@@ -475,18 +475,10 @@
 
       <div class="stat-grid" id="stat-grid"></div>
 
-      <div class="panel-grid panel-grid-3">
+      <div class="panel-grid" style="grid-template-columns:1fr;">
         <div class="panel">
           <div class="panel-head"><h3>Procesos activos por Estado</h3></div>
           <div class="panel-body" id="panel-procesos-estado"></div>
-        </div>
-        <div class="panel">
-          <div class="panel-head"><h3>Audiencias por tipo de proceso</h3></div>
-          <div class="panel-body" id="panel-audiencias"></div>
-        </div>
-        <div class="panel">
-          <div class="panel-head"><h3>Términos por cliente</h3></div>
-          <div class="panel-body" id="panel-terminos"></div>
         </div>
       </div>
     </div>
@@ -627,8 +619,6 @@ const SEMANTIC_FIELDS = [
   {key:"Estado", label:"Estado", hint:["estado"]},
   {key:"FechaAdmision", label:"Fecha de admisión", hint:["admision","admisión"]},
   {key:"FechaContestacion", label:"Fecha de contestación", hint:["contestacion","contestación"]},
-  {key:"FechaAudiencia", label:"Próxima audiencia", hint:["audiencia"]},
-  {key:"FechaTermino", label:"Próximo término", hint:["termino","término","vencimiento","plazo"]},
   {key:"CalificacionContingencia", label:"Calificación de contingencia", hint:["calificacion","calificación","conting"]},
   {key:"EstadoVT", label:"Estado V/T", hint:["estado v/t","estado vt"]},
   {key:"Observaciones", label:"Observaciones", hint:["observ"]},
@@ -904,11 +894,6 @@ function goView(view){
 }
 
 /* ---------------- Helpers ---------------- */
-function daysUntil(dateStr){
-  if(!dateStr) return null;
-  const d = new Date(dateStr); const now = new Date();
-  return Math.ceil((d - now) / (1000*60*60*24));
-}
 function fmtDate(dateStr){
   if(!dateStr) return "—";
   const d = new Date(dateStr);
@@ -935,8 +920,6 @@ function escapeAttr(str){
 /* ---------------- Dashboard render ---------------- */
 function renderDashboard(){
   const activos = procesos.filter(p => !(p.Estado||"").toLowerCase().includes('termin'));
-  const audienciasProximas = procesos.filter(p => { const d = daysUntil(p.FechaAudiencia); return d!==null && d>=0 && d<=30; });
-  const terminosProximos = procesos.filter(p => { const d = daysUntil(p.FechaTermino); return d!==null && d>=0 && d<=15; });
   const altaContingencia = procesos.filter(p => {
     const c = (p.CalificacionContingencia||"").toLowerCase();
     return c.includes('probable') || c.includes('alta') || c.includes('alto');
@@ -944,8 +927,6 @@ function renderDashboard(){
 
   const stats = [
     {label:"Procesos activos", value:activos.length, icon:iconFolder(), cls:'icon-teal', delta:`${procesos.length} en total`},
-    {label:"Audiencias (30 días)", value:audienciasProximas.length, icon:iconCalendar(), cls:'icon-orange', delta:"Próximo mes"},
-    {label:"Términos por vencer", value:terminosProximos.length, icon:iconClock(), cls:'icon-yellow', delta:"Próximos 15 días"},
     {label:"Alta contingencia", value:altaContingencia.length, icon:iconAlert(), cls:'icon-green', delta:"Requieren seguimiento"},
   ];
   document.getElementById('stat-grid').innerHTML = stats.map(s => `
@@ -956,8 +937,6 @@ function renderDashboard(){
     </div>`).join('');
 
   renderBarChart('panel-procesos-estado', groupCount(activos, p => p.EstadoVT), 'var(--verde-oscuro)', "No hay datos de Estado V/T para los procesos activos.");
-  renderBarChart('panel-audiencias', groupCount(audienciasProximas, p => p.TipoProceso), 'var(--verde-claro)', "No hay audiencias programadas en los próximos 30 días.");
-  renderBarChart('panel-terminos', groupCount(terminosProximos, p => p.Cliente), 'var(--naranja)', "No hay términos próximos a vencer.");
 }
 function emptyMini(msg){ return `<div class="mini-row" style="color:var(--texto-suave); cursor:default;">${msg}</div>`; }
 function groupCount(list, keyFn){
@@ -981,8 +960,6 @@ function renderBarChart(containerId, data, color, emptyMsg, maxBars){
     </div>`).join('') + `</div>`;
 }
 function iconFolder(){ return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/></svg>`; }
-function iconCalendar(){ return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>`; }
-function iconClock(){ return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>`; }
 function iconAlert(){ return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01M10.3 3.9L2.5 18a1.5 1.5 0 001.3 2.2h16.4a1.5 1.5 0 001.3-2.2L13.7 3.9a1.5 1.5 0 00-2.6 0z"/></svg>`; }
 
 /* ---------------- Procesos render ---------------- */
@@ -1031,7 +1008,7 @@ const FIELD_SECTIONS = [
     ["TipoProceso","text"],["NumeroContrato","text"],["EtapaProcesal","text"],["Estado","text"],
   ]},
   {title:"Fechas del proceso", fields:[
-    ["FechaAdmision","date"],["FechaContestacion","date"],["FechaAudiencia","date"],["FechaTermino","date"],
+    ["FechaAdmision","date"],["FechaContestacion","date"],
   ]},
   {title:"Riesgo y seguimiento", fields:[
     ["CalificacionContingencia","text"],["Observaciones","textarea"],
@@ -1067,8 +1044,8 @@ function openProceso(id){
 function labelFor(key){
   const map = {Cliente:"Cliente", Apoderado:"Apoderado", Despacho:"Despacho / juzgado", Instancia:"Instancia",
     TipoProceso:"Tipo de proceso", NumeroContrato:"No. de contrato", EtapaProcesal:"Etapa procesal", Estado:"Estado",
-    FechaAdmision:"Fecha de admisión", FechaContestacion:"Fecha de contestación", FechaAudiencia:"Próxima audiencia",
-    FechaTermino:"Próximo término", CalificacionContingencia:"Calificación de contingencia", Observaciones:"Observaciones"};
+    FechaAdmision:"Fecha de admisión", FechaContestacion:"Fecha de contestación",
+    CalificacionContingencia:"Calificación de contingencia", Observaciones:"Observaciones"};
   return map[key] || key;
 }
 function closeDrawer(){
