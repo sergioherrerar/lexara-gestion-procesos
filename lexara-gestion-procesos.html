@@ -477,16 +477,16 @@
 
       <div class="panel-grid panel-grid-3">
         <div class="panel">
-          <div class="panel-head"><h3>Audiencias por cliente</h3></div>
+          <div class="panel-head"><h3>Procesos activos por Estado</h3></div>
+          <div class="panel-body" id="panel-procesos-estado"></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h3>Audiencias por tipo de proceso</h3></div>
           <div class="panel-body" id="panel-audiencias"></div>
         </div>
         <div class="panel">
-          <div class="panel-head"><h3>Términos por tipo de proceso</h3></div>
+          <div class="panel-head"><h3>Términos por cliente</h3></div>
           <div class="panel-body" id="panel-terminos"></div>
-        </div>
-        <div class="panel">
-          <div class="panel-head"><h3>Alta contingencia por Estado V/T</h3></div>
-          <div class="panel-body" id="panel-contingencia"></div>
         </div>
       </div>
     </div>
@@ -955,9 +955,9 @@ function renderDashboard(){
       <div class="delta">${s.delta}</div>
     </div>`).join('');
 
-  renderBarChart('panel-audiencias', groupCount(audienciasProximas, p => p.Cliente), 'var(--verde-claro)', "No hay audiencias programadas en los próximos 30 días.");
-  renderBarChart('panel-terminos', groupCount(terminosProximos, p => p.TipoProceso), 'var(--naranja)', "No hay términos próximos a vencer.");
-  renderBarChart('panel-contingencia', groupCount(altaContingencia, p => p.EstadoVT), 'var(--amarillo)', "No hay procesos de alta contingencia.");
+  renderBarChart('panel-procesos-estado', groupCount(activos, p => p.EstadoVT), 'var(--verde-oscuro)', "No hay datos de Estado V/T para los procesos activos.");
+  renderBarChart('panel-audiencias', groupCount(audienciasProximas, p => p.TipoProceso), 'var(--verde-claro)', "No hay audiencias programadas en los próximos 30 días.");
+  renderBarChart('panel-terminos', groupCount(terminosProximos, p => p.Cliente), 'var(--naranja)', "No hay términos próximos a vencer.");
 }
 function emptyMini(msg){ return `<div class="mini-row" style="color:var(--texto-suave); cursor:default;">${msg}</div>`; }
 function groupCount(list, keyFn){
