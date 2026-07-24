@@ -247,6 +247,7 @@
 
   .panel-grid{display:grid; grid-template-columns:1.4fr 1fr; gap:16px;}
   .panel-grid-3{grid-template-columns:repeat(3,1fr);}
+  .panel-grid-2{grid-template-columns:repeat(2,1fr);}
   .bar-chart{padding:14px 20px 18px;}
   .bar-row{display:flex; align-items:center; gap:10px; padding:7px 0;}
   .bar-row .bar-label{width:38%; flex-shrink:0; font-size:12.5px; color:var(--texto); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
@@ -475,10 +476,14 @@
 
       <div class="stat-grid" id="stat-grid"></div>
 
-      <div class="panel-grid" style="grid-template-columns:1fr;">
+      <div class="panel-grid panel-grid-2">
         <div class="panel">
           <div class="panel-head"><h3>Procesos activos por Estado</h3></div>
           <div class="panel-body" id="panel-procesos-estado"></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h3>Tipo De Proceso</h3></div>
+          <div class="panel-body" id="panel-tipo-proceso"></div>
         </div>
       </div>
     </div>
@@ -935,14 +940,11 @@ function escapeAttr(str){
 /* ---------------- Dashboard render ---------------- */
 function renderDashboard(){
   const activos = procesos.filter(p => !(p.Estado||"").toLowerCase().includes('termin'));
-  const altaContingencia = procesos.filter(p => {
-    const c = (p.CalificacionContingencia||"").toLowerCase();
-    return c.includes('probable') || c.includes('alta') || c.includes('alto');
-  });
+  const tiposDistintos = new Set(procesos.map(p => stripHtml(p.TipoProceso) || "Sin dato"));
 
   const stats = [
     {label:"Procesos Lexara", value:activos.length, icon:iconFolder(), cls:'icon-teal', delta:`${procesos.length} en total`},
-    {label:"Alta contingencia", value:altaContingencia.length, icon:iconAlert(), cls:'icon-green', delta:"Requieren seguimiento"},
+    {label:"Tipo De Proceso", value:tiposDistintos.size, icon:iconAlert(), cls:'icon-green', delta:"Categorías distintas"},
   ];
   document.getElementById('stat-grid').innerHTML = stats.map(s => `
     <div class="stat-card">
@@ -952,6 +954,7 @@ function renderDashboard(){
     </div>`).join('');
 
   renderBarChart('panel-procesos-estado', groupCount(activos, p => p.EstadoVT), 'var(--verde-oscuro)', "No hay datos de Estado V/T para los procesos activos.");
+  renderBarChart('panel-tipo-proceso', groupCount(procesos, p => p.TipoProceso), 'var(--naranja)', "No hay datos de Tipo de Proceso.");
 }
 function emptyMini(msg){ return `<div class="mini-row" style="color:var(--texto-suave); cursor:default;">${msg}</div>`; }
 function groupCount(list, keyFn){
