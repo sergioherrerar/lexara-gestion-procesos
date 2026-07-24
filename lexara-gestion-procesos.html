@@ -926,7 +926,7 @@ function renderDashboard(){
   });
 
   const stats = [
-    {label:"Procesos activos", value:activos.length, icon:iconFolder(), cls:'icon-teal', delta:`${procesos.length} en total`},
+    {label:"Procesos Lexara", value:activos.length, icon:iconFolder(), cls:'icon-teal', delta:`${procesos.length} en total`},
     {label:"Alta contingencia", value:altaContingencia.length, icon:iconAlert(), cls:'icon-green', delta:"Requieren seguimiento"},
   ];
   document.getElementById('stat-grid').innerHTML = stats.map(s => `
