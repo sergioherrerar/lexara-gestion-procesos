@@ -397,7 +397,7 @@
       </svg>
     </div>
     <div class="caption">
-      Lexara centraliza cada radicado, término y audiencia del despacho en un solo lugar — conectado en vivo con SharePoint.
+      Lexara centraliza cada número corto, término y audiencia del despacho en un solo lugar — conectado en vivo con SharePoint.
     </div>
   </div>
   <div class="login-panel">
@@ -460,7 +460,7 @@
       </div>
       <div class="search-bar">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
-        <input id="global-search" type="text" placeholder="Buscar por radicado, cliente o apoderado…" oninput="onSearch(this.value)" />
+        <input id="global-search" type="text" placeholder="Buscar por numero corto, cliente o apoderado…" oninput="onSearch(this.value)" />
       </div>
     </div>
 
@@ -496,7 +496,7 @@
         <table>
           <thead>
             <tr>
-              <th>Radicado</th><th>Cliente</th><th>Despacho</th><th>No. despacho</th><th>Estado</th><th>Carpeta</th>
+              <th>Numero_Corto</th><th>Cliente</th><th>Despacho</th><th>No. despacho</th><th>Estado</th><th>Carpeta</th>
             </tr>
           </thead>
           <tbody id="procesos-tbody"></tbody>
@@ -571,7 +571,7 @@ Body: { "&lt;columna real de Estado&gt;": "En trámite", "&lt;columna real de Fe
     <button class="drawer-close" onclick="closeDrawer()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
     </button>
-    <div class="eyebrow" id="drawer-radicado">RADICADO —</div>
+    <div class="eyebrow" id="drawer-radicado">NUMERO_CORTO —</div>
     <h2 id="drawer-cliente">Cliente</h2>
     <span class="badge badge-verde" id="drawer-estado">Estado</span>
   </div>
@@ -607,7 +607,7 @@ const MAPPING = {
 };
 
 const SEMANTIC_FIELDS = [
-  {key:"Radicado", label:"Radicado", hint:["radicado"]},
+  {key:"Radicado", label:"Numero_Corto", hint:["radicado"]},
   {key:"Cliente", label:"Cliente", hint:["cliente","demandante"]},
   {key:"Apoderado", label:"Apoderado", hint:["apoderad"]},
   {key:"Despacho", label:"Despacho / juzgado", hint:["despacho","juzgado","corte"]},
@@ -830,7 +830,7 @@ function applyMapping(){
     if(sel.value) MAPPING[key] = sel.value; else delete MAPPING[key];
   });
   if(!MAPPING.Radicado || !MAPPING.Cliente || !MAPPING.Estado){
-    alert("Mapea al menos Radicado, Cliente y Estado antes de continuar.");
+    alert("Mapea al menos Numero_Corto, Cliente y Estado antes de continuar.");
     return;
   }
   transformRawItems();
@@ -1017,7 +1017,7 @@ const FIELD_SECTIONS = [
 function openProceso(id){
   activeProceso = procesos.find(p => p.id===id);
   if(!activeProceso) return;
-  document.getElementById('drawer-radicado').textContent = "RADICADO — " + (activeProceso.Radicado||"—");
+  document.getElementById('drawer-radicado').textContent = "NUMERO_CORTO — " + (activeProceso.Radicado||"—");
   document.getElementById('drawer-cliente').textContent = activeProceso.Cliente || "Sin nombre";
   const est = document.getElementById('drawer-estado');
   est.textContent = stripHtml(activeProceso.Estado) || "—";
