@@ -482,7 +482,7 @@
           <div class="panel-body" id="panel-procesos-estado"></div>
         </div>
         <div class="panel">
-          <div class="panel-head"><h3>Tipo De Proceso</h3></div>
+          <div class="panel-head"><h3>Tipo de Acción</h3></div>
           <div class="panel-body" id="panel-tipo-proceso"></div>
         </div>
       </div>
@@ -615,6 +615,7 @@ const MAPPING = {
   NumeroDespacho: "numero_x0020_de_x0020_despacho",
   Instancia: "Instancia",
   TipoProceso: "Tipo_x0020_de_x0020_Proceso",
+  TipoAccion: "Tipo_x0020_de_x0020_Accion",
   NumeroContrato: "No_x0020_Contrato",
   EtapaProcesal: "Etapa_x0020_Procesal",
   Estado: "Estado",
@@ -634,6 +635,7 @@ const SEMANTIC_FIELDS = [
   {key:"NumeroDespacho", label:"No. de despacho", hint:["numero de despacho","numero despacho","número de despacho"]},
   {key:"Instancia", label:"Instancia", hint:["instancia"]},
   {key:"TipoProceso", label:"Tipo de proceso", hint:["tipo de proceso","tipoproceso","tipo_proceso"]},
+  {key:"TipoAccion", label:"Tipo de Acción", hint:["tipo de accion","tipo de acción","tipoaccion"]},
   {key:"NumeroContrato", label:"No. de contrato", hint:["contrato"]},
   {key:"EtapaProcesal", label:"Etapa procesal", hint:["etapa"]},
   {key:"Estado", label:"Estado", hint:["estado"]},
@@ -940,11 +942,11 @@ function escapeAttr(str){
 /* ---------------- Dashboard render ---------------- */
 function renderDashboard(){
   const activos = procesos.filter(p => !(p.Estado||"").toLowerCase().includes('termin'));
-  const tiposDistintos = new Set(procesos.map(p => stripHtml(p.TipoProceso) || "Sin dato"));
+  const tiposDistintos = new Set(procesos.map(p => stripHtml(p.TipoAccion) || "Sin dato"));
 
   const stats = [
     {label:"Procesos Lexara", value:activos.length, icon:iconFolder(), cls:'icon-teal', delta:`${procesos.length} en total`},
-    {label:"Tipo De Proceso", value:tiposDistintos.size, icon:iconAlert(), cls:'icon-green', delta:"Categorías distintas"},
+    {label:"Tipo de Acción", value:tiposDistintos.size, icon:iconAlert(), cls:'icon-green', delta:"Categorías distintas"},
   ];
   document.getElementById('stat-grid').innerHTML = stats.map(s => `
     <div class="stat-card">
@@ -954,7 +956,7 @@ function renderDashboard(){
     </div>`).join('');
 
   renderBarChart('panel-procesos-estado', groupCount(activos, p => p.EstadoVT), 'var(--verde-oscuro)', "No hay datos de Estado V/T para los procesos activos.");
-  renderBarChart('panel-tipo-proceso', groupCount(procesos, p => p.TipoProceso), 'var(--naranja)', "No hay datos de Tipo de Proceso.");
+  renderBarChart('panel-tipo-proceso', groupCount(procesos, p => p.TipoAccion), 'var(--naranja)', "No hay datos de Tipo de Acción.");
 }
 function emptyMini(msg){ return `<div class="mini-row" style="color:var(--texto-suave); cursor:default;">${msg}</div>`; }
 function groupCount(list, keyFn){
