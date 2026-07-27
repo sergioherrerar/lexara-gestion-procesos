@@ -549,19 +549,83 @@ function openProceso(id){
     <div class="field-section">
       <h4>${sec.title}</h4>
       <div class="field-grid ${sec.fields.length===1?'full':''}">
-        ${sec.fields.map(([key,type]) => `
+        ${sec.fields.map(([key,type]) => {
+          if(key==='Cliente') return `
+          <div class="field full" style="grid-column:1/-1;">
+            <label>Cliente</label>
+            <select data-field="Cliente" id="field-cliente-select"></select>
+            <button type="button" class="btn-secondary" style="margin-top:8px; align-self:flex-start;" onclick="toggleNewClienteForm()">+ Nuevo cliente</button>
+            <div id="new-cliente-form" style="display:none; margin-top:10px; padding:12px; border:1px solid var(--gris-linea); border-radius:8px; background:var(--gris-claro);">
+              <div class="field-grid">
+                <div class="field"><label>Razón social *</label><input id="nc-razonsocial" type="text"></div>
+                <div class="field"><label>NIT</label><input id="nc-nit" type="text"></div>
+                <div class="field"><label>Dirección</label><input id="nc-direccion" type="text"></div>
+                <div class="field"><label>Teléfono</label><input id="nc-telefono" type="text"></div>
+                <div class="field full" style="grid-column:1/-1;"><label>Correo</label><input id="nc-correo" type="text"></div>
+              </div>
+              <div style="margin-top:10px; display:flex; gap:8px;">
+                <button type="button" class="btn-primary" onclick="createCliente()">Crear cliente</button>
+                <button type="button" class="btn-secondary" onclick="toggleNewClienteForm()">Cancelar</button>
+              </div>
+            </div>
+          </div>`;
+          return `
           <div class="field ${type==='textarea'?'full':''}" style="${type==='textarea'?'grid-column:1/-1;':''}">
             <label>${labelFor(key)}</label>
             ${type==='textarea'
               ? `<textarea data-field="${key}">${escapeAttr(stripHtml(activeProceso[key]||""))}</textarea>`
               : `<input data-field="${key}" type="${type}" value="${escapeAttr(type==='date' ? (activeProceso[key]||"") : stripHtml(activeProceso[key]||""))}">`}
-          </div>`).join('')}
+          </div>`;
+        }).join('')}
       </div>
     </div>`).join('');
 
+  populateClienteSelect(activeProceso.Cliente);
   document.getElementById('save-hint').textContent = liveMode ? "Los cambios se guardan en SharePoint." : "Modo demo — los cambios no se guardan.";
   document.getElementById('overlay').classList.add('active');
   document.getElementById('drawer').classList.add('active');
+}
+function populateClienteSelect(selected){
+  const sel = document.getElementById('field-cliente-select');
+  if(!sel) return;
+  const nombres = clientes.map(c => c.RazonSocial).filter(Boolean);
+  if(selected && !nombres.includes(selected)) nombres.unshift(selected);
+  sel.innerHTML = `<option value="">— seleccionar cliente —</option>` +
+    nombres.map(n => `<option value="${escapeAttr(n)}" ${n===selected?'selected':''}>${n}</option>`).join('');
+}
+function toggleNewClienteForm(){
+  const form = document.getElementById('new-cliente-form');
+  if(!form) return;
+  form.style.display = form.style.display==='none' ? 'block' : 'none';
+}
+async function createCliente(){
+  const razonSocial = document.getElementById('nc-razonsocial').value.trim();
+  if(!razonSocial){ alert("El nombre (Razón social) es obligatorio."); return; }
+  const nuevo = {
+    id: 'tmp-' + Math.random().toString(36).slice(2),
+    RazonSocial: razonSocial,
+    Nit: document.getElementById('nc-nit').value.trim(),
+    Direccion: document.getElementById('nc-direccion').value.trim(),
+    Telefono: document.getElementById('nc-telefono').value.trim(),
+    Correo: document.getElementById('nc-correo').value.trim(),
+    Entidad: "",
+  };
+  if(liveMode){
+    const list = listByKey('clientes');
+    const fields = {};
+    Object.keys(nuevo).forEach(key => { if(key!=='id' && list.mapping[key]) fields[list.mapping[key]] = nuevo[key]; });
+    try{
+      const created = await graphFetch(`/sites/${siteId}/lists/${list.listId}/items`, {
+        method:"POST",
+        body: JSON.stringify({ fields })
+      });
+      nuevo.id = created.id; nuevo._graphId = created.id;
+    }catch(err){ console.error(err); alert("No se pudo crear el cliente en SharePoint: " + err.message); return; }
+  }
+  clientes.push(nuevo);
+  renderClientes();
+  populateClienteSelect(nuevo.RazonSocial);
+  toggleNewClienteForm();
 }
 function labelFor(key){
   const map = {Cliente:"Cliente", Apoderado:"Apoderado", Despacho:"Despacho / juzgado", Instancia:"Instancia",
