@@ -146,7 +146,7 @@
         <table>
           <thead>
             <tr>
-              <th>Razón social</th><th>NIT</th><th>Dirección</th><th>Teléfono</th><th>Correo</th><th>Entidad</th>
+              <th>Razón social</th><th>NIT</th><th>Dirección</th><th>Teléfono</th><th>Correo</th><th>Entidad</th><th>Acciones</th>
             </tr>
           </thead>
           <tbody id="clientes-tbody"></tbody>
@@ -229,6 +229,25 @@ Body: { "&lt;columna real de Estado&gt;": "En trámite", "&lt;columna real de Fe
     <button class="btn-primary" onclick="saveProceso()">Guardar cambios</button>
     <button class="btn-secondary" onclick="closeDrawer()">Cancelar</button>
     <span class="save-hint" id="save-hint"></span>
+  </div>
+</div>
+
+<!-- ============ CLIENTE DRAWER ============ -->
+<div id="cliente-overlay" onclick="closeClienteDrawer()"></div>
+<div id="cliente-drawer">
+  <div class="drawer-head">
+    <button class="drawer-close" onclick="closeClienteDrawer()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button>
+    <div class="eyebrow">CLIENTE</div>
+    <h2 id="cliente-drawer-nombre">Cliente</h2>
+  </div>
+  <div class="drawer-body" id="cliente-drawer-body"></div>
+  <div class="drawer-foot">
+    <button class="btn-primary" onclick="saveCliente()">Guardar cambios</button>
+    <button class="btn-secondary" onclick="deleteCliente()">Eliminar cliente</button>
+    <button class="btn-secondary" onclick="closeClienteDrawer()">Cancelar</button>
+    <span class="save-hint" id="cliente-save-hint"></span>
   </div>
 </div>
 

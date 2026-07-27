@@ -520,7 +520,78 @@ function renderClientes(){
       <td>${c.Telefono||"—"}</td>
       <td>${c.Correo||"—"}</td>
       <td>${c.Entidad||"—"}</td>
-    </tr>`).join('') : `<tr><td colspan="6"><div class="empty-state"><div class="mark">${ICON_SVG}</div>No hay clientes para mostrar.</div></td></tr>`;
+      <td style="white-space:nowrap;">
+        <button type="button" class="btn-secondary" style="padding:5px 10px; font-size:12px;" onclick="openCliente(${JSON.stringify(c.id)})">Editar</button>
+        <button type="button" class="btn-secondary" style="padding:5px 10px; font-size:12px; margin-left:6px;" onclick="deleteCliente(${JSON.stringify(c.id)})">Eliminar</button>
+      </td>
+    </tr>`).join('') : `<tr><td colspan="7"><div class="empty-state"><div class="mark">${ICON_SVG}</div>No hay clientes para mostrar.</div></td></tr>`;
+}
+
+/* ---------------- Cliente drawer (editar / eliminar) ---------------- */
+let activeCliente = null;
+const CLIENTE_FIELDS = [
+  ["RazonSocial","Razón social","text"],
+  ["Nit","NIT","text"],
+  ["Direccion","Dirección","text"],
+  ["Telefono","Teléfono","text"],
+  ["Correo","Correo","text"],
+  ["Entidad","Entidad","text"],
+];
+function openCliente(id){
+  activeCliente = clientes.find(c => c.id===id);
+  if(!activeCliente) return;
+  document.getElementById('cliente-drawer-nombre').textContent = activeCliente.RazonSocial || "Sin nombre";
+  document.getElementById('cliente-drawer-body').innerHTML = `
+    <div class="field-section">
+      <div class="field-grid">
+        ${CLIENTE_FIELDS.map(([key,label]) => `
+          <div class="field">
+            <label>${label}</label>
+            <input data-cliente-field="${key}" type="text" value="${escapeAttr(activeCliente[key]||"")}">
+          </div>`).join('')}
+      </div>
+    </div>`;
+  document.getElementById('cliente-save-hint').textContent = liveMode ? "Los cambios se guardan en SharePoint." : "Modo demo — los cambios no se guardan.";
+  document.getElementById('cliente-overlay').classList.add('active');
+  document.getElementById('cliente-drawer').classList.add('active');
+}
+function closeClienteDrawer(){
+  document.getElementById('cliente-overlay').classList.remove('active');
+  document.getElementById('cliente-drawer').classList.remove('active');
+  activeCliente = null;
+}
+async function saveCliente(){
+  if(!activeCliente) return;
+  const updates = {};
+  document.querySelectorAll('#cliente-drawer-body [data-cliente-field]').forEach(el => { updates[el.dataset.clienteField] = el.value; });
+  Object.assign(activeCliente, updates);
+  if(liveMode){
+    const list = listByKey('clientes');
+    const fields = {};
+    Object.keys(updates).forEach(key => { if(list.mapping[key]) fields[list.mapping[key]] = updates[key]; });
+    try{
+      await graphFetch(`/sites/${siteId}/lists/${list.listId}/items/${activeCliente._graphId || activeCliente.id}/fields`, {
+        method:"PATCH",
+        body: JSON.stringify(fields)
+      });
+    }catch(err){ console.error(err); alert("No se pudo guardar en SharePoint: " + err.message); return; }
+  }
+  renderClientes();
+  closeClienteDrawer();
+}
+async function deleteCliente(id){
+  const cliente = id ? clientes.find(c => c.id===id) : activeCliente;
+  if(!cliente) return;
+  if(!confirm(`¿Eliminar al cliente "${cliente.RazonSocial}"? Esta acción no se puede deshacer.`)) return;
+  if(liveMode){
+    const list = listByKey('clientes');
+    try{
+      await graphFetch(`/sites/${siteId}/lists/${list.listId}/items/${cliente._graphId || cliente.id}`, { method:"DELETE" });
+    }catch(err){ console.error(err); alert("No se pudo eliminar en SharePoint: " + err.message); return; }
+  }
+  clientes = clientes.filter(c => c.id !== cliente.id);
+  renderClientes();
+  if(activeCliente && activeCliente.id===cliente.id) closeClienteDrawer();
 }
 
 /* ---------------- Detail drawer ---------------- */
