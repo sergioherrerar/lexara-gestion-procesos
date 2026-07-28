@@ -1,22 +1,15 @@
 import { ICON_SVG } from '../config';
 import { stripHtml, estadoBadgeClass } from '../lib/graph';
 
-const FILTERS = [
-  {key:'todos', label:'Todos'},
-  {key:'activos', label:'Activos'},
-  {key:'apelacion', label:'En apelación / corte'},
-  {key:'terminados', label:'Terminados'},
-];
-
 function matchesFilter(p, currentFilter){
-  const e = (p.Estado||"").toLowerCase();
-  if(currentFilter==='activos') return !e.includes('termin');
-  if(currentFilter==='apelacion') return e.includes('apelaci') || e.includes('corte') || e.includes('casaci');
-  if(currentFilter==='terminados') return e.includes('termin');
-  return true;
+  if(currentFilter==='todos') return true;
+  return (stripHtml(p.Entidad) || "Sin entidad") === currentFilter;
 }
 
 export default function ProcesosView({ procesos, currentFilter, setFilter, searchQuery, onOpenProceso }){
+  const entidades = Array.from(new Set(procesos.map(p => stripHtml(p.Entidad) || "Sin entidad"))).sort((a,b)=>a.localeCompare(b));
+  const filters = [{key:'todos', label:'Todos'}, ...entidades.map(e => ({key:e, label:e}))];
+
   const query = (searchQuery||"").trim().toLowerCase();
   const rows = procesos.filter(p => matchesFilter(p, currentFilter) && (!query ||
     (p.Radicado||"").toLowerCase().includes(query) ||
@@ -32,7 +25,7 @@ export default function ProcesosView({ procesos, currentFilter, setFilter, searc
         </div>
       </div>
       <div className="toolbar">
-        {FILTERS.map(f => (
+        {filters.map(f => (
           <div key={f.key} className={"filter-chip" + (currentFilter===f.key ? " active" : "")} onClick={() => setFilter(f.key)}>{f.label}</div>
         ))}
       </div>
@@ -40,7 +33,7 @@ export default function ProcesosView({ procesos, currentFilter, setFilter, searc
         <table>
           <thead>
             <tr>
-              <th>Numero_Corto</th><th>Cliente</th><th>Despacho</th><th>No. despacho</th><th>Estado</th><th>Carpeta</th>
+              <th>Numero_Corto</th><th>Cliente</th><th>Despacho</th><th>No. despacho</th><th>Estado</th><th>Carpeta</th><th>Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -50,11 +43,14 @@ export default function ProcesosView({ procesos, currentFilter, setFilter, searc
                 <td className="cliente">{p.Cliente || "—"}</td>
                 <td>{p.Despacho || "—"}</td>
                 <td>{p.NumeroDespacho || "—"}</td>
-                <td><span className={"badge badge-truncate " + estadoBadgeClass(p.Estado)} title={stripHtml(p.Estado)}>{stripHtml(p.Estado) || "—"}</span></td>
+                <td><span className={"badge badge-truncate " + estadoBadgeClass(p.Estado)}>{stripHtml(p.Estado) || "—"}</span></td>
                 <td>{p.LinkCarpeta ? <a href={p.LinkCarpeta} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{color:'var(--verde-oscuro)', fontWeight:600, textDecoration:'underline'}}>Abrir</a> : "—"}</td>
+                <td style={{whiteSpace:'nowrap'}}>
+                  <button type="button" className="btn-secondary" style={{padding:'5px 10px', fontSize:'12px'}} onClick={e => { e.stopPropagation(); onOpenProceso(p.id); }}>Editar</button>
+                </td>
               </tr>
             )) : (
-              <tr><td colSpan={6}><div className="empty-state"><div className="mark" dangerouslySetInnerHTML={{__html: ICON_SVG}} />No se encontraron procesos con ese criterio.</div></td></tr>
+              <tr><td colSpan={7}><div className="empty-state"><div className="mark" dangerouslySetInnerHTML={{__html: ICON_SVG}} />No se encontraron procesos con ese criterio.</div></td></tr>
             )}
           </tbody>
         </table>

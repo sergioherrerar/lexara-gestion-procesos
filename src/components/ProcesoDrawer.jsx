@@ -1,23 +1,26 @@
 import { useState, useEffect } from 'react';
-import { stripHtml, estadoBadgeClass } from '../lib/graph';
+import { stripHtml, estadoBadgeClass, findClienteByNombre } from '../lib/graph';
 
 const FIELD_SECTIONS = [
   {title:"Datos generales", fields:[
-    ["Cliente","text"],["Apoderado","text"],["Despacho","text"],["Instancia","text"],
-    ["TipoProceso","text"],["NumeroContrato","text"],["EtapaProcesal","text"],["Estado","text"],
+    ["Cliente","text"],["Entidad","text"],["Apoderado","text"],["Despacho","text"],["NumeroDespacho","text"],
+    ["Instancia","text"],["TipoProceso","text"],["TipoAccion","text"],["NumeroContrato","text"],
+    ["EtapaProcesal","text"],["Estado","text"],
   ]},
   {title:"Fechas del proceso", fields:[
     ["FechaAdmision","date"],["FechaContestacion","date"],
   ]},
   {title:"Riesgo y seguimiento", fields:[
-    ["CalificacionContingencia","text"],["Observaciones","textarea"],
+    ["CalificacionContingencia","text"],["EstadoVT","text"],["LinkCarpeta","text"],["Observaciones","textarea"],
   ]},
 ];
 const LABELS = {
-  Cliente:"Cliente", Apoderado:"Apoderado", Despacho:"Despacho / juzgado", Instancia:"Instancia",
-  TipoProceso:"Tipo de proceso", NumeroContrato:"No. de contrato", EtapaProcesal:"Etapa procesal", Estado:"Estado",
+  Cliente:"Cliente", Entidad:"Entidad", Apoderado:"Apoderado", Despacho:"Despacho / juzgado", NumeroDespacho:"No. de despacho",
+  Instancia:"Instancia", TipoProceso:"Tipo de proceso", TipoAccion:"Tipo de Acción", NumeroContrato:"No. de contrato",
+  EtapaProcesal:"Etapa procesal", Estado:"Estado",
   FechaAdmision:"Fecha de admisión", FechaContestacion:"Fecha de contestación",
-  CalificacionContingencia:"Calificación de contingencia", Observaciones:"Observaciones",
+  CalificacionContingencia:"Calificación de contingencia", EstadoVT:"Estado V/T", LinkCarpeta:"Link a la carpeta",
+  Observaciones:"Observaciones",
 };
 const EMPTY_NEW_CLIENTE = {RazonSocial:"", Nit:"", Direccion:"", Telefono:"", Correo:""};
 
@@ -56,6 +59,7 @@ export default function ProcesoDrawer({ proceso, clientes, liveMode, onClose, on
 
   const clienteNombres = clientes.map(c => c.RazonSocial).filter(Boolean);
   if(form.Cliente && !clienteNombres.includes(form.Cliente)) clienteNombres.unshift(form.Cliente);
+  const linkedCliente = findClienteByNombre(clientes, form.Cliente);
 
   return (
     <>
@@ -84,6 +88,20 @@ export default function ProcesoDrawer({ proceso, clientes, liveMode, onClose, on
                           {clienteNombres.map(n => <option value={n} key={n}>{n}</option>)}
                         </select>
                         <button type="button" className="btn-secondary" style={{marginTop:8, alignSelf:'flex-start'}} onClick={() => setShowNewCliente(v => !v)}>+ Nuevo cliente</button>
+                        {form.Cliente && (
+                          linkedCliente ? (
+                            <div style={{marginTop:10, padding:'10px 12px', border:'1px solid var(--gris-linea)', borderRadius:8, fontSize:12.5, color:'var(--texto-suave)', lineHeight:1.7}}>
+                              <strong style={{color:'var(--texto)'}}>Datos del cliente (lista Clientes)</strong><br/>
+                              NIT: {linkedCliente.Nit || "—"} · Tel: {linkedCliente.Telefono || "—"}<br/>
+                              {linkedCliente.Direccion || "—"}<br/>
+                              {linkedCliente.Correo || "—"}
+                            </div>
+                          ) : (
+                            <div style={{marginTop:10, padding:'10px 12px', border:'1px solid #f3d78e', background:'#fff7e8', borderRadius:8, fontSize:12.5, color:'#6b5115'}}>
+                              Este nombre no coincide con ningún registro de la lista de Clientes — créalo con "+ Nuevo cliente" para vincularlo.
+                            </div>
+                          )
+                        )}
                         {showNewCliente && (
                           <div style={{marginTop:10, padding:12, border:'1px solid var(--gris-linea)', borderRadius:8, background:'var(--gris-claro)'}}>
                             <div className="field-grid">

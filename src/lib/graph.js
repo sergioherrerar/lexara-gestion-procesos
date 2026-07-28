@@ -136,3 +136,19 @@ export function groupCount(list, keyFn){
   });
   return Array.from(map.entries()).map(([label,value]) => ({label,value})).sort((a,b)=>b.value-a.value);
 }
+
+/* ---------------- Relación Procesos.Cliente <-> Clientes.RazonSocial ---------------- */
+// Cruce por nombre: el campo "Cliente" de un proceso guarda el mismo texto
+// que "Razón social" en la lista de Clientes. Estas dos funciones son el
+// punto único de esa relación — si más adelante se agrega un vínculo real
+// por ID de SharePoint, solo hay que cambiar la implementación aquí.
+export function findClienteByNombre(clientes, nombre){
+  if(!nombre) return null;
+  const target = normalize(nombre);
+  return clientes.find(c => normalize(c.RazonSocial) === target) || null;
+}
+export function procesosForCliente(procesos, cliente){
+  if(!cliente) return [];
+  const target = normalize(cliente.RazonSocial);
+  return procesos.filter(p => normalize(p.Cliente) === target);
+}

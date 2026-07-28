@@ -53,6 +53,7 @@ export default function App(){
         {app.view === 'clientes' && (
           <ClientesView
             clientes={app.clientes}
+            procesos={app.procesos}
             onOpenCliente={app.openCliente}
             onDeleteCliente={app.deleteCliente}
           />
