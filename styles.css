@@ -76,7 +76,7 @@
     padding:40px;
   }
   .login-box{width:100%; max-width:360px;}
-  .login-box img.wordmark{height:34px; margin-bottom:36px;}
+  .brand-logo-wrap{margin-bottom:36px;}
   .login-box h1{
     font-family:var(--font-display);
     font-size:26px;
@@ -151,7 +151,7 @@
   }
   .sidebar-overlay{display:none;}
   .mobile-nav-btn{display:none;}
-  .sidebar img.wordmark{height:24px; margin:6px 8px 28px;}
+  .sidebar-logo{margin:6px 8px 28px;}
   .nav-group-label{
     font-size:11px;
     letter-spacing:.06em;
@@ -394,7 +394,7 @@
     .stat-grid{grid-template-columns:repeat(2,1fr);}
     .panel-grid{grid-template-columns:1fr;}
     .sidebar{width:72px;}
-    .sidebar .label-text, .sidebar .nav-group-label, .sidebar img.wordmark, .user-name, .user-role{display:none;}
+    .sidebar .label-text, .sidebar .nav-group-label, .sidebar .sidebar-logo, .user-name, .user-role{display:none;}
     .search-bar{width:200px;}
   }
 
@@ -426,7 +426,7 @@
       box-shadow:8px 0 24px rgba(0,20,18,.2);
     }
     .sidebar.mobile-open{transform:translateX(0);}
-    .sidebar .label-text, .sidebar .nav-group-label, .sidebar img.wordmark,
+    .sidebar .label-text, .sidebar .nav-group-label, .sidebar .sidebar-logo,
     .sidebar .user-name, .sidebar .user-role{display:block !important;}
     .nav-item .dot{display:inline-block;}
 

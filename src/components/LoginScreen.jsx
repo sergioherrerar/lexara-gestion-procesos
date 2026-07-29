@@ -1,4 +1,4 @@
-import { LOGO_LOGIN_DATA_URI } from '../assets/logo';
+import Logo from './Logo';
 
 export default function LoginScreen({ config, onSignIn, onEnterDemo, onGoSetup }){
   return (
@@ -16,7 +16,7 @@ export default function LoginScreen({ config, onSignIn, onEnterDemo, onGoSetup }
       </div>
       <div className="login-panel">
         <div className="login-box">
-          <img className="wordmark" src={LOGO_LOGIN_DATA_URI} alt="Lexara Abogados" />
+          <div className="brand-logo-wrap"><Logo color="var(--verde-oscuro)" height={30} /></div>
           <h1>Gestión de procesos</h1>
           <p className="sub">Inicia sesión con tu cuenta de Microsoft 365 del despacho para acceder a los procesos judiciales.</p>
           <button className="btn-msal" onClick={onSignIn}>

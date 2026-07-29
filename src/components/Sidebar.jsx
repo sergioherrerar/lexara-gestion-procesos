@@ -1,4 +1,4 @@
-import { LOGO_SIDEBAR_DATA_URI } from '../assets/logo';
+import Logo from './Logo';
 import { ICON_SVG } from '../config';
 
 const NAV_ITEMS = [
@@ -12,7 +12,7 @@ export default function Sidebar({ view, onGoView, account, liveMode, onSignOut, 
   const role = liveMode ? "Sesión Microsoft 365" : (account?.username==="demo@lexara.com" ? "Datos de ejemplo" : "Sesión Microsoft 365 (sin mapear)");
   return (
     <aside className={"sidebar" + (mobileOpen ? " mobile-open" : "")}>
-      <img className="wordmark" src={LOGO_SIDEBAR_DATA_URI} alt="Lexara Abogados" />
+      <div className="sidebar-logo"><Logo color="var(--amarillo)" height={20} /></div>
       <div className="nav-group-label">Principal</div>
       {NAV_ITEMS.map(item => (
         <div
