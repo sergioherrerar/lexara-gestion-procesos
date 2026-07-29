@@ -1,5 +1,5 @@
 import { ICON_SVG } from '../config';
-import { clienteForFactura, procesoForFactura, facturaBadgeClass, fmtDate } from '../lib/graph';
+import { clienteForFactura, procesoForFactura, facturaNumero, computeFacturaTotals, fmtMonto, fmtDate } from '../lib/graph';
 import IconButton from './IconButton';
 
 export default function FacturacionView({ facturas, clientes, procesos, searchQuery, onOpenFactura }){
@@ -7,10 +7,11 @@ export default function FacturacionView({ facturas, clientes, procesos, searchQu
   const rows = facturas.filter(f => {
     if(!query) return true;
     const cliente = clienteForFactura(clientes, f);
-    return (f.NumeroFactura||"").toLowerCase().includes(query) ||
+    return facturaNumero(f).toLowerCase().includes(query) ||
       (f.Contrato||"").toLowerCase().includes(query) ||
+      (f.Proceso||"").toLowerCase().includes(query) ||
       (cliente?.RazonSocial||"").toLowerCase().includes(query);
-  }).sort((a,b) => (b.FechaEmision||"").localeCompare(a.FechaEmision||""));
+  }).sort((a,b) => (b.Fecha||"").localeCompare(a.Fecha||""));
 
   return (
     <div className="view">
@@ -24,25 +25,26 @@ export default function FacturacionView({ facturas, clientes, procesos, searchQu
         <table>
           <thead>
             <tr>
-              <th>No. factura</th><th>Cliente</th><th>Proceso</th><th>Valor</th><th>Estado</th><th>Emisión</th><th>Vencimiento</th><th>Acciones</th>
+              <th>No. factura</th><th>Cliente</th><th>Proceso</th><th>Fecha</th><th>Subtotal</th><th>IVA</th><th>Total</th><th>Acciones</th>
             </tr>
           </thead>
           <tbody>
             {rows.length ? rows.map(f => {
               const cliente = clienteForFactura(clientes, f);
               const proceso = procesoForFactura(procesos, f);
+              const totals = computeFacturaTotals(f);
               return (
                 <tr key={f.id} onClick={() => onOpenFactura(f.id)}>
-                  <td>{f.NumeroFactura || "—"}</td>
+                  <td>{facturaNumero(f)}</td>
                   <td className="cliente">{cliente?.RazonSocial || "—"}</td>
-                  <td>{proceso?.Radicado || f.Contrato || "—"}</td>
-                  <td>{f.Valor || "—"}</td>
-                  <td><span className={"badge " + facturaBadgeClass(f.Estado)}>{f.Estado || "—"}</span></td>
-                  <td>{fmtDate(f.FechaEmision)}</td>
-                  <td>{fmtDate(f.FechaVencimiento)}</td>
+                  <td>{proceso?.Radicado || f.Proceso || "—"}</td>
+                  <td>{fmtDate(f.Fecha)}</td>
+                  <td>{fmtMonto(totals.subtotal)}</td>
+                  <td>{fmtMonto(totals.iva)}</td>
+                  <td>{fmtMonto(totals.total)}</td>
                   <td style={{whiteSpace:'nowrap'}}>
                     <div className="row-actions">
-                      <IconButton icon="edit" variant="edit" label="Editar factura" onClick={e => { e.stopPropagation(); onOpenFactura(f.id); }} />
+                      <IconButton icon="edit" variant="edit" label="Ver / editar factura" onClick={e => { e.stopPropagation(); onOpenFactura(f.id); }} />
                     </div>
                   </td>
                 </tr>

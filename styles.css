@@ -322,6 +322,23 @@
   }
   .field input:focus, .field select:focus, .field textarea:focus{border-color:var(--verde-claro);}
   .field textarea{resize:vertical; min-height:64px;}
+  .field-warning{margin-top:2px; padding:8px 10px; border:1px solid #f3d78e; background:#fff7e8; border-radius:8px; font-size:12.5px; color:#6b5115;}
+
+  /* ---------- Líneas de detalle de factura ---------- */
+  table.lineas-factura{width:100%; border-collapse:collapse;}
+  table.lineas-factura th{
+    text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--texto-suave);
+    padding:6px 8px; border-bottom:1px solid var(--gris-linea);
+  }
+  table.lineas-factura td{padding:6px 8px; border-bottom:1px solid var(--gris-linea); vertical-align:top;}
+  table.lineas-factura td:nth-child(1){width:46%;}
+  table.lineas-factura td:nth-child(2), table.lineas-factura td:nth-child(3){width:16%;}
+  table.lineas-factura input, table.lineas-factura textarea{
+    width:100%; border:1px solid var(--gris-linea); border-radius:6px; padding:6px 8px; font-size:13px; font-family:var(--font-body);
+  }
+  table.lineas-factura textarea{resize:vertical; min-height:38px;}
+  table.lineas-factura .linea-total{font-weight:600; color:var(--verde-oscuro); white-space:nowrap; padding-top:14px;}
+
   .drawer-foot{
     padding:16px 26px; border-top:1px solid var(--gris-linea); display:flex; gap:10px; flex-shrink:0;
   }
@@ -441,4 +458,41 @@
     .drawer-head, .drawer-body, .drawer-foot{padding-left:18px; padding-right:18px;}
     #drawer, #cliente-drawer, #factura-drawer{width:100vw; max-width:100vw;}
     .field-grid{grid-template-columns:1fr;}
+  }
+
+  /* ---------- Hoja imprimible de factura ---------- */
+  .print-sheet{display:none;}
+
+  @media print{
+    body *{visibility:hidden;}
+    .print-sheet, .print-sheet *{visibility:visible;}
+    .print-sheet{
+      display:block; position:absolute; top:0; left:0; width:100%; padding:24px;
+      font-family:var(--font-body); color:var(--texto); font-size:12.5px;
+    }
+    .print-head{display:flex; align-items:center; gap:18px; border-bottom:3px solid var(--verde-oscuro); padding-bottom:14px; margin-bottom:16px;}
+    .print-head img{height:46px; width:auto;}
+    .print-title{flex:1; text-align:center;}
+    .print-title h1{font-family:var(--font-display); font-size:16px; color:var(--verde-oscuro); margin:0;}
+    .print-title h2{font-size:12px; color:var(--texto-suave); margin:4px 0 0; font-weight:600;}
+    .print-numero{font-family:var(--font-display); font-size:30px; font-weight:700; color:#c0392b;}
+
+    .print-cliente{display:grid; grid-template-columns:1fr 1fr; gap:6px 24px; margin-bottom:16px;}
+    .print-cliente > div{display:flex; gap:8px; border-bottom:1px solid var(--gris-linea); padding-bottom:3px;}
+    .print-cliente label{font-weight:700; color:var(--verde-oscuro); min-width:70px;}
+
+    table.print-lineas{width:100%; border-collapse:collapse; margin-bottom:16px;}
+    table.print-lineas th{background:var(--verde-oscuro); color:#fff; text-align:left; padding:6px 8px; font-size:11px; text-transform:uppercase;}
+    table.print-lineas td{padding:6px 8px; border-bottom:1px solid var(--gris-linea); vertical-align:top; min-height:20px;}
+    table.print-lineas td:nth-child(1){width:50%;}
+
+    .print-foot{display:flex; justify-content:space-between; gap:24px;}
+    .print-foot-left, .print-foot-right{display:flex; flex-direction:column; gap:6px;}
+    .print-foot-right{min-width:220px;}
+    .print-foot > div > div{display:flex; justify-content:space-between; gap:12px; border-bottom:1px solid var(--gris-linea); padding-bottom:3px;}
+    .print-foot label{font-weight:700; color:var(--verde-oscuro);}
+    .print-total{font-size:15px;}
+    .print-total label, .print-total span{font-weight:700; color:var(--verde-oscuro);}
+
+    .sidebar, .topbar, #factura-overlay, .drawer-foot, .drawer-close{display:none !important;}
   }

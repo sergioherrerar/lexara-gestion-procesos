@@ -70,6 +70,7 @@ export const SHAREPOINT_LISTS_CONFIG = [
     semanticFields: [
       {key:"RazonSocial", label:"Razón social", hint:["razon social","razón social"], required:true},
       {key:"Nit", label:"NIT", hint:["nit"]},
+      {key:"Ciudad", label:"Ciudad", hint:["ciudad"]},
       {key:"Direccion", label:"Dirección", hint:["direccion","dirrección","dirreccion"]},
       {key:"Telefono", label:"Teléfono", hint:["telefono","teléfono"]},
       {key:"Correo", label:"Correo", hint:["correo"]},
@@ -88,15 +89,27 @@ export const SHAREPOINT_LISTS_CONFIG = [
     key: "facturacion",
     listName: "base facturas",
     label: "Facturación",
+    // Las líneas de detalle (Descripción/Cantidad/Valor unitario/Total) no son una
+    // tabla aparte: son 6 juegos de columnas fijos en la misma lista (Descripcion1..6, etc.),
+    // migrados así desde la base Access original.
     semanticFields: [
-      {key:"NumeroFactura", label:"No. de factura", hint:["numero de factura","número de factura","no factura","factura"]},
-      {key:"CodigoCliente", label:"Código cliente", hint:["codigo cliente","código cliente","id cliente"], required:true},
+      {key:"Factura", label:"No. de factura", hint:["factura"], required:true},
+      {key:"CodigoCliente", label:"Código cliente", hint:["codigo cliente","código cliente","id cliente","clien"], required:true},
       {key:"Contrato", label:"Contrato", hint:["contrato"], required:true},
-      {key:"Valor", label:"Valor", hint:["valor","monto","total"]},
-      {key:"Estado", label:"Estado", hint:["estado"]},
-      {key:"FechaEmision", label:"Fecha de emisión", hint:["fecha de emision","fecha de emisión","fecha factura"]},
-      {key:"FechaVencimiento", label:"Fecha de vencimiento", hint:["fecha de vencimiento","vencimiento"]},
-      {key:"Concepto", label:"Concepto / Observaciones", hint:["concepto","observaciones","detalle"]},
+      {key:"Proceso", label:"Proceso", hint:["proceso"]},
+      {key:"Fecha", label:"Fecha", hint:["fecha"]},
+      {key:"Etapa", label:"Etapa", hint:["etapa"]},
+      ...Array.from({length:6}, (_,i) => i+1).flatMap(n => [
+        {key:`Descripcion${n}`, label:`Descripción ${n}`, hint:[`descripcion${n}`,`descripcion ${n}`]},
+        {key:`Cantidad${n}`, label:`Cantidad ${n}`, hint:[`cantidad${n}`,`cantidad ${n}`]},
+        {key:`ValorUnitario${n}`, label:`Valor unitario ${n}`, hint:[`valorunitario${n}`,`valor unitario ${n}`]},
+        {key:`Total${n}`, label:`Total ${n}`, hint:[`total${n}`,`total ${n}`]},
+      ]),
+      {key:"Subtotal", label:"Subtotal", hint:["subtotal","subtotales"]},
+      {key:"Iva", label:"IVA", hint:["iva"]},
+      {key:"Total", label:"Total", hint:["total"]},
+      // Subtotal/IVA/Total se calculan en la app a partir de las 6 líneas y el % de IVA,
+      // pero también se guardan como columnas reales en SharePoint (no son solo de pantalla).
     ],
     mapping: {},
   },
@@ -111,17 +124,29 @@ export const DEMO_PROCESOS = [
 ];
 
 export const DEMO_CLIENTES = [
-  {id:1, RazonSocial:"Grupo Andino S.A.S.", Nit:"900.123.456-7", Direccion:"Calle 100 #15-20, Bogotá", Telefono:"601 654 3210", Correo:"contacto@grupoandino.com", Entidad:"Privada"},
-  {id:2, RazonSocial:"Constructora del Sur Ltda.", Nit:"890.234.567-1", Direccion:"Carrera 43A #30-10, Medellín", Telefono:"604 512 3344", Correo:"info@constructorasur.com", Entidad:"Privada"},
-  {id:3, RazonSocial:"Inversiones Cali Norte", Nit:"805.345.678-2", Direccion:"Avenida 6N #28-45, Cali", Telefono:"602 660 7788", Correo:"admin@calinorte.com", Entidad:"Privada"},
-  {id:4, RazonSocial:"Distribuidora Caribe SAS", Nit:"812.456.789-3", Direccion:"Calle 35 #22-18, Cartagena", Telefono:"605 690 1122", Correo:"ventas@distcaribe.com", Entidad:"Privada"},
+  {id:1, RazonSocial:"Grupo Andino S.A.S.", Nit:"900.123.456-7", Ciudad:"Bogotá", Direccion:"Calle 100 #15-20", Telefono:"601 654 3210", Correo:"contacto@grupoandino.com", Entidad:"Privada"},
+  {id:2, RazonSocial:"Constructora del Sur Ltda.", Nit:"890.234.567-1", Ciudad:"Medellín", Direccion:"Carrera 43A #30-10", Telefono:"604 512 3344", Correo:"info@constructorasur.com", Entidad:"Privada"},
+  {id:3, RazonSocial:"Inversiones Cali Norte", Nit:"805.345.678-2", Ciudad:"Cali", Direccion:"Avenida 6N #28-45", Telefono:"602 660 7788", Correo:"admin@calinorte.com", Entidad:"Privada"},
+  {id:4, RazonSocial:"Distribuidora Caribe SAS", Nit:"812.456.789-3", Ciudad:"Cartagena", Direccion:"Calle 35 #22-18", Telefono:"605 690 1122", Correo:"ventas@distcaribe.com", Entidad:"Privada"},
 ];
 
 export const DEMO_FACTURAS = [
-  {id:1, NumeroFactura:"FAC-2024-001", CodigoCliente:"1", Contrato:"CT-2023-118", Valor:"3.500.000", Estado:"Pagada", FechaEmision:"2024-01-15", FechaVencimiento:"2024-02-14", Concepto:"Honorarios primera instancia."},
-  {id:2, NumeroFactura:"FAC-2024-002", CodigoCliente:"2", Contrato:"CT-2022-076", Valor:"5.200.000", Estado:"Pendiente", FechaEmision:"2024-03-01", FechaVencimiento:"2024-03-31", Concepto:"Honorarios apelación."},
-  {id:3, NumeroFactura:"FAC-2024-003", CodigoCliente:"3", Contrato:"CT-2024-004", Valor:"1.800.000", Estado:"Vencida", FechaEmision:"2024-01-05", FechaVencimiento:"2024-02-04", Concepto:"Estudio inicial del caso."},
-  {id:4, NumeroFactura:"FAC-2024-004", CodigoCliente:"1", Contrato:"CT-2021-201", Valor:"7.900.000", Estado:"Pendiente", FechaEmision:"2024-04-10", FechaVencimiento:"2024-05-10", Concepto:"Trámite en casación."},
+  {id:1, Factura:"93", CodigoCliente:"1", Contrato:"CT-2023-118", Proceso:"2023-00218", Fecha:"2024-01-15", Etapa:"Período probatorio",
+    Descripcion1:"Honorarios generados por la contestación realizada dentro del proceso 2023-00218 de Grupo Andino S.A.S. contra Aseguradora Cordillera. Por valor de 2 SMLV.", Cantidad1:"2", ValorUnitario1:"1.471.348,75", Total1:"2.942.697,50",
+    Descripcion2:"", Cantidad2:"", ValorUnitario2:"", Total2:"",
+    Descripcion3:"", Cantidad3:"", ValorUnitario3:"", Total3:"",
+    Descripcion4:"", Cantidad4:"", ValorUnitario4:"", Total4:"",
+    Descripcion5:"", Cantidad5:"", ValorUnitario5:"", Total5:"",
+    Descripcion6:"", Cantidad6:"", ValorUnitario6:"", Total6:"",
+    Subtotal:"2.942.697,50", Iva:"19", Total:"3.501.810,03"},
+  {id:2, Factura:"94", CodigoCliente:"2", Contrato:"CT-2022-076", Proceso:"2022-00341", Fecha:"2024-03-01", Etapa:"Alegatos de conclusión",
+    Descripcion1:"Honorarios por apelación dentro del proceso 2022-00341.", Cantidad1:"1", ValorUnitario1:"5.200.000", Total1:"5.200.000",
+    Descripcion2:"", Cantidad2:"", ValorUnitario2:"", Total2:"",
+    Descripcion3:"", Cantidad3:"", ValorUnitario3:"", Total3:"",
+    Descripcion4:"", Cantidad4:"", ValorUnitario4:"", Total4:"",
+    Descripcion5:"", Cantidad5:"", ValorUnitario5:"", Total5:"",
+    Descripcion6:"", Cantidad6:"", ValorUnitario6:"", Total6:"",
+    Subtotal:"5.200.000", Iva:"19", Total:"6.188.000"},
 ];
 
 export const ICON_SVG = `<svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 30 L50 50 L80 30" stroke="currentColor" stroke-width="14" fill="none" stroke-linecap="square"/><path d="M20 70 L50 50 L80 70" stroke="currentColor" stroke-width="14" fill="none" stroke-linecap="square"/></svg>`;

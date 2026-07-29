@@ -109,11 +109,12 @@ export function allRequiredMapped(lists){
 }
 
 /* ---------------- Helpers de formato (sin dependencia de Graph) ---------------- */
+const MESES_CORTOS = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
 export function fmtDate(dateStr){
   if(!dateStr) return "—";
-  const d = new Date(dateStr);
-  if(isNaN(d)) return dateStr;
-  return d.toLocaleDateString('es-CO', {day:'2-digit', month:'short', year:'numeric'});
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(dateStr);
+  if(!m) return dateStr;
+  return `${m[3]} ${MESES_CORTOS[Number(m[2])-1]}. ${m[1]}`;
 }
 export function estadoBadgeClass(estado){
   const e = (estado||"").toLowerCase();
@@ -164,10 +165,29 @@ export function procesoForFactura(procesos, factura){
   const target = normalize(factura.Contrato);
   return procesos.find(p => normalize(p.NumeroContrato) === target) || null;
 }
-export function facturaBadgeClass(estado){
-  const e = (estado||"").toLowerCase();
-  if(e.includes('pagad')) return 'badge-verde';
-  if(e.includes('venc')) return 'badge-naranja';
-  if(e.includes('pendient')) return 'badge-amarillo';
-  return 'badge-gris';
+export function facturaNumero(factura){
+  return factura.Factura || (factura.id!=null ? String(Number(factura.id) + 92) : "");
+}
+export function facturaLineItems(factura){
+  return Array.from({length:6}, (_,i) => i+1).map(n => ({
+    n,
+    Descripcion: factura[`Descripcion${n}`] || "",
+    Cantidad: factura[`Cantidad${n}`] || "",
+    ValorUnitario: factura[`ValorUnitario${n}`] || "",
+    Total: factura[`Total${n}`] || "",
+  }));
+}
+export function parseMonto(str){
+  if(str==null || str==="") return 0;
+  const n = parseFloat(String(str).replace(/\./g,"").replace(",","."));
+  return isNaN(n) ? 0 : n;
+}
+export function fmtMonto(n){
+  return new Intl.NumberFormat('es-CO', {minimumFractionDigits:0, maximumFractionDigits:2}).format(n||0);
+}
+export function computeFacturaTotals(factura){
+  const subtotal = facturaLineItems(factura).reduce((sum,li) => sum + parseMonto(li.Total), 0);
+  const ivaRate = parseMonto(factura.Iva);
+  const iva = subtotal * (ivaRate/100);
+  return { subtotal, iva, total: subtotal + iva };
 }
