@@ -77,8 +77,17 @@ export async function connectList(siteId, list){
     throw new Error(`No se encontró una lista llamada "${list.listName}" en el sitio. Listas disponibles: ${disponibles}`);
   }
   const listId = found.id;
-  const colsRes = await graphFetch(`/sites/${siteId}/lists/${listId}/columns`);
-  const columns = (colsRes.value||[]).filter(c => !c.hidden && c.name!=="ContentType" && !c.readOnly);
+  // La API de Graph pagina /columns cuando hay muchas (como en listas con decenas
+  // de campos); sin seguir @odata.nextLink, las columnas de páginas siguientes
+  // desaparecían del desplegable de mapeo sin ningún aviso.
+  let rawColumns = [];
+  let colsUrl = `/sites/${siteId}/lists/${listId}/columns`;
+  while(colsUrl){
+    const colsRes = await graphFetch(colsUrl);
+    rawColumns = rawColumns.concat(colsRes.value||[]);
+    colsUrl = colsRes["@odata.nextLink"] || null;
+  }
+  const columns = rawColumns.filter(c => !c.hidden && c.name!=="ContentType" && !c.readOnly);
   const itemsRes = await graphFetch(`/sites/${siteId}/lists/${listId}/items?expand=fields&$top=200`);
   const rawItems = itemsRes.value || [];
   const itemsTruncated = !!itemsRes["@odata.nextLink"];
