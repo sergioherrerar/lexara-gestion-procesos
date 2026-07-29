@@ -87,7 +87,10 @@ export async function connectList(siteId, list){
     rawColumns = rawColumns.concat(colsRes.value||[]);
     colsUrl = colsRes["@odata.nextLink"] || null;
   }
-  const columns = rawColumns.filter(c => !c.hidden && c.name!=="ContentType" && !c.readOnly);
+  // No excluimos columnas de solo lectura: los campos calculados (fórmulas de
+  // SharePoint, como Fecha o los TotalN) suelen venir marcados readOnly, pero
+  // igual hay que poder leerlos y mapearlos.
+  const columns = rawColumns.filter(c => !c.hidden && c.name!=="ContentType");
   const itemsRes = await graphFetch(`/sites/${siteId}/lists/${listId}/items?expand=fields&$top=200`);
   const rawItems = itemsRes.value || [];
   const itemsTruncated = !!itemsRes["@odata.nextLink"];
