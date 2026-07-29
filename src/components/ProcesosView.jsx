@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { ICON_SVG } from '../config';
 import { stripHtml, estadoBadgeClass } from '../lib/graph';
 import IconButton from './IconButton';
@@ -6,13 +7,18 @@ function matchesFilter(p, currentFilter){
   if(currentFilter==='todos') return true;
   return (stripHtml(p.Entidad) || "Sin entidad") === currentFilter;
 }
+function isTerminado(p){
+  return (stripHtml(p.EstadoVT) || "").toLowerCase().includes('termin');
+}
 
 export default function ProcesosView({ procesos, currentFilter, setFilter, searchQuery, onOpenProceso }){
+  const [showTerminados, setShowTerminados] = useState(false);
   const entidades = Array.from(new Set(procesos.map(p => stripHtml(p.Entidad) || "Sin entidad"))).sort((a,b)=>a.localeCompare(b));
   const filters = [{key:'todos', label:'Todos'}, ...entidades.map(e => ({key:e, label:e}))];
+  const totalTerminados = procesos.filter(isTerminado).length;
 
   const query = (searchQuery||"").trim().toLowerCase();
-  const rows = procesos.filter(p => matchesFilter(p, currentFilter) && (!query ||
+  const rows = procesos.filter(p => matchesFilter(p, currentFilter) && (showTerminados ? isTerminado(p) : !isTerminado(p)) && (!query ||
     (p.Radicado||"").toLowerCase().includes(query) ||
     (p.Cliente||"").toLowerCase().includes(query) ||
     (p.Apoderado||"").toLowerCase().includes(query)))
@@ -30,6 +36,13 @@ export default function ProcesosView({ procesos, currentFilter, setFilter, searc
         {filters.map(f => (
           <div key={f.key} className={"filter-chip" + (currentFilter===f.key ? " active" : "")} onClick={() => setFilter(f.key)}>{f.label}</div>
         ))}
+        <div
+          className={"filter-chip filter-chip-terminados" + (showTerminados ? " active" : "")}
+          style={{marginLeft:'auto'}}
+          onClick={() => setShowTerminados(v => !v)}
+        >
+          {showTerminados ? "← Ver vigentes" : `Ver terminados (${totalTerminados})`}
+        </div>
       </div>
       <div className="table-wrap">
         <table>
