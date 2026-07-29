@@ -34,7 +34,7 @@ export default function ProcesosView({ procesos, currentFilter, setFilter, searc
         <table>
           <thead>
             <tr>
-              <th>Numero_Corto</th><th>Cliente</th><th>Despacho</th><th>No. despacho</th><th>Estado</th><th>Carpeta</th><th>Acciones</th>
+              <th>Numero_Corto</th><th>Cliente</th><th>Despacho</th><th>Estado</th><th>Carpeta</th><th>Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -42,8 +42,7 @@ export default function ProcesosView({ procesos, currentFilter, setFilter, searc
               <tr key={p.id} onClick={() => onOpenProceso(p.id)}>
                 <td className="radicado">{p.Radicado || "—"}</td>
                 <td className="cliente">{p.Cliente || "—"}</td>
-                <td>{p.Despacho || "—"}</td>
-                <td>{p.NumeroDespacho || "—"}</td>
+                <td>{p.Despacho || "—"}{p.NumeroDespacho ? ` · ${p.NumeroDespacho}` : ""}</td>
                 <td><span className={"badge badge-truncate " + estadoBadgeClass(p.Estado)}>{stripHtml(p.Estado) || "—"}</span></td>
                 <td>{p.LinkCarpeta ? <IconButton icon="open" variant="open" label="Abrir carpeta" href={p.LinkCarpeta} onClick={e => e.stopPropagation()} /> : "—"}</td>
                 <td style={{whiteSpace:'nowrap'}}>
@@ -53,7 +52,7 @@ export default function ProcesosView({ procesos, currentFilter, setFilter, searc
                 </td>
               </tr>
             )) : (
-              <tr><td colSpan={7}><div className="empty-state"><div className="mark" dangerouslySetInnerHTML={{__html: ICON_SVG}} />No se encontraron procesos con ese criterio.</div></td></tr>
+              <tr><td colSpan={6}><div className="empty-state"><div className="mark" dangerouslySetInnerHTML={{__html: ICON_SVG}} />No se encontraron procesos con ese criterio.</div></td></tr>
             )}
           </tbody>
         </table>
