@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { INITIAL_CONFIG, SHAREPOINT_LISTS_CONFIG, DEMO_PROCESOS, DEMO_CLIENTES } from '../config';
+import { INITIAL_CONFIG, SHAREPOINT_LISTS_CONFIG, DEMO_PROCESOS, DEMO_CLIENTES, DEMO_FACTURAS } from '../config';
 import * as Graph from '../lib/graph';
 
 export function useLexaraApp(){
@@ -13,8 +13,10 @@ export function useLexaraApp(){
   const [siteId, setSiteId] = useState(null);
   const [procesos, setProcesos] = useState([]);
   const [clientes, setClientes] = useState([]);
+  const [facturas, setFacturas] = useState([]);
   const [activeProcesoId, setActiveProcesoId] = useState(null);
   const [activeClienteId, setActiveClienteId] = useState(null);
+  const [activeFacturaId, setActiveFacturaId] = useState(null);
   const [currentFilter, setCurrentFilter] = useState('todos');
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
@@ -31,6 +33,7 @@ export function useLexaraApp(){
     setLiveMode(false);
     setProcesos(JSON.parse(JSON.stringify(DEMO_PROCESOS)));
     setClientes(JSON.parse(JSON.stringify(DEMO_CLIENTES)));
+    setFacturas(JSON.parse(JSON.stringify(DEMO_FACTURAS)));
     setAccount({ name:"Usuario Demo", username:"demo@lexara.com" });
     setAppActive(true);
     if(!silent) setView('dashboard');
@@ -88,6 +91,7 @@ export function useLexaraApp(){
         setLists(updated);
         setProcesos(updated.find(l => l.key==='procesos')?.items || []);
         setClientes(updated.find(l => l.key==='clientes')?.items || []);
+        setFacturas(updated.find(l => l.key==='facturacion')?.items || []);
         setLiveMode(true);
         setAppActive(true);
       } else {
@@ -115,6 +119,7 @@ export function useLexaraApp(){
       setLists(updated);
       setProcesos(updated.find(l => l.key==='procesos')?.items || []);
       setClientes(updated.find(l => l.key==='clientes')?.items || []);
+      setFacturas(updated.find(l => l.key==='facturacion')?.items || []);
     }catch(err){
       console.error(err);
       alert("No se pudo actualizar la información: " + err.message);
@@ -146,6 +151,7 @@ export function useLexaraApp(){
     setLists(updated);
     setProcesos(updated.find(l => l.key==='procesos')?.items || []);
     setClientes(updated.find(l => l.key==='clientes')?.items || []);
+    setFacturas(updated.find(l => l.key==='facturacion')?.items || []);
     setLiveMode(true);
   }
 
@@ -184,6 +190,7 @@ export function useLexaraApp(){
 
   const activeProceso = procesos.find(p => p.id===activeProcesoId) || null;
   const activeCliente = clientes.find(c => c.id===activeClienteId) || null;
+  const activeFactura = facturas.find(f => f.id===activeFacturaId) || null;
 
   function openProceso(id){ setActiveProcesoId(id); }
   function closeDrawer(){ setActiveProcesoId(null); }
@@ -250,6 +257,24 @@ export function useLexaraApp(){
     return nuevo;
   }
 
+  function openFactura(id){ setActiveFacturaId(id); }
+  function closeFacturaDrawer(){ setActiveFacturaId(null); }
+  async function saveFactura(updates){
+    if(!activeFactura) return;
+    setFacturas(prev => prev.map(f => f.id===activeFacturaId ? {...f, ...updates} : f));
+    if(liveMode){
+      const list = listByKey('facturacion');
+      const graphBody = {};
+      Object.keys(updates).forEach(key => { if(list.mapping[key]) graphBody[list.mapping[key]] = updates[key]; });
+      try{
+        await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items/${activeFactura._graphId}/fields`, {
+          method:"PATCH", body: JSON.stringify(graphBody)
+        });
+      }catch(err){ console.error(err); alert("No se pudo guardar en SharePoint: " + err.message); return; }
+    }
+    setActiveFacturaId(null);
+  }
+
   return {
     config, saveConfig, clearConfig,
     lists, listByKey, updateListMapping,
@@ -257,10 +282,11 @@ export function useLexaraApp(){
     testStatus, testConnection, applyAllMappings, downloadAllMappings,
     refreshData, refreshing,
     signIn, enterDemo, goSetup, signOut,
-    procesos, clientes,
+    procesos, clientes, facturas,
     currentFilter, setFilter: setCurrentFilter, searchQuery, setSearchQuery: setSearchQuery,
     onSearch: setSearchQuery,
     activeProceso, openProceso, closeDrawer, saveProceso,
     activeCliente, openCliente, closeClienteDrawer, saveCliente, deleteCliente, createCliente,
+    activeFactura, openFactura, closeFacturaDrawer, saveFactura,
   };
 }

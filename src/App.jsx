@@ -6,9 +6,11 @@ import Topbar from './components/Topbar';
 import DashboardView from './components/DashboardView';
 import ProcesosView from './components/ProcesosView';
 import ClientesView from './components/ClientesView';
+import FacturacionView from './components/FacturacionView';
 import SetupView from './components/SetupView';
 import ProcesoDrawer from './components/ProcesoDrawer';
 import ClienteDrawer from './components/ClienteDrawer';
+import FacturaDrawer from './components/FacturaDrawer';
 
 export default function App(){
   const app = useLexaraApp();
@@ -71,6 +73,15 @@ export default function App(){
             onDeleteCliente={app.deleteCliente}
           />
         )}
+        {app.view === 'facturacion' && (
+          <FacturacionView
+            facturas={app.facturas}
+            clientes={app.clientes}
+            procesos={app.procesos}
+            searchQuery={app.searchQuery}
+            onOpenFactura={app.openFactura}
+          />
+        )}
         {app.view === 'setup' && (
           <SetupView
             config={app.config}
@@ -100,6 +111,14 @@ export default function App(){
         onClose={app.closeClienteDrawer}
         onSave={app.saveCliente}
         onDelete={app.deleteCliente}
+      />
+      <FacturaDrawer
+        factura={app.activeFactura}
+        clientes={app.clientes}
+        procesos={app.procesos}
+        liveMode={app.liveMode}
+        onClose={app.closeFacturaDrawer}
+        onSave={app.saveFactura}
       />
     </div>
   );

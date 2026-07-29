@@ -152,3 +152,22 @@ export function procesosForCliente(procesos, cliente){
   const target = normalize(cliente.RazonSocial);
   return procesos.filter(p => normalize(p.Cliente) === target);
 }
+
+/* ---------------- Relación Facturas.CodigoCliente <-> Clientes.id, Facturas.Contrato <-> Procesos.NumeroContrato ---------------- */
+export function clienteForFactura(clientes, factura){
+  if(!factura || !factura.CodigoCliente) return null;
+  const target = String(factura.CodigoCliente).trim();
+  return clientes.find(c => String(c.id) === target) || null;
+}
+export function procesoForFactura(procesos, factura){
+  if(!factura || !factura.Contrato) return null;
+  const target = normalize(factura.Contrato);
+  return procesos.find(p => normalize(p.NumeroContrato) === target) || null;
+}
+export function facturaBadgeClass(estado){
+  const e = (estado||"").toLowerCase();
+  if(e.includes('pagad')) return 'badge-verde';
+  if(e.includes('venc')) return 'badge-naranja';
+  if(e.includes('pendient')) return 'badge-amarillo';
+  return 'badge-gris';
+}

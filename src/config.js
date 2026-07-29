@@ -84,6 +84,22 @@ export const SHAREPOINT_LISTS_CONFIG = [
       Entidad: "Entidad",
     },
   },
+  {
+    key: "facturacion",
+    listName: "base facturas",
+    label: "Facturación",
+    semanticFields: [
+      {key:"NumeroFactura", label:"No. de factura", hint:["numero de factura","número de factura","no factura","factura"]},
+      {key:"CodigoCliente", label:"Código cliente", hint:["codigo cliente","código cliente","id cliente"], required:true},
+      {key:"Contrato", label:"Contrato", hint:["contrato"], required:true},
+      {key:"Valor", label:"Valor", hint:["valor","monto","total"]},
+      {key:"Estado", label:"Estado", hint:["estado"]},
+      {key:"FechaEmision", label:"Fecha de emisión", hint:["fecha de emision","fecha de emisión","fecha factura"]},
+      {key:"FechaVencimiento", label:"Fecha de vencimiento", hint:["fecha de vencimiento","vencimiento"]},
+      {key:"Concepto", label:"Concepto / Observaciones", hint:["concepto","observaciones","detalle"]},
+    ],
+    mapping: {},
+  },
 ];
 
 export const DEMO_PROCESOS = [
@@ -99,6 +115,13 @@ export const DEMO_CLIENTES = [
   {id:2, RazonSocial:"Constructora del Sur Ltda.", Nit:"890.234.567-1", Direccion:"Carrera 43A #30-10, Medellín", Telefono:"604 512 3344", Correo:"info@constructorasur.com", Entidad:"Privada"},
   {id:3, RazonSocial:"Inversiones Cali Norte", Nit:"805.345.678-2", Direccion:"Avenida 6N #28-45, Cali", Telefono:"602 660 7788", Correo:"admin@calinorte.com", Entidad:"Privada"},
   {id:4, RazonSocial:"Distribuidora Caribe SAS", Nit:"812.456.789-3", Direccion:"Calle 35 #22-18, Cartagena", Telefono:"605 690 1122", Correo:"ventas@distcaribe.com", Entidad:"Privada"},
+];
+
+export const DEMO_FACTURAS = [
+  {id:1, NumeroFactura:"FAC-2024-001", CodigoCliente:"1", Contrato:"CT-2023-118", Valor:"3.500.000", Estado:"Pagada", FechaEmision:"2024-01-15", FechaVencimiento:"2024-02-14", Concepto:"Honorarios primera instancia."},
+  {id:2, NumeroFactura:"FAC-2024-002", CodigoCliente:"2", Contrato:"CT-2022-076", Valor:"5.200.000", Estado:"Pendiente", FechaEmision:"2024-03-01", FechaVencimiento:"2024-03-31", Concepto:"Honorarios apelación."},
+  {id:3, NumeroFactura:"FAC-2024-003", CodigoCliente:"3", Contrato:"CT-2024-004", Valor:"1.800.000", Estado:"Vencida", FechaEmision:"2024-01-05", FechaVencimiento:"2024-02-04", Concepto:"Estudio inicial del caso."},
+  {id:4, NumeroFactura:"FAC-2024-004", CodigoCliente:"1", Contrato:"CT-2021-201", Valor:"7.900.000", Estado:"Pendiente", FechaEmision:"2024-04-10", FechaVencimiento:"2024-05-10", Concepto:"Trámite en casación."},
 ];
 
 export const ICON_SVG = `<svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 30 L50 50 L80 30" stroke="currentColor" stroke-width="14" fill="none" stroke-linecap="square"/><path d="M20 70 L50 50 L80 70" stroke="currentColor" stroke-width="14" fill="none" stroke-linecap="square"/></svg>`;

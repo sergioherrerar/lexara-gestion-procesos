@@ -5,6 +5,7 @@ const NAV_ITEMS = [
   {view:'dashboard', label:'Dashboard'},
   {view:'procesos', label:'Procesos judiciales'},
   {view:'clientes', label:'Clientes'},
+  {view:'facturacion', label:'Facturación'},
 ];
 
 export default function Sidebar({ view, onGoView, account, liveMode, onSignOut, mobileOpen }){
@@ -25,7 +26,6 @@ export default function Sidebar({ view, onGoView, account, liveMode, onSignOut, 
         </div>
       ))}
       <div className="nav-group-label">Próximamente</div>
-      <div className="nav-item" style={{opacity:.45, cursor:'default'}}><span className="dot"></span><span className="label-text">Facturación</span></div>
       <div className="nav-item" style={{opacity:.45, cursor:'default'}}><span className="dot"></span><span className="label-text">Desistimientos</span></div>
       <div className="nav-group-label">Sistema</div>
       <div className={"nav-item" + (view==='setup' ? " active" : "")} onClick={() => onGoView('setup')}>
