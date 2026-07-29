@@ -149,6 +149,8 @@
     flex-direction:column;
     padding:22px 16px;
   }
+  .sidebar-overlay{display:none;}
+  .mobile-nav-btn{display:none;}
   .sidebar img.wordmark{height:24px; margin:6px 8px 28px;}
   .nav-group-label{
     font-size:11px;
@@ -394,4 +396,43 @@
     .sidebar{width:72px;}
     .sidebar .label-text, .sidebar .nav-group-label, .sidebar img.wordmark, .user-name, .user-role{display:none;}
     .search-bar{width:200px;}
+  }
+
+  /* ---------- Celular: la barra lateral pasa a ser un menú deslizable ---------- */
+  @media (max-width:640px){
+    #login-screen{flex-direction:column; overflow-y:auto; min-height:100vh; height:auto;}
+    .login-visual{flex:none; min-height:0; padding:28px 24px; width:100%;}
+    .login-visual .chevrons{position:static; margin-bottom:0;}
+    .login-visual .chevrons svg{width:120px;}
+    .login-visual .caption{display:none;}
+    .login-panel{flex:none; min-width:0; width:100%; padding:28px 24px 40px;}
+    .login-box{max-width:100%;}
+
+    .mobile-nav-btn{
+      display:flex; align-items:center; justify-content:center;
+      width:34px; height:34px; margin-right:10px; flex-shrink:0;
+      background:none; border:none; color:var(--verde-oscuro); cursor:pointer;
+    }
+    .mobile-nav-btn svg{width:22px; height:22px;}
+    .topbar{padding:0 14px 0 10px; gap:8px;}
+    .search-bar{width:auto; flex:1; min-width:0; max-width:180px;}
+
+    .sidebar-overlay.active{
+      display:block; position:fixed; inset:0; background:rgba(0,20,18,.45); z-index:55;
+    }
+    .sidebar{
+      position:fixed; top:0; left:0; height:100vh; width:250px !important;
+      transform:translateX(-100%); transition:transform .22s ease; z-index:60;
+      box-shadow:8px 0 24px rgba(0,20,18,.2);
+    }
+    .sidebar.mobile-open{transform:translateX(0);}
+    .sidebar .label-text, .sidebar .nav-group-label, .sidebar img.wordmark,
+    .sidebar .user-name, .sidebar .user-role{display:block !important;}
+    .nav-item .dot{display:inline-block;}
+
+    .view{padding:18px 14px 40px;}
+    .stat-grid{grid-template-columns:repeat(2,1fr); gap:10px;}
+    .drawer-head, .drawer-body, .drawer-foot{padding-left:18px; padding-right:18px;}
+    #drawer, #cliente-drawer{width:100vw; max-width:100vw;}
+    .field-grid{grid-template-columns:1fr;}
   }

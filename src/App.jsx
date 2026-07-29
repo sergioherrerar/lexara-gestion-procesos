@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useLexaraApp } from './hooks/useLexaraApp';
 import LoginScreen from './components/LoginScreen';
 import Sidebar from './components/Sidebar';
@@ -11,6 +12,7 @@ import ClienteDrawer from './components/ClienteDrawer';
 
 export default function App(){
   const app = useLexaraApp();
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   if(!app.appActive){
     return (
@@ -23,14 +25,21 @@ export default function App(){
     );
   }
 
+  function goView(view){
+    app.setView(view);
+    setMobileNavOpen(false);
+  }
+
   return (
     <div id="app" className="active">
+      <div className={"sidebar-overlay" + (mobileNavOpen ? " active" : "")} onClick={() => setMobileNavOpen(false)}></div>
       <Sidebar
         view={app.view}
-        onGoView={app.setView}
+        onGoView={goView}
         account={app.account}
         liveMode={app.liveMode}
         onSignOut={app.signOut}
+        mobileOpen={mobileNavOpen}
       />
       <div className="main">
         <Topbar
@@ -38,6 +47,7 @@ export default function App(){
           liveMode={app.liveMode}
           searchQuery={app.searchQuery}
           onSearch={app.onSearch}
+          onOpenMobileNav={() => setMobileNavOpen(true)}
         />
 
         {app.view === 'dashboard' && <DashboardView procesos={app.procesos} />}

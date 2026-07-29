@@ -7,11 +7,11 @@ const NAV_ITEMS = [
   {view:'clientes', label:'Clientes'},
 ];
 
-export default function Sidebar({ view, onGoView, account, liveMode, onSignOut }){
+export default function Sidebar({ view, onGoView, account, liveMode, onSignOut, mobileOpen }){
   const name = account?.name || account?.username || "Usuario";
   const role = liveMode ? "Sesión Microsoft 365" : (account?.username==="demo@lexara.com" ? "Datos de ejemplo" : "Sesión Microsoft 365 (sin mapear)");
   return (
-    <aside className="sidebar">
+    <aside className={"sidebar" + (mobileOpen ? " mobile-open" : "")}>
       <img className="wordmark" src={LOGO_SIDEBAR_DATA_URI} alt="Lexara Abogados" />
       <div className="nav-group-label">Principal</div>
       {NAV_ITEMS.map(item => (
