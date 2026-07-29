@@ -91,9 +91,19 @@ export async function connectList(siteId, list){
   // SharePoint, como Fecha o los TotalN) suelen venir marcados readOnly, pero
   // igual hay que poder leerlos y mapearlos.
   const columns = rawColumns.filter(c => !c.hidden && c.name!=="ContentType");
-  const itemsRes = await graphFetch(`/sites/${siteId}/lists/${listId}/items?expand=fields&$top=200`);
-  const rawItems = itemsRes.value || [];
-  const itemsTruncated = !!itemsRes["@odata.nextLink"];
+  // Igual que /columns, /items pagina de a 200 — sin seguir @odata.nextLink,
+  // listas con más de 200 registros (como "base facturas", con casi mil)
+  // se veían truncadas a la primera página sin ningún aviso.
+  let rawItems = [];
+  let itemsUrl = `/sites/${siteId}/lists/${listId}/items?expand=fields&$top=200`;
+  let itemsTruncated = false;
+  const MAX_PAGINAS = 50; // tope de seguridad (~10.000 elementos) contra listas descontroladas
+  for(let pagina = 0; itemsUrl && pagina < MAX_PAGINAS; pagina++){
+    const itemsRes = await graphFetch(itemsUrl);
+    rawItems = rawItems.concat(itemsRes.value||[]);
+    itemsUrl = itemsRes["@odata.nextLink"] || null;
+    if(itemsUrl && pagina === MAX_PAGINAS-1) itemsTruncated = true;
+  }
   return { ...list, listId, columns, rawItems, itemsTruncated, connectError: null };
 }
 
