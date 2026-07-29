@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { IconTextButton } from './IconButton';
 
 const CLIENTE_FIELDS = [
   ["RazonSocial","Razón social"],
@@ -49,7 +50,7 @@ export default function ClienteDrawer({ cliente, liveMode, onClose, onSave, onDe
         </div>
         <div className="drawer-foot">
           <button className="btn-primary" onClick={() => onSave(form)}>Guardar cambios</button>
-          <button className="btn-secondary" onClick={() => onDelete(cliente.id)}>Eliminar cliente</button>
+          <IconTextButton icon="delete" variant="secondary" onClick={() => onDelete(cliente.id)}>Eliminar cliente</IconTextButton>
           <button className="btn-secondary" onClick={onClose}>Cancelar</button>
           <span className="save-hint">{liveMode ? "Los cambios se guardan en SharePoint." : "Modo demo — los cambios no se guardan."}</span>
         </div>

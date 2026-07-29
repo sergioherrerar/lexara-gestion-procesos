@@ -1,5 +1,6 @@
 import { ICON_SVG } from '../config';
 import { procesosForCliente } from '../lib/graph';
+import IconButton from './IconButton';
 
 export default function ClientesView({ clientes, procesos, onOpenCliente, onDeleteCliente }){
   return (
@@ -28,8 +29,10 @@ export default function ClientesView({ clientes, procesos, onOpenCliente, onDele
                 <td>{c.Entidad || "—"}</td>
                 <td>{procesosForCliente(procesos, c).length}</td>
                 <td style={{whiteSpace:'nowrap'}}>
-                  <button type="button" className="btn-secondary" style={{padding:'5px 10px', fontSize:'12px'}} onClick={() => onOpenCliente(c.id)}>Editar</button>
-                  <button type="button" className="btn-secondary" style={{padding:'5px 10px', fontSize:'12px', marginLeft:'6px'}} onClick={() => onDeleteCliente(c.id)}>Eliminar</button>
+                  <div className="row-actions">
+                    <IconButton icon="edit" variant="edit" label="Editar cliente" onClick={() => onOpenCliente(c.id)} />
+                    <IconButton icon="delete" variant="delete" label="Eliminar cliente" onClick={() => onDeleteCliente(c.id)} />
+                  </div>
                 </td>
               </tr>
             )) : (

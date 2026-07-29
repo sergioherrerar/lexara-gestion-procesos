@@ -1,5 +1,6 @@
 import { ICON_SVG } from '../config';
 import { stripHtml, estadoBadgeClass } from '../lib/graph';
+import IconButton from './IconButton';
 
 function matchesFilter(p, currentFilter){
   if(currentFilter==='todos') return true;
@@ -44,9 +45,11 @@ export default function ProcesosView({ procesos, currentFilter, setFilter, searc
                 <td>{p.Despacho || "—"}</td>
                 <td>{p.NumeroDespacho || "—"}</td>
                 <td><span className={"badge badge-truncate " + estadoBadgeClass(p.Estado)}>{stripHtml(p.Estado) || "—"}</span></td>
-                <td>{p.LinkCarpeta ? <a href={p.LinkCarpeta} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{color:'var(--verde-oscuro)', fontWeight:600, textDecoration:'underline'}}>Abrir</a> : "—"}</td>
+                <td>{p.LinkCarpeta ? <IconButton icon="open" variant="open" label="Abrir carpeta" href={p.LinkCarpeta} onClick={e => e.stopPropagation()} /> : "—"}</td>
                 <td style={{whiteSpace:'nowrap'}}>
-                  <button type="button" className="btn-secondary" style={{padding:'5px 10px', fontSize:'12px'}} onClick={e => { e.stopPropagation(); onOpenProceso(p.id); }}>Editar</button>
+                  <div className="row-actions">
+                    <IconButton icon="edit" variant="edit" label="Editar proceso" onClick={e => { e.stopPropagation(); onOpenProceso(p.id); }} />
+                  </div>
                 </td>
               </tr>
             )) : (

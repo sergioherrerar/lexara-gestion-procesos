@@ -332,6 +332,25 @@
   .btn-secondary:hover{border-color:var(--verde-claro); color:var(--verde-oscuro);}
   .save-hint{font-size:12px; color:var(--texto-suave); align-self:center; margin-left:auto;}
 
+  /* ---------- Botones de ícono (acciones de fila: editar/eliminar/abrir/nuevo) ---------- */
+  .icon-btn{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:32px; height:32px; border-radius:8px; border:1px solid transparent;
+    cursor:pointer; background:none; flex-shrink:0;
+    transition:background .15s ease, color .15s ease, transform .05s ease;
+  }
+  .icon-btn:active{transform:translateY(1px);}
+  .icon-btn svg{width:16px; height:16px;}
+  .icon-btn-edit{color:var(--verde-oscuro); background:#e3efee;}
+  .icon-btn-edit:hover{background:var(--verde-oscuro); color:#fff;}
+  .icon-btn-open{color:var(--verde-claro); background:#e4f4f3;}
+  .icon-btn-open:hover{background:var(--verde-claro); color:#fff;}
+  .icon-btn-delete{color:#b3590a; background:#fdece0;}
+  .icon-btn-delete:hover{background:var(--naranja); color:#fff;}
+  .icon-btn-add{color:#8a6410; background:#fef4de;}
+  .icon-btn-add:hover{background:var(--amarillo); color:#4a3a0a;}
+  .row-actions{display:flex; gap:6px; align-items:center;}
+
   /* ---------- Setup / help view ---------- */
   .setup-card{background:#fff; border:1px solid var(--gris-linea); border-radius:var(--radius); box-shadow:var(--shadow); padding:26px 28px; margin-bottom:18px;}
   .setup-card h3{font-family:var(--font-display); font-size:17px; color:var(--verde-oscuro); margin:0 0 6px;}

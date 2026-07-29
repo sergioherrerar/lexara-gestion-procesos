@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { stripHtml, estadoBadgeClass, findClienteByNombre } from '../lib/graph';
+import { IconTextButton } from './IconButton';
 
 const FIELD_SECTIONS = [
   {title:"Datos generales", fields:[
@@ -87,7 +88,7 @@ export default function ProcesoDrawer({ proceso, clientes, liveMode, onClose, on
                           <option value="">— seleccionar cliente —</option>
                           {clienteNombres.map(n => <option value={n} key={n}>{n}</option>)}
                         </select>
-                        <button type="button" className="btn-secondary" style={{marginTop:8, alignSelf:'flex-start'}} onClick={() => setShowNewCliente(v => !v)}>+ Nuevo cliente</button>
+                        <IconTextButton icon="add" variant="secondary" style={{marginTop:8, alignSelf:'flex-start'}} onClick={() => setShowNewCliente(v => !v)}>Nuevo cliente</IconTextButton>
                         {form.Cliente && (
                           linkedCliente ? (
                             <div style={{marginTop:10, padding:'10px 12px', border:'1px solid var(--gris-linea)', borderRadius:8, fontSize:12.5, color:'var(--texto-suave)', lineHeight:1.7}}>
@@ -112,7 +113,7 @@ export default function ProcesoDrawer({ proceso, clientes, liveMode, onClose, on
                               <div className="field full" style={{gridColumn:'1/-1'}}><label>Correo</label><input type="text" value={newCliente.Correo} onChange={e => setNewCliente(v => ({...v, Correo:e.target.value}))} /></div>
                             </div>
                             <div style={{marginTop:10, display:'flex', gap:8}}>
-                              <button type="button" className="btn-primary" onClick={handleCreateCliente}>Crear cliente</button>
+                              <IconTextButton icon="add" variant="primary" onClick={handleCreateCliente}>Crear cliente</IconTextButton>
                               <button type="button" className="btn-secondary" onClick={() => setShowNewCliente(false)}>Cancelar</button>
                             </div>
                           </div>
