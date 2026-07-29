@@ -15,7 +15,7 @@ export default function Topbar({ view, liveMode, searchQuery, onSearch }){
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
         <input
           type="text"
-          placeholder="Buscar por numero corto, cliente o apoderado…"
+          placeholder={view === 'clientes' ? "Buscar por razón social, NIT, correo o dirección…" : "Buscar por numero corto, cliente o apoderado…"}
           value={searchQuery}
           onChange={e => onSearch(e.target.value)}
         />

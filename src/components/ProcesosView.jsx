@@ -15,7 +15,8 @@ export default function ProcesosView({ procesos, currentFilter, setFilter, searc
   const rows = procesos.filter(p => matchesFilter(p, currentFilter) && (!query ||
     (p.Radicado||"").toLowerCase().includes(query) ||
     (p.Cliente||"").toLowerCase().includes(query) ||
-    (p.Apoderado||"").toLowerCase().includes(query)));
+    (p.Apoderado||"").toLowerCase().includes(query)))
+    .sort((a,b) => (a.Radicado||"").localeCompare(b.Radicado||""));
 
   return (
     <div className="view">

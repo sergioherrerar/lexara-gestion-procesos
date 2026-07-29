@@ -54,6 +54,7 @@ export default function App(){
           <ClientesView
             clientes={app.clientes}
             procesos={app.procesos}
+            searchQuery={app.searchQuery}
             onOpenCliente={app.openCliente}
             onDeleteCliente={app.deleteCliente}
           />
