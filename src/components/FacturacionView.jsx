@@ -1,8 +1,12 @@
 import { ICON_SVG } from '../config';
-import { clienteForFactura, procesoForFactura, facturaNumero, computeFacturaTotals, fmtMonto, fmtDate } from '../lib/graph';
-import IconButton from './IconButton';
+import { clienteForFactura, procesoForFactura, facturaNumero, computeFacturaTotals, fmtMonto, fmtDate, fechaFromPartes } from '../lib/graph';
+import IconButton, { IconTextButton } from './IconButton';
 
-export default function FacturacionView({ facturas, clientes, procesos, searchQuery, onOpenFactura }){
+function fechaOrdenable(f){
+  return fechaFromPartes(f.Dia, f.Mes, f.Anio) || f.Fecha || "";
+}
+
+export default function FacturacionView({ facturas, clientes, procesos, searchQuery, onOpenFactura, onCreateFactura }){
   const query = (searchQuery||"").trim().toLowerCase();
   const rows = facturas.filter(f => {
     if(!query) return true;
@@ -11,7 +15,7 @@ export default function FacturacionView({ facturas, clientes, procesos, searchQu
       (f.Contrato||"").toLowerCase().includes(query) ||
       (f.Proceso||"").toLowerCase().includes(query) ||
       (cliente?.RazonSocial||"").toLowerCase().includes(query);
-  }).sort((a,b) => (b.Fecha||"").localeCompare(a.Fecha||""));
+  }).sort((a,b) => fechaOrdenable(b).localeCompare(fechaOrdenable(a)));
 
   return (
     <div className="view">
@@ -20,6 +24,7 @@ export default function FacturacionView({ facturas, clientes, procesos, searchQu
           <h1>Facturación</h1>
           <p>{rows.length} de {facturas.length} facturas</p>
         </div>
+        <IconTextButton icon="add" variant="primary" onClick={onCreateFactura}>Nueva factura</IconTextButton>
       </div>
       <div className="table-wrap">
         <table>

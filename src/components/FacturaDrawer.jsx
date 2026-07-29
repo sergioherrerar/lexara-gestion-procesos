@@ -1,9 +1,19 @@
 import { useState, useEffect } from 'react';
-import { clienteForFactura, procesoForFactura, facturaNumero, parseMonto, fmtMonto } from '../lib/graph';
+import { clienteForFactura, procesoForFactura, facturaNumero, fechaFromPartes, parseMonto, fmtMonto } from '../lib/graph';
 import logoPrint from '../assets/Logo verde OScuro.png';
 
 const LINE_NUMS = [1,2,3,4,5,6];
-const OTHER_FIELDS = ["Proceso","Fecha","Etapa"];
+const OTHER_FIELDS = ["Proceso","Dia","Mes","Anio","EtapaContrato","EstadoFactura","Observacion","ValorAPagar"];
+
+const ETAPA_CONTRATO_OPTIONS = [
+  "Acta Audiencia","Administracion Proceso","Admision","Asesoria","Asesorias","Auditoria",
+  "Audiencia de Conciliacion","Auto de Pruebas","Contestacion","Cuota Litis","Entrega de Poder",
+  "Entrega poder Demanda","Escrito de Oposicion","Honorarios","Pronunciamiento Frente a las exepciones",
+  "Radicacion Conciliacion","Radicacion de contestacion","Radicacion Demanda","Reforma",
+  "Sentencia 1ra","Sentencia 2da","Tutelas","% Antes de Sentencia","% Por Conciliacion",
+  "% Por Sentencia","% Reconocimiento Por Recurso",
+];
+const ESTADO_FACTURA_OPTIONS = ["Pagada","Radicada","Anulada"];
 
 function emptyForm(factura){
   const initial = { CodigoCliente: factura.CodigoCliente || "", Contrato: factura.Contrato || "", Iva: factura.Iva || "19" };
@@ -25,11 +35,6 @@ function computeLive(form){
   const iva = subtotal * (ivaRate/100);
   return { subtotal, iva, total: subtotal + iva };
 }
-function fmtFechaLarga(fecha){
-  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(fecha||"");
-  if(!m) return {dia:"—", mes:"—", anio:"—"};
-  return { dia: m[3], mes: m[2], anio: m[1] };
-}
 
 export default function FacturaDrawer({ factura, clientes, procesos, liveMode, onClose, onSave }){
   const [form, setForm] = useState(null);
@@ -50,12 +55,44 @@ export default function FacturaDrawer({ factura, clientes, procesos, liveMode, o
     });
   }
 
+  // Fecha/TotalN/Subtotal/Total se recalculan solo para una factura nueva o cuando
+  // el usuario realmente cambió un campo de origen (cantidad, valor unitario, día/mes/año).
+  // Si ya estaban guardados y nada de eso cambió, se respeta el dato existente.
   function handleSave(){
     const totals = computeLive(form);
     const payload = {...form};
-    LINE_NUMS.forEach(n => { payload[`Total${n}`] = (form[`Cantidad${n}`] || form[`ValorUnitario${n}`]) ? fmtMonto(lineTotal(form,n)) : ""; });
-    payload.Subtotal = fmtMonto(totals.subtotal);
-    payload.Total = fmtMonto(totals.total);
+
+    let algunTotalCambio = false;
+    LINE_NUMS.forEach(n => {
+      const cantCambio = form[`Cantidad${n}`] !== (factura[`Cantidad${n}`]||"");
+      const valorCambio = form[`ValorUnitario${n}`] !== (factura[`ValorUnitario${n}`]||"");
+      if(cantCambio || valorCambio || !factura[`Total${n}`]){
+        payload[`Total${n}`] = (form[`Cantidad${n}`] || form[`ValorUnitario${n}`]) ? fmtMonto(lineTotal(form,n)) : "";
+        algunTotalCambio = true;
+      } else {
+        delete payload[`Total${n}`];
+      }
+    });
+
+    const ivaCambio = form.Iva !== (factura.Iva||"19");
+    if(algunTotalCambio || !factura.Subtotal){
+      payload.Subtotal = fmtMonto(totals.subtotal);
+    } else {
+      delete payload.Subtotal;
+    }
+    if(algunTotalCambio || ivaCambio || !factura.Total){
+      payload.Total = fmtMonto(totals.total);
+    } else {
+      delete payload.Total;
+    }
+
+    const fechaCambio = form.Dia !== (factura.Dia||"") || form.Mes !== (factura.Mes||"") || form.Anio !== (factura.Anio||"");
+    if(fechaCambio || !factura.Fecha){
+      payload.Fecha = fechaFromPartes(form.Dia, form.Mes, form.Anio);
+    } else {
+      delete payload.Fecha;
+    }
+
     onSave(payload);
   }
 
@@ -63,7 +100,6 @@ export default function FacturaDrawer({ factura, clientes, procesos, liveMode, o
   const linkedProceso = procesoForFactura(procesos, form);
   const totals = computeLive(form);
   const numero = facturaNumero(factura);
-  const fechaLarga = fmtFechaLarga(form.Fecha);
 
   return (
     <>
@@ -108,8 +144,24 @@ export default function FacturaDrawer({ factura, clientes, procesos, liveMode, o
             <h4>Datos generales</h4>
             <div className="field-grid">
               <div className="field"><label>Proceso</label><input type="text" value={form.Proceso} onChange={e => setField('Proceso', e.target.value)} /></div>
-              <div className="field"><label>Fecha</label><input type="date" value={form.Fecha} onChange={e => setField('Fecha', e.target.value)} /></div>
-              <div className="field"><label>Etapa</label><input type="text" value={form.Etapa} onChange={e => setField('Etapa', e.target.value)} /></div>
+              <div className="field">
+                <label>Etapa contrato</label>
+                <select value={form.EtapaContrato} onChange={e => setField('EtapaContrato', e.target.value)}>
+                  <option value="">— seleccionar etapa —</option>
+                  {ETAPA_CONTRATO_OPTIONS.map(o => <option value={o} key={o}>{o}</option>)}
+                </select>
+              </div>
+              <div className="field"><label>Día</label><input type="text" inputMode="numeric" maxLength={2} value={form.Dia} onChange={e => setField('Dia', e.target.value)} /></div>
+              <div className="field"><label>Mes</label><input type="text" inputMode="numeric" maxLength={2} value={form.Mes} onChange={e => setField('Mes', e.target.value)} /></div>
+              <div className="field"><label>Año</label><input type="text" inputMode="numeric" maxLength={4} value={form.Anio} onChange={e => setField('Anio', e.target.value)} /></div>
+              <div className="field">
+                <label>Estado de factura</label>
+                <select value={form.EstadoFactura} onChange={e => setField('EstadoFactura', e.target.value)}>
+                  <option value="">— seleccionar estado —</option>
+                  {ESTADO_FACTURA_OPTIONS.map(o => <option value={o} key={o}>{o}</option>)}
+                </select>
+              </div>
+              <div className="field full" style={{gridColumn:'1/-1'}}><label>Observación</label><textarea value={form.Observacion} onChange={e => setField('Observacion', e.target.value)} /></div>
             </div>
           </div>
           <div className="field-section">
@@ -138,6 +190,7 @@ export default function FacturaDrawer({ factura, clientes, procesos, liveMode, o
               <div className="field"><label>Subtotal</label><input type="text" value={fmtMonto(totals.subtotal)} readOnly /></div>
               <div className="field"><label>IVA (%)</label><input type="text" value={form.Iva} onChange={e => setField('Iva', e.target.value)} /></div>
               <div className="field"><label>Total</label><input type="text" value={fmtMonto(totals.total)} readOnly /></div>
+              <div className="field"><label>Valor a pagar</label><input type="text" value={form.ValorAPagar} onChange={e => setField('ValorAPagar', e.target.value)} /></div>
             </div>
           </div>
         </div>
@@ -159,7 +212,7 @@ export default function FacturaDrawer({ factura, clientes, procesos, liveMode, o
           <div className="print-numero">{numero}</div>
         </div>
         <div className="print-cliente">
-          <div><label>Fecha</label><span>{fechaLarga.dia}/{fechaLarga.mes}/{fechaLarga.anio}</span></div>
+          <div><label>Fecha</label><span>{form.Dia || "—"}/{form.Mes || "—"}/{form.Anio || "—"}</span></div>
           <div><label>Cliente</label><span>{linkedCliente?.RazonSocial || "—"}</span></div>
           <div><label>Ciudad</label><span>{linkedCliente?.Ciudad || "—"}</span></div>
           <div><label>NIT</label><span>{linkedCliente?.Nit || "—"}</span></div>
@@ -184,13 +237,15 @@ export default function FacturaDrawer({ factura, clientes, procesos, liveMode, o
         </table>
         <div className="print-foot">
           <div className="print-foot-left">
-            <div><label>Etapa</label><span>{form.Etapa || "—"}</span></div>
+            <div><label>Etapa</label><span>{form.EtapaContrato || "—"}</span></div>
             <div><label>Proceso</label><span>{form.Proceso || "—"}</span></div>
+            <div><label>Estado</label><span>{form.EstadoFactura || "—"}</span></div>
           </div>
           <div className="print-foot-right">
             <div><label>Subtotal</label><span>{fmtMonto(totals.subtotal)}</span></div>
             <div><label>IVA ({form.Iva || 0}%)</label><span>{fmtMonto(totals.iva)}</span></div>
             <div className="print-total"><label>Total</label><span>{fmtMonto(totals.total)}</span></div>
+            <div><label>Valor a pagar</label><span>{form.ValorAPagar ? fmtMonto(parseMonto(form.ValorAPagar)) : fmtMonto(totals.total)}</span></div>
           </div>
         </div>
       </div>

@@ -274,6 +274,31 @@ export function useLexaraApp(){
     }
     setActiveFacturaId(null);
   }
+  // El No. de factura se genera al crear el registro: id de SharePoint + 92.
+  async function createFactura(){
+    const nuevo = { Iva:"19" };
+    if(liveMode){
+      const list = listByKey('facturacion');
+      try{
+        const created = await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items`, {
+          method:"POST", body: JSON.stringify({ fields:{} })
+        });
+        nuevo.id = created.id; nuevo._graphId = created.id;
+        nuevo.Factura = String(Number(created.id) + 92);
+        if(list.mapping.Factura){
+          await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items/${created.id}/fields`, {
+            method:"PATCH", body: JSON.stringify({ [list.mapping.Factura]: nuevo.Factura })
+          });
+        }
+      }catch(err){ console.error(err); alert("No se pudo crear la factura en SharePoint: " + err.message); return null; }
+    } else {
+      const maxId = facturas.reduce((max,f) => Math.max(max, Number(f.id)||0), 0);
+      nuevo.id = maxId + 1;
+      nuevo.Factura = String(nuevo.id + 92);
+    }
+    setFacturas(prev => [...prev, nuevo]);
+    return nuevo;
+  }
 
   return {
     config, saveConfig, clearConfig,
@@ -287,6 +312,6 @@ export function useLexaraApp(){
     onSearch: setSearchQuery,
     activeProceso, openProceso, closeDrawer, saveProceso,
     activeCliente, openCliente, closeClienteDrawer, saveCliente, deleteCliente, createCliente,
-    activeFactura, openFactura, closeFacturaDrawer, saveFactura,
+    activeFactura, openFactura, closeFacturaDrawer, saveFactura, createFactura,
   };
 }

@@ -93,23 +93,31 @@ export const SHAREPOINT_LISTS_CONFIG = [
     // tabla aparte: son 6 juegos de columnas fijos en la misma lista (Descripcion1..6, etc.),
     // migrados así desde la base Access original.
     semanticFields: [
-      {key:"Factura", label:"No. de factura", hint:["factura"], required:true},
-      {key:"CodigoCliente", label:"Código cliente", hint:["codigo cliente","código cliente","id cliente","clien"], required:true},
+      {key:"Factura", label:"Factura", hint:["factura"], required:true},
+      {key:"Dia", label:"Día", hint:["dia","día"]},
+      {key:"Mes", label:"Mes", hint:["mes"]},
+      {key:"Anio", label:"Año", hint:["año","ano","anio"]},
       {key:"Contrato", label:"Contrato", hint:["contrato"], required:true},
+      ...Array.from({length:6}, (_,i) => i+1).flatMap(n => [
+        {key:`Descripcion${n}`, label:`Descripción ${n}`, hint:[`descripcion ${n}`,`descripcion${n}`]},
+        {key:`Cantidad${n}`, label:`Cantidad ${n}`, hint:[`cantidad ${n}`,`cantidad${n}`]},
+        {key:`ValorUnitario${n}`, label:`Valor unitario ${n}`, hint:[`valor unitario ${n}`,`valorunitario${n}`]},
+      ]),
+      {key:"Observacion", label:"Observación", hint:["observacion","observación"]},
+      {key:"EstadoFactura", label:"Estado de factura", hint:["estado de factura"]},
+      {key:"CodigoCliente", label:"Código cliente", hint:["codigo cliente","código cliente","id cliente"], required:true},
+      {key:"EtapaContrato", label:"Etapa contrato", hint:["etapa contrato","etapa"]},
       {key:"Proceso", label:"Proceso", hint:["proceso"]},
       {key:"Fecha", label:"Fecha", hint:["fecha"]},
-      {key:"Etapa", label:"Etapa", hint:["etapa"]},
-      ...Array.from({length:6}, (_,i) => i+1).flatMap(n => [
-        {key:`Descripcion${n}`, label:`Descripción ${n}`, hint:[`descripcion${n}`,`descripcion ${n}`]},
-        {key:`Cantidad${n}`, label:`Cantidad ${n}`, hint:[`cantidad${n}`,`cantidad ${n}`]},
-        {key:`ValorUnitario${n}`, label:`Valor unitario ${n}`, hint:[`valorunitario${n}`,`valor unitario ${n}`]},
-        {key:`Total${n}`, label:`Total ${n}`, hint:[`total${n}`,`total ${n}`]},
-      ]),
-      {key:"Subtotal", label:"Subtotal", hint:["subtotal","subtotales"]},
+      ...Array.from({length:6}, (_,i) => i+1).map(n => ({key:`Total${n}`, label:`Total ${n}`, hint:[`total ${n}`,`total${n}`]})),
+      {key:"Subtotal", label:"Subtotales", hint:["subtotales","subtotal"]},
       {key:"Iva", label:"IVA", hint:["iva"]},
       {key:"Total", label:"Total", hint:["total"]},
-      // Subtotal/IVA/Total se calculan en la app a partir de las 6 líneas y el % de IVA,
-      // pero también se guardan como columnas reales en SharePoint (no son solo de pantalla).
+      {key:"ValorAPagar", label:"Valor a pagar", hint:["valor a pagar"]},
+      // Dia/Mes/Año son los campos que se digitan; Fecha se guarda a partir de
+      // concatenarlos y darles formato de fecha (no se digita directamente).
+      // Subtotal/IVA/Total/ValorAPagar se calculan en la app a partir de las 6 líneas
+      // y el % de IVA, pero también se guardan como columnas reales en SharePoint.
     ],
     mapping: {},
   },
@@ -131,22 +139,22 @@ export const DEMO_CLIENTES = [
 ];
 
 export const DEMO_FACTURAS = [
-  {id:1, Factura:"93", CodigoCliente:"1", Contrato:"CT-2023-118", Proceso:"2023-00218", Fecha:"2024-01-15", Etapa:"Período probatorio",
+  {id:1, Factura:"93", CodigoCliente:"1", Contrato:"CT-2023-118", Proceso:"2023-00218", Dia:"15", Mes:"01", Anio:"2024", Fecha:"2024-01-15", EtapaContrato:"Contestacion", EstadoFactura:"Radicada", Observacion:"",
     Descripcion1:"Honorarios generados por la contestación realizada dentro del proceso 2023-00218 de Grupo Andino S.A.S. contra Aseguradora Cordillera. Por valor de 2 SMLV.", Cantidad1:"2", ValorUnitario1:"1.471.348,75", Total1:"2.942.697,50",
     Descripcion2:"", Cantidad2:"", ValorUnitario2:"", Total2:"",
     Descripcion3:"", Cantidad3:"", ValorUnitario3:"", Total3:"",
     Descripcion4:"", Cantidad4:"", ValorUnitario4:"", Total4:"",
     Descripcion5:"", Cantidad5:"", ValorUnitario5:"", Total5:"",
     Descripcion6:"", Cantidad6:"", ValorUnitario6:"", Total6:"",
-    Subtotal:"2.942.697,50", Iva:"19", Total:"3.501.810,03"},
-  {id:2, Factura:"94", CodigoCliente:"2", Contrato:"CT-2022-076", Proceso:"2022-00341", Fecha:"2024-03-01", Etapa:"Alegatos de conclusión",
+    Subtotal:"2.942.697,50", Iva:"19", Total:"3.501.810,03", ValorAPagar:"3.501.810,03"},
+  {id:2, Factura:"94", CodigoCliente:"2", Contrato:"CT-2022-076", Proceso:"2022-00341", Dia:"01", Mes:"03", Anio:"2024", Fecha:"2024-03-01", EtapaContrato:"Honorarios", EstadoFactura:"Pagada", Observacion:"",
     Descripcion1:"Honorarios por apelación dentro del proceso 2022-00341.", Cantidad1:"1", ValorUnitario1:"5.200.000", Total1:"5.200.000",
     Descripcion2:"", Cantidad2:"", ValorUnitario2:"", Total2:"",
     Descripcion3:"", Cantidad3:"", ValorUnitario3:"", Total3:"",
     Descripcion4:"", Cantidad4:"", ValorUnitario4:"", Total4:"",
     Descripcion5:"", Cantidad5:"", ValorUnitario5:"", Total5:"",
     Descripcion6:"", Cantidad6:"", ValorUnitario6:"", Total6:"",
-    Subtotal:"5.200.000", Iva:"19", Total:"6.188.000"},
+    Subtotal:"5.200.000", Iva:"19", Total:"6.188.000", ValorAPagar:"6.188.000"},
 ];
 
 export const ICON_SVG = `<svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 30 L50 50 L80 30" stroke="currentColor" stroke-width="14" fill="none" stroke-linecap="square"/><path d="M20 70 L50 50 L80 70" stroke="currentColor" stroke-width="14" fill="none" stroke-linecap="square"/></svg>`;

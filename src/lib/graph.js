@@ -168,6 +168,12 @@ export function procesoForFactura(procesos, factura){
 export function facturaNumero(factura){
   return factura.Factura || (factura.id!=null ? String(Number(factura.id) + 92) : "");
 }
+// Dia/Mes/Año son los campos que se digitan; Fecha se guarda concatenándolos
+// y dándoles formato de fecha (no se digita directamente).
+export function fechaFromPartes(dia, mes, anio){
+  if(!dia || !mes || !anio) return "";
+  return `${String(anio).padStart(4,'0')}-${String(mes).padStart(2,'0')}-${String(dia).padStart(2,'0')}`;
+}
 export function facturaLineItems(factura){
   return Array.from({length:6}, (_,i) => i+1).map(n => ({
     n,
