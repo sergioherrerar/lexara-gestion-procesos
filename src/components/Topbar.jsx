@@ -1,16 +1,27 @@
+import IconButton from './IconButton';
+
 const TITLES = {dashboard:"Dashboard", procesos:"Procesos judiciales", clientes:"Clientes", setup:"Configuración"};
 
-export default function Topbar({ view, liveMode, searchQuery, onSearch, onOpenMobileNav }){
+export default function Topbar({ view, liveMode, searchQuery, onSearch, onOpenMobileNav, onRefresh, refreshing }){
   return (
     <div className="topbar">
       <button className="mobile-nav-btn" aria-label="Abrir menú" onClick={onOpenMobileNav}>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
       </button>
       <div>
-        <div className="eyebrow">
+        <div className="eyebrow" style={{display:'flex', alignItems:'center', gap:8}}>
           <span className={"status-pill " + (liveMode ? "status-live" : "status-demo")}>
             {liveMode ? "Conectado a SharePoint" : "Modo demo"}
           </span>
+          {liveMode && (
+            <IconButton
+              icon="refresh"
+              variant="refresh"
+              label={refreshing ? "Actualizando…" : "Actualizar datos desde SharePoint"}
+              spinning={refreshing}
+              onClick={onRefresh}
+            />
+          )}
         </div>
         <h2>{TITLES[view] || view}</h2>
       </div>

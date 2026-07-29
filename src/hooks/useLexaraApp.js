@@ -17,6 +17,7 @@ export function useLexaraApp(){
   const [activeClienteId, setActiveClienteId] = useState(null);
   const [currentFilter, setCurrentFilter] = useState('todos');
   const [searchQuery, setSearchQuery] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
 
   // Arranque: si ya hay credenciales fijas en el código, prepara MSAL de una vez.
   useEffect(() => {
@@ -98,6 +99,27 @@ export function useLexaraApp(){
       console.error(err);
       alert("No fue posible iniciar sesión. Revisa la consola para más detalle.");
     }
+  }
+
+  async function refreshData(){
+    if(!liveMode || refreshing) return;
+    setRefreshing(true);
+    try{
+      const sid = siteId || await Graph.fetchSiteId(config);
+      setSiteId(sid);
+      const updated = [];
+      for(const list of lists){
+        const connected = await Graph.connectList(sid, list);
+        updated.push({...connected, items: Graph.transformListItems(connected)});
+      }
+      setLists(updated);
+      setProcesos(updated.find(l => l.key==='procesos')?.items || []);
+      setClientes(updated.find(l => l.key==='clientes')?.items || []);
+    }catch(err){
+      console.error(err);
+      alert("No se pudo actualizar la información: " + err.message);
+    }
+    setRefreshing(false);
   }
 
   function updateListMapping(listKey, fieldKey, value){
@@ -233,6 +255,7 @@ export function useLexaraApp(){
     lists, listByKey, updateListMapping,
     liveMode, account, appActive, view, setView,
     testStatus, testConnection, applyAllMappings, downloadAllMappings,
+    refreshData, refreshing,
     signIn, enterDemo, goSetup, signOut,
     procesos, clientes,
     currentFilter, setFilter: setCurrentFilter, searchQuery, setSearchQuery: setSearchQuery,

@@ -48,6 +48,8 @@ export default function App(){
           searchQuery={app.searchQuery}
           onSearch={app.onSearch}
           onOpenMobileNav={() => setMobileNavOpen(true)}
+          onRefresh={app.refreshData}
+          refreshing={app.refreshing}
         />
 
         {app.view === 'dashboard' && <DashboardView procesos={app.procesos} />}

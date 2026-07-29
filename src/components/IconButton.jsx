@@ -19,11 +19,16 @@ export const ICONS = {
       <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><path d="M15 3h6v6"/><path d="M10 14L21 3"/>
     </svg>
   ),
+  refresh: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 12a9 9 0 0 1-15.3 6.4M3 12a9 9 0 0 1 15.3-6.4"/><path d="M21 3v6h-6"/><path d="M3 21v-6h6"/>
+    </svg>
+  ),
 };
 
 // Botón compacto de solo ícono, para acciones repetidas en filas de tabla.
-export default function IconButton({ icon, variant = 'edit', label, href, onClick }){
-  const cls = `icon-btn icon-btn-${variant}`;
+export default function IconButton({ icon, variant = 'edit', label, href, onClick, spinning }){
+  const cls = `icon-btn icon-btn-${variant}` + (spinning ? ' icon-btn-spinning' : '');
   if(href){
     return (
       <a className={cls} href={href} target="_blank" rel="noopener noreferrer" title={label} aria-label={label} onClick={onClick}>
@@ -32,7 +37,7 @@ export default function IconButton({ icon, variant = 'edit', label, href, onClic
     );
   }
   return (
-    <button type="button" className={cls} title={label} aria-label={label} onClick={onClick}>
+    <button type="button" className={cls} title={label} aria-label={label} onClick={onClick} disabled={spinning}>
       {ICONS[icon]}
     </button>
   );

@@ -353,6 +353,11 @@
   .icon-btn-delete:hover{background:var(--naranja); color:#fff;}
   .icon-btn-add{color:#8a6410; background:#fef4de;}
   .icon-btn-add:hover{background:var(--amarillo); color:#4a3a0a;}
+  .icon-btn-refresh{color:var(--verde-oscuro); background:#e3efee;}
+  .icon-btn-refresh:hover{background:var(--verde-oscuro); color:#fff;}
+  .icon-btn-spinning{cursor:default;}
+  .icon-btn-spinning svg{animation:icon-spin .8s linear infinite;}
+  @keyframes icon-spin{to{transform:rotate(360deg);}}
   .row-actions{display:flex; gap:6px; align-items:center;}
 
   /* ---------- Setup / help view ---------- */
