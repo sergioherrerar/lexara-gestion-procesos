@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
-import { clienteForFactura, procesoForFactura, facturaNumero, fechaFromPartes, parseMonto, fmtMonto } from '../lib/graph';
+import { clienteForFactura, procesoForFactura, facturaNumero, parseMonto, fmtMonto, IVA_RATE_DEFAULT } from '../lib/graph';
 import logoPrint from '../assets/Logo verde OScuro.png';
 
 const LINE_NUMS = [1,2,3,4,5,6];
-const OTHER_FIELDS = ["Proceso","Dia","Mes","Anio","EtapaContrato","EstadoFactura","Observacion","RetIva","ValorAPagar"];
+const OTHER_FIELDS = ["Proceso","Dia","Mes","Anio","EtapaContrato","EstadoFactura","Observacion"];
 
 const ETAPA_CONTRATO_OPTIONS = [
   "Acta Audiencia","Administracion Proceso","Admision","Asesoria","Asesorias","Auditoria",
@@ -16,7 +16,7 @@ const ETAPA_CONTRATO_OPTIONS = [
 const ESTADO_FACTURA_OPTIONS = ["Pagada","Radicada","Anulada"];
 
 function emptyForm(factura){
-  const initial = { CodigoCliente: factura.CodigoCliente || "", Contrato: factura.Contrato || "", Iva: factura.Iva || "19" };
+  const initial = { CodigoCliente: factura.CodigoCliente || "", Contrato: factura.Contrato || "" };
   OTHER_FIELDS.forEach(key => { initial[key] = factura[key] || ""; });
   LINE_NUMS.forEach(n => {
     initial[`Descripcion${n}`] = factura[`Descripcion${n}`] || "";
@@ -29,10 +29,12 @@ function emptyForm(factura){
 function lineTotal(form, n){
   return parseMonto(form[`Cantidad${n}`]) * parseMonto(form[`ValorUnitario${n}`]);
 }
+// Vista previa en la app — Fecha/TotalN/Subtotal/IVA/Total/Ret IVA/Valor a pagar
+// son columnas calculadas por fórmula en SharePoint; esto solo estima el resultado
+// mientras se edita, con el 19% fijo. El valor definitivo lo calcula SharePoint al guardar.
 function computeLive(form){
   const subtotal = LINE_NUMS.reduce((sum,n) => sum + lineTotal(form,n), 0);
-  const ivaRate = parseMonto(form.Iva);
-  const iva = subtotal * (ivaRate/100);
+  const iva = subtotal * (IVA_RATE_DEFAULT/100);
   return { subtotal, iva, total: subtotal + iva };
 }
 
@@ -51,45 +53,19 @@ export default function FacturaDrawer({ factura, clientes, procesos, liveMode, o
     setField(`${field}${n}`, value);
   }
 
-  // Fecha/TotalN/Subtotal/Total sí son columnas reales: se calculan al crear la
-  // factura y ese valor queda guardado. Al editar una factura existente, solo se
-  // recalculan y regrabar cuando el usuario realmente cambió un campo de origen
-  // (cantidad, valor unitario, IVA, día/mes/año) — si no, se respeta el dato ya guardado.
+  // Fecha/TotalN/Subtotal/IVA/Total/Ret IVA/Valor a pagar son columnas calculadas
+  // por fórmula en SharePoint — la app nunca les escribe un valor, solo las lee.
+  // Se guardan los campos de origen (Día/Mes/Año, Cantidad, Valor unitario, etc.)
+  // y SharePoint recalcula esas columnas por su cuenta.
   function handleSave(){
-    const totals = computeLive(form);
     const payload = {...form};
-
-    let algunTotalCambio = false;
-    LINE_NUMS.forEach(n => {
-      const cantCambio = form[`Cantidad${n}`] !== (factura[`Cantidad${n}`]||"");
-      const valorCambio = form[`ValorUnitario${n}`] !== (factura[`ValorUnitario${n}`]||"");
-      if(cantCambio || valorCambio || !factura[`Total${n}`]){
-        payload[`Total${n}`] = (form[`Cantidad${n}`] || form[`ValorUnitario${n}`]) ? fmtMonto(lineTotal(form,n)) : "";
-        algunTotalCambio = true;
-      } else {
-        delete payload[`Total${n}`];
-      }
-    });
-
-    const ivaCambio = form.Iva !== (factura.Iva||"19");
-    if(algunTotalCambio || !factura.Subtotal){
-      payload.Subtotal = fmtMonto(totals.subtotal);
-    } else {
-      delete payload.Subtotal;
-    }
-    if(algunTotalCambio || ivaCambio || !factura.Total){
-      payload.Total = fmtMonto(totals.total);
-    } else {
-      delete payload.Total;
-    }
-
-    const fechaCambio = form.Dia !== (factura.Dia||"") || form.Mes !== (factura.Mes||"") || form.Anio !== (factura.Anio||"");
-    if(fechaCambio || !factura.Fecha){
-      payload.Fecha = fechaFromPartes(form.Dia, form.Mes, form.Anio);
-    } else {
-      delete payload.Fecha;
-    }
-
+    LINE_NUMS.forEach(n => { delete payload[`Total${n}`]; });
+    delete payload.Fecha;
+    delete payload.Subtotal;
+    delete payload.Iva;
+    delete payload.Total;
+    delete payload.RetIva;
+    delete payload.ValorAPagar;
     onSave(payload);
   }
 
@@ -107,7 +83,7 @@ export default function FacturaDrawer({ factura, clientes, procesos, liveMode, o
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
           </button>
           <div className="eyebrow">FACTURA</div>
-          <h2>No. {numero}</h2>
+          <h2>{numero ? `No. ${numero}` : "Nueva factura (No. se asigna al guardar)"}</h2>
         </div>
         <div className="drawer-body">
           <div className="field-section">
@@ -183,12 +159,15 @@ export default function FacturaDrawer({ factura, clientes, procesos, liveMode, o
           </div>
           <div className="field-section">
             <h4>Totales</h4>
+            <p style={{fontSize:12.5, color:'var(--texto-suave)', marginTop:-6, marginBottom:12}}>
+              Los calcula SharePoint automáticamente (IVA fijo del {IVA_RATE_DEFAULT}%). Lo de aquí abajo es una vista previa mientras editas; el valor definitivo aparece al guardar y actualizar.
+            </p>
             <div className="field-grid">
               <div className="field"><label>Subtotal</label><input type="text" value={fmtMonto(totals.subtotal)} readOnly /></div>
-              <div className="field"><label>IVA (%)</label><input type="text" value={form.Iva} onChange={e => setField('Iva', e.target.value)} /></div>
+              <div className="field"><label>IVA ({IVA_RATE_DEFAULT}%)</label><input type="text" value={fmtMonto(totals.iva)} readOnly /></div>
               <div className="field"><label>Total</label><input type="text" value={fmtMonto(totals.total)} readOnly /></div>
-              <div className="field"><label>Ret. IVA</label><input type="text" value={form.RetIva} onChange={e => setField('RetIva', e.target.value)} /></div>
-              <div className="field"><label>Valor a pagar</label><input type="text" value={form.ValorAPagar} onChange={e => setField('ValorAPagar', e.target.value)} /></div>
+              <div className="field"><label>Ret. IVA</label><input type="text" value={factura.RetIva || "—"} readOnly /></div>
+              <div className="field"><label>Valor a pagar</label><input type="text" value={factura.ValorAPagar || "—"} readOnly /></div>
             </div>
           </div>
         </div>
@@ -241,10 +220,10 @@ export default function FacturaDrawer({ factura, clientes, procesos, liveMode, o
           </div>
           <div className="print-foot-right">
             <div><label>Subtotal</label><span>{fmtMonto(totals.subtotal)}</span></div>
-            <div><label>IVA ({form.Iva || 0}%)</label><span>{fmtMonto(totals.iva)}</span></div>
+            <div><label>IVA ({IVA_RATE_DEFAULT}%)</label><span>{fmtMonto(totals.iva)}</span></div>
             <div className="print-total"><label>Total</label><span>{fmtMonto(totals.total)}</span></div>
-            {form.RetIva && <div><label>Ret. IVA</label><span>{fmtMonto(parseMonto(form.RetIva))}</span></div>}
-            <div><label>Valor a pagar</label><span>{form.ValorAPagar ? fmtMonto(parseMonto(form.ValorAPagar)) : fmtMonto(totals.total)}</span></div>
+            {factura.RetIva && <div><label>Ret. IVA</label><span>{fmtMonto(parseMonto(factura.RetIva))}</span></div>}
+            <div><label>Valor a pagar</label><span>{factura.ValorAPagar ? fmtMonto(parseMonto(factura.ValorAPagar)) : fmtMonto(totals.total)}</span></div>
           </div>
         </div>
       </div>

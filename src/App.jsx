@@ -80,10 +80,7 @@ export default function App(){
             procesos={app.procesos}
             searchQuery={app.searchQuery}
             onOpenFactura={app.openFactura}
-            onCreateFactura={async () => {
-              const created = await app.createFactura();
-              if(created) app.openFactura(created.id);
-            }}
+            onCreateFactura={app.newFactura}
           />
         )}
         {app.view === 'setup' && (

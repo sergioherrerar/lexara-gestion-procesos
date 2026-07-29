@@ -178,7 +178,7 @@ export function procesoForFactura(procesos, factura){
   return procesos.find(p => normalize(p.NumeroContrato) === target) || null;
 }
 export function facturaNumero(factura){
-  return factura.Factura || (factura.id!=null ? String(Number(factura.id) + 92) : "");
+  return factura.Factura || (factura.id!=null ? String(Number(factura.id) + 91) : "");
 }
 // Dia/Mes/Año son los campos que se digitan; Fecha se guarda concatenándolos
 // y dándoles formato de fecha (no se digita directamente).
@@ -205,9 +205,16 @@ export function facturaLineItems(factura){
 export function fmtMonto(n){
   return new Intl.NumberFormat('es-CO', {minimumFractionDigits:0, maximumFractionDigits:2}).format(n||0);
 }
+// Fecha/TotalN/Subtotal/IVA/Total/ValorAPagar son columnas calculadas por fórmula
+// en SharePoint — la app nunca les escribe un valor, solo las lee. El 19% de IVA
+// es una constante fija (no hay una columna de "tasa"); se usa solo para armar una
+// vista previa en la app cuando el dato calculado real todavía no existe (factura
+// recién creada, antes de que SharePoint la recalcule).
+export const IVA_RATE_DEFAULT = 19;
 export function computeFacturaTotals(factura){
-  const subtotal = facturaLineItems(factura).reduce((sum,li) => sum + parseMonto(li.Total), 0);
-  const ivaRate = parseMonto(factura.Iva);
-  const iva = subtotal * (ivaRate/100);
-  return { subtotal, iva, total: subtotal + iva };
+  const subtotalCalc = facturaLineItems(factura).reduce((sum,li) => sum + parseMonto(li.Total), 0);
+  const subtotal = factura.Subtotal ? parseMonto(factura.Subtotal) : subtotalCalc;
+  const iva = factura.Iva ? parseMonto(factura.Iva) : subtotal * (IVA_RATE_DEFAULT/100);
+  const total = factura.Total ? parseMonto(factura.Total) : subtotal + iva;
+  return { subtotal, iva, total };
 }

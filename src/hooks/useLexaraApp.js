@@ -17,6 +17,7 @@ export function useLexaraApp(){
   const [activeProcesoId, setActiveProcesoId] = useState(null);
   const [activeClienteId, setActiveClienteId] = useState(null);
   const [activeFacturaId, setActiveFacturaId] = useState(null);
+  const [draftFactura, setDraftFactura] = useState(null);
   const [currentFilter, setCurrentFilter] = useState('todos');
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
@@ -190,7 +191,7 @@ export function useLexaraApp(){
 
   const activeProceso = procesos.find(p => p.id===activeProcesoId) || null;
   const activeCliente = clientes.find(c => c.id===activeClienteId) || null;
-  const activeFactura = facturas.find(f => f.id===activeFacturaId) || null;
+  const activeFactura = draftFactura || facturas.find(f => f.id===activeFacturaId) || null;
 
   function openProceso(id){ setActiveProcesoId(id); }
   function closeDrawer(){ setActiveProcesoId(null); }
@@ -257,10 +258,44 @@ export function useLexaraApp(){
     return nuevo;
   }
 
-  function openFactura(id){ setActiveFacturaId(id); }
-  function closeFacturaDrawer(){ setActiveFacturaId(null); }
+  function openFactura(id){ setDraftFactura(null); setActiveFacturaId(id); }
+  // "+ Nueva factura" solo abre un borrador local — no toca SharePoint hasta
+  // que el usuario le da "Guardar cambios" (evita registros vacíos huérfanos).
+  function newFactura(){ setActiveFacturaId(null); setDraftFactura({}); }
+  function closeFacturaDrawer(){ setActiveFacturaId(null); setDraftFactura(null); }
   async function saveFactura(updates){
     if(!activeFactura) return;
+
+    if(draftFactura){
+      const nuevo = {...updates};
+      if(liveMode){
+        const list = listByKey('facturacion');
+        const graphFields = {};
+        Object.keys(updates).forEach(key => { if(list.mapping[key]) graphFields[list.mapping[key]] = updates[key]; });
+        try{
+          const created = await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items`, {
+            method:"POST", body: JSON.stringify({ fields: graphFields })
+          });
+          nuevo.id = created.id; nuevo._graphId = created.id;
+          const numero = String(Number(created.id) + 91);
+          nuevo.Factura = numero;
+          if(list.mapping.Factura){
+            await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items/${created.id}/fields`, {
+              method:"PATCH", body: JSON.stringify({ [list.mapping.Factura]: numero })
+            });
+          }
+        }catch(err){ console.error(err); alert("No se pudo crear la factura en SharePoint: " + err.message); return; }
+      } else {
+        const maxId = facturas.reduce((max,f) => Math.max(max, Number(f.id)||0), 0);
+        nuevo.id = maxId + 1;
+        nuevo.Factura = String(nuevo.id + 91);
+      }
+      setFacturas(prev => [...prev, nuevo]);
+      setDraftFactura(null);
+      setActiveFacturaId(null);
+      return;
+    }
+
     setFacturas(prev => prev.map(f => f.id===activeFacturaId ? {...f, ...updates} : f));
     if(liveMode){
       const list = listByKey('facturacion');
@@ -273,31 +308,6 @@ export function useLexaraApp(){
       }catch(err){ console.error(err); alert("No se pudo guardar en SharePoint: " + err.message); return; }
     }
     setActiveFacturaId(null);
-  }
-  // El No. de factura se genera al crear el registro: id de SharePoint + 92.
-  async function createFactura(){
-    const nuevo = { Iva:"19" };
-    if(liveMode){
-      const list = listByKey('facturacion');
-      try{
-        const created = await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items`, {
-          method:"POST", body: JSON.stringify({ fields:{} })
-        });
-        nuevo.id = created.id; nuevo._graphId = created.id;
-        nuevo.Factura = String(Number(created.id) + 92);
-        if(list.mapping.Factura){
-          await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items/${created.id}/fields`, {
-            method:"PATCH", body: JSON.stringify({ [list.mapping.Factura]: nuevo.Factura })
-          });
-        }
-      }catch(err){ console.error(err); alert("No se pudo crear la factura en SharePoint: " + err.message); return null; }
-    } else {
-      const maxId = facturas.reduce((max,f) => Math.max(max, Number(f.id)||0), 0);
-      nuevo.id = maxId + 1;
-      nuevo.Factura = String(nuevo.id + 92);
-    }
-    setFacturas(prev => [...prev, nuevo]);
-    return nuevo;
   }
 
   return {
@@ -312,6 +322,6 @@ export function useLexaraApp(){
     onSearch: setSearchQuery,
     activeProceso, openProceso, closeDrawer, saveProceso,
     activeCliente, openCliente, closeClienteDrawer, saveCliente, deleteCliente, createCliente,
-    activeFactura, openFactura, closeFacturaDrawer, saveFactura, createFactura,
+    activeFactura, openFactura, newFactura, closeFacturaDrawer, saveFactura,
   };
 }

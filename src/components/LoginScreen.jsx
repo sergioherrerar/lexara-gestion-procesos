@@ -16,7 +16,7 @@ export default function LoginScreen({ config, onSignIn, onEnterDemo, onGoSetup }
       </div>
       <div className="login-panel">
         <div className="login-box">
-          <div className="brand-logo-wrap"><img src={logoLogin} alt="Lexara Abogados" height={30} /></div>
+          <div className="brand-logo-wrap"><img src={logoLogin} alt="Lexara Abogados" /></div>
           <h1>Gestión de procesos</h1>
           <p className="sub">Inicia sesión con tu cuenta de Microsoft 365 del despacho para acceder a los procesos judiciales.</p>
           <button className="btn-msal" onClick={onSignIn}>
