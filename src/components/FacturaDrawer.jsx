@@ -3,7 +3,7 @@ import { clienteForFactura, procesoForFactura, facturaNumero, fechaFromPartes, p
 import logoPrint from '../assets/Logo verde OScuro.png';
 
 const LINE_NUMS = [1,2,3,4,5,6];
-const OTHER_FIELDS = ["Proceso","Dia","Mes","Anio","EtapaContrato","EstadoFactura","Observacion","ValorAPagar"];
+const OTHER_FIELDS = ["Proceso","Dia","Mes","Anio","EtapaContrato","EstadoFactura","Observacion","RetIva","ValorAPagar"];
 
 const ETAPA_CONTRATO_OPTIONS = [
   "Acta Audiencia","Administracion Proceso","Admision","Asesoria","Asesorias","Auditoria",
@@ -48,16 +48,13 @@ export default function FacturaDrawer({ factura, clientes, procesos, liveMode, o
   function setField(key, value){ setForm(prev => ({...prev, [key]: value})); }
 
   function setLineField(n, field, value){
-    setForm(prev => {
-      const next = {...prev, [`${field}${n}`]: value};
-      next[`Total${n}`] = fmtMonto(lineTotal(next, n));
-      return next;
-    });
+    setField(`${field}${n}`, value);
   }
 
-  // Fecha/TotalN/Subtotal/Total se recalculan solo para una factura nueva o cuando
-  // el usuario realmente cambió un campo de origen (cantidad, valor unitario, día/mes/año).
-  // Si ya estaban guardados y nada de eso cambió, se respeta el dato existente.
+  // Fecha/TotalN/Subtotal/Total sí son columnas reales: se calculan al crear la
+  // factura y ese valor queda guardado. Al editar una factura existente, solo se
+  // recalculan y regrabar cuando el usuario realmente cambió un campo de origen
+  // (cantidad, valor unitario, IVA, día/mes/año) — si no, se respeta el dato ya guardado.
   function handleSave(){
     const totals = computeLive(form);
     const payload = {...form};
@@ -190,6 +187,7 @@ export default function FacturaDrawer({ factura, clientes, procesos, liveMode, o
               <div className="field"><label>Subtotal</label><input type="text" value={fmtMonto(totals.subtotal)} readOnly /></div>
               <div className="field"><label>IVA (%)</label><input type="text" value={form.Iva} onChange={e => setField('Iva', e.target.value)} /></div>
               <div className="field"><label>Total</label><input type="text" value={fmtMonto(totals.total)} readOnly /></div>
+              <div className="field"><label>Ret. IVA</label><input type="text" value={form.RetIva} onChange={e => setField('RetIva', e.target.value)} /></div>
               <div className="field"><label>Valor a pagar</label><input type="text" value={form.ValorAPagar} onChange={e => setField('ValorAPagar', e.target.value)} /></div>
             </div>
           </div>
@@ -245,6 +243,7 @@ export default function FacturaDrawer({ factura, clientes, procesos, liveMode, o
             <div><label>Subtotal</label><span>{fmtMonto(totals.subtotal)}</span></div>
             <div><label>IVA ({form.Iva || 0}%)</label><span>{fmtMonto(totals.iva)}</span></div>
             <div className="print-total"><label>Total</label><span>{fmtMonto(totals.total)}</span></div>
+            {form.RetIva && <div><label>Ret. IVA</label><span>{fmtMonto(parseMonto(form.RetIva))}</span></div>}
             <div><label>Valor a pagar</label><span>{form.ValorAPagar ? fmtMonto(parseMonto(form.ValorAPagar)) : fmtMonto(totals.total)}</span></div>
           </div>
         </div>

@@ -113,10 +113,13 @@ export const SHAREPOINT_LISTS_CONFIG = [
       {key:"Subtotal", label:"Subtotales", hint:["subtotales","subtotal"]},
       {key:"Iva", label:"IVA", hint:["iva"]},
       {key:"Total", label:"Total", hint:["total"]},
+      {key:"RetIva", label:"Ret IVA", hint:["ret iva","retencion iva","retención iva"]},
       {key:"ValorAPagar", label:"Valor a pagar", hint:["valor a pagar"]},
-      // Dia/Mes/Año son los campos que se digitan; Fecha se guarda a partir de
-      // concatenarlos y darles formato de fecha (no se digita directamente).
-      // Subtotal/IVA/Total/ValorAPagar se calculan en la app a partir de las 6 líneas
+      // Fecha/TotalN/Subtotal/IVA/Total/RetIva sí son columnas reales en SharePoint.
+      // Se calculan al crear una factura nueva (Fecha desde Día/Mes/Año, TotalN desde
+      // CantidadN × Valor unitarioN, etc.) y ese valor calculado queda guardado. Al
+      // editar una factura existente, solo se recalculan si el usuario cambia un
+      // campo de origen — si no, se respeta el dato ya guardado (ver FacturaDrawer).
       // y el % de IVA, pero también se guardan como columnas reales en SharePoint.
     ],
     mapping: {},
@@ -141,20 +144,20 @@ export const DEMO_CLIENTES = [
 export const DEMO_FACTURAS = [
   {id:1, Factura:"93", CodigoCliente:"1", Contrato:"CT-2023-118", Proceso:"2023-00218", Dia:"15", Mes:"01", Anio:"2024", Fecha:"2024-01-15", EtapaContrato:"Contestacion", EstadoFactura:"Radicada", Observacion:"",
     Descripcion1:"Honorarios generados por la contestación realizada dentro del proceso 2023-00218 de Grupo Andino S.A.S. contra Aseguradora Cordillera. Por valor de 2 SMLV.", Cantidad1:"2", ValorUnitario1:"1.471.348,75", Total1:"2.942.697,50",
-    Descripcion2:"", Cantidad2:"", ValorUnitario2:"", Total2:"",
-    Descripcion3:"", Cantidad3:"", ValorUnitario3:"", Total3:"",
-    Descripcion4:"", Cantidad4:"", ValorUnitario4:"", Total4:"",
-    Descripcion5:"", Cantidad5:"", ValorUnitario5:"", Total5:"",
-    Descripcion6:"", Cantidad6:"", ValorUnitario6:"", Total6:"",
-    Subtotal:"2.942.697,50", Iva:"19", Total:"3.501.810,03", ValorAPagar:"3.501.810,03"},
+    Descripcion2:"", Cantidad2:"", ValorUnitario2:"",
+    Descripcion3:"", Cantidad3:"", ValorUnitario3:"",
+    Descripcion4:"", Cantidad4:"", ValorUnitario4:"",
+    Descripcion5:"", Cantidad5:"", ValorUnitario5:"",
+    Descripcion6:"", Cantidad6:"", ValorUnitario6:"",
+    Subtotal:"2.942.697,50", Iva:"19", Total:"3.501.810,03", RetIva:"", ValorAPagar:"3.501.810,03"},
   {id:2, Factura:"94", CodigoCliente:"2", Contrato:"CT-2022-076", Proceso:"2022-00341", Dia:"01", Mes:"03", Anio:"2024", Fecha:"2024-03-01", EtapaContrato:"Honorarios", EstadoFactura:"Pagada", Observacion:"",
     Descripcion1:"Honorarios por apelación dentro del proceso 2022-00341.", Cantidad1:"1", ValorUnitario1:"5.200.000", Total1:"5.200.000",
-    Descripcion2:"", Cantidad2:"", ValorUnitario2:"", Total2:"",
-    Descripcion3:"", Cantidad3:"", ValorUnitario3:"", Total3:"",
-    Descripcion4:"", Cantidad4:"", ValorUnitario4:"", Total4:"",
-    Descripcion5:"", Cantidad5:"", ValorUnitario5:"", Total5:"",
-    Descripcion6:"", Cantidad6:"", ValorUnitario6:"", Total6:"",
-    Subtotal:"5.200.000", Iva:"19", Total:"6.188.000", ValorAPagar:"6.188.000"},
+    Descripcion2:"", Cantidad2:"", ValorUnitario2:"",
+    Descripcion3:"", Cantidad3:"", ValorUnitario3:"",
+    Descripcion4:"", Cantidad4:"", ValorUnitario4:"",
+    Descripcion5:"", Cantidad5:"", ValorUnitario5:"",
+    Descripcion6:"", Cantidad6:"", ValorUnitario6:"",
+    Subtotal:"5.200.000", Iva:"19", Total:"6.188.000", RetIva:"", ValorAPagar:"6.188.000"},
 ];
 
 export const ICON_SVG = `<svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 30 L50 50 L80 30" stroke="currentColor" stroke-width="14" fill="none" stroke-linecap="square"/><path d="M20 70 L50 50 L80 70" stroke="currentColor" stroke-width="14" fill="none" stroke-linecap="square"/></svg>`;

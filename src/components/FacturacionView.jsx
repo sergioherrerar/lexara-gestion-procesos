@@ -43,7 +43,7 @@ export default function FacturacionView({ facturas, clientes, procesos, searchQu
                   <td>{facturaNumero(f)}</td>
                   <td className="cliente">{cliente?.RazonSocial || "—"}</td>
                   <td>{proceso?.Radicado || f.Proceso || "—"}</td>
-                  <td>{fmtDate(f.Fecha)}</td>
+                  <td>{fmtDate(fechaOrdenable(f))}</td>
                   <td>{fmtMonto(totals.subtotal)}</td>
                   <td>{fmtMonto(totals.iva)}</td>
                   <td>{fmtMonto(totals.total)}</td>

@@ -174,6 +174,13 @@ export function fechaFromPartes(dia, mes, anio){
   if(!dia || !mes || !anio) return "";
   return `${String(anio).padStart(4,'0')}-${String(mes).padStart(2,'0')}-${String(dia).padStart(2,'0')}`;
 }
+export function parseMonto(str){
+  if(str==null || str==="") return 0;
+  const n = parseFloat(String(str).replace(/\./g,"").replace(",","."));
+  return isNaN(n) ? 0 : n;
+}
+// Total1..6 sí son columnas reales: se calculan al crear la factura (Cantidad ×
+// Valor unitario) y ese valor queda guardado, por eso se lee tal cual está.
 export function facturaLineItems(factura){
   return Array.from({length:6}, (_,i) => i+1).map(n => ({
     n,
@@ -182,11 +189,6 @@ export function facturaLineItems(factura){
     ValorUnitario: factura[`ValorUnitario${n}`] || "",
     Total: factura[`Total${n}`] || "",
   }));
-}
-export function parseMonto(str){
-  if(str==null || str==="") return 0;
-  const n = parseFloat(String(str).replace(/\./g,"").replace(",","."));
-  return isNaN(n) ? 0 : n;
 }
 export function fmtMonto(n){
   return new Intl.NumberFormat('es-CO', {minimumFractionDigits:0, maximumFractionDigits:2}).format(n||0);
