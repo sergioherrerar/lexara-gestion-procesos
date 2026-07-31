@@ -159,7 +159,7 @@ export default function FacturaDrawer({ factura, clientes, procesos, liveMode, o
                 <tbody>
                   {LINE_NUMS.map(n => (
                     <tr key={n}>
-                      <td><textarea rows={4} value={form[`Descripcion${n}`]} onChange={e => setLineField(n,'Descripcion',e.target.value)} /></td>
+                      <td><textarea rows={6} value={form[`Descripcion${n}`]} onChange={e => setLineField(n,'Descripcion',e.target.value)} /></td>
                       <td><input type="text" value={form[`Cantidad${n}`]} onChange={e => setLineField(n,'Cantidad',e.target.value)} /></td>
                       <td><input type="text" value={form[`ValorUnitario${n}`]} onChange={e => setLineField(n,'ValorUnitario',e.target.value)} /></td>
                       <td className="linea-total">{(form[`Cantidad${n}`] || form[`ValorUnitario${n}`]) ? fmtMonto(lineTotal(form,n)) : ""}</td>
@@ -174,10 +174,10 @@ export default function FacturaDrawer({ factura, clientes, procesos, liveMode, o
             <p style={{fontSize:12.5, color:'var(--texto-suave)', marginTop:-6, marginBottom:12}}>
               Los calcula SharePoint automáticamente (IVA fijo del {IVA_RATE_DEFAULT}%). Lo de aquí abajo es una vista previa mientras editas; el valor definitivo aparece al guardar y actualizar.
             </p>
-            <div className="field-grid">
-              <div className="field"><label>Subtotal</label><input type="text" value={fmtMonto(totals.subtotal)} readOnly /></div>
-              <div className="field"><label>IVA ({IVA_RATE_DEFAULT}%)</label><input type="text" value={fmtMonto(totals.iva)} readOnly /></div>
-              <div className="field"><label>Total</label><input type="text" value={fmtMonto(totals.total)} readOnly /></div>
+            <div className="totales-resumen">
+              <div><span>Subtotal</span><strong>{fmtMonto(totals.subtotal)}</strong></div>
+              <div><span>IVA ({IVA_RATE_DEFAULT}%)</span><strong>{fmtMonto(totals.iva)}</strong></div>
+              <div className="totales-resumen-total"><span>Total</span><strong>{fmtMonto(totals.total)}</strong></div>
             </div>
           </div>
         </div>
