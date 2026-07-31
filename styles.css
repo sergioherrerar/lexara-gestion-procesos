@@ -507,11 +507,23 @@
     #factura-overlay, #factura-drawer,
     #overlay, #drawer, #cliente-overlay, #cliente-drawer{display:none !important;}
     .print-sheet{
-      display:block; position:static; width:210mm; min-height:297mm;
+      display:block; position:relative; width:210mm; min-height:297mm;
       background-repeat:no-repeat; background-size:210mm 297mm; background-position:top left;
       font-family:var(--font-body); color:var(--texto); font-size:12.5px;
       box-sizing:border-box;
     }
+    /* Tapa la barra amarilla del membrete con un pie propio: contacto + redes + fecha/hora. */
+    .print-page-footer{
+      position:absolute; left:0; right:0; bottom:0; height:47mm;
+      background:#fff; border-top:1px solid var(--gris-linea);
+      display:flex; align-items:center; justify-content:space-between; gap:16px;
+      padding:0 20mm; box-sizing:border-box;
+    }
+    .print-page-footer-contact{display:flex; gap:18px; flex-wrap:wrap; align-items:center;}
+    .print-page-footer-contact span{display:inline-flex; align-items:center; gap:5px; font-size:9.5px; color:var(--texto-suave);}
+    .print-page-footer-contact svg{width:13px; height:13px; color:var(--verde-oscuro); flex-shrink:0;}
+    .print-page-footer-meta{display:flex; align-items:center; gap:10px; font-size:9px; color:var(--texto-suave); text-align:right; white-space:nowrap;}
+    .print-page-footer-meta .print-qr{width:22mm; height:22mm; object-fit:contain;}
     .print-body{
       padding:60mm 20mm 35mm 20mm; box-sizing:border-box;
     }

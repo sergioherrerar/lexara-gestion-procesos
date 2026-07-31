@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { clienteForFactura, procesoForFactura, facturaNumero, parseMonto, fmtMonto, IVA_RATE_DEFAULT } from '../lib/graph';
 import membrete from '../assets/Membrete Lexara.png';
+import qrRedes from '../assets/Qr_Redes.png';
 
 const LINE_NUMS = [1,2,3,4,5,6];
 const OTHER_FIELDS = ["Proceso","Dia","Mes","Anio","EtapaContrato","EstadoFactura","Observacion"];
@@ -106,6 +107,8 @@ export default function FacturaDrawer({ factura, clientes, procesos, liveMode, o
   const linkedProceso = procesoForFactura(procesos, form);
   const totals = computeLive(form);
   const numero = facturaNumero(factura);
+  const ahora = new Date();
+  const fechaImpresion = `${ahora.toLocaleDateString('es-CO')} ${ahora.toLocaleTimeString('es-CO', {hour:'2-digit', minute:'2-digit'})}`;
 
   return (
     <>
@@ -273,6 +276,17 @@ export default function FacturaDrawer({ factura, clientes, procesos, liveMode, o
             <div className="print-total"><label>Total</label><span>{fmtMonto(totals.total)}</span></div>
           </div>
         </div>
+        </div>
+        <div className="print-page-footer">
+          <div className="print-page-footer-contact">
+            <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20z"/></svg> www.lexaraabogados.com</span>
+            <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 6 10-6"/></svg> Gerencia@lexaraabogados.com</span>
+            <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.7A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .3 2 .7 3a2 2 0 0 1-.5 2.1L8 10a16 16 0 0 0 6 6l1.2-1.3a2 2 0 0 1 2.1-.5c1 .4 2 .6 3 .7a2 2 0 0 1 1.7 2z"/></svg> +57 312 442 0026</span>
+          </div>
+          <div className="print-page-footer-meta">
+            <img src={qrRedes} alt="Redes sociales" className="print-qr" />
+            <span>Generado el {fechaImpresion}</span>
+          </div>
         </div>
       </div>
     </>
