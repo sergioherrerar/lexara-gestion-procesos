@@ -494,6 +494,11 @@
   /* ---------- Hoja imprimible de factura ---------- */
   .print-sheet{display:none;}
 
+  /* @page + margin:0 evita que el navegador agregue su propio encabezado/pie de
+     página (URL, fecha, número de página) al imprimir, que se vería encima del
+     membrete. El tamaño A4 coincide con el diseño del membrete (2563×3625 ≈ 210×297mm). */
+  @page{ size: A4; margin: 0; }
+
   @media print{
     /* display:none saca estos elementos del flujo del documento — visibility:hidden
        NO lo hace, y con una tabla de 714 facturas de por medio eso generaba decenas
@@ -502,12 +507,15 @@
     #factura-overlay, #factura-drawer,
     #overlay, #drawer, #cliente-overlay, #cliente-drawer{display:none !important;}
     .print-sheet{
-      display:block; position:static; width:100%; padding:24px;
+      display:block; position:static; width:210mm; min-height:297mm;
+      background-repeat:no-repeat; background-size:210mm 297mm; background-position:top left;
       font-family:var(--font-body); color:var(--texto); font-size:12.5px;
+      box-sizing:border-box;
     }
-    .print-head{display:flex; align-items:center; gap:18px; border-bottom:3px solid var(--verde-oscuro); padding-bottom:14px; margin-bottom:16px;}
-    .print-head img{height:46px; width:auto;}
-    .print-title{flex:1; text-align:center;}
+    .print-body{
+      padding:60mm 20mm 35mm 20mm; box-sizing:border-box;
+    }
+    .print-head{display:flex; align-items:flex-start; justify-content:space-between; gap:18px; border-bottom:3px solid var(--verde-oscuro); padding-bottom:14px; margin-bottom:16px;}
     .print-title h1{font-family:var(--font-display); font-size:16px; color:var(--verde-oscuro); margin:0;}
     .print-title h2{font-size:12px; color:var(--texto-suave); margin:4px 0 0; font-weight:600;}
     .print-numero{font-family:var(--font-display); font-size:30px; font-weight:700; color:#c0392b;}

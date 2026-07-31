@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { clienteForFactura, procesoForFactura, facturaNumero, parseMonto, fmtMonto, IVA_RATE_DEFAULT } from '../lib/graph';
-import logoPrint from '../assets/Logo verde OScuro.png';
+import membrete from '../assets/Membrete Lexara.png';
 
 const LINE_NUMS = [1,2,3,4,5,6];
 const OTHER_FIELDS = ["Proceso","Dia","Mes","Anio","EtapaContrato","EstadoFactura","Observacion"];
@@ -228,9 +228,9 @@ export default function FacturaDrawer({ factura, clientes, procesos, liveMode, o
         </div>
       </div>
 
-      <div className="print-sheet">
+      <div className="print-sheet" style={{backgroundImage: `url(${membrete})`}}>
+        <div className="print-body">
         <div className="print-head">
-          <img src={logoPrint} alt="Lexara Abogados" />
           <div className="print-title">
             <h1>SOLICITUD DE FACTURACIÓN ELECTRÓNICA</h1>
             <h2>MD ABOGADOS Nit: 900495788-3</h2>
@@ -272,6 +272,7 @@ export default function FacturaDrawer({ factura, clientes, procesos, liveMode, o
             <div><label>IVA ({IVA_RATE_DEFAULT}%)</label><span>{fmtMonto(totals.iva)}</span></div>
             <div className="print-total"><label>Total</label><span>{fmtMonto(totals.total)}</span></div>
           </div>
+        </div>
         </div>
       </div>
     </>
