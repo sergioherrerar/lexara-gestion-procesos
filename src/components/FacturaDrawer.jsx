@@ -81,12 +81,15 @@ export default function FacturaDrawer({ factura, clientes, procesos, liveMode, o
     delete payload.Total;
     delete payload.RetIva;
     delete payload.ValorAPagar;
-    // Los campos numéricos en blanco se envían como 0 (no "") para no romper
-    // las fórmulas/sumas de SharePoint (Cantidad × Valor unitario, Subtotales...).
-    ['Dia','Mes','Anio'].forEach(k => { if(payload[k] === "") payload[k] = 0; });
+    // Los campos numéricos siempre se envían como número plano (parseMonto ya
+    // convierte "" a 0, para no romper las fórmulas/sumas de SharePoint). Valor
+    // unitario se muestra formateado en pesos ("1.471.348,75") para que se lea
+    // bien, pero eso NO es lo que se guarda — SharePoint rechaza ese texto en
+    // una columna numérica ("Graph 400: Invalid request").
+    ['Dia','Mes','Anio','CodigoCliente'].forEach(k => { payload[k] = parseMonto(payload[k]); });
     LINE_NUMS.forEach(n => {
-      if(payload[`Cantidad${n}`] === "") payload[`Cantidad${n}`] = 0;
-      if(payload[`ValorUnitario${n}`] === "") payload[`ValorUnitario${n}`] = 0;
+      payload[`Cantidad${n}`] = parseMonto(payload[`Cantidad${n}`]);
+      payload[`ValorUnitario${n}`] = parseMonto(payload[`ValorUnitario${n}`]);
     });
     // Ciudad es del Cliente, no de la Factura — se guarda aparte en el registro
     // del cliente relacionado, no como columna de esta lista.
@@ -139,16 +142,16 @@ export default function FacturaDrawer({ factura, clientes, procesos, liveMode, o
               </div>
               <div className="field">
                 <label>Número de contrato</label>
-                <select value={form.Contrato} onChange={e => {
+                <input type="text" list="lista-contratos" value={form.Contrato} onChange={e => {
                   const contrato = e.target.value;
                   const matched = procesos.find(p => p.NumeroContrato === contrato);
                   setForm(prev => ({...prev, Contrato: contrato, Proceso: matched ? matched.Radicado : prev.Proceso}));
-                }}>
-                  <option value="">— seleccionar contrato —</option>
+                }} placeholder="Escribe para buscar…" />
+                <datalist id="lista-contratos">
                   {procesos.filter(p => p.NumeroContrato).map(p => (
                     <option value={p.NumeroContrato} key={p.id}>{p.NumeroContrato} · {p.Radicado}</option>
                   ))}
-                </select>
+                </datalist>
                 {form.Contrato && !linkedProceso && (
                   <div className="field-warning">Este contrato no coincide con ningún proceso registrado.</div>
                 )}
