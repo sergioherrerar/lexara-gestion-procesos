@@ -15,7 +15,7 @@ export default function FacturacionView({ facturas, clientes, procesos, searchQu
       (f.Contrato||"").toLowerCase().includes(query) ||
       (f.Proceso||"").toLowerCase().includes(query) ||
       (cliente?.RazonSocial||"").toLowerCase().includes(query);
-  }).sort((a,b) => fechaOrdenable(b).localeCompare(fechaOrdenable(a)));
+  }).sort((a,b) => Number(facturaNumero(b)) - Number(facturaNumero(a)));
 
   return (
     <div className="view">

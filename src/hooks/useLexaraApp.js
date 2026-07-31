@@ -200,8 +200,7 @@ export function useLexaraApp(){
     setProcesos(prev => prev.map(p => p.id===activeProcesoId ? {...p, ...updates} : p));
     if(liveMode){
       const list = listByKey('procesos');
-      const graphBody = {};
-      Object.keys(updates).forEach(key => { if(list.mapping[key]) graphBody[list.mapping[key]] = updates[key]; });
+      const graphBody = Graph.graphFieldsFromUpdates(list, updates);
       try{
         await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items/${activeProceso._graphId}/fields`, {
           method:"PATCH", body: JSON.stringify(graphBody)
@@ -218,8 +217,7 @@ export function useLexaraApp(){
     setClientes(prev => prev.map(c => c.id===activeClienteId ? {...c, ...updates} : c));
     if(liveMode){
       const list = listByKey('clientes');
-      const fields = {};
-      Object.keys(updates).forEach(key => { if(list.mapping[key]) fields[list.mapping[key]] = updates[key]; });
+      const fields = Graph.graphFieldsFromUpdates(list, updates);
       try{
         await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items/${activeCliente._graphId || activeCliente.id}/fields`, {
           method:"PATCH", body: JSON.stringify(fields)
@@ -245,8 +243,8 @@ export function useLexaraApp(){
     const nuevo = { id: 'tmp-' + Math.random().toString(36).slice(2), Entidad:"", ...fields };
     if(liveMode){
       const list = listByKey('clientes');
-      const graphFields = {};
-      Object.keys(nuevo).forEach(key => { if(key!=='id' && list.mapping[key]) graphFields[list.mapping[key]] = nuevo[key]; });
+      const { id, ...nuevoSinId } = nuevo;
+      const graphFields = Graph.graphFieldsFromUpdates(list, nuevoSinId);
       try{
         const created = await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items`, {
           method:"POST", body: JSON.stringify({ fields: graphFields })

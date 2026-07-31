@@ -21,7 +21,10 @@ function emptyForm(factura){
   LINE_NUMS.forEach(n => {
     initial[`Descripcion${n}`] = factura[`Descripcion${n}`] || "";
     initial[`Cantidad${n}`] = factura[`Cantidad${n}`] || "";
-    initial[`ValorUnitario${n}`] = factura[`ValorUnitario${n}`] || "";
+    // Normaliza a formato pesos con 2 decimales al cargar, sin importar cómo
+    // haya llegado el valor desde SharePoint (número crudo o texto).
+    const vu = factura[`ValorUnitario${n}`];
+    initial[`ValorUnitario${n}`] = vu ? fmtMonto(parseMonto(vu)) : "";
   });
   return initial;
 }
@@ -66,6 +69,13 @@ export default function FacturaDrawer({ factura, clientes, procesos, liveMode, o
     delete payload.Total;
     delete payload.RetIva;
     delete payload.ValorAPagar;
+    // Los campos numéricos en blanco se envían como 0 (no "") para no romper
+    // las fórmulas/sumas de SharePoint (Cantidad × Valor unitario, Subtotales...).
+    ['Dia','Mes','Anio'].forEach(k => { if(payload[k] === "") payload[k] = 0; });
+    LINE_NUMS.forEach(n => {
+      if(payload[`Cantidad${n}`] === "") payload[`Cantidad${n}`] = 0;
+      if(payload[`ValorUnitario${n}`] === "") payload[`ValorUnitario${n}`] = 0;
+    });
     onSave(payload);
   }
 
@@ -118,20 +128,22 @@ export default function FacturaDrawer({ factura, clientes, procesos, liveMode, o
             <div className="field-grid">
               <div className="field"><label>Proceso</label><input type="text" value={form.Proceso} onChange={e => setField('Proceso', e.target.value)} /></div>
               <div className="field">
-                <label>Etapa contrato</label>
-                <select value={form.EtapaContrato} onChange={e => setField('EtapaContrato', e.target.value)}>
-                  <option value="">— seleccionar etapa —</option>
-                  {ETAPA_CONTRATO_OPTIONS.map(o => <option value={o} key={o}>{o}</option>)}
-                </select>
-              </div>
-              <div className="field"><label>Día</label><input type="text" inputMode="numeric" maxLength={2} value={form.Dia} onChange={e => setField('Dia', e.target.value)} /></div>
-              <div className="field"><label>Mes</label><input type="text" inputMode="numeric" maxLength={2} value={form.Mes} onChange={e => setField('Mes', e.target.value)} /></div>
-              <div className="field"><label>Año</label><input type="text" inputMode="numeric" maxLength={4} value={form.Anio} onChange={e => setField('Anio', e.target.value)} /></div>
-              <div className="field">
                 <label>Estado de factura</label>
                 <select value={form.EstadoFactura} onChange={e => setField('EstadoFactura', e.target.value)}>
                   <option value="">— seleccionar estado —</option>
                   {ESTADO_FACTURA_OPTIONS.map(o => <option value={o} key={o}>{o}</option>)}
+                </select>
+              </div>
+              <div className="field-grid-3" style={{gridColumn:'1/-1'}}>
+                <div className="field"><label>Día</label><input type="text" inputMode="numeric" maxLength={2} value={form.Dia} onChange={e => setField('Dia', e.target.value)} /></div>
+                <div className="field"><label>Mes</label><input type="text" inputMode="numeric" maxLength={2} value={form.Mes} onChange={e => setField('Mes', e.target.value)} /></div>
+                <div className="field"><label>Año</label><input type="text" inputMode="numeric" maxLength={4} value={form.Anio} onChange={e => setField('Anio', e.target.value)} /></div>
+              </div>
+              <div className="field full" style={{gridColumn:'1/-1'}}>
+                <label>Etapa contrato</label>
+                <select value={form.EtapaContrato} onChange={e => setField('EtapaContrato', e.target.value)}>
+                  <option value="">— seleccionar etapa —</option>
+                  {ETAPA_CONTRATO_OPTIONS.map(o => <option value={o} key={o}>{o}</option>)}
                 </select>
               </div>
               <div className="field full" style={{gridColumn:'1/-1'}}><label>Observación</label><textarea value={form.Observacion} onChange={e => setField('Observacion', e.target.value)} /></div>
@@ -147,7 +159,7 @@ export default function FacturaDrawer({ factura, clientes, procesos, liveMode, o
                 <tbody>
                   {LINE_NUMS.map(n => (
                     <tr key={n}>
-                      <td><textarea rows={2} value={form[`Descripcion${n}`]} onChange={e => setLineField(n,'Descripcion',e.target.value)} /></td>
+                      <td><textarea rows={4} value={form[`Descripcion${n}`]} onChange={e => setLineField(n,'Descripcion',e.target.value)} /></td>
                       <td><input type="text" value={form[`Cantidad${n}`]} onChange={e => setLineField(n,'Cantidad',e.target.value)} /></td>
                       <td><input type="text" value={form[`ValorUnitario${n}`]} onChange={e => setLineField(n,'ValorUnitario',e.target.value)} /></td>
                       <td className="linea-total">{(form[`Cantidad${n}`] || form[`ValorUnitario${n}`]) ? fmtMonto(lineTotal(form,n)) : ""}</td>
@@ -166,8 +178,6 @@ export default function FacturaDrawer({ factura, clientes, procesos, liveMode, o
               <div className="field"><label>Subtotal</label><input type="text" value={fmtMonto(totals.subtotal)} readOnly /></div>
               <div className="field"><label>IVA ({IVA_RATE_DEFAULT}%)</label><input type="text" value={fmtMonto(totals.iva)} readOnly /></div>
               <div className="field"><label>Total</label><input type="text" value={fmtMonto(totals.total)} readOnly /></div>
-              <div className="field"><label>Ret. IVA</label><input type="text" value={factura.RetIva || "—"} readOnly /></div>
-              <div className="field"><label>Valor a pagar</label><input type="text" value={factura.ValorAPagar || "—"} readOnly /></div>
             </div>
           </div>
         </div>

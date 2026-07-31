@@ -118,6 +118,16 @@ export function guessListMapping(list){
   return guessed;
 }
 
+// Traduce claves semánticas a nombres reales de columna para un PATCH/POST.
+export function graphFieldsFromUpdates(list, updates){
+  const fields = {};
+  Object.keys(updates).forEach(key => {
+    if(!list.mapping[key]) return;
+    fields[list.mapping[key]] = updates[key];
+  });
+  return fields;
+}
+
 export function transformListItems(list){
   return (list.rawItems||[]).map(it => {
     const obj = { id: it.id, _graphId: it.id };
@@ -196,24 +206,43 @@ export function fechaFromPartes(dia, mes, anio){
   if(!dia || !mes || !anio) return "";
   return `${String(anio).padStart(4,'0')}-${String(mes).padStart(2,'0')}-${String(dia).padStart(2,'0')}`;
 }
-export function parseMonto(str){
-  if(str==null || str==="") return 0;
-  const n = parseFloat(String(str).replace(/\./g,"").replace(",","."));
+// SharePoint devuelve columnas numéricas (Cantidad, Valor unitario, Total, IVA...)
+// unas veces como número (p.ej. 1471348.75) y otras como texto en formato
+// colombiano (p.ej. "1.471.348,75"). Antes se trataba todo como texto colombiano,
+// lo que le borraba el punto decimal a un número real y lo inflaba x100.
+export function parseMonto(val){
+  if(val==null || val==="") return 0;
+  if(typeof val === "number") return val;
+  const str = String(val).trim();
+  if(str.includes(",")){
+    // Formato colombiano: punto = miles, coma = decimal.
+    const n = parseFloat(str.replace(/\./g,"").replace(",","."));
+    return isNaN(n) ? 0 : n;
+  }
+  const partes = str.split(".");
+  // Sin coma: si hay un solo punto y quedan 1-2 dígitos después (p.ej. "1471348.75"),
+  // es un decimal normal — se respeta. Si hay varios puntos o el último grupo tiene
+  // más de 2 dígitos (p.ej. "1.471.348"), son separadores de miles — se quitan.
+  const esDecimalSimple = partes.length===2 && partes[1].length<=2;
+  const limpio = esDecimalSimple ? str : str.replace(/\./g,"");
+  const n = parseFloat(limpio);
   return isNaN(n) ? 0 : n;
 }
 // Total1..6 sí son columnas reales: se calculan al crear la factura (Cantidad ×
-// Valor unitario) y ese valor queda guardado, por eso se lee tal cual está.
+// Valor unitario) y ese valor queda guardado. Pero si esa columna llegó vacía o en
+// 0 (factura antigua/incompleta), se recalcula en el momento desde Cantidad × Valor
+// unitario en vez de mostrar un total en cero.
 export function facturaLineItems(factura){
-  return Array.from({length:6}, (_,i) => i+1).map(n => ({
-    n,
-    Descripcion: factura[`Descripcion${n}`] || "",
-    Cantidad: factura[`Cantidad${n}`] || "",
-    ValorUnitario: factura[`ValorUnitario${n}`] || "",
-    Total: factura[`Total${n}`] || "",
-  }));
+  return Array.from({length:6}, (_,i) => i+1).map(n => {
+    const Cantidad = factura[`Cantidad${n}`] || "";
+    const ValorUnitario = factura[`ValorUnitario${n}`] || "";
+    const totalGuardado = parseMonto(factura[`Total${n}`]);
+    const Total = totalGuardado > 0 ? totalGuardado : parseMonto(Cantidad) * parseMonto(ValorUnitario);
+    return { n, Descripcion: factura[`Descripcion${n}`] || "", Cantidad, ValorUnitario, Total };
+  });
 }
 export function fmtMonto(n){
-  return new Intl.NumberFormat('es-CO', {minimumFractionDigits:0, maximumFractionDigits:2}).format(n||0);
+  return new Intl.NumberFormat('es-CO', {minimumFractionDigits:2, maximumFractionDigits:2}).format(n||0);
 }
 // Fecha/TotalN/Subtotal/IVA/Total/ValorAPagar son columnas calculadas por fórmula
 // en SharePoint — la app nunca les escribe un valor, solo las lee. El 19% de IVA
@@ -222,9 +251,15 @@ export function fmtMonto(n){
 // recién creada, antes de que SharePoint la recalcule).
 export const IVA_RATE_DEFAULT = 19;
 export function computeFacturaTotals(factura){
+  // Comparamos numéricamente (>0), no con un simple truthy: un "0" guardado
+  // literalmente en Subtotal/Total (factura incompleta) es texto no-vacío y
+  // por lo tanto "truthy", pero no debe pisar el cálculo real a partir de las líneas.
   const subtotalCalc = facturaLineItems(factura).reduce((sum,li) => sum + parseMonto(li.Total), 0);
-  const subtotal = factura.Subtotal ? parseMonto(factura.Subtotal) : subtotalCalc;
-  const iva = factura.Iva ? parseMonto(factura.Iva) : subtotal * (IVA_RATE_DEFAULT/100);
-  const total = factura.Total ? parseMonto(factura.Total) : subtotal + iva;
+  const subtotalStored = parseMonto(factura.Subtotal);
+  const subtotal = subtotalStored > 0 ? subtotalStored : subtotalCalc;
+  const ivaStored = parseMonto(factura.Iva);
+  const iva = ivaStored > 0 ? ivaStored : subtotal * (IVA_RATE_DEFAULT/100);
+  const totalStored = parseMonto(factura.Total);
+  const total = totalStored > 0 ? totalStored : subtotal + iva;
   return { subtotal, iva, total };
 }
