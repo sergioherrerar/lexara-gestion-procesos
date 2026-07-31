@@ -514,7 +514,7 @@
     }
     /* Tapa la barra amarilla del membrete con un pie propio: contacto + redes + fecha/hora. */
     .print-page-footer{
-      position:absolute; left:0; right:0; bottom:0; height:47mm;
+      position:absolute; left:0; right:0; bottom:0; height:65mm;
       background:#fff; border-top:1px solid var(--gris-linea);
       display:flex; align-items:center; justify-content:space-between; gap:16px;
       padding:0 20mm; box-sizing:border-box;
