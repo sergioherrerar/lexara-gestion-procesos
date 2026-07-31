@@ -18,6 +18,7 @@ export function useLexaraApp(){
   const [activeClienteId, setActiveClienteId] = useState(null);
   const [activeFacturaId, setActiveFacturaId] = useState(null);
   const [draftFactura, setDraftFactura] = useState(null);
+  const [autoPrintFacturaId, setAutoPrintFacturaId] = useState(null);
   const [currentFilter, setCurrentFilter] = useState('todos');
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
@@ -226,6 +227,23 @@ export function useLexaraApp(){
     }
     setActiveClienteId(null);
   }
+  // A diferencia de saveCliente, no depende del cliente "activo" en su propio
+  // drawer — permite corregir un dato del cliente (p.ej. Ciudad) desde otra
+  // pantalla, como el formulario de Facturación.
+  async function updateCliente(clienteId, updates){
+    const cliente = clientes.find(c => String(c.id)===String(clienteId));
+    if(!cliente) return;
+    setClientes(prev => prev.map(c => c.id===cliente.id ? {...c, ...updates} : c));
+    if(liveMode){
+      const list = listByKey('clientes');
+      const fields = Graph.graphFieldsFromUpdates(list, updates);
+      try{
+        await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items/${cliente._graphId || cliente.id}/fields`, {
+          method:"PATCH", body: JSON.stringify(fields)
+        });
+      }catch(err){ console.error(err); alert("No se pudo actualizar el cliente en SharePoint: " + err.message); }
+    }
+  }
   async function deleteCliente(id){
     const cliente = clientes.find(c => c.id===id);
     if(!cliente) return;
@@ -257,6 +275,9 @@ export function useLexaraApp(){
   }
 
   function openFactura(id){ setDraftFactura(null); setActiveFacturaId(id); }
+  // Abre la factura e imprime automáticamente, para el botón de imprimir de la tabla.
+  function printFactura(id){ setDraftFactura(null); setActiveFacturaId(id); setAutoPrintFacturaId(id); }
+  function clearAutoPrint(){ setAutoPrintFacturaId(null); }
   // "+ Nueva factura" solo abre un borrador local — no toca SharePoint hasta
   // que el usuario le da "Guardar cambios" (evita registros vacíos huérfanos).
   function newFactura(){ setActiveFacturaId(null); setDraftFactura({}); }
@@ -319,7 +340,8 @@ export function useLexaraApp(){
     currentFilter, setFilter: setCurrentFilter, searchQuery, setSearchQuery: setSearchQuery,
     onSearch: setSearchQuery,
     activeProceso, openProceso, closeDrawer, saveProceso,
-    activeCliente, openCliente, closeClienteDrawer, saveCliente, deleteCliente, createCliente,
+    activeCliente, openCliente, closeClienteDrawer, saveCliente, deleteCliente, createCliente, updateCliente,
     activeFactura, openFactura, newFactura, closeFacturaDrawer, saveFactura,
+    printFactura, autoPrintFacturaId, clearAutoPrint,
   };
 }

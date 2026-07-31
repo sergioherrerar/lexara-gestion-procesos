@@ -81,6 +81,7 @@ export default function App(){
             searchQuery={app.searchQuery}
             onOpenFactura={app.openFactura}
             onCreateFactura={app.newFactura}
+            onPrintFactura={app.printFactura}
           />
         )}
         {app.view === 'setup' && (
@@ -120,6 +121,9 @@ export default function App(){
         liveMode={app.liveMode}
         onClose={app.closeFacturaDrawer}
         onSave={app.saveFactura}
+        onUpdateCliente={app.updateCliente}
+        autoPrint={!!app.activeFactura && app.autoPrintFacturaId === app.activeFactura.id}
+        onAutoPrinted={app.clearAutoPrint}
       />
     </div>
   );

@@ -6,7 +6,7 @@ function fechaOrdenable(f){
   return fechaFromPartes(f.Dia, f.Mes, f.Anio) || f.Fecha || "";
 }
 
-export default function FacturacionView({ facturas, clientes, procesos, searchQuery, onOpenFactura, onCreateFactura }){
+export default function FacturacionView({ facturas, clientes, procesos, searchQuery, onOpenFactura, onCreateFactura, onPrintFactura }){
   const query = (searchQuery||"").trim().toLowerCase();
   const rows = facturas.filter(f => {
     if(!query) return true;
@@ -30,7 +30,7 @@ export default function FacturacionView({ facturas, clientes, procesos, searchQu
         <table>
           <thead>
             <tr>
-              <th>No. factura</th><th>Cliente</th><th>Proceso</th><th>Fecha</th><th>Subtotal</th><th>IVA</th><th>Total</th><th>Acciones</th>
+              <th>No. factura</th><th>Cliente</th><th>Contrato</th><th>Proceso</th><th>Fecha</th><th>Subtotal</th><th>IVA</th><th>Total</th><th>Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -42,6 +42,7 @@ export default function FacturacionView({ facturas, clientes, procesos, searchQu
                 <tr key={f.id} onClick={() => onOpenFactura(f.id)}>
                   <td>{facturaNumero(f)}</td>
                   <td className="cliente">{cliente?.RazonSocial || "—"}</td>
+                  <td>{f.Contrato || "—"}</td>
                   <td>{proceso?.Radicado || f.Proceso || "—"}</td>
                   <td>{fmtDate(fechaOrdenable(f))}</td>
                   <td>{fmtMonto(totals.subtotal)}</td>
@@ -50,12 +51,13 @@ export default function FacturacionView({ facturas, clientes, procesos, searchQu
                   <td style={{whiteSpace:'nowrap'}}>
                     <div className="row-actions">
                       <IconButton icon="edit" variant="edit" label="Ver / editar factura" onClick={e => { e.stopPropagation(); onOpenFactura(f.id); }} />
+                      <IconButton icon="print" variant="print" label="Imprimir factura" onClick={e => { e.stopPropagation(); onPrintFactura(f.id); }} />
                     </div>
                   </td>
                 </tr>
               );
             }) : (
-              <tr><td colSpan={8}><div className="empty-state"><div className="mark" dangerouslySetInnerHTML={{__html: ICON_SVG}} />No se encontraron facturas con ese criterio.</div></td></tr>
+              <tr><td colSpan={9}><div className="empty-state"><div className="mark" dangerouslySetInnerHTML={{__html: ICON_SVG}} />No se encontraron facturas con ese criterio.</div></td></tr>
             )}
           </tbody>
         </table>

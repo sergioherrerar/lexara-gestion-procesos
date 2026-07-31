@@ -15,8 +15,9 @@ const ETAPA_CONTRATO_OPTIONS = [
 ];
 const ESTADO_FACTURA_OPTIONS = ["Pagada","Radicada","Anulada"];
 
-function emptyForm(factura){
-  const initial = { CodigoCliente: factura.CodigoCliente || "", Contrato: factura.Contrato || "" };
+function emptyForm(factura, clientes){
+  const cliente = clienteForFactura(clientes, factura);
+  const initial = { CodigoCliente: factura.CodigoCliente || "", Contrato: factura.Contrato || "", Ciudad: cliente?.Ciudad || "" };
   OTHER_FIELDS.forEach(key => { initial[key] = factura[key] || ""; });
   LINE_NUMS.forEach(n => {
     initial[`Descripcion${n}`] = factura[`Descripcion${n}`] || "";
@@ -41,12 +42,23 @@ function computeLive(form){
   return { subtotal, iva, total: subtotal + iva };
 }
 
-export default function FacturaDrawer({ factura, clientes, procesos, liveMode, onClose, onSave }){
+export default function FacturaDrawer({ factura, clientes, procesos, liveMode, onClose, onSave, onUpdateCliente, autoPrint, onAutoPrinted }){
   const [form, setForm] = useState(null);
 
   useEffect(() => {
-    setForm(factura ? emptyForm(factura) : null);
+    setForm(factura ? emptyForm(factura, clientes) : null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [factura]);
+
+  // Botón de imprimir de la tabla: abre la factura e imprime en cuanto el
+  // formulario (y su hoja de impresión) ya están montados.
+  useEffect(() => {
+    if(autoPrint && form){
+      window.print();
+      onAutoPrinted && onAutoPrinted();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoPrint, form]);
 
   if(!factura || !form) return null;
 
@@ -76,6 +88,14 @@ export default function FacturaDrawer({ factura, clientes, procesos, liveMode, o
       if(payload[`Cantidad${n}`] === "") payload[`Cantidad${n}`] = 0;
       if(payload[`ValorUnitario${n}`] === "") payload[`ValorUnitario${n}`] = 0;
     });
+    // Ciudad es del Cliente, no de la Factura — se guarda aparte en el registro
+    // del cliente relacionado, no como columna de esta lista.
+    const ciudad = payload.Ciudad;
+    delete payload.Ciudad;
+    const clienteOriginal = clienteForFactura(clientes, factura);
+    if(clienteOriginal && ciudad !== (clienteOriginal.Ciudad || "") && onUpdateCliente){
+      onUpdateCliente(clienteOriginal.id, { Ciudad: ciudad });
+    }
     onSave(payload);
   }
 
@@ -101,16 +121,21 @@ export default function FacturaDrawer({ factura, clientes, procesos, liveMode, o
             <div className="field-grid">
               <div className="field">
                 <label>Cliente</label>
-                <select value={form.CodigoCliente} onChange={e => setField('CodigoCliente', e.target.value)}>
+                <select value={form.CodigoCliente} onChange={e => {
+                  const codigoCliente = e.target.value;
+                  const cliente = clientes.find(c => String(c.id) === codigoCliente);
+                  setForm(prev => ({...prev, CodigoCliente: codigoCliente, Ciudad: cliente ? (cliente.Ciudad || "") : prev.Ciudad}));
+                }}>
                   <option value="">— seleccionar cliente —</option>
                   {clientes.map(c => <option value={c.id} key={c.id}>{c.RazonSocial}</option>)}
                 </select>
                 {form.CodigoCliente && !linkedCliente && (
                   <div className="field-warning">Este código no coincide con ningún cliente registrado.</div>
                 )}
-                {linkedCliente && (
-                  <div className="field-info">Ciudad: {linkedCliente.Ciudad || "—"}</div>
-                )}
+              </div>
+              <div className="field">
+                <label>Ciudad</label>
+                <input type="text" value={form.Ciudad} onChange={e => setField('Ciudad', e.target.value)} />
               </div>
               <div className="field">
                 <label>Número de contrato</label>
@@ -137,6 +162,7 @@ export default function FacturaDrawer({ factura, clientes, procesos, liveMode, o
             <h4>Datos generales</h4>
             <div className="field-grid">
               <div className="field"><label>Proceso</label><input type="text" value={form.Proceso} onChange={e => setField('Proceso', e.target.value)} /></div>
+              <div className="field"><label>Contrato</label><input type="text" value={form.Contrato} readOnly /></div>
               <div className="field">
                 <label>Estado de factura</label>
                 <select value={form.EstadoFactura} onChange={e => setField('EstadoFactura', e.target.value)}>
@@ -211,7 +237,7 @@ export default function FacturaDrawer({ factura, clientes, procesos, liveMode, o
         <div className="print-cliente">
           <div><label>Fecha</label><span>{form.Dia || "—"}/{form.Mes || "—"}/{form.Anio || "—"}</span></div>
           <div><label>Cliente</label><span>{linkedCliente?.RazonSocial || "—"}</span></div>
-          <div><label>Ciudad</label><span>{linkedCliente?.Ciudad || "—"}</span></div>
+          <div><label>Ciudad</label><span>{form.Ciudad || "—"}</span></div>
           <div><label>NIT</label><span>{linkedCliente?.Nit || "—"}</span></div>
           <div><label>Dirección</label><span>{linkedCliente?.Direccion || "—"}</span></div>
           <div><label>Teléfono</label><span>{linkedCliente?.Telefono || "—"}</span></div>
@@ -242,8 +268,6 @@ export default function FacturaDrawer({ factura, clientes, procesos, liveMode, o
             <div><label>Subtotal</label><span>{fmtMonto(totals.subtotal)}</span></div>
             <div><label>IVA ({IVA_RATE_DEFAULT}%)</label><span>{fmtMonto(totals.iva)}</span></div>
             <div className="print-total"><label>Total</label><span>{fmtMonto(totals.total)}</span></div>
-            {factura.RetIva && <div><label>Ret. IVA</label><span>{fmtMonto(parseMonto(factura.RetIva))}</span></div>}
-            <div><label>Valor a pagar</label><span>{factura.ValorAPagar ? fmtMonto(parseMonto(factura.ValorAPagar)) : fmtMonto(totals.total)}</span></div>
           </div>
         </div>
       </div>
