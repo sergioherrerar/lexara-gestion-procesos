@@ -495,10 +495,14 @@
   .print-sheet{display:none;}
 
   @media print{
-    body *{visibility:hidden;}
-    .print-sheet, .print-sheet *{visibility:visible;}
+    /* display:none saca estos elementos del flujo del documento — visibility:hidden
+       NO lo hace, y con una tabla de 714 facturas de por medio eso generaba decenas
+       de páginas en blanco (todo su alto seguía "ocupando espacio" al imprimir). */
+    .sidebar, .sidebar-overlay, .main,
+    #factura-overlay, #factura-drawer,
+    #overlay, #drawer, #cliente-overlay, #cliente-drawer{display:none !important;}
     .print-sheet{
-      display:block; position:absolute; top:0; left:0; width:100%; padding:24px;
+      display:block; position:static; width:100%; padding:24px;
       font-family:var(--font-body); color:var(--texto); font-size:12.5px;
     }
     .print-head{display:flex; align-items:center; gap:18px; border-bottom:3px solid var(--verde-oscuro); padding-bottom:14px; margin-bottom:16px;}
@@ -524,6 +528,4 @@
     .print-foot label{font-weight:700; color:var(--verde-oscuro);}
     .print-total{font-size:15px;}
     .print-total label, .print-total span{font-weight:700; color:var(--verde-oscuro);}
-
-    .sidebar, .topbar, #factura-overlay, .drawer-foot, .drawer-close{display:none !important;}
   }
