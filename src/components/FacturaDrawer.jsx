@@ -108,17 +108,27 @@ export default function FacturaDrawer({ factura, clientes, procesos, liveMode, o
                 {form.CodigoCliente && !linkedCliente && (
                   <div className="field-warning">Este código no coincide con ningún cliente registrado.</div>
                 )}
+                {linkedCliente && (
+                  <div className="field-info">Ciudad: {linkedCliente.Ciudad || "—"}</div>
+                )}
               </div>
               <div className="field">
-                <label>Proceso (contrato)</label>
-                <select value={form.Contrato} onChange={e => setField('Contrato', e.target.value)}>
-                  <option value="">— seleccionar proceso —</option>
+                <label>Número de contrato</label>
+                <select value={form.Contrato} onChange={e => {
+                  const contrato = e.target.value;
+                  const matched = procesos.find(p => p.NumeroContrato === contrato);
+                  setForm(prev => ({...prev, Contrato: contrato, Proceso: matched ? matched.Radicado : prev.Proceso}));
+                }}>
+                  <option value="">— seleccionar contrato —</option>
                   {procesos.filter(p => p.NumeroContrato).map(p => (
-                    <option value={p.NumeroContrato} key={p.id}>{p.Radicado} · {p.NumeroContrato}</option>
+                    <option value={p.NumeroContrato} key={p.id}>{p.NumeroContrato} · {p.Radicado}</option>
                   ))}
                 </select>
                 {form.Contrato && !linkedProceso && (
                   <div className="field-warning">Este contrato no coincide con ningún proceso registrado.</div>
+                )}
+                {linkedProceso && (
+                  <div className="field-info">Numero corto: {linkedProceso.Radicado || "—"}</div>
                 )}
               </div>
             </div>
