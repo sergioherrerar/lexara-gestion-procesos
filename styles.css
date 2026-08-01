@@ -512,13 +512,16 @@
     *{ -webkit-print-color-adjust:exact; print-color-adjust:exact; color-adjust:exact; }
     .print-sheet{
       display:block; position:relative; width:210mm; min-height:297mm;
-      background-repeat:no-repeat; background-size:210mm 297mm; background-position:top left;
       font-family:var(--font-body); color:var(--texto); font-size:12.5px;
-      box-sizing:border-box;
+      box-sizing:border-box; overflow:hidden;
+    }
+    /* <img> real en vez de background-image — ver comentario en el JSX. */
+    .print-membrete-bg{
+      position:absolute; top:0; left:0; width:210mm; height:297mm; object-fit:cover; z-index:0;
     }
     /* Tapa la barra amarilla del membrete con un pie propio: contacto + redes + fecha/hora. */
     .print-page-footer{
-      position:absolute; left:0; right:0; bottom:0; height:65mm;
+      position:absolute; left:0; right:0; bottom:0; height:65mm; z-index:2;
       background:#fff; border-top:1px solid var(--gris-linea);
       display:flex; align-items:center; justify-content:space-between; gap:16px;
       padding:0 20mm; box-sizing:border-box;
@@ -529,7 +532,7 @@
     .print-page-footer-meta{display:flex; align-items:center; gap:10px; font-size:9px; color:var(--texto-suave); text-align:right; white-space:nowrap;}
     .print-page-footer-meta .print-qr{width:32mm; height:32mm; object-fit:contain;}
     .print-body{
-      padding:60mm 20mm 35mm 20mm; box-sizing:border-box;
+      position:relative; z-index:1; padding:60mm 20mm 35mm 20mm; box-sizing:border-box;
     }
     .print-head{display:flex; align-items:flex-start; justify-content:space-between; gap:18px; border-bottom:3px solid var(--verde-oscuro); padding-bottom:14px; margin-bottom:16px;}
     .print-title h1{font-family:var(--font-display); font-size:16px; color:var(--verde-oscuro); margin:0;}

@@ -18,7 +18,7 @@ const ESTADO_FACTURA_OPTIONS = ["Pagada","Radicada","Anulada"];
 
 function emptyForm(factura, clientes){
   const cliente = clienteForFactura(clientes, factura);
-  const initial = { CodigoCliente: factura.CodigoCliente || "", Contrato: factura.Contrato || "", Ciudad: cliente?.Ciudad || "" };
+  const initial = { CodigoCliente: factura.CodigoCliente || "", Contrato: factura.Contrato || "", Ciudad: cliente?.Ciudad || "Bogota D.C" };
   OTHER_FIELDS.forEach(key => { initial[key] = factura[key] || ""; });
   LINE_NUMS.forEach(n => {
     initial[`Descripcion${n}`] = factura[`Descripcion${n}`] || "";
@@ -130,7 +130,7 @@ export default function FacturaDrawer({ factura, clientes, procesos, liveMode, o
                 <select value={form.CodigoCliente} onChange={e => {
                   const codigoCliente = e.target.value;
                   const cliente = clientes.find(c => String(c.id) === codigoCliente);
-                  setForm(prev => ({...prev, CodigoCliente: codigoCliente, Ciudad: cliente ? (cliente.Ciudad || "") : prev.Ciudad}));
+                  setForm(prev => ({...prev, CodigoCliente: codigoCliente, Ciudad: cliente ? (cliente.Ciudad || "Bogota D.C") : prev.Ciudad}));
                 }}>
                   <option value="">— seleccionar cliente —</option>
                   {clientes.map(c => <option value={c.id} key={c.id}>{c.RazonSocial}</option>)}
@@ -231,7 +231,11 @@ export default function FacturaDrawer({ factura, clientes, procesos, liveMode, o
         </div>
       </div>
 
-      <div className="print-sheet" style={{backgroundImage: `url(${membrete})`}}>
+      <div className="print-sheet">
+        {/* <img> real en vez de CSS background-image: los navegadores no
+            imprimen fondos CSS salvo que el usuario active "Gráficos de fondo"
+            manualmente — una imagen normal siempre se imprime, sin depender de esa opción. */}
+        <img src={membrete} alt="" className="print-membrete-bg" />
         <div className="print-body">
         <div className="print-head">
           <div className="print-title">
