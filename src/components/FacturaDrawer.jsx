@@ -3,6 +3,22 @@ import { clienteForFactura, procesoForFactura, facturaNumero, parseMonto, fmtMon
 import membrete from '../assets/Membrete Lexara.png';
 import qrRedes from '../assets/Qr_Redes.png';
 
+// Si se llama a window.print() antes de que el membrete/QR terminen de cargar,
+// esas imágenes salen en blanco en el PDF impreso (la carrera entre la carga
+// de la imagen y el impreso; el navegador no espera). Se precargan y se
+// imprime solo cuando ambas ya están listas.
+function preloadImage(src){
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => resolve(true);
+    img.onerror = () => resolve(false);
+    img.src = src;
+  });
+}
+function imprimirCuandoListo(){
+  Promise.all([preloadImage(membrete), preloadImage(qrRedes)]).then(() => window.print());
+}
+
 const LINE_NUMS = [1,2,3,4,5,6];
 const OTHER_FIELDS = ["Proceso","Dia","Mes","Anio","EtapaContrato","EstadoFactura","Observacion"];
 
@@ -55,7 +71,7 @@ export default function FacturaDrawer({ factura, clientes, procesos, liveMode, o
   // formulario (y su hoja de impresión) ya están montados.
   useEffect(() => {
     if(autoPrint && form){
-      window.print();
+      imprimirCuandoListo();
       onAutoPrinted && onAutoPrinted();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -225,7 +241,7 @@ export default function FacturaDrawer({ factura, clientes, procesos, liveMode, o
         </div>
         <div className="drawer-foot">
           <button className="btn-primary" onClick={handleSave}>Guardar cambios</button>
-          <button className="btn-secondary" onClick={() => window.print()}>Imprimir</button>
+          <button className="btn-secondary" onClick={imprimirCuandoListo}>Imprimir</button>
           <button className="btn-secondary" onClick={onClose}>Cancelar</button>
           <span className="save-hint">{liveMode ? "Los cambios se guardan en SharePoint." : "Modo demo — los cambios no se guardan."}</span>
         </div>
