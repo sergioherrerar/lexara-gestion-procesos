@@ -407,6 +407,10 @@
   .icon-btn-spinning svg{animation:icon-spin .8s linear infinite;}
   @keyframes icon-spin{to{transform:rotate(360deg);}}
   .row-actions{display:flex; gap:6px; align-items:center;}
+  .estado-badge{display:inline-block; padding:4px 10px; border-radius:999px; font-size:12px; font-weight:600; white-space:nowrap; background:#eef0ef; color:#555;}
+  .estado-badge.estado-pagada{background:#e0f3e9; color:#1c7a4d;}
+  .estado-badge.estado-radicada{background:#fef4de; color:#8a6410;}
+  .estado-badge.estado-anulada{background:#fdece0; color:#b3590a;}
 
   /* ---------- Setup / help view ---------- */
   .setup-card{background:#fff; border:1px solid var(--gris-linea); border-radius:var(--radius); box-shadow:var(--shadow); padding:26px 28px; margin-bottom:18px;}

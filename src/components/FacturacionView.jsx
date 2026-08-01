@@ -30,7 +30,7 @@ export default function FacturacionView({ facturas, clientes, procesos, searchQu
         <table>
           <thead>
             <tr>
-              <th>No. factura</th><th>Cliente</th><th>Contrato</th><th>Proceso</th><th>Fecha</th><th>Subtotal</th><th>IVA</th><th>Total</th><th>Acciones</th>
+              <th>No. factura</th><th>Cliente</th><th>Contrato</th><th>Proceso</th><th>Fecha</th><th>Subtotal</th><th>IVA</th><th>Total</th><th>Estado</th><th>Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -48,6 +48,7 @@ export default function FacturacionView({ facturas, clientes, procesos, searchQu
                   <td>{fmtMonto(totals.subtotal)}</td>
                   <td>{fmtMonto(totals.iva)}</td>
                   <td>{fmtMonto(totals.total)}</td>
+                  <td><span className={"estado-badge" + (f.EstadoFactura ? " estado-" + f.EstadoFactura.toLowerCase() : "")}>{f.EstadoFactura || "—"}</span></td>
                   <td style={{whiteSpace:'nowrap'}}>
                     <div className="row-actions">
                       <IconButton icon="edit" variant="edit" label="Ver / editar factura" onClick={e => { e.stopPropagation(); onOpenFactura(f.id); }} />
@@ -57,7 +58,7 @@ export default function FacturacionView({ facturas, clientes, procesos, searchQu
                 </tr>
               );
             }) : (
-              <tr><td colSpan={9}><div className="empty-state"><div className="mark" dangerouslySetInnerHTML={{__html: ICON_SVG}} />No se encontraron facturas con ese criterio.</div></td></tr>
+              <tr><td colSpan={10}><div className="empty-state"><div className="mark" dangerouslySetInnerHTML={{__html: ICON_SVG}} />No se encontraron facturas con ese criterio.</div></td></tr>
             )}
           </tbody>
         </table>
