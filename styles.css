@@ -276,8 +276,9 @@
   .filter-chip.active{background:var(--verde-oscuro); color:#fff; border-color:var(--verde-oscuro);}
   .filter-chip-terminados{color:var(--naranja); border-color:var(--naranja);}
   .filter-chip-terminados.active{background:var(--naranja); color:#fff; border-color:var(--naranja);}
-  .table-wrap{background:#fff; border:1px solid var(--gris-linea); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden;}
-  table{width:100%; border-collapse:collapse; font-size:13.5px;}
+  .table-wrap{background:#fff; border:1px solid var(--gris-linea); border-radius:var(--radius); box-shadow:var(--shadow); overflow-x:auto; -webkit-overflow-scrolling:touch;}
+  table{min-width:100%; border-collapse:collapse; font-size:13.5px;}
+  thead th, tbody td{white-space:nowrap;}
   thead th{
     text-align:left; padding:12px 16px; font-size:11px; text-transform:uppercase; letter-spacing:.05em;
     color:var(--texto-suave); border-bottom:1px solid var(--gris-linea); background:var(--gris-claro);
