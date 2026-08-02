@@ -6,6 +6,7 @@ const NAV_ITEMS = [
   {view:'procesos', label:'Procesos judiciales'},
   {view:'clientes', label:'Clientes'},
   {view:'facturacion', label:'Facturación'},
+  {view:'ordenesCompra', label:'Órdenes de compra'},
 ];
 
 export default function Sidebar({ view, onGoView, account, liveMode, onSignOut, mobileOpen }){

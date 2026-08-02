@@ -1,6 +1,6 @@
 import IconButton from './IconButton';
 
-const TITLES = {dashboard:"Dashboard", procesos:"Procesos judiciales", clientes:"Clientes", facturacion:"Facturación", setup:"Configuración"};
+const TITLES = {dashboard:"Dashboard", procesos:"Procesos judiciales", clientes:"Clientes", facturacion:"Facturación", ordenesCompra:"Órdenes de compra", setup:"Configuración"};
 
 export default function Topbar({ view, liveMode, searchQuery, onSearch, onOpenMobileNav, onRefresh, refreshing }){
   return (
@@ -32,6 +32,7 @@ export default function Topbar({ view, liveMode, searchQuery, onSearch, onOpenMo
           placeholder={
             view === 'clientes' ? "Buscar por razón social, NIT, correo o dirección…" :
             view === 'facturacion' ? "Buscar por no. de factura, contrato o cliente…" :
+            view === 'ordenesCompra' ? "Buscar por no. de orden, contrato o cliente…" :
             "Buscar por numero corto, cliente o apoderado…"
           }
           value={searchQuery}

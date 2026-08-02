@@ -7,10 +7,12 @@ import DashboardView from './components/DashboardView';
 import ProcesosView from './components/ProcesosView';
 import ClientesView from './components/ClientesView';
 import FacturacionView from './components/FacturacionView';
+import OrdenesCompraView from './components/OrdenesCompraView';
 import SetupView from './components/SetupView';
 import ProcesoDrawer from './components/ProcesoDrawer';
 import ClienteDrawer from './components/ClienteDrawer';
 import FacturaDrawer from './components/FacturaDrawer';
+import OrdenCompraDrawer from './components/OrdenCompraDrawer';
 
 export default function App(){
   const app = useLexaraApp();
@@ -84,6 +86,18 @@ export default function App(){
             onPrintFactura={app.printFactura}
           />
         )}
+        {app.view === 'ordenesCompra' && (
+          <OrdenesCompraView
+            ordenesCompra={app.ordenesCompra}
+            clientes={app.clientes}
+            procesos={app.procesos}
+            facturas={app.facturas}
+            searchQuery={app.searchQuery}
+            onOpenOrdenCompra={app.openOrdenCompra}
+            onCreateOrdenCompra={app.newOrdenCompra}
+            onPrintOrdenCompra={app.printOrdenCompra}
+          />
+        )}
         {app.view === 'setup' && (
           <SetupView
             config={app.config}
@@ -124,6 +138,18 @@ export default function App(){
         onUpdateCliente={app.updateCliente}
         autoPrint={!!app.activeFactura && app.autoPrintFacturaId === app.activeFactura.id}
         onAutoPrinted={app.clearAutoPrint}
+      />
+      <OrdenCompraDrawer
+        ordenCompra={app.activeOrdenCompra}
+        clientes={app.clientes}
+        procesos={app.procesos}
+        facturas={app.facturas}
+        liveMode={app.liveMode}
+        onClose={app.closeOrdenCompraDrawer}
+        onSave={app.saveOrdenCompra}
+        onUpdateCliente={app.updateCliente}
+        autoPrint={!!app.activeOrdenCompra && app.autoPrintOrdenCompraId === app.activeOrdenCompra.id}
+        onAutoPrinted={app.clearAutoPrintOrdenCompra}
       />
     </div>
   );

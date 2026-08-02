@@ -165,6 +165,41 @@ export const SHAREPOINT_LISTS_CONFIG = [
       ValorAPagar: "VALOR_x0020_A_x0020_PAGAR",
     },
   },
+  {
+    key: "ordenesCompra",
+    listName: "Órdenes de Compra",
+    label: "Órdenes de compra",
+    // Mismo esquema de líneas fijas (Descripcion/Cantidad/ValorUnitario x6) que
+    // Facturación — es "el mismo formulario" pero contra otra lista. Diferencias:
+    // el número de orden es directamente el ID (no hace falta columna propia,
+    // ver ordenCompraNumero en graph.js), y el campo "Factura" no se autonumera:
+    // guarda automáticamente el número de la factura de "base facturas" que
+    // comparte el mismo Contrato (ver facturaForOrdenCompra en graph.js).
+    semanticFields: [
+      {key:"Contrato", label:"Contrato", hint:["contrato"], required:true},
+      {key:"Proceso", label:"Proceso", hint:["proceso"]},
+      {key:"CodigoCliente", label:"Código cliente", hint:["codigo cliente","código cliente","id cliente"]},
+      {key:"Dia", label:"Día", hint:["dia","día"]},
+      {key:"Mes", label:"Mes", hint:["mes"]},
+      {key:"Anio", label:"Año", hint:["año","ano","anio"]},
+      ...Array.from({length:6}, (_,i) => i+1).flatMap(n => [
+        {key:`Descripcion${n}`, label:`Descripción ${n}`, hint:[`descripcion ${n}`,`descripcion${n}`]},
+        {key:`Cantidad${n}`, label:`Cantidad ${n}`, hint:[`cantidad ${n}`,`cantidad${n}`]},
+        {key:`ValorUnitario${n}`, label:`Valor unitario ${n}`, hint:[`valor unitario ${n}`,`valorunitario${n}`]},
+      ]),
+      {key:"Observacion", label:"Observación", hint:["observacion","observación"]},
+      {key:"EtapaContrato", label:"Etapa contrato", hint:["etapa contrato","etapa"]},
+      {key:"Fecha", label:"Fecha", hint:["fecha"]},
+      ...Array.from({length:6}, (_,i) => i+1).map(n => ({key:`Total${n}`, label:`Total ${n}`, hint:[`total ${n}`,`total${n}`]})),
+      {key:"Subtotal", label:"Subtotales", hint:["subtotales","subtotal"]},
+      {key:"Iva", label:"IVA", hint:["iva"]},
+      {key:"Total", label:"Total", hint:["total"]},
+      {key:"RetIva", label:"Ret IVA", hint:["ret iva","retencion iva","retención iva"]},
+      {key:"ValorAPagar", label:"Valor a pagar", hint:["valor a pagar"]},
+      {key:"Factura", label:"Factura relacionada", hint:["factura"]},
+    ],
+    mapping: {},
+  },
 ];
 
 export const DEMO_PROCESOS = [
@@ -199,6 +234,25 @@ export const DEMO_FACTURAS = [
     Descripcion5:"", Cantidad5:"", ValorUnitario5:"",
     Descripcion6:"", Cantidad6:"", ValorUnitario6:"",
     Subtotal:"5.200.000", Iva:"988.000", Total:"6.188.000", RetIva:"", ValorAPagar:"6.188.000"},
+];
+
+export const DEMO_ORDENES_COMPRA = [
+  {id:1, Contrato:"CT-2023-118", Proceso:"2023-00218", CodigoCliente:"1", Dia:"10", Mes:"01", Anio:"2024", Fecha:"2024-01-10", EtapaContrato:"Contestacion", Observacion:"", Factura:"92",
+    Descripcion1:"Suministro de papelería y copias certificadas para el proceso 2023-00218.", Cantidad1:"1", ValorUnitario1:"350.000,00", Total1:"350.000,00",
+    Descripcion2:"", Cantidad2:"", ValorUnitario2:"",
+    Descripcion3:"", Cantidad3:"", ValorUnitario3:"",
+    Descripcion4:"", Cantidad4:"", ValorUnitario4:"",
+    Descripcion5:"", Cantidad5:"", ValorUnitario5:"",
+    Descripcion6:"", Cantidad6:"", ValorUnitario6:"",
+    Subtotal:"350.000,00", Iva:"66.500,00", Total:"416.500,00", RetIva:"", ValorAPagar:"416.500,00"},
+  {id:2, Contrato:"CT-2022-076", Proceso:"2022-00341", CodigoCliente:"2", Dia:"25", Mes:"02", Anio:"2024", Fecha:"2024-02-25", EtapaContrato:"Honorarios", Observacion:"", Factura:"93",
+    Descripcion1:"Gastos de desplazamiento y notificación judicial, proceso 2022-00341.", Cantidad1:"1", ValorUnitario1:"180.000,00", Total1:"180.000,00",
+    Descripcion2:"", Cantidad2:"", ValorUnitario2:"",
+    Descripcion3:"", Cantidad3:"", ValorUnitario3:"",
+    Descripcion4:"", Cantidad4:"", ValorUnitario4:"",
+    Descripcion5:"", Cantidad5:"", ValorUnitario5:"",
+    Descripcion6:"", Cantidad6:"", ValorUnitario6:"",
+    Subtotal:"180.000,00", Iva:"34.200,00", Total:"214.200,00", RetIva:"", ValorAPagar:"214.200,00"},
 ];
 
 export const ICON_SVG = `<svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 30 L50 50 L80 30" stroke="currentColor" stroke-width="14" fill="none" stroke-linecap="square"/><path d="M20 70 L50 50 L80 70" stroke="currentColor" stroke-width="14" fill="none" stroke-linecap="square"/></svg>`;

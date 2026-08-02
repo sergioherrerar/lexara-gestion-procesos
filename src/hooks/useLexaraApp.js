@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { INITIAL_CONFIG, SHAREPOINT_LISTS_CONFIG, DEMO_PROCESOS, DEMO_CLIENTES, DEMO_FACTURAS } from '../config';
+import { INITIAL_CONFIG, SHAREPOINT_LISTS_CONFIG, DEMO_PROCESOS, DEMO_CLIENTES, DEMO_FACTURAS, DEMO_ORDENES_COMPRA } from '../config';
 import * as Graph from '../lib/graph';
 
 export function useLexaraApp(){
@@ -14,11 +14,15 @@ export function useLexaraApp(){
   const [procesos, setProcesos] = useState([]);
   const [clientes, setClientes] = useState([]);
   const [facturas, setFacturas] = useState([]);
+  const [ordenesCompra, setOrdenesCompra] = useState([]);
   const [activeProcesoId, setActiveProcesoId] = useState(null);
   const [activeClienteId, setActiveClienteId] = useState(null);
   const [activeFacturaId, setActiveFacturaId] = useState(null);
   const [draftFactura, setDraftFactura] = useState(null);
   const [autoPrintFacturaId, setAutoPrintFacturaId] = useState(null);
+  const [activeOrdenCompraId, setActiveOrdenCompraId] = useState(null);
+  const [draftOrdenCompra, setDraftOrdenCompra] = useState(null);
+  const [autoPrintOrdenCompraId, setAutoPrintOrdenCompraId] = useState(null);
   const [currentFilter, setCurrentFilter] = useState('todos');
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
@@ -36,6 +40,7 @@ export function useLexaraApp(){
     setProcesos(JSON.parse(JSON.stringify(DEMO_PROCESOS)));
     setClientes(JSON.parse(JSON.stringify(DEMO_CLIENTES)));
     setFacturas(JSON.parse(JSON.stringify(DEMO_FACTURAS)));
+    setOrdenesCompra(JSON.parse(JSON.stringify(DEMO_ORDENES_COMPRA)));
     setAccount({ name:"Usuario Demo", username:"demo@lexara.com" });
     setAppActive(true);
     if(!silent) setView('dashboard');
@@ -94,6 +99,7 @@ export function useLexaraApp(){
         setProcesos(updated.find(l => l.key==='procesos')?.items || []);
         setClientes(updated.find(l => l.key==='clientes')?.items || []);
         setFacturas(updated.find(l => l.key==='facturacion')?.items || []);
+        setOrdenesCompra(updated.find(l => l.key==='ordenesCompra')?.items || []);
         setLiveMode(true);
         setAppActive(true);
       } else {
@@ -122,6 +128,7 @@ export function useLexaraApp(){
       setProcesos(updated.find(l => l.key==='procesos')?.items || []);
       setClientes(updated.find(l => l.key==='clientes')?.items || []);
       setFacturas(updated.find(l => l.key==='facturacion')?.items || []);
+      setOrdenesCompra(updated.find(l => l.key==='ordenesCompra')?.items || []);
     }catch(err){
       console.error(err);
       alert("No se pudo actualizar la información: " + err.message);
@@ -154,6 +161,7 @@ export function useLexaraApp(){
     setProcesos(updated.find(l => l.key==='procesos')?.items || []);
     setClientes(updated.find(l => l.key==='clientes')?.items || []);
     setFacturas(updated.find(l => l.key==='facturacion')?.items || []);
+    setOrdenesCompra(updated.find(l => l.key==='ordenesCompra')?.items || []);
     setLiveMode(true);
   }
 
@@ -193,6 +201,7 @@ export function useLexaraApp(){
   const activeProceso = procesos.find(p => p.id===activeProcesoId) || null;
   const activeCliente = clientes.find(c => c.id===activeClienteId) || null;
   const activeFactura = draftFactura || facturas.find(f => f.id===activeFacturaId) || null;
+  const activeOrdenCompra = draftOrdenCompra || ordenesCompra.find(o => o.id===activeOrdenCompraId) || null;
 
   function openProceso(id){ setActiveProcesoId(id); }
   function closeDrawer(){ setActiveProcesoId(null); }
@@ -329,6 +338,51 @@ export function useLexaraApp(){
     setActiveFacturaId(null);
   }
 
+  function openOrdenCompra(id){ setDraftOrdenCompra(null); setActiveOrdenCompraId(id); }
+  // Abre la orden de compra e imprime automáticamente, para el botón de imprimir de la tabla.
+  function printOrdenCompra(id){ setDraftOrdenCompra(null); setActiveOrdenCompraId(id); setAutoPrintOrdenCompraId(id); }
+  function clearAutoPrintOrdenCompra(){ setAutoPrintOrdenCompraId(null); }
+  // "+ Nueva orden de compra" solo abre un borrador local — no toca SharePoint
+  // hasta que el usuario le da "Guardar cambios" (mismo criterio que Facturación).
+  function newOrdenCompra(){ setActiveOrdenCompraId(null); setDraftOrdenCompra({}); }
+  function closeOrdenCompraDrawer(){ setActiveOrdenCompraId(null); setDraftOrdenCompra(null); }
+  async function saveOrdenCompra(updates){
+    if(!activeOrdenCompra) return;
+
+    if(draftOrdenCompra){
+      const nuevo = {...updates};
+      if(liveMode){
+        const list = listByKey('ordenesCompra');
+        const graphFields = Graph.graphFieldsFromUpdates(list, updates);
+        try{
+          const created = await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items`, {
+            method:"POST", body: JSON.stringify({ fields: graphFields })
+          });
+          nuevo.id = created.id; nuevo._graphId = created.id;
+        }catch(err){ console.error(err); alert("No se pudo crear la orden de compra en SharePoint: " + err.message); return; }
+      } else {
+        const maxId = ordenesCompra.reduce((max,o) => Math.max(max, Number(o.id)||0), 0);
+        nuevo.id = maxId + 1;
+      }
+      setOrdenesCompra(prev => [...prev, nuevo]);
+      setDraftOrdenCompra(null);
+      setActiveOrdenCompraId(null);
+      return;
+    }
+
+    setOrdenesCompra(prev => prev.map(o => o.id===activeOrdenCompraId ? {...o, ...updates} : o));
+    if(liveMode){
+      const list = listByKey('ordenesCompra');
+      const graphBody = Graph.graphFieldsFromUpdates(list, updates);
+      try{
+        await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items/${activeOrdenCompra._graphId}/fields`, {
+          method:"PATCH", body: JSON.stringify(graphBody)
+        });
+      }catch(err){ console.error(err); alert("No se pudo guardar en SharePoint: " + err.message); return; }
+    }
+    setActiveOrdenCompraId(null);
+  }
+
   return {
     config, saveConfig, clearConfig,
     lists, listByKey, updateListMapping,
@@ -336,12 +390,14 @@ export function useLexaraApp(){
     testStatus, testConnection, applyAllMappings, downloadAllMappings,
     refreshData, refreshing,
     signIn, enterDemo, goSetup, signOut,
-    procesos, clientes, facturas,
+    procesos, clientes, facturas, ordenesCompra,
     currentFilter, setFilter: setCurrentFilter, searchQuery, setSearchQuery: setSearchQuery,
     onSearch: setSearchQuery,
     activeProceso, openProceso, closeDrawer, saveProceso,
     activeCliente, openCliente, closeClienteDrawer, saveCliente, deleteCliente, createCliente, updateCliente,
     activeFactura, openFactura, newFactura, closeFacturaDrawer, saveFactura,
     printFactura, autoPrintFacturaId, clearAutoPrint,
+    activeOrdenCompra, openOrdenCompra, newOrdenCompra, closeOrdenCompraDrawer, saveOrdenCompra,
+    printOrdenCompra, autoPrintOrdenCompraId, clearAutoPrintOrdenCompra,
   };
 }

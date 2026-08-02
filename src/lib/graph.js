@@ -263,3 +263,51 @@ export function computeFacturaTotals(factura){
   const total = totalStored > 0 ? totalStored : subtotal + iva;
   return { subtotal, iva, total };
 }
+
+/* ---------------- Órdenes de Compra: mismo esquema de líneas que Facturas ---------------- */
+export function clienteForOrdenCompra(clientes, oc){
+  if(!oc || !oc.CodigoCliente) return null;
+  const target = String(oc.CodigoCliente).trim();
+  return clientes.find(c => String(c.id) === target) || null;
+}
+export function procesoForOrdenCompra(procesos, oc){
+  if(!oc || !oc.Contrato) return null;
+  const target = normalize(oc.Contrato);
+  return procesos.find(p => normalize(p.NumeroContrato) === target) || null;
+}
+// El número de orden de compra es directamente el ID del elemento en
+// SharePoint (a diferencia de Factura, que suma 91 por numeración heredada
+// de Access) — no hace falta guardar un número aparte en ninguna columna.
+export function ordenCompraNumero(oc){
+  return oc && oc.id!=null ? String(oc.id) : "";
+}
+export function ordenCompraLineItems(oc){
+  return Array.from({length:6}, (_,i) => i+1).map(n => {
+    const Cantidad = oc[`Cantidad${n}`] || "";
+    const ValorUnitario = oc[`ValorUnitario${n}`] || "";
+    const totalGuardado = parseMonto(oc[`Total${n}`]);
+    const Total = totalGuardado > 0 ? totalGuardado : parseMonto(Cantidad) * parseMonto(ValorUnitario);
+    return { n, Descripcion: oc[`Descripcion${n}`] || "", Cantidad, ValorUnitario, Total };
+  });
+}
+export function computeOrdenCompraTotals(oc){
+  const subtotalCalc = ordenCompraLineItems(oc).reduce((sum,li) => sum + parseMonto(li.Total), 0);
+  const subtotalStored = parseMonto(oc.Subtotal);
+  const subtotal = subtotalStored > 0 ? subtotalStored : subtotalCalc;
+  const ivaStored = parseMonto(oc.Iva);
+  const iva = ivaStored > 0 ? ivaStored : subtotal * (IVA_RATE_DEFAULT/100);
+  const totalStored = parseMonto(oc.Total);
+  const total = totalStored > 0 ? totalStored : subtotal + iva;
+  return { subtotal, iva, total };
+}
+// La orden de compra guarda automáticamente, en su propio campo "Factura", el
+// número de la factura de "base facturas" que comparte el mismo Contrato (si
+// hay varias coincidencias se toma la de número más alto/reciente) — así
+// queda la referencia cruzada sin que el usuario tenga que buscarla a mano.
+export function facturaForOrdenCompra(facturas, oc){
+  if(!oc || !oc.Contrato) return null;
+  const target = normalize(oc.Contrato);
+  const matches = (facturas||[]).filter(f => normalize(f.Contrato) === target);
+  if(!matches.length) return null;
+  return matches.reduce((best,f) => Number(facturaNumero(f)) > Number(facturaNumero(best)) ? f : best);
+}
