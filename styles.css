@@ -4,9 +4,6 @@
     --verde-claro:#52bbb5;
     --naranja:#ef7d00;
     --amarillo:#fbbc33;
-    --oc-azul:#1c3d5a;
-    --oc-azul-2:#12283c;
-    --oc-oro:#a9791f;
     --gris:#d0d0d0;
     --gris-claro:#f4f4f2;
     --gris-linea:#e4e4e1;
@@ -308,11 +305,11 @@
   .drawer-head{padding:22px 26px 18px; border-bottom:1px solid var(--gris-linea); flex-shrink:0;}
   .drawer-head .eyebrow{font-size:11.5px; color:var(--texto-suave); font-family:var(--font-mono); margin-bottom:6px;}
   .drawer-head h2{font-family:var(--font-display); font-size:21px; font-weight:600; margin:0 0 10px; color:var(--verde-oscuro);}
-  /* Órdenes de compra: mismo formulario que Facturación, acento azul/oro para diferenciarlo a simple vista. */
-  .eyebrow-oc{color:var(--oc-azul) !important; font-weight:700;}
-  #oc-drawer .drawer-head h2{color:var(--oc-azul);}
-  .btn-primary.btn-primary-oc{background:var(--oc-azul);}
-  .btn-primary.btn-primary-oc:hover{background:var(--oc-azul-2);}
+  /* Órdenes de compra: mismo formulario que Facturación, acento verde claro (institucional) para diferenciarlo del verde oscuro de Facturación. */
+  .eyebrow-oc{color:var(--verde-claro) !important; font-weight:700;}
+  #oc-drawer .drawer-head h2{color:var(--verde-claro);}
+  .btn-primary.btn-primary-oc{background:var(--verde-claro);}
+  .btn-primary.btn-primary-oc:hover{background:var(--verde-oscuro);}
   .drawer-close{position:absolute; top:20px; right:22px; background:none; border:none; cursor:pointer; color:var(--texto-suave); padding:4px;}
   .drawer-close svg{width:18px; height:18px;}
   .drawer-body{padding:20px 26px 40px; overflow-y:auto; flex:1;}
@@ -577,17 +574,18 @@
     .print-total label, .print-total span{font-weight:700; color:var(--verde-oscuro);}
 
     /* Orden de compra: mismo documento base que la factura, pero con acento
-       azul/oro en vez de verde/rojo y un sello rotado, para que a simple
-       vista (impreso o en PDF) no se confunda con una factura. */
-    .print-sheet-oc .print-head{border-bottom-color:var(--oc-azul);}
-    .print-sheet-oc .print-title h1{color:var(--oc-azul);}
-    .print-sheet-oc .print-numero{color:var(--oc-oro);}
-    .print-sheet-oc .print-cliente label{color:var(--oc-azul);}
-    .print-sheet-oc table.print-lineas th{background:var(--oc-azul);}
-    .print-sheet-oc .print-foot label{color:var(--oc-azul);}
-    .print-sheet-oc .print-total label, .print-sheet-oc .print-total span{color:var(--oc-azul);}
+       verde claro en vez de verde oscuro, número en naranja institucional
+       (en vez de rojo) y un sello rotado, para que a simple vista (impreso
+       o en PDF) no se confunda con una factura — solo colores Lexara. */
+    .print-sheet-oc .print-head{border-bottom-color:var(--verde-claro);}
+    .print-sheet-oc .print-title h1{color:var(--verde-claro);}
+    .print-sheet-oc .print-numero{color:var(--naranja);}
+    .print-sheet-oc .print-cliente label{color:var(--verde-claro);}
+    .print-sheet-oc table.print-lineas th{background:var(--verde-claro);}
+    .print-sheet-oc .print-foot label{color:var(--verde-claro);}
+    .print-sheet-oc .print-total label, .print-sheet-oc .print-total span{color:var(--verde-claro);}
     .print-oc-stamp{
-      border:1.5px solid var(--oc-oro); color:var(--oc-oro); font-weight:700; font-size:9px;
+      border:1.5px solid var(--naranja); color:var(--naranja); font-weight:700; font-size:9px;
       letter-spacing:.08em; text-transform:uppercase; padding:4px 10px; border-radius:4px;
       transform:rotate(-6deg); white-space:nowrap;
     }

@@ -24,7 +24,7 @@ export default function OrdenesCompraView({ ordenesCompra, clientes, procesos, f
           <h1>Órdenes de compra</h1>
           <p>{rows.length} de {ordenesCompra.length} órdenes de compra</p>
         </div>
-        <IconTextButton icon="add" variant="primary" style={{background:'var(--oc-azul)'}} onClick={onCreateOrdenCompra}>Nueva orden de compra</IconTextButton>
+        <IconTextButton icon="add" variant="primary" style={{background:'var(--verde-claro)'}} onClick={onCreateOrdenCompra}>Nueva orden de compra</IconTextButton>
       </div>
       <div className="table-wrap">
         <table>
