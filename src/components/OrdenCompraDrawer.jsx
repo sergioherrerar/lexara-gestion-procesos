@@ -88,11 +88,10 @@ export default function OrdenCompraDrawer({ ordenCompra, clientes, procesos, fac
       payload[`Cantidad${n}`] = parseMonto(payload[`Cantidad${n}`]);
       payload[`ValorUnitario${n}`] = parseMonto(payload[`ValorUnitario${n}`]);
     });
-    // El campo "Factura" de la orden de compra se recalcula y se guarda siempre
-    // aquí mismo — nunca se deja lo que el usuario haya visto en pantalla, para
-    // que quede al día con el Contrato actual en cada guardado.
-    const matched = facturaForOrdenCompra(facturas, payload);
-    payload.Factura = matched ? facturaNumero(matched) : "";
+    // "Factura" es de solo lectura en SharePoint (columna calculada/lookup) —
+    // igual que Fecha/TotalN, nunca se le escribe. Se sigue mostrando en
+    // pantalla calculada en vivo (facturaForOrdenCompra), solo que no se envía.
+    delete payload.Factura;
     const ciudad = payload.Ciudad;
     delete payload.Ciudad;
     const clienteOriginal = clienteForOrdenCompra(clientes, ordenCompra);
