@@ -31,6 +31,7 @@ export default function App(){
 
   function goView(view){
     app.setView(view);
+    app.setSearchQuery('');
     setMobileNavOpen(false);
   }
 
