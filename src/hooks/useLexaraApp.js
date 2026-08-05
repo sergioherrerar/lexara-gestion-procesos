@@ -17,6 +17,10 @@ export function useLexaraApp(){
   const [facturas, setFacturas] = useState([]);
   const [ordenesCompra, setOrdenesCompra] = useState([]);
   const [activeProcesoId, setActiveProcesoId] = useState(null);
+  // Aparte del rol (canWrite), cada apertura del panel de Proceso judicial
+  // puede pedirse explícitamente "solo ver" (botón de ojo en la tabla) —
+  // deja todo en modo consulta aunque el rol sí permita editar.
+  const [procesoViewOnly, setProcesoViewOnly] = useState(false);
   const [activeClienteId, setActiveClienteId] = useState(null);
   const [activeFacturaId, setActiveFacturaId] = useState(null);
   const [draftFactura, setDraftFactura] = useState(null);
@@ -271,8 +275,8 @@ export function useLexaraApp(){
   })();
   const canWrite = canWriteForRole(role);
 
-  function openProceso(id){ setActiveProcesoId(id); }
-  function closeDrawer(){ setActiveProcesoId(null); }
+  function openProceso(id, opts){ setActiveProcesoId(id); setProcesoViewOnly(!!(opts && opts.viewOnly)); }
+  function closeDrawer(){ setActiveProcesoId(null); setProcesoViewOnly(false); }
   async function saveProceso(updates){
     if(!activeProceso) return;
     setProcesos(prev => prev.map(p => p.id===activeProcesoId ? {...p, ...updates} : p));
@@ -725,7 +729,7 @@ export function useLexaraApp(){
     procesos, clientes, facturas, ordenesCompra, colaboradores, formasPago, desistimientos,
     currentFilter, setFilter: setCurrentFilter, searchQuery, setSearchQuery: setSearchQuery,
     onSearch: setSearchQuery,
-    activeProceso, openProceso, closeDrawer, saveProceso,
+    activeProceso, openProceso, closeDrawer, saveProceso, procesoViewOnly,
     activeCliente, openCliente, closeClienteDrawer, saveCliente, deleteCliente, createCliente, updateCliente,
     activeFactura, openFactura, newFactura, closeFacturaDrawer, saveFactura,
     printFactura, autoPrintFacturaId, clearAutoPrint, createFacturaFromOrdenCompra, newFacturaFromProceso,

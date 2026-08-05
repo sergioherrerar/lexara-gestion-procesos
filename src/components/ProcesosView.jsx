@@ -22,7 +22,7 @@ const COLUMNS = [
   {key:'acciones', label:'Acciones', filterable:false},
 ];
 
-export default function ProcesosView({ procesos, currentFilter, setFilter, searchQuery, onOpenProceso }){
+export default function ProcesosView({ procesos, currentFilter, setFilter, searchQuery, onOpenProceso, canWrite = true }){
   const [showTerminados, setShowTerminados] = useState(false);
   const { filters, setFilter: setColFilter, clearFilters, rowMatches, hasActiveFilters } = useColumnFilters();
   const entidades = Array.from(new Set(procesos.map(p => stripHtml(p.Entidad) || "Sin entidad"))).sort((a,b)=>a.localeCompare(b));
@@ -76,9 +76,9 @@ export default function ProcesosView({ procesos, currentFilter, setFilter, searc
             {rows.length ? rows.map(p => (
               <tr
                 key={p.id}
-                onClick={() => onOpenProceso(p.id)}
+                onClick={() => onOpenProceso(p.id, {viewOnly: !canWrite})}
                 role="button" tabIndex={0}
-                onKeyDown={e => { if(e.key==='Enter' || e.key===' '){ e.preventDefault(); onOpenProceso(p.id); } }}
+                onKeyDown={e => { if(e.key==='Enter' || e.key===' '){ e.preventDefault(); onOpenProceso(p.id, {viewOnly: !canWrite}); } }}
               >
                 <td className="radicado">{p.Radicado || "—"}</td>
                 <td className="cliente">{p.Cliente || "—"}</td>
@@ -87,7 +87,8 @@ export default function ProcesosView({ procesos, currentFilter, setFilter, searc
                 <td>{p.LinkCarpeta ? <IconButton icon="open" variant="open" label="Abrir carpeta" href={p.LinkCarpeta} onClick={e => e.stopPropagation()} /> : "—"}</td>
                 <td style={{whiteSpace:'nowrap'}}>
                   <div className="row-actions">
-                    <IconButton icon="edit" variant="edit" label="Editar proceso" onClick={e => { e.stopPropagation(); onOpenProceso(p.id); }} />
+                    <IconButton icon="view" variant="view" label="Ver proceso (solo consulta)" onClick={e => { e.stopPropagation(); onOpenProceso(p.id, {viewOnly:true}); }} />
+                    {canWrite && <IconButton icon="edit" variant="edit" label="Editar proceso" onClick={e => { e.stopPropagation(); onOpenProceso(p.id, {viewOnly:false}); }} />}
                   </div>
                 </td>
               </tr>

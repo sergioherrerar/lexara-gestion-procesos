@@ -35,6 +35,12 @@ export const ICONS = {
       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M12 11v6M9 14h6"/>
     </svg>
   ),
+  // Ojo — abrir un registro solo para consultar/copiar datos, sin poder editarlo.
+  view: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+    </svg>
+  ),
 };
 
 // Botón compacto de solo ícono, para acciones repetidas en filas de tabla.

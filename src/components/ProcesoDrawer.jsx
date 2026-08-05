@@ -437,7 +437,7 @@ export default function ProcesoDrawer({ proceso, clientes, facturas, ordenesComp
                   <FieldCard label={LABELS[key]} full={type==='richtext'} key={key}>
                     {type==='richtext'
                       ? <RichTextEditor value={form[key]} onChange={v => setField(key, v)} readOnly={!canWrite} />
-                      : <input type={type} value={form[key]} onChange={e => setField(key, e.target.value)} readOnly={!canWrite} disabled={!canWrite} />}
+                      : <input type={type} value={form[key]} onChange={e => setField(key, e.target.value)} readOnly={!canWrite} />}
                   </FieldCard>
                 ))}
               </div>

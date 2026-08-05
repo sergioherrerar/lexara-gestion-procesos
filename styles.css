@@ -571,6 +571,8 @@
   .icon-btn-print:hover{background:var(--verde-claro); color:#fff;}
   .icon-btn-invoice{color:var(--verde-oscuro); background:#e3efee;}
   .icon-btn-invoice:hover{background:var(--verde-oscuro); color:#fff;}
+  .icon-btn-view{color:var(--texto-suave); background:var(--gris-claro);}
+  .icon-btn-view:hover{background:var(--texto-suave); color:#fff;}
   .icon-btn-spinning{cursor:default;}
   .icon-btn-spinning svg{animation:icon-spin .8s linear infinite;}
   @keyframes icon-spin{to{transform:rotate(360deg);}}

@@ -93,6 +93,7 @@ export default function App(){
             setFilter={app.setFilter}
             searchQuery={app.searchQuery}
             onOpenProceso={app.openProceso}
+            canWrite={app.canWrite}
           />
         )}
         {app.view === 'clientes' && canAccessView(app.role, 'clientes') && (
@@ -176,7 +177,7 @@ export default function App(){
         onOpenDesistimiento={app.openDesistimiento}
         onCreateDesistimiento={app.newDesistimientoFromProceso}
         saving={app.saving}
-        canWrite={app.canWrite}
+        canWrite={app.canWrite && !app.procesoViewOnly}
       />
       <ClienteDrawer
         cliente={app.activeCliente}
