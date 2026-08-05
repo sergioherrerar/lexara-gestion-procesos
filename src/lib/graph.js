@@ -207,6 +207,19 @@ export function procesoForFactura(procesos, factura){
   const target = normalize(factura.Contrato);
   return procesos.find(p => normalize(p.NumeroContrato) === target) || null;
 }
+// Inversa de procesoForFactura/procesoForOrdenCompra — para mostrar, dentro
+// del panel de un proceso, todas las facturas/órdenes de compra que
+// comparten su mismo Contrato (pestañas "Facturas"/"Órdenes de compra").
+export function facturasForProceso(facturas, proceso){
+  if(!proceso || !proceso.NumeroContrato) return [];
+  const target = normalize(proceso.NumeroContrato);
+  return (facturas||[]).filter(f => f.Contrato && normalize(f.Contrato) === target);
+}
+export function ordenesCompraForProceso(ordenesCompra, proceso){
+  if(!proceso || !proceso.NumeroContrato) return [];
+  const target = normalize(proceso.NumeroContrato);
+  return (ordenesCompra||[]).filter(o => o.Contrato && normalize(o.Contrato) === target);
+}
 export function facturaNumero(factura){
   return factura.Factura || (factura.id!=null ? String(Number(factura.id) + 91) : "");
 }

@@ -3,6 +3,7 @@
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
 ## 2026-08-05
+- El panel de cada Proceso judicial ahora tiene pestañas: **Datos generales**, **Facturas** y **Órdenes de compra** (con un contador de cuántas hay relacionadas por Contrato). Al abrir una desde ahí, te lleva directo a su propio panel. Primer paso de varios más por venir (Desistimientos, Audiencias, Términos, etc.).
 - Filtros por columna en las tablas de Procesos, Clientes, Facturación y Órdenes de compra: un cuadro de texto debajo de cada encabezado para filtrar solo esa columna, con un enlace para limpiarlos.
 - Corregido el orden de Facturación: las numeraciones simples (300, 301… 805) quedan arriba de mayor a menor, y las que tienen letra (1a, 169a, 193a…) quedan abajo — antes se mezclaban por un error al comparar números con letras.
 - Nuevo botón "Generar factura" en cada orden de compra: crea un borrador de factura con los mismos datos (cliente, contrato, proceso, etapa, líneas de detalle), solo con la fecha de hoy en vez de la fecha de la orden. Sigue sin guardarse en SharePoint hasta darle "Guardar cambios".

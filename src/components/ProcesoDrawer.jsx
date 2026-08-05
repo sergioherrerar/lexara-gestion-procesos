@@ -1,7 +1,63 @@
 import { useState, useEffect } from 'react';
-import { stripHtml, estadoBadgeClass, findClienteByNombre } from '../lib/graph';
-import { IconTextButton } from './IconButton';
+import {
+  stripHtml, estadoBadgeClass, findClienteByNombre,
+  facturasForProceso, ordenesCompraForProceso, facturaNumero, ordenCompraNumero,
+  computeFacturaTotals, computeOrdenCompraTotals, estadoFacturaBadgeClass,
+  facturaForOrdenCompra, fmtMonto, fmtDate, fechaFromPartes,
+} from '../lib/graph';
+import IconButton, { IconTextButton } from './IconButton';
 import { useEscapeToClose } from '../hooks/useEscapeToClose';
+import { ICON_SVG } from '../config';
+
+const TABS = [
+  {key:'datos', label:'Datos generales'},
+  {key:'facturas', label:'Facturas'},
+  {key:'ordenes', label:'Órdenes de compra'},
+];
+
+function fechaOrdenable(row){
+  return fechaFromPartes(row.Dia, row.Mes, row.Anio) || row.Fecha || "";
+}
+
+// Lista compacta de facturas/órdenes de compra relacionadas con el proceso
+// abierto — reutilizada por las pestañas "Facturas" y "Órdenes de compra".
+function RelatedList({ emptyMsg, rows, columns, onOpen, onPrint }){
+  if(!rows.length){
+    return (
+      <div className="empty-state empty-state-compact">
+        <div className="mark" dangerouslySetInnerHTML={{__html: ICON_SVG}} />
+        {emptyMsg}
+      </div>
+    );
+  }
+  return (
+    <div className="table-wrap">
+      <table>
+        <thead>
+          <tr>{columns.map(c => <th key={c.key}>{c.label}</th>)}<th>Acciones</th></tr>
+        </thead>
+        <tbody>
+          {rows.map(row => (
+            <tr
+              key={row.id}
+              onClick={() => onOpen(row.id)}
+              role="button" tabIndex={0}
+              onKeyDown={e => { if(e.key==='Enter' || e.key===' '){ e.preventDefault(); onOpen(row.id); } }}
+            >
+              {columns.map(c => <td key={c.key}>{c.render(row)}</td>)}
+              <td style={{whiteSpace:'nowrap'}}>
+                <div className="row-actions">
+                  <IconButton icon="edit" variant="edit" label="Ver / editar" onClick={e => { e.stopPropagation(); onOpen(row.id); }} />
+                  <IconButton icon="print" variant="print" label="Imprimir" onClick={e => { e.stopPropagation(); onPrint(row.id); }} />
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
 
 const FIELD_SECTIONS = [
   {title:"Datos generales", fields:[
@@ -26,11 +82,12 @@ const LABELS = {
 };
 const EMPTY_NEW_CLIENTE = {RazonSocial:"", Nit:"", Direccion:"", Telefono:"", Correo:""};
 
-export default function ProcesoDrawer({ proceso, clientes, liveMode, onClose, onSave, onCreateCliente, saving }){
+export default function ProcesoDrawer({ proceso, clientes, facturas, ordenesCompra, liveMode, onClose, onSave, onCreateCliente, onOpenFactura, onPrintFactura, onOpenOrdenCompra, onPrintOrdenCompra, saving }){
   const [form, setForm] = useState(null);
   const [showNewCliente, setShowNewCliente] = useState(false);
   const [newCliente, setNewCliente] = useState(EMPTY_NEW_CLIENTE);
   const [nuevoClienteError, setNuevoClienteError] = useState("");
+  const [activeTab, setActiveTab] = useState('datos');
 
   useEffect(() => {
     if(proceso){
@@ -42,6 +99,7 @@ export default function ProcesoDrawer({ proceso, clientes, liveMode, onClose, on
       setShowNewCliente(false);
       setNewCliente(EMPTY_NEW_CLIENTE);
       setNuevoClienteError("");
+      setActiveTab('datos');
     } else {
       setForm(null);
     }
@@ -68,6 +126,31 @@ export default function ProcesoDrawer({ proceso, clientes, liveMode, onClose, on
   if(form.Cliente && !clienteNombres.includes(form.Cliente)) clienteNombres.unshift(form.Cliente);
   const linkedCliente = findClienteByNombre(clientes, form.Cliente);
 
+  const facturasRelacionadas = facturasForProceso(facturas, proceso)
+    .sort((a,b) => Number(facturaNumero(b)) - Number(facturaNumero(a)) || 0);
+  const ordenesRelacionadas = ordenesCompraForProceso(ordenesCompra, proceso)
+    .sort((a,b) => Number(ordenCompraNumero(b)) - Number(ordenCompraNumero(a)));
+
+  // Al abrir/imprimir una factura u orden de compra relacionada, se cierra
+  // este panel primero — dos paneles superpuestos a la vez se ven mal.
+  function goToFactura(id){ onClose(); onOpenFactura(id); }
+  function goToPrintFactura(id){ onClose(); onPrintFactura(id); }
+  function goToOrdenCompra(id){ onClose(); onOpenOrdenCompra(id); }
+  function goToPrintOrdenCompra(id){ onClose(); onPrintOrdenCompra(id); }
+
+  const FACTURA_COLUMNS = [
+    {key:'numero', label:'No. factura', render: f => facturaNumero(f)},
+    {key:'fecha', label:'Fecha', render: f => fmtDate(fechaOrdenable(f))},
+    {key:'total', label:'Total', render: f => fmtMonto(computeFacturaTotals(f).total)},
+    {key:'estado', label:'Estado', render: f => <span className={"badge " + estadoFacturaBadgeClass(f.EstadoFactura)}>{f.EstadoFactura || "—"}</span>},
+  ];
+  const ORDEN_COLUMNS = [
+    {key:'numero', label:'No. orden', render: oc => ordenCompraNumero(oc)},
+    {key:'fecha', label:'Fecha', render: oc => fmtDate(fechaOrdenable(oc))},
+    {key:'total', label:'Total', render: oc => fmtMonto(computeOrdenCompraTotals(oc).total)},
+    {key:'factura', label:'Factura', render: oc => { const f = facturaForOrdenCompra(facturas, oc); return f ? facturaNumero(f) : "—"; }},
+  ];
+
   return (
     <>
       <div id="overlay" className="active" onClick={onClose}></div>
@@ -80,8 +163,43 @@ export default function ProcesoDrawer({ proceso, clientes, liveMode, onClose, on
           <h2>{proceso.Cliente || "Sin nombre"}</h2>
           <span className={"badge " + estadoBadgeClass(proceso.Estado)}>{stripHtml(proceso.Estado) || "—"}</span>
         </div>
+        <div className="drawer-tabs">
+          {TABS.map(t => (
+            <button
+              key={t.key} type="button"
+              className={"drawer-tab" + (activeTab===t.key ? " active" : "")}
+              onClick={() => setActiveTab(t.key)}
+            >
+              {t.label}
+              {t.key==='facturas' && facturasRelacionadas.length > 0 && <span className="drawer-tab-count">{facturasRelacionadas.length}</span>}
+              {t.key==='ordenes' && ordenesRelacionadas.length > 0 && <span className="drawer-tab-count">{ordenesRelacionadas.length}</span>}
+            </button>
+          ))}
+        </div>
         <div className="drawer-body">
-          {FIELD_SECTIONS.map(sec => (
+          {activeTab === 'facturas' && (
+            <div className="field-section">
+              <RelatedList
+                emptyMsg="No hay facturas con el mismo contrato de este proceso."
+                rows={facturasRelacionadas}
+                columns={FACTURA_COLUMNS}
+                onOpen={goToFactura}
+                onPrint={goToPrintFactura}
+              />
+            </div>
+          )}
+          {activeTab === 'ordenes' && (
+            <div className="field-section">
+              <RelatedList
+                emptyMsg="No hay órdenes de compra con el mismo contrato de este proceso."
+                rows={ordenesRelacionadas}
+                columns={ORDEN_COLUMNS}
+                onOpen={goToOrdenCompra}
+                onPrint={goToPrintOrdenCompra}
+              />
+            </div>
+          )}
+          {activeTab === 'datos' && FIELD_SECTIONS.map(sec => (
             <div className="field-section" key={sec.title}>
               <h4>{sec.title}</h4>
               <div className={"field-grid" + (sec.fields.length===1 ? " full" : "")}>

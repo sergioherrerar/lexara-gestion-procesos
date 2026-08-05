@@ -130,10 +130,16 @@ export default function App(){
       <ProcesoDrawer
         proceso={app.activeProceso}
         clientes={app.clientes}
+        facturas={app.facturas}
+        ordenesCompra={app.ordenesCompra}
         liveMode={app.liveMode}
         onClose={app.closeDrawer}
         onSave={app.saveProceso}
         onCreateCliente={app.createCliente}
+        onOpenFactura={app.openFactura}
+        onPrintFactura={app.printFactura}
+        onOpenOrdenCompra={app.openOrdenCompra}
+        onPrintOrdenCompra={app.printOrdenCompra}
         saving={app.saving}
       />
       <ClienteDrawer
