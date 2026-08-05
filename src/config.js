@@ -220,6 +220,26 @@ export const SHAREPOINT_LISTS_CONFIG = [
     ],
     mapping: {},
   },
+  {
+    key: "formasPago",
+    listName: "Formas de pago",
+    label: "Formas de pago",
+    // Igual que Facturación/Órdenes de compra, se asocia al proceso por
+    // Contrato (columna real "Numero de Contrato"). 6 pagos fijos por
+    // registro, cada uno con su Etapa procesal cumplida, valor y factura
+    // asociada — no es una tabla aparte, son 6 juegos de columnas fijos.
+    semanticFields: [
+      {key:"Contrato", label:"Contrato", hint:["numero de contrato","numero contrato"], required:true},
+      ...Array.from({length:6}, (_,i) => i+1).flatMap(n => [
+        {key:`Pago${n}`, label:`Pago ${n} (etapa)`, hint:[`pago${n}`,`pago ${n}`]},
+        {key:`ValorPago${n}`, label:`Valor pago ${n}`, hint:[`valor pago${n}`,`valor pago ${n}`]},
+        {key:`FacturaPago${n}`, label:`Factura pago ${n}`, hint:[`factura pago${n}`,`factura pago ${n}`]},
+        {key:`EtapaProcesalCumplida${n}`, label:`Pago ${n} cumplido`, hint:[n===1 ? "etapa procesal cumplida" : `etapa procesal cumplida ${n}`]},
+      ]),
+      {key:"Honorarios", label:"Honorarios", hint:["honorarios"]},
+    ],
+    mapping: {},
+  },
 ];
 
 export const DEMO_PROCESOS = [
@@ -281,6 +301,25 @@ export const DEMO_COLABORADORES = [
   {id:3, Nombre:"Dahiana Camila Pedraza", TipoIdentificacion:"C.C.", Identificacion:"1.014.300.118", Telefono:"+57 3202751824", Direccion:"Cll 69a #105-35", Correo:"dcpedrazap@lexaraabogados.com", Activo:true, Rol:"Colaborador"},
   {id:4, Nombre:"Daniel Santiago Flechas", TipoIdentificacion:"C.C.", Identificacion:"1.032.502.681", Telefono:"+57 310 4112130", Direccion:"Carrera 49B", Correo:"dsflechasa@lexaraabogados.com", Activo:true, Rol:"Colaborador"},
   {id:5, Nombre:"Ariana Andrea Torres", TipoIdentificacion:"C.C", Identificacion:"1.006.415.925", Telefono:"+57 3124720", Direccion:"Calle 27a #33-6", Correo:"Asesoriajuridica@lexaraabogados.com", Activo:false, Rol:"Colaborador"},
+];
+
+export const DEMO_FORMAS_PAGO = [
+  {id:1, Contrato:"CT-2023-118",
+    Pago1:"Contestacion", ValorPago1:"1.500.000,00", FacturaPago1:"92", EtapaProcesalCumplida1:true,
+    Pago2:"Sentencia 1ra", ValorPago2:"1.442.697,50", FacturaPago2:"", EtapaProcesalCumplida2:false,
+    Pago3:"", ValorPago3:"", FacturaPago3:"", EtapaProcesalCumplida3:false,
+    Pago4:"", ValorPago4:"", FacturaPago4:"", EtapaProcesalCumplida4:false,
+    Pago5:"", ValorPago5:"", FacturaPago5:"", EtapaProcesalCumplida5:false,
+    Pago6:"", ValorPago6:"", FacturaPago6:"", EtapaProcesalCumplida6:false,
+    Honorarios:"2.942.697,50"},
+  {id:2, Contrato:"CT-2022-076",
+    Pago1:"Honorarios", ValorPago1:"5.200.000,00", FacturaPago1:"93", EtapaProcesalCumplida1:true,
+    Pago2:"", ValorPago2:"", FacturaPago2:"", EtapaProcesalCumplida2:false,
+    Pago3:"", ValorPago3:"", FacturaPago3:"", EtapaProcesalCumplida3:false,
+    Pago4:"", ValorPago4:"", FacturaPago4:"", EtapaProcesalCumplida4:false,
+    Pago5:"", ValorPago5:"", FacturaPago5:"", EtapaProcesalCumplida5:false,
+    Pago6:"", ValorPago6:"", FacturaPago6:"", EtapaProcesalCumplida6:false,
+    Honorarios:"5.200.000,00"},
 ];
 
 export const ICON_SVG = `<svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 30 L50 50 L80 30" stroke="currentColor" stroke-width="14" fill="none" stroke-linecap="square"/><path d="M20 70 L50 50 L80 70" stroke="currentColor" stroke-width="14" fill="none" stroke-linecap="square"/></svg>`;

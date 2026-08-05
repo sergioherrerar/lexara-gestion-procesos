@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import {
   stripHtml, estadoBadgeClass, findClienteByNombre,
-  facturasForProceso, ordenesCompraForProceso, facturaNumero, ordenCompraNumero,
+  facturasForProceso, ordenesCompraForProceso, formasPagoForProceso, facturaNumero, ordenCompraNumero,
   computeFacturaTotals, computeOrdenCompraTotals, estadoFacturaBadgeClass,
-  facturaForOrdenCompra, fmtMonto, fmtDate, fechaFromPartes,
+  facturaForOrdenCompra, fmtMonto, fmtDate, fechaFromPartes, parseMonto,
 } from '../lib/graph';
 import IconButton, { IconTextButton } from './IconButton';
 import { useEscapeToClose } from '../hooks/useEscapeToClose';
@@ -13,6 +13,7 @@ const TABS = [
   {key:'datos', label:'Datos generales'},
   {key:'facturas', label:'Facturas'},
   {key:'ordenes', label:'Órdenes de compra'},
+  {key:'formaspago', label:'Formas de pago'},
 ];
 
 function fechaOrdenable(row){
@@ -48,7 +49,7 @@ function RelatedList({ emptyMsg, rows, columns, onOpen, onPrint }){
               <td style={{whiteSpace:'nowrap'}}>
                 <div className="row-actions">
                   <IconButton icon="edit" variant="edit" label="Ver / editar" onClick={e => { e.stopPropagation(); onOpen(row.id); }} />
-                  <IconButton icon="print" variant="print" label="Imprimir" onClick={e => { e.stopPropagation(); onPrint(row.id); }} />
+                  {onPrint && <IconButton icon="print" variant="print" label="Imprimir" onClick={e => { e.stopPropagation(); onPrint(row.id); }} />}
                 </div>
               </td>
             </tr>
@@ -82,7 +83,7 @@ const LABELS = {
 };
 const EMPTY_NEW_CLIENTE = {RazonSocial:"", Nit:"", Direccion:"", Telefono:"", Correo:""};
 
-export default function ProcesoDrawer({ proceso, clientes, facturas, ordenesCompra, liveMode, onClose, onSave, onCreateCliente, onOpenFactura, onPrintFactura, onOpenOrdenCompra, onPrintOrdenCompra, saving, canWrite = true }){
+export default function ProcesoDrawer({ proceso, clientes, facturas, ordenesCompra, formasPago, liveMode, onClose, onSave, onCreateCliente, onOpenFactura, onPrintFactura, onCreateFactura, onOpenOrdenCompra, onPrintOrdenCompra, onCreateOrdenCompra, onOpenFormaPago, onCreateFormaPago, saving, canWrite = true }){
   const [form, setForm] = useState(null);
   const [showNewCliente, setShowNewCliente] = useState(false);
   const [newCliente, setNewCliente] = useState(EMPTY_NEW_CLIENTE);
@@ -130,6 +131,7 @@ export default function ProcesoDrawer({ proceso, clientes, facturas, ordenesComp
     .sort((a,b) => Number(facturaNumero(b)) - Number(facturaNumero(a)) || 0);
   const ordenesRelacionadas = ordenesCompraForProceso(ordenesCompra, proceso)
     .sort((a,b) => Number(ordenCompraNumero(b)) - Number(ordenCompraNumero(a)));
+  const formasPagoRelacionadas = formasPagoForProceso(formasPago, proceso);
 
   // Al abrir/imprimir una factura u orden de compra relacionada, se cierra
   // este panel primero — dos paneles superpuestos a la vez se ven mal.
@@ -137,6 +139,13 @@ export default function ProcesoDrawer({ proceso, clientes, facturas, ordenesComp
   function goToPrintFactura(id){ onClose(); onPrintFactura(id); }
   function goToOrdenCompra(id){ onClose(); onOpenOrdenCompra(id); }
   function goToPrintOrdenCompra(id){ onClose(); onPrintOrdenCompra(id); }
+  function goToFormaPago(id){ onClose(); onOpenFormaPago(id); }
+  // Botones "+ Nueva factura"/"+ Nueva orden de compra"/"+ Nueva forma de
+  // pago" de este panel: cierran el proceso y abren un borrador con el
+  // Contrato/Proceso ya llenos.
+  function goToNewFactura(){ onClose(); onCreateFactura(proceso); }
+  function goToNewOrdenCompra(){ onClose(); onCreateOrdenCompra(proceso); }
+  function goToNewFormaPago(){ onClose(); onCreateFormaPago(proceso); }
 
   const FACTURA_COLUMNS = [
     {key:'numero', label:'No. factura', render: f => facturaNumero(f)},
@@ -149,6 +158,16 @@ export default function ProcesoDrawer({ proceso, clientes, facturas, ordenesComp
     {key:'fecha', label:'Fecha', render: oc => fmtDate(fechaOrdenable(oc))},
     {key:'total', label:'Total', render: oc => fmtMonto(computeOrdenCompraTotals(oc).total)},
     {key:'factura', label:'Factura', render: oc => { const f = facturaForOrdenCompra(facturas, oc); return f ? facturaNumero(f) : "—"; }},
+  ];
+  const FORMA_PAGO_COLUMNS = [
+    {key:'honorarios', label:'Honorarios', render: fp => fmtMonto(parseMonto(fp.Honorarios))},
+    {key:'cumplidos', label:'Pagos cumplidos', render: fp => {
+      const n = [1,2,3,4,5,6].filter(i => {
+        const v = fp[`EtapaProcesalCumplida${i}`];
+        return v === true || v === 1 || (typeof v === 'string' && /^(s[ií]|true|1)$/i.test(v.trim()));
+      }).length;
+      return `${n} de 6`;
+    }},
   ];
 
   return (
@@ -173,12 +192,18 @@ export default function ProcesoDrawer({ proceso, clientes, facturas, ordenesComp
               {t.label}
               {t.key==='facturas' && facturasRelacionadas.length > 0 && <span className="drawer-tab-count">{facturasRelacionadas.length}</span>}
               {t.key==='ordenes' && ordenesRelacionadas.length > 0 && <span className="drawer-tab-count">{ordenesRelacionadas.length}</span>}
+              {t.key==='formaspago' && formasPagoRelacionadas.length > 0 && <span className="drawer-tab-count">{formasPagoRelacionadas.length}</span>}
             </button>
           ))}
         </div>
         <div className="drawer-body">
           {activeTab === 'facturas' && (
             <div className="field-section">
+              {canWrite && (
+                <div style={{display:'flex', justifyContent:'flex-end', marginBottom:12}}>
+                  <IconTextButton icon="add" variant="primary" onClick={goToNewFactura}>Nueva factura</IconTextButton>
+                </div>
+              )}
               <RelatedList
                 emptyMsg="No hay facturas con el mismo contrato de este proceso."
                 rows={facturasRelacionadas}
@@ -190,12 +215,32 @@ export default function ProcesoDrawer({ proceso, clientes, facturas, ordenesComp
           )}
           {activeTab === 'ordenes' && (
             <div className="field-section">
+              {canWrite && (
+                <div style={{display:'flex', justifyContent:'flex-end', marginBottom:12}}>
+                  <IconTextButton icon="add" variant="primary" style={{background:'var(--verde-claro)'}} onClick={goToNewOrdenCompra}>Nueva orden de compra</IconTextButton>
+                </div>
+              )}
               <RelatedList
                 emptyMsg="No hay órdenes de compra con el mismo contrato de este proceso."
                 rows={ordenesRelacionadas}
                 columns={ORDEN_COLUMNS}
                 onOpen={goToOrdenCompra}
                 onPrint={goToPrintOrdenCompra}
+              />
+            </div>
+          )}
+          {activeTab === 'formaspago' && (
+            <div className="field-section">
+              {canWrite && (
+                <div style={{display:'flex', justifyContent:'flex-end', marginBottom:12}}>
+                  <IconTextButton icon="add" variant="primary" onClick={goToNewFormaPago}>Nueva forma de pago</IconTextButton>
+                </div>
+              )}
+              <RelatedList
+                emptyMsg="No hay formas de pago con el mismo contrato de este proceso."
+                rows={formasPagoRelacionadas}
+                columns={FORMA_PAGO_COLUMNS}
+                onOpen={goToFormaPago}
               />
             </div>
           )}

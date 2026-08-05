@@ -16,6 +16,7 @@ import FacturaDrawer from './components/FacturaDrawer';
 import OrdenCompraDrawer from './components/OrdenCompraDrawer';
 import ColaboradoresView from './components/ColaboradoresView';
 import ColaboradorDrawer from './components/ColaboradorDrawer';
+import FormaPagoDrawer from './components/FormaPagoDrawer';
 import { Toast, ConfirmDialog } from './components/Feedback';
 
 export default function App(){
@@ -157,14 +158,19 @@ export default function App(){
         clientes={app.clientes}
         facturas={app.facturas}
         ordenesCompra={app.ordenesCompra}
+        formasPago={app.formasPago}
         liveMode={app.liveMode}
         onClose={app.closeDrawer}
         onSave={app.saveProceso}
         onCreateCliente={app.createCliente}
         onOpenFactura={app.openFactura}
         onPrintFactura={app.printFactura}
+        onCreateFactura={app.newFacturaFromProceso}
         onOpenOrdenCompra={app.openOrdenCompra}
         onPrintOrdenCompra={app.printOrdenCompra}
+        onCreateOrdenCompra={app.newOrdenCompraFromProceso}
+        onOpenFormaPago={app.openFormaPago}
+        onCreateFormaPago={app.newFormaPagoFromProceso}
         saving={app.saving}
         canWrite={app.canWrite}
       />
@@ -208,6 +214,17 @@ export default function App(){
         onClose={app.closeColaboradorDrawer}
         onSave={app.saveColaborador}
         onDelete={app.deleteColaborador}
+        saving={app.saving}
+        canWrite={app.canWrite}
+      />
+      <FormaPagoDrawer
+        formaPago={app.activeFormaPago}
+        procesos={app.procesos}
+        facturas={app.facturas}
+        liveMode={app.liveMode}
+        onClose={app.closeFormaPagoDrawer}
+        onSave={app.saveFormaPago}
+        onDelete={app.deleteFormaPago}
         saving={app.saving}
         canWrite={app.canWrite}
       />

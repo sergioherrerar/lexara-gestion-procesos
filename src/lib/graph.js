@@ -220,6 +220,22 @@ export function ordenesCompraForProceso(ordenesCompra, proceso){
   const target = normalize(proceso.NumeroContrato);
   return (ordenesCompra||[]).filter(o => o.Contrato && normalize(o.Contrato) === target);
 }
+export function formasPagoForProceso(formasPago, proceso){
+  if(!proceso || !proceso.NumeroContrato) return [];
+  const target = normalize(proceso.NumeroContrato);
+  return (formasPago||[]).filter(fp => fp.Contrato && normalize(fp.Contrato) === target);
+}
+// Los 6 pagos fijos de una "Forma de pago", cada uno con su etapa procesal
+// cumplida, valor y factura asociada — igual criterio que facturaLineItems.
+export function formaPagoLineas(formaPago){
+  return Array.from({length:6}, (_,i) => i+1).map(n => ({
+    n,
+    EtapaProcesalCumplida: formaPago[`EtapaProcesalCumplida${n}`] || "",
+    Pago: formaPago[`Pago${n}`] || "",
+    ValorPago: formaPago[`ValorPago${n}`] || "",
+    FacturaPago: formaPago[`FacturaPago${n}`] || "",
+  }));
+}
 export function facturaNumero(factura){
   return factura.Factura || (factura.id!=null ? String(Number(factura.id) + 91) : "");
 }

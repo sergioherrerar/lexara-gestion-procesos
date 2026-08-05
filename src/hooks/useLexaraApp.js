@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { INITIAL_CONFIG, SHAREPOINT_LISTS_CONFIG, DEMO_PROCESOS, DEMO_CLIENTES, DEMO_FACTURAS, DEMO_ORDENES_COMPRA, DEMO_COLABORADORES } from '../config';
+import { INITIAL_CONFIG, SHAREPOINT_LISTS_CONFIG, DEMO_PROCESOS, DEMO_CLIENTES, DEMO_FACTURAS, DEMO_ORDENES_COMPRA, DEMO_COLABORADORES, DEMO_FORMAS_PAGO } from '../config';
 import * as Graph from '../lib/graph';
 import { canWrite as canWriteForRole } from '../lib/permissions';
 
@@ -27,6 +27,9 @@ export function useLexaraApp(){
   const [colaboradores, setColaboradores] = useState([]);
   const [activeColaboradorId, setActiveColaboradorId] = useState(null);
   const [draftColaborador, setDraftColaborador] = useState(null);
+  const [formasPago, setFormasPago] = useState([]);
+  const [activeFormaPagoId, setActiveFormaPagoId] = useState(null);
+  const [draftFormaPago, setDraftFormaPago] = useState(null);
   const [currentFilter, setCurrentFilter] = useState('todos');
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
@@ -74,6 +77,7 @@ export function useLexaraApp(){
     setFacturas(JSON.parse(JSON.stringify(DEMO_FACTURAS)));
     setOrdenesCompra(JSON.parse(JSON.stringify(DEMO_ORDENES_COMPRA)));
     setColaboradores(JSON.parse(JSON.stringify(DEMO_COLABORADORES)));
+    setFormasPago(JSON.parse(JSON.stringify(DEMO_FORMAS_PAGO)));
     setAccount({ name:"Usuario Demo", username:"demo@lexara.com" });
     setAppActive(true);
     if(!silent) setView('dashboard');
@@ -135,6 +139,7 @@ export function useLexaraApp(){
         setFacturas(updated.find(l => l.key==='facturacion')?.items || []);
         setOrdenesCompra(updated.find(l => l.key==='ordenesCompra')?.items || []);
         setColaboradores(updated.find(l => l.key==='colaboradores')?.items || []);
+        setFormasPago(updated.find(l => l.key==='formasPago')?.items || []);
         setLiveMode(true);
         setAppActive(true);
       } else {
@@ -166,6 +171,7 @@ export function useLexaraApp(){
       setFacturas(updated.find(l => l.key==='facturacion')?.items || []);
       setOrdenesCompra(updated.find(l => l.key==='ordenesCompra')?.items || []);
       setColaboradores(updated.find(l => l.key==='colaboradores')?.items || []);
+      setFormasPago(updated.find(l => l.key==='formasPago')?.items || []);
     }catch(err){
       console.error(err);
       notify("No se pudo actualizar la información: " + err.message, 'error');
@@ -200,6 +206,7 @@ export function useLexaraApp(){
     setFacturas(updated.find(l => l.key==='facturacion')?.items || []);
     setOrdenesCompra(updated.find(l => l.key==='ordenesCompra')?.items || []);
     setColaboradores(updated.find(l => l.key==='colaboradores')?.items || []);
+    setFormasPago(updated.find(l => l.key==='formasPago')?.items || []);
     setLiveMode(true);
   }
 
@@ -241,6 +248,7 @@ export function useLexaraApp(){
   const activeFactura = draftFactura || facturas.find(f => f.id===activeFacturaId) || null;
   const activeOrdenCompra = draftOrdenCompra || ordenesCompra.find(o => o.id===activeOrdenCompraId) || null;
   const activeColaborador = draftColaborador || colaboradores.find(c => c.id===activeColaboradorId) || null;
+  const activeFormaPago = draftFormaPago || formasPago.find(f => f.id===activeFormaPagoId) || null;
 
   // Rol del usuario que inició sesión, cruzando su correo de Microsoft 365
   // contra la lista de Colaborador Lexara — ver src/lib/permissions.js.
@@ -356,6 +364,13 @@ export function useLexaraApp(){
   // "+ Nueva factura" solo abre un borrador local — no toca SharePoint hasta
   // que el usuario le da "Guardar cambios" (evita registros vacíos huérfanos).
   function newFactura(){ setActiveFacturaId(null); setDraftFactura({}); }
+  // Botón "+ Nueva factura" dentro del panel de un Proceso judicial: abre un
+  // borrador con el Contrato (y Proceso) ya llenos desde ese proceso, para
+  // no tener que volver a escribirlos.
+  function newFacturaFromProceso(proceso){
+    setActiveFacturaId(null);
+    setDraftFactura({ Contrato: proceso.NumeroContrato || "", Proceso: proceso.Radicado || "" });
+  }
   // Botón "generar factura" de cada orden de compra: abre un borrador de
   // factura precargado con los mismos datos (cliente, contrato, proceso,
   // líneas de detalle) — solo el Día/Mes/Año cambia, al de hoy. Sigue sin
@@ -442,6 +457,12 @@ export function useLexaraApp(){
   // "+ Nueva orden de compra" solo abre un borrador local — no toca SharePoint
   // hasta que el usuario le da "Guardar cambios" (mismo criterio que Facturación).
   function newOrdenCompra(){ setActiveOrdenCompraId(null); setDraftOrdenCompra({}); }
+  // Botón "+ Nueva orden de compra" dentro del panel de un Proceso judicial —
+  // mismo criterio que newFacturaFromProceso.
+  function newOrdenCompraFromProceso(proceso){
+    setActiveOrdenCompraId(null);
+    setDraftOrdenCompra({ Contrato: proceso.NumeroContrato || "", Proceso: proceso.Radicado || "" });
+  }
   function closeOrdenCompraDrawer(){ setActiveOrdenCompraId(null); setDraftOrdenCompra(null); }
   async function saveOrdenCompra(updates){
     if(!activeOrdenCompra) return;
@@ -550,6 +571,73 @@ export function useLexaraApp(){
     requestConfirm(`¿Eliminar al colaborador "${colaborador.Nombre}"? Esta acción no se puede deshacer.`, () => performDeleteColaborador(id));
   }
 
+  function openFormaPago(id){ setDraftFormaPago(null); setActiveFormaPagoId(id); }
+  function closeFormaPagoDrawer(){ setActiveFormaPagoId(null); setDraftFormaPago(null); }
+  // Botón "+ Nueva forma de pago" del panel de un Proceso judicial: abre un
+  // borrador con el Contrato ya lleno — sigue sin tocar SharePoint hasta
+  // "Guardar cambios" (mismo criterio que Facturas/Órdenes de compra).
+  function newFormaPagoFromProceso(proceso){
+    setActiveFormaPagoId(null);
+    setDraftFormaPago({ Contrato: proceso.NumeroContrato || "" });
+  }
+  async function saveFormaPago(updates){
+    if(!activeFormaPago) return;
+
+    if(draftFormaPago){
+      const nuevo = {...updates};
+      if(liveMode){
+        setSaving(true);
+        const list = listByKey('formasPago');
+        const graphFields = Graph.graphFieldsFromUpdates(list, updates);
+        try{
+          const created = await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items`, {
+            method:"POST", body: JSON.stringify({ fields: graphFields })
+          });
+          nuevo.id = created.id; nuevo._graphId = created.id;
+        }catch(err){ console.error(err); notify("No se pudo crear la forma de pago en SharePoint: " + err.message, 'error'); setSaving(false); return; }
+        setSaving(false);
+      } else {
+        const maxId = formasPago.reduce((max,f) => Math.max(max, Number(f.id)||0), 0);
+        nuevo.id = maxId + 1;
+      }
+      setFormasPago(prev => [...prev, nuevo]);
+      setDraftFormaPago(null);
+      setActiveFormaPagoId(null);
+      return;
+    }
+
+    setFormasPago(prev => prev.map(f => f.id===activeFormaPagoId ? {...f, ...updates} : f));
+    if(liveMode){
+      setSaving(true);
+      const list = listByKey('formasPago');
+      const graphBody = Graph.graphFieldsFromUpdates(list, updates);
+      try{
+        await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items/${activeFormaPago._graphId}/fields`, {
+          method:"PATCH", body: JSON.stringify(graphBody)
+        });
+      }catch(err){ console.error(err); notify("No se pudo guardar en SharePoint: " + err.message, 'error'); setSaving(false); return; }
+      setSaving(false);
+    }
+    setActiveFormaPagoId(null);
+  }
+  async function performDeleteFormaPago(id){
+    const formaPago = formasPago.find(f => f.id===id);
+    if(!formaPago) return;
+    if(liveMode){
+      setSaving(true);
+      const list = listByKey('formasPago');
+      try{
+        await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items/${formaPago._graphId || formaPago.id}`, { method:"DELETE" });
+      }catch(err){ console.error(err); notify("No se pudo eliminar en SharePoint: " + err.message, 'error'); setSaving(false); return; }
+      setSaving(false);
+    }
+    setFormasPago(prev => prev.filter(f => f.id !== id));
+    if(activeFormaPagoId === id) setActiveFormaPagoId(null);
+  }
+  function deleteFormaPago(id){
+    requestConfirm("¿Eliminar esta forma de pago? Esta acción no se puede deshacer.", () => performDeleteFormaPago(id));
+  }
+
   return {
     config, saveConfig, clearConfig,
     lists, listByKey, updateListMapping,
@@ -559,15 +647,16 @@ export function useLexaraApp(){
     signIn, enterDemo, goSetup, signOut,
     saving, signingIn,
     toast, closeToast, confirmState, acceptConfirm, cancelConfirm,
-    procesos, clientes, facturas, ordenesCompra, colaboradores,
+    procesos, clientes, facturas, ordenesCompra, colaboradores, formasPago,
     currentFilter, setFilter: setCurrentFilter, searchQuery, setSearchQuery: setSearchQuery,
     onSearch: setSearchQuery,
     activeProceso, openProceso, closeDrawer, saveProceso,
     activeCliente, openCliente, closeClienteDrawer, saveCliente, deleteCliente, createCliente, updateCliente,
     activeFactura, openFactura, newFactura, closeFacturaDrawer, saveFactura,
-    printFactura, autoPrintFacturaId, clearAutoPrint, createFacturaFromOrdenCompra,
-    activeOrdenCompra, openOrdenCompra, newOrdenCompra, closeOrdenCompraDrawer, saveOrdenCompra,
+    printFactura, autoPrintFacturaId, clearAutoPrint, createFacturaFromOrdenCompra, newFacturaFromProceso,
+    activeOrdenCompra, openOrdenCompra, newOrdenCompra, newOrdenCompraFromProceso, closeOrdenCompraDrawer, saveOrdenCompra,
     printOrdenCompra, autoPrintOrdenCompraId, clearAutoPrintOrdenCompra,
     activeColaborador, openColaborador, newColaborador, closeColaboradorDrawer, saveColaborador, deleteColaborador,
+    activeFormaPago, openFormaPago, newFormaPagoFromProceso, closeFormaPagoDrawer, saveFormaPago, deleteFormaPago,
   };
 }
