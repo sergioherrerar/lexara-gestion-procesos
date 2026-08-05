@@ -41,6 +41,32 @@ export const SHAREPOINT_LISTS_CONFIG = [
       {key:"EstadoVT", label:"Estado V/T", hint:["estado v/t","estado vt"]},
       {key:"Observaciones", label:"Observaciones", hint:["observ"]},
       {key:"LinkCarpeta", label:"Link a la carpeta", hint:["link carpeta","carpetas"]},
+      // Campos adicionales de la lista real "Procesos Judiciales" — vistos en
+      // el formulario Access original, todavía sin mapear (se confirman uno
+      // a uno desde Configuración). Agrupados en la pestaña "Datos generales"
+      // (rediseñada en tarjetas) y "Trazabilidad fechas" del panel de proceso.
+      {key:"NoCompleto", label:"No. completo", hint:["no completo","numero completo","número completo"]},
+      {key:"ParteActuamos", label:"Parte en que actuamos", hint:["parte en que actuamos","parte actuamos"]},
+      {key:"AbogadoEncargado", label:"Abogado encargado", hint:["abogado encargado"]},
+      {key:"CCApoderada", label:"CC Apoderada", hint:["cc apoderada","cc apoderado"]},
+      {key:"Demandante", label:"Demandante", hint:["demandante"]},
+      {key:"Demandado", label:"Demandado", hint:["demandado"]},
+      {key:"LinkContrato", label:"Link contrato", hint:["link contrato"]},
+      {key:"LinkLexara", label:"Link Lexara", hint:["link lexara"]},
+      {key:"LinkCliente", label:"Link cliente", hint:["link cliente"]},
+      {key:"LinkDespacho", label:"Link despacho", hint:["link despacho"]},
+      {key:"CorreoDespacho", label:"Correo despacho", hint:["correo despacho"]},
+      {key:"HistoricoNumerosCompletos", label:"Histórico números completos", hint:["historico numeros completos","histórico números completos"]},
+      // Distinto del anterior: bitácora narrativa del proceso (actuaciones,
+      // fechas y decisiones a lo largo del tiempo) — columna real de
+      // SharePoint con texto enriquecido (permite negrita/subrayado/resaltado),
+      // igual que Observaciones.
+      {key:"Historico", label:"Histórico", hint:["historico","histórico"]},
+      {key:"ValorRadicacion", label:"Valor radicación", hint:["valor radicacion","valor radicación"]},
+      {key:"ValorReforma", label:"Valor reforma", hint:["valor reforma"]},
+      {key:"ValorActualDemanda", label:"Valor actual demanda", hint:["valor actual demanda"]},
+      {key:"FechaInstancia", label:"Fecha instancia", hint:["fecha instancia"]},
+      {key:"FechaUltimoEstado", label:"Fecha último estado", hint:["fecha ultimo estado","fecha último estado"]},
     ],
     mapping: {
       Radicado: "numero_x0020_corto",
@@ -263,7 +289,13 @@ export const SHAREPOINT_LISTS_CONFIG = [
 ];
 
 export const DEMO_PROCESOS = [
-  {id:1, Radicado:"11001-31-03-045-2023-00218-00", Cliente:"Grupo Andino S.A.S.", Entidad:"Aseguradora Cordillera", Apoderado:"María Fernanda Ruiz", Despacho:"Juzgado 45 Civil del Circuito de Bogotá", Instancia:"Primera instancia", Estado:"En trámite", EtapaProcesal:"Período probatorio", TipoProceso:"Ejecutivo", NumeroContrato:"CT-2023-118", FechaAdmision:"2023-05-12", FechaContestacion:"2023-06-30", CalificacionContingencia:"Media", Observaciones:"Pendiente dictamen pericial contable."},
+  {id:1, Radicado:"11001-31-03-045-2023-00218-00", Cliente:"Grupo Andino S.A.S.", Entidad:"Aseguradora Cordillera", Apoderado:"María Fernanda Ruiz", Despacho:"Juzgado 45 Civil del Circuito de Bogotá", Instancia:"Primera instancia", Estado:"En trámite", EtapaProcesal:"Período probatorio", TipoProceso:"Ejecutivo", NumeroContrato:"CT-2023-118", FechaAdmision:"2023-05-12", FechaContestacion:"2023-06-30", CalificacionContingencia:"Media", Observaciones:"Pendiente dictamen pericial contable.",
+    NoCompleto:"1100131030452023002180", ParteActuamos:"Con el Demandante", Demandante:"Grupo Andino S.A.S.", Demandado:"Aseguradora Cordillera", AbogadoEncargado:"María Fernanda Ruiz", CCApoderada:"52.884.221",
+    LinkContrato:"https://mydabogados/contrato-118", LinkLexara:"https://mydabogados/lexara-218", LinkCliente:"https://mydabogados/cliente-1", LinkDespacho:"https://mydabogados/despacho-45",
+    CorreoDespacho:"juzgado45civil@cendoj.ramajudicial.gov.co", HistoricoNumerosCompletos:"11001-31-03-045-2023-00218-00 (anterior: 2023-00218)",
+    Historico:"<div>12-05-2023 radicación de la demanda.</div><div><u>30-06-2023</u> contestación de la demanda por la aseguradora.</div><div>18-09-2023 auto que <b>decreta pruebas</b> y fija <span style=\"background-color:#fff3b0\">audiencia de instrucción</span>.</div>",
+    ValorRadicacion:"120.000.000,00", ValorReforma:"120.000.000,00", ValorActualDemanda:"135.400.000,00",
+    FechaInstancia:"2023-05-20", FechaUltimoEstado:"2024-11-03"},
   {id:2, Radicado:"05001-31-03-012-2022-00341-00", Cliente:"Constructora del Sur Ltda.", Entidad:"Sector Privado", Apoderado:"Carlos Andrés Peña", Despacho:"Juzgado 12 Civil del Circuito de Medellín", Instancia:"Segunda instancia", Estado:"En apelación", EtapaProcesal:"Alegatos de conclusión", TipoProceso:"Ordinario", NumeroContrato:"CT-2022-076", FechaAdmision:"2022-09-03", FechaContestacion:"2022-11-15", CalificacionContingencia:"Alta", Observaciones:"Riesgo de fallo desfavorable, revisar con el cliente."},
   {id:3, Radicado:"76001-31-03-008-2024-00092-00", Cliente:"Inversiones Cali Norte", Entidad:"Sector Privado", Apoderado:"María Fernanda Ruiz", Despacho:"Juzgado 8 Civil del Circuito de Cali", Instancia:"Primera instancia", Estado:"Admitida", EtapaProcesal:"Traslado de la demanda", TipoProceso:"Verbal", NumeroContrato:"CT-2024-004", FechaAdmision:"2024-02-20", FechaContestacion:"", CalificacionContingencia:"Baja", Observaciones:""},
   {id:4, Radicado:"11001-31-03-021-2021-00567-00", Cliente:"Grupo Andino S.A.S.", Entidad:"Aseguradora Cordillera", Apoderado:"Jorge Iván Salcedo", Despacho:"Juzgado 21 Civil del Circuito de Bogotá", Instancia:"Casación", Estado:"En corte", EtapaProcesal:"Traslado en casación", TipoProceso:"Ordinario", NumeroContrato:"CT-2021-201", FechaAdmision:"2021-04-18", FechaContestacion:"2021-07-02", CalificacionContingencia:"Alta", Observaciones:"Enviado a la Corte Suprema desde marzo."},

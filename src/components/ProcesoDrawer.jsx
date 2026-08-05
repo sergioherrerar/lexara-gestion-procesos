@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   stripHtml, estadoBadgeClass, findClienteByNombre,
   facturasForProceso, ordenesCompraForProceso, formasPagoForProceso, desistimientosForProceso, facturaNumero, ordenCompraNumero,
@@ -11,6 +11,7 @@ import { ICON_SVG } from '../config';
 
 const TABS = [
   {key:'datos', label:'Datos generales'},
+  {key:'trazabilidad', label:'Trazabilidad fechas'},
   {key:'facturas', label:'Facturas'},
   {key:'ordenes', label:'Órdenes de compra'},
   {key:'formaspago', label:'Formas de pago'},
@@ -61,19 +62,47 @@ function RelatedList({ emptyMsg, rows, columns, onOpen, onPrint }){
   );
 }
 
+// Fechas del proceso, agrupadas todas juntas en su propia pestaña
+// "Trazabilidad fechas" — ya no se mezclan con el resto de campos.
+const DATE_FIELDS = ["FechaAdmision","FechaContestacion","FechaInstancia","FechaUltimoEstado"];
+
+// Pestaña "Datos generales" — organizada igual que el formulario Access
+// original (agrupado por Identificación / Partes / Representación / Despacho /
+// Estado / Valores / Enlaces), con los campos que aún no tenían un lugar en
+// la app (se mapean desde Configuración cuando el usuario confirme la
+// columna real de SharePoint; mientras tanto quedan en blanco).
 const FIELD_SECTIONS = [
-  {title:"Datos generales", fields:[
-    ["Cliente","text"],["Entidad","text"],["Apoderado","text"],["Despacho","text"],["NumeroDespacho","text"],
-    ["Instancia","text"],["TipoProceso","text"],["TipoAccion","text"],["NumeroContrato","text"],
-    ["EtapaProcesal","text"],["Estado","text"],
+  {title:"Identificación del proceso", fields:[
+    ["NoCompleto","text"],["NumeroContrato","text"],["HistoricoNumerosCompletos","textarea"],
   ]},
-  {title:"Fechas del proceso", fields:[
-    ["FechaAdmision","date"],["FechaContestacion","date"],
+  {title:"Partes", fields:[
+    ["Cliente","text"],["Entidad","text"],["Demandante","text"],["Demandado","text"],["ParteActuamos","text"],
   ]},
-  {title:"Riesgo y seguimiento", fields:[
-    ["CalificacionContingencia","text"],["EstadoVT","text"],["LinkCarpeta","text"],["Observaciones","textarea"],
+  {title:"Representación", fields:[
+    ["Apoderado","text"],["CCApoderada","text"],["AbogadoEncargado","text"],
+  ]},
+  {title:"Despacho", fields:[
+    ["Despacho","text"],["NumeroDespacho","text"],["LinkDespacho","text"],["CorreoDespacho","text"],["Instancia","text"],
+  ]},
+  {title:"Estado del proceso", fields:[
+    ["TipoProceso","text"],["TipoAccion","text"],["EtapaProcesal","text"],["Estado","textarea"],["EstadoVT","text"],["CalificacionContingencia","text"],
+  ]},
+  {title:"Valores", fields:[
+    ["ValorRadicacion","text"],["ValorReforma","text"],["ValorActualDemanda","text"],
+  ]},
+  {title:"Enlaces y observaciones", fields:[
+    ["LinkContrato","text"],["LinkLexara","text"],["LinkCliente","text"],["LinkCarpeta","text"],["Observaciones","richtext"],
   ]},
 ];
+// "Historico" es la bitácora narrativa del proceso (distinta de "Histórico
+// números completos", que solo guarda numeraciones anteriores) — va junto a
+// las fechas porque es, en la práctica, la traza cronológica del proceso.
+// Igual que Observaciones, es una columna de SharePoint con texto
+// enriquecido (permite negrita/subrayado/resaltado).
+const TRAZABILIDAD_SECTION = {title:"Fechas del proceso", fields: [...DATE_FIELDS.map(k => [k,"date"]), ["Historico","richtext"]]};
+// Se usa para inicializar el formulario — incluye tanto las secciones de
+// Datos generales como la de Trazabilidad de fechas.
+const ALL_SECTIONS = [...FIELD_SECTIONS, TRAZABILIDAD_SECTION];
 const LABELS = {
   Cliente:"Cliente", Entidad:"Entidad", Apoderado:"Apoderado", Despacho:"Despacho / juzgado", NumeroDespacho:"No. de despacho",
   Instancia:"Instancia", TipoProceso:"Tipo de proceso", TipoAccion:"Tipo de Acción", NumeroContrato:"No. de contrato",
@@ -81,7 +110,73 @@ const LABELS = {
   FechaAdmision:"Fecha de admisión", FechaContestacion:"Fecha de contestación",
   CalificacionContingencia:"Calificación de contingencia", EstadoVT:"Estado V/T", LinkCarpeta:"Link a la carpeta",
   Observaciones:"Observaciones",
+  NoCompleto:"No. completo", HistoricoNumerosCompletos:"Histórico números completos",
+  Demandante:"Demandante", Demandado:"Demandado", ParteActuamos:"Parte en que actuamos",
+  CCApoderada:"CC Apoderada", AbogadoEncargado:"Abogado encargado",
+  LinkDespacho:"Link despacho", CorreoDespacho:"Correo despacho",
+  ValorRadicacion:"Valor radicación", ValorReforma:"Valor reforma", ValorActualDemanda:"Valor actual demanda",
+  LinkContrato:"Link contrato", LinkLexara:"Link Lexara", LinkCliente:"Link cliente",
+  FechaInstancia:"Fecha instancia", FechaUltimoEstado:"Fecha último estado",
+  Historico:"Histórico",
 };
+
+// Tarjeta de campo con etiqueta oscura arriba y valor abajo — mismo formato
+// del formulario Access original que se usaba antes, pero con los colores
+// institucionales de Lexara en vez de los verdes/teales de Access.
+function FieldCard({ label, full, children }){
+  return (
+    <div className={"field-card" + (full ? " full" : "")}>
+      <div className="field-card-label">{label}</div>
+      <div className="field-card-value">{children}</div>
+    </div>
+  );
+}
+
+// Editor de texto enriquecido para "Histórico" y "Observaciones" — en
+// SharePoint son columnas de texto enriquecido reales (permiten negrita,
+// subrayado y resaltado), así que un <textarea> plano les hacía perder el
+// formato. Es "no controlado" (el HTML vive en el propio contentEditable,
+// no se vuelve a pintar en cada tecla) para no perder la posición del
+// cursor mientras se escribe.
+function RichTextEditor({ value, onChange, readOnly }){
+  const ref = useRef(null);
+  const focusedRef = useRef(false);
+
+  useEffect(() => {
+    if(ref.current && !focusedRef.current && ref.current.innerHTML !== (value || "")){
+      ref.current.innerHTML = value || "";
+    }
+  }, [value]);
+
+  function exec(cmd, arg){
+    if(readOnly) return;
+    ref.current?.focus();
+    document.execCommand(cmd, false, arg);
+    onChange(ref.current.innerHTML);
+  }
+
+  return (
+    <div className="richtext">
+      {!readOnly && (
+        <div className="richtext-toolbar">
+          <button type="button" title="Negrita" onMouseDown={e => e.preventDefault()} onClick={() => exec('bold')}><b>N</b></button>
+          <button type="button" title="Subrayado" onMouseDown={e => e.preventDefault()} onClick={() => exec('underline')}><u>S</u></button>
+          <button type="button" title="Resaltar" onMouseDown={e => e.preventDefault()} onClick={() => exec('hiliteColor', '#fff3b0')}>Resaltar</button>
+          <button type="button" title="Quitar formato" onMouseDown={e => e.preventDefault()} onClick={() => exec('removeFormat')}>Limpiar</button>
+        </div>
+      )}
+      <div
+        ref={ref}
+        className="richtext-body"
+        contentEditable={!readOnly}
+        suppressContentEditableWarning
+        onFocus={() => { focusedRef.current = true; }}
+        onBlur={() => { focusedRef.current = false; }}
+        onInput={e => onChange(e.currentTarget.innerHTML)}
+      />
+    </div>
+  );
+}
 const EMPTY_NEW_CLIENTE = {RazonSocial:"", Nit:"", Direccion:"", Telefono:"", Correo:""};
 
 export default function ProcesoDrawer({ proceso, clientes, facturas, ordenesCompra, formasPago, desistimientos, liveMode, onClose, onSave, onCreateCliente, onOpenFactura, onPrintFactura, onCreateFactura, onOpenOrdenCompra, onPrintOrdenCompra, onCreateOrdenCompra, onOpenFormaPago, onCreateFormaPago, onOpenDesistimiento, onCreateDesistimiento, saving, canWrite = true }){
@@ -94,7 +189,7 @@ export default function ProcesoDrawer({ proceso, clientes, facturas, ordenesComp
   useEffect(() => {
     if(proceso){
       const initial = {};
-      FIELD_SECTIONS.forEach(sec => sec.fields.forEach(([key,type]) => {
+      ALL_SECTIONS.forEach(sec => sec.fields.forEach(([key,type]) => {
         initial[key] = key==='Estado' ? stripHtml(proceso[key]) : (proceso[key] || "");
       }));
       setForm(initial);
@@ -272,12 +367,11 @@ export default function ProcesoDrawer({ proceso, clientes, facturas, ordenesComp
           {activeTab === 'datos' && FIELD_SECTIONS.map(sec => (
             <div className="field-section" key={sec.title}>
               <h4>{sec.title}</h4>
-              <div className={"field-grid" + (sec.fields.length===1 ? " full" : "")}>
+              <div className="field-card-grid">
                 {sec.fields.map(([key,type]) => {
                   if(key==='Cliente'){
                     return (
-                      <div className="field full" style={{gridColumn:'1/-1'}} key={key}>
-                        <label>Cliente</label>
+                      <FieldCard label="Cliente" full key={key}>
                         <select value={form.Cliente} onChange={e => setField('Cliente', e.target.value)} disabled={!canWrite}>
                           <option value="">— seleccionar cliente —</option>
                           {clienteNombres.map(n => <option value={n} key={n}>{n}</option>)}
@@ -287,7 +381,7 @@ export default function ProcesoDrawer({ proceso, clientes, facturas, ordenesComp
                         )}
                         {form.Cliente && (
                           linkedCliente ? (
-                            <div style={{marginTop:10, padding:'10px 12px', border:'1px solid var(--gris-linea)', borderRadius:8, fontSize:12.5, color:'var(--texto-suave)', lineHeight:1.7}}>
+                            <div style={{marginTop:10, padding:'10px 12px', border:'1px solid var(--gris-linea)', borderRadius:8, fontSize:12.5, color:'var(--texto-suave)', lineHeight:1.7, background:'#fff'}}>
                               <strong style={{color:'var(--texto)'}}>Datos del cliente (lista Clientes)</strong><br/>
                               NIT: {linkedCliente.Nit || "—"} · Tel: {linkedCliente.Telefono || "—"}<br/>
                               {linkedCliente.Direccion || "—"}<br/>
@@ -315,21 +409,36 @@ export default function ProcesoDrawer({ proceso, clientes, facturas, ordenesComp
                             </div>
                           </div>
                         )}
-                      </div>
+                      </FieldCard>
                     );
                   }
                   return (
-                    <div className={"field" + (type==='textarea' ? " full" : "")} style={type==='textarea' ? {gridColumn:'1/-1'} : undefined} key={key}>
-                      <label>{LABELS[key]}</label>
-                      {type==='textarea'
+                    <FieldCard label={LABELS[key]} full={type==='textarea' || type==='richtext'} key={key}>
+                      {type==='richtext'
+                        ? <RichTextEditor value={form[key]} onChange={v => setField(key, v)} readOnly={!canWrite} />
+                        : type==='textarea'
                         ? <textarea value={form[key]} onChange={e => setField(key, e.target.value)} readOnly={!canWrite} />
                         : <input type={type} value={form[key]} onChange={e => setField(key, e.target.value)} readOnly={!canWrite} />}
-                    </div>
+                    </FieldCard>
                   );
                 })}
               </div>
             </div>
           ))}
+          {activeTab === 'trazabilidad' && (
+            <div className="field-section">
+              <h4>{TRAZABILIDAD_SECTION.title}</h4>
+              <div className="field-card-grid">
+                {TRAZABILIDAD_SECTION.fields.map(([key,type]) => (
+                  <FieldCard label={LABELS[key]} full={type==='richtext'} key={key}>
+                    {type==='richtext'
+                      ? <RichTextEditor value={form[key]} onChange={v => setField(key, v)} readOnly={!canWrite} />
+                      : <input type={type} value={form[key]} onChange={e => setField(key, e.target.value)} readOnly={!canWrite} disabled={!canWrite} />}
+                  </FieldCard>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
         <div className="drawer-foot">
           {canWrite ? (

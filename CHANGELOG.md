@@ -3,6 +3,10 @@
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
 ## 2026-08-05
+- Nueva tipografía corporativa: se reemplazó Fraunces/Inter por **Prompt** (fuente propia del despacho) en toda la app — títulos, tablas, formularios e impresión de facturas/órdenes de compra.
+- En el panel de cada Proceso judicial: nueva pestaña **"Trazabilidad fechas"** que agrupa todas las fechas del proceso en un solo lugar, y la pestaña "Datos generales" ahora usa un formato de tarjetas (etiqueta + valor) más ordenado, con varios campos de la lista real que todavía no tenían un lugar en la app (No. completo, Demandante, Demandado, Links de Contrato/Lexara/Cliente/Despacho, Correo despacho, Valores de radicación/reforma/demanda, etc. — se mapean desde Configuración cuando se confirme la columna real de SharePoint).
+- Se agregó el campo **"Histórico"** (bitácora del proceso) que faltaba, junto a "Fecha último estado".
+- Los campos "Histórico" y "Observaciones" ahora tienen texto enriquecido (negrita, subrayado, resaltado) en vez de texto plano, igual que en SharePoint.
 - Nuevo módulo **"Desistimientos"** (lista real "Desistimientos tabla"), con su propia pestaña dentro del panel de cada Proceso judicial — a diferencia de los demás, se relaciona por ID real del proceso, no por Contrato. Se puede crear un "Nuevo desistimiento" directamente desde ahí.
 - Ampliado el panel de cada Proceso judicial (de 520px a 760px) — con 5 pestañas ya quedaba muy apretado. Se quitó el aviso "Desistimientos (próximamente)" del menú, ya que ahora está disponible como pestaña.
 - Nuevo módulo **"Formas de pago"** (lista real "Formas de pago" de SharePoint, asociada por Contrato), con su propia pestaña dentro del panel de cada Proceso judicial. Cada registro tiene 6 pagos con Etapa, Valor y si está Cumplida (casilla); el número de Factura de cada pago se calcula solo (busca una factura con el mismo Contrato y la misma Etapa) y se resalta en verde — nunca se pisa un valor ya guardado.
