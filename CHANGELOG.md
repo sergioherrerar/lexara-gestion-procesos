@@ -3,6 +3,8 @@
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
 ## 2026-08-05
+- Nuevo botón "Generar factura" en cada orden de compra: crea un borrador de factura con los mismos datos (cliente, contrato, proceso, etapa, líneas de detalle), solo con la fecha de hoy en vez de la fecha de la orden. Sigue sin guardarse en SharePoint hasta darle "Guardar cambios".
+- Se agregó `CHANGELOG.md` para llevar este registro de cambios.
 - Modernización general de la app: los avisos de error y las confirmaciones (por ejemplo, "¿eliminar cliente?") ya no usan los cuadros feos del navegador, ahora tienen el estilo de Lexara.
 - Los botones de Guardar/Eliminar/Iniciar sesión avisan "Guardando…" mientras trabajan, para que no se pueda hacer doble clic por accidente.
 - El Dashboard ahora muestra 4 tarjetas (se agregaron Clientes y Facturación/Órdenes de compra).

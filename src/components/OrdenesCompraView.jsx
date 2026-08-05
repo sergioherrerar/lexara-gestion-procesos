@@ -6,7 +6,7 @@ function fechaOrdenable(oc){
   return fechaFromPartes(oc.Dia, oc.Mes, oc.Anio) || oc.Fecha || "";
 }
 
-export default function OrdenesCompraView({ ordenesCompra, clientes, procesos, facturas, searchQuery, onOpenOrdenCompra, onCreateOrdenCompra, onPrintOrdenCompra }){
+export default function OrdenesCompraView({ ordenesCompra, clientes, procesos, facturas, searchQuery, onOpenOrdenCompra, onCreateOrdenCompra, onPrintOrdenCompra, onCreateFacturaFromOrdenCompra }){
   const query = (searchQuery||"").trim().toLowerCase();
   const rows = ordenesCompra.filter(oc => {
     if(!query) return true;
@@ -59,6 +59,7 @@ export default function OrdenesCompraView({ ordenesCompra, clientes, procesos, f
                     <div className="row-actions">
                       <IconButton icon="edit" variant="edit" label="Ver / editar orden de compra" onClick={e => { e.stopPropagation(); onOpenOrdenCompra(oc.id); }} />
                       <IconButton icon="print" variant="print" label="Imprimir orden de compra" onClick={e => { e.stopPropagation(); onPrintOrdenCompra(oc.id); }} />
+                      <IconButton icon="invoice" variant="invoice" label="Generar factura con estos mismos datos" onClick={e => { e.stopPropagation(); onCreateFacturaFromOrdenCompra(oc.id); }} />
                     </div>
                   </td>
                 </tr>

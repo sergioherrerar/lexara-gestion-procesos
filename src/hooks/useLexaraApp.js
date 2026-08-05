@@ -334,6 +334,33 @@ export function useLexaraApp(){
   // "+ Nueva factura" solo abre un borrador local — no toca SharePoint hasta
   // que el usuario le da "Guardar cambios" (evita registros vacíos huérfanos).
   function newFactura(){ setActiveFacturaId(null); setDraftFactura({}); }
+  // Botón "generar factura" de cada orden de compra: abre un borrador de
+  // factura precargado con los mismos datos (cliente, contrato, proceso,
+  // líneas de detalle) — solo el Día/Mes/Año cambia, al de hoy. Sigue sin
+  // tocar SharePoint hasta que se le dé "Guardar cambios" (mismo criterio
+  // que "Nueva factura").
+  function createFacturaFromOrdenCompra(ordenCompraId){
+    const oc = ordenesCompra.find(o => o.id === ordenCompraId);
+    if(!oc) return;
+    const hoy = new Date();
+    const draft = {
+      CodigoCliente: oc.CodigoCliente || "",
+      Contrato: oc.Contrato || "",
+      Proceso: oc.Proceso || "",
+      EtapaContrato: oc.EtapaContrato || "",
+      Observacion: oc.Observacion || "",
+      Dia: String(hoy.getDate()),
+      Mes: String(hoy.getMonth() + 1).padStart(2, '0'),
+      Anio: String(hoy.getFullYear()),
+    };
+    [1,2,3,4,5,6].forEach(n => {
+      draft[`Descripcion${n}`] = oc[`Descripcion${n}`] || "";
+      draft[`Cantidad${n}`] = oc[`Cantidad${n}`] || "";
+      draft[`ValorUnitario${n}`] = oc[`ValorUnitario${n}`] || "";
+    });
+    setActiveFacturaId(null);
+    setDraftFactura(draft);
+  }
   function closeFacturaDrawer(){ setActiveFacturaId(null); setDraftFactura(null); }
   async function saveFactura(updates){
     if(!activeFactura) return;
@@ -450,7 +477,7 @@ export function useLexaraApp(){
     activeProceso, openProceso, closeDrawer, saveProceso,
     activeCliente, openCliente, closeClienteDrawer, saveCliente, deleteCliente, createCliente, updateCliente,
     activeFactura, openFactura, newFactura, closeFacturaDrawer, saveFactura,
-    printFactura, autoPrintFacturaId, clearAutoPrint,
+    printFactura, autoPrintFacturaId, clearAutoPrint, createFacturaFromOrdenCompra,
     activeOrdenCompra, openOrdenCompra, newOrdenCompra, closeOrdenCompraDrawer, saveOrdenCompra,
     printOrdenCompra, autoPrintOrdenCompraId, clearAutoPrintOrdenCompra,
   };

@@ -109,6 +109,7 @@ export default function App(){
             onOpenOrdenCompra={app.openOrdenCompra}
             onCreateOrdenCompra={app.newOrdenCompra}
             onPrintOrdenCompra={app.printOrdenCompra}
+            onCreateFacturaFromOrdenCompra={app.createFacturaFromOrdenCompra}
           />
         )}
         {app.view === 'setup' && (
