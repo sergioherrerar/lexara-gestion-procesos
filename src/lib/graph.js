@@ -210,6 +210,26 @@ export function procesoForFactura(procesos, factura){
 export function facturaNumero(factura){
   return factura.Factura || (factura.id!=null ? String(Number(factura.id) + 91) : "");
 }
+// Facturación tiene dos numeraciones históricas conviviendo: solo dígitos
+// (p.ej. "300", "805", de la numeración actual) y con letra, heredadas de
+// la migración de Access (p.ej. "1a", "193a"). El usuario pidió dejar la
+// numeración solo-dígitos arriba (de mayor a menor, la más reciente
+// primero) y las que tienen letra abajo (también de mayor a menor) —
+// antes se ordenaba con Number(), que da NaN para "1a" y desordena la lista.
+export function compareFacturaNumero(a, b){
+  const na = facturaNumero(a), nb = facturaNumero(b);
+  const aEsNumero = /^\d+$/.test(na);
+  const bEsNumero = /^\d+$/.test(nb);
+  if(aEsNumero && !bEsNumero) return -1;
+  if(!aEsNumero && bEsNumero) return 1;
+  if(aEsNumero && bEsNumero) return Number(nb) - Number(na);
+  // Ambas con letra: compara primero por el número al inicio (p.ej. 193 en
+  // "193a"), de mayor a menor, y si empatan por el texto completo.
+  const numA = parseInt(na, 10) || 0;
+  const numB = parseInt(nb, 10) || 0;
+  if(numB !== numA) return numB - numA;
+  return nb.localeCompare(na);
+}
 // Dia/Mes/Año son los campos que se digitan; Fecha se guarda concatenándolos
 // y dándoles formato de fecha (no se digita directamente).
 export function fechaFromPartes(dia, mes, anio){

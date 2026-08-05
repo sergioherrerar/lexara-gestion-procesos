@@ -1,14 +1,28 @@
 import { ICON_SVG } from '../config';
 import { procesosForCliente } from '../lib/graph';
 import IconButton from './IconButton';
+import ColumnFilterRow from './ColumnFilterRow';
+import { useColumnFilters } from '../hooks/useColumnFilters';
+
+const COLUMNS = [
+  {key:'razonSocial', label:'Razón social', value: c => c.RazonSocial || ""},
+  {key:'nit', label:'NIT', value: c => c.Nit || ""},
+  {key:'direccion', label:'Dirección', value: c => c.Direccion || ""},
+  {key:'telefono', label:'Teléfono', value: c => c.Telefono || ""},
+  {key:'correo', label:'Correo', value: c => c.Correo || ""},
+  {key:'entidad', label:'Entidad', value: c => c.Entidad || ""},
+  {key:'procesos', label:'Procesos', filterable:false},
+  {key:'acciones', label:'Acciones', filterable:false},
+];
 
 export default function ClientesView({ clientes, procesos, searchQuery, onOpenCliente, onDeleteCliente }){
+  const { filters, setFilter, clearFilters, rowMatches, hasActiveFilters } = useColumnFilters();
   const query = (searchQuery||"").trim().toLowerCase();
-  const rows = clientes.filter(c => !query ||
+  const rows = clientes.filter(c => (!query ||
     (c.RazonSocial||"").toLowerCase().includes(query) ||
     (c.Nit||"").toLowerCase().includes(query) ||
     (c.Correo||"").toLowerCase().includes(query) ||
-    (c.Direccion||"").toLowerCase().includes(query))
+    (c.Direccion||"").toLowerCase().includes(query)) && rowMatches(c, COLUMNS))
     .sort((a,b) => (a.RazonSocial||"").localeCompare(b.RazonSocial||""));
 
   return (
@@ -16,15 +30,16 @@ export default function ClientesView({ clientes, procesos, searchQuery, onOpenCl
       <div className="view-header">
         <div>
           <h1>Clientes</h1>
-          <p>{rows.length} de {clientes.length} clientes</p>
+          <p>{rows.length} de {clientes.length} clientes{hasActiveFilters && <> · <button type="button" className="clear-filters-link" onClick={clearFilters}>Limpiar filtros de columna</button></>}</p>
         </div>
       </div>
       <div className="table-wrap">
         <table>
           <thead>
             <tr>
-              <th>Razón social</th><th>NIT</th><th>Dirección</th><th>Teléfono</th><th>Correo</th><th>Entidad</th><th>Procesos</th><th>Acciones</th>
+              {COLUMNS.map(c => <th key={c.key}>{c.label}</th>)}
             </tr>
+            <ColumnFilterRow columns={COLUMNS} filters={filters} onChange={setFilter} />
           </thead>
           <tbody>
             {rows.length ? rows.map(c => (

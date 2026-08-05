@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { ICON_SVG } from '../config';
 import { stripHtml, estadoBadgeClass } from '../lib/graph';
 import IconButton from './IconButton';
+import ColumnFilterRow from './ColumnFilterRow';
+import { useColumnFilters } from '../hooks/useColumnFilters';
 
 function matchesFilter(p, currentFilter){
   if(currentFilter==='todos') return true;
@@ -11,17 +13,27 @@ function isTerminado(p){
   return (stripHtml(p.EstadoVT) || "").toLowerCase().includes('termin');
 }
 
+const COLUMNS = [
+  {key:'radicado', label:'Numero_Corto', value: p => p.Radicado || ""},
+  {key:'cliente', label:'Cliente', value: p => p.Cliente || ""},
+  {key:'despacho', label:'Despacho', value: p => `${p.Despacho||""} ${p.NumeroDespacho||""}`.trim()},
+  {key:'estado', label:'Estado', value: p => stripHtml(p.Estado) || ""},
+  {key:'carpeta', label:'Carpeta', filterable:false},
+  {key:'acciones', label:'Acciones', filterable:false},
+];
+
 export default function ProcesosView({ procesos, currentFilter, setFilter, searchQuery, onOpenProceso }){
   const [showTerminados, setShowTerminados] = useState(false);
+  const { filters, setFilter: setColFilter, clearFilters, rowMatches, hasActiveFilters } = useColumnFilters();
   const entidades = Array.from(new Set(procesos.map(p => stripHtml(p.Entidad) || "Sin entidad"))).sort((a,b)=>a.localeCompare(b));
-  const filters = [{key:'todos', label:'Todos'}, ...entidades.map(e => ({key:e, label:e}))];
+  const filterChips = [{key:'todos', label:'Todos'}, ...entidades.map(e => ({key:e, label:e}))];
   const totalTerminados = procesos.filter(isTerminado).length;
 
   const query = (searchQuery||"").trim().toLowerCase();
   const rows = procesos.filter(p => matchesFilter(p, currentFilter) && (showTerminados ? isTerminado(p) : !isTerminado(p)) && (!query ||
     (p.Radicado||"").toLowerCase().includes(query) ||
     (p.Cliente||"").toLowerCase().includes(query) ||
-    (p.Apoderado||"").toLowerCase().includes(query)))
+    (p.Apoderado||"").toLowerCase().includes(query)) && rowMatches(p, COLUMNS))
     .sort((a,b) => (a.Radicado||"").localeCompare(b.Radicado||""));
 
   return (
@@ -29,11 +41,11 @@ export default function ProcesosView({ procesos, currentFilter, setFilter, searc
       <div className="view-header">
         <div>
           <h1>Procesos judiciales</h1>
-          <p>{rows.length} de {procesos.length} procesos</p>
+          <p>{rows.length} de {procesos.length} procesos{hasActiveFilters && <> · <button type="button" className="clear-filters-link" onClick={clearFilters}>Limpiar filtros de columna</button></>}</p>
         </div>
       </div>
       <div className="toolbar">
-        {filters.map(f => (
+        {filterChips.map(f => (
           <div
             key={f.key}
             className={"filter-chip" + (currentFilter===f.key ? " active" : "")}
@@ -56,8 +68,9 @@ export default function ProcesosView({ procesos, currentFilter, setFilter, searc
         <table>
           <thead>
             <tr>
-              <th>Numero_Corto</th><th>Cliente</th><th>Despacho</th><th>Estado</th><th>Carpeta</th><th>Acciones</th>
+              {COLUMNS.map(c => <th key={c.key}>{c.label}</th>)}
             </tr>
+            <ColumnFilterRow columns={COLUMNS} filters={filters} onChange={setColFilter} />
           </thead>
           <tbody>
             {rows.length ? rows.map(p => (

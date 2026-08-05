@@ -1,14 +1,32 @@
 import { ICON_SVG } from '../config';
 import { clienteForOrdenCompra, procesoForOrdenCompra, ordenCompraNumero, computeOrdenCompraTotals, facturaForOrdenCompra, facturaNumero, fmtMonto, fmtDate, fechaFromPartes } from '../lib/graph';
 import IconButton, { IconTextButton } from './IconButton';
+import ColumnFilterRow from './ColumnFilterRow';
+import { useColumnFilters } from '../hooks/useColumnFilters';
 
 function fechaOrdenable(oc){
   return fechaFromPartes(oc.Dia, oc.Mes, oc.Anio) || oc.Fecha || "";
 }
 
 export default function OrdenesCompraView({ ordenesCompra, clientes, procesos, facturas, searchQuery, onOpenOrdenCompra, onCreateOrdenCompra, onPrintOrdenCompra, onCreateFacturaFromOrdenCompra }){
+  const { filters, setFilter, clearFilters, rowMatches, hasActiveFilters } = useColumnFilters();
+
+  const COLUMNS = [
+    {key:'numero', label:'No. orden', value: oc => ordenCompraNumero(oc)},
+    {key:'cliente', label:'Cliente', value: oc => clienteForOrdenCompra(clientes, oc)?.RazonSocial || ""},
+    {key:'contrato', label:'Contrato', value: oc => oc.Contrato || ""},
+    {key:'proceso', label:'Proceso', value: oc => procesoForOrdenCompra(procesos, oc)?.Radicado || oc.Proceso || ""},
+    {key:'fecha', label:'Fecha', value: oc => fmtDate(fechaOrdenable(oc))},
+    {key:'subtotal', label:'Subtotal', value: oc => fmtMonto(computeOrdenCompraTotals(oc).subtotal)},
+    {key:'iva', label:'IVA', value: oc => fmtMonto(computeOrdenCompraTotals(oc).iva)},
+    {key:'total', label:'Total', value: oc => fmtMonto(computeOrdenCompraTotals(oc).total)},
+    {key:'factura', label:'Factura', value: oc => { const f = facturaForOrdenCompra(facturas, oc); return f ? facturaNumero(f) : ""; }},
+    {key:'acciones', label:'Acciones', filterable:false},
+  ];
+
   const query = (searchQuery||"").trim().toLowerCase();
   const rows = ordenesCompra.filter(oc => {
+    if(!rowMatches(oc, COLUMNS)) return false;
     if(!query) return true;
     const cliente = clienteForOrdenCompra(clientes, oc);
     return ordenCompraNumero(oc).toLowerCase().includes(query) ||
@@ -22,7 +40,7 @@ export default function OrdenesCompraView({ ordenesCompra, clientes, procesos, f
       <div className="view-header">
         <div>
           <h1>Órdenes de compra</h1>
-          <p>{rows.length} de {ordenesCompra.length} órdenes de compra</p>
+          <p>{rows.length} de {ordenesCompra.length} órdenes de compra{hasActiveFilters && <> · <button type="button" className="clear-filters-link" onClick={clearFilters}>Limpiar filtros de columna</button></>}</p>
         </div>
         <IconTextButton icon="add" variant="primary" style={{background:'var(--verde-claro)'}} onClick={onCreateOrdenCompra}>Nueva orden de compra</IconTextButton>
       </div>
@@ -30,8 +48,9 @@ export default function OrdenesCompraView({ ordenesCompra, clientes, procesos, f
         <table>
           <thead>
             <tr>
-              <th>No. orden</th><th>Cliente</th><th>Contrato</th><th>Proceso</th><th>Fecha</th><th>Subtotal</th><th>IVA</th><th>Total</th><th>Factura</th><th>Acciones</th>
+              {COLUMNS.map(c => <th key={c.key}>{c.label}</th>)}
             </tr>
+            <ColumnFilterRow columns={COLUMNS} filters={filters} onChange={setFilter} />
           </thead>
           <tbody>
             {rows.length ? rows.map(oc => {
