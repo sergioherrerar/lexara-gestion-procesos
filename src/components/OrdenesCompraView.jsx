@@ -40,7 +40,12 @@ export default function OrdenesCompraView({ ordenesCompra, clientes, procesos, f
               const factura = facturaForOrdenCompra(facturas, oc);
               const totals = computeOrdenCompraTotals(oc);
               return (
-                <tr key={oc.id} onClick={() => onOpenOrdenCompra(oc.id)}>
+                <tr
+                  key={oc.id}
+                  onClick={() => onOpenOrdenCompra(oc.id)}
+                  role="button" tabIndex={0}
+                  onKeyDown={e => { if(e.key==='Enter' || e.key===' '){ e.preventDefault(); onOpenOrdenCompra(oc.id); } }}
+                >
                   <td>{ordenCompraNumero(oc)}</td>
                   <td className="cliente">{cliente?.RazonSocial || "—"}</td>
                   <td>{oc.Contrato || "—"}</td>

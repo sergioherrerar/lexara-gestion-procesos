@@ -13,19 +13,31 @@ import ProcesoDrawer from './components/ProcesoDrawer';
 import ClienteDrawer from './components/ClienteDrawer';
 import FacturaDrawer from './components/FacturaDrawer';
 import OrdenCompraDrawer from './components/OrdenCompraDrawer';
+import { Toast, ConfirmDialog } from './components/Feedback';
 
 export default function App(){
   const app = useLexaraApp();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
+  const feedback = (
+    <>
+      <Toast toast={app.toast} onClose={app.closeToast} />
+      <ConfirmDialog confirmState={app.confirmState} onConfirm={app.acceptConfirm} onCancel={app.cancelConfirm} />
+    </>
+  );
+
   if(!app.appActive){
     return (
-      <LoginScreen
-        config={app.config}
-        onSignIn={app.signIn}
-        onEnterDemo={() => app.enterDemo()}
-        onGoSetup={app.goSetup}
-      />
+      <>
+        <LoginScreen
+          config={app.config}
+          onSignIn={app.signIn}
+          onEnterDemo={() => app.enterDemo()}
+          onGoSetup={app.goSetup}
+          signingIn={app.signingIn}
+        />
+        {feedback}
+      </>
     );
   }
 
@@ -57,7 +69,7 @@ export default function App(){
           refreshing={app.refreshing}
         />
 
-        {app.view === 'dashboard' && <DashboardView procesos={app.procesos} />}
+        {app.view === 'dashboard' && <DashboardView procesos={app.procesos} clientes={app.clientes} facturas={app.facturas} ordenesCompra={app.ordenesCompra} />}
         {app.view === 'procesos' && (
           <ProcesosView
             procesos={app.procesos}
@@ -121,6 +133,7 @@ export default function App(){
         onClose={app.closeDrawer}
         onSave={app.saveProceso}
         onCreateCliente={app.createCliente}
+        saving={app.saving}
       />
       <ClienteDrawer
         cliente={app.activeCliente}
@@ -128,6 +141,7 @@ export default function App(){
         onClose={app.closeClienteDrawer}
         onSave={app.saveCliente}
         onDelete={app.deleteCliente}
+        saving={app.saving}
       />
       <FacturaDrawer
         factura={app.activeFactura}
@@ -139,6 +153,7 @@ export default function App(){
         onUpdateCliente={app.updateCliente}
         autoPrint={!!app.activeFactura && app.autoPrintFacturaId === app.activeFactura.id}
         onAutoPrinted={app.clearAutoPrint}
+        saving={app.saving}
       />
       <OrdenCompraDrawer
         ordenCompra={app.activeOrdenCompra}
@@ -151,7 +166,9 @@ export default function App(){
         onUpdateCliente={app.updateCliente}
         autoPrint={!!app.activeOrdenCompra && app.autoPrintOrdenCompraId === app.activeOrdenCompra.id}
         onAutoPrinted={app.clearAutoPrintOrdenCompra}
+        saving={app.saving}
       />
+      {feedback}
     </div>
   );
 }

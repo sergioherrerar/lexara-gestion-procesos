@@ -26,6 +26,34 @@ export function useLexaraApp(){
   const [currentFilter, setCurrentFilter] = useState('todos');
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [signingIn, setSigningIn] = useState(false);
+  const [toast, setToast] = useState(null); // {msg, type}
+  const [confirmState, setConfirmState] = useState(null); // {message, onConfirm}
+
+  // Reemplaza alert() — un aviso flotante con el estilo de la app en vez del
+  // cuadro nativo del navegador. Se cierra solo a los 5s o al hacer clic en la X.
+  const notify = useCallback((msg, type = 'info') => {
+    setToast({ msg, type });
+  }, []);
+  function closeToast(){ setToast(null); }
+  useEffect(() => {
+    if(!toast) return;
+    const t = setTimeout(() => setToast(null), 5000);
+    return () => clearTimeout(t);
+  }, [toast]);
+
+  // Reemplaza confirm() — abre un modal propio; onConfirmed solo corre si el
+  // usuario acepta explícitamente.
+  function requestConfirm(message, onConfirmed){
+    setConfirmState({ message, onConfirmed });
+  }
+  function cancelConfirm(){ setConfirmState(null); }
+  function acceptConfirm(){
+    const fn = confirmState?.onConfirmed;
+    setConfirmState(null);
+    if(fn) fn();
+  }
 
   // Arranque: si ya hay credenciales fijas en el código, prepara MSAL de una vez.
   useEffect(() => {
@@ -80,10 +108,11 @@ export function useLexaraApp(){
 
   async function signIn(){
     if(!config.CLIENT_ID || !config.TENANT_ID){
-      alert("Primero configura Client ID y Tenant ID en la sección de Configuración.");
+      notify("Primero configura Client ID y Tenant ID en la sección de Configuración.", 'error');
       goSetup();
       return;
     }
+    setSigningIn(true);
     try{
       const acc = await Graph.ensureSignedIn(config);
       setAccount(acc);
@@ -109,8 +138,9 @@ export function useLexaraApp(){
       }
     }catch(err){
       console.error(err);
-      alert("No fue posible iniciar sesión. Revisa la consola para más detalle.");
+      notify("No fue posible iniciar sesión. Revisa la consola para más detalle.", 'error');
     }
+    setSigningIn(false);
   }
 
   async function refreshData(){
@@ -131,7 +161,7 @@ export function useLexaraApp(){
       setOrdenesCompra(updated.find(l => l.key==='ordenesCompra')?.items || []);
     }catch(err){
       console.error(err);
-      alert("No se pudo actualizar la información: " + err.message);
+      notify("No se pudo actualizar la información: " + err.message, 'error');
     }
     setRefreshing(false);
   }
@@ -153,7 +183,7 @@ export function useLexaraApp(){
       if(faltan.length) missing.push(`${list.label}: ${faltan.map(f=>f.label).join(", ")}`);
     });
     if(missing.length){
-      alert("Mapea los campos obligatorios antes de continuar:\n" + missing.join("\n"));
+      notify("Mapea los campos obligatorios antes de continuar: " + missing.join(" · "), 'error');
       return;
     }
     const updated = lists.map(list => list.connectError ? list : {...list, items: Graph.transformListItems(list)});
@@ -209,13 +239,15 @@ export function useLexaraApp(){
     if(!activeProceso) return;
     setProcesos(prev => prev.map(p => p.id===activeProcesoId ? {...p, ...updates} : p));
     if(liveMode){
+      setSaving(true);
       const list = listByKey('procesos');
       const graphBody = Graph.graphFieldsFromUpdates(list, updates);
       try{
         await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items/${activeProceso._graphId}/fields`, {
           method:"PATCH", body: JSON.stringify(graphBody)
         });
-      }catch(err){ console.error(err); alert("No se pudo guardar en SharePoint: " + err.message); return; }
+      }catch(err){ console.error(err); notify("No se pudo guardar en SharePoint: " + err.message, 'error'); setSaving(false); return; }
+      setSaving(false);
     }
     setActiveProcesoId(null);
   }
@@ -226,13 +258,15 @@ export function useLexaraApp(){
     if(!activeCliente) return;
     setClientes(prev => prev.map(c => c.id===activeClienteId ? {...c, ...updates} : c));
     if(liveMode){
+      setSaving(true);
       const list = listByKey('clientes');
       const fields = Graph.graphFieldsFromUpdates(list, updates);
       try{
         await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items/${activeCliente._graphId || activeCliente.id}/fields`, {
           method:"PATCH", body: JSON.stringify(fields)
         });
-      }catch(err){ console.error(err); alert("No se pudo guardar en SharePoint: " + err.message); return; }
+      }catch(err){ console.error(err); notify("No se pudo guardar en SharePoint: " + err.message, 'error'); setSaving(false); return; }
+      setSaving(false);
     }
     setActiveClienteId(null);
   }
@@ -250,25 +284,34 @@ export function useLexaraApp(){
         await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items/${cliente._graphId || cliente.id}/fields`, {
           method:"PATCH", body: JSON.stringify(fields)
         });
-      }catch(err){ console.error(err); alert("No se pudo actualizar el cliente en SharePoint: " + err.message); }
+      }catch(err){ console.error(err); notify("No se pudo actualizar el cliente en SharePoint: " + err.message, 'error'); }
     }
   }
-  async function deleteCliente(id){
+  // El borrado en sí solo corre si el usuario acepta el modal de confirmación
+  // (requestConfirm) — nunca al primer clic, para no borrar por accidente.
+  async function performDeleteCliente(id){
     const cliente = clientes.find(c => c.id===id);
     if(!cliente) return;
-    if(!confirm(`¿Eliminar al cliente "${cliente.RazonSocial}"? Esta acción no se puede deshacer.`)) return;
     if(liveMode){
+      setSaving(true);
       const list = listByKey('clientes');
       try{
         await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items/${cliente._graphId || cliente.id}`, { method:"DELETE" });
-      }catch(err){ console.error(err); alert("No se pudo eliminar en SharePoint: " + err.message); return; }
+      }catch(err){ console.error(err); notify("No se pudo eliminar en SharePoint: " + err.message, 'error'); setSaving(false); return; }
+      setSaving(false);
     }
     setClientes(prev => prev.filter(c => c.id !== id));
     if(activeClienteId === id) setActiveClienteId(null);
   }
+  function deleteCliente(id){
+    const cliente = clientes.find(c => c.id===id);
+    if(!cliente) return;
+    requestConfirm(`¿Eliminar al cliente "${cliente.RazonSocial}"? Esta acción no se puede deshacer.`, () => performDeleteCliente(id));
+  }
   async function createCliente(fields){
     const nuevo = { id: 'tmp-' + Math.random().toString(36).slice(2), Entidad:"", ...fields };
     if(liveMode){
+      setSaving(true);
       const list = listByKey('clientes');
       const { id, ...nuevoSinId } = nuevo;
       const graphFields = Graph.graphFieldsFromUpdates(list, nuevoSinId);
@@ -277,7 +320,8 @@ export function useLexaraApp(){
           method:"POST", body: JSON.stringify({ fields: graphFields })
         });
         nuevo.id = created.id; nuevo._graphId = created.id;
-      }catch(err){ console.error(err); alert("No se pudo crear el cliente en SharePoint: " + err.message); return null; }
+      }catch(err){ console.error(err); notify("No se pudo crear el cliente en SharePoint: " + err.message, 'error'); setSaving(false); return null; }
+      setSaving(false);
     }
     setClientes(prev => [...prev, nuevo]);
     return nuevo;
@@ -297,6 +341,7 @@ export function useLexaraApp(){
     if(draftFactura){
       const nuevo = {...updates};
       if(liveMode){
+        setSaving(true);
         const list = listByKey('facturacion');
         const graphFields = {};
         Object.keys(updates).forEach(key => { if(list.mapping[key]) graphFields[list.mapping[key]] = updates[key]; });
@@ -312,7 +357,8 @@ export function useLexaraApp(){
               method:"PATCH", body: JSON.stringify({ [list.mapping.Factura]: numero })
             });
           }
-        }catch(err){ console.error(err); alert("No se pudo crear la factura en SharePoint: " + err.message); return; }
+        }catch(err){ console.error(err); notify("No se pudo crear la factura en SharePoint: " + err.message, 'error'); setSaving(false); return; }
+        setSaving(false);
       } else {
         const maxId = facturas.reduce((max,f) => Math.max(max, Number(f.id)||0), 0);
         nuevo.id = maxId + 1;
@@ -326,6 +372,7 @@ export function useLexaraApp(){
 
     setFacturas(prev => prev.map(f => f.id===activeFacturaId ? {...f, ...updates} : f));
     if(liveMode){
+      setSaving(true);
       const list = listByKey('facturacion');
       const graphBody = {};
       Object.keys(updates).forEach(key => { if(list.mapping[key]) graphBody[list.mapping[key]] = updates[key]; });
@@ -333,7 +380,8 @@ export function useLexaraApp(){
         await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items/${activeFactura._graphId}/fields`, {
           method:"PATCH", body: JSON.stringify(graphBody)
         });
-      }catch(err){ console.error(err); alert("No se pudo guardar en SharePoint: " + err.message); return; }
+      }catch(err){ console.error(err); notify("No se pudo guardar en SharePoint: " + err.message, 'error'); setSaving(false); return; }
+      setSaving(false);
     }
     setActiveFacturaId(null);
   }
@@ -352,6 +400,7 @@ export function useLexaraApp(){
     if(draftOrdenCompra){
       const nuevo = {...updates};
       if(liveMode){
+        setSaving(true);
         const list = listByKey('ordenesCompra');
         const graphFields = Graph.graphFieldsFromUpdates(list, updates);
         try{
@@ -359,7 +408,8 @@ export function useLexaraApp(){
             method:"POST", body: JSON.stringify({ fields: graphFields })
           });
           nuevo.id = created.id; nuevo._graphId = created.id;
-        }catch(err){ console.error(err); alert("No se pudo crear la orden de compra en SharePoint: " + err.message); return; }
+        }catch(err){ console.error(err); notify("No se pudo crear la orden de compra en SharePoint: " + err.message, 'error'); setSaving(false); return; }
+        setSaving(false);
       } else {
         const maxId = ordenesCompra.reduce((max,o) => Math.max(max, Number(o.id)||0), 0);
         nuevo.id = maxId + 1;
@@ -372,13 +422,15 @@ export function useLexaraApp(){
 
     setOrdenesCompra(prev => prev.map(o => o.id===activeOrdenCompraId ? {...o, ...updates} : o));
     if(liveMode){
+      setSaving(true);
       const list = listByKey('ordenesCompra');
       const graphBody = Graph.graphFieldsFromUpdates(list, updates);
       try{
         await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items/${activeOrdenCompra._graphId}/fields`, {
           method:"PATCH", body: JSON.stringify(graphBody)
         });
-      }catch(err){ console.error(err); alert("No se pudo guardar en SharePoint: " + err.message); return; }
+      }catch(err){ console.error(err); notify("No se pudo guardar en SharePoint: " + err.message, 'error'); setSaving(false); return; }
+      setSaving(false);
     }
     setActiveOrdenCompraId(null);
   }
@@ -390,6 +442,8 @@ export function useLexaraApp(){
     testStatus, testConnection, applyAllMappings, downloadAllMappings,
     refreshData, refreshing,
     signIn, enterDemo, goSetup, signOut,
+    saving, signingIn,
+    toast, closeToast, confirmState, acceptConfirm, cancelConfirm,
     procesos, clientes, facturas, ordenesCompra,
     currentFilter, setFilter: setCurrentFilter, searchQuery, setSearchQuery: setSearchQuery,
     onSearch: setSearchQuery,

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { clienteForFactura, procesoForFactura, facturaNumero, parseMonto, fmtMonto, IVA_RATE_DEFAULT } from '../lib/graph';
+import { useEscapeToClose } from '../hooks/useEscapeToClose';
 import membrete from '../assets/Membrete Lexara.png';
 import qrRedes from '../assets/Qr_Redes.png';
 
@@ -59,7 +60,7 @@ function computeLive(form){
   return { subtotal, iva, total: subtotal + iva };
 }
 
-export default function FacturaDrawer({ factura, clientes, procesos, liveMode, onClose, onSave, onUpdateCliente, autoPrint, onAutoPrinted }){
+export default function FacturaDrawer({ factura, clientes, procesos, liveMode, onClose, onSave, onUpdateCliente, autoPrint, onAutoPrinted, saving }){
   const [form, setForm] = useState(null);
 
   useEffect(() => {
@@ -76,6 +77,8 @@ export default function FacturaDrawer({ factura, clientes, procesos, liveMode, o
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoPrint, form]);
+
+  useEscapeToClose(!!factura, onClose);
 
   if(!factura || !form) return null;
 
@@ -240,9 +243,11 @@ export default function FacturaDrawer({ factura, clientes, procesos, liveMode, o
           </div>
         </div>
         <div className="drawer-foot">
-          <button className="btn-primary" onClick={handleSave}>Guardar cambios</button>
-          <button className="btn-secondary" onClick={imprimirCuandoListo}>Imprimir</button>
-          <button className="btn-secondary" onClick={onClose}>Cancelar</button>
+          <button className="btn-primary" onClick={handleSave} disabled={saving}>
+            {saving && <span className="btn-spinner" />}{saving ? "Guardando…" : "Guardar cambios"}
+          </button>
+          <button className="btn-secondary" onClick={imprimirCuandoListo} disabled={saving}>Imprimir</button>
+          <button className="btn-secondary" onClick={onClose} disabled={saving}>Cancelar</button>
           <span className="save-hint">{liveMode ? "Los cambios se guardan en SharePoint." : "Modo demo — los cambios no se guardan."}</span>
         </div>
       </div>

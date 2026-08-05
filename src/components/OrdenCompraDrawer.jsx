@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { clienteForOrdenCompra, procesoForOrdenCompra, ordenCompraNumero, facturaForOrdenCompra, facturaNumero, parseMonto, fmtMonto, IVA_RATE_DEFAULT } from '../lib/graph';
+import { useEscapeToClose } from '../hooks/useEscapeToClose';
 import membrete from '../assets/Membrete Lexara.png';
 import qrRedes from '../assets/Qr_Redes.png';
 
@@ -51,7 +52,7 @@ function computeLive(form){
   return { subtotal, iva, total: subtotal + iva };
 }
 
-export default function OrdenCompraDrawer({ ordenCompra, clientes, procesos, facturas, liveMode, onClose, onSave, onUpdateCliente, autoPrint, onAutoPrinted }){
+export default function OrdenCompraDrawer({ ordenCompra, clientes, procesos, facturas, liveMode, onClose, onSave, onUpdateCliente, autoPrint, onAutoPrinted, saving }){
   const [form, setForm] = useState(null);
 
   useEffect(() => {
@@ -66,6 +67,8 @@ export default function OrdenCompraDrawer({ ordenCompra, clientes, procesos, fac
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoPrint, form]);
+
+  useEscapeToClose(!!ordenCompra, onClose);
 
   if(!ordenCompra || !form) return null;
 
@@ -222,9 +225,11 @@ export default function OrdenCompraDrawer({ ordenCompra, clientes, procesos, fac
           </div>
         </div>
         <div className="drawer-foot">
-          <button className="btn-primary btn-primary-oc" onClick={handleSave}>Guardar cambios</button>
-          <button className="btn-secondary" onClick={imprimirCuandoListo}>Imprimir</button>
-          <button className="btn-secondary" onClick={onClose}>Cancelar</button>
+          <button className="btn-primary btn-primary-oc" onClick={handleSave} disabled={saving}>
+            {saving && <span className="btn-spinner" />}{saving ? "Guardando…" : "Guardar cambios"}
+          </button>
+          <button className="btn-secondary" onClick={imprimirCuandoListo} disabled={saving}>Imprimir</button>
+          <button className="btn-secondary" onClick={onClose} disabled={saving}>Cancelar</button>
           <span className="save-hint">{liveMode ? "Los cambios se guardan en SharePoint." : "Modo demo — los cambios no se guardan."}</span>
         </div>
       </div>

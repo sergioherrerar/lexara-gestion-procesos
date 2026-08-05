@@ -49,10 +49,10 @@ export default function IconButton({ icon, variant = 'edit', label, href, onClic
 }
 
 // Botón con ícono + texto, para acciones destacadas (formularios, pies de panel).
-export function IconTextButton({ icon, variant = 'primary', children, onClick, style }){
+export function IconTextButton({ icon, variant = 'primary', children, onClick, style, disabled }){
   const base = variant === 'primary' ? 'btn-primary' : 'btn-secondary';
   return (
-    <button type="button" className={base} onClick={onClick} style={{display:'inline-flex', alignItems:'center', gap:7, ...style}}>
+    <button type="button" className={base} onClick={onClick} disabled={disabled} style={{display:'inline-flex', alignItems:'center', gap:7, ...style}}>
       <span style={{width:14, height:14, display:'inline-flex'}}>{ICONS[icon]}</span>
       {children}
     </button>

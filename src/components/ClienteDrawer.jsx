@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { IconTextButton } from './IconButton';
+import { useEscapeToClose } from '../hooks/useEscapeToClose';
 
 const CLIENTE_FIELDS = [
   ["RazonSocial","Razón social"],
@@ -10,7 +11,7 @@ const CLIENTE_FIELDS = [
   ["Entidad","Entidad"],
 ];
 
-export default function ClienteDrawer({ cliente, liveMode, onClose, onSave, onDelete }){
+export default function ClienteDrawer({ cliente, liveMode, onClose, onSave, onDelete, saving }){
   const [form, setForm] = useState(null);
 
   useEffect(() => {
@@ -22,6 +23,8 @@ export default function ClienteDrawer({ cliente, liveMode, onClose, onSave, onDe
       setForm(null);
     }
   }, [cliente]);
+
+  useEscapeToClose(!!cliente, onClose);
 
   if(!cliente || !form) return null;
 
@@ -49,9 +52,11 @@ export default function ClienteDrawer({ cliente, liveMode, onClose, onSave, onDe
           </div>
         </div>
         <div className="drawer-foot">
-          <button className="btn-primary" onClick={() => onSave(form)}>Guardar cambios</button>
-          <IconTextButton icon="delete" variant="secondary" onClick={() => onDelete(cliente.id)}>Eliminar cliente</IconTextButton>
-          <button className="btn-secondary" onClick={onClose}>Cancelar</button>
+          <button className="btn-primary" onClick={() => onSave(form)} disabled={saving}>
+            {saving && <span className="btn-spinner" />}{saving ? "Guardando…" : "Guardar cambios"}
+          </button>
+          <IconTextButton icon="delete" variant="secondary" onClick={() => onDelete(cliente.id)} disabled={saving}>Eliminar cliente</IconTextButton>
+          <button className="btn-secondary" onClick={onClose} disabled={saving}>Cancelar</button>
           <span className="save-hint">{liveMode ? "Los cambios se guardan en SharePoint." : "Modo demo — los cambios no se guardan."}</span>
         </div>
       </div>

@@ -1,5 +1,5 @@
 import { ICON_SVG } from '../config';
-import { clienteForFactura, procesoForFactura, facturaNumero, computeFacturaTotals, fmtMonto, fmtDate, fechaFromPartes } from '../lib/graph';
+import { clienteForFactura, procesoForFactura, facturaNumero, computeFacturaTotals, fmtMonto, fmtDate, fechaFromPartes, estadoFacturaBadgeClass } from '../lib/graph';
 import IconButton, { IconTextButton } from './IconButton';
 
 function fechaOrdenable(f){
@@ -39,7 +39,12 @@ export default function FacturacionView({ facturas, clientes, procesos, searchQu
               const proceso = procesoForFactura(procesos, f);
               const totals = computeFacturaTotals(f);
               return (
-                <tr key={f.id} onClick={() => onOpenFactura(f.id)}>
+                <tr
+                  key={f.id}
+                  onClick={() => onOpenFactura(f.id)}
+                  role="button" tabIndex={0}
+                  onKeyDown={e => { if(e.key==='Enter' || e.key===' '){ e.preventDefault(); onOpenFactura(f.id); } }}
+                >
                   <td>{facturaNumero(f)}</td>
                   <td className="cliente">{cliente?.RazonSocial || "—"}</td>
                   <td>{f.Contrato || "—"}</td>
@@ -48,7 +53,7 @@ export default function FacturacionView({ facturas, clientes, procesos, searchQu
                   <td>{fmtMonto(totals.subtotal)}</td>
                   <td>{fmtMonto(totals.iva)}</td>
                   <td>{fmtMonto(totals.total)}</td>
-                  <td><span className={"estado-badge" + (f.EstadoFactura ? " estado-" + f.EstadoFactura.toLowerCase() : "")}>{f.EstadoFactura || "—"}</span></td>
+                  <td><span className={"badge " + estadoFacturaBadgeClass(f.EstadoFactura)}>{f.EstadoFactura || "—"}</span></td>
                   <td style={{whiteSpace:'nowrap'}}>
                     <div className="row-actions">
                       <IconButton icon="edit" variant="edit" label="Ver / editar factura" onClick={e => { e.stopPropagation(); onOpenFactura(f.id); }} />

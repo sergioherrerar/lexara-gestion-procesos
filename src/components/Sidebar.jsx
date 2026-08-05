@@ -21,6 +21,8 @@ export default function Sidebar({ view, onGoView, account, liveMode, onSignOut, 
           key={item.view}
           className={"nav-item" + (view===item.view ? " active" : "")}
           onClick={() => onGoView(item.view)}
+          role="button" tabIndex={0}
+          onKeyDown={e => { if(e.key==='Enter' || e.key===' '){ e.preventDefault(); onGoView(item.view); } }}
         >
           <span className="mark" dangerouslySetInnerHTML={{__html: ICON_SVG}} />
           <span className="label-text">{item.label}</span>
@@ -29,7 +31,12 @@ export default function Sidebar({ view, onGoView, account, liveMode, onSignOut, 
       <div className="nav-group-label">Próximamente</div>
       <div className="nav-item" style={{opacity:.45, cursor:'default'}}><span className="dot"></span><span className="label-text">Desistimientos</span></div>
       <div className="nav-group-label">Sistema</div>
-      <div className={"nav-item" + (view==='setup' ? " active" : "")} onClick={() => onGoView('setup')}>
+      <div
+        className={"nav-item" + (view==='setup' ? " active" : "")}
+        onClick={() => onGoView('setup')}
+        role="button" tabIndex={0}
+        onKeyDown={e => { if(e.key==='Enter' || e.key===' '){ e.preventDefault(); onGoView('setup'); } }}
+      >
         <span className="mark" dangerouslySetInnerHTML={{__html: ICON_SVG}} />
         <span className="label-text">Configuración</span>
       </div>

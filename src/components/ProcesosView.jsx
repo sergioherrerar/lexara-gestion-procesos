@@ -34,12 +34,20 @@ export default function ProcesosView({ procesos, currentFilter, setFilter, searc
       </div>
       <div className="toolbar">
         {filters.map(f => (
-          <div key={f.key} className={"filter-chip" + (currentFilter===f.key ? " active" : "")} onClick={() => setFilter(f.key)}>{f.label}</div>
+          <div
+            key={f.key}
+            className={"filter-chip" + (currentFilter===f.key ? " active" : "")}
+            onClick={() => setFilter(f.key)}
+            role="button" tabIndex={0}
+            onKeyDown={e => { if(e.key==='Enter' || e.key===' '){ e.preventDefault(); setFilter(f.key); } }}
+          >{f.label}</div>
         ))}
         <div
           className={"filter-chip filter-chip-terminados" + (showTerminados ? " active" : "")}
           style={{marginLeft:'auto'}}
           onClick={() => setShowTerminados(v => !v)}
+          role="button" tabIndex={0}
+          onKeyDown={e => { if(e.key==='Enter' || e.key===' '){ e.preventDefault(); setShowTerminados(v => !v); } }}
         >
           {showTerminados ? "← Ver vigentes" : `Ver terminados (${totalTerminados})`}
         </div>
@@ -53,7 +61,12 @@ export default function ProcesosView({ procesos, currentFilter, setFilter, searc
           </thead>
           <tbody>
             {rows.length ? rows.map(p => (
-              <tr key={p.id} onClick={() => onOpenProceso(p.id)}>
+              <tr
+                key={p.id}
+                onClick={() => onOpenProceso(p.id)}
+                role="button" tabIndex={0}
+                onKeyDown={e => { if(e.key==='Enter' || e.key===' '){ e.preventDefault(); onOpenProceso(p.id); } }}
+              >
                 <td className="radicado">{p.Radicado || "—"}</td>
                 <td className="cliente">{p.Cliente || "—"}</td>
                 <td>{p.Despacho || "—"}{p.NumeroDespacho ? ` · ${p.NumeroDespacho}` : ""}</td>

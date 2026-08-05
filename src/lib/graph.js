@@ -155,6 +155,16 @@ export function estadoBadgeClass(estado){
   if(e.includes('trámite') || e.includes('tramite')) return 'badge-amarillo';
   return 'badge-verde';
 }
+// Mismo sistema de etiquetas .badge que Procesos (antes Facturación tenía su
+// propio .estado-badge, con otro radio/colores — quedaban dos componentes
+// para lo mismo). Pagada/Radicada/Anulada son las únicas 3 opciones reales.
+export function estadoFacturaBadgeClass(estado){
+  const e = (estado||"").toLowerCase();
+  if(e.includes('pagada')) return 'badge-verde';
+  if(e.includes('radicada')) return 'badge-amarillo';
+  if(e.includes('anulada')) return 'badge-naranja';
+  return 'badge-gris';
+}
 export function stripHtml(html){
   if(!html) return "";
   const tmp = document.createElement('div');

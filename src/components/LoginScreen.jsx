@@ -1,6 +1,6 @@
 import logoLogin from '../assets/Logo verde OScuro.png';
 
-export default function LoginScreen({ config, onSignIn, onEnterDemo, onGoSetup }){
+export default function LoginScreen({ config, onSignIn, onEnterDemo, onGoSetup, signingIn }){
   return (
     <div id="login-screen">
       <div className="login-visual">
@@ -19,11 +19,13 @@ export default function LoginScreen({ config, onSignIn, onEnterDemo, onGoSetup }
           <div className="brand-logo-wrap"><img src={logoLogin} alt="Lexara Abogados" /></div>
           <h1>Gestión de procesos</h1>
           <p className="sub">Inicia sesión con tu cuenta de Microsoft 365 del despacho para acceder a los procesos judiciales.</p>
-          <button className="btn-msal" onClick={onSignIn}>
-            <svg viewBox="0 0 21 21" fill="none"><rect x="1" y="1" width="9" height="9" fill="#f25022"/><rect x="11" y="1" width="9" height="9" fill="#7fba00"/><rect x="1" y="11" width="9" height="9" fill="#00a4ef"/><rect x="11" y="11" width="9" height="9" fill="#ffb900"/></svg>
-            Iniciar sesión con Microsoft
+          <button className="btn-msal" onClick={onSignIn} disabled={signingIn}>
+            {signingIn ? <span className="btn-spinner" /> : (
+              <svg viewBox="0 0 21 21" fill="none"><rect x="1" y="1" width="9" height="9" fill="#f25022"/><rect x="11" y="1" width="9" height="9" fill="#7fba00"/><rect x="1" y="11" width="9" height="9" fill="#00a4ef"/><rect x="11" y="11" width="9" height="9" fill="#ffb900"/></svg>
+            )}
+            {signingIn ? "Conectando…" : "Iniciar sesión con Microsoft"}
           </button>
-          <button className="login-demo" onClick={onEnterDemo}>Explorar en modo demo (datos de ejemplo)</button>
+          <button className="login-demo" onClick={onEnterDemo} disabled={signingIn}>Explorar en modo demo (datos de ejemplo)</button>
           {!(config.CLIENT_ID && config.TENANT_ID) && (
             <div className="config-banner">
               Esta instancia aún no tiene configurado <span className="code-inline">CLIENT_ID</span> / <span className="code-inline">TENANT_ID</span>.

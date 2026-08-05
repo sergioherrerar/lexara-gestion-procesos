@@ -7,14 +7,22 @@ function IconFolder(){
 function IconAlert(){
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 9v4M12 17h.01M10.3 3.9L2.5 18a1.5 1.5 0 001.3 2.2h16.4a1.5 1.5 0 001.3-2.2L13.7 3.9a1.5 1.5 0 00-2.6 0z"/></svg>;
 }
+function IconUsers(){
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>;
+}
+function IconReceipt(){
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 2h16v20l-3-2-2 2-2-2-2 2-2-2-2 2-3-2V2z"/><path d="M8 7h8M8 11h8M8 15h5"/></svg>;
+}
 
-export default function DashboardView({ procesos }){
+export default function DashboardView({ procesos, clientes = [], facturas = [], ordenesCompra = [] }){
   const activos = procesos.filter(p => !(p.Estado||"").toLowerCase().includes('termin'));
   const tiposDistintos = new Set(procesos.map(p => stripHtml(p.TipoAccion) || "Sin dato"));
 
   const stats = [
     {label:"Procesos Lexara", value:activos.length, icon:<IconFolder/>, cls:'icon-teal', delta:`${procesos.length} en total`},
     {label:"Tipo de Acción", value:tiposDistintos.size, icon:<IconAlert/>, cls:'icon-green', delta:"Categorías distintas"},
+    {label:"Clientes", value:clientes.length, icon:<IconUsers/>, cls:'icon-orange', delta:"Registrados en total"},
+    {label:"Facturación", value:facturas.length, icon:<IconReceipt/>, cls:'icon-yellow', delta:`${ordenesCompra.length} órdenes de compra`},
   ];
 
   const estadoData = groupCount(activos, p => p.EstadoVT);

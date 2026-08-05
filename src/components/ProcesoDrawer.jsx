@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { stripHtml, estadoBadgeClass, findClienteByNombre } from '../lib/graph';
 import { IconTextButton } from './IconButton';
+import { useEscapeToClose } from '../hooks/useEscapeToClose';
 
 const FIELD_SECTIONS = [
   {title:"Datos generales", fields:[
@@ -25,10 +26,11 @@ const LABELS = {
 };
 const EMPTY_NEW_CLIENTE = {RazonSocial:"", Nit:"", Direccion:"", Telefono:"", Correo:""};
 
-export default function ProcesoDrawer({ proceso, clientes, liveMode, onClose, onSave, onCreateCliente }){
+export default function ProcesoDrawer({ proceso, clientes, liveMode, onClose, onSave, onCreateCliente, saving }){
   const [form, setForm] = useState(null);
   const [showNewCliente, setShowNewCliente] = useState(false);
   const [newCliente, setNewCliente] = useState(EMPTY_NEW_CLIENTE);
+  const [nuevoClienteError, setNuevoClienteError] = useState("");
 
   useEffect(() => {
     if(proceso){
@@ -39,17 +41,21 @@ export default function ProcesoDrawer({ proceso, clientes, liveMode, onClose, on
       setForm(initial);
       setShowNewCliente(false);
       setNewCliente(EMPTY_NEW_CLIENTE);
+      setNuevoClienteError("");
     } else {
       setForm(null);
     }
   }, [proceso]);
+
+  useEscapeToClose(!!proceso, onClose);
 
   if(!proceso || !form) return null;
 
   function setField(key, value){ setForm(prev => ({...prev, [key]: value})); }
 
   async function handleCreateCliente(){
-    if(!newCliente.RazonSocial.trim()){ alert("El nombre (Razón social) es obligatorio."); return; }
+    if(!newCliente.RazonSocial.trim()){ setNuevoClienteError("El nombre (Razón social) es obligatorio."); return; }
+    setNuevoClienteError("");
     const created = await onCreateCliente(newCliente);
     if(created){
       setField('Cliente', created.RazonSocial);
@@ -112,9 +118,10 @@ export default function ProcesoDrawer({ proceso, clientes, liveMode, onClose, on
                               <div className="field"><label>Teléfono</label><input type="text" value={newCliente.Telefono} onChange={e => setNewCliente(v => ({...v, Telefono:e.target.value}))} /></div>
                               <div className="field full" style={{gridColumn:'1/-1'}}><label>Correo</label><input type="text" value={newCliente.Correo} onChange={e => setNewCliente(v => ({...v, Correo:e.target.value}))} /></div>
                             </div>
+                            {nuevoClienteError && <div className="field-warning" style={{marginBottom:10}}>{nuevoClienteError}</div>}
                             <div style={{marginTop:10, display:'flex', gap:8}}>
-                              <IconTextButton icon="add" variant="primary" onClick={handleCreateCliente}>Crear cliente</IconTextButton>
-                              <button type="button" className="btn-secondary" onClick={() => setShowNewCliente(false)}>Cancelar</button>
+                              <IconTextButton icon="add" variant="primary" onClick={handleCreateCliente} disabled={saving}>{saving ? "Creando…" : "Crear cliente"}</IconTextButton>
+                              <button type="button" className="btn-secondary" onClick={() => setShowNewCliente(false)} disabled={saving}>Cancelar</button>
                             </div>
                           </div>
                         )}
@@ -135,8 +142,10 @@ export default function ProcesoDrawer({ proceso, clientes, liveMode, onClose, on
           ))}
         </div>
         <div className="drawer-foot">
-          <button className="btn-primary" onClick={() => onSave(form)}>Guardar cambios</button>
-          <button className="btn-secondary" onClick={onClose}>Cancelar</button>
+          <button className="btn-primary" onClick={() => onSave(form)} disabled={saving}>
+            {saving && <span className="btn-spinner" />}{saving ? "Guardando…" : "Guardar cambios"}
+          </button>
+          <button className="btn-secondary" onClick={onClose} disabled={saving}>Cancelar</button>
           <span className="save-hint">{liveMode ? "Los cambios se guardan en SharePoint." : "Modo demo — los cambios no se guardan."}</span>
         </div>
       </div>
