@@ -82,7 +82,7 @@ const LABELS = {
 };
 const EMPTY_NEW_CLIENTE = {RazonSocial:"", Nit:"", Direccion:"", Telefono:"", Correo:""};
 
-export default function ProcesoDrawer({ proceso, clientes, facturas, ordenesCompra, liveMode, onClose, onSave, onCreateCliente, onOpenFactura, onPrintFactura, onOpenOrdenCompra, onPrintOrdenCompra, saving }){
+export default function ProcesoDrawer({ proceso, clientes, facturas, ordenesCompra, liveMode, onClose, onSave, onCreateCliente, onOpenFactura, onPrintFactura, onOpenOrdenCompra, onPrintOrdenCompra, saving, canWrite = true }){
   const [form, setForm] = useState(null);
   const [showNewCliente, setShowNewCliente] = useState(false);
   const [newCliente, setNewCliente] = useState(EMPTY_NEW_CLIENTE);
@@ -208,11 +208,13 @@ export default function ProcesoDrawer({ proceso, clientes, facturas, ordenesComp
                     return (
                       <div className="field full" style={{gridColumn:'1/-1'}} key={key}>
                         <label>Cliente</label>
-                        <select value={form.Cliente} onChange={e => setField('Cliente', e.target.value)}>
+                        <select value={form.Cliente} onChange={e => setField('Cliente', e.target.value)} disabled={!canWrite}>
                           <option value="">— seleccionar cliente —</option>
                           {clienteNombres.map(n => <option value={n} key={n}>{n}</option>)}
                         </select>
-                        <IconTextButton icon="add" variant="secondary" style={{marginTop:8, alignSelf:'flex-start'}} onClick={() => setShowNewCliente(v => !v)}>Nuevo cliente</IconTextButton>
+                        {canWrite && (
+                          <IconTextButton icon="add" variant="secondary" style={{marginTop:8, alignSelf:'flex-start'}} onClick={() => setShowNewCliente(v => !v)}>Nuevo cliente</IconTextButton>
+                        )}
                         {form.Cliente && (
                           linkedCliente ? (
                             <div style={{marginTop:10, padding:'10px 12px', border:'1px solid var(--gris-linea)', borderRadius:8, fontSize:12.5, color:'var(--texto-suave)', lineHeight:1.7}}>
@@ -250,8 +252,8 @@ export default function ProcesoDrawer({ proceso, clientes, facturas, ordenesComp
                     <div className={"field" + (type==='textarea' ? " full" : "")} style={type==='textarea' ? {gridColumn:'1/-1'} : undefined} key={key}>
                       <label>{LABELS[key]}</label>
                       {type==='textarea'
-                        ? <textarea value={form[key]} onChange={e => setField(key, e.target.value)} />
-                        : <input type={type} value={form[key]} onChange={e => setField(key, e.target.value)} />}
+                        ? <textarea value={form[key]} onChange={e => setField(key, e.target.value)} readOnly={!canWrite} />
+                        : <input type={type} value={form[key]} onChange={e => setField(key, e.target.value)} readOnly={!canWrite} />}
                     </div>
                   );
                 })}
@@ -260,11 +262,20 @@ export default function ProcesoDrawer({ proceso, clientes, facturas, ordenesComp
           ))}
         </div>
         <div className="drawer-foot">
-          <button className="btn-primary" onClick={() => onSave(form)} disabled={saving}>
-            {saving && <span className="btn-spinner" />}{saving ? "Guardando…" : "Guardar cambios"}
-          </button>
-          <button className="btn-secondary" onClick={onClose} disabled={saving}>Cancelar</button>
-          <span className="save-hint">{liveMode ? "Los cambios se guardan en SharePoint." : "Modo demo — los cambios no se guardan."}</span>
+          {canWrite ? (
+            <>
+              <button className="btn-primary" onClick={() => onSave(form)} disabled={saving}>
+                {saving && <span className="btn-spinner" />}{saving ? "Guardando…" : "Guardar cambios"}
+              </button>
+              <button className="btn-secondary" onClick={onClose} disabled={saving}>Cancelar</button>
+              <span className="save-hint">{liveMode ? "Los cambios se guardan en SharePoint." : "Modo demo — los cambios no se guardan."}</span>
+            </>
+          ) : (
+            <>
+              <button className="btn-secondary" onClick={onClose}>Cerrar</button>
+              <span className="save-hint">Solo puedes consultar esta información.</span>
+            </>
+          )}
         </div>
       </div>
     </>

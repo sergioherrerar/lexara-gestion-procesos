@@ -200,6 +200,26 @@ export const SHAREPOINT_LISTS_CONFIG = [
     ],
     mapping: {},
   },
+  {
+    key: "colaboradores",
+    listName: "Equipo MD",
+    label: "Colaborador Lexara",
+    // Base del sistema de roles/permisos: el campo "Rol" (Administrador /
+    // Jefe / Colaborador) define qué partes del menú puede ver cada quien —
+    // ver src/lib/permissions.js. Se cruza por Correo contra la cuenta de
+    // Microsoft 365 con la que se inició sesión.
+    semanticFields: [
+      {key:"Nombre", label:"Nombre", hint:["nombre"], required:true},
+      {key:"TipoIdentificacion", label:"Tipo de identificación", hint:["tipo identif","tipo de identificacion","tipo de identificación"]},
+      {key:"Identificacion", label:"Identificación", hint:["identificacion","identificación"]},
+      {key:"Telefono", label:"Teléfono", hint:["telefono","teléfono"]},
+      {key:"Direccion", label:"Dirección", hint:["direccion","dirección"]},
+      {key:"Correo", label:"Correo", hint:["correo","email"], required:true},
+      {key:"Activo", label:"Activo", hint:["activo"]},
+      {key:"Rol", label:"Rol", hint:["rol"], required:true},
+    ],
+    mapping: {},
+  },
 ];
 
 export const DEMO_PROCESOS = [
@@ -253,6 +273,14 @@ export const DEMO_ORDENES_COMPRA = [
     Descripcion5:"", Cantidad5:"", ValorUnitario5:"",
     Descripcion6:"", Cantidad6:"", ValorUnitario6:"",
     Subtotal:"180.000,00", Iva:"34.200,00", Total:"214.200,00", RetIva:"", ValorAPagar:"214.200,00"},
+];
+
+export const DEMO_COLABORADORES = [
+  {id:1, Nombre:"Monica Paola Gómez", TipoIdentificacion:"C.C.", Identificacion:"40.039.240", Telefono:"+57 312 4420026", Direccion:"Carrera 56B", Correo:"Gerencia@lexaraabogados.com", Activo:true, Rol:"Jefe"},
+  {id:2, Nombre:"Sergio Alexander Herrera", TipoIdentificacion:"C.C.", Identificacion:"80.728.333", Telefono:"+57 310 4380043", Direccion:"Calle 128 No 87", Correo:"Soporte@lexaraabogados.com", Activo:true, Rol:"Administrador"},
+  {id:3, Nombre:"Dahiana Camila Pedraza", TipoIdentificacion:"C.C.", Identificacion:"1.014.300.118", Telefono:"+57 3202751824", Direccion:"Cll 69a #105-35", Correo:"dcpedrazap@lexaraabogados.com", Activo:true, Rol:"Colaborador"},
+  {id:4, Nombre:"Daniel Santiago Flechas", TipoIdentificacion:"C.C.", Identificacion:"1.032.502.681", Telefono:"+57 310 4112130", Direccion:"Carrera 49B", Correo:"dsflechasa@lexaraabogados.com", Activo:true, Rol:"Colaborador"},
+  {id:5, Nombre:"Ariana Andrea Torres", TipoIdentificacion:"C.C", Identificacion:"1.006.415.925", Telefono:"+57 3124720", Direccion:"Calle 27a #33-6", Correo:"Asesoriajuridica@lexaraabogados.com", Activo:false, Rol:"Colaborador"},
 ];
 
 export const ICON_SVG = `<svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 30 L50 50 L80 30" stroke="currentColor" stroke-width="14" fill="none" stroke-linecap="square"/><path d="M20 70 L50 50 L80 70" stroke="currentColor" stroke-width="14" fill="none" stroke-linecap="square"/></svg>`;

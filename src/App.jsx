@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLexaraApp } from './hooks/useLexaraApp';
+import { canAccessView } from './lib/permissions';
 import LoginScreen from './components/LoginScreen';
 import Sidebar from './components/Sidebar';
 import Topbar from './components/Topbar';
@@ -13,11 +14,23 @@ import ProcesoDrawer from './components/ProcesoDrawer';
 import ClienteDrawer from './components/ClienteDrawer';
 import FacturaDrawer from './components/FacturaDrawer';
 import OrdenCompraDrawer from './components/OrdenCompraDrawer';
+import ColaboradoresView from './components/ColaboradoresView';
+import ColaboradorDrawer from './components/ColaboradorDrawer';
 import { Toast, ConfirmDialog } from './components/Feedback';
 
 export default function App(){
   const app = useLexaraApp();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
+  // Si el rol del usuario cambia (o ya estaba en una sección restringida)
+  // lo devuelve al Dashboard — no solo se oculta del menú, se bloquea el
+  // acceso aunque ya estuviera ahí.
+  useEffect(() => {
+    if(app.appActive && !canAccessView(app.role, app.view)){
+      app.setView('dashboard');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [app.appActive, app.role, app.view]);
 
   const feedback = (
     <>
@@ -55,6 +68,7 @@ export default function App(){
         onGoView={goView}
         account={app.account}
         liveMode={app.liveMode}
+        accessRole={app.role}
         onSignOut={app.signOut}
         mobileOpen={mobileNavOpen}
       />
@@ -70,7 +84,7 @@ export default function App(){
         />
 
         {app.view === 'dashboard' && <DashboardView procesos={app.procesos} clientes={app.clientes} facturas={app.facturas} ordenesCompra={app.ordenesCompra} />}
-        {app.view === 'procesos' && (
+        {app.view === 'procesos' && canAccessView(app.role, 'procesos') && (
           <ProcesosView
             procesos={app.procesos}
             currentFilter={app.currentFilter}
@@ -79,16 +93,17 @@ export default function App(){
             onOpenProceso={app.openProceso}
           />
         )}
-        {app.view === 'clientes' && (
+        {app.view === 'clientes' && canAccessView(app.role, 'clientes') && (
           <ClientesView
             clientes={app.clientes}
             procesos={app.procesos}
             searchQuery={app.searchQuery}
             onOpenCliente={app.openCliente}
             onDeleteCliente={app.deleteCliente}
+            canWrite={app.canWrite}
           />
         )}
-        {app.view === 'facturacion' && (
+        {app.view === 'facturacion' && canAccessView(app.role, 'facturacion') && (
           <FacturacionView
             facturas={app.facturas}
             clientes={app.clientes}
@@ -99,7 +114,7 @@ export default function App(){
             onPrintFactura={app.printFactura}
           />
         )}
-        {app.view === 'ordenesCompra' && (
+        {app.view === 'ordenesCompra' && canAccessView(app.role, 'ordenesCompra') && (
           <OrdenesCompraView
             ordenesCompra={app.ordenesCompra}
             clientes={app.clientes}
@@ -112,7 +127,13 @@ export default function App(){
             onCreateFacturaFromOrdenCompra={app.createFacturaFromOrdenCompra}
           />
         )}
-        {app.view === 'setup' && (
+        {app.view === 'colaboradores' && canAccessView(app.role, 'colaboradores') && (
+          <ColaboradoresView
+            colaboradores={app.colaboradores}
+            searchQuery={app.searchQuery}
+          />
+        )}
+        {app.view === 'setup' && canAccessView(app.role, 'setup') && (
           <SetupView
             config={app.config}
             saveConfig={app.saveConfig}
@@ -123,6 +144,10 @@ export default function App(){
             onTestConnection={app.testConnection}
             onApplyAllMappings={app.applyAllMappings}
             onDownloadMappings={app.downloadAllMappings}
+            colaboradores={app.colaboradores}
+            onOpenColaborador={app.openColaborador}
+            onCreateColaborador={app.newColaborador}
+            onDeleteColaborador={app.deleteColaborador}
           />
         )}
       </div>
@@ -141,6 +166,7 @@ export default function App(){
         onOpenOrdenCompra={app.openOrdenCompra}
         onPrintOrdenCompra={app.printOrdenCompra}
         saving={app.saving}
+        canWrite={app.canWrite}
       />
       <ClienteDrawer
         cliente={app.activeCliente}
@@ -149,6 +175,7 @@ export default function App(){
         onSave={app.saveCliente}
         onDelete={app.deleteCliente}
         saving={app.saving}
+        canWrite={app.canWrite}
       />
       <FacturaDrawer
         factura={app.activeFactura}
@@ -173,6 +200,14 @@ export default function App(){
         onUpdateCliente={app.updateCliente}
         autoPrint={!!app.activeOrdenCompra && app.autoPrintOrdenCompraId === app.activeOrdenCompra.id}
         onAutoPrinted={app.clearAutoPrintOrdenCompra}
+        saving={app.saving}
+      />
+      <ColaboradorDrawer
+        colaborador={app.activeColaborador}
+        liveMode={app.liveMode}
+        onClose={app.closeColaboradorDrawer}
+        onSave={app.saveColaborador}
+        onDelete={app.deleteColaborador}
         saving={app.saving}
       />
       {feedback}

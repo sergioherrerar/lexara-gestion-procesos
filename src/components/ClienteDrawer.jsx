@@ -11,7 +11,7 @@ const CLIENTE_FIELDS = [
   ["Entidad","Entidad"],
 ];
 
-export default function ClienteDrawer({ cliente, liveMode, onClose, onSave, onDelete, saving }){
+export default function ClienteDrawer({ cliente, liveMode, onClose, onSave, onDelete, saving, canWrite = true }){
   const [form, setForm] = useState(null);
 
   useEffect(() => {
@@ -45,19 +45,28 @@ export default function ClienteDrawer({ cliente, liveMode, onClose, onSave, onDe
               {CLIENTE_FIELDS.map(([key,label]) => (
                 <div className="field" key={key}>
                   <label>{label}</label>
-                  <input type="text" value={form[key]} onChange={e => setForm(v => ({...v, [key]: e.target.value}))} />
+                  <input type="text" value={form[key]} onChange={e => setForm(v => ({...v, [key]: e.target.value}))} readOnly={!canWrite} />
                 </div>
               ))}
             </div>
           </div>
         </div>
         <div className="drawer-foot">
-          <button className="btn-primary" onClick={() => onSave(form)} disabled={saving}>
-            {saving && <span className="btn-spinner" />}{saving ? "Guardando…" : "Guardar cambios"}
-          </button>
-          <IconTextButton icon="delete" variant="secondary" onClick={() => onDelete(cliente.id)} disabled={saving}>Eliminar cliente</IconTextButton>
-          <button className="btn-secondary" onClick={onClose} disabled={saving}>Cancelar</button>
-          <span className="save-hint">{liveMode ? "Los cambios se guardan en SharePoint." : "Modo demo — los cambios no se guardan."}</span>
+          {canWrite ? (
+            <>
+              <button className="btn-primary" onClick={() => onSave(form)} disabled={saving}>
+                {saving && <span className="btn-spinner" />}{saving ? "Guardando…" : "Guardar cambios"}
+              </button>
+              <IconTextButton icon="delete" variant="secondary" onClick={() => onDelete(cliente.id)} disabled={saving}>Eliminar cliente</IconTextButton>
+              <button className="btn-secondary" onClick={onClose} disabled={saving}>Cancelar</button>
+              <span className="save-hint">{liveMode ? "Los cambios se guardan en SharePoint." : "Modo demo — los cambios no se guardan."}</span>
+            </>
+          ) : (
+            <>
+              <button className="btn-secondary" onClick={onClose}>Cerrar</button>
+              <span className="save-hint">Solo puedes consultar esta información.</span>
+            </>
+          )}
         </div>
       </div>
     </>

@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
-import { INITIAL_CONFIG, SHAREPOINT_LISTS_CONFIG, DEMO_PROCESOS, DEMO_CLIENTES, DEMO_FACTURAS, DEMO_ORDENES_COMPRA } from '../config';
+import { INITIAL_CONFIG, SHAREPOINT_LISTS_CONFIG, DEMO_PROCESOS, DEMO_CLIENTES, DEMO_FACTURAS, DEMO_ORDENES_COMPRA, DEMO_COLABORADORES } from '../config';
 import * as Graph from '../lib/graph';
+import { canWrite as canWriteForRole } from '../lib/permissions';
 
 export function useLexaraApp(){
   const [config, setConfigState] = useState(INITIAL_CONFIG);
@@ -23,6 +24,9 @@ export function useLexaraApp(){
   const [activeOrdenCompraId, setActiveOrdenCompraId] = useState(null);
   const [draftOrdenCompra, setDraftOrdenCompra] = useState(null);
   const [autoPrintOrdenCompraId, setAutoPrintOrdenCompraId] = useState(null);
+  const [colaboradores, setColaboradores] = useState([]);
+  const [activeColaboradorId, setActiveColaboradorId] = useState(null);
+  const [draftColaborador, setDraftColaborador] = useState(null);
   const [currentFilter, setCurrentFilter] = useState('todos');
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
@@ -69,6 +73,7 @@ export function useLexaraApp(){
     setClientes(JSON.parse(JSON.stringify(DEMO_CLIENTES)));
     setFacturas(JSON.parse(JSON.stringify(DEMO_FACTURAS)));
     setOrdenesCompra(JSON.parse(JSON.stringify(DEMO_ORDENES_COMPRA)));
+    setColaboradores(JSON.parse(JSON.stringify(DEMO_COLABORADORES)));
     setAccount({ name:"Usuario Demo", username:"demo@lexara.com" });
     setAppActive(true);
     if(!silent) setView('dashboard');
@@ -129,6 +134,7 @@ export function useLexaraApp(){
         setClientes(updated.find(l => l.key==='clientes')?.items || []);
         setFacturas(updated.find(l => l.key==='facturacion')?.items || []);
         setOrdenesCompra(updated.find(l => l.key==='ordenesCompra')?.items || []);
+        setColaboradores(updated.find(l => l.key==='colaboradores')?.items || []);
         setLiveMode(true);
         setAppActive(true);
       } else {
@@ -159,6 +165,7 @@ export function useLexaraApp(){
       setClientes(updated.find(l => l.key==='clientes')?.items || []);
       setFacturas(updated.find(l => l.key==='facturacion')?.items || []);
       setOrdenesCompra(updated.find(l => l.key==='ordenesCompra')?.items || []);
+      setColaboradores(updated.find(l => l.key==='colaboradores')?.items || []);
     }catch(err){
       console.error(err);
       notify("No se pudo actualizar la información: " + err.message, 'error');
@@ -192,6 +199,7 @@ export function useLexaraApp(){
     setClientes(updated.find(l => l.key==='clientes')?.items || []);
     setFacturas(updated.find(l => l.key==='facturacion')?.items || []);
     setOrdenesCompra(updated.find(l => l.key==='ordenesCompra')?.items || []);
+    setColaboradores(updated.find(l => l.key==='colaboradores')?.items || []);
     setLiveMode(true);
   }
 
@@ -232,6 +240,20 @@ export function useLexaraApp(){
   const activeCliente = clientes.find(c => c.id===activeClienteId) || null;
   const activeFactura = draftFactura || facturas.find(f => f.id===activeFacturaId) || null;
   const activeOrdenCompra = draftOrdenCompra || ordenesCompra.find(o => o.id===activeOrdenCompraId) || null;
+  const activeColaborador = draftColaborador || colaboradores.find(c => c.id===activeColaboradorId) || null;
+
+  // Rol del usuario que inició sesión, cruzando su correo de Microsoft 365
+  // contra la lista de Colaborador Lexara — ver src/lib/permissions.js.
+  // Modo demo: acceso completo, para poder mostrar toda la app. En vivo, un
+  // correo que no aparece en Equipo MD queda en null — permissions.js lo
+  // trata como el caso más restringido: bloqueo de menú + solo lectura en
+  // todas partes (nunca como acceso total).
+  const role = !liveMode ? 'Administrador' : (() => {
+    const email = (account?.username || '').trim().toLowerCase();
+    const match = colaboradores.find(c => (c.Correo||'').trim().toLowerCase() === email);
+    return match?.Rol || null;
+  })();
+  const canWrite = canWriteForRole(role);
 
   function openProceso(id){ setActiveProcesoId(id); }
   function closeDrawer(){ setActiveProcesoId(null); }
@@ -462,16 +484,82 @@ export function useLexaraApp(){
     setActiveOrdenCompraId(null);
   }
 
+  function openColaborador(id){ setDraftColaborador(null); setActiveColaboradorId(id); }
+  // "+ Nuevo colaborador" solo abre un borrador local — no toca SharePoint
+  // hasta que el usuario le da "Guardar cambios" (mismo criterio que en
+  // Facturación/Órdenes de compra).
+  function newColaborador(){ setActiveColaboradorId(null); setDraftColaborador({}); }
+  function closeColaboradorDrawer(){ setActiveColaboradorId(null); setDraftColaborador(null); }
+  async function saveColaborador(updates){
+    if(!activeColaborador) return;
+
+    if(draftColaborador){
+      const nuevo = {...updates};
+      if(liveMode){
+        setSaving(true);
+        const list = listByKey('colaboradores');
+        const graphFields = Graph.graphFieldsFromUpdates(list, updates);
+        try{
+          const created = await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items`, {
+            method:"POST", body: JSON.stringify({ fields: graphFields })
+          });
+          nuevo.id = created.id; nuevo._graphId = created.id;
+        }catch(err){ console.error(err); notify("No se pudo crear el colaborador en SharePoint: " + err.message, 'error'); setSaving(false); return; }
+        setSaving(false);
+      } else {
+        const maxId = colaboradores.reduce((max,c) => Math.max(max, Number(c.id)||0), 0);
+        nuevo.id = maxId + 1;
+      }
+      setColaboradores(prev => [...prev, nuevo]);
+      setDraftColaborador(null);
+      setActiveColaboradorId(null);
+      return;
+    }
+
+    setColaboradores(prev => prev.map(c => c.id===activeColaboradorId ? {...c, ...updates} : c));
+    if(liveMode){
+      setSaving(true);
+      const list = listByKey('colaboradores');
+      const fields = Graph.graphFieldsFromUpdates(list, updates);
+      try{
+        await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items/${activeColaborador._graphId}/fields`, {
+          method:"PATCH", body: JSON.stringify(fields)
+        });
+      }catch(err){ console.error(err); notify("No se pudo guardar en SharePoint: " + err.message, 'error'); setSaving(false); return; }
+      setSaving(false);
+    }
+    setActiveColaboradorId(null);
+  }
+  async function performDeleteColaborador(id){
+    const colaborador = colaboradores.find(c => c.id===id);
+    if(!colaborador) return;
+    if(liveMode){
+      setSaving(true);
+      const list = listByKey('colaboradores');
+      try{
+        await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items/${colaborador._graphId || colaborador.id}`, { method:"DELETE" });
+      }catch(err){ console.error(err); notify("No se pudo eliminar en SharePoint: " + err.message, 'error'); setSaving(false); return; }
+      setSaving(false);
+    }
+    setColaboradores(prev => prev.filter(c => c.id !== id));
+    if(activeColaboradorId === id) setActiveColaboradorId(null);
+  }
+  function deleteColaborador(id){
+    const colaborador = colaboradores.find(c => c.id===id);
+    if(!colaborador) return;
+    requestConfirm(`¿Eliminar al colaborador "${colaborador.Nombre}"? Esta acción no se puede deshacer.`, () => performDeleteColaborador(id));
+  }
+
   return {
     config, saveConfig, clearConfig,
     lists, listByKey, updateListMapping,
-    liveMode, account, appActive, view, setView,
+    liveMode, account, appActive, view, setView, role, canWrite,
     testStatus, testConnection, applyAllMappings, downloadAllMappings,
     refreshData, refreshing,
     signIn, enterDemo, goSetup, signOut,
     saving, signingIn,
     toast, closeToast, confirmState, acceptConfirm, cancelConfirm,
-    procesos, clientes, facturas, ordenesCompra,
+    procesos, clientes, facturas, ordenesCompra, colaboradores,
     currentFilter, setFilter: setCurrentFilter, searchQuery, setSearchQuery: setSearchQuery,
     onSearch: setSearchQuery,
     activeProceso, openProceso, closeDrawer, saveProceso,
@@ -480,5 +568,6 @@ export function useLexaraApp(){
     printFactura, autoPrintFacturaId, clearAutoPrint, createFacturaFromOrdenCompra,
     activeOrdenCompra, openOrdenCompra, newOrdenCompra, closeOrdenCompraDrawer, saveOrdenCompra,
     printOrdenCompra, autoPrintOrdenCompraId, clearAutoPrintOrdenCompra,
+    activeColaborador, openColaborador, newColaborador, closeColaboradorDrawer, saveColaborador, deleteColaborador,
   };
 }

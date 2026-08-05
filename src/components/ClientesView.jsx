@@ -15,7 +15,7 @@ const COLUMNS = [
   {key:'acciones', label:'Acciones', filterable:false},
 ];
 
-export default function ClientesView({ clientes, procesos, searchQuery, onOpenCliente, onDeleteCliente }){
+export default function ClientesView({ clientes, procesos, searchQuery, onOpenCliente, onDeleteCliente, canWrite = true }){
   const { filters, setFilter, clearFilters, rowMatches, hasActiveFilters } = useColumnFilters();
   const query = (searchQuery||"").trim().toLowerCase();
   const rows = clientes.filter(c => (!query ||
@@ -53,8 +53,8 @@ export default function ClientesView({ clientes, procesos, searchQuery, onOpenCl
                 <td>{procesosForCliente(procesos, c).length}</td>
                 <td style={{whiteSpace:'nowrap'}}>
                   <div className="row-actions">
-                    <IconButton icon="edit" variant="edit" label="Editar cliente" onClick={() => onOpenCliente(c.id)} />
-                    <IconButton icon="delete" variant="delete" label="Eliminar cliente" onClick={() => onDeleteCliente(c.id)} />
+                    <IconButton icon="edit" variant="edit" label={canWrite ? "Editar cliente" : "Ver cliente"} onClick={() => onOpenCliente(c.id)} />
+                    {canWrite && <IconButton icon="delete" variant="delete" label="Eliminar cliente" onClick={() => onDeleteCliente(c.id)} />}
                   </div>
                 </td>
               </tr>
