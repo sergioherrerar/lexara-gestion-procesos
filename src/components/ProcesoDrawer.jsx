@@ -277,14 +277,18 @@ export default function ProcesoDrawer({ proceso, clientes, facturas, ordenesComp
   return (
     <>
       <div id="overlay" className="active" onClick={onClose}></div>
-      <div id="drawer" className="active">
+      <div id="drawer" className="active drawer-fullscreen">
         <div className="drawer-head">
+          <button className="drawer-back" onClick={onClose}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 18l-6-6 6-6"/></svg>
+            Volver a procesos judiciales
+          </button>
           <button className="drawer-close" onClick={onClose}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
           </button>
           <div className="eyebrow">NUMERO_CORTO — {proceso.Radicado || "—"}</div>
           <h2>{proceso.Cliente || "Sin nombre"}</h2>
-          <span className={"badge " + estadoBadgeClass(proceso.Estado)}>{stripHtml(proceso.Estado) || "—"}</span>
+          <span className={"badge badge-truncate " + estadoBadgeClass(proceso.Estado)}>{stripHtml(proceso.Estado) || "—"}</span>
         </div>
         <div className="drawer-tabs">
           {TABS.map(t => (

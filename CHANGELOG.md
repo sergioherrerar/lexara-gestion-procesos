@@ -3,6 +3,7 @@
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
 ## 2026-08-05
+- El panel de cada Proceso judicial ahora ocupa toda la pantalla (antes era un panel lateral) y tiene un botón **"Volver a procesos judiciales"** para regresar a la lista. También se corrigió que la etiqueta de estado se desbordara cuando el texto era largo.
 - Nueva tipografía corporativa: se reemplazó Fraunces/Inter por **Prompt** (fuente propia del despacho) en toda la app — títulos, tablas, formularios e impresión de facturas/órdenes de compra.
 - En el panel de cada Proceso judicial: nueva pestaña **"Trazabilidad fechas"** que agrupa todas las fechas del proceso en un solo lugar, y la pestaña "Datos generales" ahora usa un formato de tarjetas (etiqueta + valor) más ordenado, con varios campos de la lista real que todavía no tenían un lugar en la app (No. completo, Demandante, Demandado, Links de Contrato/Lexara/Cliente/Despacho, Correo despacho, Valores de radicación/reforma/demanda, etc. — se mapean desde Configuración cuando se confirme la columna real de SharePoint).
 - Se agregó el campo **"Histórico"** (bitácora del proceso) que faltaba, junto a "Fecha último estado".
