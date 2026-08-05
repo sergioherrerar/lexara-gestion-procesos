@@ -11,9 +11,25 @@ const NAV_ITEMS = [
   {view:'colaboradores', label:'Colaborador Lexara'},
 ];
 
+// MSAL no siempre entrega account.name relleno (depende de qué claims traiga
+// el token) — se prueban varias fuentes antes de caer al correo, y solo al
+// genérico "Usuario" si de verdad no hay ningún dato de la cuenta todavía
+// (por ejemplo, el instante justo antes de que termine el inicio de sesión).
+function resolveDisplayName(account){
+  const claims = account?.idTokenClaims || {};
+  const nombre = account?.name || claims.name || claims.given_name;
+  if(nombre) return nombre;
+  const correo = account?.username || claims.preferred_username || claims.email;
+  if(correo) return correo.split('@')[0].replace(/[._-]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  return "Usuario";
+}
+
 export default function Sidebar({ view, onGoView, account, liveMode, accessRole, onSignOut, mobileOpen }){
-  const name = account?.name || account?.username || "Usuario";
-  const sessionLabel = liveMode ? "Sesión Microsoft 365" : (account?.username==="demo@lexara.com" ? "Datos de ejemplo" : "Sesión Microsoft 365 (sin mapear)");
+  const name = resolveDisplayName(account);
+  const correo = account?.username || account?.idTokenClaims?.preferred_username || "";
+  const sessionLabel = liveMode
+    ? (correo || "Sesión Microsoft 365")
+    : (account?.username==="demo@lexara.com" ? "Datos de ejemplo" : "Sesión Microsoft 365 (sin mapear)");
   const visibleNavItems = NAV_ITEMS.filter(item => canAccessView(accessRole, item.view));
   const puedeConfiguracion = canAccessView(accessRole, 'setup');
   return (

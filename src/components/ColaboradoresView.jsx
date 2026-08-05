@@ -1,4 +1,5 @@
 import { ICON_SVG } from '../config';
+import IconButton, { IconTextButton } from './IconButton';
 import ColumnFilterRow from './ColumnFilterRow';
 import { useColumnFilters } from '../hooks/useColumnFilters';
 
@@ -9,11 +10,10 @@ const COLUMNS = [
   {key:'direccion', label:'Dirección', value: c => c.Direccion || ""},
   {key:'rol', label:'Rol', value: c => c.Rol || ""},
   {key:'activo', label:'Activo', value: c => c.Activo ? "Sí" : "No"},
+  {key:'acciones', label:'Acciones', filterable:false},
 ];
 
-// Vista de solo lectura — para editar/crear/eliminar colaboradores hay que
-// ir a Configuración (solo Administrador llega ahí, ver src/lib/permissions.js).
-export default function ColaboradoresView({ colaboradores, searchQuery }){
+export default function ColaboradoresView({ colaboradores, searchQuery, onOpenColaborador, onCreateColaborador, onDeleteColaborador, canWrite = true }){
   const { filters, setFilter, clearFilters, rowMatches, hasActiveFilters } = useColumnFilters();
   const query = (searchQuery||"").trim().toLowerCase();
   const rows = colaboradores.filter(c => (!query ||
@@ -28,6 +28,7 @@ export default function ColaboradoresView({ colaboradores, searchQuery }){
           <h1>Colaborador Lexara</h1>
           <p>{rows.length} de {colaboradores.length} colaboradores{hasActiveFilters && <> · <button type="button" className="clear-filters-link" onClick={clearFilters}>Limpiar filtros de columna</button></>}</p>
         </div>
+        {canWrite && <IconTextButton icon="add" variant="primary" onClick={onCreateColaborador}>Nuevo colaborador</IconTextButton>}
       </div>
       <div className="table-wrap">
         <table>
@@ -46,9 +47,15 @@ export default function ColaboradoresView({ colaboradores, searchQuery }){
                 <td>{c.Direccion || "—"}</td>
                 <td>{c.Rol || "—"}</td>
                 <td>{c.Activo ? "Sí" : "No"}</td>
+                <td style={{whiteSpace:'nowrap'}}>
+                  <div className="row-actions">
+                    <IconButton icon="edit" variant="edit" label={canWrite ? "Editar colaborador" : "Ver colaborador"} onClick={() => onOpenColaborador(c.id)} />
+                    {canWrite && <IconButton icon="delete" variant="delete" label="Eliminar colaborador" onClick={() => onDeleteColaborador(c.id)} />}
+                  </div>
+                </td>
               </tr>
             )) : (
-              <tr><td colSpan={6}><div className="empty-state"><div className="mark" dangerouslySetInnerHTML={{__html: ICON_SVG}} />No hay colaboradores para mostrar.</div></td></tr>
+              <tr><td colSpan={7}><div className="empty-state"><div className="mark" dangerouslySetInnerHTML={{__html: ICON_SVG}} />No hay colaboradores para mostrar.</div></td></tr>
             )}
           </tbody>
         </table>

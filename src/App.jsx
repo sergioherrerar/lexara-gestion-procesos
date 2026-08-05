@@ -131,6 +131,10 @@ export default function App(){
           <ColaboradoresView
             colaboradores={app.colaboradores}
             searchQuery={app.searchQuery}
+            onOpenColaborador={app.openColaborador}
+            onCreateColaborador={app.newColaborador}
+            onDeleteColaborador={app.deleteColaborador}
+            canWrite={app.canWrite}
           />
         )}
         {app.view === 'setup' && canAccessView(app.role, 'setup') && (
@@ -144,10 +148,6 @@ export default function App(){
             onTestConnection={app.testConnection}
             onApplyAllMappings={app.applyAllMappings}
             onDownloadMappings={app.downloadAllMappings}
-            colaboradores={app.colaboradores}
-            onOpenColaborador={app.openColaborador}
-            onCreateColaborador={app.newColaborador}
-            onDeleteColaborador={app.deleteColaborador}
           />
         )}
       </div>
@@ -209,6 +209,7 @@ export default function App(){
         onSave={app.saveColaborador}
         onDelete={app.deleteColaborador}
         saving={app.saving}
+        canWrite={app.canWrite}
       />
       {feedback}
     </div>

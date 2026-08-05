@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
-import IconButton, { IconTextButton } from './IconButton';
 
-export default function SetupView({ config, saveConfig, clearConfig, lists, updateListMapping, testStatus, onTestConnection, onApplyAllMappings, onDownloadMappings, colaboradores, onOpenColaborador, onCreateColaborador, onDeleteColaborador }){
+export default function SetupView({ config, saveConfig, clearConfig, lists, updateListMapping, testStatus, onTestConnection, onApplyAllMappings, onDownloadMappings }){
   const [form, setForm] = useState(config);
   useEffect(() => { setForm(config); }, [config]);
 
@@ -64,42 +63,7 @@ export default function SetupView({ config, saveConfig, clearConfig, lists, upda
       </div>
 
       <div className="setup-card">
-        <div style={{display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:12, flexWrap:'wrap'}}>
-          <div>
-            <h3>4. Colaboradores y roles de acceso</h3>
-            <p>Solo aquí (Configuración) se puede crear, editar o eliminar un colaborador — desde el menú "Colaborador Lexara" solo se puede consultar. El <strong>Rol</strong> define qué ve cada quien: Administrador (todo), Jefe (todo menos Configuración), Colaborador (no ve Facturación, Órdenes de compra ni Configuración). Un correo que no esté aquí registrado solo puede ver, sin crear/editar/eliminar en ningún módulo.</p>
-          </div>
-          <IconTextButton icon="add" variant="primary" onClick={onCreateColaborador} style={{flexShrink:0}}>Nuevo colaborador</IconTextButton>
-        </div>
-        <div className="table-wrap" style={{marginTop:16}}>
-          <table>
-            <thead>
-              <tr><th>Nombre</th><th>Correo</th><th>Rol</th><th>Activo</th><th>Acciones</th></tr>
-            </thead>
-            <tbody>
-              {(colaboradores||[]).length ? [...colaboradores].sort((a,b) => (a.Nombre||"").localeCompare(b.Nombre||"")).map(c => (
-                <tr key={c.id}>
-                  <td className="cliente">{c.Nombre || "—"}</td>
-                  <td>{c.Correo || "—"}</td>
-                  <td>{c.Rol || "—"}</td>
-                  <td>{c.Activo ? "Sí" : "No"}</td>
-                  <td style={{whiteSpace:'nowrap'}}>
-                    <div className="row-actions">
-                      <IconButton icon="edit" variant="edit" label="Editar colaborador" onClick={() => onOpenColaborador(c.id)} />
-                      <IconButton icon="delete" variant="delete" label="Eliminar colaborador" onClick={() => onDeleteColaborador(c.id)} />
-                    </div>
-                  </td>
-                </tr>
-              )) : (
-                <tr><td colSpan={5} style={{textAlign:'center', color:'var(--texto-suave)', padding:20}}>No hay colaboradores registrados.</td></tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <div className="setup-card">
-        <h3>5. Cómo se leen y guardan los datos</h3>
+        <h3>4. Cómo se leen y guardan los datos</h3>
         <p>La app llama a Microsoft Graph así, usando el mapeo que definas arriba para traducir cada campo al nombre real de tu columna:</p>
         <pre className="code-block">{`GET https://graph.microsoft.com/v1.0/sites/{siteId}/lists/{listId}/items?expand=fields
 
