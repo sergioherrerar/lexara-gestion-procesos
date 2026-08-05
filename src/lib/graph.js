@@ -225,6 +225,13 @@ export function formasPagoForProceso(formasPago, proceso){
   const target = normalize(proceso.NumeroContrato);
   return (formasPago||[]).filter(fp => fp.Contrato && normalize(fp.Contrato) === target);
 }
+// A diferencia de facturas/órdenes/formas de pago (que se asocian por
+// Contrato, un texto), Desistimientos se asocia por ID real del proceso —
+// el campo "Proceso" guarda el id del elemento en Procesos Judiciales.
+export function desistimientosForProceso(desistimientos, proceso){
+  if(!proceso || proceso.id == null) return [];
+  return (desistimientos||[]).filter(d => d.Proceso != null && String(d.Proceso) === String(proceso.id));
+}
 // Los 6 pagos fijos de una "Forma de pago", cada uno con su etapa procesal
 // cumplida, valor y factura asociada — igual criterio que facturaLineItems.
 export function formaPagoLineas(formaPago){

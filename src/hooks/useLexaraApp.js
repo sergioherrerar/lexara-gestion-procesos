@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { INITIAL_CONFIG, SHAREPOINT_LISTS_CONFIG, DEMO_PROCESOS, DEMO_CLIENTES, DEMO_FACTURAS, DEMO_ORDENES_COMPRA, DEMO_COLABORADORES, DEMO_FORMAS_PAGO } from '../config';
+import { INITIAL_CONFIG, SHAREPOINT_LISTS_CONFIG, DEMO_PROCESOS, DEMO_CLIENTES, DEMO_FACTURAS, DEMO_ORDENES_COMPRA, DEMO_COLABORADORES, DEMO_FORMAS_PAGO, DEMO_DESISTIMIENTOS } from '../config';
 import * as Graph from '../lib/graph';
 import { canWrite as canWriteForRole } from '../lib/permissions';
 
@@ -30,6 +30,9 @@ export function useLexaraApp(){
   const [formasPago, setFormasPago] = useState([]);
   const [activeFormaPagoId, setActiveFormaPagoId] = useState(null);
   const [draftFormaPago, setDraftFormaPago] = useState(null);
+  const [desistimientos, setDesistimientos] = useState([]);
+  const [activeDesistimientoId, setActiveDesistimientoId] = useState(null);
+  const [draftDesistimiento, setDraftDesistimiento] = useState(null);
   const [currentFilter, setCurrentFilter] = useState('todos');
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
@@ -78,6 +81,7 @@ export function useLexaraApp(){
     setOrdenesCompra(JSON.parse(JSON.stringify(DEMO_ORDENES_COMPRA)));
     setColaboradores(JSON.parse(JSON.stringify(DEMO_COLABORADORES)));
     setFormasPago(JSON.parse(JSON.stringify(DEMO_FORMAS_PAGO)));
+    setDesistimientos(JSON.parse(JSON.stringify(DEMO_DESISTIMIENTOS)));
     setAccount({ name:"Usuario Demo", username:"demo@lexara.com" });
     setAppActive(true);
     if(!silent) setView('dashboard');
@@ -140,6 +144,7 @@ export function useLexaraApp(){
         setOrdenesCompra(updated.find(l => l.key==='ordenesCompra')?.items || []);
         setColaboradores(updated.find(l => l.key==='colaboradores')?.items || []);
         setFormasPago(updated.find(l => l.key==='formasPago')?.items || []);
+        setDesistimientos(updated.find(l => l.key==='desistimientos')?.items || []);
         setLiveMode(true);
         setAppActive(true);
       } else {
@@ -172,6 +177,7 @@ export function useLexaraApp(){
       setOrdenesCompra(updated.find(l => l.key==='ordenesCompra')?.items || []);
       setColaboradores(updated.find(l => l.key==='colaboradores')?.items || []);
       setFormasPago(updated.find(l => l.key==='formasPago')?.items || []);
+      setDesistimientos(updated.find(l => l.key==='desistimientos')?.items || []);
     }catch(err){
       console.error(err);
       notify("No se pudo actualizar la información: " + err.message, 'error');
@@ -207,6 +213,7 @@ export function useLexaraApp(){
     setOrdenesCompra(updated.find(l => l.key==='ordenesCompra')?.items || []);
     setColaboradores(updated.find(l => l.key==='colaboradores')?.items || []);
     setFormasPago(updated.find(l => l.key==='formasPago')?.items || []);
+    setDesistimientos(updated.find(l => l.key==='desistimientos')?.items || []);
     setLiveMode(true);
   }
 
@@ -249,6 +256,7 @@ export function useLexaraApp(){
   const activeOrdenCompra = draftOrdenCompra || ordenesCompra.find(o => o.id===activeOrdenCompraId) || null;
   const activeColaborador = draftColaborador || colaboradores.find(c => c.id===activeColaboradorId) || null;
   const activeFormaPago = draftFormaPago || formasPago.find(f => f.id===activeFormaPagoId) || null;
+  const activeDesistimiento = draftDesistimiento || desistimientos.find(d => d.id===activeDesistimientoId) || null;
 
   // Rol del usuario que inició sesión, cruzando su correo de Microsoft 365
   // contra la lista de Colaborador Lexara — ver src/lib/permissions.js.
@@ -638,6 +646,73 @@ export function useLexaraApp(){
     requestConfirm("¿Eliminar esta forma de pago? Esta acción no se puede deshacer.", () => performDeleteFormaPago(id));
   }
 
+  function openDesistimiento(id){ setDraftDesistimiento(null); setActiveDesistimientoId(id); }
+  function closeDesistimientoDrawer(){ setActiveDesistimientoId(null); setDraftDesistimiento(null); }
+  // Botón "+ Nuevo desistimiento" del panel de un Proceso judicial: abre un
+  // borrador con el Proceso (ID real) y Numero corto ya llenos — se asocia
+  // por ID, no por texto, a diferencia de Facturas/Órdenes/Formas de pago.
+  function newDesistimientoFromProceso(proceso){
+    setActiveDesistimientoId(null);
+    setDraftDesistimiento({ Proceso: proceso.id, NumeroCorto: proceso.Radicado || "" });
+  }
+  async function saveDesistimiento(updates){
+    if(!activeDesistimiento) return;
+
+    if(draftDesistimiento){
+      const nuevo = {...updates};
+      if(liveMode){
+        setSaving(true);
+        const list = listByKey('desistimientos');
+        const graphFields = Graph.graphFieldsFromUpdates(list, updates);
+        try{
+          const created = await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items`, {
+            method:"POST", body: JSON.stringify({ fields: graphFields })
+          });
+          nuevo.id = created.id; nuevo._graphId = created.id;
+        }catch(err){ console.error(err); notify("No se pudo crear el desistimiento en SharePoint: " + err.message, 'error'); setSaving(false); return; }
+        setSaving(false);
+      } else {
+        const maxId = desistimientos.reduce((max,d) => Math.max(max, Number(d.id)||0), 0);
+        nuevo.id = maxId + 1;
+      }
+      setDesistimientos(prev => [...prev, nuevo]);
+      setDraftDesistimiento(null);
+      setActiveDesistimientoId(null);
+      return;
+    }
+
+    setDesistimientos(prev => prev.map(d => d.id===activeDesistimientoId ? {...d, ...updates} : d));
+    if(liveMode){
+      setSaving(true);
+      const list = listByKey('desistimientos');
+      const graphBody = Graph.graphFieldsFromUpdates(list, updates);
+      try{
+        await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items/${activeDesistimiento._graphId}/fields`, {
+          method:"PATCH", body: JSON.stringify(graphBody)
+        });
+      }catch(err){ console.error(err); notify("No se pudo guardar en SharePoint: " + err.message, 'error'); setSaving(false); return; }
+      setSaving(false);
+    }
+    setActiveDesistimientoId(null);
+  }
+  async function performDeleteDesistimiento(id){
+    const desistimiento = desistimientos.find(d => d.id===id);
+    if(!desistimiento) return;
+    if(liveMode){
+      setSaving(true);
+      const list = listByKey('desistimientos');
+      try{
+        await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items/${desistimiento._graphId || desistimiento.id}`, { method:"DELETE" });
+      }catch(err){ console.error(err); notify("No se pudo eliminar en SharePoint: " + err.message, 'error'); setSaving(false); return; }
+      setSaving(false);
+    }
+    setDesistimientos(prev => prev.filter(d => d.id !== id));
+    if(activeDesistimientoId === id) setActiveDesistimientoId(null);
+  }
+  function deleteDesistimiento(id){
+    requestConfirm("¿Eliminar este desistimiento? Esta acción no se puede deshacer.", () => performDeleteDesistimiento(id));
+  }
+
   return {
     config, saveConfig, clearConfig,
     lists, listByKey, updateListMapping,
@@ -647,7 +722,7 @@ export function useLexaraApp(){
     signIn, enterDemo, goSetup, signOut,
     saving, signingIn,
     toast, closeToast, confirmState, acceptConfirm, cancelConfirm,
-    procesos, clientes, facturas, ordenesCompra, colaboradores, formasPago,
+    procesos, clientes, facturas, ordenesCompra, colaboradores, formasPago, desistimientos,
     currentFilter, setFilter: setCurrentFilter, searchQuery, setSearchQuery: setSearchQuery,
     onSearch: setSearchQuery,
     activeProceso, openProceso, closeDrawer, saveProceso,
@@ -658,5 +733,6 @@ export function useLexaraApp(){
     printOrdenCompra, autoPrintOrdenCompraId, clearAutoPrintOrdenCompra,
     activeColaborador, openColaborador, newColaborador, closeColaboradorDrawer, saveColaborador, deleteColaborador,
     activeFormaPago, openFormaPago, newFormaPagoFromProceso, closeFormaPagoDrawer, saveFormaPago, deleteFormaPago,
+    activeDesistimiento, openDesistimiento, newDesistimientoFromProceso, closeDesistimientoDrawer, saveDesistimiento, deleteDesistimiento,
   };
 }

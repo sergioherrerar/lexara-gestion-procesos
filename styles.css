@@ -315,15 +315,20 @@
   .bar-chart-more{padding:6px 20px 2px; font-size:11.5px; color:var(--texto-suave); text-align:right;}
 
   /* ---------- Detail drawer ---------- */
-  #overlay, #cliente-overlay, #factura-overlay, #oc-overlay, #colaborador-overlay, #formapago-overlay{position:fixed; inset:0; background:rgba(0,20,18,.35); display:none; z-index:40;}
-  #overlay.active, #cliente-overlay.active, #factura-overlay.active, #oc-overlay.active, #colaborador-overlay.active, #formapago-overlay.active{display:block;}
-  #drawer, #cliente-drawer, #factura-drawer, #oc-drawer, #colaborador-drawer, #formapago-drawer{
+  #overlay, #cliente-overlay, #factura-overlay, #oc-overlay, #colaborador-overlay, #formapago-overlay, #desistimiento-overlay{position:fixed; inset:0; background:rgba(0,20,18,.35); display:none; z-index:40;}
+  #overlay.active, #cliente-overlay.active, #factura-overlay.active, #oc-overlay.active, #colaborador-overlay.active, #formapago-overlay.active, #desistimiento-overlay.active{display:block;}
+  #drawer, #cliente-drawer, #factura-drawer, #oc-drawer, #colaborador-drawer, #formapago-drawer, #desistimiento-drawer{
     position:fixed; top:0; right:0; height:100vh; width:520px; max-width:92vw;
     background:#fff; z-index:41; box-shadow:-8px 0 32px rgba(0,20,18,.18);
     transform:translateX(100%); transition:transform .22s ease;
     display:flex; flex-direction:column;
   }
-  #drawer.active, #cliente-drawer.active, #factura-drawer.active, #oc-drawer.active, #colaborador-drawer.active, #formapago-drawer.active{transform:translateX(0);}
+  #drawer.active, #cliente-drawer.active, #factura-drawer.active, #oc-drawer.active, #colaborador-drawer.active, #formapago-drawer.active, #desistimiento-drawer.active{transform:translateX(0);}
+  /* El panel de Procesos judiciales reúne 5 pestañas (Datos generales,
+     Facturas, Órdenes de compra, Formas de pago, Desistimientos) — necesita
+     más ancho que un formulario simple para que las pestañas y las tablas
+     relacionadas no queden apretadas. */
+  #drawer{width:760px;}
   .drawer-head{padding:22px 26px 18px; border-bottom:1px solid var(--gris-linea); flex-shrink:0;}
   .drawer-head .eyebrow{font-size:11.5px; color:var(--texto-suave); font-family:var(--font-mono); margin-bottom:6px;}
   .drawer-head h2{font-family:var(--font-display); font-size:21px; font-weight:600; margin:0 0 10px; color:var(--verde-oscuro);}
@@ -585,7 +590,7 @@
     .view{padding:18px 14px 40px;}
     .stat-grid{grid-template-columns:repeat(2,1fr); gap:10px;}
     .drawer-head, .drawer-body, .drawer-foot{padding-left:18px; padding-right:18px;}
-    #drawer, #cliente-drawer, #factura-drawer, #oc-drawer, #colaborador-drawer, #formapago-drawer{width:100vw; max-width:100vw;}
+    #drawer, #cliente-drawer, #factura-drawer, #oc-drawer, #colaborador-drawer, #formapago-drawer, #desistimiento-drawer{width:100vw; max-width:100vw;}
     .field-grid{grid-template-columns:1fr;}
     .field-grid-3{grid-template-columns:1fr;}
     .filter-chip{padding:9px 14px;}
@@ -615,7 +620,8 @@
     #factura-overlay, #factura-drawer,
     #overlay, #drawer, #cliente-overlay, #cliente-drawer,
     #oc-overlay, #oc-drawer, #colaborador-overlay, #colaborador-drawer,
-    #formapago-overlay, #formapago-drawer{display:none !important;}
+    #formapago-overlay, #formapago-drawer,
+    #desistimiento-overlay, #desistimiento-drawer{display:none !important;}
     /* Los navegadores no imprimen fondos CSS por defecto salvo que el usuario
        marque "Gráficos de fondo" en el diálogo de impresión — estas dos líneas
        lo fuerzan para que el membrete siempre se imprima. */

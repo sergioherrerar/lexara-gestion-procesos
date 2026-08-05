@@ -240,6 +240,26 @@ export const SHAREPOINT_LISTS_CONFIG = [
     ],
     mapping: {},
   },
+  {
+    key: "desistimientos",
+    listName: "Desistimientos tabla",
+    label: "Desistimientos",
+    // A diferencia de Facturación/Órdenes de compra/Formas de pago (que se
+    // asocian por Contrato, un texto), esta se asocia por el campo "Proceso",
+    // que guarda el ID real del elemento en la lista Procesos Judiciales —
+    // relación por ID, no por texto. "Numero corto" es solo informativo
+    // (se copia del proceso para leer fácil, no se usa para la relación).
+    semanticFields: [
+      {key:"Proceso", label:"Proceso (ID)", hint:["proceso"], required:true},
+      {key:"NumeroCorto", label:"Numero corto", hint:["numero corto"]},
+      {key:"DesistimientoValor", label:"Desistimiento Valor", hint:["desistimiento valor"]},
+      {key:"FechaRadicacion", label:"Fecha Radicación", hint:["fecha radicacion","fecha radicación"]},
+      {key:"Aprobacion", label:"Aprobación", hint:["aprobacion","aprobación"]},
+      {key:"FechaAprobacion", label:"Fecha de Aprobación", hint:["fecha de aprobacion","fecha de aprobación"]},
+      {key:"Observaciones", label:"Observaciones", hint:["observaciones"]},
+    ],
+    mapping: {},
+  },
 ];
 
 export const DEMO_PROCESOS = [
@@ -320,6 +340,10 @@ export const DEMO_FORMAS_PAGO = [
     Pago5:"", ValorPago5:"", FacturaPago5:"", EtapaProcesalCumplida5:false,
     Pago6:"", ValorPago6:"", FacturaPago6:"", EtapaProcesalCumplida6:false,
     Honorarios:"5.200.000,00"},
+];
+
+export const DEMO_DESISTIMIENTOS = [
+  {id:1, Proceso:1, NumeroCorto:"11001-31-03-045-2023-00218-00", DesistimientoValor:"792.695,00", FechaRadicacion:"2023-10-20", Aprobacion:"Aprobado", FechaAprobacion:"2024-06-22", Observaciones:""},
 ];
 
 export const ICON_SVG = `<svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 30 L50 50 L80 30" stroke="currentColor" stroke-width="14" fill="none" stroke-linecap="square"/><path d="M20 70 L50 50 L80 70" stroke="currentColor" stroke-width="14" fill="none" stroke-linecap="square"/></svg>`;

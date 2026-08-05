@@ -17,6 +17,7 @@ import OrdenCompraDrawer from './components/OrdenCompraDrawer';
 import ColaboradoresView from './components/ColaboradoresView';
 import ColaboradorDrawer from './components/ColaboradorDrawer';
 import FormaPagoDrawer from './components/FormaPagoDrawer';
+import DesistimientoDrawer from './components/DesistimientoDrawer';
 import { Toast, ConfirmDialog } from './components/Feedback';
 
 export default function App(){
@@ -159,6 +160,7 @@ export default function App(){
         facturas={app.facturas}
         ordenesCompra={app.ordenesCompra}
         formasPago={app.formasPago}
+        desistimientos={app.desistimientos}
         liveMode={app.liveMode}
         onClose={app.closeDrawer}
         onSave={app.saveProceso}
@@ -171,6 +173,8 @@ export default function App(){
         onCreateOrdenCompra={app.newOrdenCompraFromProceso}
         onOpenFormaPago={app.openFormaPago}
         onCreateFormaPago={app.newFormaPagoFromProceso}
+        onOpenDesistimiento={app.openDesistimiento}
+        onCreateDesistimiento={app.newDesistimientoFromProceso}
         saving={app.saving}
         canWrite={app.canWrite}
       />
@@ -225,6 +229,16 @@ export default function App(){
         onClose={app.closeFormaPagoDrawer}
         onSave={app.saveFormaPago}
         onDelete={app.deleteFormaPago}
+        saving={app.saving}
+        canWrite={app.canWrite}
+      />
+      <DesistimientoDrawer
+        desistimiento={app.activeDesistimiento}
+        procesos={app.procesos}
+        liveMode={app.liveMode}
+        onClose={app.closeDesistimientoDrawer}
+        onSave={app.saveDesistimiento}
+        onDelete={app.deleteDesistimiento}
         saving={app.saving}
         canWrite={app.canWrite}
       />

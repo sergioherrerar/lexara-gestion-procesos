@@ -48,8 +48,6 @@ export default function Sidebar({ view, onGoView, account, liveMode, accessRole,
           <span className="label-text">{item.label}</span>
         </div>
       ))}
-      <div className="nav-group-label">Próximamente</div>
-      <div className="nav-item" style={{opacity:.45, cursor:'default'}}><span className="dot"></span><span className="label-text">Desistimientos</span></div>
       {puedeConfiguracion && (
         <>
           <div className="nav-group-label">Sistema</div>

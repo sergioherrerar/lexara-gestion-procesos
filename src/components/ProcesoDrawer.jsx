@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   stripHtml, estadoBadgeClass, findClienteByNombre,
-  facturasForProceso, ordenesCompraForProceso, formasPagoForProceso, facturaNumero, ordenCompraNumero,
+  facturasForProceso, ordenesCompraForProceso, formasPagoForProceso, desistimientosForProceso, facturaNumero, ordenCompraNumero,
   computeFacturaTotals, computeOrdenCompraTotals, estadoFacturaBadgeClass,
   facturaForOrdenCompra, fmtMonto, fmtDate, fechaFromPartes, parseMonto,
 } from '../lib/graph';
@@ -14,6 +14,7 @@ const TABS = [
   {key:'facturas', label:'Facturas'},
   {key:'ordenes', label:'Órdenes de compra'},
   {key:'formaspago', label:'Formas de pago'},
+  {key:'desistimientos', label:'Desistimientos'},
 ];
 
 function fechaOrdenable(row){
@@ -83,7 +84,7 @@ const LABELS = {
 };
 const EMPTY_NEW_CLIENTE = {RazonSocial:"", Nit:"", Direccion:"", Telefono:"", Correo:""};
 
-export default function ProcesoDrawer({ proceso, clientes, facturas, ordenesCompra, formasPago, liveMode, onClose, onSave, onCreateCliente, onOpenFactura, onPrintFactura, onCreateFactura, onOpenOrdenCompra, onPrintOrdenCompra, onCreateOrdenCompra, onOpenFormaPago, onCreateFormaPago, saving, canWrite = true }){
+export default function ProcesoDrawer({ proceso, clientes, facturas, ordenesCompra, formasPago, desistimientos, liveMode, onClose, onSave, onCreateCliente, onOpenFactura, onPrintFactura, onCreateFactura, onOpenOrdenCompra, onPrintOrdenCompra, onCreateOrdenCompra, onOpenFormaPago, onCreateFormaPago, onOpenDesistimiento, onCreateDesistimiento, saving, canWrite = true }){
   const [form, setForm] = useState(null);
   const [showNewCliente, setShowNewCliente] = useState(false);
   const [newCliente, setNewCliente] = useState(EMPTY_NEW_CLIENTE);
@@ -132,6 +133,7 @@ export default function ProcesoDrawer({ proceso, clientes, facturas, ordenesComp
   const ordenesRelacionadas = ordenesCompraForProceso(ordenesCompra, proceso)
     .sort((a,b) => Number(ordenCompraNumero(b)) - Number(ordenCompraNumero(a)));
   const formasPagoRelacionadas = formasPagoForProceso(formasPago, proceso);
+  const desistimientosRelacionados = desistimientosForProceso(desistimientos, proceso);
 
   // Al abrir/imprimir una factura u orden de compra relacionada, se cierra
   // este panel primero — dos paneles superpuestos a la vez se ven mal.
@@ -140,12 +142,14 @@ export default function ProcesoDrawer({ proceso, clientes, facturas, ordenesComp
   function goToOrdenCompra(id){ onClose(); onOpenOrdenCompra(id); }
   function goToPrintOrdenCompra(id){ onClose(); onPrintOrdenCompra(id); }
   function goToFormaPago(id){ onClose(); onOpenFormaPago(id); }
+  function goToDesistimiento(id){ onClose(); onOpenDesistimiento(id); }
   // Botones "+ Nueva factura"/"+ Nueva orden de compra"/"+ Nueva forma de
-  // pago" de este panel: cierran el proceso y abren un borrador con el
-  // Contrato/Proceso ya llenos.
+  // pago"/"+ Nuevo desistimiento" de este panel: cierran el proceso y abren
+  // un borrador con el Contrato/Proceso ya llenos.
   function goToNewFactura(){ onClose(); onCreateFactura(proceso); }
   function goToNewOrdenCompra(){ onClose(); onCreateOrdenCompra(proceso); }
   function goToNewFormaPago(){ onClose(); onCreateFormaPago(proceso); }
+  function goToNewDesistimiento(){ onClose(); onCreateDesistimiento(proceso); }
 
   const FACTURA_COLUMNS = [
     {key:'numero', label:'No. factura', render: f => facturaNumero(f)},
@@ -168,6 +172,11 @@ export default function ProcesoDrawer({ proceso, clientes, facturas, ordenesComp
       }).length;
       return `${n} de 6`;
     }},
+  ];
+  const DESISTIMIENTO_COLUMNS = [
+    {key:'valor', label:'Valor', render: d => fmtMonto(parseMonto(d.DesistimientoValor))},
+    {key:'fecharadicacion', label:'Fecha radicación', render: d => fmtDate(d.FechaRadicacion)},
+    {key:'aprobacion', label:'Aprobación', render: d => d.Aprobacion || "—"},
   ];
 
   return (
@@ -193,6 +202,7 @@ export default function ProcesoDrawer({ proceso, clientes, facturas, ordenesComp
               {t.key==='facturas' && facturasRelacionadas.length > 0 && <span className="drawer-tab-count">{facturasRelacionadas.length}</span>}
               {t.key==='ordenes' && ordenesRelacionadas.length > 0 && <span className="drawer-tab-count">{ordenesRelacionadas.length}</span>}
               {t.key==='formaspago' && formasPagoRelacionadas.length > 0 && <span className="drawer-tab-count">{formasPagoRelacionadas.length}</span>}
+              {t.key==='desistimientos' && desistimientosRelacionados.length > 0 && <span className="drawer-tab-count">{desistimientosRelacionados.length}</span>}
             </button>
           ))}
         </div>
@@ -241,6 +251,21 @@ export default function ProcesoDrawer({ proceso, clientes, facturas, ordenesComp
                 rows={formasPagoRelacionadas}
                 columns={FORMA_PAGO_COLUMNS}
                 onOpen={goToFormaPago}
+              />
+            </div>
+          )}
+          {activeTab === 'desistimientos' && (
+            <div className="field-section">
+              {canWrite && (
+                <div style={{display:'flex', justifyContent:'flex-end', marginBottom:12}}>
+                  <IconTextButton icon="add" variant="primary" onClick={goToNewDesistimiento}>Nuevo desistimiento</IconTextButton>
+                </div>
+              )}
+              <RelatedList
+                emptyMsg="No hay desistimientos vinculados a este proceso."
+                rows={desistimientosRelacionados}
+                columns={DESISTIMIENTO_COLUMNS}
+                onOpen={goToDesistimiento}
               />
             </div>
           )}
