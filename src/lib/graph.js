@@ -232,6 +232,27 @@ export function desistimientosForProceso(desistimientos, proceso){
   if(!proceso || proceso.id == null) return [];
   return (desistimientos||[]).filter(d => d.Proceso != null && String(d.Proceso) === String(proceso.id));
 }
+// La lista "tipos de Accion" guía qué Tipo de Proceso y qué Despacho son
+// válidos para cada Tipo de Acción (Administrativo/Civil/Laboral) en
+// Procesos Judiciales — son selects dependientes: elegir el Tipo de Acción
+// filtra las opciones de los otros dos.
+export function tiposAccionDistinct(tiposAccion){
+  return Array.from(new Set((tiposAccion||[]).map(t => t.NombreIdTipoProceso).filter(Boolean))).sort((a,b)=>a.localeCompare(b));
+}
+export function tiposProcesoParaAccion(tiposAccion, tipoAccion){
+  if(!tipoAccion) return [];
+  const target = normalize(tipoAccion);
+  const set = new Set();
+  (tiposAccion||[]).forEach(t => { if(t.TipoProceso && normalize(t.NombreIdTipoProceso||"")===target) set.add(t.TipoProceso); });
+  return Array.from(set).sort((a,b)=>a.localeCompare(b));
+}
+export function despachosParaAccion(tiposAccion, tipoAccion){
+  if(!tipoAccion) return [];
+  const target = normalize(tipoAccion);
+  const set = new Set();
+  (tiposAccion||[]).forEach(t => { if(t.Despacho && normalize(t.NombreIdTipoProceso||"")===target) set.add(t.Despacho); });
+  return Array.from(set).sort((a,b)=>a.localeCompare(b));
+}
 // Los 6 pagos fijos de una "Forma de pago", cada uno con su etapa procesal
 // cumplida, valor y factura asociada — igual criterio que facturaLineItems.
 export function formaPagoLineas(formaPago){

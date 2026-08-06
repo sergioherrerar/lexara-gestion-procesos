@@ -4,6 +4,7 @@ import {
   facturasForProceso, ordenesCompraForProceso, formasPagoForProceso, desistimientosForProceso, facturaNumero, ordenCompraNumero,
   computeFacturaTotals, computeOrdenCompraTotals, estadoFacturaBadgeClass,
   facturaForOrdenCompra, fmtMonto, fmtDate, fechaFromPartes, parseMonto,
+  tiposAccionDistinct, tiposProcesoParaAccion, despachosParaAccion,
 } from '../lib/graph';
 import IconButton, { IconTextButton } from './IconButton';
 import { useEscapeToClose } from '../hooks/useEscapeToClose';
@@ -81,11 +82,16 @@ const FIELD_SECTIONS = [
   {title:"Representación", fields:[
     ["Apoderado","text"],["CCApoderada","text"],["AbogadoEncargado","text"],
   ]},
-  {title:"Despacho", fields:[
-    ["Despacho","text"],["NumeroDespacho","text"],["LinkDespacho","text"],["CorreoDespacho","text"],["Instancia","text"],
-  ]},
   {title:"Estado del proceso", fields:[
-    ["TipoProceso","text"],["TipoAccion","text"],["EtapaProcesal","text"],["Estado","textarea"],["EstadoVT","text"],["CalificacionContingencia","text"],
+    // Tipo de Acción / Tipo de Proceso / Despacho van seguidos, en ese
+    // orden — son los 3 selects dependientes guiados por la lista
+    // "tipos de Accion" (ver tiposAccionDistinct/tiposProcesoParaAccion/
+    // despachosParaAccion en graph.js).
+    ["TipoAccion","text"],["TipoProceso","text"],["Despacho","text"],
+    ["EtapaProcesal","text"],["Estado","textarea"],["EstadoVT","text"],["CalificacionContingencia","text"],
+  ]},
+  {title:"Detalles del despacho", fields:[
+    ["NumeroDespacho","text"],["LinkDespacho","text"],["CorreoDespacho","text"],["Instancia","text"],
   ]},
   {title:"Valores", fields:[
     ["ValorRadicacion","text"],["ValorReforma","text"],["ValorActualDemanda","text"],
@@ -179,7 +185,7 @@ function RichTextEditor({ value, onChange, readOnly }){
 }
 const EMPTY_NEW_CLIENTE = {RazonSocial:"", Nit:"", Direccion:"", Telefono:"", Correo:""};
 
-export default function ProcesoDrawer({ proceso, clientes, facturas, ordenesCompra, formasPago, desistimientos, liveMode, onClose, onSave, onCreateCliente, onOpenFactura, onPrintFactura, onCreateFactura, onOpenOrdenCompra, onPrintOrdenCompra, onCreateOrdenCompra, onOpenFormaPago, onCreateFormaPago, onOpenDesistimiento, onCreateDesistimiento, saving, canWrite = true }){
+export default function ProcesoDrawer({ proceso, clientes, facturas, ordenesCompra, formasPago, desistimientos, tiposAccion, liveMode, onClose, onSave, onCreateCliente, onOpenFactura, onPrintFactura, onCreateFactura, onOpenOrdenCompra, onPrintOrdenCompra, onCreateOrdenCompra, onOpenFormaPago, onCreateFormaPago, onOpenDesistimiento, onCreateDesistimiento, saving, canWrite = true }){
   const [form, setForm] = useState(null);
   const [showNewCliente, setShowNewCliente] = useState(false);
   const [newCliente, setNewCliente] = useState(EMPTY_NEW_CLIENTE);
@@ -208,6 +214,19 @@ export default function ProcesoDrawer({ proceso, clientes, facturas, ordenesComp
 
   function setField(key, value){ setForm(prev => ({...prev, [key]: value})); }
 
+  // Al cambiar el Tipo de Acción, si el Tipo de Proceso o el Despacho ya
+  // elegidos dejan de ser válidos para la nueva categoría (según la lista
+  // "tipos de Accion"), se limpian — evita combinaciones inconsistentes
+  // (p.ej. un Despacho de "Civil" con Tipo de Acción "Laboral").
+  function setTipoAccion(value){
+    setForm(prev => {
+      const next = {...prev, TipoAccion: value};
+      if(prev.TipoProceso && !tiposProcesoParaAccion(tiposAccion, value).includes(prev.TipoProceso)) next.TipoProceso = "";
+      if(prev.Despacho && !despachosParaAccion(tiposAccion, value).includes(prev.Despacho)) next.Despacho = "";
+      return next;
+    });
+  }
+
   async function handleCreateCliente(){
     if(!newCliente.RazonSocial.trim()){ setNuevoClienteError("El nombre (Razón social) es obligatorio."); return; }
     setNuevoClienteError("");
@@ -222,6 +241,17 @@ export default function ProcesoDrawer({ proceso, clientes, facturas, ordenesComp
   const clienteNombres = clientes.map(c => c.RazonSocial).filter(Boolean);
   if(form.Cliente && !clienteNombres.includes(form.Cliente)) clienteNombres.unshift(form.Cliente);
   const linkedCliente = findClienteByNombre(clientes, form.Cliente);
+
+  // Tipo de Acción / Tipo de Proceso / Despacho — selects dependientes
+  // guiados por la lista "tipos de Accion" (ver graph.js). Si el valor ya
+  // guardado no está en la lista de opciones válidas (p.ej. antes de mapear
+  // la lista, o un dato viejo), se agrega igual para no perderlo de vista.
+  const tipoAccionOpciones = tiposAccionDistinct(tiposAccion);
+  if(form.TipoAccion && !tipoAccionOpciones.includes(form.TipoAccion)) tipoAccionOpciones.unshift(form.TipoAccion);
+  const tipoProcesoOpciones = tiposProcesoParaAccion(tiposAccion, form.TipoAccion);
+  if(form.TipoProceso && !tipoProcesoOpciones.includes(form.TipoProceso)) tipoProcesoOpciones.unshift(form.TipoProceso);
+  const despachoOpciones = despachosParaAccion(tiposAccion, form.TipoAccion);
+  if(form.Despacho && !despachoOpciones.includes(form.Despacho)) despachoOpciones.unshift(form.Despacho);
 
   const facturasRelacionadas = facturasForProceso(facturas, proceso)
     .sort((a,b) => Number(facturaNumero(b)) - Number(facturaNumero(a)) || 0);
@@ -413,6 +443,39 @@ export default function ProcesoDrawer({ proceso, clientes, facturas, ordenesComp
                             </div>
                           </div>
                         )}
+                      </FieldCard>
+                    );
+                  }
+                  // Tipo de Acción / Tipo de Proceso / Despacho: selects dependientes
+                  // guiados por la lista "tipos de Accion" — elegir el Tipo de Acción
+                  // filtra las opciones de los otros dos (ver graph.js).
+                  if(key==='TipoAccion'){
+                    return (
+                      <FieldCard label={LABELS[key]} key={key}>
+                        <select value={form.TipoAccion} onChange={e => setTipoAccion(e.target.value)} disabled={!canWrite}>
+                          <option value="">— seleccionar —</option>
+                          {tipoAccionOpciones.map(n => <option value={n} key={n}>{n}</option>)}
+                        </select>
+                      </FieldCard>
+                    );
+                  }
+                  if(key==='TipoProceso'){
+                    return (
+                      <FieldCard label={LABELS[key]} key={key}>
+                        <select value={form.TipoProceso} onChange={e => setField('TipoProceso', e.target.value)} disabled={!canWrite || !form.TipoAccion}>
+                          <option value="">{form.TipoAccion ? "— seleccionar —" : "— elige primero el Tipo de Acción —"}</option>
+                          {tipoProcesoOpciones.map(n => <option value={n} key={n}>{n}</option>)}
+                        </select>
+                      </FieldCard>
+                    );
+                  }
+                  if(key==='Despacho'){
+                    return (
+                      <FieldCard label={LABELS[key]} key={key}>
+                        <select value={form.Despacho} onChange={e => setField('Despacho', e.target.value)} disabled={!canWrite || !form.TipoAccion}>
+                          <option value="">{form.TipoAccion ? "— seleccionar —" : "— elige primero el Tipo de Acción —"}</option>
+                          {despachoOpciones.map(n => <option value={n} key={n}>{n}</option>)}
+                        </select>
                       </FieldCard>
                     );
                   }

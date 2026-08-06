@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { ICON_SVG } from '../config';
 import { stripHtml, estadoBadgeClass } from '../lib/graph';
-import IconButton from './IconButton';
+import IconButton, { IconTextButton } from './IconButton';
 import ColumnFilterRow from './ColumnFilterRow';
 import { useColumnFilters } from '../hooks/useColumnFilters';
 
@@ -22,7 +22,7 @@ const COLUMNS = [
   {key:'acciones', label:'Acciones', filterable:false},
 ];
 
-export default function ProcesosView({ procesos, currentFilter, setFilter, searchQuery, onOpenProceso, canWrite = true }){
+export default function ProcesosView({ procesos, currentFilter, setFilter, searchQuery, onOpenProceso, onCreateProceso, canWrite = true }){
   const [showTerminados, setShowTerminados] = useState(false);
   const { filters, setFilter: setColFilter, clearFilters, rowMatches, hasActiveFilters } = useColumnFilters();
   const entidades = Array.from(new Set(procesos.map(p => stripHtml(p.Entidad) || "Sin entidad"))).sort((a,b)=>a.localeCompare(b));
@@ -43,6 +43,7 @@ export default function ProcesosView({ procesos, currentFilter, setFilter, searc
           <h1>Procesos judiciales</h1>
           <p>{rows.length} de {procesos.length} procesos{hasActiveFilters && <> · <button type="button" className="clear-filters-link" onClick={clearFilters}>Limpiar filtros de columna</button></>}</p>
         </div>
+        {canWrite && <IconTextButton icon="add" variant="primary" onClick={onCreateProceso}>Nuevo proceso judicial</IconTextButton>}
       </div>
       <div className="toolbar">
         {filterChips.map(f => (

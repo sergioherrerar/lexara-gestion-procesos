@@ -286,6 +286,30 @@ export const SHAREPOINT_LISTS_CONFIG = [
     ],
     mapping: {},
   },
+  {
+    key: "tiposAccion",
+    listName: "tipos de Accion",
+    label: "Tipos de Acción",
+    // Lista de referencia (no tiene módulo ni panel propio): guía qué
+    // combinaciones de Tipo de Acción / Tipo de Proceso / Despacho son
+    // válidas en Procesos Judiciales. La columna "Nombre Id Tipo Proceso"
+    // guarda el Tipo de Acción (Administrativo/Civil/Laboral); a partir de
+    // ahí, "Tipo de Proceso" y "Despacho" quedan filtrados a los valores que
+    // de verdad aparecen juntos en esta lista — son selects dependientes en
+    // el panel de Proceso judicial (ver tiposProcesoParaAccion/
+    // despachosParaAccion en graph.js). "Descripcion"/"TipoAlerta"/"Dias" son
+    // para más adelante (Términos/Impulso Procesal, "por configurar").
+    semanticFields: [
+      {key:"NombreIdTipoProceso", label:"Nombre (Tipo de Acción)", hint:["nombre id tipo proceso","nombre"], required:true},
+      {key:"Descripcion", label:"Descripción", hint:["descripcion","descripción"]},
+      {key:"TipoAlerta", label:"Tipo de Alerta", hint:["tipo alerta","tipo de alerta"]},
+      {key:"Dias", label:"Días", hint:["dias","días"]},
+      {key:"Despacho", label:"Despacho", hint:["despacho"]},
+      {key:"TipoProceso", label:"Tipo de Proceso", hint:["tipo de proceso","tipo proceso"]},
+      {key:"Link", label:"Link", hint:["link"]},
+    ],
+    mapping: {},
+  },
 ];
 
 export const DEMO_PROCESOS = [
@@ -376,6 +400,46 @@ export const DEMO_FORMAS_PAGO = [
 
 export const DEMO_DESISTIMIENTOS = [
   {id:1, Proceso:1, NumeroCorto:"11001-31-03-045-2023-00218-00", DesistimientoValor:"792.695,00", FechaRadicacion:"2023-10-20", Aprobacion:"Aprobado", FechaAprobacion:"2024-06-22", Observaciones:""},
+];
+
+// Lista de referencia "tipos de Accion" — guía las combinaciones válidas de
+// Tipo de Acción / Tipo de Proceso / Despacho en Procesos Judiciales (ver
+// tiposProcesoParaAccion/despachosParaAccion en graph.js).
+export const DEMO_TIPOS_ACCION = [
+  {id:1, NombreIdTipoProceso:"Administrativo", Descripcion:"Apelacion De Sentencias Art. 292 CPACA", TipoAlerta:"Termino", Dias:"5,00", Despacho:"Consejo De Estado Sección Primera", TipoProceso:"Nulidad simple", Link:"http://www.secretariasenado.gov.co/senado/basedoc/ley_1564_2012_pr007.html"},
+  {id:2, NombreIdTipoProceso:"Administrativo", Descripcion:"Audiencia De Alegaciones Y Juzgamiento Art. 182 Cpaca", TipoAlerta:"Audiencia", Dias:"", Despacho:"Consejo De Estado Sección Segunda", TipoProceso:"Nulidad y reestablecimiento del derecho", Link:"http://www.secretariasenado.gov.co/senado/basedoc/ley_1437_2011_pr004.html"},
+  {id:3, NombreIdTipoProceso:"Administrativo", Descripcion:"Audiencia De Pruebas Art. 181 Cpaca", TipoAlerta:"Audiencia", Dias:"", Despacho:"Consejo De Estado Sección Tercera", TipoProceso:"Reparación directa", Link:"http://www.secretariasenado.gov.co/senado/basedoc/ley_1437_2011_pr004.html"},
+  {id:4, NombreIdTipoProceso:"Administrativo", Descripcion:"Audiencia Inicial Art. 180 Cpaca", TipoAlerta:"Audiencia", Dias:"", Despacho:"Consejo De Estado Sección Cuarta", TipoProceso:"", Link:"http://www.secretariasenado.gov.co/senado/basedoc/ley_1437_2011_pr004.html"},
+  {id:5, NombreIdTipoProceso:"Administrativo", Descripcion:"Contestacion Art. 172 CPACA", TipoAlerta:"Termino", Dias:"30,00", Despacho:"Consejo De Estado Sección Quinto", TipoProceso:"", Link:"http://www.secretariasenado.gov.co/senado/basedoc/ley_1437_2011_pr004.html"},
+  {id:6, NombreIdTipoProceso:"Administrativo", Descripcion:"Continuacion Art. 180 Cpaca", TipoAlerta:"Termino", Dias:"30,00", Despacho:"Consejo De Estado Sección Sexta", TipoProceso:"", Link:""},
+  {id:7, NombreIdTipoProceso:"Administrativo", Descripcion:"Continuacion Art. 181 Cpaca", TipoAlerta:"Termino", Dias:"30,00", Despacho:"Juzgado Administrativo", TipoProceso:"", Link:""},
+  {id:8, NombreIdTipoProceso:"Administrativo", Descripcion:"Recurso De Apelacion Auto Art. 244 CPACA", TipoAlerta:"Termino", Dias:"3,00", Despacho:"Procuradurías Administrativas", TipoProceso:"", Link:"http://www.secretariasenado.gov.co/senado/basedoc/ley_1437_2011_pr005.html"},
+  {id:9, NombreIdTipoProceso:"Administrativo", Descripcion:"Recurso De Queja Art. 245 CPACA", TipoAlerta:"Termino", Dias:"3,00", Despacho:"Tribunal Administrativo", TipoProceso:"", Link:"http://www.secretariasenado.gov.co/senado/basedoc/ley_1437_2011_pr005.html"},
+  {id:10, NombreIdTipoProceso:"Administrativo", Descripcion:"Recurso Reposicion Auto ART. 242 CPACA", TipoAlerta:"Termino", Dias:"3,00", Despacho:"", TipoProceso:"", Link:"http://www.secretariasenado.gov.co/senado/basedoc/ley_1437_2011_pr005.html"},
+  {id:11, NombreIdTipoProceso:"Administrativo", Descripcion:"Termino Para La Reforma Art. 173 CPACA", TipoAlerta:"Termino", Dias:"40,00", Despacho:"", TipoProceso:"", Link:"http://www.secretariasenado.gov.co/senado/basedoc/ley_1437_2011_pr004.html"},
+  {id:12, NombreIdTipoProceso:"Administrativo", Descripcion:"Subsanacion de la Demanda Art 170 CPACA", TipoAlerta:"Termino", Dias:"10,00", Despacho:"", TipoProceso:"", Link:""},
+  {id:13, NombreIdTipoProceso:"Civil", Descripcion:"Audiencia Art. 372 Y 373 Cg", TipoAlerta:"Audiencia", Dias:"", Despacho:"Centro De Conciliación Civil De La Procuraduría", TipoProceso:"Declarativo", Link:""},
+  {id:14, NombreIdTipoProceso:"Civil", Descripcion:"Audiencia De Instruccion Y Juzgamiento Art 373 Cgp", TipoAlerta:"Audiencia", Dias:"", Despacho:"Corte Suprema De Justicia Civil Y Agraria", TipoProceso:"Ejecutivo", Link:"http://www.secretariasenado.gov.co/senado/basedoc/ley_1564_2012_pr009.html"},
+  {id:15, NombreIdTipoProceso:"Civil", Descripcion:"Audiencia Inicial Art 372 Cgp", TipoAlerta:"Audiencia", Dias:"", Despacho:"Juzgado Civil Del Circuito", TipoProceso:"", Link:"http://www.secretariasenado.gov.co/senado/basedoc/ley_1564_2012_pr009.html"},
+  {id:16, NombreIdTipoProceso:"Civil", Descripcion:"Contestacion Art. 369 CGP", TipoAlerta:"Termino", Dias:"20,00", Despacho:"Juzgado Civil Municipal", TipoProceso:"", Link:"http://www.secretariasenado.gov.co/senado/basedoc/ley_1564_2012_pr009.html"},
+  {id:17, NombreIdTipoProceso:"Civil", Descripcion:"Recurso De Apelacion Auto Art. 322 CGP", TipoAlerta:"Termino", Dias:"3,00", Despacho:"Juzgado De Pequeñas Causas Y Competencias Múltiples", TipoProceso:"", Link:"http://www.secretariasenado.gov.co/senado/basedoc/ley_1564_2012_pr007.html"},
+  {id:18, NombreIdTipoProceso:"Civil", Descripcion:"Recurso De Casacion Art. 337 CGP", TipoAlerta:"Termino", Dias:"3,00", Despacho:"Superintendencia De Industria Y Comercio", TipoProceso:"", Link:"http://www.secretariasenado.gov.co/senado/basedoc/ley_1564_2012_pr008.html"},
+  {id:19, NombreIdTipoProceso:"Civil", Descripcion:"Recurso De Queja Art. 353 CGP", TipoAlerta:"Termino", Dias:"3,00", Despacho:"Superintendencia Financiera", TipoProceso:"", Link:"http://www.secretariasenado.gov.co/senado/basedoc/ley_1564_2012_pr008.html"},
+  {id:20, NombreIdTipoProceso:"Civil", Descripcion:"Recurso De Suplica Art. 353 CGP", TipoAlerta:"Termino", Dias:"3,00", Despacho:"Tribunal Superior Sala Civil", TipoProceso:"", Link:"http://www.secretariasenado.gov.co/senado/basedoc/ley_1564_2012_pr008.html"},
+  {id:21, NombreIdTipoProceso:"Civil", Descripcion:"Recurso Reposicion Auto Art. 318 CGP", TipoAlerta:"Termino", Dias:"3,00", Despacho:"", TipoProceso:"", Link:"http://www.secretariasenado.gov.co/senado/basedoc/ley_1564_2012_pr007.html"},
+  {id:22, NombreIdTipoProceso:"Laboral", Descripcion:"Alegatos En Apelacion Art. 13 Ley 2213 De 2022", TipoAlerta:"Termino", Dias:"5,00", Despacho:"Corte Suprema De Justicia Sala Laboral", TipoProceso:"Ordinario laboral", Link:"https://www.funcionpublica.gov.co/eva/gestornormativo/norma.php?i=187626"},
+  {id:23, NombreIdTipoProceso:"Laboral", Descripcion:"Art. 72 Cpl Y Ss Unica Instancia", TipoAlerta:"Audiencia", Dias:"", Despacho:"Juzgado Laboral Del Circuito", TipoProceso:"Ejecutivo laboral", Link:"http://www.secretariasenado.gov.co/senado/basedoc/codigo_procedimental_laboral_pr001.html"},
+  {id:24, NombreIdTipoProceso:"Laboral", Descripcion:"Art. 77 Cpl Y Ss Conciliacion Y Primera De Tramite", TipoAlerta:"Audiencia", Dias:"", Despacho:"Juzgado Laboral Municipal De Pequeñas Causas", TipoProceso:"", Link:"http://www.secretariasenado.gov.co/senado/basedoc/codigo_procedimental_laboral_pr001.html"},
+  {id:25, NombreIdTipoProceso:"Laboral", Descripcion:"Art. 77 Y Art. 80 Cpl Y Ss", TipoAlerta:"Audiencia", Dias:"", Despacho:"Superintendencia Nacional De Salud", TipoProceso:"", Link:""},
+  {id:26, NombreIdTipoProceso:"Laboral", Descripcion:"Art. 80 Cpl Y Ss Pruebas Alegatos Y Fallo", TipoAlerta:"Audiencia", Dias:"", Despacho:"Tribunal Superior Sala Laboral", TipoProceso:"", Link:"http://www.secretariasenado.gov.co/senado/basedoc/codigo_procedimental_laboral_pr001.html"},
+  {id:27, NombreIdTipoProceso:"Laboral", Descripcion:"Casacion Art. 88 CPL Y SS", TipoAlerta:"Termino", Dias:"15,00", Despacho:"", TipoProceso:"", Link:"http://www.secretariasenado.gov.co/senado/basedoc/codigo_procedimental_laboral_pr002.html"},
+  {id:28, NombreIdTipoProceso:"Laboral", Descripcion:"Contestacion Art. 74 CPL Y SS", TipoAlerta:"Termino", Dias:"10,00", Despacho:"", TipoProceso:"", Link:"http://www.secretariasenado.gov.co/senado/basedoc/codigo_procedimental_laboral_pr001.html"},
+  {id:29, NombreIdTipoProceso:"Laboral", Descripcion:"Continuacion Art. 77 Cpl Y Ss", TipoAlerta:"Termino", Dias:"10,00", Despacho:"", TipoProceso:"", Link:""},
+  {id:30, NombreIdTipoProceso:"Laboral", Descripcion:"Continuacion Art. 80 Cpl Y Ss", TipoAlerta:"Termino", Dias:"10,00", Despacho:"", TipoProceso:"", Link:""},
+  {id:31, NombreIdTipoProceso:"Laboral", Descripcion:"Recurso De Apelacion Auto Art. 65 CPL Y SS", TipoAlerta:"Termino", Dias:"3,00", Despacho:"", TipoProceso:"", Link:"http://www.secretariasenado.gov.co/senado/basedoc/codigo_procedimental_laboral_pr001.html"},
+  {id:32, NombreIdTipoProceso:"Laboral", Descripcion:"Recurso Reposicion Auto Art. 63 CPL Y SS", TipoAlerta:"Termino", Dias:"2,00", Despacho:"", TipoProceso:"", Link:"http://www.secretariasenado.gov.co/senado/basedoc/codigo_procedimental_laboral_pr001.html"},
+  {id:33, NombreIdTipoProceso:"Laboral", Descripcion:"Subsanacion Art. 28 CPL Y SS", TipoAlerta:"Termino", Dias:"5,00", Despacho:"", TipoProceso:"", Link:"http://www.secretariasenado.gov.co/senado/basedoc/codigo_procedimental_laboral.html"},
+  {id:34, NombreIdTipoProceso:"Laboral", Descripcion:"Termino Para La Reforma", TipoAlerta:"Termino", Dias:"15,00", Despacho:"", TipoProceso:"", Link:"http://www.secretariasenado.gov.co/senado/basedoc/codigo_procedimental_laboral.html"},
 ];
 
 export const ICON_SVG = `<svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 30 L50 50 L80 30" stroke="currentColor" stroke-width="14" fill="none" stroke-linecap="square"/><path d="M20 70 L50 50 L80 70" stroke="currentColor" stroke-width="14" fill="none" stroke-linecap="square"/></svg>`;

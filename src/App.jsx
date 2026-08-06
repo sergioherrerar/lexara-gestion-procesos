@@ -93,6 +93,7 @@ export default function App(){
             setFilter={app.setFilter}
             searchQuery={app.searchQuery}
             onOpenProceso={app.openProceso}
+            onCreateProceso={app.newProceso}
             canWrite={app.canWrite}
           />
         )}
@@ -162,6 +163,7 @@ export default function App(){
         ordenesCompra={app.ordenesCompra}
         formasPago={app.formasPago}
         desistimientos={app.desistimientos}
+        tiposAccion={app.tiposAccion}
         liveMode={app.liveMode}
         onClose={app.closeDrawer}
         onSave={app.saveProceso}

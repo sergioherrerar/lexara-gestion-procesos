@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { INITIAL_CONFIG, SHAREPOINT_LISTS_CONFIG, DEMO_PROCESOS, DEMO_CLIENTES, DEMO_FACTURAS, DEMO_ORDENES_COMPRA, DEMO_COLABORADORES, DEMO_FORMAS_PAGO, DEMO_DESISTIMIENTOS } from '../config';
+import { INITIAL_CONFIG, SHAREPOINT_LISTS_CONFIG, DEMO_PROCESOS, DEMO_CLIENTES, DEMO_FACTURAS, DEMO_ORDENES_COMPRA, DEMO_COLABORADORES, DEMO_FORMAS_PAGO, DEMO_DESISTIMIENTOS, DEMO_TIPOS_ACCION } from '../config';
 import * as Graph from '../lib/graph';
 import { canWrite as canWriteForRole } from '../lib/permissions';
 
@@ -17,10 +17,14 @@ export function useLexaraApp(){
   const [facturas, setFacturas] = useState([]);
   const [ordenesCompra, setOrdenesCompra] = useState([]);
   const [activeProcesoId, setActiveProcesoId] = useState(null);
+  const [draftProceso, setDraftProceso] = useState(null);
   // Aparte del rol (canWrite), cada apertura del panel de Proceso judicial
   // puede pedirse explícitamente "solo ver" (botón de ojo en la tabla) —
   // deja todo en modo consulta aunque el rol sí permita editar.
   const [procesoViewOnly, setProcesoViewOnly] = useState(false);
+  // Lista de referencia (sin panel propio) — guía los selects dependientes
+  // de Tipo de Acción/Tipo de Proceso/Despacho, ver graph.js.
+  const [tiposAccion, setTiposAccion] = useState([]);
   const [activeClienteId, setActiveClienteId] = useState(null);
   const [activeFacturaId, setActiveFacturaId] = useState(null);
   const [draftFactura, setDraftFactura] = useState(null);
@@ -86,6 +90,7 @@ export function useLexaraApp(){
     setColaboradores(JSON.parse(JSON.stringify(DEMO_COLABORADORES)));
     setFormasPago(JSON.parse(JSON.stringify(DEMO_FORMAS_PAGO)));
     setDesistimientos(JSON.parse(JSON.stringify(DEMO_DESISTIMIENTOS)));
+    setTiposAccion(JSON.parse(JSON.stringify(DEMO_TIPOS_ACCION)));
     setAccount({ name:"Usuario Demo", username:"demo@lexara.com" });
     setAppActive(true);
     if(!silent) setView('dashboard');
@@ -149,6 +154,7 @@ export function useLexaraApp(){
         setColaboradores(updated.find(l => l.key==='colaboradores')?.items || []);
         setFormasPago(updated.find(l => l.key==='formasPago')?.items || []);
         setDesistimientos(updated.find(l => l.key==='desistimientos')?.items || []);
+        setTiposAccion(updated.find(l => l.key==='tiposAccion')?.items || []);
         setLiveMode(true);
         setAppActive(true);
       } else {
@@ -182,6 +188,7 @@ export function useLexaraApp(){
       setColaboradores(updated.find(l => l.key==='colaboradores')?.items || []);
       setFormasPago(updated.find(l => l.key==='formasPago')?.items || []);
       setDesistimientos(updated.find(l => l.key==='desistimientos')?.items || []);
+      setTiposAccion(updated.find(l => l.key==='tiposAccion')?.items || []);
     }catch(err){
       console.error(err);
       notify("No se pudo actualizar la información: " + err.message, 'error');
@@ -218,6 +225,7 @@ export function useLexaraApp(){
     setColaboradores(updated.find(l => l.key==='colaboradores')?.items || []);
     setFormasPago(updated.find(l => l.key==='formasPago')?.items || []);
     setDesistimientos(updated.find(l => l.key==='desistimientos')?.items || []);
+    setTiposAccion(updated.find(l => l.key==='tiposAccion')?.items || []);
     setLiveMode(true);
   }
 
@@ -254,7 +262,7 @@ export function useLexaraApp(){
     setAppActive(false);
   }
 
-  const activeProceso = procesos.find(p => p.id===activeProcesoId) || null;
+  const activeProceso = draftProceso || procesos.find(p => p.id===activeProcesoId) || null;
   const activeCliente = clientes.find(c => c.id===activeClienteId) || null;
   const activeFactura = draftFactura || facturas.find(f => f.id===activeFacturaId) || null;
   const activeOrdenCompra = draftOrdenCompra || ordenesCompra.find(o => o.id===activeOrdenCompraId) || null;
@@ -275,10 +283,38 @@ export function useLexaraApp(){
   })();
   const canWrite = canWriteForRole(role);
 
-  function openProceso(id, opts){ setActiveProcesoId(id); setProcesoViewOnly(!!(opts && opts.viewOnly)); }
-  function closeDrawer(){ setActiveProcesoId(null); setProcesoViewOnly(false); }
+  function openProceso(id, opts){ setDraftProceso(null); setActiveProcesoId(id); setProcesoViewOnly(!!(opts && opts.viewOnly)); }
+  function closeDrawer(){ setActiveProcesoId(null); setDraftProceso(null); setProcesoViewOnly(false); }
+  // "+ Nuevo proceso judicial" solo abre un borrador local — no toca
+  // SharePoint hasta que el usuario le da "Guardar cambios" (mismo criterio
+  // que "Nueva factura"/"Nueva orden de compra"/etc.).
+  function newProceso(){ setActiveProcesoId(null); setProcesoViewOnly(false); setDraftProceso({}); }
   async function saveProceso(updates){
     if(!activeProceso) return;
+
+    if(draftProceso){
+      const nuevo = {...updates};
+      if(liveMode){
+        setSaving(true);
+        const list = listByKey('procesos');
+        const graphFields = Graph.graphFieldsFromUpdates(list, updates);
+        try{
+          const created = await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items`, {
+            method:"POST", body: JSON.stringify({ fields: graphFields })
+          });
+          nuevo.id = created.id; nuevo._graphId = created.id;
+        }catch(err){ console.error(err); notify("No se pudo crear el proceso en SharePoint: " + err.message, 'error'); setSaving(false); return; }
+        setSaving(false);
+      } else {
+        const maxId = procesos.reduce((max,p) => Math.max(max, Number(p.id)||0), 0);
+        nuevo.id = maxId + 1;
+      }
+      setProcesos(prev => [...prev, nuevo]);
+      setDraftProceso(null);
+      setActiveProcesoId(null);
+      return;
+    }
+
     setProcesos(prev => prev.map(p => p.id===activeProcesoId ? {...p, ...updates} : p));
     if(liveMode){
       setSaving(true);
@@ -726,10 +762,10 @@ export function useLexaraApp(){
     signIn, enterDemo, goSetup, signOut,
     saving, signingIn,
     toast, closeToast, confirmState, acceptConfirm, cancelConfirm,
-    procesos, clientes, facturas, ordenesCompra, colaboradores, formasPago, desistimientos,
+    procesos, clientes, facturas, ordenesCompra, colaboradores, formasPago, desistimientos, tiposAccion,
     currentFilter, setFilter: setCurrentFilter, searchQuery, setSearchQuery: setSearchQuery,
     onSearch: setSearchQuery,
-    activeProceso, openProceso, closeDrawer, saveProceso, procesoViewOnly,
+    activeProceso, openProceso, newProceso, closeDrawer, saveProceso, procesoViewOnly,
     activeCliente, openCliente, closeClienteDrawer, saveCliente, deleteCliente, createCliente, updateCliente,
     activeFactura, openFactura, newFactura, closeFacturaDrawer, saveFactura,
     printFactura, autoPrintFacturaId, clearAutoPrint, createFacturaFromOrdenCompra, newFacturaFromProceso,

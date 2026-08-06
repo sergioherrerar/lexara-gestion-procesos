@@ -3,6 +3,9 @@
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
 ## 2026-08-05
+- Nueva lista conectada **"Tipos de Acción"**: guía qué combinaciones de Tipo de Acción / Tipo de Proceso / Despacho son válidas. En el panel de cada Proceso judicial, estos 3 campos quedan seguidos y son selects dependientes — al elegir el Tipo de Acción (Administrativo/Civil/Laboral), Tipo de Proceso y Despacho solo muestran las opciones reales de esa categoría.
+- Ahora se puede crear un **Nuevo proceso judicial** desde cero (antes solo se podían editar los existentes), con el mismo criterio de siempre: no se guarda en SharePoint hasta darle "Guardar cambios".
+- Se cambió la tipografía de vuelta a Fraunces/Inter (la anterior, "Prompt", no convenció).
 - En la tabla de Procesos judiciales: nuevo ícono de **"Ver"** (ojo) junto al de "Editar" — abre el proceso completo solo para consultar y copiar datos, sin botón de guardar. "Editar" sigue permitiendo modificar todos los campos de Datos generales y Trazabilidad fechas.
 - El panel de cada Proceso judicial ahora ocupa toda la pantalla (antes era un panel lateral) y tiene un botón **"Volver a procesos judiciales"** para regresar a la lista. También se corrigió que la etiqueta de estado se desbordara cuando el texto era largo.
 - Nueva tipografía corporativa: se reemplazó Fraunces/Inter por **Prompt** (fuente propia del despacho) en toda la app — títulos, tablas, formularios e impresión de facturas/órdenes de compra.
