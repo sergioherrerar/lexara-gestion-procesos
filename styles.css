@@ -405,6 +405,7 @@
   .field-card-value input:focus, .field-card-value select:focus, .field-card-value textarea:focus{outline:none;}
   .field-card-value input[readonly], .field-card-value textarea[readonly]{color:var(--texto-suave);}
   .field-card-value textarea{resize:vertical; min-height:56px;}
+  .field-card-value input.input-money{text-align:right; font-family:var(--font-mono);}
 
   /* ---------- Editor de texto enriquecido ("Histórico" y "Observaciones" —
      columnas reales de SharePoint con formato: negrita/subrayado/resaltado) ---------- */

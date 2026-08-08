@@ -92,13 +92,13 @@ const FIELD_SECTIONS = [
     ["Estado","textarea"],["EstadoVT","text"],["CalificacionContingencia","text"],
   ]},
   {title:"Detalles del despacho", fields:[
-    ["LinkDespacho","text"],["CorreoDespacho","text"],["Instancia","text"],
+    ["LinkDespacho","link"],["CorreoDespacho","text"],["Instancia","text"],
   ]},
   {title:"Valores", fields:[
-    ["ValorRadicacion","text"],["ValorReforma","text"],["ValorActualDemanda","text"],
+    ["ValorRadicacion","money"],["ValorReforma","money"],["ValorActualDemanda","money"],
   ]},
   {title:"Enlaces y observaciones", fields:[
-    ["LinkContrato","text"],["LinkLexara","text"],["LinkCliente","text"],["LinkCarpeta","text"],["Observaciones","richtext"],
+    ["LinkContrato","link"],["LinkLexara","link"],["LinkCliente","link"],["LinkCarpeta","link"],["Observaciones","richtext"],
   ]},
 ];
 // "Historico" es la bitácora narrativa del proceso (distinta de "Histórico
@@ -197,7 +197,9 @@ export default function ProcesoDrawer({ proceso, clientes, facturas, ordenesComp
     if(proceso){
       const initial = {};
       ALL_SECTIONS.forEach(sec => sec.fields.forEach(([key,type]) => {
-        initial[key] = key==='Estado' ? stripHtml(proceso[key]) : (proceso[key] || "");
+        initial[key] = key==='Estado' ? stripHtml(proceso[key])
+          : type==='money' ? (proceso[key] ? fmtMonto(parseMonto(proceso[key])) : "")
+          : (proceso[key] || "");
       }));
       setForm(initial);
       setShowNewCliente(false);
@@ -214,6 +216,17 @@ export default function ProcesoDrawer({ proceso, clientes, facturas, ordenesComp
   if(!proceso || !form) return null;
 
   function setField(key, value){ setForm(prev => ({...prev, [key]: value})); }
+
+  // Los campos "money" se muestran formateados ($ colombiano) mientras se
+  // editan, pero SharePoint espera un número plano — igual que en Facturas/
+  // Órdenes de compra, se pasan por parseMonto justo antes de guardar.
+  function handleSave(){
+    const payload = {...form};
+    ALL_SECTIONS.forEach(sec => sec.fields.forEach(([key,type]) => {
+      if(type==='money') payload[key] = parseMonto(payload[key]);
+    }));
+    onSave(payload);
+  }
 
   // Al cambiar el Tipo de Acción, si el Tipo de Proceso o el Despacho ya
   // elegidos dejan de ser válidos para la nueva categoría (según la lista
@@ -480,12 +493,29 @@ export default function ProcesoDrawer({ proceso, clientes, facturas, ordenesComp
                       </FieldCard>
                     );
                   }
+                  // Campos "link" (Link Contrato/Lexara/Cliente/Carpeta/Despacho): antes
+                  // eran solo texto — al tocarlos no pasaba nada. Ahora, si hay un valor,
+                  // aparece un botón para abrirlo en una pestaña nueva.
+                  if(type==='link'){
+                    const url = (form[key]||"").trim();
+                    const href = url && !/^https?:\/\//i.test(url) ? `https://${url}` : url;
+                    return (
+                      <FieldCard label={LABELS[key]} key={key}>
+                        <div style={{display:'flex', alignItems:'center', gap:6}}>
+                          <input type="text" value={form[key]} onChange={e => setField(key, e.target.value)} readOnly={!canWrite} style={{flex:1, minWidth:0}} />
+                          {url && <IconButton icon="open" variant="open" label="Abrir enlace" href={href} onClick={e => e.stopPropagation()} />}
+                        </div>
+                      </FieldCard>
+                    );
+                  }
                   return (
                     <FieldCard label={LABELS[key]} full={type==='textarea' || type==='richtext'} key={key}>
                       {type==='richtext'
                         ? <RichTextEditor value={form[key]} onChange={v => setField(key, v)} readOnly={!canWrite} />
                         : type==='textarea'
                         ? <textarea value={form[key]} onChange={e => setField(key, e.target.value)} readOnly={!canWrite} />
+                        : type==='money'
+                        ? <input type="text" className="input-money" value={form[key]} onChange={e => setField(key, e.target.value)} onBlur={e => setField(key, fmtMonto(parseMonto(e.target.value)))} readOnly={!canWrite} />
                         : <input type={type} value={form[key]} onChange={e => setField(key, e.target.value)} readOnly={!canWrite} />}
                     </FieldCard>
                   );
@@ -511,7 +541,7 @@ export default function ProcesoDrawer({ proceso, clientes, facturas, ordenesComp
         <div className="drawer-foot">
           {canWrite ? (
             <>
-              <button className="btn-primary" onClick={() => onSave(form)} disabled={saving}>
+              <button className="btn-primary" onClick={handleSave} disabled={saving}>
                 {saving && <span className="btn-spinner" />}{saving ? "Guardando…" : "Guardar cambios"}
               </button>
               <button className="btn-secondary" onClick={onClose} disabled={saving}>Cancelar</button>

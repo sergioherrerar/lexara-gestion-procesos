@@ -3,9 +3,26 @@ import { INITIAL_CONFIG, SHAREPOINT_LISTS_CONFIG, DEMO_PROCESOS, DEMO_CLIENTES, 
 import * as Graph from '../lib/graph';
 import { canWrite as canWriteForRole } from '../lib/permissions';
 
+// El mapeo de columnas que se confirma en Configuración vivía solo en memoria
+// de React — al recargar la página o volver a iniciar sesión normal (sin
+// pasar por Configuración) se perdía y todo volvía a los mapeos vacíos de
+// config.js, aunque ya se hubiera mapeado antes. Se guarda en localStorage
+// (por navegador/equipo) para que el mapeo confirmado quede aplicado en el
+// siguiente inicio de sesión sin tener que repetir Configuración cada vez.
+const LIST_MAPPINGS_KEY = 'lexara-list-mappings-v1';
+function loadSavedMappings(){
+  try{
+    const raw = localStorage.getItem(LIST_MAPPINGS_KEY);
+    return raw ? JSON.parse(raw) : {};
+  }catch{ return {}; }
+}
+
 export function useLexaraApp(){
   const [config, setConfigState] = useState(INITIAL_CONFIG);
-  const [lists, setLists] = useState(() => SHAREPOINT_LISTS_CONFIG.map(l => ({...l, mapping:{...l.mapping}})));
+  const [lists, setLists] = useState(() => {
+    const saved = loadSavedMappings();
+    return SHAREPOINT_LISTS_CONFIG.map(l => ({...l, mapping:{...l.mapping, ...(saved[l.key]||{})}}));
+  });
   const [liveMode, setLiveMode] = useState(false);
   const [account, setAccount] = useState(null);
   const [appActive, setAppActive] = useState(false);
@@ -78,6 +95,17 @@ export function useLexaraApp(){
     if(config.CLIENT_ID && config.TENANT_ID) Graph.initMsal(config);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Cada vez que el mapeo de alguna lista cambia (al conectar y adivinar
+  // columnas, al ajustar un select a mano, o al aplicar mapeo), se guarda en
+  // localStorage para que el próximo inicio de sesión ya lo tenga listo.
+  useEffect(() => {
+    try{
+      const toSave = {};
+      lists.forEach(l => { toSave[l.key] = l.mapping; });
+      localStorage.setItem(LIST_MAPPINGS_KEY, JSON.stringify(toSave));
+    }catch{ /* localStorage no disponible — no es crítico */ }
+  }, [lists]);
 
   const listByKey = useCallback((key) => lists.find(l => l.key===key), [lists]);
 

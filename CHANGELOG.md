@@ -3,6 +3,9 @@
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
 ## 2026-08-08
+- Corregido: los campos de Link (Contrato, Lexara, Cliente, Carpeta, Despacho) en el panel de Proceso judicial no llevaban a ningún lado al tocarlos — ahora, si tienen un valor, aparece un botón para abrirlos en una pestaña nueva.
+- Corregido: el mapeo de columnas que se confirma en Configuración se perdía al recargar la página o volver a iniciar sesión — ahora queda guardado en el navegador y se aplica automáticamente en el siguiente inicio de sesión, sin tener que repetir Configuración cada vez.
+- Los campos "Valor radicación/reforma/actual demanda" ahora se muestran en formato de moneda colombiana, alineados a la derecha.
 - Inicio de sesión restringido: ahora solo puede entrar quien ya esté registrado en el módulo "Colaborador Lexara". Si alguien intenta entrar con una cuenta que no está ahí (Hotmail, Outlook, etc.), se le bloquea el acceso por completo y se le pide escribir a Soporte@lexaraabogados.com para solicitar el ingreso.
 - Se quitaron de Configuración los campos "Numero corto" (Desistimientos) y "Ciudad" (Clientes) — no existen como columnas reales en esas listas de SharePoint, así que aparecían para siempre como "sin mapear". El resto de su comportamiento en los formularios sigue igual.
 
