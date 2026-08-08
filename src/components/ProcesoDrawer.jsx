@@ -87,11 +87,12 @@ const FIELD_SECTIONS = [
     // orden — son los 3 selects dependientes guiados por la lista
     // "tipos de Accion" (ver tiposAccionDistinct/tiposProcesoParaAccion/
     // despachosParaAccion en graph.js).
-    ["TipoAccion","text"],["TipoProceso","text"],["Despacho","text"],
-    ["EtapaProcesal","text"],["Estado","textarea"],["EstadoVT","text"],["CalificacionContingencia","text"],
+    ["TipoAccion","text"],["TipoProceso","text"],["EtapaProcesal","text"],
+    ["Despacho","text"],["NumeroDespacho","text"],
+    ["Estado","textarea"],["EstadoVT","text"],["CalificacionContingencia","text"],
   ]},
   {title:"Detalles del despacho", fields:[
-    ["NumeroDespacho","text"],["LinkDespacho","text"],["CorreoDespacho","text"],["Instancia","text"],
+    ["LinkDespacho","text"],["CorreoDespacho","text"],["Instancia","text"],
   ]},
   {title:"Valores", fields:[
     ["ValorRadicacion","text"],["ValorReforma","text"],["ValorActualDemanda","text"],

@@ -2,6 +2,10 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-08-08
+- Inicio de sesión restringido: ahora solo puede entrar quien ya esté registrado en el módulo "Colaborador Lexara". Si alguien intenta entrar con una cuenta que no está ahí (Hotmail, Outlook, etc.), se le bloquea el acceso por completo y se le pide escribir a Soporte@lexaraabogados.com para solicitar el ingreso.
+- Se quitaron de Configuración los campos "Numero corto" (Desistimientos) y "Ciudad" (Clientes) — no existen como columnas reales en esas listas de SharePoint, así que aparecían para siempre como "sin mapear". El resto de su comportamiento en los formularios sigue igual.
+
 ## 2026-08-05
 - Nueva lista conectada **"Tipos de Acción"**: guía qué combinaciones de Tipo de Acción / Tipo de Proceso / Despacho son válidas. En el panel de cada Proceso judicial, estos 3 campos quedan seguidos y son selects dependientes — al elegir el Tipo de Acción (Administrativo/Civil/Laboral), Tipo de Proceso y Despacho solo muestran las opciones reales de esa categoría.
 - Ahora se puede crear un **Nuevo proceso judicial** desde cero (antes solo se podían editar los existentes), con el mismo criterio de siempre: no se guarda en SharePoint hasta darle "Guardar cambios".

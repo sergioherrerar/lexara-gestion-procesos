@@ -96,7 +96,11 @@ export const SHAREPOINT_LISTS_CONFIG = [
     semanticFields: [
       {key:"RazonSocial", label:"Razón social", hint:["razon social","razón social"], required:true},
       {key:"Nit", label:"NIT", hint:["nit"]},
-      {key:"Ciudad", label:"Ciudad", hint:["ciudad"]},
+      // No existe columna real "Ciudad" en la lista de Clientes (confirmado
+      // por el usuario) — se quitó de aquí para que Configuración deje de
+      // mostrarla como "sin mapear". El campo Ciudad de Facturas/Órdenes de
+      // compra sigue funcionando igual (editable por documento), solo que
+      // ya no intenta guardarse en ninguna columna real del Cliente.
       {key:"Direccion", label:"Dirección", hint:["direccion","dirrección","dirreccion"]},
       {key:"Telefono", label:"Teléfono", hint:["telefono","teléfono"]},
       {key:"Correo", label:"Correo", hint:["correo"]},
@@ -273,11 +277,13 @@ export const SHAREPOINT_LISTS_CONFIG = [
     // A diferencia de Facturación/Órdenes de compra/Formas de pago (que se
     // asocian por Contrato, un texto), esta se asocia por el campo "Proceso",
     // que guarda el ID real del elemento en la lista Procesos Judiciales —
-    // relación por ID, no por texto. "Numero corto" es solo informativo
-    // (se copia del proceso para leer fácil, no se usa para la relación).
+    // relación por ID, no por texto. No existe columna real "Numero corto"
+    // en esta lista (confirmado por el usuario) — en el formulario sigue
+    // usándose como campo de búsqueda en pantalla para encontrar el proceso
+    // por su Radicado, solo que ya no aparece en Configuración porque no hay
+    // ninguna columna real que mapearle.
     semanticFields: [
       {key:"Proceso", label:"Proceso (ID)", hint:["proceso"], required:true},
-      {key:"NumeroCorto", label:"Numero corto", hint:["numero corto"]},
       {key:"DesistimientoValor", label:"Desistimiento Valor", hint:["desistimiento valor"]},
       {key:"FechaRadicacion", label:"Fecha Radicación", hint:["fecha radicacion","fecha radicación"]},
       {key:"Aprobacion", label:"Aprobación", hint:["aprobacion","aprobación"]},
@@ -375,8 +381,8 @@ export const DEMO_COLABORADORES = [
   {id:1, Nombre:"Monica Paola Gómez", TipoIdentificacion:"C.C.", Identificacion:"40.039.240", Telefono:"+57 312 4420026", Direccion:"Carrera 56B", Correo:"Gerencia@lexaraabogados.com", Activo:true, Rol:"Jefe"},
   {id:2, Nombre:"Sergio Alexander Herrera", TipoIdentificacion:"C.C.", Identificacion:"80.728.333", Telefono:"+57 310 4380043", Direccion:"Calle 128 No 87", Correo:"Soporte@lexaraabogados.com", Activo:true, Rol:"Administrador"},
   {id:3, Nombre:"Dahiana Camila Pedraza", TipoIdentificacion:"C.C.", Identificacion:"1.014.300.118", Telefono:"+57 3202751824", Direccion:"Cll 69a #105-35", Correo:"dcpedrazap@lexaraabogados.com", Activo:true, Rol:"Colaborador"},
-  {id:4, Nombre:"Daniel Santiago Flechas", TipoIdentificacion:"C.C.", Identificacion:"1.032.502.681", Telefono:"+57 310 4112130", Direccion:"Carrera 49B", Correo:"dsflechasa@lexaraabogados.com", Activo:true, Rol:"Colaborador"},
-  {id:5, Nombre:"Ariana Andrea Torres", TipoIdentificacion:"C.C", Identificacion:"1.006.415.925", Telefono:"+57 3124720", Direccion:"Calle 27a #33-6", Correo:"Asesoriajuridica@lexaraabogados.com", Activo:false, Rol:"Colaborador"},
+  {id:4, Nombre:"Daniel Santiago Flechas", TipoIdentificacion:"C.C.", Identificacion:"1.032.502.681", Telefono:"+57 310 4112130", Direccion:"Carrera 49B", Correo:"Asesoriajuridica@lexaraabogados.com", Activo:true, Rol:"Colaborador"},
+  {id:5, Nombre:"Ariana Andrea Torres", TipoIdentificacion:"C.C", Identificacion:"1.006.415.925", Telefono:"+57 3124720", Direccion:"Calle 27a #33-6", Correo:"Tutelas@lexaraabogados.com", Activo:true, Rol:"Colaborador"},
 ];
 
 export const DEMO_FORMAS_PAGO = [

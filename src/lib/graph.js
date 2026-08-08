@@ -26,7 +26,11 @@ export async function ensureSignedIn(config){
     throw new Error("No se pudo cargar la librería de inicio de sesión de Microsoft (MSAL). Verifica tu conexión a internet, y recarga la página.");
   }
   if(!account){
-    const res = await msalInstance.loginPopup({ scopes:["User.Read","Sites.ReadWrite.All"] });
+    // "select_account" para que, si Microsoft ya tiene varias cuentas en el
+    // navegador (o la anterior quedó bloqueada por no estar en Colaborador
+    // Lexara), siempre se pueda elegir con cuál entrar en vez de reusar la
+    // última en silencio.
+    const res = await msalInstance.loginPopup({ scopes:["User.Read","Sites.ReadWrite.All"], prompt:"select_account" });
     account = res.account;
   }
   return account;

@@ -137,27 +137,40 @@ export function useLexaraApp(){
     setSigningIn(true);
     try{
       const acc = await Graph.ensureSignedIn(config);
-      setAccount(acc);
       if(Graph.allRequiredMapped(lists)){
         const sid = await Graph.fetchSiteId(config);
-        setSiteId(sid);
         const updated = [];
         for(const list of lists){
           const connected = await Graph.connectList(sid, list);
           updated.push({...connected, items: Graph.transformListItems(connected)});
         }
+        // Solo puede entrar quien ya está registrado en Colaborador Lexara
+        // (lista real "Equipo MD"), sin importar el rol — un correo que no
+        // aparece ahí queda bloqueado por completo, no en modo consulta.
+        const colaboradoresItems = updated.find(l => l.key==='colaboradores')?.items || [];
+        const emailIngreso = (acc.username || '').trim().toLowerCase();
+        const autorizado = colaboradoresItems.some(c => (c.Correo||'').trim().toLowerCase() === emailIngreso);
+        if(!autorizado){
+          Graph.clearSession();
+          notify(`La cuenta ${acc.username} no está autorizada para ingresar. Si necesitas acceso, escribe a Soporte@lexaraabogados.com solicitando el ingreso.`, 'error');
+          setSigningIn(false);
+          return;
+        }
+        setAccount(acc);
+        setSiteId(sid);
         setLists(updated);
         setProcesos(updated.find(l => l.key==='procesos')?.items || []);
         setClientes(updated.find(l => l.key==='clientes')?.items || []);
         setFacturas(updated.find(l => l.key==='facturacion')?.items || []);
         setOrdenesCompra(updated.find(l => l.key==='ordenesCompra')?.items || []);
-        setColaboradores(updated.find(l => l.key==='colaboradores')?.items || []);
+        setColaboradores(colaboradoresItems);
         setFormasPago(updated.find(l => l.key==='formasPago')?.items || []);
         setDesistimientos(updated.find(l => l.key==='desistimientos')?.items || []);
         setTiposAccion(updated.find(l => l.key==='tiposAccion')?.items || []);
         setLiveMode(true);
         setAppActive(true);
       } else {
+        setAccount(acc);
         setAppActive(true);
         setView('setup');
         await testConnection(acc);
