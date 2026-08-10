@@ -172,18 +172,23 @@ export function useLexaraApp(){
           const connected = await Graph.connectList(sid, list);
           updated.push({...connected, items: Graph.transformListItems(connected)});
         }
-        // Solo puede entrar quien ya está registrado en Colaborador Lexara
-        // (lista real "Equipo MD"), sin importar el rol — un correo que no
-        // aparece ahí queda bloqueado por completo, no en modo consulta.
+        // DESACTIVADO TEMPORALMENTE (2026-08-08) a pedido del usuario: este
+        // bloqueo por Correo en Colaborador Lexara estaba dejando afuera a
+        // TODAS las cuentas, incluidas las 4 autorizadas — probablemente
+        // porque el mapeo real de la columna "Correo" en la lista Equipo MD
+        // no está quedando bien aplicado (colaboradoresItems llega con
+        // Correo vacío) o acc.username no coincide exactamente con lo que
+        // guarda SharePoint. Hay que revisar esto con el usuario antes de
+        // reactivarlo — no descomentar a ciegas.
         const colaboradoresItems = updated.find(l => l.key==='colaboradores')?.items || [];
-        const emailIngreso = (acc.username || '').trim().toLowerCase();
-        const autorizado = colaboradoresItems.some(c => (c.Correo||'').trim().toLowerCase() === emailIngreso);
-        if(!autorizado){
-          Graph.clearSession();
-          notify(`La cuenta ${acc.username} no está autorizada para ingresar. Si necesitas acceso, escribe a Soporte@lexaraabogados.com solicitando el ingreso.`, 'error');
-          setSigningIn(false);
-          return;
-        }
+        // const emailIngreso = (acc.username || '').trim().toLowerCase();
+        // const autorizado = colaboradoresItems.some(c => (c.Correo||'').trim().toLowerCase() === emailIngreso);
+        // if(!autorizado){
+        //   Graph.clearSession();
+        //   notify(`La cuenta ${acc.username} no está autorizada para ingresar. Si necesitas acceso, escribe a Soporte@lexaraabogados.com solicitando el ingreso.`, 'error');
+        //   setSigningIn(false);
+        //   return;
+        // }
         setAccount(acc);
         setSiteId(sid);
         setLists(updated);
