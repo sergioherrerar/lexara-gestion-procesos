@@ -90,12 +90,6 @@ export function useLexaraApp(){
     if(fn) fn();
   }
 
-  // Arranque: si ya hay credenciales fijas en el código, prepara MSAL de una vez.
-  useEffect(() => {
-    if(config.CLIENT_ID && config.TENANT_ID) Graph.initMsal(config);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   // Cada vez que el mapeo de alguna lista cambia (al conectar y adivinar
   // columnas, al ajustar un select a mano, o al aplicar mapeo), se guarda en
   // localStorage para que el próximo inicio de sesión ya lo tenga listo.
@@ -132,7 +126,17 @@ export function useLexaraApp(){
   async function testConnection(accOverride){
     setTestStatus({msg:"Conectando con SharePoint…", isError:false});
     try{
-      const acc = accOverride || await Graph.ensureSignedIn(config);
+      let acc = accOverride;
+      if(!acc){
+        acc = await Graph.completeSignInFromRedirect(config);
+        if(!acc){
+          // No hay cuenta todavía: manda a Microsoft (navega la página
+          // completa, ya no es un popup) — al volver, esta misma pantalla
+          // de Configuración retoma la conexión.
+          await Graph.beginSignIn(config);
+          return;
+        }
+      }
       setAccount(acc);
       const sid = siteId || await Graph.fetchSiteId(config);
       setSiteId(sid);
@@ -156,15 +160,11 @@ export function useLexaraApp(){
     }
   }
 
-  async function signIn(){
-    if(!config.CLIENT_ID || !config.TENANT_ID){
-      notify("Primero configura Client ID y Tenant ID en la sección de Configuración.", 'error');
-      goSetup();
-      return;
-    }
-    setSigningIn(true);
+  // Termina el inicio de sesión una vez que ya se tiene la cuenta de
+  // Microsoft (venga de un redirect recién completado, o de una cuenta ya
+  // en caché al recargar la página).
+  async function finishSignIn(acc){
     try{
-      const acc = await Graph.ensureSignedIn(config);
       if(Graph.allRequiredMapped(lists)){
         const sid = await Graph.fetchSiteId(config);
         const updated = [];
@@ -174,19 +174,16 @@ export function useLexaraApp(){
         }
         // DESACTIVADO TEMPORALMENTE (2026-08-08) a pedido del usuario: este
         // bloqueo por Correo en Colaborador Lexara estaba dejando afuera a
-        // TODAS las cuentas, incluidas las 4 autorizadas — probablemente
-        // porque el mapeo real de la columna "Correo" en la lista Equipo MD
-        // no está quedando bien aplicado (colaboradoresItems llega con
-        // Correo vacío) o acc.username no coincide exactamente con lo que
-        // guarda SharePoint. Hay que revisar esto con el usuario antes de
-        // reactivarlo — no descomentar a ciegas.
+        // TODAS las cuentas, incluidas las 4 autorizadas. Con el cambio de
+        // loginPopup a loginRedirect es posible que la causa real fuera el
+        // popup atascado (nunca llegaba a este código) y no el mapeo — hay
+        // que confirmar con el usuario antes de reactivar esto.
         const colaboradoresItems = updated.find(l => l.key==='colaboradores')?.items || [];
         // const emailIngreso = (acc.username || '').trim().toLowerCase();
         // const autorizado = colaboradoresItems.some(c => (c.Correo||'').trim().toLowerCase() === emailIngreso);
         // if(!autorizado){
         //   Graph.clearSession();
         //   notify(`La cuenta ${acc.username} no está autorizada para ingresar. Si necesitas acceso, escribe a Soporte@lexaraabogados.com solicitando el ingreso.`, 'error');
-        //   setSigningIn(false);
         //   return;
         // }
         setAccount(acc);
@@ -210,10 +207,51 @@ export function useLexaraApp(){
       }
     }catch(err){
       console.error(err);
-      notify("No fue posible iniciar sesión. Revisa la consola para más detalle.", 'error');
+      notify("No fue posible completar el inicio de sesión. Revisa la consola para más detalle.", 'error');
     }
-    setSigningIn(false);
   }
+
+  // Antes esto esperaba un popup de Microsoft y seguía en la misma función.
+  // Ahora loginRedirect navega la página completa a Microsoft — no hay nada
+  // que esperar aquí, la página se recarga y el useEffect de abajo
+  // (completeSignInFromRedirect) retoma y llama a finishSignIn().
+  function signIn(){
+    if(!config.CLIENT_ID || !config.TENANT_ID){
+      notify("Primero configura Client ID y Tenant ID en la sección de Configuración.", 'error');
+      goSetup();
+      return;
+    }
+    setSigningIn(true);
+    Promise.resolve(Graph.beginSignIn(config)).catch(err => {
+      console.error(err);
+      notify("No fue posible iniciar sesión. Revisa la consola para más detalle.", 'error');
+      setSigningIn(false);
+    });
+  }
+
+  // Al arrancar la app: si la URL trae la respuesta de Microsoft (porque
+  // venimos de signIn()), la procesa y termina el inicio de sesión. Si no
+  // hay nada que procesar pero ya había una cuenta en la caché de esta
+  // pestaña (recargaste la página estando conectado), también sigue de una
+  // vez sin pedir que inicies sesión otra vez.
+  useEffect(() => {
+    if(!(config.CLIENT_ID && config.TENANT_ID)) return;
+    let cancelado = false;
+    setSigningIn(true);
+    (async () => {
+      try{
+        const acc = await Graph.completeSignInFromRedirect(config);
+        if(cancelado) return;
+        if(acc) await finishSignIn(acc);
+      }catch(err){
+        console.error(err);
+        if(!cancelado) notify("No fue posible completar el inicio de sesión. Revisa la consola para más detalle.", 'error');
+      }
+      if(!cancelado) setSigningIn(false);
+    })();
+    return () => { cancelado = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function refreshData(){
     if(!liveMode || refreshing) return;

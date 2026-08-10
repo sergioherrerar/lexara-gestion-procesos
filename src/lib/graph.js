@@ -5,6 +5,7 @@ let account = null;
 export function getAccount(){ return account; }
 
 export function initMsal(config){
+  if(msalInstance) return msalInstance;
   if(!window.msal || !config.CLIENT_ID || !config.TENANT_ID) return null;
   msalInstance = new window.msal.PublicClientApplication({
     auth:{
@@ -17,7 +18,18 @@ export function initMsal(config){
   return msalInstance;
 }
 
-export async function ensureSignedIn(config){
+// Antes se usaba loginPopup — se cambió a loginRedirect (navega la página
+// completa a Microsoft y de vuelta) porque el popup se quedaba pegado en
+// una pestaña en blanco mostrando el código de autenticación en la URL sin
+// cerrarse solo (falla conocida de MSAL con popups cuando el navegador
+// bloquea el acceso a window.opener, o cuando el navegador/una extensión
+// abre el popup como pestaña normal en vez de ventana emergente).
+// loginRedirect evita ese problema de raíz al no depender de un popup.
+
+// Inicia sesión: navega la página completa a Microsoft. No hay nada que
+// esperar aquí — la página se recarga y completeSignInFromRedirect() más
+// abajo procesa el resultado en el siguiente arranque de la app.
+export function beginSignIn(config){
   if(!config.CLIENT_ID || !config.TENANT_ID){
     throw new Error("Falta configurar Client ID y Tenant ID.");
   }
@@ -25,13 +37,30 @@ export async function ensureSignedIn(config){
   if(!msalInstance){
     throw new Error("No se pudo cargar la librería de inicio de sesión de Microsoft (MSAL). Verifica tu conexión a internet, y recarga la página.");
   }
-  if(!account){
-    // "select_account" para que, si Microsoft ya tiene varias cuentas en el
-    // navegador (o la anterior quedó bloqueada por no estar en Colaborador
-    // Lexara), siempre se pueda elegir con cuál entrar en vez de reusar la
-    // última en silencio.
-    const res = await msalInstance.loginPopup({ scopes:["User.Read","Sites.ReadWrite.All"], prompt:"select_account" });
-    account = res.account;
+  // "select_account" para que, si Microsoft ya tiene varias cuentas en el
+  // navegador, siempre se pueda elegir con cuál entrar en vez de reusar la
+  // última en silencio.
+  return msalInstance.loginRedirect({ scopes:["User.Read","Sites.ReadWrite.All"], prompt:"select_account" });
+}
+
+// Se llama una sola vez al arrancar la app. Si la URL trae la respuesta de
+// Microsoft (porque venimos de un beginSignIn()), la procesa y devuelve la
+// cuenta. Si no hay nada que procesar, revisa si ya hay una cuenta en la
+// caché de esta pestaña (por ejemplo, al recargar la página estando ya
+// conectado) para no pedir inicio de sesión de nuevo sin necesidad.
+export async function completeSignInFromRedirect(config){
+  if(!msalInstance) initMsal(config);
+  if(!msalInstance) return null;
+  const result = await msalInstance.handleRedirectPromise();
+  if(result && result.account){
+    account = result.account;
+    msalInstance.setActiveAccount(account);
+    return account;
+  }
+  const cuentas = msalInstance.getAllAccounts();
+  if(cuentas && cuentas.length){
+    account = cuentas[0];
+    msalInstance.setActiveAccount(account);
   }
   return account;
 }
