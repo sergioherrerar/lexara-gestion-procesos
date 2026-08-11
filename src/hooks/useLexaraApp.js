@@ -408,7 +408,16 @@ export function useLexaraApp(){
         await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items/${activeProceso._graphId}/fields`, {
           method:"PATCH", body: JSON.stringify(graphBody)
         });
-      }catch(err){ console.error(err); notify("No se pudo guardar en SharePoint: " + err.message, 'error'); setSaving(false); return; }
+      }catch(err){
+        // SharePoint casi nunca dice cuál campo exacto rechazó — se deja
+        // en consola el cuerpo enviado completo para poder diagnosticar
+        // (F12 → Consola) comparando qué campo tiene un valor inválido
+        // para su columna real (p.ej. un Tipo de Proceso/Despacho que no
+        // coincide con las opciones fijas de esa columna en SharePoint).
+        console.error(err, 'Campos enviados:', graphBody);
+        notify(`No se pudo guardar en SharePoint: ${err.message} — campos enviados: ${Object.keys(graphBody).join(', ')}`, 'error');
+        setSaving(false); return;
+      }
       setSaving(false);
     }
     setActiveProcesoId(null);
