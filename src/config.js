@@ -52,7 +52,6 @@ export const SHAREPOINT_LISTS_CONFIG = [
       {key:"Demandante", label:"Demandante", hint:["demandante"]},
       {key:"Demandado", label:"Demandado", hint:["demandado"]},
       {key:"LinkContrato", label:"Link contrato", hint:["link contrato"]},
-      {key:"LinkLexara", label:"Link Lexara", hint:["link lexara"]},
       {key:"LinkCliente", label:"Link cliente", hint:["link cliente"]},
       {key:"LinkDespacho", label:"Link despacho", hint:["link despacho"]},
       {key:"CorreoDespacho", label:"Correo despacho", hint:["correo despacho"]},
@@ -321,7 +320,7 @@ export const SHAREPOINT_LISTS_CONFIG = [
 export const DEMO_PROCESOS = [
   {id:1, Radicado:"11001-31-03-045-2023-00218-00", Cliente:"Grupo Andino S.A.S.", Entidad:"Aseguradora Cordillera", Apoderado:"María Fernanda Ruiz", Despacho:"Juzgado 45 Civil del Circuito de Bogotá", Instancia:"Primera instancia", Estado:"En trámite", EtapaProcesal:"Período probatorio", TipoProceso:"Ejecutivo", NumeroContrato:"CT-2023-118", FechaAdmision:"2023-05-12", FechaContestacion:"2023-06-30", CalificacionContingencia:"Media", Observaciones:"Pendiente dictamen pericial contable.",
     NoCompleto:"1100131030452023002180", ParteActuamos:"Con el Demandante", Demandante:"Grupo Andino S.A.S.", Demandado:"Aseguradora Cordillera", AbogadoEncargado:"María Fernanda Ruiz", CCApoderada:"52.884.221",
-    LinkContrato:"https://mydabogados/contrato-118", LinkLexara:"https://mydabogados/lexara-218", LinkCliente:"https://mydabogados/cliente-1", LinkDespacho:"https://mydabogados/despacho-45",
+    LinkContrato:"https://mydabogados/contrato-118", LinkCliente:"https://mydabogados/cliente-1", LinkDespacho:"https://mydabogados/despacho-45",
     CorreoDespacho:"juzgado45civil@cendoj.ramajudicial.gov.co", HistoricoNumerosCompletos:"11001-31-03-045-2023-00218-00 (anterior: 2023-00218)",
     Historico:"<div>12-05-2023 radicación de la demanda.</div><div><u>30-06-2023</u> contestación de la demanda por la aseguradora.</div><div>18-09-2023 auto que <b>decreta pruebas</b> y fija <span style=\"background-color:#fff3b0\">audiencia de instrucción</span>.</div>",
     ValorRadicacion:"120.000.000,00", ValorReforma:"120.000.000,00", ValorActualDemanda:"135.400.000,00",

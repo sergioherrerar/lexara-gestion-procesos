@@ -3,6 +3,8 @@
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
 ## 2026-08-08
+- Al guardar un Proceso judicial, ahora solo se envían a SharePoint los campos que realmente cambiaron (antes se reenviaban los 36 campos del formulario aunque solo se tocara uno) — reduce el riesgo de error y, si SharePoint rechaza algo, el aviso ahora indica justo qué campos se intentaron guardar.
+- Se quitó "Link Lexara" (era un campo fantasma, duplicado de "Link a la carpeta" — no existe como columna real en SharePoint).
 - Protección técnica: si algo falla de forma inesperada, ahora se ve un mensaje de error con el detalle en vez de quedar la pantalla completamente en blanco sin ninguna pista. También se blindó la forma en que se leen los datos de SharePoint, por si alguna columna real viene en un formato distinto al esperado (por ejemplo, un campo de Persona o Búsqueda en vez de texto simple).
 - Corregido: el botón para abrir la carpeta (y los demás enlaces con botón de abrir, como los de Contrato/Lexara/Cliente/Despacho) daba error 404 cuando el enlace real de SharePoint no traía "https://" al principio — ahora se completa automáticamente antes de abrirlo.
 - Corregido: el inicio de sesión con Microsoft se quedaba en una pestaña en blanco mostrando un código de autenticación en la dirección, sin completar el ingreso — era un problema conocido de la ventana emergente (popup) de Microsoft, que a veces el navegador bloquea o no logra cerrar sola. Se cambió a que la página completa te lleve a Microsoft y te traiga de vuelta, en vez de usar una ventana emergente — debería ser mucho más confiable.

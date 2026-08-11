@@ -98,7 +98,7 @@ const FIELD_SECTIONS = [
     ["ValorRadicacion","money"],["ValorReforma","money"],["ValorActualDemanda","money"],
   ]},
   {title:"Enlaces y observaciones", fields:[
-    ["LinkContrato","link"],["LinkLexara","link"],["LinkCliente","link"],["LinkCarpeta","link"],["Observaciones","richtext"],
+    ["LinkContrato","link"],["LinkCliente","link"],["LinkCarpeta","link"],["Observaciones","richtext"],
   ]},
 ];
 // "Historico" es la bitácora narrativa del proceso (distinta de "Histórico
@@ -122,7 +122,7 @@ const LABELS = {
   CCApoderada:"CC Apoderada", AbogadoEncargado:"Abogado encargado",
   LinkDespacho:"Link despacho", CorreoDespacho:"Correo despacho",
   ValorRadicacion:"Valor radicación", ValorReforma:"Valor reforma", ValorActualDemanda:"Valor actual demanda",
-  LinkContrato:"Link contrato", LinkLexara:"Link Lexara", LinkCliente:"Link cliente",
+  LinkContrato:"Link contrato", LinkCliente:"Link cliente",
   FechaInstancia:"Fecha instancia", FechaUltimoEstado:"Fecha último estado",
   Historico:"Histórico",
 };
@@ -217,13 +217,24 @@ export default function ProcesoDrawer({ proceso, clientes, facturas, ordenesComp
 
   function setField(key, value){ setForm(prev => ({...prev, [key]: value})); }
 
+  // Solo se envían los campos que realmente cambiaron respecto a lo que
+  // había — antes se reenviaba el formulario completo (36 campos) aunque
+  // solo se hubiera tocado uno, lo que hacía casi imposible saber cuál
+  // campo rechazaba SharePoint con su 400 genérico. Además reduce el
+  // riesgo: un campo que la app todavía no ha probado bien contra la
+  // lista real no se toca si el usuario no lo modificó.
   // Los campos "money" se muestran formateados ($ colombiano) mientras se
   // editan, pero SharePoint espera un número plano — igual que en Facturas/
-  // Órdenes de compra, se pasan por parseMonto justo antes de guardar.
+  // Órdenes de compra, se pasan por parseMonto justo antes de comparar y guardar.
   function handleSave(){
-    const payload = {...form};
+    const payload = {};
     ALL_SECTIONS.forEach(sec => sec.fields.forEach(([key,type]) => {
-      if(type==='money') payload[key] = parseMonto(payload[key]);
+      const actual = type==='money' ? parseMonto(form[key]) : (form[key] ?? "");
+      const original = type==='money' ? parseMonto(proceso[key])
+        : key==='Estado' ? stripHtml(proceso[key])
+        : (proceso[key] ?? "");
+      const cambio = type==='money' ? actual !== original : String(actual) !== String(original ?? "");
+      if(cambio) payload[key] = actual;
     }));
     onSave(payload);
   }
