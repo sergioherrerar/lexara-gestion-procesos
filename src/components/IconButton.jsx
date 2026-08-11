@@ -43,12 +43,21 @@ export const ICONS = {
   ),
 };
 
+// Muchos links vienen de SharePoint sin "https://" delante (o con espacios
+// de sobra) — como href relativo, el navegador los busca dentro de este
+// mismo sitio (GitHub Pages) y da 404 en vez de abrir la página real.
+function normalizeHref(href){
+  const url = (href||"").trim();
+  if(!url) return url;
+  return /^([a-z][a-z0-9+.-]*:|\/)/i.test(url) ? url : `https://${url}`;
+}
+
 // Botón compacto de solo ícono, para acciones repetidas en filas de tabla.
 export default function IconButton({ icon, variant = 'edit', label, href, onClick, spinning }){
   const cls = `icon-btn icon-btn-${variant}` + (spinning ? ' icon-btn-spinning' : '');
   if(href){
     return (
-      <a className={cls} href={href} target="_blank" rel="noopener noreferrer" title={label} aria-label={label} onClick={onClick}>
+      <a className={cls} href={normalizeHref(href)} target="_blank" rel="noopener noreferrer" title={label} aria-label={label} onClick={onClick}>
         {ICONS[icon]}
       </a>
     );

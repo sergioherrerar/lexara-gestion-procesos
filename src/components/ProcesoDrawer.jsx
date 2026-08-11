@@ -498,12 +498,11 @@ export default function ProcesoDrawer({ proceso, clientes, facturas, ordenesComp
                   // aparece un botón para abrirlo en una pestaña nueva.
                   if(type==='link'){
                     const url = (form[key]||"").trim();
-                    const href = url && !/^https?:\/\//i.test(url) ? `https://${url}` : url;
                     return (
                       <FieldCard label={LABELS[key]} key={key}>
                         <div style={{display:'flex', alignItems:'center', gap:6}}>
                           <input type="text" value={form[key]} onChange={e => setField(key, e.target.value)} readOnly={!canWrite} style={{flex:1, minWidth:0}} />
-                          {url && <IconButton icon="open" variant="open" label="Abrir enlace" href={href} onClick={e => e.stopPropagation()} />}
+                          {url && <IconButton icon="open" variant="open" label="Abrir enlace" href={url} onClick={e => e.stopPropagation()} />}
                         </div>
                       </FieldCard>
                     );
