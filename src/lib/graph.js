@@ -161,10 +161,27 @@ export function graphFieldsFromUpdates(list, updates){
   return fields;
 }
 
+// Casi todo el resto de la app da por hecho que un campo es texto/número
+// plano (le hace .toLowerCase(), .trim(), .localeCompare(), etc.). Pero una
+// columna real de SharePoint puede ser de Persona, Búsqueda (Lookup) o
+// Selección múltiple, y Graph la devuelve como un objeto o un arreglo, no
+// como texto — eso rompe esas llamadas y tumba toda la página en blanco (sin
+// límite de error, React desmonta todo el árbol si algo lanza durante el
+// render). Esta función normaliza cualquier forma rara a texto plano antes
+// de que llegue al resto del código.
+function coerceFieldValue(raw){
+  if(raw == null) return "";
+  const t = typeof raw;
+  if(t === 'string' || t === 'number' || t === 'boolean') return raw;
+  if(Array.isArray(raw)) return raw.map(coerceFieldValue).filter(Boolean).join(", ");
+  if(t === 'object') return raw.LookupValue || raw.Title || raw.DisplayName || raw.Label || raw.Email || "";
+  return String(raw);
+}
+
 export function transformListItems(list){
   return (list.rawItems||[]).map(it => {
     const obj = { id: it.id, _graphId: it.id };
-    list.semanticFields.forEach(f => { if(list.mapping[f.key]) obj[f.key] = it.fields[list.mapping[f.key]] ?? ""; });
+    list.semanticFields.forEach(f => { if(list.mapping[f.key]) obj[f.key] = coerceFieldValue(it.fields[list.mapping[f.key]] ?? ""); });
     return obj;
   });
 }
