@@ -1,8 +1,9 @@
 import { ICON_SVG } from '../config';
 import { clienteForOrdenCompra, procesoForOrdenCompra, ordenCompraNumero, computeOrdenCompraTotals, facturaForOrdenCompra, facturaNumero, fmtMonto, fmtDate, fechaFromPartes } from '../lib/graph';
 import IconButton, { IconTextButton } from './IconButton';
-import ColumnFilterRow from './ColumnFilterRow';
+import ColumnHeaderMenu from './ColumnHeaderMenu';
 import { useColumnFilters } from '../hooks/useColumnFilters';
+import { useColumnSort } from '../hooks/useColumnSort';
 
 function fechaOrdenable(oc){
   return fechaFromPartes(oc.Dia, oc.Mes, oc.Anio) || oc.Fecha || "";
@@ -10,6 +11,7 @@ function fechaOrdenable(oc){
 
 export default function OrdenesCompraView({ ordenesCompra, clientes, procesos, facturas, searchQuery, onOpenOrdenCompra, onCreateOrdenCompra, onPrintOrdenCompra, onCreateFacturaFromOrdenCompra }){
   const { filters, setFilter, clearFilters, rowMatches, hasActiveFilters } = useColumnFilters();
+  const { sort, setSortKey, sortRows } = useColumnSort();
 
   const COLUMNS = [
     {key:'numero', label:'No. orden', value: oc => ordenCompraNumero(oc)},
@@ -34,6 +36,7 @@ export default function OrdenesCompraView({ ordenesCompra, clientes, procesos, f
       (oc.Proceso||"").toLowerCase().includes(query) ||
       (cliente?.RazonSocial||"").toLowerCase().includes(query);
   }).sort((a,b) => Number(ordenCompraNumero(b)) - Number(ordenCompraNumero(a)));
+  const sortedRows = sortRows(rows, COLUMNS);
 
   return (
     <div className="view">
@@ -48,12 +51,13 @@ export default function OrdenesCompraView({ ordenesCompra, clientes, procesos, f
         <table>
           <thead>
             <tr>
-              {COLUMNS.map(c => <th key={c.key}>{c.label}</th>)}
+              {COLUMNS.map(c => (
+                <ColumnHeaderMenu key={c.key} column={c} sort={sort} onSort={setSortKey} filterValue={filters[c.key]} onFilterChange={setFilter} />
+              ))}
             </tr>
-            <ColumnFilterRow columns={COLUMNS} filters={filters} onChange={setFilter} />
           </thead>
           <tbody>
-            {rows.length ? rows.map(oc => {
+            {sortedRows.length ? sortedRows.map(oc => {
               const cliente = clienteForOrdenCompra(clientes, oc);
               const proceso = procesoForOrdenCompra(procesos, oc);
               const factura = facturaForOrdenCompra(facturas, oc);

@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { ICON_SVG } from '../config';
 import { stripHtml, estadoBadgeClass } from '../lib/graph';
 import IconButton, { IconTextButton } from './IconButton';
-import ColumnFilterRow from './ColumnFilterRow';
+import ColumnHeaderMenu from './ColumnHeaderMenu';
 import { useColumnFilters } from '../hooks/useColumnFilters';
+import { useColumnSort } from '../hooks/useColumnSort';
 
 function matchesFilter(p, currentFilter){
   if(currentFilter==='todos') return true;
@@ -25,6 +26,7 @@ const COLUMNS = [
 export default function ProcesosView({ procesos, currentFilter, setFilter, searchQuery, onOpenProceso, onCreateProceso, canWrite = true }){
   const [showTerminados, setShowTerminados] = useState(false);
   const { filters, setFilter: setColFilter, clearFilters, rowMatches, hasActiveFilters } = useColumnFilters();
+  const { sort, setSortKey, sortRows } = useColumnSort();
   const entidades = Array.from(new Set(procesos.map(p => stripHtml(p.Entidad) || "Sin entidad"))).sort((a,b)=>a.localeCompare(b));
   const filterChips = [{key:'todos', label:'Todos'}, ...entidades.map(e => ({key:e, label:e}))];
   const totalTerminados = procesos.filter(isTerminado).length;
@@ -35,6 +37,7 @@ export default function ProcesosView({ procesos, currentFilter, setFilter, searc
     (p.Cliente||"").toLowerCase().includes(query) ||
     (p.Apoderado||"").toLowerCase().includes(query)) && rowMatches(p, COLUMNS))
     .sort((a,b) => (a.Radicado||"").localeCompare(b.Radicado||""));
+  const sortedRows = sortRows(rows, COLUMNS);
 
   return (
     <div className="view">
@@ -69,12 +72,13 @@ export default function ProcesosView({ procesos, currentFilter, setFilter, searc
         <table>
           <thead>
             <tr>
-              {COLUMNS.map(c => <th key={c.key}>{c.label}</th>)}
+              {COLUMNS.map(c => (
+                <ColumnHeaderMenu key={c.key} column={c} sort={sort} onSort={setSortKey} filterValue={filters[c.key]} onFilterChange={setColFilter} />
+              ))}
             </tr>
-            <ColumnFilterRow columns={COLUMNS} filters={filters} onChange={setColFilter} />
           </thead>
           <tbody>
-            {rows.length ? rows.map(p => (
+            {sortedRows.length ? sortedRows.map(p => (
               <tr
                 key={p.id}
                 onClick={() => onOpenProceso(p.id, {viewOnly: !canWrite})}

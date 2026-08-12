@@ -226,6 +226,9 @@ export default function ProcesoDrawer({ proceso, clientes, facturas, ordenesComp
   // Los campos "money" se muestran formateados ($ colombiano) mientras se
   // editan, pero SharePoint espera un número plano — igual que en Facturas/
   // Órdenes de compra, se pasan por parseMonto justo antes de comparar y guardar.
+  // Los campos "link" son columnas de "Hipervínculo o imagen" en SharePoint
+  // — Graph las espera como {Url, Description}, no como texto plano, o el
+  // guardado no toma el dato (aunque no siempre avisa con error).
   function handleSave(){
     const payload = {};
     ALL_SECTIONS.forEach(sec => sec.fields.forEach(([key,type]) => {
@@ -234,7 +237,7 @@ export default function ProcesoDrawer({ proceso, clientes, facturas, ordenesComp
         : key==='Estado' ? stripHtml(proceso[key])
         : (proceso[key] ?? "");
       const cambio = type==='money' ? actual !== original : String(actual) !== String(original ?? "");
-      if(cambio) payload[key] = actual;
+      if(cambio) payload[key] = type==='link' && actual ? { Url: actual, Description: actual } : actual;
     }));
     onSave(payload);
   }

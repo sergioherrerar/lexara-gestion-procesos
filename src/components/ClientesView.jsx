@@ -1,8 +1,9 @@
 import { ICON_SVG } from '../config';
 import { procesosForCliente } from '../lib/graph';
 import IconButton from './IconButton';
-import ColumnFilterRow from './ColumnFilterRow';
+import ColumnHeaderMenu from './ColumnHeaderMenu';
 import { useColumnFilters } from '../hooks/useColumnFilters';
+import { useColumnSort } from '../hooks/useColumnSort';
 
 const COLUMNS = [
   {key:'razonSocial', label:'Razón social', value: c => c.RazonSocial || ""},
@@ -17,6 +18,7 @@ const COLUMNS = [
 
 export default function ClientesView({ clientes, procesos, searchQuery, onOpenCliente, onDeleteCliente, canWrite = true }){
   const { filters, setFilter, clearFilters, rowMatches, hasActiveFilters } = useColumnFilters();
+  const { sort, setSortKey, sortRows } = useColumnSort();
   const query = (searchQuery||"").trim().toLowerCase();
   const rows = clientes.filter(c => (!query ||
     (c.RazonSocial||"").toLowerCase().includes(query) ||
@@ -24,6 +26,7 @@ export default function ClientesView({ clientes, procesos, searchQuery, onOpenCl
     (c.Correo||"").toLowerCase().includes(query) ||
     (c.Direccion||"").toLowerCase().includes(query)) && rowMatches(c, COLUMNS))
     .sort((a,b) => (a.RazonSocial||"").localeCompare(b.RazonSocial||""));
+  const sortedRows = sortRows(rows, COLUMNS);
 
   return (
     <div className="view">
@@ -37,12 +40,13 @@ export default function ClientesView({ clientes, procesos, searchQuery, onOpenCl
         <table>
           <thead>
             <tr>
-              {COLUMNS.map(c => <th key={c.key}>{c.label}</th>)}
+              {COLUMNS.map(c => (
+                <ColumnHeaderMenu key={c.key} column={c} sort={sort} onSort={setSortKey} filterValue={filters[c.key]} onFilterChange={setFilter} />
+              ))}
             </tr>
-            <ColumnFilterRow columns={COLUMNS} filters={filters} onChange={setFilter} />
           </thead>
           <tbody>
-            {rows.length ? rows.map(c => (
+            {sortedRows.length ? sortedRows.map(c => (
               <tr key={c.id}>
                 <td className="cliente">{c.RazonSocial || "—"}</td>
                 <td>{c.Nit || "—"}</td>

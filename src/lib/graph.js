@@ -174,7 +174,11 @@ function coerceFieldValue(raw){
   const t = typeof raw;
   if(t === 'string' || t === 'number' || t === 'boolean') return raw;
   if(Array.isArray(raw)) return raw.map(coerceFieldValue).filter(Boolean).join(", ");
-  if(t === 'object') return raw.LookupValue || raw.Title || raw.DisplayName || raw.Label || raw.Email || "";
+  // Una columna real de "Hipervínculo o imagen" en SharePoint llega desde
+  // Graph como {Url, Description}, no como texto — por eso los campos de
+  // Link se veían vacíos aunque sí tuvieran enlace en SharePoint. Url
+  // primero (es lo que de verdad hace falta para abrir el enlace).
+  if(t === 'object') return raw.Url || raw.LookupValue || raw.Title || raw.DisplayName || raw.Label || raw.Email || "";
   return String(raw);
 }
 

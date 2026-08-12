@@ -1,7 +1,8 @@
 import { ICON_SVG } from '../config';
 import IconButton, { IconTextButton } from './IconButton';
-import ColumnFilterRow from './ColumnFilterRow';
+import ColumnHeaderMenu from './ColumnHeaderMenu';
 import { useColumnFilters } from '../hooks/useColumnFilters';
+import { useColumnSort } from '../hooks/useColumnSort';
 
 const COLUMNS = [
   {key:'nombre', label:'Nombre', value: c => c.Nombre || ""},
@@ -15,11 +16,13 @@ const COLUMNS = [
 
 export default function ColaboradoresView({ colaboradores, searchQuery, onOpenColaborador, onCreateColaborador, onDeleteColaborador, canWrite = true }){
   const { filters, setFilter, clearFilters, rowMatches, hasActiveFilters } = useColumnFilters();
+  const { sort, setSortKey, sortRows } = useColumnSort();
   const query = (searchQuery||"").trim().toLowerCase();
   const rows = colaboradores.filter(c => (!query ||
     (c.Nombre||"").toLowerCase().includes(query) ||
     (c.Correo||"").toLowerCase().includes(query)) && rowMatches(c, COLUMNS))
     .sort((a,b) => (a.Nombre||"").localeCompare(b.Nombre||""));
+  const sortedRows = sortRows(rows, COLUMNS);
 
   return (
     <div className="view">
@@ -34,12 +37,13 @@ export default function ColaboradoresView({ colaboradores, searchQuery, onOpenCo
         <table>
           <thead>
             <tr>
-              {COLUMNS.map(c => <th key={c.key}>{c.label}</th>)}
+              {COLUMNS.map(c => (
+                <ColumnHeaderMenu key={c.key} column={c} sort={sort} onSort={setSortKey} filterValue={filters[c.key]} onFilterChange={setFilter} />
+              ))}
             </tr>
-            <ColumnFilterRow columns={COLUMNS} filters={filters} onChange={setFilter} />
           </thead>
           <tbody>
-            {rows.length ? rows.map(c => (
+            {sortedRows.length ? sortedRows.map(c => (
               <tr key={c.id}>
                 <td className="cliente">{c.Nombre || "—"}</td>
                 <td>{c.Correo || "—"}</td>

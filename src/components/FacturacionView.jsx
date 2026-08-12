@@ -1,8 +1,9 @@
 import { ICON_SVG } from '../config';
 import { clienteForFactura, procesoForFactura, facturaNumero, computeFacturaTotals, fmtMonto, fmtDate, fechaFromPartes, estadoFacturaBadgeClass, compareFacturaNumero } from '../lib/graph';
 import IconButton, { IconTextButton } from './IconButton';
-import ColumnFilterRow from './ColumnFilterRow';
+import ColumnHeaderMenu from './ColumnHeaderMenu';
 import { useColumnFilters } from '../hooks/useColumnFilters';
+import { useColumnSort } from '../hooks/useColumnSort';
 
 function fechaOrdenable(f){
   return fechaFromPartes(f.Dia, f.Mes, f.Anio) || f.Fecha || "";
@@ -10,6 +11,7 @@ function fechaOrdenable(f){
 
 export default function FacturacionView({ facturas, clientes, procesos, searchQuery, onOpenFactura, onCreateFactura, onPrintFactura }){
   const { filters, setFilter, clearFilters, rowMatches, hasActiveFilters } = useColumnFilters();
+  const { sort, setSortKey, sortRows } = useColumnSort();
 
   const COLUMNS = [
     {key:'numero', label:'No. factura', value: f => facturaNumero(f)},
@@ -34,6 +36,7 @@ export default function FacturacionView({ facturas, clientes, procesos, searchQu
       (f.Proceso||"").toLowerCase().includes(query) ||
       (cliente?.RazonSocial||"").toLowerCase().includes(query);
   }).sort(compareFacturaNumero);
+  const sortedRows = sortRows(rows, COLUMNS);
 
   return (
     <div className="view">
@@ -48,12 +51,13 @@ export default function FacturacionView({ facturas, clientes, procesos, searchQu
         <table>
           <thead>
             <tr>
-              {COLUMNS.map(c => <th key={c.key}>{c.label}</th>)}
+              {COLUMNS.map(c => (
+                <ColumnHeaderMenu key={c.key} column={c} sort={sort} onSort={setSortKey} filterValue={filters[c.key]} onFilterChange={setFilter} />
+              ))}
             </tr>
-            <ColumnFilterRow columns={COLUMNS} filters={filters} onChange={setFilter} />
           </thead>
           <tbody>
-            {rows.length ? rows.map(f => {
+            {sortedRows.length ? sortedRows.map(f => {
               const cliente = clienteForFactura(clientes, f);
               const proceso = procesoForFactura(procesos, f);
               const totals = computeFacturaTotals(f);
