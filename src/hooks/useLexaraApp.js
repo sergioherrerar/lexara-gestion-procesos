@@ -373,11 +373,28 @@ export function useLexaraApp(){
   // SharePoint hasta que el usuario le da "Guardar cambios" (mismo criterio
   // que "Nueva factura"/"Nueva orden de compra"/etc.).
   function newProceso(){ setActiveProcesoId(null); setProcesoViewOnly(false); setDraftProceso({}); }
+  // Los campos de Link se envían a Graph como {Url, Description} (así
+  // espera Graph una columna de "Hipervínculo"), pero el resto de la app
+  // (el propio formulario al reabrir el proceso, las listas relacionadas,
+  // etc.) espera un texto plano — si ese objeto se queda tal cual en el
+  // estado local, la próxima vez que se abre el proceso truena con
+  // "...trim is not a function". Se aplana a solo la URL antes de
+  // guardarlo en el estado de React; el objeto completo sigue yendo a
+  // Graph sin tocar.
+  function flattenLinkValues(updates){
+    const out = {};
+    Object.keys(updates).forEach(key => {
+      const v = updates[key];
+      out[key] = (v && typeof v === 'object' && 'Url' in v) ? v.Url : v;
+    });
+    return out;
+  }
+
   async function saveProceso(updates){
     if(!activeProceso) return;
 
     if(draftProceso){
-      const nuevo = {...updates};
+      const nuevo = flattenLinkValues(updates);
       if(liveMode){
         setSaving(true);
         const list = listByKey('procesos');
@@ -399,7 +416,7 @@ export function useLexaraApp(){
       return;
     }
 
-    setProcesos(prev => prev.map(p => p.id===activeProcesoId ? {...p, ...updates} : p));
+    setProcesos(prev => prev.map(p => p.id===activeProcesoId ? {...p, ...flattenLinkValues(updates)} : p));
     if(liveMode){
       setSaving(true);
       const list = listByKey('procesos');

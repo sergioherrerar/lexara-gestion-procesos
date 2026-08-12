@@ -197,9 +197,15 @@ export default function ProcesoDrawer({ proceso, clientes, facturas, ordenesComp
     if(proceso){
       const initial = {};
       ALL_SECTIONS.forEach(sec => sec.fields.forEach(([key,type]) => {
-        initial[key] = key==='Estado' ? stripHtml(proceso[key])
-          : type==='money' ? (proceso[key] ? fmtMonto(parseMonto(proceso[key])) : "")
-          : (proceso[key] || "");
+        const raw = proceso[key];
+        // Defensa extra: si por lo que sea el valor llega como objeto
+        // (p.ej. {Url,Description} de un campo de Link, sin pasar por el
+        // aplanado de guardarProceso), se toma el texto en vez de tronar
+        // más adelante con "...trim is not a function".
+        const seguro = raw && typeof raw === 'object' ? (raw.Url || raw.LookupValue || raw.Title || "") : raw;
+        initial[key] = key==='Estado' ? stripHtml(seguro)
+          : type==='money' ? (seguro ? fmtMonto(parseMonto(seguro)) : "")
+          : (seguro || "");
       }));
       setForm(initial);
       setShowNewCliente(false);
