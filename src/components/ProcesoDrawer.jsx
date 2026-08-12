@@ -436,7 +436,7 @@ export default function ProcesoDrawer({ proceso, clientes, facturas, ordenesComp
                           {clienteNombres.map(n => <option value={n} key={n}>{n}</option>)}
                         </select>
                         {canWrite && (
-                          <IconTextButton icon="add" variant="secondary" style={{marginTop:8, alignSelf:'flex-start'}} onClick={() => setShowNewCliente(v => !v)}>Nuevo cliente</IconTextButton>
+                          <IconTextButton icon="add" variant="primary" style={{marginTop:8, alignSelf:'flex-start'}} onClick={() => setShowNewCliente(v => !v)}>Nuevo cliente</IconTextButton>
                         )}
                         {form.Cliente && (
                           linkedCliente ? (
