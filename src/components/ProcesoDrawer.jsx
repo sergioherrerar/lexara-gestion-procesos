@@ -92,7 +92,7 @@ const FIELD_SECTIONS = [
     ["Estado","textarea"],["EstadoVT","select"],
   ]},
   {title:"Detalles del despacho", fields:[
-    ["LinkDespacho","link"],["CorreoDespacho","text"],["Instancia","text"],
+    ["LinkDespacho","link"],["CorreoDespacho","text"],["Instancia","select"],
   ]},
   {title:"Valores", fields:[
     ["ValorRadicacion","money"],["ValorReforma","money"],["ValorActualDemanda","money"],
@@ -122,6 +122,7 @@ const SELECT_OPTIONS = {
   CalificacionContingencia: ["POSIBLE","PROBABLE","REMOTO"],
   ParteActuamos: ["Con el Demandante","Con el Demandado"],
   EstadoVT: ["VIGENTE","TERMINADO","EN REVISION"],
+  Instancia: ["Única Instancia","Primera instancia","Segunda Instancia"],
 };
 // Se usa para inicializar el formulario — incluye tanto las secciones de
 // Datos generales como la de Trazabilidad de fechas.
@@ -213,10 +214,15 @@ function renderGenericField(key, type, form, setField, canWrite){
   if(type==='money') return <input type="text" className="input-money" value={form[key]} onChange={e => setField(key, e.target.value)} onBlur={e => setField(key, fmtMonto(parseMonto(e.target.value)))} readOnly={!canWrite} />;
   if(type==='select'){
     const options = SELECT_OPTIONS[key] || [];
+    // Si el dato ya guardado no coincide exactamente con ninguna opción fija
+    // (mayúsculas distintas, o un valor real que la lista todavía no
+    // contempla), se agrega igual como opción — mismo criterio que
+    // Cliente/Entidad/Apoderado, para no esconder un dato ya guardado.
+    const conValorActual = form[key] && !options.includes(form[key]) ? [form[key], ...options] : options;
     return (
       <select value={form[key]} onChange={e => setField(key, e.target.value)} disabled={!canWrite}>
         <option value="">— seleccionar —</option>
-        {options.map(o => <option value={o} key={o}>{o}</option>)}
+        {conValorActual.map(o => <option value={o} key={o}>{o}</option>)}
       </select>
     );
   }

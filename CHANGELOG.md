@@ -3,6 +3,7 @@
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
 ## 2026-08-08
+- El campo "Instancia" ahora es lista desplegable ("Única Instancia"/"Primera instancia"/"Segunda Instancia").
 - En Datos generales: "Entidad" ahora es una lista desplegable con los valores reales que ya existen en la lista de Clientes; "Apoderado" toma los nombres reales de Colaborador Lexara; "Parte en que actuamos" y "Estado V/T" pasan a lista fija ("Con el Demandante"/"Con el Demandado" y "VIGENTE"/"TERMINADO"/"EN REVISION").
 - Se renombró la pestaña "Trazabilidad fechas" a solo "Trazabilidad".
 - Se agregaron a la pestaña "Trazabilidad fechas" del Proceso judicial: "Admitida" y "Prueba Pericial" (lista Sí/No), "Origen/Tipo Glosa" (texto), y se movió "Calificación de contingencia" aquí, ahora como lista desplegable (POSIBLE/PROBABLE/REMOTO) en vez de texto libre.
