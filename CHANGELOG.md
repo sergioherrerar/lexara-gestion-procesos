@@ -3,6 +3,7 @@
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
 ## 2026-08-08
+- Se agregaron a la pestaña "Trazabilidad fechas" del Proceso judicial: "Admitida" y "Prueba Pericial" (lista Sí/No), "Origen/Tipo Glosa" (texto), y se movió "Calificación de contingencia" aquí, ahora como lista desplegable (POSIBLE/PROBABLE/REMOTO) en vez de texto libre.
 - Corregido: al guardar un campo de Link y volver a abrir ese mismo proceso, la aplicación se caía por completo con un error en blanco. Era un efecto secundario de la corrección anterior de los Links.
 - El aviso de error (cuando algo sale mal) ahora regresa limpio al menú principal en vez de solo recargar la misma dirección.
 - Las tablas (Procesos, Clientes, Facturación, Órdenes de compra, Colaborador Lexara) ahora tienen un menú por columna al estilo de las listas de SharePoint: clic en el encabezado para ordenar de la A a la Z / de la Z a la A, o filtrar por texto — reemplaza la fila fija de filtros que había antes.

@@ -66,6 +66,11 @@ export const SHAREPOINT_LISTS_CONFIG = [
       {key:"ValorActualDemanda", label:"Valor actual demanda", hint:["valor actual demanda"]},
       {key:"FechaInstancia", label:"Fecha instancia", hint:["fecha instancia"]},
       {key:"FechaUltimoEstado", label:"Fecha último estado", hint:["fecha ultimo estado","fecha último estado"]},
+      // Los siguientes 3 se agregaron en la pestaña "Trazabilidad fechas" —
+      // Admitida/Prueba Pericial son listas Sí/No; Origen/Tipo Glosa es texto.
+      {key:"Admitida", label:"Admitida", hint:["admitida"]},
+      {key:"PruebaPericial", label:"Prueba Pericial", hint:["prueba pericial"]},
+      {key:"OrigenTipoGlosa", label:"Origen/Tipo Glosa", hint:["origen tipo glosa","origen/tipo glosa","tipo glosa"]},
     ],
     mapping: {
       Radicado: "numero_x0020_corto",
@@ -318,16 +323,17 @@ export const SHAREPOINT_LISTS_CONFIG = [
 ];
 
 export const DEMO_PROCESOS = [
-  {id:1, Radicado:"11001-31-03-045-2023-00218-00", Cliente:"Grupo Andino S.A.S.", Entidad:"Aseguradora Cordillera", Apoderado:"María Fernanda Ruiz", Despacho:"Juzgado 45 Civil del Circuito de Bogotá", Instancia:"Primera instancia", Estado:"En trámite", EtapaProcesal:"Período probatorio", TipoProceso:"Ejecutivo", NumeroContrato:"CT-2023-118", FechaAdmision:"2023-05-12", FechaContestacion:"2023-06-30", CalificacionContingencia:"Media", Observaciones:"Pendiente dictamen pericial contable.",
+  {id:1, Radicado:"11001-31-03-045-2023-00218-00", Cliente:"Grupo Andino S.A.S.", Entidad:"Aseguradora Cordillera", Apoderado:"María Fernanda Ruiz", Despacho:"Juzgado 45 Civil del Circuito de Bogotá", Instancia:"Primera instancia", Estado:"En trámite", EtapaProcesal:"Período probatorio", TipoProceso:"Ejecutivo", NumeroContrato:"CT-2023-118", FechaAdmision:"2023-05-12", FechaContestacion:"2023-06-30", CalificacionContingencia:"PROBABLE", Observaciones:"Pendiente dictamen pericial contable.",
     NoCompleto:"1100131030452023002180", ParteActuamos:"Con el Demandante", Demandante:"Grupo Andino S.A.S.", Demandado:"Aseguradora Cordillera", AbogadoEncargado:"María Fernanda Ruiz", CCApoderada:"52.884.221",
     LinkContrato:"https://mydabogados/contrato-118", LinkCliente:"https://mydabogados/cliente-1", LinkDespacho:"https://mydabogados/despacho-45",
     CorreoDespacho:"juzgado45civil@cendoj.ramajudicial.gov.co", HistoricoNumerosCompletos:"11001-31-03-045-2023-00218-00 (anterior: 2023-00218)",
     Historico:"<div>12-05-2023 radicación de la demanda.</div><div><u>30-06-2023</u> contestación de la demanda por la aseguradora.</div><div>18-09-2023 auto que <b>decreta pruebas</b> y fija <span style=\"background-color:#fff3b0\">audiencia de instrucción</span>.</div>",
     ValorRadicacion:"120.000.000,00", ValorReforma:"120.000.000,00", ValorActualDemanda:"135.400.000,00",
-    FechaInstancia:"2023-05-20", FechaUltimoEstado:"2024-11-03"},
-  {id:2, Radicado:"05001-31-03-012-2022-00341-00", Cliente:"Constructora del Sur Ltda.", Entidad:"Sector Privado", Apoderado:"Carlos Andrés Peña", Despacho:"Juzgado 12 Civil del Circuito de Medellín", Instancia:"Segunda instancia", Estado:"En apelación", EtapaProcesal:"Alegatos de conclusión", TipoProceso:"Ordinario", NumeroContrato:"CT-2022-076", FechaAdmision:"2022-09-03", FechaContestacion:"2022-11-15", CalificacionContingencia:"Alta", Observaciones:"Riesgo de fallo desfavorable, revisar con el cliente."},
-  {id:3, Radicado:"76001-31-03-008-2024-00092-00", Cliente:"Inversiones Cali Norte", Entidad:"Sector Privado", Apoderado:"María Fernanda Ruiz", Despacho:"Juzgado 8 Civil del Circuito de Cali", Instancia:"Primera instancia", Estado:"Admitida", EtapaProcesal:"Traslado de la demanda", TipoProceso:"Verbal", NumeroContrato:"CT-2024-004", FechaAdmision:"2024-02-20", FechaContestacion:"", CalificacionContingencia:"Baja", Observaciones:""},
-  {id:4, Radicado:"11001-31-03-021-2021-00567-00", Cliente:"Grupo Andino S.A.S.", Entidad:"Aseguradora Cordillera", Apoderado:"Jorge Iván Salcedo", Despacho:"Juzgado 21 Civil del Circuito de Bogotá", Instancia:"Casación", Estado:"En corte", EtapaProcesal:"Traslado en casación", TipoProceso:"Ordinario", NumeroContrato:"CT-2021-201", FechaAdmision:"2021-04-18", FechaContestacion:"2021-07-02", CalificacionContingencia:"Alta", Observaciones:"Enviado a la Corte Suprema desde marzo."},
+    FechaInstancia:"2023-05-20", FechaUltimoEstado:"2024-11-03",
+    Admitida:"Sí", PruebaPericial:"Sí", OrigenTipoGlosa:"Glosa parcial - honorarios"},
+  {id:2, Radicado:"05001-31-03-012-2022-00341-00", Cliente:"Constructora del Sur Ltda.", Entidad:"Sector Privado", Apoderado:"Carlos Andrés Peña", Despacho:"Juzgado 12 Civil del Circuito de Medellín", Instancia:"Segunda instancia", Estado:"En apelación", EtapaProcesal:"Alegatos de conclusión", TipoProceso:"Ordinario", NumeroContrato:"CT-2022-076", FechaAdmision:"2022-09-03", FechaContestacion:"2022-11-15", CalificacionContingencia:"PROBABLE", Observaciones:"Riesgo de fallo desfavorable, revisar con el cliente."},
+  {id:3, Radicado:"76001-31-03-008-2024-00092-00", Cliente:"Inversiones Cali Norte", Entidad:"Sector Privado", Apoderado:"María Fernanda Ruiz", Despacho:"Juzgado 8 Civil del Circuito de Cali", Instancia:"Primera instancia", Estado:"Admitida", EtapaProcesal:"Traslado de la demanda", TipoProceso:"Verbal", NumeroContrato:"CT-2024-004", FechaAdmision:"2024-02-20", FechaContestacion:"", CalificacionContingencia:"REMOTO", Observaciones:""},
+  {id:4, Radicado:"11001-31-03-021-2021-00567-00", Cliente:"Grupo Andino S.A.S.", Entidad:"Aseguradora Cordillera", Apoderado:"Jorge Iván Salcedo", Despacho:"Juzgado 21 Civil del Circuito de Bogotá", Instancia:"Casación", Estado:"En corte", EtapaProcesal:"Traslado en casación", TipoProceso:"Ordinario", NumeroContrato:"CT-2021-201", FechaAdmision:"2021-04-18", FechaContestacion:"2021-07-02", CalificacionContingencia:"PROBABLE", Observaciones:"Enviado a la Corte Suprema desde marzo."},
   {id:5, Radicado:"13001-31-03-003-2023-00450-00", Cliente:"Distribuidora Caribe SAS", Entidad:"Sector Público", Apoderado:"Carlos Andrés Peña", Despacho:"Juzgado 3 Civil del Circuito de Cartagena", Instancia:"Primera instancia", Estado:"Terminado", EtapaProcesal:"Sentencia en firme", TipoProceso:"Ejecutivo", NumeroContrato:"CT-2023-055", FechaAdmision:"2023-01-30", FechaContestacion:"2023-03-11", CalificacionContingencia:"Baja", Observaciones:"Fallo a favor. Pendiente archivar expediente."},
 ];
 

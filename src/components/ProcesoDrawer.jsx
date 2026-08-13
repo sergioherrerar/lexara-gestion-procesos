@@ -89,7 +89,7 @@ const FIELD_SECTIONS = [
     // despachosParaAccion en graph.js).
     ["TipoAccion","text"],["TipoProceso","text"],["EtapaProcesal","text"],
     ["Despacho","text"],["NumeroDespacho","text"],
-    ["Estado","textarea"],["EstadoVT","text"],["CalificacionContingencia","text"],
+    ["Estado","textarea"],["EstadoVT","text"],
   ]},
   {title:"Detalles del despacho", fields:[
     ["LinkDespacho","link"],["CorreoDespacho","text"],["Instancia","text"],
@@ -106,7 +106,21 @@ const FIELD_SECTIONS = [
 // las fechas porque es, en la práctica, la traza cronológica del proceso.
 // Igual que Observaciones, es una columna de SharePoint con texto
 // enriquecido (permite negrita/subrayado/resaltado).
-const TRAZABILIDAD_SECTION = {title:"Fechas del proceso", fields: [...DATE_FIELDS.map(k => [k,"date"]), ["Historico","richtext"]]};
+const TRAZABILIDAD_SECTION = {title:"Fechas del proceso", fields: [
+  ...DATE_FIELDS.map(k => [k,"date"]),
+  ["Admitida","select"],
+  ["PruebaPericial","select"],
+  ["OrigenTipoGlosa","text"],
+  ["CalificacionContingencia","select"],
+  ["Historico","richtext"],
+]};
+// Opciones fijas de los selects de esta pestaña — vienen del formulario
+// Access original, confirmadas por el usuario.
+const SELECT_OPTIONS = {
+  Admitida: ["Sí","No"],
+  PruebaPericial: ["Sí","No"],
+  CalificacionContingencia: ["POSIBLE","PROBABLE","REMOTO"],
+};
 // Se usa para inicializar el formulario — incluye tanto las secciones de
 // Datos generales como la de Trazabilidad de fechas.
 const ALL_SECTIONS = [...FIELD_SECTIONS, TRAZABILIDAD_SECTION];
@@ -125,6 +139,7 @@ const LABELS = {
   LinkContrato:"Link contrato", LinkCliente:"Link cliente",
   FechaInstancia:"Fecha instancia", FechaUltimoEstado:"Fecha último estado",
   Historico:"Histórico",
+  Admitida:"Admitida", PruebaPericial:"Prueba Pericial", OrigenTipoGlosa:"Origen/Tipo Glosa",
 };
 
 // Tarjeta de campo con etiqueta oscura arriba y valor abajo — mismo formato
@@ -183,6 +198,27 @@ function RichTextEditor({ value, onChange, readOnly }){
       />
     </div>
   );
+}
+
+// Campo genérico (texto/select/money/textarea/richtext), compartido entre
+// la pestaña "Datos generales" y "Trazabilidad fechas" — evita repetir el
+// mismo switch de tipos dos veces. Los casos especiales por campo (Cliente,
+// Tipo de Acción/Proceso/Despacho dependientes, "link" con botón de abrir)
+// se resuelven aparte, antes de caer aquí.
+function renderGenericField(key, type, form, setField, canWrite){
+  if(type==='richtext') return <RichTextEditor value={form[key]} onChange={v => setField(key, v)} readOnly={!canWrite} />;
+  if(type==='textarea') return <textarea value={form[key]} onChange={e => setField(key, e.target.value)} readOnly={!canWrite} />;
+  if(type==='money') return <input type="text" className="input-money" value={form[key]} onChange={e => setField(key, e.target.value)} onBlur={e => setField(key, fmtMonto(parseMonto(e.target.value)))} readOnly={!canWrite} />;
+  if(type==='select'){
+    const options = SELECT_OPTIONS[key] || [];
+    return (
+      <select value={form[key]} onChange={e => setField(key, e.target.value)} disabled={!canWrite}>
+        <option value="">— seleccionar —</option>
+        {options.map(o => <option value={o} key={o}>{o}</option>)}
+      </select>
+    );
+  }
+  return <input type={type==='link' ? 'text' : type} value={form[key]} onChange={e => setField(key, e.target.value)} readOnly={!canWrite} />;
 }
 const EMPTY_NEW_CLIENTE = {RazonSocial:"", Nit:"", Direccion:"", Telefono:"", Correo:""};
 
@@ -529,13 +565,7 @@ export default function ProcesoDrawer({ proceso, clientes, facturas, ordenesComp
                   }
                   return (
                     <FieldCard label={LABELS[key]} full={type==='textarea' || type==='richtext'} key={key}>
-                      {type==='richtext'
-                        ? <RichTextEditor value={form[key]} onChange={v => setField(key, v)} readOnly={!canWrite} />
-                        : type==='textarea'
-                        ? <textarea value={form[key]} onChange={e => setField(key, e.target.value)} readOnly={!canWrite} />
-                        : type==='money'
-                        ? <input type="text" className="input-money" value={form[key]} onChange={e => setField(key, e.target.value)} onBlur={e => setField(key, fmtMonto(parseMonto(e.target.value)))} readOnly={!canWrite} />
-                        : <input type={type} value={form[key]} onChange={e => setField(key, e.target.value)} readOnly={!canWrite} />}
+                      {renderGenericField(key, type, form, setField, canWrite)}
                     </FieldCard>
                   );
                 })}
@@ -548,9 +578,7 @@ export default function ProcesoDrawer({ proceso, clientes, facturas, ordenesComp
               <div className="field-card-grid">
                 {TRAZABILIDAD_SECTION.fields.map(([key,type]) => (
                   <FieldCard label={LABELS[key]} full={type==='richtext'} key={key}>
-                    {type==='richtext'
-                      ? <RichTextEditor value={form[key]} onChange={v => setField(key, v)} readOnly={!canWrite} />
-                      : <input type={type} value={form[key]} onChange={e => setField(key, e.target.value)} readOnly={!canWrite} />}
+                    {renderGenericField(key, type, form, setField, canWrite)}
                   </FieldCard>
                 ))}
               </div>
