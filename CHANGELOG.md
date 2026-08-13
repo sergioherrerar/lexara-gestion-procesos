@@ -3,6 +3,9 @@
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
 ## 2026-08-08
+- Cambió el criterio de color del Estado del proceso (en la tabla y en el panel): antes se adivinaba por palabras dentro del propio texto de Estado (y tenía un error: "vencimiento de términos" se confundía con "Terminado"). Ahora es: si "Estado V/T" = Terminado → gris; si no, según qué tan vieja es "Fecha último estado" — menos de 6 meses → verde, entre 6 meses y 1 año → naranja, más de 1 año → rojo.
+- Corregido: al crear/editar una factura, orden de compra, forma de pago o desistimiento desde dentro de un Proceso judicial, ahora al cerrar ese panel se vuelve a abrir el mismo proceso en vez de dejar solo la lista de fondo.
+- En Representación: "Abogado encargado" ahora es lista desplegable con los mismos nombres reales de Colaborador Lexara que "Apoderado". Al elegir el Apoderado, "CC Apoderada" se llena sola con su Identificación (solo si el campo estaba vacío o tenía el CC del apoderado anterior — un dato distinto escrito a mano no se pisa).
 - El campo "Instancia" ahora es lista desplegable ("Única Instancia"/"Primera instancia"/"Segunda Instancia").
 - En Datos generales: "Entidad" ahora es una lista desplegable con los valores reales que ya existen en la lista de Clientes; "Apoderado" toma los nombres reales de Colaborador Lexara; "Parte en que actuamos" y "Estado V/T" pasan a lista fija ("Con el Demandante"/"Con el Demandado" y "VIGENTE"/"TERMINADO"/"EN REVISION").
 - Se renombró la pestaña "Trazabilidad fechas" a solo "Trazabilidad".

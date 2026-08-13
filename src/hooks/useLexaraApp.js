@@ -58,6 +58,11 @@ export function useLexaraApp(){
   const [desistimientos, setDesistimientos] = useState([]);
   const [activeDesistimientoId, setActiveDesistimientoId] = useState(null);
   const [draftDesistimiento, setDraftDesistimiento] = useState(null);
+  // Cuando se abre/crea una factura, orden de compra, forma de pago o
+  // desistimiento DESDE dentro de un proceso, se guarda aquí su id — al
+  // cerrar ese panel se reabre el mismo proceso en vez de dejar solo la
+  // lista de fondo (ver rememberReturnToProceso/reabrirProcesoSiCorresponde).
+  const [returnToProcesoId, setReturnToProcesoId] = useState(null);
   const [currentFilter, setCurrentFilter] = useState('todos');
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
@@ -369,6 +374,17 @@ export function useLexaraApp(){
 
   function openProceso(id, opts){ setDraftProceso(null); setActiveProcesoId(id); setProcesoViewOnly(!!(opts && opts.viewOnly)); }
   function closeDrawer(){ setActiveProcesoId(null); setDraftProceso(null); setProcesoViewOnly(false); }
+  // El panel de Proceso llama esto justo antes de cerrarse para ir a ver/crear
+  // una factura, orden de compra, forma de pago o desistimiento relacionado —
+  // guarda el id del proceso para poder volver a él (ver reabrirProcesoSiCorresponde).
+  function rememberReturnToProceso(procesoId){ setReturnToProcesoId(procesoId); }
+  function reabrirProcesoSiCorresponde(){
+    if(returnToProcesoId){
+      const id = returnToProcesoId;
+      setReturnToProcesoId(null);
+      openProceso(id);
+    }
+  }
   // "+ Nuevo proceso judicial" solo abre un borrador local — no toca
   // SharePoint hasta que el usuario le da "Guardar cambios" (mismo criterio
   // que "Nueva factura"/"Nueva orden de compra"/etc.).
@@ -556,7 +572,7 @@ export function useLexaraApp(){
     setActiveFacturaId(null);
     setDraftFactura(draft);
   }
-  function closeFacturaDrawer(){ setActiveFacturaId(null); setDraftFactura(null); }
+  function closeFacturaDrawer(){ setActiveFacturaId(null); setDraftFactura(null); reabrirProcesoSiCorresponde(); }
   async function saveFactura(updates){
     if(!activeFactura) return;
 
@@ -589,6 +605,7 @@ export function useLexaraApp(){
       setFacturas(prev => [...prev, nuevo]);
       setDraftFactura(null);
       setActiveFacturaId(null);
+      reabrirProcesoSiCorresponde();
       return;
     }
 
@@ -606,6 +623,7 @@ export function useLexaraApp(){
       setSaving(false);
     }
     setActiveFacturaId(null);
+    reabrirProcesoSiCorresponde();
   }
 
   function openOrdenCompra(id){ setDraftOrdenCompra(null); setActiveOrdenCompraId(id); }
@@ -621,7 +639,7 @@ export function useLexaraApp(){
     setActiveOrdenCompraId(null);
     setDraftOrdenCompra({ Contrato: proceso.NumeroContrato || "", Proceso: proceso.Radicado || "" });
   }
-  function closeOrdenCompraDrawer(){ setActiveOrdenCompraId(null); setDraftOrdenCompra(null); }
+  function closeOrdenCompraDrawer(){ setActiveOrdenCompraId(null); setDraftOrdenCompra(null); reabrirProcesoSiCorresponde(); }
   async function saveOrdenCompra(updates){
     if(!activeOrdenCompra) return;
 
@@ -645,6 +663,7 @@ export function useLexaraApp(){
       setOrdenesCompra(prev => [...prev, nuevo]);
       setDraftOrdenCompra(null);
       setActiveOrdenCompraId(null);
+      reabrirProcesoSiCorresponde();
       return;
     }
 
@@ -661,6 +680,7 @@ export function useLexaraApp(){
       setSaving(false);
     }
     setActiveOrdenCompraId(null);
+    reabrirProcesoSiCorresponde();
   }
 
   function openColaborador(id){ setDraftColaborador(null); setActiveColaboradorId(id); }
@@ -730,7 +750,7 @@ export function useLexaraApp(){
   }
 
   function openFormaPago(id){ setDraftFormaPago(null); setActiveFormaPagoId(id); }
-  function closeFormaPagoDrawer(){ setActiveFormaPagoId(null); setDraftFormaPago(null); }
+  function closeFormaPagoDrawer(){ setActiveFormaPagoId(null); setDraftFormaPago(null); reabrirProcesoSiCorresponde(); }
   // Botón "+ Nueva forma de pago" del panel de un Proceso judicial: abre un
   // borrador con el Contrato ya lleno — sigue sin tocar SharePoint hasta
   // "Guardar cambios" (mismo criterio que Facturas/Órdenes de compra).
@@ -761,6 +781,7 @@ export function useLexaraApp(){
       setFormasPago(prev => [...prev, nuevo]);
       setDraftFormaPago(null);
       setActiveFormaPagoId(null);
+      reabrirProcesoSiCorresponde();
       return;
     }
 
@@ -777,6 +798,7 @@ export function useLexaraApp(){
       setSaving(false);
     }
     setActiveFormaPagoId(null);
+    reabrirProcesoSiCorresponde();
   }
   async function performDeleteFormaPago(id){
     const formaPago = formasPago.find(f => f.id===id);
@@ -797,7 +819,7 @@ export function useLexaraApp(){
   }
 
   function openDesistimiento(id){ setDraftDesistimiento(null); setActiveDesistimientoId(id); }
-  function closeDesistimientoDrawer(){ setActiveDesistimientoId(null); setDraftDesistimiento(null); }
+  function closeDesistimientoDrawer(){ setActiveDesistimientoId(null); setDraftDesistimiento(null); reabrirProcesoSiCorresponde(); }
   // Botón "+ Nuevo desistimiento" del panel de un Proceso judicial: abre un
   // borrador con el Proceso (ID real) y Numero corto ya llenos — se asocia
   // por ID, no por texto, a diferencia de Facturas/Órdenes/Formas de pago.
@@ -828,6 +850,7 @@ export function useLexaraApp(){
       setDesistimientos(prev => [...prev, nuevo]);
       setDraftDesistimiento(null);
       setActiveDesistimientoId(null);
+      reabrirProcesoSiCorresponde();
       return;
     }
 
@@ -844,6 +867,7 @@ export function useLexaraApp(){
       setSaving(false);
     }
     setActiveDesistimientoId(null);
+    reabrirProcesoSiCorresponde();
   }
   async function performDeleteDesistimiento(id){
     const desistimiento = desistimientos.find(d => d.id===id);
@@ -875,7 +899,7 @@ export function useLexaraApp(){
     procesos, clientes, facturas, ordenesCompra, colaboradores, formasPago, desistimientos, tiposAccion,
     currentFilter, setFilter: setCurrentFilter, searchQuery, setSearchQuery: setSearchQuery,
     onSearch: setSearchQuery,
-    activeProceso, openProceso, newProceso, closeDrawer, saveProceso, procesoViewOnly,
+    activeProceso, openProceso, newProceso, closeDrawer, saveProceso, procesoViewOnly, rememberReturnToProceso,
     activeCliente, openCliente, closeClienteDrawer, saveCliente, deleteCliente, createCliente, updateCliente,
     activeFactura, openFactura, newFactura, closeFacturaDrawer, saveFactura,
     printFactura, autoPrintFacturaId, clearAutoPrint, createFacturaFromOrdenCompra, newFacturaFromProceso,

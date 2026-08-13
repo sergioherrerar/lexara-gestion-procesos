@@ -272,6 +272,7 @@
   .badge-naranja{background:#fdece0; color:#b3590a;}
   .badge-amarillo{background:#fef4de; color:#8a6410;}
   .badge-gris{background:var(--gris-claro); color:var(--texto-suave);}
+  .badge-rojo{background:#fbe4e2; color:#a3281c;}
   .badge-truncate{display:inline-block; max-width:360px; white-space:normal; line-height:1.5; vertical-align:middle;}
 
   /* ---------- Procesos table ---------- */

@@ -202,12 +202,32 @@ export function fmtDate(dateStr){
   if(!m) return dateStr;
   return `${m[3]} ${MESES_CORTOS[Number(m[2])-1]}. ${m[1]}`;
 }
-export function estadoBadgeClass(estado){
-  const e = (estado||"").toLowerCase();
-  if(e.includes('termin')) return 'badge-gris';
-  if(e.includes('apelaci') || e.includes('corte') || e.includes('casaci')) return 'badge-naranja';
-  if(e.includes('trámite') || e.includes('tramite')) return 'badge-amarillo';
-  return 'badge-verde';
+// Color del badge de Estado del proceso — antes se adivinaba por palabras
+// clave dentro del propio texto de "Estado" (fallaba: p.ej. "vencimiento de
+// términos" se confundía con "Terminado"). Criterio confirmado por el
+// usuario, ahora basado en dos campos aparte:
+// - "Estado V/T" = Terminado → siempre gris, sin importar la fecha.
+// - Si no está terminado, según qué tan vieja es "Fecha último estado"
+//   comparada con hoy: menos de 6 meses → verde, entre 6 meses y 1 año →
+//   naranja, más de 1 año → rojo.
+// - Sin fecha (o una fecha inválida) → gris, para no inventar un color.
+function mesesDesde(fechaStr){
+  if(!fechaStr) return null;
+  const fecha = new Date(fechaStr);
+  if(isNaN(fecha.getTime())) return null;
+  const hoy = new Date();
+  let meses = (hoy.getFullYear() - fecha.getFullYear()) * 12 + (hoy.getMonth() - fecha.getMonth());
+  if(hoy.getDate() < fecha.getDate()) meses -= 1;
+  return meses;
+}
+export function estadoBadgeClass(estadoVT, fechaUltimoEstado){
+  const vt = (estadoVT||"").toLowerCase();
+  if(vt.includes('termin')) return 'badge-gris';
+  const meses = mesesDesde(fechaUltimoEstado);
+  if(meses == null) return 'badge-gris';
+  if(meses < 6) return 'badge-verde';
+  if(meses < 12) return 'badge-naranja';
+  return 'badge-rojo';
 }
 // Mismo sistema de etiquetas .badge que Procesos (antes Facturación tenía su
 // propio .estado-badge, con otro radio/colores — quedaban dos componentes

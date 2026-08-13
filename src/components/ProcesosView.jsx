@@ -88,7 +88,7 @@ export default function ProcesosView({ procesos, currentFilter, setFilter, searc
                 <td className="radicado">{p.Radicado || "—"}</td>
                 <td className="cliente">{p.Cliente || "—"}</td>
                 <td>{p.Despacho || "—"}{p.NumeroDespacho ? ` · ${p.NumeroDespacho}` : ""}</td>
-                <td><span className={"badge badge-truncate " + estadoBadgeClass(p.Estado)}>{stripHtml(p.Estado) || "—"}</span></td>
+                <td><span className={"badge badge-truncate " + estadoBadgeClass(p.EstadoVT, p.FechaUltimoEstado)}>{stripHtml(p.Estado) || "—"}</span></td>
                 <td>{p.LinkCarpeta ? <IconButton icon="open" variant="open" label="Abrir carpeta" href={p.LinkCarpeta} onClick={e => e.stopPropagation()} /> : "—"}</td>
                 <td style={{whiteSpace:'nowrap'}}>
                   <div className="row-actions">

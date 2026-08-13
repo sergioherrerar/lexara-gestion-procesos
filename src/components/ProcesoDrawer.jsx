@@ -80,7 +80,7 @@ const FIELD_SECTIONS = [
     ["Cliente","text"],["Entidad","text"],["Demandante","text"],["Demandado","text"],["ParteActuamos","select"],
   ]},
   {title:"Representación", fields:[
-    ["Apoderado","text"],["CCApoderada","text"],["AbogadoEncargado","text"],
+    ["Apoderado","select"],["CCApoderada","text"],["AbogadoEncargado","select"],
   ]},
   {title:"Estado del proceso", fields:[
     // Tipo de Acción / Tipo de Proceso / Despacho van seguidos, en ese
@@ -230,7 +230,7 @@ function renderGenericField(key, type, form, setField, canWrite){
 }
 const EMPTY_NEW_CLIENTE = {RazonSocial:"", Nit:"", Direccion:"", Telefono:"", Correo:""};
 
-export default function ProcesoDrawer({ proceso, clientes, colaboradores, facturas, ordenesCompra, formasPago, desistimientos, tiposAccion, liveMode, onClose, onSave, onCreateCliente, onOpenFactura, onPrintFactura, onCreateFactura, onOpenOrdenCompra, onPrintOrdenCompra, onCreateOrdenCompra, onOpenFormaPago, onCreateFormaPago, onOpenDesistimiento, onCreateDesistimiento, saving, canWrite = true }){
+export default function ProcesoDrawer({ proceso, clientes, colaboradores, facturas, ordenesCompra, formasPago, desistimientos, tiposAccion, liveMode, onClose, onSave, onNavigateAway, onCreateCliente, onOpenFactura, onPrintFactura, onCreateFactura, onOpenOrdenCompra, onPrintOrdenCompra, onCreateOrdenCompra, onOpenFormaPago, onCreateFormaPago, onOpenDesistimiento, onCreateDesistimiento, saving, canWrite = true }){
   const [form, setForm] = useState(null);
   const [showNewCliente, setShowNewCliente] = useState(false);
   const [newCliente, setNewCliente] = useState(EMPTY_NEW_CLIENTE);
@@ -305,6 +305,23 @@ export default function ProcesoDrawer({ proceso, clientes, colaboradores, factur
     });
   }
 
+  // Al elegir el Apoderado, se busca su Identificación en la lista de
+  // Colaboradores (Equipo MD) y se rellena sola en "CC Apoderada" — solo si
+  // ese campo está vacío o todavía tiene el CC del apoderado anterior, para
+  // no pisar un dato distinto que se haya escrito a mano.
+  function setApoderado(value){
+    setForm(prev => {
+      const next = {...prev, Apoderado: value};
+      const anterior = (colaboradores||[]).find(c => c.Nombre === prev.Apoderado);
+      const ccAnteriorAuto = anterior ? (anterior.Identificacion || "") : "";
+      if(!prev.CCApoderada || prev.CCApoderada === ccAnteriorAuto){
+        const nuevo = (colaboradores||[]).find(c => c.Nombre === value);
+        next.CCApoderada = nuevo ? (nuevo.Identificacion || "") : "";
+      }
+      return next;
+    });
+  }
+
   async function handleCreateCliente(){
     if(!newCliente.RazonSocial.trim()){ setNuevoClienteError("El nombre (Razón social) es obligatorio."); return; }
     setNuevoClienteError("");
@@ -340,6 +357,10 @@ export default function ProcesoDrawer({ proceso, clientes, colaboradores, factur
   if(form.Entidad && !entidadOpciones.includes(form.Entidad)) entidadOpciones.unshift(form.Entidad);
   const apoderadoOpciones = Array.from(new Set((colaboradores||[]).map(c => c.Nombre).filter(Boolean))).sort((a,b)=>a.localeCompare(b));
   if(form.Apoderado && !apoderadoOpciones.includes(form.Apoderado)) apoderadoOpciones.unshift(form.Apoderado);
+  // Abogado encargado: misma lista de nombres que Apoderado, pero con su
+  // propio arreglo (para no duplicar/perder el valor guardado de cada uno).
+  const abogadoEncargadoOpciones = Array.from(new Set((colaboradores||[]).map(c => c.Nombre).filter(Boolean))).sort((a,b)=>a.localeCompare(b));
+  if(form.AbogadoEncargado && !abogadoEncargadoOpciones.includes(form.AbogadoEncargado)) abogadoEncargadoOpciones.unshift(form.AbogadoEncargado);
 
   const facturasRelacionadas = facturasForProceso(facturas, proceso)
     .sort((a,b) => Number(facturaNumero(b)) - Number(facturaNumero(a)) || 0);
@@ -349,20 +370,23 @@ export default function ProcesoDrawer({ proceso, clientes, colaboradores, factur
   const desistimientosRelacionados = desistimientosForProceso(desistimientos, proceso);
 
   // Al abrir/imprimir una factura u orden de compra relacionada, se cierra
-  // este panel primero — dos paneles superpuestos a la vez se ven mal.
-  function goToFactura(id){ onClose(); onOpenFactura(id); }
-  function goToPrintFactura(id){ onClose(); onPrintFactura(id); }
-  function goToOrdenCompra(id){ onClose(); onOpenOrdenCompra(id); }
-  function goToPrintOrdenCompra(id){ onClose(); onPrintOrdenCompra(id); }
-  function goToFormaPago(id){ onClose(); onOpenFormaPago(id); }
-  function goToDesistimiento(id){ onClose(); onOpenDesistimiento(id); }
+  // este panel primero — dos paneles superpuestos a la vez se ven mal — pero
+  // se avisa antes (onNavigateAway) para que, al cerrar ese otro panel, se
+  // vuelva a abrir este mismo proceso en vez de dejar solo la lista de fondo.
+  function goToFactura(id){ onNavigateAway(proceso.id); onClose(); onOpenFactura(id); }
+  function goToPrintFactura(id){ onNavigateAway(proceso.id); onClose(); onPrintFactura(id); }
+  function goToOrdenCompra(id){ onNavigateAway(proceso.id); onClose(); onOpenOrdenCompra(id); }
+  function goToPrintOrdenCompra(id){ onNavigateAway(proceso.id); onClose(); onPrintOrdenCompra(id); }
+  function goToFormaPago(id){ onNavigateAway(proceso.id); onClose(); onOpenFormaPago(id); }
+  function goToDesistimiento(id){ onNavigateAway(proceso.id); onClose(); onOpenDesistimiento(id); }
   // Botones "+ Nueva factura"/"+ Nueva orden de compra"/"+ Nueva forma de
   // pago"/"+ Nuevo desistimiento" de este panel: cierran el proceso y abren
-  // un borrador con el Contrato/Proceso ya llenos.
-  function goToNewFactura(){ onClose(); onCreateFactura(proceso); }
-  function goToNewOrdenCompra(){ onClose(); onCreateOrdenCompra(proceso); }
-  function goToNewFormaPago(){ onClose(); onCreateFormaPago(proceso); }
-  function goToNewDesistimiento(){ onClose(); onCreateDesistimiento(proceso); }
+  // un borrador con el Contrato/Proceso ya llenos — también vuelven a este
+  // proceso al cerrar ese borrador.
+  function goToNewFactura(){ onNavigateAway(proceso.id); onClose(); onCreateFactura(proceso); }
+  function goToNewOrdenCompra(){ onNavigateAway(proceso.id); onClose(); onCreateOrdenCompra(proceso); }
+  function goToNewFormaPago(){ onNavigateAway(proceso.id); onClose(); onCreateFormaPago(proceso); }
+  function goToNewDesistimiento(){ onNavigateAway(proceso.id); onClose(); onCreateDesistimiento(proceso); }
 
   const FACTURA_COLUMNS = [
     {key:'numero', label:'No. factura', render: f => facturaNumero(f)},
@@ -406,7 +430,7 @@ export default function ProcesoDrawer({ proceso, clientes, colaboradores, factur
           </button>
           <div className="eyebrow">NUMERO_CORTO — {proceso.Radicado || "—"}</div>
           <h2>{proceso.Cliente || "Sin nombre"}</h2>
-          <span className={"badge badge-truncate " + estadoBadgeClass(proceso.Estado)}>{stripHtml(proceso.Estado) || "—"}</span>
+          <span className={"badge badge-truncate " + estadoBadgeClass(proceso.EstadoVT, proceso.FechaUltimoEstado)}>{stripHtml(proceso.Estado) || "—"}</span>
         </div>
         <div className="drawer-tabs">
           {TABS.map(t => (
@@ -593,12 +617,25 @@ export default function ProcesoDrawer({ proceso, clientes, colaboradores, factur
                     );
                   }
                   // Apoderado: nombres reales tomados de Colaborador Lexara (Equipo MD).
+                  // Al elegirlo, autocompleta CC Apoderada (ver setApoderado).
                   if(key==='Apoderado'){
                     return (
                       <FieldCard label={LABELS[key]} key={key}>
-                        <select value={form.Apoderado} onChange={e => setField('Apoderado', e.target.value)} disabled={!canWrite}>
+                        <select value={form.Apoderado} onChange={e => setApoderado(e.target.value)} disabled={!canWrite}>
                           <option value="">— seleccionar —</option>
                           {apoderadoOpciones.map(n => <option value={n} key={n}>{n}</option>)}
+                        </select>
+                      </FieldCard>
+                    );
+                  }
+                  // Abogado encargado: mismos nombres reales de Colaborador Lexara
+                  // (Equipo MD) que Apoderado — no autocompleta nada más.
+                  if(key==='AbogadoEncargado'){
+                    return (
+                      <FieldCard label={LABELS[key]} key={key}>
+                        <select value={form.AbogadoEncargado} onChange={e => setField('AbogadoEncargado', e.target.value)} disabled={!canWrite}>
+                          <option value="">— seleccionar —</option>
+                          {abogadoEncargadoOpciones.map(n => <option value={n} key={n}>{n}</option>)}
                         </select>
                       </FieldCard>
                     );

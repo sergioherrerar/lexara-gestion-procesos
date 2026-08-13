@@ -168,6 +168,7 @@ export default function App(){
         liveMode={app.liveMode}
         onClose={app.closeDrawer}
         onSave={app.saveProceso}
+        onNavigateAway={app.rememberReturnToProceso}
         onCreateCliente={app.createCliente}
         onOpenFactura={app.openFactura}
         onPrintFactura={app.printFactura}
