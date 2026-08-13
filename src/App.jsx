@@ -159,6 +159,7 @@ export default function App(){
       <ProcesoDrawer
         proceso={app.activeProceso}
         clientes={app.clientes}
+        colaboradores={app.colaboradores}
         facturas={app.facturas}
         ordenesCompra={app.ordenesCompra}
         formasPago={app.formasPago}

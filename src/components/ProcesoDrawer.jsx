@@ -12,7 +12,7 @@ import { ICON_SVG } from '../config';
 
 const TABS = [
   {key:'datos', label:'Datos generales'},
-  {key:'trazabilidad', label:'Trazabilidad fechas'},
+  {key:'trazabilidad', label:'Trazabilidad'},
   {key:'facturas', label:'Facturas'},
   {key:'ordenes', label:'Órdenes de compra'},
   {key:'formaspago', label:'Formas de pago'},
@@ -77,7 +77,7 @@ const FIELD_SECTIONS = [
     ["NoCompleto","text"],["NumeroContrato","text"],["HistoricoNumerosCompletos","textarea"],
   ]},
   {title:"Partes", fields:[
-    ["Cliente","text"],["Entidad","text"],["Demandante","text"],["Demandado","text"],["ParteActuamos","text"],
+    ["Cliente","text"],["Entidad","text"],["Demandante","text"],["Demandado","text"],["ParteActuamos","select"],
   ]},
   {title:"Representación", fields:[
     ["Apoderado","text"],["CCApoderada","text"],["AbogadoEncargado","text"],
@@ -89,7 +89,7 @@ const FIELD_SECTIONS = [
     // despachosParaAccion en graph.js).
     ["TipoAccion","text"],["TipoProceso","text"],["EtapaProcesal","text"],
     ["Despacho","text"],["NumeroDespacho","text"],
-    ["Estado","textarea"],["EstadoVT","text"],
+    ["Estado","textarea"],["EstadoVT","select"],
   ]},
   {title:"Detalles del despacho", fields:[
     ["LinkDespacho","link"],["CorreoDespacho","text"],["Instancia","text"],
@@ -120,6 +120,8 @@ const SELECT_OPTIONS = {
   Admitida: ["Sí","No"],
   PruebaPericial: ["Sí","No"],
   CalificacionContingencia: ["POSIBLE","PROBABLE","REMOTO"],
+  ParteActuamos: ["Con el Demandante","Con el Demandado"],
+  EstadoVT: ["VIGENTE","TERMINADO","EN REVISION"],
 };
 // Se usa para inicializar el formulario — incluye tanto las secciones de
 // Datos generales como la de Trazabilidad de fechas.
@@ -222,7 +224,7 @@ function renderGenericField(key, type, form, setField, canWrite){
 }
 const EMPTY_NEW_CLIENTE = {RazonSocial:"", Nit:"", Direccion:"", Telefono:"", Correo:""};
 
-export default function ProcesoDrawer({ proceso, clientes, facturas, ordenesCompra, formasPago, desistimientos, tiposAccion, liveMode, onClose, onSave, onCreateCliente, onOpenFactura, onPrintFactura, onCreateFactura, onOpenOrdenCompra, onPrintOrdenCompra, onCreateOrdenCompra, onOpenFormaPago, onCreateFormaPago, onOpenDesistimiento, onCreateDesistimiento, saving, canWrite = true }){
+export default function ProcesoDrawer({ proceso, clientes, colaboradores, facturas, ordenesCompra, formasPago, desistimientos, tiposAccion, liveMode, onClose, onSave, onCreateCliente, onOpenFactura, onPrintFactura, onCreateFactura, onOpenOrdenCompra, onPrintOrdenCompra, onCreateOrdenCompra, onOpenFormaPago, onCreateFormaPago, onOpenDesistimiento, onCreateDesistimiento, saving, canWrite = true }){
   const [form, setForm] = useState(null);
   const [showNewCliente, setShowNewCliente] = useState(false);
   const [newCliente, setNewCliente] = useState(EMPTY_NEW_CLIENTE);
@@ -322,6 +324,16 @@ export default function ProcesoDrawer({ proceso, clientes, facturas, ordenesComp
   if(form.TipoProceso && !tipoProcesoOpciones.includes(form.TipoProceso)) tipoProcesoOpciones.unshift(form.TipoProceso);
   const despachoOpciones = despachosParaAccion(tiposAccion, form.TipoAccion);
   if(form.Despacho && !despachoOpciones.includes(form.Despacho)) despachoOpciones.unshift(form.Despacho);
+
+  // Entidad: lista de valores reales que ya existen en la lista de Clientes
+  // (no una lista fija). Apoderado: nombres reales de Colaborador Lexara
+  // (Equipo MD). En ambos casos, si el valor ya guardado no está en esa
+  // lista, se agrega igual para no perderlo de vista (mismo criterio que
+  // Cliente/Tipo de Acción arriba).
+  const entidadOpciones = Array.from(new Set(clientes.map(c => c.Entidad).filter(Boolean))).sort((a,b)=>a.localeCompare(b));
+  if(form.Entidad && !entidadOpciones.includes(form.Entidad)) entidadOpciones.unshift(form.Entidad);
+  const apoderadoOpciones = Array.from(new Set((colaboradores||[]).map(c => c.Nombre).filter(Boolean))).sort((a,b)=>a.localeCompare(b));
+  if(form.Apoderado && !apoderadoOpciones.includes(form.Apoderado)) apoderadoOpciones.unshift(form.Apoderado);
 
   const facturasRelacionadas = facturasForProceso(facturas, proceso)
     .sort((a,b) => Number(facturaNumero(b)) - Number(facturaNumero(a)) || 0);
@@ -560,6 +572,28 @@ export default function ProcesoDrawer({ proceso, clientes, facturas, ordenesComp
                           <input type="text" value={form[key]} onChange={e => setField(key, e.target.value)} readOnly={!canWrite} style={{flex:1, minWidth:0}} />
                           {url && <IconButton icon="open" variant="open" label="Abrir enlace" href={url} onClick={e => e.stopPropagation()} />}
                         </div>
+                      </FieldCard>
+                    );
+                  }
+                  // Entidad: opciones reales tomadas de la lista de Clientes.
+                  if(key==='Entidad'){
+                    return (
+                      <FieldCard label={LABELS[key]} key={key}>
+                        <select value={form.Entidad} onChange={e => setField('Entidad', e.target.value)} disabled={!canWrite}>
+                          <option value="">— seleccionar —</option>
+                          {entidadOpciones.map(n => <option value={n} key={n}>{n}</option>)}
+                        </select>
+                      </FieldCard>
+                    );
+                  }
+                  // Apoderado: nombres reales tomados de Colaborador Lexara (Equipo MD).
+                  if(key==='Apoderado'){
+                    return (
+                      <FieldCard label={LABELS[key]} key={key}>
+                        <select value={form.Apoderado} onChange={e => setField('Apoderado', e.target.value)} disabled={!canWrite}>
+                          <option value="">— seleccionar —</option>
+                          {apoderadoOpciones.map(n => <option value={n} key={n}>{n}</option>)}
+                        </select>
                       </FieldCard>
                     );
                   }
