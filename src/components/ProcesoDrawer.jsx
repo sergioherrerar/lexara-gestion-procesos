@@ -74,10 +74,11 @@ const DATE_FIELDS = ["FechaAdmision","FechaContestacion","FechaInstancia","Fecha
 // columna real de SharePoint; mientras tanto quedan en blanco).
 const FIELD_SECTIONS = [
   {title:"Identificación del proceso", fields:[
-    ["NoCompleto","text"],["NumeroContrato","text"],["HistoricoNumerosCompletos","textarea"],
+    ["NoCompleto","text"],["NumeroContrato","text"],["Numero5Digitos","text"],["HistoricoNumerosCompletos","textarea"],
+    ["NaturalezaProceso","text"],["Subclasificacion","text"],
   ]},
   {title:"Partes", fields:[
-    ["Cliente","text"],["Entidad","text"],["Demandante","text"],["Demandado","text"],["ParteActuamos","select"],
+    ["Cliente","text"],["Entidad","text"],["Demandante","text"],["DemandanteIdentificacion","text"],["Demandado","text"],["ParteActuamos","select"],
   ]},
   {title:"Representación", fields:[
     ["Apoderado","select"],["CCApoderada","text"],["AbogadoEncargado","select"],
@@ -92,13 +93,14 @@ const FIELD_SECTIONS = [
     ["Estado","textarea"],["EstadoVT","select"],
   ]},
   {title:"Detalles del despacho", fields:[
-    ["LinkDespacho","link"],["CorreoDespacho","text"],["Instancia","select"],
+    ["LinkDespacho","link"],["CorreoDespacho","text"],["Instancia","select"],["Departamento","text"],["Municipio","text"],
   ]},
   {title:"Valores", fields:[
-    ["ValorRadicacion","money"],["ValorReforma","money"],["ValorActualDemanda","money"],
+    ["ValorRadicacion","money"],["ValorReforma","money"],["ValorActualDemanda","money"],["ValorCarteraActual","money"],
+    ["MedidaCautelar","select"],["MontoMedidaCautelar","money"],
   ]},
   {title:"Enlaces y observaciones", fields:[
-    ["LinkContrato","link"],["LinkCliente","link"],["LinkCarpeta","link"],["Observaciones","richtext"],
+    ["LinkContrato","link"],["LinkCliente","link"],["LinkCarpeta","link"],["EnlaceProceso","link"],["Observaciones","richtext"],
   ]},
 ];
 // "Historico" es la bitácora narrativa del proceso (distinta de "Histórico
@@ -108,10 +110,13 @@ const FIELD_SECTIONS = [
 // enriquecido (permite negrita/subrayado/resaltado).
 const TRAZABILIDAD_SECTION = {title:"Fechas del proceso", fields: [
   ...DATE_FIELDS.map(k => [k,"date"]),
+  ["FechaReformaDemanda","date"],
   ["Admitida","select"],
   ["PruebaPericial","select"],
   ["OrigenTipoGlosa","text"],
+  ["GlosaDemandada","text"],
   ["CalificacionContingencia","select"],
+  ["PorcentajeCalificacion","text"],
   ["Historico","richtext"],
 ]};
 // Opciones fijas de los selects de esta pestaña — vienen del formulario
@@ -119,6 +124,7 @@ const TRAZABILIDAD_SECTION = {title:"Fechas del proceso", fields: [
 const SELECT_OPTIONS = {
   Admitida: ["Sí","No"],
   PruebaPericial: ["Sí","No"],
+  MedidaCautelar: ["Sí","No"],
   CalificacionContingencia: ["POSIBLE","PROBABLE","REMOTO"],
   ParteActuamos: ["Con el Demandante","Con el Demandado"],
   EstadoVT: ["VIGENTE","TERMINADO","EN REVISION"],
@@ -143,6 +149,14 @@ const LABELS = {
   FechaInstancia:"Fecha instancia", FechaUltimoEstado:"Fecha último estado",
   Historico:"Histórico",
   Admitida:"Admitida", PruebaPericial:"Prueba Pericial", OrigenTipoGlosa:"Origen/Tipo Glosa",
+  // Agregados 2026-08-14 para el módulo "Informes" (formato Entidad SOS).
+  NaturalezaProceso:"Naturaleza del proceso", Subclasificacion:"Subclasificación", Numero5Digitos:"Número 5 dígitos",
+  FechaReformaDemanda:"Fecha reforma de demanda", ValorCarteraActual:"Valor cartera actual",
+  EnlaceProceso:"Enlace proceso", GlosaDemandada:"Glosa demandada",
+  Departamento:"Departamento", Municipio:"Municipio",
+  DemandanteIdentificacion:"No. de identificación demandante",
+  MedidaCautelar:"Medida cautelar", MontoMedidaCautelar:"Monto medida cautelar",
+  PorcentajeCalificacion:"Porcentaje de la calificación",
 };
 
 // Tarjeta de campo con etiqueta oscura arriba y valor abajo — mismo formato

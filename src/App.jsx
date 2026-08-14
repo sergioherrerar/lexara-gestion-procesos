@@ -5,6 +5,7 @@ import LoginScreen from './components/LoginScreen';
 import Sidebar from './components/Sidebar';
 import Topbar from './components/Topbar';
 import DashboardView from './components/DashboardView';
+import InformesView from './components/InformesView';
 import ProcesosView from './components/ProcesosView';
 import ClientesView from './components/ClientesView';
 import FacturacionView from './components/FacturacionView';
@@ -86,6 +87,9 @@ export default function App(){
         />
 
         {app.view === 'dashboard' && <DashboardView procesos={app.procesos} clientes={app.clientes} facturas={app.facturas} ordenesCompra={app.ordenesCompra} />}
+        {app.view === 'informes' && canAccessView(app.role, 'informes') && (
+          <InformesView procesos={app.procesos} clientes={app.clientes} facturas={app.facturas} ordenesCompra={app.ordenesCompra} />
+        )}
         {app.view === 'procesos' && canAccessView(app.role, 'procesos') && (
           <ProcesosView
             procesos={app.procesos}

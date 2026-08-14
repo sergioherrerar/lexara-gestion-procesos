@@ -71,6 +71,23 @@ export const SHAREPOINT_LISTS_CONFIG = [
       {key:"Admitida", label:"Admitida", hint:["admitida"]},
       {key:"PruebaPericial", label:"Prueba Pericial", hint:["prueba pericial"]},
       {key:"OrigenTipoGlosa", label:"Origen/Tipo Glosa", hint:["origen tipo glosa","origen/tipo glosa","tipo glosa"]},
+      // Agregados 2026-08-14 para el módulo "Informes" — Entidad SOS pide un
+      // informe (Excel + PDF) con estas columnas exactas, tomadas de su
+      // consulta real de Access. La mayoría de sus columnas ya existían acá
+      // con otro nombre (ver mapeo en informeSOS.js); estas 13 son nuevas.
+      {key:"NaturalezaProceso", label:"Naturaleza del proceso", hint:["naturaleza del proceso","naturaleza proceso"]},
+      {key:"Subclasificacion", label:"Subclasificación", hint:["subclasificacion","subclasificación"]},
+      {key:"Numero5Digitos", label:"Número 5 dígitos", hint:["numero 5 digitos","número 5 dígitos"]},
+      {key:"FechaReformaDemanda", label:"Fecha reforma de demanda", hint:["fecha reforma de demanda","fecha reforma demanda"]},
+      {key:"ValorCarteraActual", label:"Valor cartera actual", hint:["valor cartera actual","valor cartera"]},
+      {key:"EnlaceProceso", label:"Enlace proceso", hint:["enlace proceso"]},
+      {key:"GlosaDemandada", label:"Glosa demandada", hint:["glosa demandada"]},
+      {key:"Departamento", label:"Departamento", hint:["departamento"]},
+      {key:"Municipio", label:"Municipio", hint:["municipio"]},
+      {key:"DemandanteIdentificacion", label:"No. de identificación demandante", hint:["identificacion demandante","identificación demandante","numero de identificacion demandante"]},
+      {key:"MedidaCautelar", label:"Medida cautelar", hint:["medida cautelar"]},
+      {key:"MontoMedidaCautelar", label:"Monto medida cautelar", hint:["monto medida cautelar"]},
+      {key:"PorcentajeCalificacion", label:"Porcentaje de la calificación", hint:["porcentaje de la calificacion","porcentaje calificacion","porcentaje de la calificación"]},
     ],
     mapping: {
       Radicado: "numero_x0020_corto",
@@ -335,6 +352,21 @@ export const DEMO_PROCESOS = [
   {id:3, Radicado:"76001-31-03-008-2024-00092-00", Cliente:"Inversiones Cali Norte", Entidad:"Sector Privado", Apoderado:"María Fernanda Ruiz", Despacho:"Juzgado 8 Civil del Circuito de Cali", Instancia:"Primera instancia", Estado:"Admitida", EstadoVT:"EN REVISION", FechaUltimoEstado:"2026-01-15", EtapaProcesal:"Traslado de la demanda", TipoProceso:"Verbal", NumeroContrato:"CT-2024-004", FechaAdmision:"2024-02-20", FechaContestacion:"", CalificacionContingencia:"REMOTO", Observaciones:""},
   {id:4, Radicado:"11001-31-03-021-2021-00567-00", Cliente:"Grupo Andino S.A.S.", Entidad:"Aseguradora Cordillera", Apoderado:"Jorge Iván Salcedo", Despacho:"Juzgado 21 Civil del Circuito de Bogotá", Instancia:"Casación", Estado:"En corte", EstadoVT:"VIGENTE", FechaUltimoEstado:"2024-03-01", EtapaProcesal:"Traslado en casación", TipoProceso:"Ordinario", NumeroContrato:"CT-2021-201", FechaAdmision:"2021-04-18", FechaContestacion:"2021-07-02", CalificacionContingencia:"PROBABLE", Observaciones:"Enviado a la Corte Suprema desde marzo."},
   {id:5, Radicado:"13001-31-03-003-2023-00450-00", Cliente:"Distribuidora Caribe SAS", Entidad:"Sector Público", Apoderado:"Carlos Andrés Peña", Despacho:"Juzgado 3 Civil del Circuito de Cartagena", Instancia:"Primera instancia", Estado:"Terminado", EstadoVT:"TERMINADO", EtapaProcesal:"Sentencia en firme", TipoProceso:"Ejecutivo", NumeroContrato:"CT-2023-055", FechaAdmision:"2023-01-30", FechaContestacion:"2023-03-11", CalificacionContingencia:"Baja", Observaciones:"Fallo a favor. Pendiente archivar expediente."},
+  // Ejemplo Entidad "SOS" (2026-08-14) — datos ficticios, solo para probar el
+  // módulo Informes y el formato de exportación Excel/PDF de esta Entidad
+  // (ver src/lib/informeSOS.js). No es información real de ningún cliente.
+  {id:6, Radicado:"11001-33-44-006-2025-00099-00", Cliente:"EPS Ejemplo de Salud S.A.", Entidad:"SOS", Apoderado:"Dahiana Camila Pedraza", Despacho:"Juzgado 6 Administrativo de Bogotá", Instancia:"Primera instancia",
+    Estado:"<div>10-02-2026 Auto admite demanda.</div><div>18-03-2026 Notificación de auto admisorio.</div><div>05-05-2026 Contestación de la demanda por ADRES.</div><div>22-06-2026 Al despacho para resolver.</div>",
+    EstadoVT:"VIGENTE", FechaUltimoEstado:"2026-06-22", EtapaProcesal:"Traslado para alegar de conclusión", TipoProceso:"Nulidad y restablecimiento del derecho", TipoAccion:"Administrativo",
+    NumeroContrato:"CT-2025-090", FechaAdmision:"2026-02-10", FechaContestacion:"2026-05-05", CalificacionContingencia:"PROBABLE", PorcentajeCalificacion:"0,5",
+    Observaciones:"Ejemplo de proceso de recobro ante ADRES.",
+    NoCompleto:"1100133440062025000990", ParteActuamos:"Con el Demandante", Demandante:"EPS Ejemplo de Salud S.A.", DemandanteIdentificacion:"900.000.111-2", Demandado:"ADRES", AbogadoEncargado:"Dahiana Camila Pedraza", CCApoderada:"1.014.300.118",
+    NaturalezaProceso:"Administrativo", Subclasificacion:"Nulidad y restablecimiento del derecho", Numero5Digitos:"2025-00099",
+    Departamento:"BOGOTÁ D.C.", Municipio:"BOGOTÁ D.C.", GlosaDemandada:"Recobro por glosa de auditoría", MedidaCautelar:"No",
+    ValorRadicacion:"850.000.000,00", ValorReforma:"850.000.000,00", ValorActualDemanda:"912.400.000,00", ValorCarteraActual:"912.400.000,00",
+    HistoricoNumerosCompletos:"11001-33-44-006-2025-00099-00", EnlaceProceso:"https://mydabogados/proceso-ejemplo-sos",
+    Historico:"<div>10-02-2026 Auto admite demanda.</div><div>18-03-2026 Notificación de auto admisorio.</div><div>05-05-2026 Contestación de la demanda por ADRES.</div><div>22-06-2026 Al despacho para resolver.</div>",
+    Admitida:"Sí", PruebaPericial:"No", OrigenTipoGlosa:"Glosa de auditoría"},
 ];
 
 export const DEMO_CLIENTES = [
@@ -342,6 +374,8 @@ export const DEMO_CLIENTES = [
   {id:2, RazonSocial:"Constructora del Sur Ltda.", Nit:"890.234.567-1", Ciudad:"Medellín", Direccion:"Carrera 43A #30-10", Telefono:"604 512 3344", Correo:"info@constructorasur.com", Entidad:"Privada"},
   {id:3, RazonSocial:"Inversiones Cali Norte", Nit:"805.345.678-2", Ciudad:"Cali", Direccion:"Avenida 6N #28-45", Telefono:"602 660 7788", Correo:"admin@calinorte.com", Entidad:"Privada"},
   {id:4, RazonSocial:"Distribuidora Caribe SAS", Nit:"812.456.789-3", Ciudad:"Cartagena", Direccion:"Calle 35 #22-18", Telefono:"605 690 1122", Correo:"ventas@distcaribe.com", Entidad:"Privada"},
+  // Ejemplo Entidad "SOS" — ver nota en DEMO_PROCESOS id:6, datos ficticios.
+  {id:5, RazonSocial:"EPS Ejemplo de Salud S.A.", Nit:"900.000.111-2", Ciudad:"Bogotá", Direccion:"Avenida Ejemplo #1-00", Telefono:"601 000 0000", Correo:"contacto@epsejemplo.com", Entidad:"SOS"},
 ];
 
 export const DEMO_FACTURAS = [

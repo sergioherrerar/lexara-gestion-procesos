@@ -4,6 +4,7 @@ import { canAccessView } from '../lib/permissions';
 
 const NAV_ITEMS = [
   {view:'dashboard', label:'Dashboard'},
+  {view:'informes', label:'Informes'},
   {view:'procesos', label:'Procesos judiciales'},
   {view:'clientes', label:'Clientes'},
   {view:'facturacion', label:'Facturación'},
