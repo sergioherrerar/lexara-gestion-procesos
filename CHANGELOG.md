@@ -3,6 +3,7 @@
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
 ## 2026-08-16
+- Corregido: el PDF del informe de SOS salía mal ordenado porque se generaba con la función de imprimir del navegador (varias hojas con el membrete repetido no se comportaban bien al guardar como PDF). Se reconstruyó para que el PDF se genere y se descargue directo, igual que el Excel, sin pasar por el diálogo de impresión.
 - El módulo Informes ya genera también la carta en PDF de la Entidad SOS (antes solo estaba el Excel) — mismo texto y columnas del modelo real (No. Radicado/Fecha Estado/Estado/Valor Actual Demanda), con presentación institucional modernizada: encabezado y pie con el membrete de Lexara repetidos en cada hoja, tabla con encabezado verde y filas alternadas, firma al final. Las fechas y el conteo de procesos se calculan solos al momento de generar el informe (siempre la fecha real y la cantidad de procesos vigentes de esa Entidad). En la tabla de Informes, el botón único "Generar informe" se dividió en dos íconos (Excel/PDF).
 
 ## 2026-08-14

@@ -11,7 +11,8 @@
 // ExcelJS es una librería pesada (~1MB) que solo hace falta al generar este
 // informe puntual — se importa de forma diferida (dynamic import) para que
 // no infle el paquete principal que se descarga en cada inicio de sesión.
-import { stripHtml, parseMonto } from './graph';
+import { stripHtml, parseMonto, fmtMonto } from './graph';
+import logoVerde from '../assets/Logo verde OScuro.png';
 
 // [columna Excel, header exacto que la Entidad SOS espera, campo interno de
 // la app, tipo]. El orden de este arreglo ES el orden de columnas del Excel.
@@ -125,4 +126,143 @@ export async function generarInformeSOSExcel(procesos){
   a.click();
   a.remove();
   URL.revokeObjectURL(url);
+}
+
+/* ---------------- Carta de reporte de procesos (PDF) ----------------
+   Primer intento (2026-08-16) usaba una hoja de impresión HTML/CSS y
+   `window.print()`, igual que Factura/Orden de compra — pero esta carta es
+   multipágina y el resultado real salió mal ordenado (encabezado/pie en
+   position:fixed no se comportó bien en varias páginas al imprimir/guardar).
+   Además el usuario pidió explícitamente que el PDF se EXPORTE directo
+   (como el Excel), sin pasar por el diálogo de impresión del navegador.
+   Se reconstruyó con jsPDF + jspdf-autotable: arma el PDF de verdad,
+   controla la paginación de la tabla él mismo (encabezado se repite en cada
+   hoja vía el hook `didDrawPage`) y descarga el archivo directo. */
+const NOMBRE_COMPLETO_ENTIDAD = {
+  SOS: "EPS SERVICIO OCCIDENTAL DE SALUD S.A",
+};
+const DIAS = ["domingo","lunes","martes","miércoles","jueves","viernes","sábado"];
+const MESES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+function fechaLarga(d){
+  return `${DIAS[d.getDay()]} ${d.getDate()} ${MESES[d.getMonth()]} de ${d.getFullYear()}`;
+}
+function fechaCorta(iso){
+  if(!iso) return "—";
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
+  if(!m) return "—";
+  return `${m[3]}/${m[2]}/${m[1]}`;
+}
+function imagenADataURL(url){
+  return fetch(url).then(res => res.blob()).then(blob => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  }));
+}
+
+const VERDE_OSCURO = [0, 73, 65];
+const GRIS_SUAVE = [92, 107, 104];
+const TEXTO = [28, 38, 36];
+const GRIS_ZEBRA = [247, 248, 247];
+const MARGEN = 18;
+
+// "entidad" es la etiqueta corta guardada en el proceso (p.ej. "SOS");
+// "procesosVigentes" ya debe venir filtrado (solo los NO terminados de esa
+// Entidad) — el conteo y las filas de la carta son exactamente esa lista.
+export async function generarInformeSOSPDF(entidad, procesosVigentes){
+  const [{ default: jsPDF }, { default: autoTable }, logoDataUrl] = await Promise.all([
+    import('jspdf'),
+    import('jspdf-autotable'),
+    imagenADataURL(logoVerde),
+  ]);
+
+  const doc = new jsPDF({ unit:'mm', format:'a4' });
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const hoy = new Date();
+  const fecha = fechaLarga(hoy);
+  const nombreEntidad = NOMBRE_COMPLETO_ENTIDAD[(entidad||"").toUpperCase()] || entidad;
+  const filas = [...procesosVigentes].sort((a,b) => (a.NoCompleto||a.Radicado||"").localeCompare(b.NoCompleto||b.Radicado||""));
+
+  function dibujarEncabezadoYPie(){
+    doc.addImage(logoDataUrl, 'PNG', MARGEN, 10, 28, 11.3);
+    doc.setFont('helvetica','bold'); doc.setFontSize(13); doc.setTextColor(...VERDE_OSCURO);
+    doc.text('Reporte procesos judiciales', pageWidth - MARGEN, 14, {align:'right'});
+    doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(...GRIS_SUAVE);
+    doc.text('MD ABOGADOS SAS · Nit 900.495.788-3', pageWidth - MARGEN, 19, {align:'right'});
+    doc.setDrawColor(...VERDE_OSCURO); doc.setLineWidth(0.8);
+    doc.line(MARGEN, 25, pageWidth - MARGEN, 25);
+
+    doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(...GRIS_SUAVE);
+    doc.text('www.lexaraabogados.com   ·   Gerencia@lexaraabogados.com   ·   +57 312 442 0026', MARGEN, pageHeight - 14);
+  }
+
+  // --- Página 1: encabezado de la carta ---
+  dibujarEncabezadoYPie();
+  let y = 34;
+  doc.setFont('helvetica','normal'); doc.setFontSize(10.5); doc.setTextColor(...TEXTO);
+  doc.text(`Bogotá D.C., ${fecha}`, MARGEN, y); y += 8;
+  doc.text('Señores:', MARGEN, y); y += 5;
+  doc.setFont('helvetica','bold'); doc.text(nombreEntidad, MARGEN, y); y += 5;
+  doc.setFont('helvetica','normal'); doc.text('Ciudad', MARGEN, y); y += 8;
+  doc.setFont('helvetica','bold'); doc.setTextColor(...VERDE_OSCURO);
+  doc.text('Asunto: Reporte procesos judiciales', MARGEN, y); y += 6;
+  doc.setFont('helvetica','normal'); doc.setTextColor(...TEXTO);
+  doc.text(`Cantidad de procesos: ${filas.length}`, MARGEN, y); y += 8;
+  doc.text('Cordial saludo,', MARGEN, y); y += 7;
+  const parrafo = `De manera cordial me permito informar que, con corte al ${fecha}, a cargo de MD ABOGADOS SAS se ` +
+    `encuentran un total de ${filas.length} procesos judiciales, con pretensiones de recobros ante la ADRES, de los ` +
+    `cuales en el siguiente cuadro se especifica su radicado actual, estado del proceso, cuantía, y última novedad, ` +
+    `cuyo detalle se encuentra en el informe de Excel adjunto.`;
+  const lineasParrafo = doc.splitTextToSize(parrafo, pageWidth - MARGEN*2);
+  doc.text(lineasParrafo, MARGEN, y);
+  y += lineasParrafo.length * 5 + 6;
+
+  // --- Tabla (autoTable pagina sola y repite el encabezado en cada hoja) ---
+  autoTable(doc, {
+    startY: y,
+    margin: { left: MARGEN, right: MARGEN, top: 30, bottom: 22 },
+    head: [["No. Radicado", "Fecha Estado", "Estado", "Valor Actual Demanda"]],
+    body: filas.map(p => [
+      p.NoCompleto || p.Radicado || "—",
+      fechaCorta(p.FechaUltimoEstado),
+      stripHtml(p.Estado) || "—",
+      p.ValorActualDemanda ? fmtMonto(parseMonto(p.ValorActualDemanda)) : "—",
+    ]),
+    styles: { font:'helvetica', fontSize:8.5, cellPadding:2.4, valign:'top', lineColor:[224,226,224], lineWidth:0.15, textColor:TEXTO },
+    headStyles: { fillColor:VERDE_OSCURO, textColor:255, fontStyle:'bold', halign:'center', fontSize:8.5 },
+    alternateRowStyles: { fillColor:GRIS_ZEBRA },
+    columnStyles: {
+      0: { halign:'center', fontStyle:'bold', textColor:VERDE_OSCURO, font:'courier', cellWidth:30 },
+      1: { halign:'center', cellWidth:22, textColor:GRIS_SUAVE },
+      2: { halign:'left', cellWidth:'auto' },
+      3: { halign:'right', font:'courier', fontStyle:'bold', cellWidth:32 },
+    },
+    didDrawPage: dibujarEncabezadoYPie,
+  });
+
+  // --- Firma, después de la tabla (nueva hoja si ya no cabe) ---
+  let yFirma = doc.lastAutoTable.finalY + 16;
+  if(yFirma > pageHeight - 45){
+    doc.addPage();
+    dibujarEncabezadoYPie();
+    yFirma = 34;
+  }
+  doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(...TEXTO);
+  doc.text('Certifico cordialmente,', MARGEN, yFirma); yFirma += 14;
+  doc.setFont('helvetica','bold'); doc.text('MÓNICA PAOLA QUINTERO JIMÉNEZ', MARGEN, yFirma); yFirma += 5;
+  doc.setFont('helvetica','normal'); doc.text('C.C. No. 40.039.240 de Tunja', MARGEN, yFirma); yFirma += 5;
+  doc.text('T.P. No. 97.956 del C. S. de la J.', MARGEN, yFirma);
+
+  // --- Numeración final, ya con el total real de páginas ---
+  const totalPaginas = doc.internal.getNumberOfPages();
+  for(let i=1; i<=totalPaginas; i++){
+    doc.setPage(i);
+    doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(...GRIS_SUAVE);
+    doc.text(`Página ${i} de ${totalPaginas}`, pageWidth - MARGEN, pageHeight - 14, {align:'right'});
+  }
+
+  const hoyISO = hoy.toISOString().slice(0,10);
+  doc.save(`Informe SOS ${hoyISO}.pdf`);
 }
