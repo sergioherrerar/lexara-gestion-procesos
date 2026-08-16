@@ -70,7 +70,10 @@ function limpiarHash(v){
   return (v||"").toString().trim().replace(/^#/, "").replace(/#$/, "");
 }
 
-export async function generarInformeSOSExcel(procesos){
+// "entidad" no se usa (el nombre de la Entidad ya está fijo en este archivo,
+// es siempre "SOS") — se recibe solo para que la firma sea igual a la del
+// resto de generadores de Excel (ver FORMATOS_POR_ENTIDAD en InformesView.jsx).
+export async function generarInformeSOSExcel(entidad, procesos){
   const { default: ExcelJS } = await import('exceljs');
   const wb = new ExcelJS.Workbook();
   const ws = wb.addWorksheet("SOS");

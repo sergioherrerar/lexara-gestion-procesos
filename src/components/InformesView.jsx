@@ -7,6 +7,7 @@ import BarChart from './BarChart';
 import IconButton from './IconButton';
 import { generarInformeSOSExcel, generarInformeSOSPDF, generarDesistimientosSOSExcel } from '../lib/informeSOS';
 import { generarInformeFamisanarExcel, generarInformeFamisanarPDF } from '../lib/informeFamisanar';
+import { generarInformeLexaraExcel, generarInformeLexaraPDF } from '../lib/informeLexara';
 
 // Entidades con formato de informe formal ya confirmado, y qué generador usa
 // cada una — cada Entidad puede tener un formato distinto (columnas/orden
@@ -15,9 +16,18 @@ import { generarInformeFamisanarExcel, generarInformeFamisanarPDF } from '../lib
 // Solo aparecen los íconos de los informes que sí tiene esa Entidad — el
 // resto de Entidades (sin entrada acá) muestra "Aún sin modelo".
 // Ver [[project_informes_modulo]] / CHANGELOG.
+const FORMATO_LEXARA = { excel: generarInformeLexaraExcel, pdf: generarInformeLexaraPDF };
 const FORMATOS_POR_ENTIDAD = {
   SOS: { excel: generarInformeSOSExcel, pdf: generarInformeSOSPDF, desistimientos: generarDesistimientosSOSExcel },
   FAMISANAR: { excel: generarInformeFamisanarExcel, pdf: generarInformeFamisanarPDF },
+  // Entidades sin formato propio heredado — usan el formato genérico de
+  // Lexara (ver informeLexara.js), confirmado por el usuario 2026-08-16.
+  COLPATRIA: FORMATO_LEXARA,
+  COOMEVA: FORMATO_LEXARA,
+  GTM: FORMATO_LEXARA,
+  JRCI: FORMATO_LEXARA,
+  PARTICULARES: FORMATO_LEXARA,
+  "SALUD TOTAL": FORMATO_LEXARA,
 };
 
 function entidadDeCliente(clientes, codigoClienteOrNombre, matchFn){
@@ -60,7 +70,7 @@ export default function InformesView({ procesos, clientes, facturas, ordenesComp
     const formato = FORMATOS_POR_ENTIDAD[entidad.toUpperCase()];
     if(!formato?.excel) return;
     setGenerando(entidad);
-    try{ await formato.excel(procesos.filter(p => p.Entidad === entidad)); }
+    try{ await formato.excel(entidad, procesos.filter(p => p.Entidad === entidad)); }
     finally { setGenerando(null); }
   }
   // "la cantidad de procesos son todos los vigentes de SOS" — la carta en

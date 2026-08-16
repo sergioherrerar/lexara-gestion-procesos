@@ -384,6 +384,17 @@ export const DEMO_PROCESOS = [
     NoCompleto:"1100131050082024001000", RadicadoActual:"2024-00100", ParteActuamos:"Con el Demandante", Demandante:"EPS Ejemplo Laboral S.A.", Demandado:"Instituto Ejemplo de Seguros",
     ValorActualDemanda:"245.600.000,00", HistoricoNumerosCompletos:"11001-31-05-008-2024-00100-00",
     Historico:"<div>10-01-2026 Auto admite demanda.</div><div>15-04-2026 Contestación de la demanda.</div><div>20-06-2026 Al despacho para fallo.</div>"},
+  // Ejemplo Entidad "Colpatria" (2026-08-16) — datos ficticios, solo para
+  // probar el formato genérico de Lexara (ver src/lib/informeLexara.js),
+  // aplicado también a Coomeva/GTM/JRCI/Particulares/Salud Total.
+  {id:8, Radicado:"11001-31-03-020-2024-00200-00", Cliente:"Aseguradora Ejemplo S.A.", Entidad:"Colpatria", Apoderado:"Ariana Andrea Torres", Despacho:"Juzgado Civil del Circuito", NumeroDespacho:"Ejemplo-20", NaturalezaProceso:"Civil", Instancia:"Primera instancia",
+    Estado:"<div>05-02-2026 Auto admite demanda.</div><div>10-05-2026 Contestación de la demanda.</div><div>18-07-2026 Al despacho para decretar pruebas.</div>",
+    EstadoVT:"VIGENTE", FechaUltimoEstado:"2026-07-18", EtapaProcesal:"Al despacho para decretar pruebas", TipoProceso:"Ordinario", TipoAccion:"Civil",
+    NumeroContrato:"CT-2024-200", FechaAdmision:"2026-02-05", FechaContestacion:"2026-05-10", CalificacionContingencia:"POSIBLE",
+    Observaciones:"Ejemplo de proceso civil.",
+    NoCompleto:"1100131032020024002000", RadicadoActual:"2024-00200", ParteActuamos:"Con el Demandante", Demandante:"Aseguradora Ejemplo S.A.", Demandado:"Constructora Ejemplo Ltda.",
+    ValorActualDemanda:"180.300.000,00", HistoricoNumerosCompletos:"11001-31-03-020-2024-00200-00",
+    Historico:"<div>05-02-2026 Auto admite demanda.</div><div>10-05-2026 Contestación de la demanda.</div><div>18-07-2026 Al despacho para decretar pruebas.</div>"},
 ];
 
 export const DEMO_CLIENTES = [
@@ -395,6 +406,8 @@ export const DEMO_CLIENTES = [
   {id:5, RazonSocial:"EPS Ejemplo de Salud S.A.", Nit:"900.000.111-2", Ciudad:"Bogotá", Direccion:"Avenida Ejemplo #1-00", Telefono:"601 000 0000", Correo:"contacto@epsejemplo.com", Entidad:"SOS"},
   // Ejemplo Entidad "Famisanar" — ver nota en DEMO_PROCESOS id:7, datos ficticios.
   {id:6, RazonSocial:"EPS Ejemplo Laboral S.A.", Nit:"900.000.222-3", Ciudad:"Bogotá", Direccion:"Avenida Ejemplo #2-00", Telefono:"601 000 1111", Correo:"contacto@epsejemplolaboral.com", Entidad:"Famisanar"},
+  // Ejemplo Entidad "Colpatria" — ver nota en DEMO_PROCESOS id:8, datos ficticios.
+  {id:7, RazonSocial:"Aseguradora Ejemplo S.A.", Nit:"900.000.333-4", Ciudad:"Bogotá", Direccion:"Avenida Ejemplo #3-00", Telefono:"601 000 2222", Correo:"contacto@aseguradoraejemplo.com", Entidad:"Colpatria"},
 ];
 
 export const DEMO_FACTURAS = [
