@@ -1,9 +1,9 @@
-// Scaffolding COMPARTIDO para la carta en PDF de los informes por Entidad —
-// cada Entidad tiene sus propias columnas y texto (eso vive en su propio
-// archivo, p.ej. informeSOS.js/informeFamisanar.js), pero todas comparten el
-// mismo membrete, paginación, firma y arreglo de tamaño de archivo. Extraído
-// 2026-08-16 al agregar la segunda Entidad (Famisanar) — evita repetir (y
-// tener que corregir dos veces) el mismo scaffolding de jsPDF.
+// Scaffolding COMPARTIDO para los PDF de la app: tanto la carta de informe
+// por Entidad (varios procesos en una tabla) como la ficha individual de un
+// solo proceso comparten el mismo membrete, pie de página y numeración —
+// `prepararDocumentoPDF()` arma eso una sola vez y cada uno construye el
+// cuerpo que necesita encima. Extraído 2026-08-16 al agregar la 2ª Entidad
+// (Famisanar) y ampliado el mismo día al agregar la ficha por proceso.
 // Ver [[project_informes_modulo]].
 import logoVerde from '../assets/Logo verde OScuro.png';
 
@@ -56,24 +56,18 @@ export const MARGEN = 18;
 // Firmante por defecto de las cartas de informe — mismo dato real que ya
 // usaba el despacho (tarjeta profesional, dato público). Si algún informe
 // necesita otro firmante, se puede pasar `firma` distinto en `opts`.
-const FIRMA_DEFECTO = {
+export const FIRMA_DEFECTO = {
   nombre: "MÓNICA PAOLA QUINTERO JIMÉNEZ",
   cc: "C.C. No. 40.039.240 de Tunja",
   tp: "T.P. No. 97.956 del C. S. de la J.",
 };
 
-// opts: {
-//   nombreArchivo: "Informe SOS" (sin fecha ni extensión, se agregan solas),
-//   nombreEntidad: "EPS SERVICIO OCCIDENTAL DE SALUD S.A" (razón social completa, para "Señores:"),
-//   cantidadProcesos: number,
-//   parrafo: string (texto ya armado, puede usar la fecha/cantidad que el caller ya interpoló),
-//   columnas: ["Encabezado 1", "Encabezado 2", ...],
-//   filas: [[...], [...]] (mismo orden que `columnas`, ya formateadas como texto),
-//   columnStyles: objeto de jspdf-autotable (estilos por índice de columna),
-//   firma: {nombre, cc, tp} (opcional, por defecto FIRMA_DEFECTO),
-// }
-export async function generarCartaInformePDF(opts){
-  const { nombreArchivo, nombreEntidad, cantidadProcesos, parrafo, columnas, filas, columnStyles, firma = FIRMA_DEFECTO } = opts;
+// Arma el documento jsPDF + carga el logo una sola vez — lo comparten la
+// carta de informe (generarCartaInformePDF) y la ficha individual de
+// proceso (generarFichaProcesoPDF en informeProceso.js). `tituloEncabezado`
+// es el título en la esquina superior derecha (por defecto el de las
+// cartas de Entidad; la ficha de proceso pasa uno propio).
+export async function prepararDocumentoPDF(tituloEncabezado = 'Reporte procesos judiciales'){
   const [{ default: jsPDF }, { default: autoTable }, logoDataUrl] = await Promise.all([
     import('jspdf'),
     import('jspdf-autotable'),
@@ -89,7 +83,7 @@ export async function generarCartaInformePDF(opts){
   function dibujarEncabezadoYPie(){
     doc.addImage(logoDataUrl, 'JPEG', MARGEN, 10, 28, 11.3, 'lexara-logo-pdf', 'MEDIUM');
     doc.setFont('helvetica','bold'); doc.setFontSize(13); doc.setTextColor(...VERDE_OSCURO);
-    doc.text('Reporte procesos judiciales', pageWidth - MARGEN, 14, {align:'right'});
+    doc.text(tituloEncabezado, pageWidth - MARGEN, 14, {align:'right'});
     doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(...GRIS_SUAVE);
     doc.text('MD ABOGADOS SAS · Nit 900.495.788-3', pageWidth - MARGEN, 19, {align:'right'});
     doc.setDrawColor(...VERDE_OSCURO); doc.setLineWidth(0.8);
@@ -98,6 +92,35 @@ export async function generarCartaInformePDF(opts){
     doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(...GRIS_SUAVE);
     doc.text('www.lexaraabogados.com   ·   Gerencia@lexaraabogados.com   ·   +57 312 442 0026', MARGEN, pageHeight - 14);
   }
+
+  // Numeración final — se llama al terminar de armar todo el documento, ya
+  // con el total real de páginas (mientras se arma no se sabe cuántas van a
+  // hacer falta si hay tablas/texto largo que paginan solos).
+  function numerarPaginas(){
+    const totalPaginas = doc.internal.getNumberOfPages();
+    for(let i=1; i<=totalPaginas; i++){
+      doc.setPage(i);
+      doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(...GRIS_SUAVE);
+      doc.text(`Página ${i} de ${totalPaginas}`, pageWidth - MARGEN, pageHeight - 14, {align:'right'});
+    }
+  }
+
+  return { doc, autoTable, pageWidth, pageHeight, hoy, fecha, dibujarEncabezadoYPie, numerarPaginas };
+}
+
+// opts: {
+//   nombreArchivo: "Informe SOS" (sin fecha ni extensión, se agregan solas),
+//   nombreEntidad: "EPS SERVICIO OCCIDENTAL DE SALUD S.A" (razón social completa, para "Señores:"),
+//   cantidadProcesos: number,
+//   parrafo: string (texto ya armado, puede usar la fecha/cantidad que el caller ya interpoló),
+//   columnas: ["Encabezado 1", "Encabezado 2", ...],
+//   filas: [[...], [...]] (mismo orden que `columnas`, ya formateadas como texto),
+//   columnStyles: objeto de jspdf-autotable (estilos por índice de columna),
+//   firma: {nombre, cc, tp} (opcional, por defecto FIRMA_DEFECTO),
+// }
+export async function generarCartaInformePDF(opts){
+  const { nombreArchivo, nombreEntidad, cantidadProcesos, parrafo, columnas, filas, columnStyles, firma = FIRMA_DEFECTO } = opts;
+  const { doc, autoTable, pageWidth, pageHeight, hoy, fecha, dibujarEncabezadoYPie, numerarPaginas } = await prepararDocumentoPDF();
 
   // --- Página 1: encabezado de la carta ---
   dibujarEncabezadoYPie();
@@ -142,13 +165,7 @@ export async function generarCartaInformePDF(opts){
   doc.setFont('helvetica','normal'); doc.text(firma.cc, MARGEN, yFirma); yFirma += 5;
   doc.text(firma.tp, MARGEN, yFirma);
 
-  // --- Numeración final, ya con el total real de páginas ---
-  const totalPaginas = doc.internal.getNumberOfPages();
-  for(let i=1; i<=totalPaginas; i++){
-    doc.setPage(i);
-    doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(...GRIS_SUAVE);
-    doc.text(`Página ${i} de ${totalPaginas}`, pageWidth - MARGEN, pageHeight - 14, {align:'right'});
-  }
+  numerarPaginas();
 
   const hoyISO = hoy.toISOString().slice(0,10);
   doc.save(`${nombreArchivo} ${hoyISO}.pdf`);

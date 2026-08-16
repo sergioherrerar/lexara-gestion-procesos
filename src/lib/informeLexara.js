@@ -104,36 +104,35 @@ function despachoConcatenado(p){
 // (todavía no se ha confirmado el nombre legal completo de cada una) — se
 // usa el nombre tal cual aparece en la app para el "Señores:" de la carta.
 // Columnas de la carta, confirmadas por el usuario, EN ESTE ORDEN: Número
-// corto, Naturaleza del Proceso, Despacho (concatenado con No. de despacho),
-// Histórico.
+// corto, Despacho (concatenado con No. de despacho), Histórico. Se quitó
+// "Naturaleza del Proceso" (2026-08-16, pedido explícito) para darle más
+// espacio a Histórico.
 export async function generarInformeLexaraPDF(entidad, procesosVigentes){
   const filas = [...procesosVigentes].sort((a,b) => (a.Radicado||"").localeCompare(b.Radicado||""));
   const fecha = fechaLarga(new Date());
   const parrafo = `De manera cordial me permito informar que, con corte al ${fecha}, a cargo de MD ABOGADOS SAS se ` +
     `encuentran un total de ${filas.length} procesos judiciales, de los cuales en el siguiente cuadro se especifica ` +
-    `su número corto, naturaleza del proceso, despacho y su histórico, cuyo detalle se encuentra en el informe de ` +
-    `Excel adjunto.`;
+    `su número corto, despacho y su histórico, cuyo detalle se encuentra en el informe de Excel adjunto.`;
 
   await generarCartaInformePDF({
     nombreArchivo: `Informe ${entidad}`,
     nombreEntidad: entidad,
     cantidadProcesos: filas.length,
     parrafo,
-    columnas: ["Número corto", "Naturaleza del Proceso", "Despacho", "Histórico"],
+    columnas: ["Número corto", "Despacho", "Histórico"],
     filas: filas.map(p => [
       p.Radicado || "—",
-      p.NaturalezaProceso || "—",
       despachoConcatenado(p),
       stripHtml(p.Historico) || "—",
     ]),
     columnStyles: {
       // Número corto es el radicado con guiones (~30 caracteres) — igual que
       // en SOS/Famisanar, letra chica + columna ancha para que no se parta
-      // en dos líneas.
+      // en dos líneas. Despacho y, sobre todo, Histórico se quedan con el
+      // resto del ancho disponible.
       0: { halign:'center', fontStyle:'bold', textColor:VERDE_OSCURO, font:'courier', fontSize:6.5, cellWidth:46 },
-      1: { halign:'center', cellWidth:28 },
-      2: { halign:'left', cellWidth:40 },
-      3: { halign:'left', cellWidth:'auto' },
+      1: { halign:'left', cellWidth:44 },
+      2: { halign:'left', cellWidth:'auto' },
     },
   });
 }

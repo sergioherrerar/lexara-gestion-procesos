@@ -96,6 +96,15 @@ export const SHAREPOINT_LISTS_CONFIG = [
       {key:"RadicadoActual", label:"Radicado actual", hint:["radicado actual"]},
       {key:"FechaTerminacion", label:"Fecha terminación", hint:["fecha terminacion","fecha terminación"]},
     ],
+    // Mapeo real completo, confirmado por el usuario desde Configuración y
+    // exportado el 2026-08-16 ("actualiza el proceso de mapeo") — se deja
+    // horneado acá como default para que la app funcione en cualquier
+    // navegador/equipo sin tener que rehacer Configuración (antes solo vivía
+    // en localStorage, ver [[project_mapping_persistence_and_link_fields]]).
+    // OJO: varios campos "nuevos" de los informes por Entidad en realidad
+    // APUNTAN A LA MISMA COLUMNA que un campo ya existente (no son columnas
+    // reales aparte) — editar ambos en el mismo guardado puede pisarse entre
+    // sí. Ver nota en [[project_informes_modulo]].
     mapping: {
       Radicado: "numero_x0020_corto",
       Cliente: "Cliente",
@@ -115,6 +124,43 @@ export const SHAREPOINT_LISTS_CONFIG = [
       EstadoVT: "Estado_x0020_V_x002f_T",
       Observaciones: "Observaciones",
       LinkCarpeta: "Link_x0020_Carpetas",
+      NoCompleto: "No_x0020_Completo",
+      AbogadoEncargado: "abogado_x0020_encargado",
+      CCApoderada: "CC_x0020_Apoderada",
+      Demandante: "Demandante",
+      Demandado: "Demandado",
+      LinkContrato: "Link_x0020_Contrato",
+      LinkCliente: "Link_x0020_Cliente",
+      LinkDespacho: "LinkDespacho",
+      CorreoDespacho: "Correo_x0020_despacho",
+      HistoricoNumerosCompletos: "Historico_x0020_numeros_x0020_co",
+      Historico: "Historico",
+      ValorRadicacion: "Valor_x0020_radicacion",
+      ValorReforma: "Valor_x0020_Reforma",
+      ValorActualDemanda: "Valor_x0020_Actual_x0020_Demanda",
+      FechaInstancia: "fecha_x0020_Instancia",
+      FechaUltimoEstado: "fecha_x0020_ultimo_x0020_estado",
+      ParteActuamos: "Parte_x0020_en_x0020_la_x0020_qu",
+      Admitida: "Admitida",
+      PruebaPericial: "Prueba_x0020_Pericial",
+      OrigenTipoGlosa: "Origen_x002f_Tipo_x0020_Glosa",
+      // Estos 5 no son columnas propias — apuntan a la MISMA columna real de
+      // otro campo (confirmado por el usuario en Configuración).
+      NaturalezaProceso: "Tipo_x0020_de_x0020_Accion",       // = TipoAccion
+      Subclasificacion: "Tipo_x0020_de_x0020_Proceso",       // = TipoProceso
+      Numero5Digitos: "numero_x0020_corto",                  // = Radicado
+      ValorCarteraActual: "Valor_x0020_Actual_x0020_Demanda", // = ValorActualDemanda
+      EnlaceProceso: "Link_x0020_Cliente",                   // = LinkCliente
+      GlosaDemandada: "Origen_x002f_Tipo_x0020_Glosa",        // = OrigenTipoGlosa
+      RadicadoActual: "No_x0020_Completo",                    // = NoCompleto
+      DemandanteIdentificacion: "Cliente",                    // = Cliente
+      Departamento: "Ciudad",
+      Municipio: "Ciudad",                                    // mismo campo que Departamento
+      FechaReformaDemanda: "Fecha_x0020_reforma_x0020_de_x00",
+      MedidaCautelar: "Medidas_x0020_Cautelares",
+      MontoMedidaCautelar: "Monto_x0020_Medida_x0020_Cautela",
+      PorcentajeCalificacion: "Porcentaje_de_la_Calificacion",
+      FechaTerminacion: "Fecha_x0020_Posible_x0020_Termin", // ojo: es "Fecha POSIBLE de terminación", no una fecha real ya ocurrida
     },
   },
   {
@@ -256,7 +302,47 @@ export const SHAREPOINT_LISTS_CONFIG = [
       {key:"ValorAPagar", label:"Valor a pagar", hint:["valor a pagar"]},
       {key:"Factura", label:"Factura relacionada", hint:["factura"]},
     ],
-    mapping: {},
+    mapping: {
+      Contrato: "CONTRATO",
+      Proceso: "Proceso",
+      CodigoCliente: "CODIGO_x0020_CLIENTE",
+      Dia: "DIA",
+      Mes: "MES",
+      Anio: "A_x00d1_O",
+      Descripcion1: "DESCRIPCION_x0020_1",
+      Cantidad1: "CANTIDAD_x0020_1",
+      ValorUnitario1: "VALOR_x0020_UNITARIO_x0020_1",
+      Descripcion2: "DESCRIPCION_x0020_2",
+      Cantidad2: "CANTIDAD_x0020_2",
+      ValorUnitario2: "VALOR_x0020_UNITARIO_x0020_2",
+      Descripcion3: "DESCRIPCION_x0020_3",
+      Cantidad3: "CANTIDAD_x0020_3",
+      ValorUnitario3: "VALOR_x0020_UNITARIO_x0020_3",
+      Descripcion4: "DESCRIPCION_x0020_4",
+      Cantidad4: "CANTIDAD_x0020_4",
+      ValorUnitario4: "VALOR_x0020_UNITARIO_x0020_4",
+      Descripcion5: "DESCRIPCION_x0020_5",
+      Cantidad5: "CANTIDAD_x0020_5",
+      ValorUnitario5: "VALOR_x0020_UNITARIO_x0020_5",
+      Descripcion6: "DESCRIPCION_x0020_6",
+      Cantidad6: "CANTIDAD_x0020_6",
+      ValorUnitario6: "VALOR_x0020_UNITARIO_x0020_6",
+      Observacion: "observacion",
+      EtapaContrato: "ETAPA_x0020_CONTRATO",
+      Fecha: "FECHA",
+      Total1: "TOTAL_x0020_1",
+      Total2: "TOTAL_x0020_2",
+      Total3: "TOTAL_x0020_3",
+      Total4: "TOTAL_x0020_4",
+      Total5: "TOTAL_x0020_5",
+      Total6: "TOTAL_x0020_6",
+      Subtotal: "SUBTOTALES",
+      Iva: "IVA",
+      Total: "TOTAL",
+      RetIva: "RET_x0020_IVA",
+      ValorAPagar: "VALOR_x0020_A_x0020_PAGAR",
+      Factura: "FACTURA",
+    },
   },
   {
     key: "colaboradores",
@@ -276,7 +362,16 @@ export const SHAREPOINT_LISTS_CONFIG = [
       {key:"Activo", label:"Activo", hint:["activo"]},
       {key:"Rol", label:"Rol", hint:["rol"], required:true},
     ],
-    mapping: {},
+    mapping: {
+      Nombre: "Nombre",
+      TipoIdentificacion: "Tipo_x0020_Identificacion",
+      Identificacion: "Identificacion",
+      Telefono: "Telefono",
+      Direccion: "Direccion",
+      Correo: "Correo",
+      Activo: "Activo",
+      Rol: "Rol",
+    },
   },
   {
     key: "formasPago",
@@ -296,7 +391,16 @@ export const SHAREPOINT_LISTS_CONFIG = [
       ]),
       {key:"Honorarios", label:"Honorarios", hint:["honorarios"]},
     ],
-    mapping: {},
+    mapping: {
+      Contrato: "Numero_x0020_de_x0020_Contrato",
+      Pago1: "Pago1", ValorPago1: "Valor_x0020_pago1", FacturaPago1: "factura_x0020_pago1", EtapaProcesalCumplida1: "EtapaProcesalCumplida",
+      Pago2: "Pago2", ValorPago2: "Valor_x0020_pago2", FacturaPago2: "factura_x0020_pago2", EtapaProcesalCumplida2: "EtapaProcesalCumplida2",
+      Pago3: "Pago3", ValorPago3: "Valor_x0020_pago3", FacturaPago3: "factura_x0020_pago3", EtapaProcesalCumplida3: "EtapaProcesalCumplida3",
+      Pago4: "Pago4", ValorPago4: "Valor_x0020_pago4", FacturaPago4: "factura_x0020_pago4", EtapaProcesalCumplida4: "EtapaProcesalCumplida4",
+      Pago5: "Pago5", ValorPago5: "Valor_x0020_pago5", FacturaPago5: "factura_x0020_pago5", EtapaProcesalCumplida5: "EtapaProcesalCumplida5",
+      Pago6: "Pago6", ValorPago6: "Valor_x0020_pago6", FacturaPago6: "factura_x0020_pago6", EtapaProcesalCumplida6: "EtapaProcesalCumplida6",
+      Honorarios: "Honorarios",
+    },
   },
   {
     key: "desistimientos",
@@ -318,7 +422,14 @@ export const SHAREPOINT_LISTS_CONFIG = [
       {key:"FechaAprobacion", label:"Fecha de Aprobación", hint:["fecha de aprobacion","fecha de aprobación"]},
       {key:"Observaciones", label:"Observaciones", hint:["observaciones"]},
     ],
-    mapping: {},
+    mapping: {
+      Proceso: "Proceso",
+      DesistimientoValor: "Desistimiento_x0020_Valor",
+      FechaRadicacion: "Fecha_x0020_Radicacion",
+      Aprobacion: "Aprobacion",
+      FechaAprobacion: "Fecha_x0020_de_x0020_Aprobacion",
+      Observaciones: "Observaciones",
+    },
   },
   {
     key: "tiposAccion",
@@ -342,7 +453,15 @@ export const SHAREPOINT_LISTS_CONFIG = [
       {key:"TipoProceso", label:"Tipo de Proceso", hint:["tipo de proceso","tipo proceso"]},
       {key:"Link", label:"Link", hint:["link"]},
     ],
-    mapping: {},
+    mapping: {
+      NombreIdTipoProceso: "Nombre_x0020_Id_x0020_Tipo_x0020",
+      Descripcion: "descripcion",
+      TipoAlerta: "Tipo_x0020_Alerta",
+      Dias: "Dias",
+      Despacho: "Despacho",
+      TipoProceso: "tipo_x0020_Proceso",
+      Link: "Link",
+    },
   },
 ];
 

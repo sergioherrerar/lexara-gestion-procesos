@@ -5,6 +5,7 @@ import IconButton, { IconTextButton } from './IconButton';
 import ColumnHeaderMenu from './ColumnHeaderMenu';
 import { useColumnFilters } from '../hooks/useColumnFilters';
 import { useColumnSort } from '../hooks/useColumnSort';
+import { generarFichaProcesoPDF } from '../lib/informeProceso';
 
 function matchesFilter(p, currentFilter){
   if(currentFilter==='todos') return true;
@@ -25,8 +26,15 @@ const COLUMNS = [
 
 export default function ProcesosView({ procesos, currentFilter, setFilter, searchQuery, onOpenProceso, onCreateProceso, canWrite = true }){
   const [showTerminados, setShowTerminados] = useState(false);
+  const [generandoPDF, setGenerandoPDF] = useState(null); // id del proceso mientras genera su ficha en PDF
   const { filters, setFilter: setColFilter, clearFilters, rowMatches, hasActiveFilters } = useColumnFilters();
   const { sort, setSortKey, sortRows } = useColumnSort();
+
+  async function handleGenerarFicha(proceso){
+    setGenerandoPDF(proceso.id);
+    try{ await generarFichaProcesoPDF(proceso); }
+    finally { setGenerandoPDF(null); }
+  }
   const entidades = Array.from(new Set(procesos.map(p => stripHtml(p.Entidad) || "Sin entidad"))).sort((a,b)=>a.localeCompare(b));
   const filterChips = [{key:'todos', label:'Todos'}, ...entidades.map(e => ({key:e, label:e}))];
   const totalTerminados = procesos.filter(isTerminado).length;
@@ -94,6 +102,7 @@ export default function ProcesosView({ procesos, currentFilter, setFilter, searc
                   <div className="row-actions">
                     <IconButton icon="view" variant="view" label="Ver proceso (solo consulta)" onClick={e => { e.stopPropagation(); onOpenProceso(p.id, {viewOnly:true}); }} />
                     {canWrite && <IconButton icon="edit" variant="edit" label="Editar proceso" onClick={e => { e.stopPropagation(); onOpenProceso(p.id, {viewOnly:false}); }} />}
+                    <IconButton icon="pdf" variant="pdf" label="Descargar ficha en PDF" spinning={generandoPDF===p.id} onClick={e => { e.stopPropagation(); handleGenerarFicha(p); }} />
                   </div>
                 </td>
               </tr>
