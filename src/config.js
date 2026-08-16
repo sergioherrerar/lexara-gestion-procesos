@@ -376,7 +376,7 @@ export const DEMO_PROCESOS = [
     Admitida:"Sí", PruebaPericial:"No", OrigenTipoGlosa:"Glosa de auditoría"},
   // Ejemplo Entidad "Famisanar" (2026-08-16) — datos ficticios, solo para
   // probar el informe de esta Entidad (ver src/lib/informeFamisanar.js).
-  {id:7, Radicado:"11001-31-05-008-2024-00100-00", Cliente:"EPS Ejemplo Laboral S.A.", Entidad:"Famisanar", Apoderado:"Carlos Andrés Peña", Despacho:"Juzgado Laboral del Circuito - Ejemplo", Instancia:"Primera instancia",
+  {id:7, Radicado:"11001-31-05-008-2024-00100-00", Cliente:"EPS Ejemplo Laboral S.A.", Entidad:"Famisanar", Apoderado:"Carlos Andrés Peña", Despacho:"Juzgado Laboral del Circuito", NumeroDespacho:"Ejemplo-8", NaturalezaProceso:"Laboral", Instancia:"Primera instancia",
     Estado:"<div>10-01-2026 Auto admite demanda.</div><div>15-04-2026 Contestación de la demanda.</div><div>20-06-2026 Al despacho para fallo.</div>",
     EstadoVT:"VIGENTE", FechaUltimoEstado:"2026-06-20", EtapaProcesal:"Al despacho para fallo", TipoProceso:"Ordinario laboral", TipoAccion:"Laboral",
     NumeroContrato:"CT-2024-100", FechaAdmision:"2026-01-10", FechaContestacion:"2026-04-15", CalificacionContingencia:"PROBABLE",
