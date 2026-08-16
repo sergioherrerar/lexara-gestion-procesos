@@ -4,6 +4,8 @@ import {
   facturasForProceso, computeFacturaTotals, clienteForFactura, clienteForOrdenCompra,
 } from '../lib/graph';
 import BarChart from './BarChart';
+import IconButton from './IconButton';
+import InformeSOSPrint from './InformeSOSPrint';
 import { generarInformeSOSExcel } from '../lib/informeSOS';
 
 // Entidades con formato de informe formal ya confirmado (Excel + PDF, con su
@@ -18,6 +20,10 @@ function entidadDeCliente(clientes, codigoClienteOrNombre, matchFn){
 
 export default function InformesView({ procesos, clientes, facturas, ordenesCompra }){
   const [generando, setGenerando] = useState(null); // nombre de la entidad mientras genera
+  // Procesos vigentes (no terminados) de la Entidad que se está imprimiendo en
+  // PDF — se le pasa así, ya filtrado, a InformeSOSPrint, que se monta apenas
+  // hay algo que imprimir y se desmonta solo (onDone) al terminar.
+  const [imprimiendo, setImprimiendo] = useState(null); // {entidad, procesos} | null
 
   const procesosPorEntidad = groupCount(procesos, p => p.Entidad);
   const clientesPorEntidad = groupCount(clientes, c => c.Entidad);
@@ -46,7 +52,7 @@ export default function InformesView({ procesos, clientes, facturas, ordenesComp
     return { entidad, total: propios.length, activos: activos.length, valorEnDisputa, facturacionTotal, semaforo };
   });
 
-  async function handleGenerarInforme(entidad){
+  async function handleGenerarExcel(entidad){
     setGenerando(entidad);
     try{
       if(entidad.toUpperCase() === 'SOS'){
@@ -55,6 +61,12 @@ export default function InformesView({ procesos, clientes, facturas, ordenesComp
     } finally {
       setGenerando(null);
     }
+  }
+  // "la cantidad de procesos son todos los vigentes de SOS" — la carta en
+  // PDF cuenta y lista solo los procesos NO terminados de esa Entidad.
+  function handleGenerarPDF(entidad){
+    const vigentes = procesos.filter(p => p.Entidad === entidad && !(p.EstadoVT||"").toLowerCase().includes('termin'));
+    setImprimiendo({ entidad, procesos: vigentes });
   }
 
   return (
@@ -128,9 +140,10 @@ export default function InformesView({ procesos, clientes, facturas, ordenesComp
                       </td>
                       <td>
                         {ENTIDADES_CON_FORMATO.includes(f.entidad.toUpperCase()) ? (
-                          <button className="btn-secondary" disabled={generando===f.entidad} onClick={() => handleGenerarInforme(f.entidad)}>
-                            {generando===f.entidad ? "Generando…" : "Generar informe"}
-                          </button>
+                          <div className="row-actions">
+                            <IconButton icon="excel" variant="excel" label="Descargar Excel" spinning={generando===f.entidad} onClick={() => handleGenerarExcel(f.entidad)} />
+                            <IconButton icon="pdf" variant="pdf" label="Generar carta en PDF" onClick={() => handleGenerarPDF(f.entidad)} />
+                          </div>
                         ) : (
                           <span className="save-hint" style={{fontSize:12}}>Aún sin modelo</span>
                         )}
@@ -143,6 +156,12 @@ export default function InformesView({ procesos, clientes, facturas, ordenesComp
           )}
         </div>
       </div>
+
+      <InformeSOSPrint
+        entidad={imprimiendo?.entidad}
+        procesos={imprimiendo?.procesos || null}
+        onDone={() => setImprimiendo(null)}
+      />
     </div>
   );
 }

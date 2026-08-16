@@ -592,6 +592,10 @@
   .icon-btn-invoice:hover{background:var(--verde-oscuro); color:#fff;}
   .icon-btn-view{color:var(--texto-suave); background:var(--gris-claro);}
   .icon-btn-view:hover{background:var(--texto-suave); color:#fff;}
+  .icon-btn-excel{color:#1e7a4a; background:#e3f3ea;}
+  .icon-btn-excel:hover{background:#1e7a4a; color:#fff;}
+  .icon-btn-pdf{color:#a3281c; background:#fbe4e2;}
+  .icon-btn-pdf:hover{background:#a3281c; color:#fff;}
   .icon-btn-spinning{cursor:default;}
   .icon-btn-spinning svg{animation:icon-spin .8s linear infinite;}
   @keyframes icon-spin{to{transform:rotate(360deg);}}
@@ -787,4 +791,51 @@
       letter-spacing:.08em; text-transform:uppercase; padding:4px 10px; border-radius:4px;
       transform:rotate(-6deg); white-space:nowrap;
     }
+
+    /* ---------- Informe de Entidad (carta multipágina, p.ej. SOS) ----------
+       A diferencia de Factura/Orden de compra (una sola página, membrete de
+       fondo en position:absolute), este documento puede ocupar varias hojas
+       con la cantidad real de procesos — el membrete y el pie van en
+       position:fixed, que Chrome SÍ repite automáticamente en cada página al
+       imprimir (position:absolute solo aparecería una vez). El @page reserva
+       el mismo espacio arriba/abajo que ocupan ese membrete y ese pie. */
+    @page{ margin: 55mm 18mm 32mm 18mm; }
+    .print-informe{ display:block; font-family:var(--font-body); color:var(--texto); font-size:11.5px; }
+    .print-informe-header{
+      position:fixed; top:-55mm; left:-18mm; right:-18mm; height:55mm;
+      display:flex; align-items:flex-start; justify-content:space-between; gap:16px;
+      padding:14mm 18mm 0 18mm; box-sizing:border-box; border-bottom:3px solid var(--verde-oscuro);
+    }
+    .print-informe-header img{height:14mm; object-fit:contain;}
+    .print-informe-header .print-informe-titulo{text-align:right;}
+    .print-informe-header .print-informe-titulo h1{font-family:var(--font-display); font-size:15px; color:var(--verde-oscuro); margin:0;}
+    .print-informe-header .print-informe-titulo h2{font-size:10.5px; color:var(--texto-suave); margin:3px 0 0; font-weight:600;}
+    .print-informe-footer{
+      position:fixed; bottom:-32mm; left:-18mm; right:-18mm; height:32mm;
+      background:#fff; border-top:1px solid var(--gris-linea);
+      display:flex; align-items:center; justify-content:space-between; gap:16px;
+      padding:0 18mm; box-sizing:border-box;
+    }
+    .print-informe-carta{margin-bottom:14px;}
+    .print-informe-carta p{margin:0 0 10px;}
+    .print-informe-asunto{font-weight:700; color:var(--verde-oscuro); text-transform:uppercase; letter-spacing:.02em;}
+    .print-informe-resumen{
+      display:inline-flex; align-items:center; gap:8px; background:#e3efee; color:var(--verde-oscuro);
+      font-weight:700; padding:5px 12px; border-radius:20px; font-size:11px; margin:4px 0 12px;
+    }
+    table.print-informe-tabla{width:100%; border-collapse:collapse; margin-top:6px;}
+    table.print-informe-tabla thead{display:table-header-group;}
+    table.print-informe-tabla th{
+      background:var(--verde-oscuro); color:#fff; font-size:10.5px; text-transform:uppercase;
+      letter-spacing:.03em; padding:7px 8px; text-align:center;
+    }
+    table.print-informe-tabla td{padding:7px 8px; border-bottom:1px solid var(--gris-linea); vertical-align:top;}
+    table.print-informe-tabla tr{page-break-inside:avoid;}
+    table.print-informe-tabla tbody tr:nth-child(even){background:#f7f8f7;}
+    table.print-informe-tabla td.col-radicado{font-family:var(--font-mono); font-weight:700; color:var(--verde-oscuro); text-align:center; white-space:nowrap;}
+    table.print-informe-tabla td.col-fecha{text-align:center; white-space:nowrap; color:var(--texto-suave);}
+    table.print-informe-tabla td.col-valor{text-align:right; font-family:var(--font-mono); font-weight:600; white-space:nowrap;}
+    .print-informe-firma{margin-top:26px; page-break-inside:avoid;}
+    .print-informe-firma p{margin:0 0 4px;}
+    .print-informe-firma .nombre{font-weight:700; margin-top:18px;}
   }
