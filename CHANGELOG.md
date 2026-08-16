@@ -3,6 +3,7 @@
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
 ## 2026-08-14
+- El "Numero_Corto" en la tabla de Procesos judiciales ahora resalta más (más grande, en negrita y en verde institucional) — es el identificador principal de un recobro y antes se veía igual de discreto que cualquier otro dato.
 - Nuevo módulo "Informes" (en el menú, justo después de Dashboard): resumen por Entidad de Procesos, Clientes, Facturación y Órdenes de compra (gráfica + tabla con procesos activos/total, valor en disputa, facturación y semáforo de Estado). Para la Entidad "SOS" además hay un botón "Generar informe" que descarga el informe en Excel con el mismo formato (columnas, orden y colores institucionales) que ya se usaba en Access. El informe en PDF queda para una siguiente entrega.
 - Se agregaron 13 campos nuevos a Procesos judiciales para este informe: Naturaleza del proceso, Subclasificación, Número 5 dígitos, Fecha reforma de demanda, Valor cartera actual, Enlace proceso, Glosa demandada, Departamento, Municipio, No. de identificación demandante, Medida cautelar, Monto medida cautelar y Porcentaje de la calificación. Aparecen en Datos generales/Trazabilidad — todavía sin mapear a SharePoint, se confirman uno a uno desde Configuración.
 

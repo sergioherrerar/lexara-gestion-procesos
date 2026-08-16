@@ -341,7 +341,10 @@
     background:none; border:none; padding:0; font-weight:600;
   }
   tbody tr:hover{background:#fafaf8;}
-  td.radicado{font-family:var(--font-mono); font-size:12.5px; color:var(--texto-suave);}
+  /* Numero_Corto es el identificador principal de un recobro — antes salía
+     igual de discreto que cualquier otro dato (gris, chico); ahora resalta:
+     más grande, en negrita y con el verde institucional. */
+  td.radicado{font-family:var(--font-mono); font-size:14px; font-weight:700; color:var(--verde-oscuro); vertical-align:middle;}
   td.cliente{font-weight:600;}
   .empty-state{padding:60px 20px; text-align:center; color:var(--texto-suave);}
   .empty-state .mark{width:40px; height:40px; margin-bottom:14px; color:var(--gris);}
