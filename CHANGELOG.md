@@ -3,6 +3,7 @@
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
 ## 2026-08-16
+- Nuevo informe para la Entidad "Grupo Colmédica" (Excel + PDF): el Excel usa el mismo formato "Grupo" que Aliansalud (12 columnas); la carta en PDF trae Número corto, Despacho (con el No. de despacho), Fecha Estado y Estado.
 - Nuevo ícono de PDF en la tabla de Procesos judiciales (junto a Ver/Editar): descarga una ficha en PDF de ese proceso individual, con sus datos principales (cliente, entidad, apoderado, despacho, fechas, valor actual, calificación de contingencia) más el Estado y el Histórico completos.
 - El PDF genérico de Colpatria/Coomeva/GTM/JRCI/Particulares/Salud Total quitó la columna "Naturaleza del Proceso" para darle más espacio a "Histórico" (ahora: Número corto, Despacho, Histórico).
 - El mapeo de columnas de SharePoint (Configuración) se actualizó con el mapeo real y completo que el usuario confirmó y exportó — ya no depende solo de lo guardado en cada navegador; funciona de una en cualquier equipo nuevo.

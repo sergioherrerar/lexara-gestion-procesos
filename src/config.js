@@ -524,6 +524,16 @@ export const DEMO_PROCESOS = [
     NoCompleto:"0500123330002024003000", ParteActuamos:"Con el Demandado", Demandante:"Ejemplo Médico S.A.", Demandado:"Aliansalud Ejemplo EPS",
     HistoricoNumerosCompletos:"05001-23-33-000-2024-00300-00",
     Historico:"<div>01-08-2024 Radicación de la demanda.</div><div>15-09-2024 Contestación de la demanda.</div><div>12-03-2026 Auto admite llamamiento en garantía.</div><div>02-06-2026 Contestación al llamamiento en garantía.</div>"},
+  // Ejemplo Entidad "GRUPO COLMEDICA" (2026-08-16) — datos ficticios, solo
+  // para probar el formato propio de esta Entidad (ver src/lib/informeColmedica.js).
+  {id:10, Radicado:"11001-31-05-012-2024-00400-00", Cliente:"Colmedica Ejemplo EPS", Entidad:"GRUPO COLMEDICA", Apoderado:"Ariana Andrea Torres", Despacho:"Juzgado Laboral del Circuito Ejemplo", NumeroDespacho:"12", Instancia:"Primera instancia",
+    Estado:"<div>03-04-2026 Auto admite demanda.</div><div>20-06-2026 Contestación de la demanda.</div>",
+    EstadoVT:"VIGENTE", FechaUltimoEstado:"2026-06-20", EtapaProcesal:"Traslado de excepciones", TipoProceso:"Ordinario laboral", TipoAccion:"Laboral",
+    NumeroContrato:"CT-2024-400", FechaAdmision:"2026-04-03", FechaContestacion:"2026-06-20", CalificacionContingencia:"POSIBLE",
+    Observaciones:"Ejemplo de proceso de Grupo Colmédica.",
+    NoCompleto:"1100131050122024004000", ParteActuamos:"Con el Demandado", Demandante:"Ejemplo Asegurador S.A.", Demandado:"Colmedica Ejemplo EPS",
+    HistoricoNumerosCompletos:"11001-31-05-012-2024-00400-00",
+    Historico:"<div>01-02-2024 Radicación de la demanda.</div><div>03-04-2026 Auto admite demanda.</div><div>20-06-2026 Contestación de la demanda.</div>"},
 ];
 
 export const DEMO_CLIENTES = [
@@ -539,6 +549,8 @@ export const DEMO_CLIENTES = [
   {id:7, RazonSocial:"Aseguradora Ejemplo S.A.", Nit:"900.000.333-4", Ciudad:"Bogotá", Direccion:"Avenida Ejemplo #3-00", Telefono:"601 000 2222", Correo:"contacto@aseguradoraejemplo.com", Entidad:"Colpatria"},
   // Ejemplo Entidad "Aliansalud" — ver nota en DEMO_PROCESOS id:9, datos ficticios.
   {id:8, RazonSocial:"Aliansalud Ejemplo EPS", Nit:"900.000.444-5", Ciudad:"Medellín", Direccion:"Avenida Ejemplo #4-00", Telefono:"601 000 3333", Correo:"contacto@aliansaludejemplo.com", Entidad:"Aliansalud"},
+  // Ejemplo Entidad "GRUPO COLMEDICA" — ver nota en DEMO_PROCESOS id:10, datos ficticios.
+  {id:9, RazonSocial:"Colmedica Ejemplo EPS", Nit:"900.000.555-6", Ciudad:"Bogotá", Direccion:"Avenida Ejemplo #5-00", Telefono:"601 000 4444", Correo:"contacto@colmedicaejemplo.com", Entidad:"GRUPO COLMEDICA"},
 ];
 
 export const DEMO_FACTURAS = [
