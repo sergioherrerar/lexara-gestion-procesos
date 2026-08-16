@@ -53,6 +53,12 @@ export const ICONS = {
       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 17v-4h1.5a1.5 1.5 0 0 1 0 3H9"/><path d="M13.5 17v-4H15"/><path d="M13.5 15H15"/>
     </svg>
   ),
+  // Documento con check — descargar el informe de Desistimientos.
+  checklist: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="m9 13 1.5 1.5L13.5 11"/><path d="M9 17.5h6"/>
+    </svg>
+  ),
 };
 
 // Muchos links vienen de SharePoint sin "https://" delante (o con espacios

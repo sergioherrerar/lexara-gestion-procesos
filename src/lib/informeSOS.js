@@ -1,17 +1,16 @@
-// Generador del informe formal de la Entidad "SOS" — Excel (esta primera
-// versión) y luego PDF. Calca la consulta/macro de Access que el despacho ya
-// usaba (34 columnas, mismo orden, mismos anchos y colores), solo que ahora
-// sale directo desde la app en vez de tener que abrir Access. Ver
-// CHANGELOG 2026-08-14 y [[project_informes_modulo]].
+// Generador de los informes formales de la Entidad "SOS": informe general de
+// procesos (Excel + PDF) y, desde 2026-08-16, el de Desistimientos (Excel).
+// Cada uno calca su propia plantilla real que el usuario compartió (mismas
+// columnas, orden y colores) — ver CHANGELOG y [[project_informes_modulo]].
 //
 // Cada Entidad puede tener su propio formato de informe (columnas/orden
 // distintos) — este archivo es específico de SOS. Si más adelante se agrega
 // otra Entidad con modelo propio, debe ir en su propio archivo, no mezclarse
 // aquí (evita que un cambio para una Entidad rompa el formato de otra).
-// ExcelJS es una librería pesada (~1MB) que solo hace falta al generar este
-// informe puntual — se importa de forma diferida (dynamic import) para que
-// no infle el paquete principal que se descarga en cada inicio de sesión.
-import { stripHtml, parseMonto, fmtMonto } from './graph';
+// ExcelJS/jsPDF son librerías pesadas que solo hacen falta al generar estos
+// informes puntuales — se importan de forma diferida (dynamic import) para
+// que no infle el paquete principal que se descarga en cada inicio de sesión.
+import { stripHtml, parseMonto, fmtMonto, procesoForDesistimiento } from './graph';
 import logoVerde from '../assets/Logo verde OScuro.png';
 
 // [columna Excel, header exacto que la Entidad SOS espera, campo interno de
@@ -152,13 +151,32 @@ function fechaCorta(iso){
   if(!m) return "—";
   return `${m[3]}/${m[2]}/${m[1]}`;
 }
-function imagenADataURL(url){
-  return fetch(url).then(res => res.blob()).then(blob => new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => resolve(reader.result);
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
-  }));
+// El logo original (PNG con transparencia) pesa varios cientos de KB a su
+// resolución nativa — de sobra para un logo de 28mm en el encabezado, pero
+// si jsPDF no lo reutiliza bien entre las ~40 páginas de un informe grande,
+// el PDF terminaba pesando más de 100MB. Se reescala a un tamaño chico por
+// canvas y se convierte a JPEG (sin transparencia, se rellena de blanco —
+// el fondo de la carta ya es blanco) antes de dárselo a jsPDF: mucho más
+// liviano y, junto con el alias fijo en doc.addImage, se incrusta una sola
+// vez sin importar cuántas páginas lo usen.
+function logoParaPDF(url){
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const anchoDestino = 300; // de sobra para nitidez a 28mm impreso
+      const escala = anchoDestino / img.naturalWidth;
+      const altoDestino = Math.round(img.naturalHeight * escala);
+      const canvas = document.createElement('canvas');
+      canvas.width = anchoDestino; canvas.height = altoDestino;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, anchoDestino, altoDestino);
+      ctx.drawImage(img, 0, 0, anchoDestino, altoDestino);
+      resolve(canvas.toDataURL('image/jpeg', 0.92));
+    };
+    img.onerror = reject;
+    img.src = url;
+  });
 }
 
 const VERDE_OSCURO = [0, 73, 65];
@@ -174,7 +192,7 @@ export async function generarInformeSOSPDF(entidad, procesosVigentes){
   const [{ default: jsPDF }, { default: autoTable }, logoDataUrl] = await Promise.all([
     import('jspdf'),
     import('jspdf-autotable'),
-    imagenADataURL(logoVerde),
+    logoParaPDF(logoVerde),
   ]);
 
   const doc = new jsPDF({ unit:'mm', format:'a4' });
@@ -186,7 +204,7 @@ export async function generarInformeSOSPDF(entidad, procesosVigentes){
   const filas = [...procesosVigentes].sort((a,b) => (a.NoCompleto||a.Radicado||"").localeCompare(b.NoCompleto||b.Radicado||""));
 
   function dibujarEncabezadoYPie(){
-    doc.addImage(logoDataUrl, 'PNG', MARGEN, 10, 28, 11.3);
+    doc.addImage(logoDataUrl, 'JPEG', MARGEN, 10, 28, 11.3, 'lexara-logo-pdf', 'MEDIUM');
     doc.setFont('helvetica','bold'); doc.setFontSize(13); doc.setTextColor(...VERDE_OSCURO);
     doc.text('Reporte procesos judiciales', pageWidth - MARGEN, 14, {align:'right'});
     doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(...GRIS_SUAVE);
@@ -234,10 +252,14 @@ export async function generarInformeSOSPDF(entidad, procesosVigentes){
     headStyles: { fillColor:VERDE_OSCURO, textColor:255, fontStyle:'bold', halign:'center', fontSize:8.5 },
     alternateRowStyles: { fillColor:GRIS_ZEBRA },
     columnStyles: {
-      0: { halign:'center', fontStyle:'bold', textColor:VERDE_OSCURO, font:'courier', cellWidth:30 },
-      1: { halign:'center', cellWidth:22, textColor:GRIS_SUAVE },
+      // No. Completo/Radicado y Valor Actual Demanda son cadenas largas en
+      // fuente monoespaciada — con el tamaño base (8.5) no cabían en una
+      // sola línea y se partían a la mitad de un número. Letra más chica +
+      // columna un poco más ancha las deja siempre en una sola línea.
+      0: { halign:'center', fontStyle:'bold', textColor:VERDE_OSCURO, font:'courier', fontSize:7, cellWidth:40 },
+      1: { halign:'center', cellWidth:20, textColor:GRIS_SUAVE },
       2: { halign:'left', cellWidth:'auto' },
-      3: { halign:'right', font:'courier', fontStyle:'bold', cellWidth:32 },
+      3: { halign:'right', font:'courier', fontStyle:'bold', fontSize:7, cellWidth:33 },
     },
     didDrawPage: dibujarEncabezadoYPie,
   });
@@ -265,4 +287,86 @@ export async function generarInformeSOSPDF(entidad, procesosVigentes){
 
   const hoyISO = hoy.toISOString().slice(0,10);
   doc.save(`Informe SOS ${hoyISO}.pdf`);
+}
+
+/* ---------------- Desistimientos SOS (Excel) ----------------
+   Calca la plantilla real compartida por el usuario ("Desistimientos SOS
+   *.xlsx", hoja "Des SOS"): 10 columnas de datos empezando en la columna B
+   (la A queda en blanco a propósito, igual que en el archivo real). La
+   mayoría de columnas vienen del PROCESO vinculado (No. Completo, Histórico
+   números completos, Despacho, Valor Actual Demanda) — un Desistimiento no
+   guarda esos datos, se unen vía `procesoForDesistimiento`. Solo se incluyen
+   los desistimientos cuyo proceso pertenezca a la Entidad que se pasa (se
+   filtra pasando ya solo los procesos de esa Entidad). */
+const COLUMNAS_DESISTIMIENTOS_SOS = [
+  ["numero corto", null, "text"],
+  ["No Completo", null, "text"],
+  ["Historico numeros completos", null, "text"],
+  ["Despacho Judicial", null, "text"],
+  ["Valor Actual Demanda", null, "money"],
+  ["Desistimiento Valor", null, "money"],
+  ["Fecha Radicacion", null, "date"],
+  ["Aprobacion", null, "text"],
+  ["Fecha de Aprobacion", null, "date"],
+  ["Observaciones", null, "text"],
+];
+const ANCHOS_DESISTIMIENTOS = [6, 16, 24, 30, 30, 20, 20, 16, 14, 18, 36];
+
+export async function generarDesistimientosSOSExcel(desistimientos, procesosEntidad){
+  const { default: ExcelJS } = await import('exceljs');
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet("Des SOS");
+
+  ws.columns = [{width: ANCHOS_DESISTIMIENTOS[0]}, ...COLUMNAS_DESISTIMIENTOS_SOS.map((c,i) => ({width: ANCHOS_DESISTIMIENTOS[i+1]}))];
+
+  const headerRow = ws.addRow(["", ...COLUMNAS_DESISTIMIENTOS_SOS.map(c => c[0])]);
+  headerRow.height = 30;
+  headerRow.eachCell((cell, colNumber) => {
+    if(colNumber === 1) return; // columna A en blanco, igual que la plantilla real
+    cell.fill = { type:'pattern', pattern:'solid', fgColor:{argb: COLOR_ENCABEZADO} };
+    cell.font = { name:'Aptos Narrow', size:11, bold:true, color:{argb:'FFFFFFFF'} };
+    cell.alignment = { horizontal:'center', vertical:'middle', wrapText:true };
+  });
+
+  const filas = (desistimientos||[])
+    .map(d => ({ d, proceso: procesoForDesistimiento(procesosEntidad, d) }))
+    .filter(x => x.proceso);
+
+  filas.forEach(({d, proceso}) => {
+    const valores = [
+      "",
+      proceso.Radicado || "",
+      proceso.NoCompleto || "",
+      proceso.HistoricoNumerosCompletos || "",
+      proceso.Despacho || "",
+      parseMonto(proceso.ValorActualDemanda),
+      parseMonto(d.DesistimientoValor),
+      fechaISOaExcel(d.FechaRadicacion),
+      d.Aprobacion || "",
+      fechaISOaExcel(d.FechaAprobacion),
+      d.Observaciones || "",
+    ];
+    const row = ws.addRow(valores);
+    row.height = 60;
+    row.eachCell(cell => { cell.alignment = { horizontal:'center', vertical:'middle', wrapText:true }; });
+  });
+
+  ws.getColumn(6).numFmt = '"$"#,##0.00'; // Valor Actual Demanda
+  ws.getColumn(7).numFmt = '"$"#,##0.00'; // Desistimiento Valor
+  ws.getColumn(8).numFmt = 'mm-dd-yy';    // Fecha Radicacion
+  ws.getColumn(10).numFmt = 'mm-dd-yy';   // Fecha de Aprobacion
+
+  ws.views = [{ state:'frozen', ySplit:1 }];
+
+  const buffer = await wb.xlsx.writeBuffer();
+  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const hoy = new Date().toISOString().slice(0,10);
+  a.href = url;
+  a.download = `Desistimientos SOS ${hoy}.xlsx`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
 }

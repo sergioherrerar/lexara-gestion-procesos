@@ -306,6 +306,13 @@ export function desistimientosForProceso(desistimientos, proceso){
   if(!proceso || proceso.id == null) return [];
   return (desistimientos||[]).filter(d => d.Proceso != null && String(d.Proceso) === String(proceso.id));
 }
+// Inversa de desistimientosForProceso — dado un desistimiento, encontrar su
+// proceso (para informes que necesitan datos del proceso, como No. Completo
+// o Despacho, junto a los propios del desistimiento).
+export function procesoForDesistimiento(procesos, desistimiento){
+  if(!desistimiento || desistimiento.Proceso == null) return null;
+  return (procesos||[]).find(p => String(p.id) === String(desistimiento.Proceso)) || null;
+}
 // La lista "tipos de Accion" guía qué Tipo de Proceso y qué Despacho son
 // válidos para cada Tipo de Acción (Administrativo/Civil/Laboral) en
 // Procesos Judiciales — son selects dependientes: elegir el Tipo de Acción

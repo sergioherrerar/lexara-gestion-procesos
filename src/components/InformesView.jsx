@@ -5,7 +5,7 @@ import {
 } from '../lib/graph';
 import BarChart from './BarChart';
 import IconButton from './IconButton';
-import { generarInformeSOSExcel, generarInformeSOSPDF } from '../lib/informeSOS';
+import { generarInformeSOSExcel, generarInformeSOSPDF, generarDesistimientosSOSExcel } from '../lib/informeSOS';
 
 // Entidades con formato de informe formal ya confirmado (Excel + PDF, con su
 // propia plantilla). El resto de Entidades todavía no tiene modelo — el
@@ -17,9 +17,10 @@ function entidadDeCliente(clientes, codigoClienteOrNombre, matchFn){
   return matchFn(clientes, codigoClienteOrNombre)?.Entidad || "Sin dato";
 }
 
-export default function InformesView({ procesos, clientes, facturas, ordenesCompra }){
+export default function InformesView({ procesos, clientes, facturas, ordenesCompra, desistimientos }){
   const [generando, setGenerando] = useState(null); // nombre de la entidad mientras genera el Excel
   const [generandoPDF, setGenerandoPDF] = useState(null); // nombre de la entidad mientras genera el PDF
+  const [generandoDesistimientos, setGenerandoDesistimientos] = useState(null);
 
   const procesosPorEntidad = groupCount(procesos, p => p.Entidad);
   const clientesPorEntidad = groupCount(clientes, c => c.Entidad);
@@ -71,6 +72,19 @@ export default function InformesView({ procesos, clientes, facturas, ordenesComp
       }
     } finally {
       setGenerandoPDF(null);
+    }
+  }
+  // Informe de Desistimientos — se une cada Desistimiento con su Proceso
+  // (procesoForDesistimiento) y solo se incluyen los que pertenecen a esta
+  // Entidad, filtrando primero los procesos propios de esa Entidad.
+  async function handleGenerarDesistimientos(entidad){
+    setGenerandoDesistimientos(entidad);
+    try{
+      if(entidad.toUpperCase() === 'SOS'){
+        await generarDesistimientosSOSExcel(desistimientos, procesos.filter(p => p.Entidad === entidad));
+      }
+    } finally {
+      setGenerandoDesistimientos(null);
     }
   }
 
@@ -148,6 +162,7 @@ export default function InformesView({ procesos, clientes, facturas, ordenesComp
                           <div className="row-actions">
                             <IconButton icon="excel" variant="excel" label="Descargar Excel" spinning={generando===f.entidad} onClick={() => handleGenerarExcel(f.entidad)} />
                             <IconButton icon="pdf" variant="pdf" label="Descargar carta en PDF" spinning={generandoPDF===f.entidad} onClick={() => handleGenerarPDF(f.entidad)} />
+                            <IconButton icon="checklist" variant="checklist" label="Descargar Desistimientos (Excel)" spinning={generandoDesistimientos===f.entidad} onClick={() => handleGenerarDesistimientos(f.entidad)} />
                           </div>
                         ) : (
                           <span className="save-hint" style={{fontSize:12}}>Aún sin modelo</span>

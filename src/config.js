@@ -445,6 +445,9 @@ export const DEMO_FORMAS_PAGO = [
 
 export const DEMO_DESISTIMIENTOS = [
   {id:1, Proceso:1, NumeroCorto:"11001-31-03-045-2023-00218-00", DesistimientoValor:"792.695,00", FechaRadicacion:"2023-10-20", Aprobacion:"Aprobado", FechaAprobacion:"2024-06-22", Observaciones:""},
+  // Ejemplo Entidad "SOS" (2026-08-16) — datos ficticios, solo para probar el
+  // informe de Desistimientos de esa Entidad (ver src/lib/informeSOS.js).
+  {id:2, Proceso:6, NumeroCorto:"11001-33-44-006-2025-00099-00", DesistimientoValor:"1.250.000,00", FechaRadicacion:"2026-04-10", Aprobacion:"APROBADO", FechaAprobacion:"2026-05-02", Observaciones:"Desistimiento parcial de pretensiones de mora."},
 ];
 
 // Lista de referencia "tipos de Accion" — guía las combinaciones válidas de
