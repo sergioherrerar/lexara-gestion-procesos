@@ -74,7 +74,7 @@ const DATE_FIELDS = ["FechaAdmision","FechaContestacion","FechaInstancia","Fecha
 // columna real de SharePoint; mientras tanto quedan en blanco).
 const FIELD_SECTIONS = [
   {title:"Identificación del proceso", fields:[
-    ["NoCompleto","text"],["NumeroContrato","text"],["Numero5Digitos","text"],["HistoricoNumerosCompletos","textarea"],
+    ["NoCompleto","text"],["NumeroContrato","text"],["Numero5Digitos","text"],["RadicadoActual","text"],["HistoricoNumerosCompletos","textarea"],
     ["NaturalezaProceso","text"],["Subclasificacion","text"],
   ]},
   {title:"Partes", fields:[
@@ -111,6 +111,7 @@ const FIELD_SECTIONS = [
 const TRAZABILIDAD_SECTION = {title:"Fechas del proceso", fields: [
   ...DATE_FIELDS.map(k => [k,"date"]),
   ["FechaReformaDemanda","date"],
+  ["FechaTerminacion","date"],
   ["Admitida","select"],
   ["PruebaPericial","select"],
   ["OrigenTipoGlosa","text"],
@@ -157,6 +158,8 @@ const LABELS = {
   DemandanteIdentificacion:"No. de identificación demandante",
   MedidaCautelar:"Medida cautelar", MontoMedidaCautelar:"Monto medida cautelar",
   PorcentajeCalificacion:"Porcentaje de la calificación",
+  // Agregados 2026-08-16 para el módulo "Informes" (formato Entidad Famisanar).
+  RadicadoActual:"Radicado actual", FechaTerminacion:"Fecha terminación",
 };
 
 // Tarjeta de campo con etiqueta oscura arriba y valor abajo — mismo formato

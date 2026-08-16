@@ -6,12 +6,19 @@ import {
 import BarChart from './BarChart';
 import IconButton from './IconButton';
 import { generarInformeSOSExcel, generarInformeSOSPDF, generarDesistimientosSOSExcel } from '../lib/informeSOS';
+import { generarInformeFamisanarExcel, generarInformeFamisanarPDF } from '../lib/informeFamisanar';
 
-// Entidades con formato de informe formal ya confirmado (Excel + PDF, con su
-// propia plantilla). El resto de Entidades todavía no tiene modelo — el
-// botón "Generar informe" solo aparece para las que sí están en esta lista.
-// Ver [[project_informes_modulo]] / CHANGELOG 2026-08-14.
-const ENTIDADES_CON_FORMATO = ['SOS'];
+// Entidades con formato de informe formal ya confirmado, y qué generador usa
+// cada una — cada Entidad puede tener un formato distinto (columnas/orden
+// propios, ver informeSOS.js/informeFamisanar.js) y no todas ofrecen los
+// mismos informes (p.ej. Famisanar todavía no tiene Desistimientos armado).
+// Solo aparecen los íconos de los informes que sí tiene esa Entidad — el
+// resto de Entidades (sin entrada acá) muestra "Aún sin modelo".
+// Ver [[project_informes_modulo]] / CHANGELOG.
+const FORMATOS_POR_ENTIDAD = {
+  SOS: { excel: generarInformeSOSExcel, pdf: generarInformeSOSPDF, desistimientos: generarDesistimientosSOSExcel },
+  FAMISANAR: { excel: generarInformeFamisanarExcel, pdf: generarInformeFamisanarPDF },
+};
 
 function entidadDeCliente(clientes, codigoClienteOrNombre, matchFn){
   return matchFn(clientes, codigoClienteOrNombre)?.Entidad || "Sin dato";
@@ -50,26 +57,23 @@ export default function InformesView({ procesos, clientes, facturas, ordenesComp
   });
 
   async function handleGenerarExcel(entidad){
+    const formato = FORMATOS_POR_ENTIDAD[entidad.toUpperCase()];
+    if(!formato?.excel) return;
     setGenerando(entidad);
-    try{
-      if(entidad.toUpperCase() === 'SOS'){
-        await generarInformeSOSExcel(procesos.filter(p => p.Entidad === entidad));
-      }
-    } finally {
-      setGenerando(null);
-    }
+    try{ await formato.excel(procesos.filter(p => p.Entidad === entidad)); }
+    finally { setGenerando(null); }
   }
   // "la cantidad de procesos son todos los vigentes de SOS" — la carta en
   // PDF cuenta y lista solo los procesos NO terminados de esa Entidad. El PDF
   // se genera y descarga directo (jsPDF) — no pasa por el diálogo de
   // impresión del navegador.
   async function handleGenerarPDF(entidad){
+    const formato = FORMATOS_POR_ENTIDAD[entidad.toUpperCase()];
+    if(!formato?.pdf) return;
     setGenerandoPDF(entidad);
     try{
       const vigentes = procesos.filter(p => p.Entidad === entidad && !(p.EstadoVT||"").toLowerCase().includes('termin'));
-      if(entidad.toUpperCase() === 'SOS'){
-        await generarInformeSOSPDF(entidad, vigentes);
-      }
+      await formato.pdf(entidad, vigentes);
     } finally {
       setGenerandoPDF(null);
     }
@@ -78,14 +82,11 @@ export default function InformesView({ procesos, clientes, facturas, ordenesComp
   // (procesoForDesistimiento) y solo se incluyen los que pertenecen a esta
   // Entidad, filtrando primero los procesos propios de esa Entidad.
   async function handleGenerarDesistimientos(entidad){
+    const formato = FORMATOS_POR_ENTIDAD[entidad.toUpperCase()];
+    if(!formato?.desistimientos) return;
     setGenerandoDesistimientos(entidad);
-    try{
-      if(entidad.toUpperCase() === 'SOS'){
-        await generarDesistimientosSOSExcel(desistimientos, procesos.filter(p => p.Entidad === entidad));
-      }
-    } finally {
-      setGenerandoDesistimientos(null);
-    }
+    try{ await formato.desistimientos(desistimientos, procesos.filter(p => p.Entidad === entidad)); }
+    finally { setGenerandoDesistimientos(null); }
   }
 
   return (
@@ -158,15 +159,17 @@ export default function InformesView({ procesos, clientes, facturas, ordenesComp
                         </div>
                       </td>
                       <td>
-                        {ENTIDADES_CON_FORMATO.includes(f.entidad.toUpperCase()) ? (
-                          <div className="row-actions">
-                            <IconButton icon="excel" variant="excel" label="Descargar Excel" spinning={generando===f.entidad} onClick={() => handleGenerarExcel(f.entidad)} />
-                            <IconButton icon="pdf" variant="pdf" label="Descargar carta en PDF" spinning={generandoPDF===f.entidad} onClick={() => handleGenerarPDF(f.entidad)} />
-                            <IconButton icon="checklist" variant="checklist" label="Descargar Desistimientos (Excel)" spinning={generandoDesistimientos===f.entidad} onClick={() => handleGenerarDesistimientos(f.entidad)} />
-                          </div>
-                        ) : (
-                          <span className="save-hint" style={{fontSize:12}}>Aún sin modelo</span>
-                        )}
+                        {(() => {
+                          const formato = FORMATOS_POR_ENTIDAD[f.entidad.toUpperCase()];
+                          if(!formato) return <span className="save-hint" style={{fontSize:12}}>Aún sin modelo</span>;
+                          return (
+                            <div className="row-actions">
+                              {formato.excel && <IconButton icon="excel" variant="excel" label="Descargar Excel" spinning={generando===f.entidad} onClick={() => handleGenerarExcel(f.entidad)} />}
+                              {formato.pdf && <IconButton icon="pdf" variant="pdf" label="Descargar carta en PDF" spinning={generandoPDF===f.entidad} onClick={() => handleGenerarPDF(f.entidad)} />}
+                              {formato.desistimientos && <IconButton icon="checklist" variant="checklist" label="Descargar Desistimientos (Excel)" spinning={generandoDesistimientos===f.entidad} onClick={() => handleGenerarDesistimientos(f.entidad)} />}
+                            </div>
+                          );
+                        })()}
                       </td>
                     </tr>
                   ))}

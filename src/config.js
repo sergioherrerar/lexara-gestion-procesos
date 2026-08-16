@@ -88,6 +88,13 @@ export const SHAREPOINT_LISTS_CONFIG = [
       {key:"MedidaCautelar", label:"Medida cautelar", hint:["medida cautelar"]},
       {key:"MontoMedidaCautelar", label:"Monto medida cautelar", hint:["monto medida cautelar"]},
       {key:"PorcentajeCalificacion", label:"Porcentaje de la calificación", hint:["porcentaje de la calificacion","porcentaje calificacion","porcentaje de la calificación"]},
+      // Agregados 2026-08-16 al leer el informe real de la Entidad "Famisanar"
+      // — 2 campos que no tenían equivalente entre los ya existentes.
+      // "Radicado Actual" (formato "2024-10072") no es lo mismo que Radicado
+      // (Numero_Corto, con guiones) ni que Numero5Digitos (solo los 5 dígitos
+      // finales) — se deja como su propio campo en vez de adivinar el cálculo.
+      {key:"RadicadoActual", label:"Radicado actual", hint:["radicado actual"]},
+      {key:"FechaTerminacion", label:"Fecha terminación", hint:["fecha terminacion","fecha terminación"]},
     ],
     mapping: {
       Radicado: "numero_x0020_corto",
@@ -367,6 +374,16 @@ export const DEMO_PROCESOS = [
     HistoricoNumerosCompletos:"11001-33-44-006-2025-00099-00", EnlaceProceso:"https://mydabogados/proceso-ejemplo-sos",
     Historico:"<div>10-02-2026 Auto admite demanda.</div><div>18-03-2026 Notificación de auto admisorio.</div><div>05-05-2026 Contestación de la demanda por ADRES.</div><div>22-06-2026 Al despacho para resolver.</div>",
     Admitida:"Sí", PruebaPericial:"No", OrigenTipoGlosa:"Glosa de auditoría"},
+  // Ejemplo Entidad "Famisanar" (2026-08-16) — datos ficticios, solo para
+  // probar el informe de esta Entidad (ver src/lib/informeFamisanar.js).
+  {id:7, Radicado:"11001-31-05-008-2024-00100-00", Cliente:"EPS Ejemplo Laboral S.A.", Entidad:"Famisanar", Apoderado:"Carlos Andrés Peña", Despacho:"Juzgado Laboral del Circuito - Ejemplo", Instancia:"Primera instancia",
+    Estado:"<div>10-01-2026 Auto admite demanda.</div><div>15-04-2026 Contestación de la demanda.</div><div>20-06-2026 Al despacho para fallo.</div>",
+    EstadoVT:"VIGENTE", FechaUltimoEstado:"2026-06-20", EtapaProcesal:"Al despacho para fallo", TipoProceso:"Ordinario laboral", TipoAccion:"Laboral",
+    NumeroContrato:"CT-2024-100", FechaAdmision:"2026-01-10", FechaContestacion:"2026-04-15", CalificacionContingencia:"PROBABLE",
+    Observaciones:"Ejemplo de proceso laboral.",
+    NoCompleto:"1100131050082024001000", RadicadoActual:"2024-00100", ParteActuamos:"Con el Demandante", Demandante:"EPS Ejemplo Laboral S.A.", Demandado:"Instituto Ejemplo de Seguros",
+    ValorActualDemanda:"245.600.000,00", HistoricoNumerosCompletos:"11001-31-05-008-2024-00100-00",
+    Historico:"<div>10-01-2026 Auto admite demanda.</div><div>15-04-2026 Contestación de la demanda.</div><div>20-06-2026 Al despacho para fallo.</div>"},
 ];
 
 export const DEMO_CLIENTES = [
@@ -376,6 +393,8 @@ export const DEMO_CLIENTES = [
   {id:4, RazonSocial:"Distribuidora Caribe SAS", Nit:"812.456.789-3", Ciudad:"Cartagena", Direccion:"Calle 35 #22-18", Telefono:"605 690 1122", Correo:"ventas@distcaribe.com", Entidad:"Privada"},
   // Ejemplo Entidad "SOS" — ver nota en DEMO_PROCESOS id:6, datos ficticios.
   {id:5, RazonSocial:"EPS Ejemplo de Salud S.A.", Nit:"900.000.111-2", Ciudad:"Bogotá", Direccion:"Avenida Ejemplo #1-00", Telefono:"601 000 0000", Correo:"contacto@epsejemplo.com", Entidad:"SOS"},
+  // Ejemplo Entidad "Famisanar" — ver nota en DEMO_PROCESOS id:7, datos ficticios.
+  {id:6, RazonSocial:"EPS Ejemplo Laboral S.A.", Nit:"900.000.222-3", Ciudad:"Bogotá", Direccion:"Avenida Ejemplo #2-00", Telefono:"601 000 1111", Correo:"contacto@epsejemplolaboral.com", Entidad:"Famisanar"},
 ];
 
 export const DEMO_FACTURAS = [
