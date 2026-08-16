@@ -7,6 +7,7 @@ import BarChart from './BarChart';
 import IconButton from './IconButton';
 import { generarInformeSOSExcel, generarInformeSOSPDF, generarDesistimientosSOSExcel } from '../lib/informeSOS';
 import { generarInformeFamisanarExcel, generarInformeFamisanarPDF } from '../lib/informeFamisanar';
+import { generarInformeAliansaludExcel, generarInformeAliansaludPDF } from '../lib/informeAliansalud';
 import { generarInformeLexaraExcel, generarInformeLexaraPDF } from '../lib/informeLexara';
 
 // Entidades con formato de informe formal ya confirmado, y qué generador usa
@@ -20,6 +21,7 @@ const FORMATO_LEXARA = { excel: generarInformeLexaraExcel, pdf: generarInformeLe
 const FORMATOS_POR_ENTIDAD = {
   SOS: { excel: generarInformeSOSExcel, pdf: generarInformeSOSPDF, desistimientos: generarDesistimientosSOSExcel },
   FAMISANAR: { excel: generarInformeFamisanarExcel, pdf: generarInformeFamisanarPDF },
+  ALIANSALUD: { excel: generarInformeAliansaludExcel, pdf: generarInformeAliansaludPDF },
   // Entidades sin formato propio heredado — usan el formato genérico de
   // Lexara (ver informeLexara.js), confirmado por el usuario 2026-08-16.
   COLPATRIA: FORMATO_LEXARA,

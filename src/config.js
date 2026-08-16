@@ -395,6 +395,16 @@ export const DEMO_PROCESOS = [
     NoCompleto:"1100131032020024002000", RadicadoActual:"2024-00200", ParteActuamos:"Con el Demandante", Demandante:"Aseguradora Ejemplo S.A.", Demandado:"Constructora Ejemplo Ltda.",
     ValorActualDemanda:"180.300.000,00", HistoricoNumerosCompletos:"11001-31-03-020-2024-00200-00",
     Historico:"<div>05-02-2026 Auto admite demanda.</div><div>10-05-2026 Contestación de la demanda.</div><div>18-07-2026 Al despacho para decretar pruebas.</div>"},
+  // Ejemplo Entidad "Aliansalud" (2026-08-16) — datos ficticios, solo para
+  // probar el formato propio de esta Entidad (ver src/lib/informeAliansalud.js).
+  {id:9, Radicado:"05001-23-33-000-2024-00300-00", Cliente:"Aliansalud Ejemplo EPS", Entidad:"Aliansalud", Apoderado:"Jorge Iván Salcedo", Despacho:"Tribunal Administrativo Ejemplo", NumeroDespacho:"Ejemplo", Instancia:"Segunda instancia",
+    Estado:"<div>12-03-2026 Auto admite llamamiento en garantía.</div><div>02-06-2026 Contestación al llamamiento en garantía.</div>",
+    EstadoVT:"VIGENTE", FechaUltimoEstado:"2026-06-02", EtapaProcesal:"Traslado de excepciones", TipoProceso:"Ordinario", TipoAccion:"Administrativo",
+    NumeroContrato:"CT-2024-300", FechaAdmision:"2024-08-01", FechaContestacion:"2024-09-15", CalificacionContingencia:"PROBABLE",
+    Observaciones:"Ejemplo de proceso administrativo.",
+    NoCompleto:"0500123330002024003000", ParteActuamos:"Con el Demandado", Demandante:"Ejemplo Médico S.A.", Demandado:"Aliansalud Ejemplo EPS",
+    HistoricoNumerosCompletos:"05001-23-33-000-2024-00300-00",
+    Historico:"<div>01-08-2024 Radicación de la demanda.</div><div>15-09-2024 Contestación de la demanda.</div><div>12-03-2026 Auto admite llamamiento en garantía.</div><div>02-06-2026 Contestación al llamamiento en garantía.</div>"},
 ];
 
 export const DEMO_CLIENTES = [
@@ -408,6 +418,8 @@ export const DEMO_CLIENTES = [
   {id:6, RazonSocial:"EPS Ejemplo Laboral S.A.", Nit:"900.000.222-3", Ciudad:"Bogotá", Direccion:"Avenida Ejemplo #2-00", Telefono:"601 000 1111", Correo:"contacto@epsejemplolaboral.com", Entidad:"Famisanar"},
   // Ejemplo Entidad "Colpatria" — ver nota en DEMO_PROCESOS id:8, datos ficticios.
   {id:7, RazonSocial:"Aseguradora Ejemplo S.A.", Nit:"900.000.333-4", Ciudad:"Bogotá", Direccion:"Avenida Ejemplo #3-00", Telefono:"601 000 2222", Correo:"contacto@aseguradoraejemplo.com", Entidad:"Colpatria"},
+  // Ejemplo Entidad "Aliansalud" — ver nota en DEMO_PROCESOS id:9, datos ficticios.
+  {id:8, RazonSocial:"Aliansalud Ejemplo EPS", Nit:"900.000.444-5", Ciudad:"Medellín", Direccion:"Avenida Ejemplo #4-00", Telefono:"601 000 3333", Correo:"contacto@aliansaludejemplo.com", Entidad:"Aliansalud"},
 ];
 
 export const DEMO_FACTURAS = [
