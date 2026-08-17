@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { INITIAL_CONFIG, SHAREPOINT_LISTS_CONFIG, DEMO_PROCESOS, DEMO_CLIENTES, DEMO_FACTURAS, DEMO_ORDENES_COMPRA, DEMO_COLABORADORES, DEMO_FORMAS_PAGO, DEMO_DESISTIMIENTOS, DEMO_TIPOS_ACCION } from '../config';
+import { INITIAL_CONFIG, SHAREPOINT_LISTS_CONFIG, DEMO_PROCESOS, DEMO_CLIENTES, DEMO_FACTURAS, DEMO_ORDENES_COMPRA, DEMO_COLABORADORES, DEMO_FORMAS_PAGO, DEMO_DESISTIMIENTOS, DEMO_TIPOS_ACCION, DEMO_TUTELAS, DEMO_TEMAS, DEMO_VALORES_ENTIDAD } from '../config';
 import * as Graph from '../lib/graph';
 import { canWrite as canWriteForRole } from '../lib/permissions';
 
@@ -58,6 +58,15 @@ export function useLexaraApp(){
   const [desistimientos, setDesistimientos] = useState([]);
   const [activeDesistimientoId, setActiveDesistimientoId] = useState(null);
   const [draftDesistimiento, setDraftDesistimiento] = useState(null);
+  // Módulo Tutelas (agregado 2026-08-16) — Tema y Valores Entidad son listas
+  // de referencia sin panel propio (se editan en línea desde TutelaDrawer,
+  // igual que Tipos de Acción para Procesos), por eso no tienen
+  // active.../draft... propio, solo su propio arreglo + create/save simples.
+  const [tutelas, setTutelas] = useState([]);
+  const [activeTutelaId, setActiveTutelaId] = useState(null);
+  const [draftTutela, setDraftTutela] = useState(null);
+  const [temas, setTemas] = useState([]);
+  const [valoresEntidad, setValoresEntidad] = useState([]);
   // Cuando se abre/crea una factura, orden de compra, forma de pago o
   // desistimiento DESDE dentro de un proceso, se guarda aquí su id — al
   // cerrar ese panel se reabre el mismo proceso en vez de dejar solo la
@@ -118,6 +127,9 @@ export function useLexaraApp(){
     setFormasPago(JSON.parse(JSON.stringify(DEMO_FORMAS_PAGO)));
     setDesistimientos(JSON.parse(JSON.stringify(DEMO_DESISTIMIENTOS)));
     setTiposAccion(JSON.parse(JSON.stringify(DEMO_TIPOS_ACCION)));
+    setTutelas(JSON.parse(JSON.stringify(DEMO_TUTELAS)));
+    setTemas(JSON.parse(JSON.stringify(DEMO_TEMAS)));
+    setValoresEntidad(JSON.parse(JSON.stringify(DEMO_VALORES_ENTIDAD)));
     setAccount({ name:"Usuario Demo", username:"demo@lexara.com" });
     setAppActive(true);
     if(!silent) setView('dashboard');
@@ -202,6 +214,9 @@ export function useLexaraApp(){
         setFormasPago(updated.find(l => l.key==='formasPago')?.items || []);
         setDesistimientos(updated.find(l => l.key==='desistimientos')?.items || []);
         setTiposAccion(updated.find(l => l.key==='tiposAccion')?.items || []);
+        setTutelas(updated.find(l => l.key==='tutelas')?.items || []);
+        setTemas(updated.find(l => l.key==='temas')?.items || []);
+        setValoresEntidad(updated.find(l => l.key==='valoresEntidad')?.items || []);
         setLiveMode(true);
         setAppActive(true);
       } else {
@@ -278,6 +293,9 @@ export function useLexaraApp(){
       setFormasPago(updated.find(l => l.key==='formasPago')?.items || []);
       setDesistimientos(updated.find(l => l.key==='desistimientos')?.items || []);
       setTiposAccion(updated.find(l => l.key==='tiposAccion')?.items || []);
+      setTutelas(updated.find(l => l.key==='tutelas')?.items || []);
+      setTemas(updated.find(l => l.key==='temas')?.items || []);
+      setValoresEntidad(updated.find(l => l.key==='valoresEntidad')?.items || []);
     }catch(err){
       console.error(err);
       notify("No se pudo actualizar la información: " + err.message, 'error');
@@ -315,6 +333,9 @@ export function useLexaraApp(){
     setFormasPago(updated.find(l => l.key==='formasPago')?.items || []);
     setDesistimientos(updated.find(l => l.key==='desistimientos')?.items || []);
     setTiposAccion(updated.find(l => l.key==='tiposAccion')?.items || []);
+    setTutelas(updated.find(l => l.key==='tutelas')?.items || []);
+    setTemas(updated.find(l => l.key==='temas')?.items || []);
+    setValoresEntidad(updated.find(l => l.key==='valoresEntidad')?.items || []);
     setLiveMode(true);
   }
 
@@ -358,6 +379,7 @@ export function useLexaraApp(){
   const activeColaborador = draftColaborador || colaboradores.find(c => c.id===activeColaboradorId) || null;
   const activeFormaPago = draftFormaPago || formasPago.find(f => f.id===activeFormaPagoId) || null;
   const activeDesistimiento = draftDesistimiento || desistimientos.find(d => d.id===activeDesistimientoId) || null;
+  const activeTutela = draftTutela || tutelas.find(t => t.id===activeTutelaId) || null;
 
   // Rol del usuario que inició sesión, cruzando su correo de Microsoft 365
   // contra la lista de Colaborador Lexara — ver src/lib/permissions.js.
@@ -887,6 +909,142 @@ export function useLexaraApp(){
     requestConfirm("¿Eliminar este desistimiento? Esta acción no se puede deshacer.", () => performDeleteDesistimiento(id));
   }
 
+  function openTutela(id){ setDraftTutela(null); setActiveTutelaId(id); }
+  // "+ Nueva tutela" solo abre un borrador local — no toca SharePoint hasta
+  // que el usuario le da "Guardar cambios" (mismo criterio que el resto de módulos).
+  function newTutela(){ setActiveTutelaId(null); setDraftTutela({}); }
+  function closeTutelaDrawer(){ setActiveTutelaId(null); setDraftTutela(null); }
+  async function saveTutela(updates){
+    if(!activeTutela) return;
+
+    if(draftTutela){
+      const nuevo = {...updates};
+      if(liveMode){
+        setSaving(true);
+        const list = listByKey('tutelas');
+        const graphFields = Graph.graphFieldsFromUpdates(list, updates);
+        try{
+          const created = await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items`, {
+            method:"POST", body: JSON.stringify({ fields: graphFields })
+          });
+          nuevo.id = created.id; nuevo._graphId = created.id;
+        }catch(err){ console.error(err); notify("No se pudo crear la tutela en SharePoint: " + err.message, 'error'); setSaving(false); return; }
+        setSaving(false);
+      } else {
+        const maxId = tutelas.reduce((max,t) => Math.max(max, Number(t.id)||0), 0);
+        nuevo.id = maxId + 1;
+      }
+      setTutelas(prev => [...prev, nuevo]);
+      setDraftTutela(null);
+      setActiveTutelaId(null);
+      return;
+    }
+
+    setTutelas(prev => prev.map(t => t.id===activeTutelaId ? {...t, ...updates} : t));
+    if(liveMode){
+      setSaving(true);
+      const list = listByKey('tutelas');
+      const graphBody = Graph.graphFieldsFromUpdates(list, updates);
+      try{
+        await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items/${activeTutela._graphId}/fields`, {
+          method:"PATCH", body: JSON.stringify(graphBody)
+        });
+      }catch(err){ console.error(err); notify("No se pudo guardar en SharePoint: " + err.message, 'error'); setSaving(false); return; }
+      setSaving(false);
+    }
+    setActiveTutelaId(null);
+  }
+  async function performDeleteTutela(id){
+    const tutela = tutelas.find(t => t.id===id);
+    if(!tutela) return;
+    if(liveMode){
+      setSaving(true);
+      const list = listByKey('tutelas');
+      try{
+        await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items/${tutela._graphId || tutela.id}`, { method:"DELETE" });
+      }catch(err){ console.error(err); notify("No se pudo eliminar en SharePoint: " + err.message, 'error'); setSaving(false); return; }
+      setSaving(false);
+    }
+    setTutelas(prev => prev.filter(t => t.id !== id));
+    if(activeTutelaId === id) setActiveTutelaId(null);
+  }
+  function deleteTutela(id){
+    requestConfirm("¿Eliminar esta tutela? Esta acción no se puede deshacer.", () => performDeleteTutela(id));
+  }
+
+  // Tema y Valores Entidad son listas de referencia sin panel propio — se
+  // editan en línea desde los botones "Tema"/"Valor entidad" del formulario
+  // de Tutela (ver TutelaDrawer.jsx), por eso solo tienen un crear/guardar
+  // simple (sin draft/active), igual de directo que createCliente.
+  async function createTema(fields){
+    const nuevo = { id: 'tmp-' + Math.random().toString(36).slice(2), ...fields };
+    if(liveMode){
+      setSaving(true);
+      const list = listByKey('temas');
+      const { id, ...nuevoSinId } = nuevo;
+      const graphFields = Graph.graphFieldsFromUpdates(list, nuevoSinId);
+      try{
+        const created = await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items`, {
+          method:"POST", body: JSON.stringify({ fields: graphFields })
+        });
+        nuevo.id = created.id; nuevo._graphId = created.id;
+      }catch(err){ console.error(err); notify("No se pudo crear el tema en SharePoint: " + err.message, 'error'); setSaving(false); return null; }
+      setSaving(false);
+    }
+    setTemas(prev => [...prev, nuevo]);
+    return nuevo;
+  }
+  async function saveTema(id, updates){
+    const tema = temas.find(t => t.id===id);
+    if(!tema) return;
+    setTemas(prev => prev.map(t => t.id===id ? {...t, ...updates} : t));
+    if(liveMode){
+      setSaving(true);
+      const list = listByKey('temas');
+      const fields = Graph.graphFieldsFromUpdates(list, updates);
+      try{
+        await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items/${tema._graphId || tema.id}/fields`, {
+          method:"PATCH", body: JSON.stringify(fields)
+        });
+      }catch(err){ console.error(err); notify("No se pudo guardar el tema en SharePoint: " + err.message, 'error'); }
+      setSaving(false);
+    }
+  }
+  async function createValorEntidad(fields){
+    const nuevo = { id: 'tmp-' + Math.random().toString(36).slice(2), ...fields };
+    if(liveMode){
+      setSaving(true);
+      const list = listByKey('valoresEntidad');
+      const { id, ...nuevoSinId } = nuevo;
+      const graphFields = Graph.graphFieldsFromUpdates(list, nuevoSinId);
+      try{
+        const created = await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items`, {
+          method:"POST", body: JSON.stringify({ fields: graphFields })
+        });
+        nuevo.id = created.id; nuevo._graphId = created.id;
+      }catch(err){ console.error(err); notify("No se pudo crear el valor de entidad en SharePoint: " + err.message, 'error'); setSaving(false); return null; }
+      setSaving(false);
+    }
+    setValoresEntidad(prev => [...prev, nuevo]);
+    return nuevo;
+  }
+  async function saveValorEntidad(id, updates){
+    const valor = valoresEntidad.find(v => v.id===id);
+    if(!valor) return;
+    setValoresEntidad(prev => prev.map(v => v.id===id ? {...v, ...updates} : v));
+    if(liveMode){
+      setSaving(true);
+      const list = listByKey('valoresEntidad');
+      const fields = Graph.graphFieldsFromUpdates(list, updates);
+      try{
+        await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items/${valor._graphId || valor.id}/fields`, {
+          method:"PATCH", body: JSON.stringify(fields)
+        });
+      }catch(err){ console.error(err); notify("No se pudo guardar el valor de entidad en SharePoint: " + err.message, 'error'); }
+      setSaving(false);
+    }
+  }
+
   return {
     config, saveConfig, clearConfig,
     lists, listByKey, updateListMapping,
@@ -897,6 +1055,7 @@ export function useLexaraApp(){
     saving, signingIn,
     toast, closeToast, confirmState, acceptConfirm, cancelConfirm,
     procesos, clientes, facturas, ordenesCompra, colaboradores, formasPago, desistimientos, tiposAccion,
+    tutelas, temas, valoresEntidad,
     currentFilter, setFilter: setCurrentFilter, searchQuery, setSearchQuery: setSearchQuery,
     onSearch: setSearchQuery,
     activeProceso, openProceso, newProceso, closeDrawer, saveProceso, procesoViewOnly, rememberReturnToProceso,
@@ -908,5 +1067,7 @@ export function useLexaraApp(){
     activeColaborador, openColaborador, newColaborador, closeColaboradorDrawer, saveColaborador, deleteColaborador,
     activeFormaPago, openFormaPago, newFormaPagoFromProceso, closeFormaPagoDrawer, saveFormaPago, deleteFormaPago,
     activeDesistimiento, openDesistimiento, newDesistimientoFromProceso, closeDesistimientoDrawer, saveDesistimiento, deleteDesistimiento,
+    activeTutela, openTutela, newTutela, closeTutelaDrawer, saveTutela, deleteTutela,
+    createTema, saveTema, createValorEntidad, saveValorEntidad,
   };
 }

@@ -463,6 +463,70 @@ export const SHAREPOINT_LISTS_CONFIG = [
       Link: "Link",
     },
   },
+  // ------------------------------------------------------------------
+  // Módulo "Tutelas" (agregado 2026-08-16) — nombres reales de lista y
+  // mapeo TODAVÍA sin confirmar (se adivinó cada campo a partir del
+  // formulario Access original que el usuario mostró) — se confirman uno
+  // a uno desde Configuración, igual que se hizo con Procesos Judiciales.
+  // ------------------------------------------------------------------
+  {
+    key: "tutelas",
+    listName: "Tutelas",
+    label: "Tutelas",
+    semanticFields: [
+      {key:"NoTutela", label:"No. Tutela", hint:["no tutela","numero tutela","número tutela"], required:true},
+      {key:"Cliente", label:"Cliente", hint:["cliente"], required:true},
+      {key:"Entidad", label:"Entidad", hint:["entidad"]},
+      {key:"LinkCarpetaTutela", label:"Link Carpeta Tutela", hint:["link carpeta tutela"]},
+      {key:"LinkCarpetaFormatos", label:"Link Carpeta Formatos", hint:["link carpeta formatos"]},
+      {key:"TipoVinculacionEntidad", label:"Tipo Vinculación Entidad", hint:["tipo vinculacion entidad","tipo vinculación entidad"]},
+      {key:"MedidaCautelar", label:"Medida Cautelar", hint:["medida cautelar"]},
+      {key:"Departamento", label:"Departamento", hint:["departamento"]},
+      {key:"Ciudad", label:"Ciudad", hint:["ciudad"]},
+      {key:"Proceso", label:"Proceso", hint:["proceso"]},
+      {key:"FechaNotificacion", label:"Fecha Notificación", hint:["fecha notificacion","fecha notificación"]},
+      {key:"FechaVencimiento", label:"Fecha Vencimiento", hint:["fecha vencimiento"]},
+      {key:"Prestacion", label:"Prestación", hint:["prestacion","prestación"]},
+      {key:"TipoRespuesta", label:"Tipo Respuesta", hint:["tipo respuesta"]},
+      {key:"Tema", label:"Tema", hint:["tema"]},
+      {key:"AgenciaOficiosa", label:"Agencia oficiosa", hint:["agencia oficiosa"]},
+      {key:"Usuario", label:"Usuario", hint:["usuario"]},
+      {key:"NoIdentificacion", label:"No. Identificación", hint:["no identificacion","no identificación","numero identificacion"]},
+      {key:"Juzgado", label:"Juzgado", hint:["juzgado"]},
+      {key:"Correo", label:"Correo", hint:["correo"]},
+      // Campo de texto grande al final del formulario Access original —
+      // muy probablemente texto enriquecido real en SharePoint, igual que
+      // Historico/Observaciones en Procesos Judiciales.
+      {key:"Solicita", label:"Solicita", hint:["solicita"]},
+    ],
+    mapping: {},
+  },
+  // Lista de referencia para el select "Tema" de Tutelas — sin panel propio
+  // por ahora, el botón "Editar Tema" del panel de Tutela edita/crea
+  // registros acá mismo (ver TutelaDrawer.jsx). Columnas reales sin
+  // confirmar todavía.
+  {
+    key: "temas",
+    listName: "Tema",
+    label: "Tema",
+    semanticFields: [
+      {key:"Nombre", label:"Tema", hint:["tema","nombre"], required:true},
+    ],
+    mapping: {},
+  },
+  // Lista de referencia para "Valores Entidad" (valores/tarifas por
+  // Entidad) — igual que "Tema", el botón "Editar Valor Entidad" del panel
+  // de Tutela edita/crea registros acá. Columnas reales sin confirmar.
+  {
+    key: "valoresEntidad",
+    listName: "Valores Entidad",
+    label: "Valores Entidad",
+    semanticFields: [
+      {key:"Entidad", label:"Entidad", hint:["entidad"], required:true},
+      {key:"Valor", label:"Valor", hint:["valor"]},
+    ],
+    mapping: {},
+  },
 ];
 
 export const DEMO_PROCESOS = [
@@ -663,6 +727,25 @@ export const DEMO_TIPOS_ACCION = [
   {id:32, NombreIdTipoProceso:"Laboral", Descripcion:"Recurso Reposicion Auto Art. 63 CPL Y SS", TipoAlerta:"Termino", Dias:"2,00", Despacho:"", TipoProceso:"", Link:"http://www.secretariasenado.gov.co/senado/basedoc/codigo_procedimental_laboral_pr001.html"},
   {id:33, NombreIdTipoProceso:"Laboral", Descripcion:"Subsanacion Art. 28 CPL Y SS", TipoAlerta:"Termino", Dias:"5,00", Despacho:"", TipoProceso:"", Link:"http://www.secretariasenado.gov.co/senado/basedoc/codigo_procedimental_laboral.html"},
   {id:34, NombreIdTipoProceso:"Laboral", Descripcion:"Termino Para La Reforma", TipoAlerta:"Termino", Dias:"15,00", Despacho:"", TipoProceso:"", Link:"http://www.secretariasenado.gov.co/senado/basedoc/codigo_procedimental_laboral.html"},
+];
+
+// Datos ficticios del módulo Tutelas (2026-08-16) — inventados solo para
+// probar la pantalla nueva, no son información real de ningún caso.
+export const DEMO_TEMAS = [
+  {id:1, Nombre:"Recobro"},
+  {id:2, Nombre:"Prestación de servicio"},
+  {id:3, Nombre:"Suministro de medicamento"},
+];
+export const DEMO_VALORES_ENTIDAD = [
+  {id:1, Entidad:"SOS", Valor:"350.000,00"},
+  {id:2, Entidad:"Famisanar", Valor:"400.000,00"},
+];
+export const DEMO_TUTELAS = [
+  {id:1, NoTutela:"T-2026-0001", Cliente:"EPS Ejemplo de Salud S.A.", Entidad:"SOS", TipoVinculacionEntidad:"Accionada", MedidaCautelar:"No",
+    Departamento:"Bogotá D.C.", Ciudad:"Bogotá D.C.", Proceso:"", FechaNotificacion:"2026-06-10", FechaVencimiento:"2026-06-20",
+    Prestacion:"Medicamento", TipoRespuesta:"ACLARACION", Tema:"Suministro de medicamento", AgenciaOficiosa:"No",
+    Usuario:"Juan Ejemplo Pérez", NoIdentificacion:"1.000.111.222", Juzgado:"Juzgado 5 Civil Municipal de Bogotá", Correo:"ejemplo@correo.com",
+    Solicita:"<div>Solicita el suministro inmediato del medicamento formulado.</div>"},
 ];
 
 export const ICON_SVG = `<svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 30 L50 50 L80 30" stroke="currentColor" stroke-width="14" fill="none" stroke-linecap="square"/><path d="M20 70 L50 50 L80 70" stroke="currentColor" stroke-width="14" fill="none" stroke-linecap="square"/></svg>`;

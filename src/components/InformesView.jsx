@@ -10,6 +10,7 @@ import { generarInformeFamisanarExcel, generarInformeFamisanarPDF } from '../lib
 import { generarInformeAliansaludExcel, generarInformeAliansaludPDF } from '../lib/informeAliansalud';
 import { generarInformeColmedicaExcel, generarInformeColmedicaPDF } from '../lib/informeColmedica';
 import { generarInformeLexaraExcel, generarInformeLexaraPDF } from '../lib/informeLexara';
+import { generarInformeFacturasExcel, generarInformeOrdenesCompraExcel } from '../lib/informeFacturacion';
 
 // Entidades con formato de informe formal ya confirmado, y qué generador usa
 // cada una — cada Entidad puede tener un formato distinto (columnas/orden
@@ -42,6 +43,8 @@ export default function InformesView({ procesos, clientes, facturas, ordenesComp
   const [generando, setGenerando] = useState(null); // nombre de la entidad mientras genera el Excel
   const [generandoPDF, setGenerandoPDF] = useState(null); // nombre de la entidad mientras genera el PDF
   const [generandoDesistimientos, setGenerandoDesistimientos] = useState(null);
+  const [generandoFacturas, setGenerandoFacturas] = useState(false);
+  const [generandoOrdenes, setGenerandoOrdenes] = useState(false);
 
   const procesosPorEntidad = groupCount(procesos, p => p.Entidad);
   const clientesPorEntidad = groupCount(clientes, c => c.Entidad);
@@ -102,6 +105,19 @@ export default function InformesView({ procesos, clientes, facturas, ordenesComp
     try{ await formato.desistimientos(desistimientos, procesos.filter(p => p.Entidad === entidad)); }
     finally { setGenerandoDesistimientos(null); }
   }
+  // Excel de Facturación/Órdenes de compra completas (no por Entidad, la
+  // lista tal cual está cargada) — mismo estilo institucional que los demás
+  // Excel de Informes. Pedido explícito del usuario 2026-08-16.
+  async function handleGenerarExcelFacturas(){
+    setGenerandoFacturas(true);
+    try{ await generarInformeFacturasExcel(facturas, clientes); }
+    finally { setGenerandoFacturas(false); }
+  }
+  async function handleGenerarExcelOrdenes(){
+    setGenerandoOrdenes(true);
+    try{ await generarInformeOrdenesCompraExcel(ordenesCompra, clientes, facturas); }
+    finally { setGenerandoOrdenes(false); }
+  }
 
   return (
     <div className="view">
@@ -126,13 +142,19 @@ export default function InformesView({ procesos, clientes, facturas, ordenesComp
           </div>
         </div>
         <div className="panel">
-          <div className="panel-head"><h3>Facturación por Entidad</h3></div>
+          <div className="panel-head">
+            <h3>Facturación por Entidad</h3>
+            <IconButton icon="excel" variant="excel" label="Descargar Excel de Facturación" spinning={generandoFacturas} onClick={handleGenerarExcelFacturas} />
+          </div>
           <div className="panel-body">
             <BarChart data={facturasPorEntidad} color="var(--verde-claro)" emptyMsg="No hay facturas asociadas a una Entidad." />
           </div>
         </div>
         <div className="panel">
-          <div className="panel-head"><h3>Órdenes de compra por Entidad</h3></div>
+          <div className="panel-head">
+            <h3>Órdenes de compra por Entidad</h3>
+            <IconButton icon="excel" variant="excel" label="Descargar Excel de Órdenes de compra" spinning={generandoOrdenes} onClick={handleGenerarExcelOrdenes} />
+          </div>
           <div className="panel-body">
             <BarChart data={ordenesPorEntidad} color="#8a6410" emptyMsg="No hay órdenes de compra asociadas a una Entidad." />
           </div>

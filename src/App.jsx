@@ -7,6 +7,7 @@ import Topbar from './components/Topbar';
 import DashboardView from './components/DashboardView';
 import InformesView from './components/InformesView';
 import ProcesosView from './components/ProcesosView';
+import TutelasView from './components/TutelasView';
 import ClientesView from './components/ClientesView';
 import FacturacionView from './components/FacturacionView';
 import OrdenesCompraView from './components/OrdenesCompraView';
@@ -19,6 +20,7 @@ import ColaboradoresView from './components/ColaboradoresView';
 import ColaboradorDrawer from './components/ColaboradorDrawer';
 import FormaPagoDrawer from './components/FormaPagoDrawer';
 import DesistimientoDrawer from './components/DesistimientoDrawer';
+import TutelaDrawer from './components/TutelaDrawer';
 import { Toast, ConfirmDialog } from './components/Feedback';
 
 export default function App(){
@@ -98,6 +100,16 @@ export default function App(){
             searchQuery={app.searchQuery}
             onOpenProceso={app.openProceso}
             onCreateProceso={app.newProceso}
+            canWrite={app.canWrite}
+          />
+        )}
+        {app.view === 'tutelas' && canAccessView(app.role, 'tutelas') && (
+          <TutelasView
+            tutelas={app.tutelas}
+            searchQuery={app.searchQuery}
+            onOpenTutela={app.openTutela}
+            onCreateTutela={app.newTutela}
+            onDeleteTutela={app.deleteTutela}
             canWrite={app.canWrite}
           />
         )}
@@ -248,6 +260,22 @@ export default function App(){
         onClose={app.closeDesistimientoDrawer}
         onSave={app.saveDesistimiento}
         onDelete={app.deleteDesistimiento}
+        saving={app.saving}
+        canWrite={app.canWrite}
+      />
+      <TutelaDrawer
+        tutela={app.activeTutela}
+        clientes={app.clientes}
+        temas={app.temas}
+        valoresEntidad={app.valoresEntidad}
+        liveMode={app.liveMode}
+        onClose={app.closeTutelaDrawer}
+        onSave={app.saveTutela}
+        onDelete={app.deleteTutela}
+        onCreateTema={app.createTema}
+        onSaveTema={app.saveTema}
+        onCreateValorEntidad={app.createValorEntidad}
+        onSaveValorEntidad={app.saveValorEntidad}
         saving={app.saving}
         canWrite={app.canWrite}
       />

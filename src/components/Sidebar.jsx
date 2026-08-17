@@ -6,6 +6,7 @@ const NAV_ITEMS = [
   {view:'dashboard', label:'Dashboard'},
   {view:'informes', label:'Informes'},
   {view:'procesos', label:'Procesos judiciales'},
+  {view:'tutelas', label:'Tutelas'},
   {view:'clientes', label:'Clientes'},
   {view:'facturacion', label:'Facturación'},
   {view:'ordenesCompra', label:'Órdenes de compra'},
