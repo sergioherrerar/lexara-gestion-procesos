@@ -486,8 +486,6 @@ export const SHAREPOINT_LISTS_CONFIG = [
       {key:"NoTutela", label:"No. Tutela", hint:["no tutela","numero tutela","número tutela"], required:true},
       {key:"Cliente", label:"Cliente", hint:["cliente"], required:true},
       {key:"Entidad", label:"Entidad", hint:["entidad"]},
-      {key:"LinkCarpetaTutela", label:"Link Carpeta Tutela", hint:["link carpeta tutela"]},
-      {key:"LinkCarpetaFormatos", label:"Link Carpeta Formatos", hint:["link carpeta formatos"]},
       {key:"TipoVinculacionEntidad", label:"Tipo Vinculación Entidad", hint:["tipo vinculacion entidad","tipo vinculación entidad"]},
       {key:"MedidaCautelar", label:"Medida Cautelar", hint:["medida cautelar"]},
       {key:"Departamento", label:"Departamento", hint:["departamento"]},
@@ -512,8 +510,12 @@ export const SHAREPOINT_LISTS_CONFIG = [
   },
   // Lista de referencia para el select "Tema" de Tutelas — sin panel propio
   // por ahora, el botón "Editar Tema" del panel de Tutela edita/crea
-  // registros acá mismo (ver TutelaDrawer.jsx). Columnas reales sin
-  // confirmar todavía.
+  // registros acá mismo (ver TutelaDrawer.jsx). Campos confirmados por el
+  // usuario 2026-08-17 viendo las columnas reales de la lista: además del
+  // nombre del Tema, cada fila trae su Prestación y Cliente asociados
+  // (Prestación Tema / Cliente Tema) — todavía no se usan en el mini-editor
+  // de TutelaDrawer.jsx (que solo edita el nombre), quedan mapeables desde
+  // Configuración para cuando se necesiten.
   {
     key: "temas",
     listName: "Tema",
@@ -521,12 +523,16 @@ export const SHAREPOINT_LISTS_CONFIG = [
     sitePathKey: "SP_SITE_PATH_TUTELAS",
     semanticFields: [
       {key:"Nombre", label:"Tema", hint:["tema","nombre"], required:true},
+      {key:"PrestacionTema", label:"Prestación Tema", hint:["prestacion tema","prestación tema"]},
+      {key:"ClienteTema", label:"Cliente Tema", hint:["cliente tema"]},
     ],
     mapping: {},
   },
-  // Lista de referencia para "Valores Entidad" (valores/tarifas por
-  // Entidad) — igual que "Tema", el botón "Editar Valor Entidad" del panel
-  // de Tutela edita/crea registros acá. Columnas reales sin confirmar.
+  // Lista de referencia para "Valores Entidad" — igual que "Tema", el botón
+  // "Editar Valor Entidad" del panel de Tutela edita/crea registros acá.
+  // Campos confirmados por el usuario 2026-08-17: los links de carpeta que
+  // al principio se habían puesto por error dentro de Tutelas en realidad
+  // son de acá (son datos fijos por Entidad, no por Tutela individual).
   {
     key: "valoresEntidad",
     listName: "Valores Entidad",
@@ -534,7 +540,11 @@ export const SHAREPOINT_LISTS_CONFIG = [
     sitePathKey: "SP_SITE_PATH_TUTELAS",
     semanticFields: [
       {key:"Entidad", label:"Entidad", hint:["entidad"], required:true},
-      {key:"Valor", label:"Valor", hint:["valor"]},
+      {key:"Tipo", label:"Tipo", hint:["tipo"]},
+      {key:"ValorEntidad", label:"Valor Entidad", hint:["valor entidad"]},
+      {key:"ValorAbogado", label:"Valor Abogado", hint:["valor abogado"]},
+      {key:"LinkCarpetas", label:"Link Carpetas", hint:["link carpetas"]},
+      {key:"LinkFormatos", label:"Link Formatos", hint:["link formatos"]},
     ],
     mapping: {},
   },
@@ -743,13 +753,13 @@ export const DEMO_TIPOS_ACCION = [
 // Datos ficticios del módulo Tutelas (2026-08-16) — inventados solo para
 // probar la pantalla nueva, no son información real de ningún caso.
 export const DEMO_TEMAS = [
-  {id:1, Nombre:"Recobro"},
-  {id:2, Nombre:"Prestación de servicio"},
-  {id:3, Nombre:"Suministro de medicamento"},
+  {id:1, Nombre:"Recobro", PrestacionTema:"", ClienteTema:""},
+  {id:2, Nombre:"Prestación de servicio", PrestacionTema:"Servicio", ClienteTema:""},
+  {id:3, Nombre:"Suministro de medicamento", PrestacionTema:"Medicamento", ClienteTema:""},
 ];
 export const DEMO_VALORES_ENTIDAD = [
-  {id:1, Entidad:"SOS", Valor:"350.000,00"},
-  {id:2, Entidad:"Famisanar", Valor:"400.000,00"},
+  {id:1, Entidad:"SOS", Tipo:"EPS", ValorEntidad:"350.000,00", ValorAbogado:"150.000,00", LinkCarpetas:"", LinkFormatos:""},
+  {id:2, Entidad:"Famisanar", Tipo:"EPS", ValorEntidad:"400.000,00", ValorAbogado:"180.000,00", LinkCarpetas:"", LinkFormatos:""},
 ];
 export const DEMO_TUTELAS = [
   {id:1, NoTutela:"T-2026-0001", Cliente:"EPS Ejemplo de Salud S.A.", Entidad:"SOS", TipoVinculacionEntidad:"Accionada", MedidaCautelar:"No",

@@ -3,6 +3,7 @@
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
 ## 2026-08-17
+- Corregido el modelo de datos de Tutelas según las columnas reales de SharePoint: "Link Carpeta Tutela" y "Link Carpeta Formatos" no son datos de cada Tutela individual, sino fijos por Entidad — se movieron a Valores Entidad (ahí también se agregaron "Tipo" y "Valor Abogado", que faltaban). El botón "Tema" ahora también reconoce sus columnas reales "Prestación Tema" y "Cliente Tema". El mini-editor "Valor entidad" del formulario de Tutela ahora edita las 5 columnas de Valores Entidad de una vez.
 - Corregido: las listas de Tutelas, Tema y Valores Entidad viven en OTRO sitio de SharePoint (no en el sitio principal donde están Procesos/Clientes/etc.) — la aplicación ya sabe conectarse a un sitio distinto por lista, así que estas 3 listas ahora sí se encuentran y se leen/guardan correctamente contra `https://mydabogados.sharepoint.com/sites/TutelasMDABOGADOS`.
 
 ## 2026-08-16

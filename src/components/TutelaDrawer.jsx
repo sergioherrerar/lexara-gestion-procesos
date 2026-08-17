@@ -11,7 +11,7 @@ import { useEscapeToClose } from '../hooks/useEscapeToClose';
 // opciones para TipoVinculacionEntidad/Departamento/Ciudad/Prestacion/TipoRespuesta.
 const SI_NO = ["Sí", "No"];
 
-const FIELDS = ["NoTutela", "LinkCarpetaTutela", "LinkCarpetaFormatos", "TipoVinculacionEntidad", "MedidaCautelar",
+const FIELDS = ["NoTutela", "TipoVinculacionEntidad", "MedidaCautelar",
   "Departamento", "Ciudad", "Proceso", "FechaNotificacion", "FechaVencimiento", "Prestacion", "TipoRespuesta",
   "AgenciaOficiosa", "Usuario", "NoIdentificacion", "Juzgado", "Correo", "Solicita"];
 
@@ -29,7 +29,7 @@ export default function TutelaDrawer({
   const [showEditarTema, setShowEditarTema] = useState(false);
   const [nombreTema, setNombreTema] = useState("");
   const [showEditarValor, setShowEditarValor] = useState(false);
-  const [valorEntidad, setValorEntidad] = useState("");
+  const [valorForm, setValorForm] = useState({ Tipo:"", ValorEntidad:"", ValorAbogado:"", LinkCarpetas:"", LinkFormatos:"" });
 
   useEffect(() => {
     setForm(tutela ? emptyForm(tutela) : null);
@@ -62,14 +62,22 @@ export default function TutelaDrawer({
   }
 
   function abrirEditarValor(){
-    setValorEntidad(valorActual?.Valor || "");
+    setValorForm({
+      Tipo: valorActual?.Tipo || "",
+      ValorEntidad: valorActual?.ValorEntidad || "",
+      ValorAbogado: valorActual?.ValorAbogado || "",
+      LinkCarpetas: valorActual?.LinkCarpetas || "",
+      LinkFormatos: valorActual?.LinkFormatos || "",
+    });
     setShowEditarValor(v => !v);
     setShowEditarTema(false);
   }
+  function setValorField(key, value){ setValorForm(prev => ({...prev, [key]: value})); }
   async function handleGuardarValor(){
     if(!form.Entidad){ return; }
-    if(valorActual){ await onSaveValorEntidad(valorActual.id, {Entidad: form.Entidad, Valor: valorEntidad}); }
-    else { await onCreateValorEntidad({Entidad: form.Entidad, Valor: valorEntidad}); }
+    const fields = { Entidad: form.Entidad, ...valorForm };
+    if(valorActual){ await onSaveValorEntidad(valorActual.id, fields); }
+    else { await onCreateValorEntidad(fields); }
     setShowEditarValor(false);
   }
 
@@ -121,9 +129,15 @@ export default function TutelaDrawer({
                       <div className="field-warning">Elige primero una Entidad.</div>
                     ) : (
                       <>
-                        <div className="field"><label>Valor para "{form.Entidad}"</label><input type="text" value={valorEntidad} onChange={e => setValorEntidad(e.target.value)} /></div>
+                        <div className="field-grid">
+                          <div className="field"><label>Tipo</label><input type="text" value={valorForm.Tipo} onChange={e => setValorField('Tipo', e.target.value)} /></div>
+                          <div className="field"><label>Valor Entidad</label><input type="text" value={valorForm.ValorEntidad} onChange={e => setValorField('ValorEntidad', e.target.value)} /></div>
+                          <div className="field"><label>Valor Abogado</label><input type="text" value={valorForm.ValorAbogado} onChange={e => setValorField('ValorAbogado', e.target.value)} /></div>
+                          <div className="field"><label>Link Carpetas</label><input type="text" value={valorForm.LinkCarpetas} onChange={e => setValorField('LinkCarpetas', e.target.value)} /></div>
+                          <div className="field"><label>Link Formatos</label><input type="text" value={valorForm.LinkFormatos} onChange={e => setValorField('LinkFormatos', e.target.value)} /></div>
+                        </div>
                         <div style={{marginTop:10, display:'flex', gap:8}}>
-                          <IconTextButton icon="add" variant="primary" onClick={handleGuardarValor} disabled={saving}>{saving ? "Guardando…" : "Guardar valor"}</IconTextButton>
+                          <IconTextButton icon="add" variant="primary" onClick={handleGuardarValor} disabled={saving}>{saving ? "Guardando…" : `Guardar valores de "${form.Entidad}"`}</IconTextButton>
                           <button type="button" className="btn-secondary" onClick={() => setShowEditarValor(false)} disabled={saving}>Cancelar</button>
                         </div>
                       </>
@@ -200,12 +214,6 @@ export default function TutelaDrawer({
           <div className="field-section">
             <h4>Enlaces y contacto</h4>
             <div className="field-card-grid">
-              <FieldCard label="Link Carpeta Tutela">
-                <input type="text" value={form.LinkCarpetaTutela} onChange={e => setField('LinkCarpetaTutela', e.target.value)} readOnly={!canWrite} />
-              </FieldCard>
-              <FieldCard label="Link Carpeta Formatos">
-                <input type="text" value={form.LinkCarpetaFormatos} onChange={e => setField('LinkCarpetaFormatos', e.target.value)} readOnly={!canWrite} />
-              </FieldCard>
               <FieldCard label="Usuario">
                 <input type="text" value={form.Usuario} onChange={e => setField('Usuario', e.target.value)} readOnly={!canWrite} />
               </FieldCard>
