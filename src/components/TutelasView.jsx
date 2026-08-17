@@ -1,4 +1,5 @@
 import { ICON_SVG } from '../config';
+import { fmtDate } from '../lib/graph';
 import IconButton, { IconTextButton } from './IconButton';
 import ColumnHeaderMenu from './ColumnHeaderMenu';
 import { useColumnFilters } from '../hooks/useColumnFilters';
@@ -10,6 +11,7 @@ const COLUMNS = [
   {key:'entidad', label:'Entidad', value: t => t.Entidad || ""},
   {key:'tema', label:'Tema', value: t => t.Tema || ""},
   {key:'juzgado', label:'Juzgado', value: t => t.Juzgado || ""},
+  {key:'fechaNotificacion', label:'Fecha Notificación', value: t => t.FechaNotificacion || ""},
   {key:'fechaVencimiento', label:'Fecha Vencimiento', value: t => t.FechaVencimiento || ""},
   {key:'acciones', label:'Acciones', filterable:false},
 ];
@@ -51,7 +53,8 @@ export default function TutelasView({ tutelas, searchQuery, onOpenTutela, onCrea
                 <td>{t.Entidad || "—"}</td>
                 <td>{t.Tema || "—"}</td>
                 <td>{t.Juzgado || "—"}</td>
-                <td>{t.FechaVencimiento || "—"}</td>
+                <td>{fmtDate(t.FechaNotificacion)}</td>
+                <td>{fmtDate(t.FechaVencimiento)}</td>
                 <td style={{whiteSpace:'nowrap'}}>
                   <div className="row-actions">
                     <IconButton icon="edit" variant="edit" label={canWrite ? "Editar tutela" : "Ver tutela"} onClick={() => onOpenTutela(t.id)} />
@@ -60,7 +63,7 @@ export default function TutelasView({ tutelas, searchQuery, onOpenTutela, onCrea
                 </td>
               </tr>
             )) : (
-              <tr><td colSpan={7}><div className="empty-state"><div className="mark" dangerouslySetInnerHTML={{__html: ICON_SVG}} />No hay tutelas para mostrar.</div></td></tr>
+              <tr><td colSpan={8}><div className="empty-state"><div className="mark" dangerouslySetInnerHTML={{__html: ICON_SVG}} />No hay tutelas para mostrar.</div></td></tr>
             )}
           </tbody>
         </table>
