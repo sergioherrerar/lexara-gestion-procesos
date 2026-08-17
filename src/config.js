@@ -6,6 +6,10 @@ export const INITIAL_CONFIG = {
   TENANT_ID: "a89ceaa6-c4df-4b18-93a7-65dfa57a5541",   // ID de directorio (inquilino) — "md abogados sas"
   SP_HOST: "mydabogados.sharepoint.com",
   SP_SITE_PATH: "/sites/NuevosProcesosMD",
+  // Las listas Tutelas/Tema/Valores Entidad viven en OTRO sitio de SharePoint
+  // del mismo tenant — confirmado por el usuario 2026-08-17 con una captura
+  // del origen de datos real: https://mydabogados.sharepoint.com/sites/TutelasMDABOGADOS
+  SP_SITE_PATH_TUTELAS: "/sites/TutelasMDABOGADOS",
 };
 
 // =========================================================================
@@ -473,6 +477,11 @@ export const SHAREPOINT_LISTS_CONFIG = [
     key: "tutelas",
     listName: "Tutelas",
     label: "Tutelas",
+    // Esta lista vive en OTRO sitio de SharePoint ("Tutelas MD Abogados"),
+    // no en el sitio principal (NuevosProcesosMD) — sitePathKey dice en qué
+    // campo de INITIAL_CONFIG (config.js) está esa URL. Ver useLexaraApp.js
+    // (siteIdForList) y [[project_tutelas_modulo]].
+    sitePathKey: "SP_SITE_PATH_TUTELAS",
     semanticFields: [
       {key:"NoTutela", label:"No. Tutela", hint:["no tutela","numero tutela","número tutela"], required:true},
       {key:"Cliente", label:"Cliente", hint:["cliente"], required:true},
@@ -509,6 +518,7 @@ export const SHAREPOINT_LISTS_CONFIG = [
     key: "temas",
     listName: "Tema",
     label: "Tema",
+    sitePathKey: "SP_SITE_PATH_TUTELAS",
     semanticFields: [
       {key:"Nombre", label:"Tema", hint:["tema","nombre"], required:true},
     ],
@@ -521,6 +531,7 @@ export const SHAREPOINT_LISTS_CONFIG = [
     key: "valoresEntidad",
     listName: "Valores Entidad",
     label: "Valores Entidad",
+    sitePathKey: "SP_SITE_PATH_TUTELAS",
     semanticFields: [
       {key:"Entidad", label:"Entidad", hint:["entidad"], required:true},
       {key:"Valor", label:"Valor", hint:["valor"]},

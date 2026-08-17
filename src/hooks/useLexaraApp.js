@@ -17,6 +17,24 @@ function loadSavedMappings(){
   }catch{ return {}; }
 }
 
+// La gran mayoría de las listas viven en el sitio principal (config.SP_SITE_PATH,
+// resuelto una sola vez como defaultSiteId). Algunas listas (Tutelas/Tema/
+// Valores Entidad) declaran `sitePathKey` en config.js apuntando a OTRO campo
+// de INITIAL_CONFIG con la URL de su propio sitio — acá se resuelve (y se
+// cachea en `cache`, para no pedirle a Graph el mismo siteId una vez por
+// lista) cuál siteId real le toca a cada lista antes de conectarla.
+async function siteIdForList(config, list, defaultSiteId, cache){
+  if(!list.sitePathKey) return defaultSiteId;
+  const path = config[list.sitePathKey];
+  if(!path){
+    throw new Error(`Falta configurar la URL del sitio de SharePoint de "${list.label}" (campo ${list.sitePathKey} en config.js).`);
+  }
+  if(cache[path]) return cache[path];
+  const sid = await Graph.fetchSiteId(config, path);
+  cache[path] = sid;
+  return sid;
+}
+
 export function useLexaraApp(){
   const [config, setConfigState] = useState(INITIAL_CONFIG);
   const [lists, setLists] = useState(() => {
@@ -157,10 +175,12 @@ export function useLexaraApp(){
       setAccount(acc);
       const sid = siteId || await Graph.fetchSiteId(config);
       setSiteId(sid);
+      const siteCache = {};
       const updated = [];
       for(const list of lists){
         try{
-          const connected = await Graph.connectList(sid, list);
+          const listSiteId = await siteIdForList(config, list, sid, siteCache);
+          const connected = await Graph.connectList(listSiteId, list);
           // Pre-carga las adivinanzas en el mapeo real (no solo visual), para
           // que "Aplicar mapeo" funcione aunque el usuario no toque un select.
           updated.push({...connected, mapping: Graph.guessListMapping(connected)});
@@ -184,9 +204,11 @@ export function useLexaraApp(){
     try{
       if(Graph.allRequiredMapped(lists)){
         const sid = await Graph.fetchSiteId(config);
+        const siteCache = {};
         const updated = [];
         for(const list of lists){
-          const connected = await Graph.connectList(sid, list);
+          const listSiteId = await siteIdForList(config, list, sid, siteCache);
+          const connected = await Graph.connectList(listSiteId, list);
           updated.push({...connected, items: Graph.transformListItems(connected)});
         }
         // DESACTIVADO TEMPORALMENTE (2026-08-08) a pedido del usuario: este
@@ -279,9 +301,11 @@ export function useLexaraApp(){
     try{
       const sid = siteId || await Graph.fetchSiteId(config);
       setSiteId(sid);
+      const siteCache = {};
       const updated = [];
       for(const list of lists){
-        const connected = await Graph.connectList(sid, list);
+        const listSiteId = await siteIdForList(config, list, sid, siteCache);
+        const connected = await Graph.connectList(listSiteId, list);
         updated.push({...connected, items: Graph.transformListItems(connected)});
       }
       setLists(updated);
@@ -924,7 +948,7 @@ export function useLexaraApp(){
         const list = listByKey('tutelas');
         const graphFields = Graph.graphFieldsFromUpdates(list, updates);
         try{
-          const created = await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items`, {
+          const created = await Graph.graphFetch(`/sites/${list.siteId || siteId}/lists/${list.listId}/items`, {
             method:"POST", body: JSON.stringify({ fields: graphFields })
           });
           nuevo.id = created.id; nuevo._graphId = created.id;
@@ -946,7 +970,7 @@ export function useLexaraApp(){
       const list = listByKey('tutelas');
       const graphBody = Graph.graphFieldsFromUpdates(list, updates);
       try{
-        await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items/${activeTutela._graphId}/fields`, {
+        await Graph.graphFetch(`/sites/${list.siteId || siteId}/lists/${list.listId}/items/${activeTutela._graphId}/fields`, {
           method:"PATCH", body: JSON.stringify(graphBody)
         });
       }catch(err){ console.error(err); notify("No se pudo guardar en SharePoint: " + err.message, 'error'); setSaving(false); return; }
@@ -961,7 +985,7 @@ export function useLexaraApp(){
       setSaving(true);
       const list = listByKey('tutelas');
       try{
-        await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items/${tutela._graphId || tutela.id}`, { method:"DELETE" });
+        await Graph.graphFetch(`/sites/${list.siteId || siteId}/lists/${list.listId}/items/${tutela._graphId || tutela.id}`, { method:"DELETE" });
       }catch(err){ console.error(err); notify("No se pudo eliminar en SharePoint: " + err.message, 'error'); setSaving(false); return; }
       setSaving(false);
     }
@@ -984,7 +1008,7 @@ export function useLexaraApp(){
       const { id, ...nuevoSinId } = nuevo;
       const graphFields = Graph.graphFieldsFromUpdates(list, nuevoSinId);
       try{
-        const created = await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items`, {
+        const created = await Graph.graphFetch(`/sites/${list.siteId || siteId}/lists/${list.listId}/items`, {
           method:"POST", body: JSON.stringify({ fields: graphFields })
         });
         nuevo.id = created.id; nuevo._graphId = created.id;
@@ -1003,7 +1027,7 @@ export function useLexaraApp(){
       const list = listByKey('temas');
       const fields = Graph.graphFieldsFromUpdates(list, updates);
       try{
-        await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items/${tema._graphId || tema.id}/fields`, {
+        await Graph.graphFetch(`/sites/${list.siteId || siteId}/lists/${list.listId}/items/${tema._graphId || tema.id}/fields`, {
           method:"PATCH", body: JSON.stringify(fields)
         });
       }catch(err){ console.error(err); notify("No se pudo guardar el tema en SharePoint: " + err.message, 'error'); }
@@ -1018,7 +1042,7 @@ export function useLexaraApp(){
       const { id, ...nuevoSinId } = nuevo;
       const graphFields = Graph.graphFieldsFromUpdates(list, nuevoSinId);
       try{
-        const created = await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items`, {
+        const created = await Graph.graphFetch(`/sites/${list.siteId || siteId}/lists/${list.listId}/items`, {
           method:"POST", body: JSON.stringify({ fields: graphFields })
         });
         nuevo.id = created.id; nuevo._graphId = created.id;
@@ -1037,7 +1061,7 @@ export function useLexaraApp(){
       const list = listByKey('valoresEntidad');
       const fields = Graph.graphFieldsFromUpdates(list, updates);
       try{
-        await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items/${valor._graphId || valor.id}/fields`, {
+        await Graph.graphFetch(`/sites/${list.siteId || siteId}/lists/${list.listId}/items/${valor._graphId || valor.id}/fields`, {
           method:"PATCH", body: JSON.stringify(fields)
         });
       }catch(err){ console.error(err); notify("No se pudo guardar el valor de entidad en SharePoint: " + err.message, 'error'); }

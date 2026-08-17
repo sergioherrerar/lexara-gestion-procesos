@@ -87,8 +87,13 @@ export async function graphFetch(path, opts){
   return res.status===204 ? null : res.json();
 }
 
-export async function fetchSiteId(config){
-  const site = await graphFetch(`/sites/${config.SP_HOST}:${config.SP_SITE_PATH}`);
+// sitePath opcional: para el sitio principal se puede omitir (usa
+// config.SP_SITE_PATH). Algunas listas (Tutelas/Tema/Valores Entidad) viven
+// en OTRO sitio del mismo tenant — ver sitePathKey en config.js y
+// siteIdForList en useLexaraApp.js.
+export async function fetchSiteId(config, sitePath){
+  const path = sitePath || config.SP_SITE_PATH;
+  const site = await graphFetch(`/sites/${config.SP_HOST}:${path}`);
   return site.id;
 }
 
@@ -137,7 +142,12 @@ export async function connectList(siteId, list){
     itemsUrl = itemsRes["@odata.nextLink"] || null;
     if(itemsUrl && pagina === MAX_PAGINAS-1) itemsTruncated = true;
   }
-  return { ...list, listId, columns, rawItems, itemsTruncated, connectError: null };
+  // Se guarda el siteId real usado para conectar esta lista — la mayoría
+  // comparte el sitio principal, pero Tutelas/Tema/Valores Entidad viven en
+  // otro sitio (ver sitePathKey en config.js); guardarlo en el propio objeto
+  // de la lista es lo que le permite a cada Guardar/Eliminar de esas listas
+  // apuntar al sitio correcto sin tener que repetir esa lógica en cada sitio.
+  return { ...list, listId, siteId, columns, rawItems, itemsTruncated, connectError: null };
 }
 
 export function guessListMapping(list){
