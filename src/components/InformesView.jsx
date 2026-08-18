@@ -11,6 +11,7 @@ import { generarInformeAliansaludExcel, generarInformeAliansaludPDF } from '../l
 import { generarInformeColmedicaExcel, generarInformeColmedicaPDF } from '../lib/informeColmedica';
 import { generarInformeLexaraExcel, generarInformeLexaraPDF } from '../lib/informeLexara';
 import { generarInformeFacturasExcel, generarInformeOrdenesCompraExcel } from '../lib/informeFacturacion';
+import { generarInformeTutelasPDF, abrirCorreoTutelas } from '../lib/informeTutelas';
 
 // Entidades con formato de informe formal ya confirmado, y qué generador usa
 // cada una — cada Entidad puede tener un formato distinto (columnas/orden
@@ -39,12 +40,17 @@ function entidadDeCliente(clientes, codigoClienteOrNombre, matchFn){
   return matchFn(clientes, codigoClienteOrNombre)?.Entidad || "Sin dato";
 }
 
-export default function InformesView({ procesos, clientes, facturas, ordenesCompra, desistimientos }){
+export default function InformesView({ procesos, clientes, facturas, ordenesCompra, desistimientos, tutelas }){
   const [generando, setGenerando] = useState(null); // nombre de la entidad mientras genera el Excel
   const [generandoPDF, setGenerandoPDF] = useState(null); // nombre de la entidad mientras genera el PDF
   const [generandoDesistimientos, setGenerandoDesistimientos] = useState(null);
   const [generandoFacturas, setGenerandoFacturas] = useState(false);
   const [generandoOrdenes, setGenerandoOrdenes] = useState(false);
+  // Informe diario de Tutelas — el usuario elige UNA fecha (la de
+  // Vencimiento); la de Notificación sale sola como el día anterior. Ver
+  // [[project_tutelas_modulo]] / informeTutelas.js.
+  const [fechaInformeTutelas, setFechaInformeTutelas] = useState(() => new Date().toISOString().slice(0,10));
+  const [generandoTutelasPDF, setGenerandoTutelasPDF] = useState(false);
 
   const procesosPorEntidad = groupCount(procesos, p => p.Entidad);
   const clientesPorEntidad = groupCount(clientes, c => c.Entidad);
@@ -119,6 +125,15 @@ export default function InformesView({ procesos, clientes, facturas, ordenesComp
     finally { setGenerandoOrdenes(false); }
   }
 
+  async function handleGenerarTutelasPDF(){
+    setGenerandoTutelasPDF(true);
+    try{ await generarInformeTutelasPDF(tutelas, fechaInformeTutelas); }
+    finally { setGenerandoTutelasPDF(false); }
+  }
+  function handleAbrirCorreoTutelas(){
+    abrirCorreoTutelas(fechaInformeTutelas);
+  }
+
   return (
     <div className="view">
       <div className="view-header">
@@ -158,6 +173,26 @@ export default function InformesView({ procesos, clientes, facturas, ordenesComp
           <div className="panel-body">
             <BarChart data={ordenesPorEntidad} color="#8a6410" emptyMsg="No hay órdenes de compra asociadas a una Entidad." />
           </div>
+        </div>
+      </div>
+
+      <div className="panel" style={{marginTop:20}}>
+        <div className="panel-head"><h3>Informe diario de Tutelas</h3></div>
+        <div className="panel-body">
+          <p style={{margin:'0 0 14px', color:'var(--texto-suave)', fontSize:13}}>
+            Elige la fecha de <strong>Vencimiento</strong> a reportar — la de <strong>Notificación</strong> se calcula sola como el día anterior. Junta todas las Tutelas, sin filtrar por Entidad.
+          </p>
+          <div style={{display:'flex', alignItems:'center', gap:14, flexWrap:'wrap'}}>
+            <div className="field" style={{maxWidth:220}}>
+              <label>Fecha de Vencimiento</label>
+              <input type="date" value={fechaInformeTutelas} onChange={e => setFechaInformeTutelas(e.target.value)} />
+            </div>
+            <div style={{display:'flex', gap:8}}>
+              <IconButton icon="pdf" variant="pdf" label="Descargar PDF de Tutelas" spinning={generandoTutelasPDF} onClick={handleGenerarTutelasPDF} />
+              <IconButton icon="mail" variant="mail" label="Abrir correo con este informe" onClick={handleAbrirCorreoTutelas} />
+            </div>
+          </div>
+          <p className="save-hint" style={{marginTop:10}}>El botón de correo abre un borrador en tu cliente de correo (Outlook, si es el predeterminado) con destinatarios y asunto listos — el PDF se descarga aparte y hay que adjuntarlo a mano antes de enviar.</p>
         </div>
       </div>
 

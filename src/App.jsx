@@ -90,7 +90,7 @@ export default function App(){
 
         {app.view === 'dashboard' && <DashboardView procesos={app.procesos} clientes={app.clientes} facturas={app.facturas} ordenesCompra={app.ordenesCompra} />}
         {app.view === 'informes' && canAccessView(app.role, 'informes') && (
-          <InformesView procesos={app.procesos} clientes={app.clientes} facturas={app.facturas} ordenesCompra={app.ordenesCompra} desistimientos={app.desistimientos} />
+          <InformesView procesos={app.procesos} clientes={app.clientes} facturas={app.facturas} ordenesCompra={app.ordenesCompra} desistimientos={app.desistimientos} tutelas={app.tutelas} />
         )}
         {app.view === 'procesos' && canAccessView(app.role, 'procesos') && (
           <ProcesosView
@@ -267,15 +267,12 @@ export default function App(){
         tutela={app.activeTutela}
         clientes={app.clientes}
         temas={app.temas}
-        valoresEntidad={app.valoresEntidad}
         liveMode={app.liveMode}
         onClose={app.closeTutelaDrawer}
         onSave={app.saveTutela}
         onDelete={app.deleteTutela}
         onCreateTema={app.createTema}
         onSaveTema={app.saveTema}
-        onCreateValorEntidad={app.createValorEntidad}
-        onSaveValorEntidad={app.saveValorEntidad}
         saving={app.saving}
         canWrite={app.canWrite}
       />

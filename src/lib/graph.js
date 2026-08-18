@@ -142,6 +142,34 @@ export async function connectList(siteId, list){
     itemsUrl = itemsRes["@odata.nextLink"] || null;
     if(itemsUrl && pagina === MAX_PAGINAS-1) itemsTruncated = true;
   }
+  // $expand=fields SIN $select trae en blanco las columnas de tipo Búsqueda
+  // (Lookup) y Persona/Grupo — Graph solo resuelve su valor real si se pide
+  // explícitamente por nombre (limitación documentada de Graph para listas de
+  // SharePoint). Caso real: "Cliente" en Tutelas es una columna de Búsqueda y
+  // siempre se veía vacía en la app aunque tuviera dato real en SharePoint
+  // (2026-08-17). En vez de arriesgar el resto de columnas (pedir $select de
+  // TODAS puede fallar contra columnas de sistema que no son campos de
+  // verdad), se hace una segunda pasada SOLO por las columnas de Búsqueda/
+  // Persona que existan en esta lista, y se combina con lo ya leído — las
+  // listas que no tienen ninguna columna de ese tipo (la mayoría) no hacen
+  // esta segunda pasada y no cambian en nada.
+  const columnasBusquedaPersona = columns.filter(c => c.lookup || c.personOrGroup).map(c => c.name);
+  if(columnasBusquedaPersona.length){
+    const selectStr = columnasBusquedaPersona.join(',');
+    let lookupItems = [];
+    let lookupUrl = `/sites/${siteId}/lists/${listId}/items?$expand=fields($select=${selectStr})&$top=200`;
+    for(let pagina = 0; lookupUrl && pagina < MAX_PAGINAS; pagina++){
+      const lookupRes = await graphFetch(lookupUrl);
+      lookupItems = lookupItems.concat(lookupRes.value||[]);
+      lookupUrl = lookupRes["@odata.nextLink"] || null;
+    }
+    const valoresPorId = {};
+    lookupItems.forEach(it => { valoresPorId[it.id] = it.fields || {}; });
+    rawItems.forEach(it => {
+      const extra = valoresPorId[it.id];
+      if(extra) Object.assign(it.fields, extra);
+    });
+  }
   // Se guarda el siteId real usado para conectar esta lista — la mayoría
   // comparte el sitio principal, pero Tutelas/Tema/Valores Entidad viven en
   // otro sitio (ver sitePathKey en config.js); guardarlo en el propio objeto
@@ -342,6 +370,21 @@ export function despachosParaAccion(tiposAccion, tipoAccion){
   const target = normalize(tipoAccion);
   const set = new Set();
   (tiposAccion||[]).forEach(t => { if(t.Despacho && normalize(t.NombreIdTipoProceso||"")===target) set.add(t.Despacho); });
+  return Array.from(set).sort((a,b)=>a.localeCompare(b));
+}
+// Tutelas: "Tipo Vinculación Entidad" y "Tema" son selects dependientes,
+// igual criterio que Tipo de Acción/Tipo de Proceso en Procesos — las
+// opciones de Tipo Vinculación Entidad son los valores distintos de
+// "Prestación Tema" en la lista Tema, y el Tema queda filtrado a los que
+// tengan esa misma Prestación Tema (ver [[project_tutelas_modulo]], 2026-08-17).
+export function tipoVinculacionDistinct(temas){
+  return Array.from(new Set((temas||[]).map(t => t.PrestacionTema).filter(Boolean))).sort((a,b)=>a.localeCompare(b));
+}
+export function temasParaTipoVinculacion(temas, tipoVinculacion){
+  if(!tipoVinculacion) return [];
+  const target = normalize(tipoVinculacion);
+  const set = new Set();
+  (temas||[]).forEach(t => { if(t.Nombre && normalize(t.PrestacionTema||"")===target) set.add(t.Nombre); });
   return Array.from(set).sort((a,b)=>a.localeCompare(b));
 }
 // Los 6 pagos fijos de una "Forma de pago", cada uno con su etapa procesal

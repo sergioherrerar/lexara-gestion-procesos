@@ -59,6 +59,12 @@ export const ICONS = {
       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="m9 13 1.5 1.5L13.5 11"/><path d="M9 17.5h6"/>
     </svg>
   ),
+  // Sobre — abrir un borrador de correo (Outlook) con destinatarios y asunto listos.
+  mail: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 6 10 7 10-7"/>
+    </svg>
+  ),
 };
 
 // Muchos links vienen de SharePoint sin "https://" delante (o con espacios

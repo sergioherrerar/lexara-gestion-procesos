@@ -753,9 +753,9 @@ export const DEMO_TIPOS_ACCION = [
 // Datos ficticios del módulo Tutelas (2026-08-16) — inventados solo para
 // probar la pantalla nueva, no son información real de ningún caso.
 export const DEMO_TEMAS = [
-  {id:1, Nombre:"Recobro", PrestacionTema:"", ClienteTema:""},
-  {id:2, Nombre:"Prestación de servicio", PrestacionTema:"Servicio", ClienteTema:""},
-  {id:3, Nombre:"Suministro de medicamento", PrestacionTema:"Medicamento", ClienteTema:""},
+  {id:1, Nombre:"Recobro", PrestacionTema:"Vinculada", ClienteTema:""},
+  {id:2, Nombre:"Prestación de servicio", PrestacionTema:"Accionada", ClienteTema:""},
+  {id:3, Nombre:"Suministro de medicamento", PrestacionTema:"Accionada", ClienteTema:""},
 ];
 export const DEMO_VALORES_ENTIDAD = [
   {id:1, Entidad:"SOS", Tipo:"EPS", ValorEntidad:"350.000,00", ValorAbogado:"150.000,00", LinkCarpetas:"", LinkFormatos:""},

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { FieldCard, RichTextEditor } from './FormFields';
 import { IconTextButton } from './IconButton';
+import { tipoVinculacionDistinct, temasParaTipoVinculacion } from '../lib/graph';
 import { useEscapeToClose } from '../hooks/useEscapeToClose';
 
 // Campos que todavía no se sabe si son un select fijo en SharePoint (el
@@ -8,33 +9,30 @@ import { useEscapeToClose } from '../hooks/useEscapeToClose';
 // conocemos las opciones reales) — quedan como texto libre por ahora. Solo
 // los que ya tienen un criterio claro (Sí/No) se dejan como select. Ver
 // [[project_tutelas_modulo]] — a confirmar con el usuario antes de fijar
-// opciones para TipoVinculacionEntidad/Departamento/Ciudad/Prestacion/TipoRespuesta.
+// opciones para Departamento/Ciudad/Prestacion/TipoRespuesta.
 const SI_NO = ["Sí", "No"];
 
-const FIELDS = ["NoTutela", "TipoVinculacionEntidad", "MedidaCautelar",
+const FIELDS = ["NoTutela", "MedidaCautelar",
   "Departamento", "Ciudad", "Proceso", "FechaNotificacion", "FechaVencimiento", "Prestacion", "TipoRespuesta",
   "AgenciaOficiosa", "Usuario", "NoIdentificacion", "Juzgado", "Correo", "Solicita"];
 
 function emptyForm(tutela){
-  const initial = { Cliente: tutela.Cliente || "", Entidad: tutela.Entidad || "", Tema: tutela.Tema || "" };
+  const initial = { Cliente: tutela.Cliente || "", Entidad: tutela.Entidad || "", TipoVinculacionEntidad: tutela.TipoVinculacionEntidad || "", Tema: tutela.Tema || "" };
   FIELDS.forEach(k => { initial[k] = tutela[k] || ""; });
   return initial;
 }
 
 export default function TutelaDrawer({
-  tutela, clientes, temas, valoresEntidad, liveMode, onClose, onSave, onDelete,
-  onCreateTema, onSaveTema, onCreateValorEntidad, onSaveValorEntidad, saving, canWrite = true,
+  tutela, clientes, temas, liveMode, onClose, onSave, onDelete,
+  onCreateTema, onSaveTema, saving, canWrite = true,
 }){
   const [form, setForm] = useState(null);
   const [showEditarTema, setShowEditarTema] = useState(false);
   const [nombreTema, setNombreTema] = useState("");
-  const [showEditarValor, setShowEditarValor] = useState(false);
-  const [valorForm, setValorForm] = useState({ Tipo:"", ValorEntidad:"", ValorAbogado:"", LinkCarpetas:"", LinkFormatos:"" });
 
   useEffect(() => {
     setForm(tutela ? emptyForm(tutela) : null);
     setShowEditarTema(false);
-    setShowEditarValor(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tutela]);
 
@@ -45,40 +43,32 @@ export default function TutelaDrawer({
   function setField(key, value){ setForm(prev => ({...prev, [key]: value})); }
 
   const esNuevo = tutela.id == null;
-  const temaActual = (temas||[]).find(t => t.Nombre === form.Tema) || null;
-  const valorActual = (valoresEntidad||[]).find(v => v.Entidad === form.Entidad) || null;
+  // Tipo Vinculación Entidad / Tema — selects dependientes: las opciones de
+  // Tipo Vinculación Entidad son los valores de "Prestación Tema" en la
+  // lista Tema, y el Tema queda filtrado a los que compartan esa misma
+  // Prestación Tema (igual criterio que Tipo de Acción/Tipo de Proceso en
+  // Procesos judiciales — ver tipoVinculacionDistinct/temasParaTipoVinculacion
+  // en graph.js).
+  function setTipoVinculacionEntidad(value){
+    setForm(prev => {
+      const next = {...prev, TipoVinculacionEntidad: value};
+      const validos = temasParaTipoVinculacion(temas, value);
+      if(prev.Tema && !validos.includes(prev.Tema)) next.Tema = "";
+      return next;
+    });
+  }
+  const temaActual = (temas||[]).find(t => t.Nombre === form.Tema && (t.PrestacionTema||"") === (form.TipoVinculacionEntidad||"")) || null;
 
   function abrirEditarTema(){
     setNombreTema(temaActual?.Nombre || "");
     setShowEditarTema(v => !v);
-    setShowEditarValor(false);
   }
   async function handleGuardarTema(){
-    if(!nombreTema.trim()) return;
+    if(!nombreTema.trim() || !form.TipoVinculacionEntidad) return;
     if(temaActual){ await onSaveTema(temaActual.id, {Nombre: nombreTema.trim()}); }
-    else { await onCreateTema({Nombre: nombreTema.trim()}); }
+    else { await onCreateTema({Nombre: nombreTema.trim(), PrestacionTema: form.TipoVinculacionEntidad}); }
     setField('Tema', nombreTema.trim());
     setShowEditarTema(false);
-  }
-
-  function abrirEditarValor(){
-    setValorForm({
-      Tipo: valorActual?.Tipo || "",
-      ValorEntidad: valorActual?.ValorEntidad || "",
-      ValorAbogado: valorActual?.ValorAbogado || "",
-      LinkCarpetas: valorActual?.LinkCarpetas || "",
-      LinkFormatos: valorActual?.LinkFormatos || "",
-    });
-    setShowEditarValor(v => !v);
-    setShowEditarTema(false);
-  }
-  function setValorField(key, value){ setValorForm(prev => ({...prev, [key]: value})); }
-  async function handleGuardarValor(){
-    if(!form.Entidad){ return; }
-    const fields = { Entidad: form.Entidad, ...valorForm };
-    if(valorActual){ await onSaveValorEntidad(valorActual.id, fields); }
-    else { await onCreateValorEntidad(fields); }
-    setShowEditarValor(false);
   }
 
   function handleSave(){ onSave(form); }
@@ -87,7 +77,9 @@ export default function TutelaDrawer({
   if(form.Cliente && !clienteNombres.includes(form.Cliente)) clienteNombres.unshift(form.Cliente);
   const entidadOpciones = Array.from(new Set(clientes.map(c => c.Entidad).filter(Boolean))).sort((a,b)=>a.localeCompare(b));
   if(form.Entidad && !entidadOpciones.includes(form.Entidad)) entidadOpciones.unshift(form.Entidad);
-  const temaOpciones = (temas||[]).map(t => t.Nombre).filter(Boolean);
+  const tipoVinculacionOpciones = tipoVinculacionDistinct(temas);
+  if(form.TipoVinculacionEntidad && !tipoVinculacionOpciones.includes(form.TipoVinculacionEntidad)) tipoVinculacionOpciones.unshift(form.TipoVinculacionEntidad);
+  const temaOpciones = temasParaTipoVinculacion(temas, form.TipoVinculacionEntidad);
   if(form.Tema && !temaOpciones.includes(form.Tema)) temaOpciones.unshift(form.Tema);
 
   return (
@@ -116,37 +108,16 @@ export default function TutelaDrawer({
                 </select>
               </FieldCard>
               <FieldCard label="Entidad">
-                <div style={{display:'flex', gap:8, alignItems:'flex-start'}}>
-                  <select value={form.Entidad} onChange={e => setField('Entidad', e.target.value)} disabled={!canWrite} style={{flex:1}}>
-                    <option value="">— seleccionar —</option>
-                    {entidadOpciones.map(n => <option value={n} key={n}>{n}</option>)}
-                  </select>
-                  {canWrite && <IconTextButton icon="edit" variant="secondary" onClick={abrirEditarValor}>Valor entidad</IconTextButton>}
-                </div>
-                {showEditarValor && (
-                  <div style={{marginTop:10, padding:12, border:'1px solid var(--gris-linea)', borderRadius:8, background:'var(--gris-claro)'}}>
-                    {!form.Entidad ? (
-                      <div className="field-warning">Elige primero una Entidad.</div>
-                    ) : (
-                      <>
-                        <div className="field-grid">
-                          <div className="field"><label>Tipo</label><input type="text" value={valorForm.Tipo} onChange={e => setValorField('Tipo', e.target.value)} /></div>
-                          <div className="field"><label>Valor Entidad</label><input type="text" value={valorForm.ValorEntidad} onChange={e => setValorField('ValorEntidad', e.target.value)} /></div>
-                          <div className="field"><label>Valor Abogado</label><input type="text" value={valorForm.ValorAbogado} onChange={e => setValorField('ValorAbogado', e.target.value)} /></div>
-                          <div className="field"><label>Link Carpetas</label><input type="text" value={valorForm.LinkCarpetas} onChange={e => setValorField('LinkCarpetas', e.target.value)} /></div>
-                          <div className="field"><label>Link Formatos</label><input type="text" value={valorForm.LinkFormatos} onChange={e => setValorField('LinkFormatos', e.target.value)} /></div>
-                        </div>
-                        <div style={{marginTop:10, display:'flex', gap:8}}>
-                          <IconTextButton icon="add" variant="primary" onClick={handleGuardarValor} disabled={saving}>{saving ? "Guardando…" : `Guardar valores de "${form.Entidad}"`}</IconTextButton>
-                          <button type="button" className="btn-secondary" onClick={() => setShowEditarValor(false)} disabled={saving}>Cancelar</button>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                )}
+                <select value={form.Entidad} onChange={e => setField('Entidad', e.target.value)} disabled={!canWrite}>
+                  <option value="">— seleccionar —</option>
+                  {entidadOpciones.map(n => <option value={n} key={n}>{n}</option>)}
+                </select>
               </FieldCard>
               <FieldCard label="Tipo Vinculación Entidad">
-                <input type="text" value={form.TipoVinculacionEntidad} onChange={e => setField('TipoVinculacionEntidad', e.target.value)} readOnly={!canWrite} />
+                <select value={form.TipoVinculacionEntidad} onChange={e => setTipoVinculacionEntidad(e.target.value)} disabled={!canWrite}>
+                  <option value="">— seleccionar —</option>
+                  {tipoVinculacionOpciones.map(n => <option value={n} key={n}>{n}</option>)}
+                </select>
               </FieldCard>
             </div>
           </div>
@@ -180,19 +151,25 @@ export default function TutelaDrawer({
               </FieldCard>
               <FieldCard label="Tema" full>
                 <div style={{display:'flex', gap:8, alignItems:'flex-start'}}>
-                  <select value={form.Tema} onChange={e => setField('Tema', e.target.value)} disabled={!canWrite} style={{flex:1}}>
-                    <option value="">— seleccionar —</option>
+                  <select value={form.Tema} onChange={e => setField('Tema', e.target.value)} disabled={!canWrite || !form.TipoVinculacionEntidad} style={{flex:1}}>
+                    <option value="">{form.TipoVinculacionEntidad ? "— seleccionar —" : "— elige primero el Tipo Vinculación Entidad —"}</option>
                     {temaOpciones.map(n => <option value={n} key={n}>{n}</option>)}
                   </select>
-                  {canWrite && <IconTextButton icon="edit" variant="secondary" onClick={abrirEditarTema}>Tema</IconTextButton>}
+                  {canWrite && <IconTextButton icon="edit" variant="secondary" onClick={abrirEditarTema} disabled={!form.TipoVinculacionEntidad}>Tema</IconTextButton>}
                 </div>
                 {showEditarTema && (
                   <div style={{marginTop:10, padding:12, border:'1px solid var(--gris-linea)', borderRadius:8, background:'var(--gris-claro)'}}>
-                    <div className="field"><label>{temaActual ? `Editar "${temaActual.Nombre}"` : "Nuevo tema"}</label><input type="text" value={nombreTema} onChange={e => setNombreTema(e.target.value)} /></div>
-                    <div style={{marginTop:10, display:'flex', gap:8}}>
-                      <IconTextButton icon="add" variant="primary" onClick={handleGuardarTema} disabled={saving}>{saving ? "Guardando…" : (temaActual ? "Guardar" : "Crear tema")}</IconTextButton>
-                      <button type="button" className="btn-secondary" onClick={() => setShowEditarTema(false)} disabled={saving}>Cancelar</button>
-                    </div>
+                    {!form.TipoVinculacionEntidad ? (
+                      <div className="field-warning">Elige primero un Tipo Vinculación Entidad.</div>
+                    ) : (
+                      <>
+                        <div className="field"><label>{temaActual ? `Editar "${temaActual.Nombre}"` : `Nuevo tema para "${form.TipoVinculacionEntidad}"`}</label><input type="text" value={nombreTema} onChange={e => setNombreTema(e.target.value)} /></div>
+                        <div style={{marginTop:10, display:'flex', gap:8}}>
+                          <IconTextButton icon="add" variant="primary" onClick={handleGuardarTema} disabled={saving}>{saving ? "Guardando…" : (temaActual ? "Guardar" : "Crear tema")}</IconTextButton>
+                          <button type="button" className="btn-secondary" onClick={() => setShowEditarTema(false)} disabled={saving}>Cancelar</button>
+                        </div>
+                      </>
+                    )}
                   </div>
                 )}
               </FieldCard>
