@@ -274,6 +274,9 @@
   .badge-gris{background:var(--gris-claro); color:var(--texto-suave);}
   .badge-rojo{background:#fbe4e2; color:#a3281c;}
   .badge-truncate{display:inline-block; max-width:360px; white-space:normal; line-height:1.5; vertical-align:middle;}
+  /* Columna "Observación" de Procesos judiciales — mismo ancho/wrap que
+     Estado, pero sin fondo de color (no es un indicador de semáforo). */
+  .obs-truncate{display:inline-block; max-width:280px; white-space:normal; line-height:1.5; vertical-align:middle; color:var(--texto);}
 
   /* ---------- Procesos table ---------- */
   .toolbar{display:flex; align-items:center; gap:10px; margin-bottom:16px; flex-wrap:wrap;}

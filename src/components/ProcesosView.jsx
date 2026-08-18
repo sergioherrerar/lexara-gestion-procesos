@@ -20,6 +20,7 @@ const COLUMNS = [
   {key:'cliente', label:'Cliente', value: p => p.Cliente || ""},
   {key:'despacho', label:'Despacho', value: p => `${p.Despacho||""} ${p.NumeroDespacho||""}`.trim()},
   {key:'estado', label:'Estado', value: p => stripHtml(p.Estado) || ""},
+  {key:'observaciones', label:'Observación', value: p => stripHtml(p.Observaciones) || ""},
   {key:'carpeta', label:'Carpeta', filterable:false},
   {key:'acciones', label:'Acciones', filterable:false},
 ];
@@ -97,6 +98,7 @@ export default function ProcesosView({ procesos, currentFilter, setFilter, searc
                 <td className="cliente">{p.Cliente || "—"}</td>
                 <td>{p.Despacho || "—"}{p.NumeroDespacho ? ` · ${p.NumeroDespacho}` : ""}</td>
                 <td><span className={"badge badge-truncate " + estadoBadgeClass(p.EstadoVT, p.FechaUltimoEstado)}>{stripHtml(p.Estado) || "—"}</span></td>
+                <td><span className="obs-truncate">{stripHtml(p.Observaciones) || "—"}</span></td>
                 <td>{p.LinkCarpeta ? <IconButton icon="open" variant="open" label="Abrir carpeta" href={p.LinkCarpeta} onClick={e => e.stopPropagation()} /> : "—"}</td>
                 <td style={{whiteSpace:'nowrap'}}>
                   <div className="row-actions">
@@ -107,7 +109,7 @@ export default function ProcesosView({ procesos, currentFilter, setFilter, searc
                 </td>
               </tr>
             )) : (
-              <tr><td colSpan={6}><div className="empty-state"><div className="mark" dangerouslySetInnerHTML={{__html: ICON_SVG}} />No se encontraron procesos con ese criterio.</div></td></tr>
+              <tr><td colSpan={7}><div className="empty-state"><div className="mark" dangerouslySetInnerHTML={{__html: ICON_SVG}} />No se encontraron procesos con ese criterio.</div></td></tr>
             )}
           </tbody>
         </table>
