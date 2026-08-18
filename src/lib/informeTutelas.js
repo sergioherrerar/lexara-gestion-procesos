@@ -1,7 +1,9 @@
 // Informe diario de Tutelas (PDF + Correo) — modelado sobre el reporte y la
-// macro de Access "Correo_2_Click" que el usuario compartió 2026-08-17. A
-// diferencia del resto de Informes (por Entidad), este junta TODAS las
-// Tutelas sin filtrar por Entidad, igual que la consulta original de Access.
+// macro de Access "Correo_2_Click" que el usuario compartió 2026-08-17, y
+// sobre un correo .msg real generado por esa macro (revisado 2026-08-18
+// para replicar el texto/tablas reales del cuerpo). A diferencia del resto
+// de Informes (por Entidad), este junta TODAS las Tutelas sin filtrar por
+// Entidad, igual que la consulta original de Access.
 // Ver [[project_tutelas_modulo]].
 import { prepararDocumentoPDF, fechaCorta, VERDE_OSCURO, GRIS_ZEBRA, TEXTO, MARGEN } from './informesPDF';
 
@@ -18,21 +20,28 @@ function fechaHoraLarga(d){
   return `${DIAS[d.getDay()]}, ${d.getDate()} de ${MESES[d.getMonth()]} de ${d.getFullYear()}    ${horas12}:${mins}:${segs} ${ampm}`;
 }
 
-// Suma/resta días a una fecha "yyyy-mm-dd" sin líos de huso horario (evita
-// construir un Date desde el string ISO completo, que UTC-desplaza el día).
-function sumarDias(iso, dias){
+// "jueves 13 de agosto de 2026" — mismo formato del párrafo de saludo del
+// correo real de Access (sin hora, con "de" antes del mes).
+function fechaLargaSinHora(iso){
   const [y,m,d] = iso.split('-').map(Number);
-  const dt = new Date(y, m-1, d + dias);
-  return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
+  const dt = new Date(y, m-1, d);
+  return `${DIAS[dt.getDay()]} ${dt.getDate()} de ${MESES[dt.getMonth()]} de ${dt.getFullYear()}`;
 }
 
-// El usuario solo elige UNA fecha (la de Vencimiento) — la de Notificación
-// sale sola como el día anterior a esa (pedido explícito 2026-08-17: "por
-// fecha de notificacion las de fecha del dia anterior sea cual sea").
-export function calcularFechasInforme(fechaVencimientoISO){
+function hoyISO(){
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+// El usuario elige UNA sola fecha — la de Notificación (cualquier día, la
+// que sea) — y la de Vencimiento siempre es la fecha real de HOY, al
+// momento exacto de darle clic al botón de PDF o Correo (igual criterio que
+// la macro de Access original: TXtDiaNoti para Notificación, Date() del
+// sistema para Vencimiento). Corregido 2026-08-18 — antes era al revés.
+export function calcularFechasInforme(fechaNotificacionISO){
   return {
-    fechaVencimiento: fechaVencimientoISO,
-    fechaNotificacion: sumarDias(fechaVencimientoISO, -1),
+    fechaNotificacion: fechaNotificacionISO,
+    fechaVencimiento: hoyISO(),
   };
 }
 
@@ -63,8 +72,8 @@ function dibujarSeccion(doc, autoTable, titulo, columnas, filas, y, pageWidth, d
   return doc.lastAutoTable.finalY + 10;
 }
 
-export async function generarInformeTutelasPDF(tutelas, fechaVencimientoISO){
-  const { fechaVencimiento, fechaNotificacion } = calcularFechasInforme(fechaVencimientoISO);
+export async function generarInformeTutelasPDF(tutelas, fechaNotificacionISO){
+  const { fechaVencimiento, fechaNotificacion } = calcularFechasInforme(fechaNotificacionISO);
   const { doc, autoTable, pageWidth, dibujarEncabezadoYPie, numerarPaginas } = await prepararDocumentoPDF('Tutelas notificadas y vencimiento');
 
   dibujarEncabezadoYPie();
@@ -89,27 +98,60 @@ export async function generarInformeTutelasPDF(tutelas, fechaVencimientoISO){
     y, pageWidth, dibujarEncabezadoYPie);
 
   numerarPaginas();
-  doc.save(`Tutelas Notificadas y con vencimiento ${fechaVencimiento}.pdf`);
+  doc.save(`Tutelas Notificadas y con vencimiento ${fechaNotificacion}.pdf`);
 }
 
-// Botón "Correo" — mismos destinatarios y asunto que la macro de Access
-// original. IMPORTANTE: un enlace mailto: (a diferencia de la automatización
-// COM de Outlook que usaba la macro) NO puede adjuntar archivos ni mandar el
-// cuerpo con las tablas de colores y la imagen de firma en HTML — solo abre
-// un borrador con Para/CC/Asunto/cuerpo en texto plano en el cliente de
-// correo predeterminado del equipo (Outlook, si está configurado así). El
-// PDF se descarga aparte (con el otro botón) y hay que adjuntarlo a mano.
+// --- Correo ---
+// Destinatarios/asunto/texto igual a un correo .msg real generado por la
+// macro de Access que el usuario compartió 2026-08-18. IMPORTANTE: un
+// enlace mailto: (a diferencia de la automatización COM de Outlook que usaba
+// la macro) NO puede adjuntar archivos ni mandar el cuerpo en HTML con
+// tablas de colores e imagen de firma — solo abre un borrador con
+// Para/CC/Asunto/cuerpo en TEXTO PLANO en el cliente de correo
+// predeterminado del equipo (Outlook, si está configurado así). El PDF se
+// descarga aparte (con el otro botón) y hay que adjuntarlo a mano.
 const DESTINATARIO_TO = "daniacp@aliansalud.com.co";
 const DESTINATARIOS_CC = ["asesoriajuridica@lexaraabogados.com", "Gerencia@lexaraabogados.com", "myd.abogados.monica@hotmail.com"];
 
-export function abrirCorreoTutelas(fechaVencimientoISO){
-  const { fechaVencimiento, fechaNotificacion } = calcularFechasInforme(fechaVencimientoISO);
+// Un mailto: muy largo puede fallar o cortarse en algunos clientes/SO — se
+// limita cuántas filas se listan en el cuerpo (el PDF adjunto siempre trae
+// el listado completo, sin límite).
+const TOPE_FILAS_CORREO = 25;
+function listadoTexto(filas){
+  const mostrar = filas.slice(0, TOPE_FILAS_CORREO);
+  let texto = mostrar.map((t,i) => `${i+1}. ${t.NoTutela||"—"} — ${t.Cliente||"—"} — ${t.TipoRespuesta||"—"}`).join('\n');
+  if(!filas.length) texto = '(sin registros)';
+  else if(filas.length > TOPE_FILAS_CORREO) texto += `\n… y ${filas.length - TOPE_FILAS_CORREO} más — ver el PDF adjunto para el listado completo.`;
+  return texto;
+}
+
+// Las dos tablas del correo real de Access no tienen columna de fecha (van
+// numeradas con "Ítem" y llevan No Tutela/Cliente/Tipo Respuesta) — orden
+// real: primero Vencimiento (hoy), después Notificación.
+export function abrirCorreoTutelas(tutelas, fechaNotificacionISO){
+  const { fechaVencimiento, fechaNotificacion } = calcularFechasInforme(fechaNotificacionISO);
+  const notificadas = filasPorFecha(tutelas, 'FechaNotificacion', fechaNotificacion);
+  const vencimiento = filasPorFecha(tutelas, 'FechaVencimiento', fechaVencimiento);
+
   const asunto = `Notificación de Tutelas del (${fechaCorta(fechaNotificacion)}) y Vencimiento de las respuestas del (${fechaCorta(fechaVencimiento)})`;
-  const cuerpo = `Buenos días,\n\n` +
-    `En el documento adjunto se encuentran las tutelas asignadas el día ${fechaCorta(fechaNotificacion)}, ` +
-    `así como aquellas que se encuentran en término de vencimiento para el día ${fechaCorta(fechaVencimiento)}.\n\n` +
-    `(Recuerda adjuntar el PDF que acabas de descargar antes de enviar este correo.)\n\n` +
-    `Saludos,`;
+  const cuerpo = [
+    'Buenos días,',
+    '',
+    `En el documento adjunto se encuentran las tutelas asignadas el día ${fechaLargaSinHora(fechaNotificacion)}, así como aquellas que se encuentran en término de vencimiento para el día de hoy, ${fechaLargaSinHora(fechaVencimiento)}.`,
+    '',
+    'Contestaciones con Vencimiento el día de hoy',
+    listadoTexto(vencimiento),
+    `Total de registros: ${vencimiento.length}`,
+    '',
+    'Tutelas Asignadas el Día Anterior',
+    listadoTexto(notificadas),
+    `Total de registros: ${notificadas.length}`,
+    '',
+    '(Recuerda adjuntar el PDF que acabas de descargar antes de enviar este correo.)',
+    '',
+    'Saludos,',
+  ].join('\n');
+
   const enc = encodeURIComponent;
   const url = `mailto:${DESTINATARIO_TO}?cc=${enc(DESTINATARIOS_CC.join(','))}&subject=${enc(asunto)}&body=${enc(cuerpo)}`;
   window.location.href = url;

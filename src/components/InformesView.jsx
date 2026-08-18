@@ -47,8 +47,8 @@ export default function InformesView({ procesos, clientes, facturas, ordenesComp
   const [generandoFacturas, setGenerandoFacturas] = useState(false);
   const [generandoOrdenes, setGenerandoOrdenes] = useState(false);
   // Informe diario de Tutelas — el usuario elige UNA fecha (la de
-  // Vencimiento); la de Notificación sale sola como el día anterior. Ver
-  // [[project_tutelas_modulo]] / informeTutelas.js.
+  // Notificación); la de Vencimiento siempre es la de hoy al momento de
+  // generar. Ver [[project_tutelas_modulo]] / informeTutelas.js.
   const [fechaInformeTutelas, setFechaInformeTutelas] = useState(() => new Date().toISOString().slice(0,10));
   const [generandoTutelasPDF, setGenerandoTutelasPDF] = useState(false);
 
@@ -131,7 +131,7 @@ export default function InformesView({ procesos, clientes, facturas, ordenesComp
     finally { setGenerandoTutelasPDF(false); }
   }
   function handleAbrirCorreoTutelas(){
-    abrirCorreoTutelas(fechaInformeTutelas);
+    abrirCorreoTutelas(tutelas, fechaInformeTutelas);
   }
 
   return (
@@ -180,11 +180,11 @@ export default function InformesView({ procesos, clientes, facturas, ordenesComp
         <div className="panel-head"><h3>Informe diario de Tutelas</h3></div>
         <div className="panel-body">
           <p style={{margin:'0 0 14px', color:'var(--texto-suave)', fontSize:13}}>
-            Elige la fecha de <strong>Vencimiento</strong> a reportar — la de <strong>Notificación</strong> se calcula sola como el día anterior. Junta todas las Tutelas, sin filtrar por Entidad.
+            Elige la fecha de <strong>Notificación</strong> a reportar (junta todas las Tutelas con esa fecha, sin filtrar por Entidad) — las de <strong>Vencimiento</strong> siempre son las de la fecha de hoy, al momento de generar el PDF o el correo.
           </p>
           <div style={{display:'flex', alignItems:'center', gap:14, flexWrap:'wrap'}}>
             <div className="field" style={{maxWidth:220}}>
-              <label>Fecha de Vencimiento</label>
+              <label>Fecha Notificación</label>
               <input type="date" value={fechaInformeTutelas} onChange={e => setFechaInformeTutelas(e.target.value)} />
             </div>
             <div style={{display:'flex', gap:8}}>

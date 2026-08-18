@@ -3,6 +3,7 @@
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
 ## 2026-08-18
+- Corregido el informe diario de Tutelas: el campo de fecha ahora es "Fecha Notificación" (antes decía "Fecha de Vencimiento" y estaba al revés) — las tutelas Notificadas se filtran por esa fecha elegida, y las de Vencimiento siempre son las de la fecha real de hoy al momento de generar el PDF o el correo. El cuerpo del correo ahora sí trae las dos listas de tutelas (Contestaciones con Vencimiento / Tutelas Asignadas), igual que el correo real de Access que se usó de modelo.
 - Nuevo panel "Informe diario de Tutelas" en Informes: se elige la fecha de Vencimiento a reportar (la de Notificación sale sola, el día anterior) y hay dos botones — uno descarga el PDF con las dos tablas (Tutelas Notificadas / Tutelas con Vencimiento, igual formato que el reporte de Access), y el otro abre un borrador en el cliente de correo del equipo (Outlook, si es el predeterminado) con destinatarios y asunto ya listos; el PDF hay que adjuntarlo a mano porque un enlace de correo del navegador no puede adjuntar archivos automáticamente.
 
 ## 2026-08-17
