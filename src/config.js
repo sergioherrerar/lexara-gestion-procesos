@@ -12,9 +12,9 @@ export const INITIAL_CONFIG = {
   SP_SITE_PATH_TUTELAS: "/sites/TutelasMDABOGADOS",
   // Carpeta (OneDrive/SharePoint, compartida por link) donde Siigo deja las
   // facturas electrónicas en PDF — confirmado por el usuario 2026-08-19.
-  // Nombre de archivo real: "F003" + 8 ceros + el número de factura (4
-  // dígitos, con ceros a la izquierda) + "0000" + ".pdf" (p.ej. factura 804
-  // → "F0030000000008040000.pdf"). Ver siigoNombreArchivo/abrirFacturaSiigo
+  // Se prueban 2 nombres de archivo posibles por factura: el simple
+  // ("804.pdf") y el esquema largo original de Siigo
+  // ("F0030000000008040000.pdf"). Ver siigoNombresPosibles/abrirFacturaSiigo
   // en graph.js y [[project_facturacion_data_model]].
   SIIGO_SHARE_URL: "https://mydabogados.sharepoint.com/:f:/g/IgAk0b_81snoRKb78a5dUN0iAQOpYavGi8KaHX16JhvFC90?e=vJOmB3",
 };

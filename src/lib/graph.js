@@ -423,17 +423,24 @@ export function compareFacturaNumero(a, b){
 // --- Facturas electrónicas de Siigo (carpeta compartida por link) ---
 // Pedido explícito del usuario 2026-08-19: cada factura tiene su PDF
 // generado por Siigo en una carpeta de SharePoint/OneDrive compartida por
-// link (no es una de las listas ya conectadas — se resuelve aparte). El
-// nombre de archivo sigue un patrón fijo confirmado con una captura real de
-// esa carpeta: "F003" + 8 ceros + el número de factura (4 dígitos, con
-// ceros a la izquierda) + "0000" + ".pdf" — p.ej. factura 804 →
-// "F0030000000008040000.pdf".
-export function siigoNombreArchivo(factura){
+// link (no es una de las listas ya conectadas — se resuelve aparte).
+//
+// Se probaron 2 esquemas de nombre, del más al menos preferido:
+// 1) Simple: el número de factura tal cual + ".pdf" (p.ej. "804.pdf") — el
+//    usuario puede renombrar los PDF así para que la búsqueda sea directa.
+// 2) Siigo original: "F003" + 8 ceros + número (4 dígitos, ceros a la
+//    izquierda) + "0000" + ".pdf" — p.ej. factura 804 →
+//    "F0030000000008040000.pdf". Se deja como respaldo por si algún archivo
+//    viejo no se alcanza a renombrar al esquema simple.
+export function siigoNombresPosibles(factura){
   const numero = facturaNumero(factura);
-  // La numeración con letra (heredada de Access, p.ej. "193a") no sigue este
-  // patrón — no hay forma de calcular su nombre de archivo.
-  if(!/^\d+$/.test(numero)) return null;
-  return `F003${"0".repeat(8)}${numero.padStart(4,'0')}0000.pdf`;
+  // La numeración con letra (heredada de Access, p.ej. "193a") no sigue
+  // ninguno de estos patrones — no hay forma de calcular su nombre de archivo.
+  if(!/^\d+$/.test(numero)) return [];
+  return [
+    `${numero}.pdf`,
+    `F003${"0".repeat(8)}${numero.padStart(4,'0')}0000.pdf`,
+  ];
 }
 
 // Codifica una URL de "compartir" de SharePoint/OneDrive al formato que
@@ -457,6 +464,15 @@ async function resolverCarpetaSiigo(shareUrl){
   const id = codificarUrlCompartida(shareUrl);
   const item = await graphFetch(`/shares/${id}/driveItem?$select=id,name,parentReference`);
   carpetaSiigo = { driveId: item.parentReference.driveId, folderId: item.id, nombre: item.name };
+  // Conteo real de archivos que SharePoint tiene registrado para esta
+  // carpeta (sin necesidad de listarlos todos) — sirve para saber si el
+  // listado por páginas se está quedando corto (carpeta con más archivos
+  // de los que realmente se están revisando) frente a lo que se ve en el
+  // navegador.
+  try{
+    const folderInfo = await graphFetch(`/drives/${carpetaSiigo.driveId}/items/${carpetaSiigo.folderId}?$select=folder`);
+    carpetaSiigo.totalArchivos = folderInfo?.folder?.childCount ?? null;
+  }catch(err){ carpetaSiigo.totalArchivos = null; }
   return carpetaSiigo;
 }
 
@@ -464,42 +480,55 @@ async function resolverCarpetaSiigo(shareUrl){
 // una pestaña nueva. Lanza un error (con mensaje para mostrar al usuario) si
 // la numeración no aplica o si Graph no encuentra el archivo.
 export async function abrirFacturaSiigo(factura, shareUrl){
-  const nombre = siigoNombreArchivo(factura);
-  if(!nombre){
-    throw new Error(`No se puede calcular el nombre del archivo para la factura "${facturaNumero(factura)}" (numeración antigua con letra).`);
+  const numero = facturaNumero(factura);
+  const nombresPosibles = siigoNombresPosibles(factura);
+  if(!nombresPosibles.length){
+    throw new Error(`No se puede calcular el nombre del archivo para la factura "${numero}" (numeración antigua con letra).`);
   }
   const carpeta = await resolverCarpetaSiigo(shareUrl);
 
-  // Primero la ruta exacta (rápido, un solo pedido a Graph) — alcanza en la
-  // mayoría de los casos.
+  // Primero las rutas exactas (rápido, un pedido a Graph por candidato) —
+  // alcanza en la mayoría de los casos. Se prueban en orden: nombre simple
+  // (p.ej. "804.pdf") primero, luego el esquema largo de Siigo.
   let item = null;
-  try{
-    item = await graphFetch(`/drives/${carpeta.driveId}/items/${carpeta.folderId}:/${encodeURIComponent(nombre)}?$select=webUrl`);
-  }catch(err){ item = null; }
+  for(const nombre of nombresPosibles){
+    try{
+      item = await graphFetch(`/drives/${carpeta.driveId}/items/${carpeta.folderId}:/${encodeURIComponent(nombre)}?$select=webUrl`);
+      if(item) break;
+    }catch(err){ /* sigue con el siguiente candidato */ }
+  }
 
-  // Si no la encontró por la ruta exacta, revisa archivo por archivo sin
-  // distinguir mayúsculas/minúsculas — el archivo real que confirmó el
-  // usuario tiene la extensión en mayúsculas (".PDF"), y Graph puede no
-  // resolver la ruta exacta si difiere aunque sea solo en eso.
+  // Si no la encontró por ninguna ruta exacta, revisa archivo por archivo
+  // sin distinguir mayúsculas/minúsculas (algunos PDF reales tienen la
+  // extensión en mayúsculas, ".PDF") contra cualquiera de los nombres
+  // posibles.
   let totalRevisados = 0;
-  const nombresVistos = []; // primeros nombres reales que sí ve Graph — para diagnosticar si no encuentra nada.
+  const nombresVistos = []; // todos los nombres reales que ve Graph — para diagnosticar si no encuentra nada.
   if(!item){
-    const objetivo = nombre.toLowerCase();
+    const objetivos = nombresPosibles.map(n => n.toLowerCase());
     let url = `/drives/${carpeta.driveId}/items/${carpeta.folderId}/children?$select=name,webUrl&$top=200`;
     while(url){
       const res = await graphFetch(url);
       const pagina = res.value || [];
       totalRevisados += pagina.length;
-      pagina.forEach(f => { if(nombresVistos.length < 5) nombresVistos.push(f.name); });
-      const match = pagina.find(f => (f.name||"").toLowerCase() === objetivo);
+      pagina.forEach(f => nombresVistos.push(f.name));
+      const match = pagina.find(f => objetivos.includes((f.name||"").toLowerCase()));
       if(match){ item = match; break; }
       url = res["@odata.nextLink"] || null;
     }
   }
 
   if(!item){
-    const ejemplo = nombresVistos.length ? ` Primeros nombres vistos ahí: ${nombresVistos.join(", ")}.` : "";
-    throw new Error(`No se encontró "${nombre}" en la carpeta "${carpeta.nombre}" de Siigo (se revisaron ${totalRevisados} archivos ahí).${ejemplo}`);
+    const conteo = carpeta.totalArchivos != null ? ` SharePoint dice que esa carpeta tiene ${carpeta.totalArchivos} archivos en total.` : "";
+    // Busca nombres "parecidos" que contengan el mismo número de factura
+    // (con o sin los ceros a la izquierda) — si aparece alguno, es señal de
+    // que el esquema de nombre real es distinto al que estoy probando
+    // (en vez de que la factura simplemente no tenga archivo electrónico).
+    const parecidos = nombresVistos.filter(n => n.includes(numero) || n.includes(numero.padStart(4,'0')));
+    const ejemplo = parecidos.length
+      ? ` Nombres parecidos que sí encontró (con el número "${numero}"): ${parecidos.join(", ")}.`
+      : (nombresVistos.length ? ` Primeros nombres vistos ahí: ${nombresVistos.slice(0,5).join(", ")}.` : "");
+    throw new Error(`No se encontró la factura "${numero}" (se buscó como ${nombresPosibles.map(n=>`"${n}"`).join(" o ")}) en la carpeta "${carpeta.nombre}" de Siigo (se revisaron ${totalRevisados} archivos ahí).${conteo}${ejemplo}`);
   }
   window.open(item.webUrl, '_blank', 'noopener');
 }
