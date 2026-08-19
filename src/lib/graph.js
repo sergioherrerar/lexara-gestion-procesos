@@ -482,6 +482,7 @@ export async function abrirFacturaSiigo(factura, shareUrl){
   // usuario tiene la extensión en mayúsculas (".PDF"), y Graph puede no
   // resolver la ruta exacta si difiere aunque sea solo en eso.
   let totalRevisados = 0;
+  const nombresVistos = []; // primeros nombres reales que sí ve Graph — para diagnosticar si no encuentra nada.
   if(!item){
     const objetivo = nombre.toLowerCase();
     let url = `/drives/${carpeta.driveId}/items/${carpeta.folderId}/children?$select=name,webUrl&$top=200`;
@@ -489,6 +490,7 @@ export async function abrirFacturaSiigo(factura, shareUrl){
       const res = await graphFetch(url);
       const pagina = res.value || [];
       totalRevisados += pagina.length;
+      pagina.forEach(f => { if(nombresVistos.length < 5) nombresVistos.push(f.name); });
       const match = pagina.find(f => (f.name||"").toLowerCase() === objetivo);
       if(match){ item = match; break; }
       url = res["@odata.nextLink"] || null;
@@ -496,7 +498,8 @@ export async function abrirFacturaSiigo(factura, shareUrl){
   }
 
   if(!item){
-    throw new Error(`No se encontró "${nombre}" en la carpeta "${carpeta.nombre}" de Siigo (se revisaron ${totalRevisados} archivos ahí).`);
+    const ejemplo = nombresVistos.length ? ` Primeros nombres vistos ahí: ${nombresVistos.join(", ")}.` : "";
+    throw new Error(`No se encontró "${nombre}" en la carpeta "${carpeta.nombre}" de Siigo (se revisaron ${totalRevisados} archivos ahí).${ejemplo}`);
   }
   window.open(item.webUrl, '_blank', 'noopener');
 }

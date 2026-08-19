@@ -3,6 +3,7 @@
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
 ## 2026-08-19
+- Ajuste temporal en la búsqueda de la factura electrónica de Siigo: si no encuentra el archivo, el aviso ahora además muestra una muestra de los nombres reales que sí encontró en esa carpeta, para poder comparar contra el nombre esperado y encontrar por qué no calza (aunque la carpeta y la cantidad de archivos revisados ya coinciden con lo que se ve en SharePoint).
 - Corregido: la búsqueda de la factura electrónica de Siigo ahora no distingue mayúsculas/minúsculas en el nombre del archivo (el archivo real tiene la extensión en mayúsculas, ".PDF") y, si no la encuentra, el aviso ahora dice en qué carpeta buscó exactamente.
 - Nuevo botón en Facturación (junto a Ver/editar e Imprimir): busca y abre la factura electrónica generada por Siigo directamente desde la carpeta compartida donde quedan guardadas, sin tener que buscarla a mano.
 - Se cambió el encabezado de TODOS los PDF de la app (Informes por Entidad, ficha de Proceso judicial, informe de Tutelas) para que use el membrete completo real — el mismo que ya usaba la hoja imprimible de Facturas/Órdenes de compra — en vez del logo chico + título propio que tenía antes.
