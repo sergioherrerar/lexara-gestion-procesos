@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { FieldCard, RichTextEditor } from './FormFields';
 import { IconTextButton } from './IconButton';
-import { tipoVinculacionDistinct, temasParaPrestacion } from '../lib/graph';
+import { temasParaPrestacion } from '../lib/graph';
 import { useEscapeToClose } from '../hooks/useEscapeToClose';
 
 // Campos que todavía no se sabe si son un select fijo en SharePoint (el
@@ -12,6 +12,10 @@ import { useEscapeToClose } from '../hooks/useEscapeToClose';
 // opciones para Departamento/Ciudad.
 const SI_NO = ["Sí", "No"];
 // Listas fijas confirmadas por el usuario 2026-08-18.
+// Tipo Vinculación Entidad NO depende de nada — es una lista fija propia
+// (corrección explícita: al principio se había armado tomando sus opciones
+// de la lista Tema por error).
+const TIPO_VINCULACION_OPCIONES = ["Accionada", "Vinculada"];
 const PRESTACION_OPCIONES = ["Asistencial", "Económica", "Administrativa"];
 const TIPO_RESPUESTA_OPCIONES = ["ACLARACION", "ALCANCE", "APLAZAMIENTO", "CUMPLIMIENTO FALLO", "IMPUGNACION", "NULIDAD", "REQUERIMIENTO", "TUTELA"];
 const ABOGADO_RESPUESTA_OPCIONES = ["Ariana Martin Mendoza", "Mónica Paola Quintero", "Daniel Santiago Flechas"];
@@ -57,10 +61,7 @@ export default function TutelaDrawer({
   // antes dependía de Tipo Vinculación Entidad): queda filtrado a los Temas
   // cuya Prestación Tema coincida con la Prestación elegida acá — mismo
   // criterio de selects dependientes que Tipo de Acción/Tipo de Proceso en
-  // Procesos judiciales (ver temasParaPrestacion en graph.js). "Tipo
-  // Vinculación Entidad" sigue tomando sus propias opciones de los valores
-  // distintos de Prestación Tema en la lista Tema (tipoVinculacionDistinct) —
-  // sin cambios ahí.
+  // Procesos judiciales (ver temasParaPrestacion en graph.js).
   function setPrestacion(value){
     setForm(prev => {
       const next = {...prev, Prestacion: value};
@@ -89,7 +90,7 @@ export default function TutelaDrawer({
   if(form.Cliente && !clienteNombres.includes(form.Cliente)) clienteNombres.unshift(form.Cliente);
   const entidadOpciones = Array.from(new Set(clientes.map(c => c.Entidad).filter(Boolean))).sort((a,b)=>a.localeCompare(b));
   if(form.Entidad && !entidadOpciones.includes(form.Entidad)) entidadOpciones.unshift(form.Entidad);
-  const tipoVinculacionOpciones = tipoVinculacionDistinct(temas);
+  const tipoVinculacionOpciones = [...TIPO_VINCULACION_OPCIONES];
   if(form.TipoVinculacionEntidad && !tipoVinculacionOpciones.includes(form.TipoVinculacionEntidad)) tipoVinculacionOpciones.unshift(form.TipoVinculacionEntidad);
   const prestacionOpciones = [...PRESTACION_OPCIONES];
   if(form.Prestacion && !prestacionOpciones.includes(form.Prestacion)) prestacionOpciones.unshift(form.Prestacion);
