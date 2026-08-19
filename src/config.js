@@ -495,6 +495,7 @@ export const SHAREPOINT_LISTS_CONFIG = [
       {key:"FechaVencimiento", label:"Fecha Vencimiento", hint:["fecha vencimiento"]},
       {key:"Prestacion", label:"Prestación", hint:["prestacion","prestación"]},
       {key:"TipoRespuesta", label:"Tipo Respuesta", hint:["tipo respuesta"]},
+      {key:"AbogadoRespuesta", label:"Abogado Respuesta", hint:["abogado respuesta"]},
       {key:"Tema", label:"Tema", hint:["tema"]},
       {key:"AgenciaOficiosa", label:"Agencia oficiosa", hint:["agencia oficiosa"]},
       {key:"Usuario", label:"Usuario", hint:["usuario"]},
@@ -753,9 +754,9 @@ export const DEMO_TIPOS_ACCION = [
 // Datos ficticios del módulo Tutelas (2026-08-16) — inventados solo para
 // probar la pantalla nueva, no son información real de ningún caso.
 export const DEMO_TEMAS = [
-  {id:1, Nombre:"Recobro", PrestacionTema:"Vinculada", ClienteTema:""},
-  {id:2, Nombre:"Prestación de servicio", PrestacionTema:"Accionada", ClienteTema:""},
-  {id:3, Nombre:"Suministro de medicamento", PrestacionTema:"Accionada", ClienteTema:""},
+  {id:1, Nombre:"Recobro", PrestacionTema:"Económica", ClienteTema:""},
+  {id:2, Nombre:"Prestación de servicio", PrestacionTema:"Asistencial", ClienteTema:""},
+  {id:3, Nombre:"Suministro de medicamento", PrestacionTema:"Asistencial", ClienteTema:""},
 ];
 export const DEMO_VALORES_ENTIDAD = [
   {id:1, Entidad:"SOS", Tipo:"EPS", ValorEntidad:"350.000,00", ValorAbogado:"150.000,00", LinkCarpetas:"", LinkFormatos:""},
@@ -764,7 +765,7 @@ export const DEMO_VALORES_ENTIDAD = [
 export const DEMO_TUTELAS = [
   {id:1, NoTutela:"T-2026-0001", Cliente:"EPS Ejemplo de Salud S.A.", Entidad:"SOS", TipoVinculacionEntidad:"Accionada", MedidaCautelar:"No",
     Departamento:"Bogotá D.C.", Ciudad:"Bogotá D.C.", Proceso:"", FechaNotificacion:"2026-06-10", FechaVencimiento:"2026-06-20",
-    Prestacion:"Medicamento", TipoRespuesta:"ACLARACION", Tema:"Suministro de medicamento", AgenciaOficiosa:"No",
+    Prestacion:"Asistencial", TipoRespuesta:"ACLARACION", AbogadoRespuesta:"Ariana Martin Mendoza", Tema:"Suministro de medicamento", AgenciaOficiosa:"No",
     Usuario:"Juan Ejemplo Pérez", NoIdentificacion:"1.000.111.222", Juzgado:"Juzgado 5 Civil Municipal de Bogotá", Correo:"ejemplo@correo.com",
     Solicita:"<div>Solicita el suministro inmediato del medicamento formulado.</div>"},
 ];

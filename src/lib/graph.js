@@ -372,17 +372,19 @@ export function despachosParaAccion(tiposAccion, tipoAccion){
   (tiposAccion||[]).forEach(t => { if(t.Despacho && normalize(t.NombreIdTipoProceso||"")===target) set.add(t.Despacho); });
   return Array.from(set).sort((a,b)=>a.localeCompare(b));
 }
-// Tutelas: "Tipo Vinculación Entidad" y "Tema" son selects dependientes,
-// igual criterio que Tipo de Acción/Tipo de Proceso en Procesos — las
-// opciones de Tipo Vinculación Entidad son los valores distintos de
-// "Prestación Tema" en la lista Tema, y el Tema queda filtrado a los que
-// tengan esa misma Prestación Tema (ver [[project_tutelas_modulo]], 2026-08-17).
+// Tutelas: "Tipo Vinculación Entidad" tiene sus opciones tomadas de los
+// valores distintos de "Prestación Tema" en la lista Tema (pedido explícito
+// 2026-08-17). "Tema" es un select dependiente de "Prestación" (corregido
+// 2026-08-18 — antes dependía de Tipo Vinculación Entidad): queda filtrado a
+// los Temas cuya Prestación Tema coincida con la Prestación elegida. Mismo
+// criterio de selects dependientes que Tipo de Acción/Tipo de Proceso en
+// Procesos judiciales. Ver [[project_tutelas_modulo]].
 export function tipoVinculacionDistinct(temas){
   return Array.from(new Set((temas||[]).map(t => t.PrestacionTema).filter(Boolean))).sort((a,b)=>a.localeCompare(b));
 }
-export function temasParaTipoVinculacion(temas, tipoVinculacion){
-  if(!tipoVinculacion) return [];
-  const target = normalize(tipoVinculacion);
+export function temasParaPrestacion(temas, prestacion){
+  if(!prestacion) return [];
+  const target = normalize(prestacion);
   const set = new Set();
   (temas||[]).forEach(t => { if(t.Nombre && normalize(t.PrestacionTema||"")===target) set.add(t.Nombre); });
   return Array.from(set).sort((a,b)=>a.localeCompare(b));
