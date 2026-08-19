@@ -50,7 +50,7 @@ export default function TutelasView({ tutelas, searchQuery, onOpenTutela, onCrea
           <p>{rows.length} de {tutelas.length} tutelas{hasActiveFilters && <> · <button type="button" className="clear-filters-link" onClick={clearFilters}>Limpiar filtros de columna</button></>}</p>
         </div>
         <div style={{display:'flex', alignItems:'center', gap:12}}>
-          <span className={"badge " + (vencenHoy > 0 ? "badge-rojo" : "badge-gris")} style={{fontSize:13, padding:'7px 14px'}}>
+          <span className={"badge " + (vencenHoy > 0 ? "badge-alerta" : "badge-gris")} style={{fontSize:14, padding:'8px 16px'}}>
             {vencenHoy} {vencenHoy === 1 ? "vence" : "vencen"} hoy
           </span>
           {canWrite && <IconTextButton icon="add" variant="primary" onClick={onCreateTutela}>Nueva tutela</IconTextButton>}

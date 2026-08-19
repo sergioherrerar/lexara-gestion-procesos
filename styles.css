@@ -274,6 +274,20 @@
   .badge-gris{background:var(--gris-claro); color:var(--texto-suave);}
   .badge-rojo{background:#fbe4e2; color:#a3281c;}
   .badge-truncate{display:inline-block; max-width:360px; white-space:normal; line-height:1.5; vertical-align:middle;}
+  /* Contador "N vencen hoy" en Tutelas — pedido explícito del usuario
+     ("dale más importancia... más llamativo") — a diferencia de .badge-rojo
+     (pastel suave, reusado como estado neutro en muchas tablas), este es
+     sólido y con un pulso sutil, reservado para esta alerta puntual. */
+  .badge-alerta{
+    background:#d64541; color:#fff; font-weight:700;
+    box-shadow:0 0 0 0 rgba(214,69,65,0.45);
+    animation:pulso-alerta 2.2s ease-in-out infinite;
+  }
+  @keyframes pulso-alerta{
+    0%{box-shadow:0 0 0 0 rgba(214,69,65,0.45);}
+    70%{box-shadow:0 0 0 7px rgba(214,69,65,0);}
+    100%{box-shadow:0 0 0 0 rgba(214,69,65,0);}
+  }
   /* Columna "Observación" de Procesos judiciales — mismo tamaño de letra y
      color que la columna Estado (badge-verde), pero sin fondo de color (no
      es un indicador de semáforo). */

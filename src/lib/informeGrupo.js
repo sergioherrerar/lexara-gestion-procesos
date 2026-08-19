@@ -6,6 +6,7 @@
 // eso vive en su propio archivo (informeAliansalud.js, informeColmedica.js).
 // Ver CHANGELOG 2026-08-16 y [[project_informes_modulo]].
 import { stripHtml } from './graph';
+import { generarCartaInformePDF, fechaLarga, fechaCorta, VERDE_OSCURO, GRIS_SUAVE } from './informesPDF';
 
 const COLOR_ENCABEZADO = "FF004941"; // var(--verde-oscuro), mismo verde institucional de siempre.
 
@@ -82,4 +83,49 @@ export async function generarInformeGrupoExcel(entidad, procesos){
   a.click();
   a.remove();
   URL.revokeObjectURL(url);
+}
+
+function despachoConcatenado(p){
+  const despacho = (p.Despacho||"").trim();
+  const numero = (p.NumeroDespacho||"").trim();
+  return [despacho, numero].filter(Boolean).join(" ") || "—";
+}
+
+// Carta en PDF del "FORMATO GRUPO" — originalmente construida solo para
+// Grupo Colmédica (informeColmedica.js), reutilizada tal cual para Colpatria
+// 2026-08-19 (pedido explícito: "el pdf de la entidad Colpatria que sea
+// igual a la entidad del grupo Colmédica en las columnas"). Columnas EN ESTE
+// ORDEN: Número corto, Despacho (concatenado con No. de despacho), Fecha
+// Estado, Estado. "procesosVigentes" ya debe venir filtrado (solo los NO
+// terminados de esa Entidad — ver handleGenerarPDF en InformesView.jsx).
+export async function generarInformeGrupoPDF(entidad, procesosVigentes){
+  const filas = [...procesosVigentes].sort((a,b) => (a.Radicado||"").localeCompare(b.Radicado||""));
+  const fecha = fechaLarga(new Date());
+  const parrafo = `De manera cordial me permito informar que, con corte al ${fecha}, a cargo de MD ABOGADOS SAS se ` +
+    `encuentran un total de ${filas.length} procesos judiciales, de los cuales en el siguiente cuadro se especifica ` +
+    `su número corto, despacho, fecha del último estado y estado del proceso, cuyo detalle se encuentra en el ` +
+    `informe de Excel adjunto.`;
+
+  await generarCartaInformePDF({
+    nombreArchivo: `Informe ${entidad}`,
+    nombreEntidad: entidad,
+    cantidadProcesos: filas.length,
+    parrafo,
+    columnas: ["Número corto", "Despacho", "Fecha Estado", "Estado"],
+    filas: filas.map(p => [
+      p.Radicado || "—",
+      despachoConcatenado(p),
+      fechaCorta(p.FechaUltimoEstado),
+      stripHtml(p.Estado) || "—",
+    ]),
+    columnStyles: {
+      // Número corto es el radicado con guiones (~30 caracteres) — igual que
+      // en el resto de informes, letra chica + columna ancha para que no se
+      // parta en dos líneas.
+      0: { halign:'center', fontStyle:'bold', textColor:VERDE_OSCURO, font:'courier', fontSize:6.5, cellWidth:46 },
+      1: { halign:'left', cellWidth:40 },
+      2: { halign:'center', cellWidth:20, textColor:GRIS_SUAVE },
+      3: { halign:'left', cellWidth:'auto' },
+    },
+  });
 }

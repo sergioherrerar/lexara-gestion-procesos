@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
-  groupCount, estadoBadgeClass, fmtMonto, stripHtml,
-  facturasForProceso, computeFacturaTotals, clienteForFactura, clienteForOrdenCompra,
+  groupCount, estadoBadgeClass, fmtMonto, stripHtml, parseMonto,
+  facturasForProceso, clienteForFactura, clienteForOrdenCompra,
 } from '../lib/graph';
 import BarChart from './BarChart';
 import IconButton from './IconButton';
@@ -9,6 +9,7 @@ import { generarInformeSOSExcel, generarInformeSOSPDF, generarDesistimientosSOSE
 import { generarInformeFamisanarExcel, generarInformeFamisanarPDF } from '../lib/informeFamisanar';
 import { generarInformeAliansaludExcel, generarInformeAliansaludPDF } from '../lib/informeAliansalud';
 import { generarInformeColmedicaExcel, generarInformeColmedicaPDF } from '../lib/informeColmedica';
+import { generarInformeGrupoPDF } from '../lib/informeGrupo';
 import { generarInformeLexaraExcel, generarInformeLexaraPDF } from '../lib/informeLexara';
 import { generarInformeFacturasExcel, generarInformeOrdenesCompraExcel } from '../lib/informeFacturacion';
 import { generarInformeTutelasPDF, abrirCorreoTutelas, generarInformeTutelasExcel } from '../lib/informeTutelas';
@@ -21,6 +22,10 @@ import { generarInformeTutelasPDF, abrirCorreoTutelas, generarInformeTutelasExce
 // resto de Entidades (sin entrada acá) muestra "Aún sin modelo".
 // Ver [[project_informes_modulo]] / CHANGELOG.
 const FORMATO_LEXARA = { excel: generarInformeLexaraExcel, pdf: generarInformeLexaraPDF };
+// Coomeva/GTM/Particulares/Salud Total: pedido explícito del usuario
+// 2026-08-19 ("retira los pdf de estas entidades") — se quita SOLO el botón
+// de PDF (carta), el de Excel se mantiene igual.
+const FORMATO_LEXARA_SOLO_EXCEL = { excel: generarInformeLexaraExcel };
 const FORMATOS_POR_ENTIDAD = {
   SOS: { excel: generarInformeSOSExcel, pdf: generarInformeSOSPDF, desistimientos: generarDesistimientosSOSExcel },
   FAMISANAR: { excel: generarInformeFamisanarExcel, pdf: generarInformeFamisanarPDF },
@@ -28,12 +33,15 @@ const FORMATOS_POR_ENTIDAD = {
   "GRUPO COLMEDICA": { excel: generarInformeColmedicaExcel, pdf: generarInformeColmedicaPDF },
   // Entidades sin formato propio heredado — usan el formato genérico de
   // Lexara (ver informeLexara.js), confirmado por el usuario 2026-08-16.
-  COLPATRIA: FORMATO_LEXARA,
-  COOMEVA: FORMATO_LEXARA,
-  GTM: FORMATO_LEXARA,
+  // Colpatria: Excel genérico de Lexara, pero el PDF usa las mismas columnas
+  // que Grupo Colmédica (Número corto/Despacho/Fecha Estado/Estado) — pedido
+  // explícito del usuario 2026-08-19.
+  COLPATRIA: { excel: generarInformeLexaraExcel, pdf: generarInformeGrupoPDF },
+  COOMEVA: FORMATO_LEXARA_SOLO_EXCEL,
+  GTM: FORMATO_LEXARA_SOLO_EXCEL,
   JRCI: FORMATO_LEXARA,
-  PARTICULARES: FORMATO_LEXARA,
-  "SALUD TOTAL": FORMATO_LEXARA,
+  PARTICULARES: FORMATO_LEXARA_SOLO_EXCEL,
+  "SALUD TOTAL": FORMATO_LEXARA_SOLO_EXCEL,
 };
 
 function entidadDeCliente(clientes, codigoClienteOrNombre, matchFn){
@@ -64,11 +72,18 @@ export default function InformesView({ procesos, clientes, facturas, ordenesComp
   const filas = entidades.map(entidad => {
     const propios = procesos.filter(p => p.Entidad === entidad);
     const activos = propios.filter(p => !(p.EstadoVT||"").toLowerCase().includes('termin'));
-    const valorEnDisputa = propios.reduce((sum,p) => sum + (Number(String(p.ValorActualDemanda||"0").replace(/[^\d,.-]/g,'').replace(/\./g,'').replace(',','.'))||0), 0);
-    const facturacionTotal = propios.reduce((sum,p) => {
-      const facs = facturasForProceso(facturas, p);
-      return sum + facs.reduce((s2,f) => s2 + computeFacturaTotals(f).total, 0);
-    }, 0);
+    // Suma "Valor actual demanda" de todos los procesos de la Entidad — usa
+    // parseMonto() (igual que el resto de la app) en vez de un regex propio:
+    // SharePoint devuelve este valor a veces como número crudo (1471348.75) y
+    // a veces como texto formateado a la colombiana ("559.112,53"); el regex
+    // anterior le quitaba los puntos a los DOS casos por igual, lo que inflaba
+    // 100x los valores que ya venían como número crudo (ver el mismo bug ya
+    // corregido una vez en parseMonto(), [[project_facturacion_data_model]]).
+    const valorEnDisputa = propios.reduce((sum,p) => sum + parseMonto(p.ValorActualDemanda), 0);
+    // Cantidad de facturas asociadas (no la suma de sus montos) — pedido
+    // explícito del usuario 2026-08-19: "acá no coloca la suma sino la
+    // cantidad de facturas".
+    const facturacionTotal = propios.reduce((sum,p) => sum + facturasForProceso(facturas, p).length, 0);
     const semaforo = {verde:0, naranja:0, rojo:0, gris:0};
     propios.forEach(p => {
       const cls = estadoBadgeClass(p.EstadoVT, p.FechaUltimoEstado);
@@ -215,8 +230,8 @@ export default function InformesView({ procesos, clientes, facturas, ordenesComp
                   <tr>
                     <th>Entidad</th>
                     <th>Procesos (activos/total)</th>
-                    <th>Valor en disputa</th>
-                    <th>Facturación</th>
+                    <th>Valor actual demanda</th>
+                    <th>Facturas</th>
                     <th>Semáforo de Estado</th>
                     <th>Informe</th>
                   </tr>
@@ -227,7 +242,7 @@ export default function InformesView({ procesos, clientes, facturas, ordenesComp
                       <td>{f.entidad}</td>
                       <td>{f.activos} / {f.total}</td>
                       <td>{fmtMonto(f.valorEnDisputa)}</td>
-                      <td>{fmtMonto(f.facturacionTotal)}</td>
+                      <td>{f.facturacionTotal}</td>
                       <td>
                         <div style={{display:'flex', gap:6, flexWrap:'wrap'}}>
                           {f.semaforo.verde > 0 && <span className="badge badge-verde">{f.semaforo.verde} verde</span>}

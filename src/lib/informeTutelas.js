@@ -5,7 +5,7 @@
 // de Informes (por Entidad), este junta TODAS las Tutelas sin filtrar por
 // Entidad, igual que la consulta original de Access.
 // Ver [[project_tutelas_modulo]].
-import { prepararDocumentoPDF, fechaCorta, VERDE_OSCURO, GRIS_ZEBRA, TEXTO, MARGEN, CONTENIDO_Y_INICIAL, CONTENIDO_Y_MAXIMO } from './informesPDF';
+import { prepararDocumentoPDF, fechaCorta, VERDE_OSCURO, GRIS_ZEBRA, BORDE_SUAVE, TEXTO, MARGEN, CONTENIDO_Y_INICIAL, CONTENIDO_Y_MAXIMO } from './informesPDF';
 import { stripHtml, parseMonto } from './graph';
 
 const DIAS = ["domingo","lunes","martes","miércoles","jueves","viernes","sábado"];
@@ -55,21 +55,34 @@ function filasPorFecha(tutelas, campoFecha, fechaISO){
     .sort((a,b) => String(a.NoTutela||"").localeCompare(String(b.NoTutela||"")));
 }
 
-// Dibuja una barra de título verde + una tabla debajo (mismo criterio visual
-// que el resto de Informes) y devuelve la posición Y donde sigue el
-// contenido siguiente.
-function dibujarSeccion(doc, autoTable, titulo, columnas, filas, y, pageWidth, dibujarEncabezadoYPie){
+// Dibuja una barra de título verde + una tabla debajo — rediseñada
+// 2026-08-19 para calcar exactamente la tabla del correo/reporte real de
+// Access que el usuario volvió a mostrar como referencia: columna "Ítem"
+// numerada (sin columna de fecha, que el original tampoco tiene), y una fila
+// de cierre "Total de registros: N" con el mismo color del encabezado (antes
+// no existía ese cierre y la tabla sí traía una columna de fecha de más).
+// Devuelve la posición Y donde sigue el contenido siguiente.
+function dibujarSeccion(doc, autoTable, titulo, filas, y, pageWidth, dibujarEncabezadoYPie){
   doc.setFillColor(...VERDE_OSCURO);
   doc.rect(MARGEN, y, pageWidth - MARGEN*2, 7, 'F');
   doc.setFont('helvetica','bold'); doc.setFontSize(10); doc.setTextColor(255);
   doc.text(titulo, MARGEN + 2, y + 5);
+  const filasNumeradas = filas.map((f, i) => [i+1, ...f]);
   autoTable(doc, {
     startY: y + 7,
     margin: { left: MARGEN, right: MARGEN, top: CONTENIDO_Y_INICIAL, bottom: 297 - CONTENIDO_Y_MAXIMO },
-    head: [columnas],
-    body: filas,
-    styles: { font:'helvetica', fontSize:8.5, cellPadding:2.4, valign:'top', lineColor:[224,226,224], lineWidth:0.15, textColor:TEXTO },
+    head: [['Ítem','No Tutela','Cliente','Tipo Respuesta']],
+    body: filasNumeradas,
+    foot: [[{ content: `Total de registros: ${filas.length}`, colSpan: 4, styles:{halign:'right', fontStyle:'bold', fillColor:VERDE_OSCURO, textColor:255, fontSize:8.5} }]],
+    styles: { font:'helvetica', fontSize:8.5, cellPadding:2.4, valign:'top', lineColor:BORDE_SUAVE, lineWidth:0.15, textColor:TEXTO },
     headStyles: { fillColor:VERDE_OSCURO, textColor:255, fontStyle:'bold', halign:'center', fontSize:8.5 },
+    // "Ítem" y "No Tutela" son valores numéricos — alineados a la derecha
+    // (regla general del proyecto: todo lo que sea un valor/número va
+    // alineado a la derecha, no centrado ni a la izquierda).
+    columnStyles: {
+      0: { halign:'right', cellWidth:14 },
+      1: { halign:'right', cellWidth:24 },
+    },
     alternateRowStyles: { fillColor:GRIS_ZEBRA },
     didDrawPage: dibujarEncabezadoYPie,
   });
@@ -90,13 +103,11 @@ export async function generarInformeTutelasPDF(tutelas, fechaNotificacionISO){
   const vencimiento = filasPorFecha(tutelas, 'FechaVencimiento', fechaVencimiento);
 
   y = dibujarSeccion(doc, autoTable, 'Tutelas Notificadas',
-    ['No Tutela','Cliente','Tipo Respuesta','Fecha Notificación'],
-    notificadas.map(t => [t.NoTutela||"—", t.Cliente||"—", t.TipoRespuesta||"—", fechaCorta(t.FechaNotificacion)]),
+    notificadas.map(t => [t.NoTutela||"—", t.Cliente||"—", t.TipoRespuesta||"—"]),
     y, pageWidth, dibujarEncabezadoYPie);
 
   dibujarSeccion(doc, autoTable, 'Tutelas con Vencimiento',
-    ['No Tutela','Cliente','Tipo Respuesta','Vencimiento'],
-    vencimiento.map(t => [t.NoTutela||"—", t.Cliente||"—", t.TipoRespuesta||"—", fechaCorta(t.FechaVencimiento)]),
+    vencimiento.map(t => [t.NoTutela||"—", t.Cliente||"—", t.TipoRespuesta||"—"]),
     y, pageWidth, dibujarEncabezadoYPie);
 
   numerarPaginas();
@@ -148,8 +159,6 @@ export function abrirCorreoTutelas(tutelas, fechaNotificacionISO){
     'Tutelas Asignadas el Día Anterior',
     listadoTexto(notificadas),
     `Total de registros: ${notificadas.length}`,
-    '',
-    '(Recuerda adjuntar el PDF que acabas de descargar antes de enviar este correo.)',
     '',
     'Saludos,',
   ].join('\n');
