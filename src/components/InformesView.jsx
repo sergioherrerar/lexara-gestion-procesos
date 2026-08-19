@@ -11,7 +11,7 @@ import { generarInformeAliansaludExcel, generarInformeAliansaludPDF } from '../l
 import { generarInformeColmedicaExcel, generarInformeColmedicaPDF } from '../lib/informeColmedica';
 import { generarInformeLexaraExcel, generarInformeLexaraPDF } from '../lib/informeLexara';
 import { generarInformeFacturasExcel, generarInformeOrdenesCompraExcel } from '../lib/informeFacturacion';
-import { generarInformeTutelasPDF, abrirCorreoTutelas } from '../lib/informeTutelas';
+import { generarInformeTutelasPDF, abrirCorreoTutelas, generarInformeTutelasExcel } from '../lib/informeTutelas';
 
 // Entidades con formato de informe formal ya confirmado, y qué generador usa
 // cada una — cada Entidad puede tener un formato distinto (columnas/orden
@@ -40,7 +40,7 @@ function entidadDeCliente(clientes, codigoClienteOrNombre, matchFn){
   return matchFn(clientes, codigoClienteOrNombre)?.Entidad || "Sin dato";
 }
 
-export default function InformesView({ procesos, clientes, facturas, ordenesCompra, desistimientos, tutelas }){
+export default function InformesView({ procesos, clientes, facturas, ordenesCompra, desistimientos, tutelas, valoresEntidad }){
   const [generando, setGenerando] = useState(null); // nombre de la entidad mientras genera el Excel
   const [generandoPDF, setGenerandoPDF] = useState(null); // nombre de la entidad mientras genera el PDF
   const [generandoDesistimientos, setGenerandoDesistimientos] = useState(null);
@@ -51,6 +51,7 @@ export default function InformesView({ procesos, clientes, facturas, ordenesComp
   // generar. Ver [[project_tutelas_modulo]] / informeTutelas.js.
   const [fechaInformeTutelas, setFechaInformeTutelas] = useState(() => new Date().toISOString().slice(0,10));
   const [generandoTutelasPDF, setGenerandoTutelasPDF] = useState(false);
+  const [generandoTutelasExcel, setGenerandoTutelasExcel] = useState(false);
 
   const procesosPorEntidad = groupCount(procesos, p => p.Entidad);
   const clientesPorEntidad = groupCount(clientes, c => c.Entidad);
@@ -133,6 +134,11 @@ export default function InformesView({ procesos, clientes, facturas, ordenesComp
   function handleAbrirCorreoTutelas(){
     abrirCorreoTutelas(tutelas, fechaInformeTutelas);
   }
+  async function handleGenerarTutelasExcel(){
+    setGenerandoTutelasExcel(true);
+    try{ await generarInformeTutelasExcel(tutelas, valoresEntidad); }
+    finally { setGenerandoTutelasExcel(false); }
+  }
 
   return (
     <div className="view">
@@ -190,9 +196,10 @@ export default function InformesView({ procesos, clientes, facturas, ordenesComp
             <div style={{display:'flex', gap:8}}>
               <IconButton icon="pdf" variant="pdf" label="Descargar PDF de Tutelas" spinning={generandoTutelasPDF} onClick={handleGenerarTutelasPDF} />
               <IconButton icon="mail" variant="mail" label="Abrir correo con este informe" onClick={handleAbrirCorreoTutelas} />
+              <IconButton icon="excel" variant="excel" label="Descargar Excel con todas las Tutelas" spinning={generandoTutelasExcel} onClick={handleGenerarTutelasExcel} />
             </div>
           </div>
-          <p className="save-hint" style={{marginTop:10}}>El botón de correo abre un borrador en tu cliente de correo (Outlook, si es el predeterminado) con destinatarios y asunto listos — el PDF se descarga aparte y hay que adjuntarlo a mano antes de enviar.</p>
+          <p className="save-hint" style={{marginTop:10}}>El botón de correo abre un borrador en tu cliente de correo (Outlook, si es el predeterminado) con destinatarios y asunto listos — el PDF se descarga aparte y hay que adjuntarlo a mano antes de enviar. El Excel descarga todas las Tutelas (no solo las de la fecha elegida arriba).</p>
         </div>
       </div>
 

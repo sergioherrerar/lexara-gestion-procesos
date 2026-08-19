@@ -21,11 +21,14 @@ export default function TutelasView({ tutelas, searchQuery, onOpenTutela, onCrea
   const { filters, setFilter, clearFilters, rowMatches, hasActiveFilters } = useColumnFilters();
   const { sort, setSortKey, sortRows } = useColumnSort();
   const query = (searchQuery||"").trim().toLowerCase();
+  // "No Tutela" es una columna numérica en SharePoint (llega como number,
+  // no string) — .toLowerCase()/.localeCompare no existen en números y
+  // tumbaban la búsqueda/orden sin avisar. Se envuelve todo en String().
   const rows = tutelas.filter(t => (!query ||
-    (t.NoTutela||"").toLowerCase().includes(query) ||
-    (t.Cliente||"").toLowerCase().includes(query) ||
-    (t.Entidad||"").toLowerCase().includes(query)) && rowMatches(t, COLUMNS))
-    .sort((a,b) => (b.FechaVencimiento||"").localeCompare(a.FechaVencimiento||""));
+    String(t.NoTutela||"").toLowerCase().includes(query) ||
+    String(t.Cliente||"").toLowerCase().includes(query) ||
+    String(t.Entidad||"").toLowerCase().includes(query)) && rowMatches(t, COLUMNS))
+    .sort((a,b) => String(b.FechaVencimiento||"").localeCompare(String(a.FechaVencimiento||"")));
   const sortedRows = sortRows(rows, COLUMNS);
 
   return (

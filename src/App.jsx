@@ -90,7 +90,7 @@ export default function App(){
 
         {app.view === 'dashboard' && <DashboardView procesos={app.procesos} clientes={app.clientes} facturas={app.facturas} ordenesCompra={app.ordenesCompra} />}
         {app.view === 'informes' && canAccessView(app.role, 'informes') && (
-          <InformesView procesos={app.procesos} clientes={app.clientes} facturas={app.facturas} ordenesCompra={app.ordenesCompra} desistimientos={app.desistimientos} tutelas={app.tutelas} />
+          <InformesView procesos={app.procesos} clientes={app.clientes} facturas={app.facturas} ordenesCompra={app.ordenesCompra} desistimientos={app.desistimientos} tutelas={app.tutelas} valoresEntidad={app.valoresEntidad} />
         )}
         {app.view === 'procesos' && canAccessView(app.role, 'procesos') && (
           <ProcesosView

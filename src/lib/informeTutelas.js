@@ -6,6 +6,7 @@
 // Entidad, igual que la consulta original de Access.
 // Ver [[project_tutelas_modulo]].
 import { prepararDocumentoPDF, fechaCorta, VERDE_OSCURO, GRIS_ZEBRA, TEXTO, MARGEN } from './informesPDF';
+import { stripHtml, parseMonto } from './graph';
 
 const DIAS = ["domingo","lunes","martes","miércoles","jueves","viernes","sábado"];
 const MESES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
@@ -47,8 +48,11 @@ export function calcularFechasInforme(fechaNotificacionISO){
 
 function filasPorFecha(tutelas, campoFecha, fechaISO){
   return tutelas
-    .filter(t => (t[campoFecha]||"").slice(0,10) === fechaISO)
-    .sort((a,b) => (a.NoTutela||"").localeCompare(b.NoTutela||""));
+    .filter(t => String(t[campoFecha]||"").slice(0,10) === fechaISO)
+    // "No Tutela" es una columna numérica en SharePoint (llega como number,
+    // no string) — .localeCompare no existe en números y tumbaba el botón
+    // entero sin avisar (2026-08-19). Se envuelve en String() antes de comparar.
+    .sort((a,b) => String(a.NoTutela||"").localeCompare(String(b.NoTutela||"")));
 }
 
 // Dibuja una barra de título verde + una tabla debajo (mismo criterio visual
@@ -155,4 +159,76 @@ export function abrirCorreoTutelas(tutelas, fechaNotificacionISO){
   const enc = encodeURIComponent;
   const url = `mailto:${DESTINATARIO_TO}?cc=${enc(DESTINATARIOS_CC.join(','))}&subject=${enc(asunto)}&body=${enc(cuerpo)}`;
   window.location.href = url;
+}
+
+// --- Excel ---
+// Mismo formato institucional que el resto de Informes (encabezado verde
+// #004941, Aptos Narrow blanco negrita, fila congelada) — columnas
+// confirmadas por el usuario 2026-08-19 con un Excel real ("Total
+// Tutelas.xlsx"): junta TODAS las tutelas (no filtra por fecha, a
+// diferencia del PDF/Correo). "Valor Entidad"/"Valor Abogado" no son
+// campos propios de la Tutela — se buscan en Valores Entidad por la
+// Entidad de cada tutela.
+const COLOR_ENCABEZADO_XLSX = "FF004941";
+
+function fechaISOaExcel(iso){
+  if(!iso) return null;
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso));
+  if(!m) return null;
+  return new Date(Number(m[1]), Number(m[2])-1, Number(m[3]));
+}
+function estilizarEncabezadoXlsx(row){
+  row.height = 30;
+  row.eachCell(cell => {
+    cell.fill = { type:'pattern', pattern:'solid', fgColor:{argb: COLOR_ENCABEZADO_XLSX} };
+    cell.font = { name:'Aptos Narrow', size:11, bold:true, color:{argb:'FFFFFFFF'} };
+    cell.alignment = { horizontal:'center', vertical:'middle', wrapText:true };
+  });
+}
+function estilizarFilaXlsx(row){
+  row.eachCell(cell => { cell.alignment = { horizontal:'center', vertical:'middle', wrapText:true }; });
+}
+
+export async function generarInformeTutelasExcel(tutelas, valoresEntidad){
+  const { default: ExcelJS } = await import('exceljs');
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet("Tutelas");
+
+  const columnas = ["Id","No Tutela","Cliente","Ciudad","Prestación","Usuario","No Identificación",
+    "fecha Notificación","Vencimiento","Tema","Solicita","Tipo Respuesta","Valor Entidad","Valor Abogado","Abogado Tutela"];
+  const anchos = [8, 12, 34, 16, 16, 26, 16, 16, 16, 26, 40, 16, 14, 14, 22];
+  ws.columns = columnas.map((c,i) => ({ width: anchos[i] }));
+  estilizarEncabezadoXlsx(ws.addRow(columnas));
+
+  tutelas.forEach(t => {
+    const valorEnt = (valoresEntidad||[]).find(v => v.Entidad === t.Entidad) || null;
+    const row = ws.addRow([
+      t.id, t.NoTutela||"", t.Cliente||"", t.Ciudad||"", t.Prestacion||"", t.Usuario||"", t.NoIdentificacion||"",
+      fechaISOaExcel(t.FechaNotificacion), fechaISOaExcel(t.FechaVencimiento), t.Tema||"", stripHtml(t.Solicita)||"",
+      t.TipoRespuesta||"", valorEnt ? parseMonto(valorEnt.ValorEntidad) : "", valorEnt ? parseMonto(valorEnt.ValorAbogado) : "",
+      t.AbogadoRespuesta||"",
+    ]);
+    estilizarFilaXlsx(row);
+  });
+
+  ["Valor Entidad","Valor Abogado"].forEach(header => {
+    ws.getColumn(columnas.indexOf(header)+1).numFmt = '"$"#,##0.00';
+  });
+  ["fecha Notificación","Vencimiento"].forEach(header => {
+    ws.getColumn(columnas.indexOf(header)+1).numFmt = 'dd/mm/yyyy';
+  });
+
+  ws.views = [{ state:'frozen', ySplit:1 }];
+
+  const buffer = await wb.xlsx.writeBuffer();
+  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const hoy = new Date().toISOString().slice(0,10);
+  a.href = url;
+  a.download = `Total Tutelas ${hoy}.xlsx`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
 }

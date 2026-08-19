@@ -2,6 +2,10 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-08-19
+- Corregido: los botones de PDF y Correo del informe diario de Tutelas no hacían nada al hacer clic — "No Tutela" es una columna numérica en SharePoint y el código intentaba tratarla como texto para ordenarla, lo que rompía el botón en silencio. Ya funciona con datos reales.
+- Nuevo botón de Excel en el informe de Tutelas: descarga todas las tutelas (no solo las de la fecha elegida) con columnas Id/No Tutela/Cliente/Ciudad/Prestación/Usuario/No Identificación/Fecha Notificación/Vencimiento/Tema/Solicita/Tipo Respuesta/Valor Entidad/Valor Abogado/Abogado Tutela — mismo formato institucional que los demás Excel de Informes.
+
 ## 2026-08-18
 - "Departamento" y "Ciudad"/"Municipio" ahora son listas desplegables dependientes (departamento → sus municipios reales), con los 32 departamentos de Colombia + Bogotá D.C., en Procesos judiciales y en Tutelas.
 - Revisé el resto de campos de Procesos judiciales por el mismo problema del punto anterior (dos campos mostrando el mismo dato dos veces): encontré 6 casos más — Naturaleza del proceso/Subclasificación/Número 5 dígitos/Radicado actual/No. identificación demandante/Enlace proceso/Glosa demandada — y los quité del formulario (siguen existiendo para los informes que ya los usan, como el de SOS). Ninguna otra lista (Tutelas, Clientes, Facturación, Órdenes de compra, Colaborador Lexara, Formas de pago, Desistimientos) tiene este problema.
