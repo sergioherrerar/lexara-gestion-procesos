@@ -446,13 +446,17 @@ function codificarUrlCompartida(url){
 
 // La carpeta de Siigo se resuelve UNA sola vez por sesión (driveId + id de
 // la carpeta) — se reusa en cada botón "Abrir factura electrónica" sin
-// volver a pedirle a Graph que resuelva el link compartido cada vez.
+// volver a pedirle a Graph que resuelva el link compartido cada vez. Se
+// guarda también el nombre real de la carpeta, para poder decir en el error
+// "no encontrado" EN QUÉ carpeta buscó (si algún día el link resuelve al
+// lugar equivocado, esto lo delata enseguida en vez de un "no encontrado"
+// genérico que se puede confundir con "esta factura en particular no existe").
 let carpetaSiigo = null;
 async function resolverCarpetaSiigo(shareUrl){
   if(carpetaSiigo) return carpetaSiigo;
   const id = codificarUrlCompartida(shareUrl);
-  const item = await graphFetch(`/shares/${id}/driveItem?$select=id,parentReference`);
-  carpetaSiigo = { driveId: item.parentReference.driveId, folderId: item.id };
+  const item = await graphFetch(`/shares/${id}/driveItem?$select=id,name,parentReference`);
+  carpetaSiigo = { driveId: item.parentReference.driveId, folderId: item.id, nombre: item.name };
   return carpetaSiigo;
 }
 
@@ -464,12 +468,35 @@ export async function abrirFacturaSiigo(factura, shareUrl){
   if(!nombre){
     throw new Error(`No se puede calcular el nombre del archivo para la factura "${facturaNumero(factura)}" (numeración antigua con letra).`);
   }
-  const { driveId, folderId } = await resolverCarpetaSiigo(shareUrl);
-  let item;
+  const carpeta = await resolverCarpetaSiigo(shareUrl);
+
+  // Primero la ruta exacta (rápido, un solo pedido a Graph) — alcanza en la
+  // mayoría de los casos.
+  let item = null;
   try{
-    item = await graphFetch(`/drives/${driveId}/items/${folderId}:/${encodeURIComponent(nombre)}?$select=webUrl`);
-  }catch(err){
-    throw new Error(`No se encontró "${nombre}" en la carpeta de Siigo.`);
+    item = await graphFetch(`/drives/${carpeta.driveId}/items/${carpeta.folderId}:/${encodeURIComponent(nombre)}?$select=webUrl`);
+  }catch(err){ item = null; }
+
+  // Si no la encontró por la ruta exacta, revisa archivo por archivo sin
+  // distinguir mayúsculas/minúsculas — el archivo real que confirmó el
+  // usuario tiene la extensión en mayúsculas (".PDF"), y Graph puede no
+  // resolver la ruta exacta si difiere aunque sea solo en eso.
+  let totalRevisados = 0;
+  if(!item){
+    const objetivo = nombre.toLowerCase();
+    let url = `/drives/${carpeta.driveId}/items/${carpeta.folderId}/children?$select=name,webUrl&$top=200`;
+    while(url){
+      const res = await graphFetch(url);
+      const pagina = res.value || [];
+      totalRevisados += pagina.length;
+      const match = pagina.find(f => (f.name||"").toLowerCase() === objetivo);
+      if(match){ item = match; break; }
+      url = res["@odata.nextLink"] || null;
+    }
+  }
+
+  if(!item){
+    throw new Error(`No se encontró "${nombre}" en la carpeta "${carpeta.nombre}" de Siigo (se revisaron ${totalRevisados} archivos ahí).`);
   }
   window.open(item.webUrl, '_blank', 'noopener');
 }
