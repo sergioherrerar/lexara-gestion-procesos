@@ -3,6 +3,7 @@
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
 ## 2026-08-18
+- En el formulario de Tutela: en Identificación, "Entidad" ahora va antes que "Cliente", y "Prestación" se movió junto a "Tipo Vinculación Entidad" (antes estaba en Trámite).
 - Corregido: "Tipo Vinculación Entidad" no depende de nada — es una lista fija propia (Accionada/Vinculada), sin relación con Tema/Prestación (se había armado por error tomando sus opciones de la lista Tema).
 - En la tabla de Tutelas: la columna "Juzgado" ya no se estira con nombres largos (se acorta con puntos suspensivos) y se agregó la columna "Tipo Respuesta".
 - En el formulario de Tutela: "Prestación" y "Tipo Respuesta" ahora son listas desplegables fijas (Asistencial/Económica/Administrativa; y ACLARACION/ALCANCE/APLAZAMIENTO/CUMPLIMIENTO FALLO/IMPUGNACION/NULIDAD/REQUERIMIENTO/TUTELA). Se agregó el campo "Abogado Respuesta" (lista desplegable: Ariana Martin Mendoza/Mónica Paola Quintero/Daniel Santiago Flechas), que en una tutela nueva arranca en "Ariana Martin Mendoza". El campo "Tema" ahora depende de "Prestación" (antes dependía de "Tipo Vinculación Entidad").

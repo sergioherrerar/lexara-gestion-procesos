@@ -120,22 +120,28 @@ export default function TutelaDrawer({
               <FieldCard label="No. Tutela">
                 <input type="text" value={form.NoTutela} onChange={e => setField('NoTutela', e.target.value)} readOnly={!canWrite} />
               </FieldCard>
-              <FieldCard label="Cliente" full>
-                <select value={form.Cliente} onChange={e => setField('Cliente', e.target.value)} disabled={!canWrite}>
-                  <option value="">— seleccionar cliente —</option>
-                  {clienteNombres.map(n => <option value={n} key={n}>{n}</option>)}
-                </select>
-              </FieldCard>
               <FieldCard label="Entidad">
                 <select value={form.Entidad} onChange={e => setField('Entidad', e.target.value)} disabled={!canWrite}>
                   <option value="">— seleccionar —</option>
                   {entidadOpciones.map(n => <option value={n} key={n}>{n}</option>)}
                 </select>
               </FieldCard>
+              <FieldCard label="Cliente" full>
+                <select value={form.Cliente} onChange={e => setField('Cliente', e.target.value)} disabled={!canWrite}>
+                  <option value="">— seleccionar cliente —</option>
+                  {clienteNombres.map(n => <option value={n} key={n}>{n}</option>)}
+                </select>
+              </FieldCard>
               <FieldCard label="Tipo Vinculación Entidad">
                 <select value={form.TipoVinculacionEntidad} onChange={e => setField('TipoVinculacionEntidad', e.target.value)} disabled={!canWrite}>
                   <option value="">— seleccionar —</option>
                   {tipoVinculacionOpciones.map(n => <option value={n} key={n}>{n}</option>)}
+                </select>
+              </FieldCard>
+              <FieldCard label="Prestación">
+                <select value={form.Prestacion} onChange={e => setPrestacion(e.target.value)} disabled={!canWrite}>
+                  <option value="">— seleccionar —</option>
+                  {prestacionOpciones.map(o => <option value={o} key={o}>{o}</option>)}
                 </select>
               </FieldCard>
             </div>
@@ -161,12 +167,6 @@ export default function TutelaDrawer({
               </FieldCard>
               <FieldCard label="Fecha Vencimiento">
                 <input type="date" value={form.FechaVencimiento} onChange={e => setField('FechaVencimiento', e.target.value)} readOnly={!canWrite} />
-              </FieldCard>
-              <FieldCard label="Prestación">
-                <select value={form.Prestacion} onChange={e => setPrestacion(e.target.value)} disabled={!canWrite}>
-                  <option value="">— seleccionar —</option>
-                  {prestacionOpciones.map(o => <option value={o} key={o}>{o}</option>)}
-                </select>
               </FieldCard>
               <FieldCard label="Tipo Respuesta">
                 <select value={form.TipoRespuesta} onChange={e => setField('TipoRespuesta', e.target.value)} disabled={!canWrite}>
