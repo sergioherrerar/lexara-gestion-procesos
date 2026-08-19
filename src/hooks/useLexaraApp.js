@@ -200,56 +200,77 @@ export function useLexaraApp(){
   // Termina el inicio de sesión una vez que ya se tiene la cuenta de
   // Microsoft (venga de un redirect recién completado, o de una cuenta ya
   // en caché al recargar la página).
+  //
+  // Corregido 2026-08-19 — bug real: "al darle F5 se sale al login" en
+  // cualquier módulo. `appActive` (lo único que decide si se muestra la
+  // pantalla de login o la app) se ponía en true recién AL FINAL, después de
+  // recargar sin fallar ~11 listas de SharePoint (2 sitios distintos) una
+  // por una. Si CUALQUIERA de esas llamadas fallaba (una intermitencia de
+  // red, un token que tardó, un límite de Graph) el catch de abajo lo
+  // atrapaba en silencio y el usuario, que sí tenía una sesión válida,
+  // quedaba viendo la pantalla de login sin ningún aviso claro de qué pasó.
+  // Ahora "ya inició sesión" (appActive/liveMode) y "ya cargaron los datos"
+  // son independientes: en cuanto se confirma la cuenta, se entra a la app
+  // de una vez — la carga de listas corre aparte y, si falla, se avisa con
+  // un error que no desaparece solo (para que si vuelve a pasar, el aviso
+  // en pantalla diga exactamente cuál fue el error real) y el usuario puede
+  // reintentar con el botón de Actualizar sin tener que iniciar sesión de nuevo.
   async function finishSignIn(acc){
-    try{
-      if(Graph.allRequiredMapped(lists)){
-        const sid = await Graph.fetchSiteId(config);
-        const siteCache = {};
-        const updated = [];
-        for(const list of lists){
-          const listSiteId = await siteIdForList(config, list, sid, siteCache);
-          const connected = await Graph.connectList(listSiteId, list);
-          updated.push({...connected, items: Graph.transformListItems(connected)});
-        }
-        // DESACTIVADO TEMPORALMENTE (2026-08-08) a pedido del usuario: este
-        // bloqueo por Correo en Colaborador Lexara estaba dejando afuera a
-        // TODAS las cuentas, incluidas las 4 autorizadas. Con el cambio de
-        // loginPopup a loginRedirect es posible que la causa real fuera el
-        // popup atascado (nunca llegaba a este código) y no el mapeo — hay
-        // que confirmar con el usuario antes de reactivar esto.
-        const colaboradoresItems = updated.find(l => l.key==='colaboradores')?.items || [];
-        // const emailIngreso = (acc.username || '').trim().toLowerCase();
-        // const autorizado = colaboradoresItems.some(c => (c.Correo||'').trim().toLowerCase() === emailIngreso);
-        // if(!autorizado){
-        //   Graph.clearSession();
-        //   notify(`La cuenta ${acc.username} no está autorizada para ingresar. Si necesitas acceso, escribe a Soporte@lexaraabogados.com solicitando el ingreso.`, 'error');
-        //   return;
-        // }
-        setAccount(acc);
-        setSiteId(sid);
-        setLists(updated);
-        setProcesos(updated.find(l => l.key==='procesos')?.items || []);
-        setClientes(updated.find(l => l.key==='clientes')?.items || []);
-        setFacturas(updated.find(l => l.key==='facturacion')?.items || []);
-        setOrdenesCompra(updated.find(l => l.key==='ordenesCompra')?.items || []);
-        setColaboradores(colaboradoresItems);
-        setFormasPago(updated.find(l => l.key==='formasPago')?.items || []);
-        setDesistimientos(updated.find(l => l.key==='desistimientos')?.items || []);
-        setTiposAccion(updated.find(l => l.key==='tiposAccion')?.items || []);
-        setTutelas(updated.find(l => l.key==='tutelas')?.items || []);
-        setTemas(updated.find(l => l.key==='temas')?.items || []);
-        setValoresEntidad(updated.find(l => l.key==='valoresEntidad')?.items || []);
-        setLiveMode(true);
-        setAppActive(true);
-      } else {
-        setAccount(acc);
-        setAppActive(true);
-        setView('setup');
-        await testConnection(acc);
+    if(!Graph.allRequiredMapped(lists)){
+      setAccount(acc);
+      setAppActive(true);
+      setView('setup');
+      try{ await testConnection(acc); }
+      catch(err){
+        console.error(err);
+        notify("No fue posible completar el inicio de sesión. Revisa la consola para más detalle.", 'error');
       }
+      return;
+    }
+    // Cuenta confirmada — entra a la app de inmediato, sin esperar a que
+    // termine de cargar todas las listas.
+    setAccount(acc);
+    setLiveMode(true);
+    setAppActive(true);
+    try{
+      const sid = await Graph.fetchSiteId(config);
+      const siteCache = {};
+      const updated = [];
+      for(const list of lists){
+        const listSiteId = await siteIdForList(config, list, sid, siteCache);
+        const connected = await Graph.connectList(listSiteId, list);
+        updated.push({...connected, items: Graph.transformListItems(connected)});
+      }
+      // DESACTIVADO TEMPORALMENTE (2026-08-08) a pedido del usuario: este
+      // bloqueo por Correo en Colaborador Lexara estaba dejando afuera a
+      // TODAS las cuentas, incluidas las 4 autorizadas. Con el cambio de
+      // loginPopup a loginRedirect es posible que la causa real fuera el
+      // popup atascado (nunca llegaba a este código) y no el mapeo — hay
+      // que confirmar con el usuario antes de reactivar esto.
+      const colaboradoresItems = updated.find(l => l.key==='colaboradores')?.items || [];
+      // const emailIngreso = (acc.username || '').trim().toLowerCase();
+      // const autorizado = colaboradoresItems.some(c => (c.Correo||'').trim().toLowerCase() === emailIngreso);
+      // if(!autorizado){
+      //   Graph.clearSession();
+      //   notify(`La cuenta ${acc.username} no está autorizada para ingresar. Si necesitas acceso, escribe a Soporte@lexaraabogados.com solicitando el ingreso.`, 'error');
+      //   return;
+      // }
+      setSiteId(sid);
+      setLists(updated);
+      setProcesos(updated.find(l => l.key==='procesos')?.items || []);
+      setClientes(updated.find(l => l.key==='clientes')?.items || []);
+      setFacturas(updated.find(l => l.key==='facturacion')?.items || []);
+      setOrdenesCompra(updated.find(l => l.key==='ordenesCompra')?.items || []);
+      setColaboradores(colaboradoresItems);
+      setFormasPago(updated.find(l => l.key==='formasPago')?.items || []);
+      setDesistimientos(updated.find(l => l.key==='desistimientos')?.items || []);
+      setTiposAccion(updated.find(l => l.key==='tiposAccion')?.items || []);
+      setTutelas(updated.find(l => l.key==='tutelas')?.items || []);
+      setTemas(updated.find(l => l.key==='temas')?.items || []);
+      setValoresEntidad(updated.find(l => l.key==='valoresEntidad')?.items || []);
     }catch(err){
       console.error(err);
-      notify("No fue posible completar el inicio de sesión. Revisa la consola para más detalle.", 'error');
+      notify("Se inició sesión, pero no se pudieron cargar los datos de SharePoint: " + err.message + " — probá el botón de Actualizar.", 'error');
     }
   }
 

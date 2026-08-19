@@ -80,6 +80,10 @@ function dibujarSeccion(doc, autoTable, titulo, filas, y, pageWidth, dibujarEnca
     head: [['Ítem','No Tutela','Cliente','Tipo Respuesta']],
     body: filasNumeradas,
     foot: [[{ content: `Total de registros: ${filas.length}`, colSpan: 4, styles:{halign:'right', fontStyle:'bold', fillColor:VERDE_CLARO_TUTELAS, textColor:VERDE_OSCURO, fontSize:8.5} }]],
+    // Solo en la última página de ESTA tabla — sin esto, cuando "Tutelas con
+    // Vencimiento" empieza en una página y sigue en la siguiente, el total
+    // aparecía de golpe justo debajo de la primera fila (antes de tiempo).
+    showFoot: 'lastPage',
     styles: { font:'helvetica', fontSize:8.5, cellPadding:2.4, valign:'top', lineColor:BORDE_SUAVE, lineWidth:0.15, textColor:TEXTO },
     headStyles: { fillColor:VERDE_OSCURO, textColor:255, fontStyle:'bold', halign:'center', fontSize:8.5 },
     // "Ítem" y "No Tutela" son valores numéricos — alineados a la derecha

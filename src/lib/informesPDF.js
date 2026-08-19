@@ -236,6 +236,10 @@ export async function generarCartaInformePDF(opts){
     // Fila de cierre con el total — le da a la tabla un final visible en vez
     // de simplemente detenerse, y sirve de verificación rápida del conteo.
     foot: [[{ content: `Total: ${filas.length} proceso${filas.length===1?'':'s'}`, colSpan: columnas.length, styles:{halign:'right', fontStyle:'bold', fillColor:VERDE_CLARO, textColor:VERDE_OSCURO, fontSize:8.5} }]],
+    // Solo en la última página de la tabla — por defecto autoTable la repite
+    // en TODAS las páginas, lo que se ve raro cuando la tabla es larga: el
+    // total real aparece de golpe justo debajo de la primera tanda de filas.
+    showFoot: 'lastPage',
     styles: { font:'helvetica', fontSize:8.5, cellPadding:2.4, valign:'top', lineColor:BORDE_SUAVE, lineWidth:0.15, textColor:TEXTO },
     headStyles: { fillColor:VERDE_OSCURO, textColor:255, fontStyle:'bold', halign:'center', fontSize:8.5 },
     alternateRowStyles: { fillColor:GRIS_ZEBRA },
