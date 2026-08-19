@@ -3,6 +3,7 @@
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
 ## 2026-08-19
+- Se cambió el encabezado de TODOS los PDF de la app (Informes por Entidad, ficha de Proceso judicial, informe de Tutelas) para que use el membrete completo real — el mismo que ya usaba la hoja imprimible de Facturas/Órdenes de compra — en vez del logo chico + título propio que tenía antes.
 - En Tutelas: contador junto al botón "Nueva tutela" que muestra cuántas tutelas vencen hoy — en rojo si hay alguna, en gris si no. Se recalcula solo con lo que haya cargado en pantalla, siempre al día.
 - Corregido: los botones de PDF y Correo del informe diario de Tutelas no hacían nada al hacer clic — "No Tutela" es una columna numérica en SharePoint y el código intentaba tratarla como texto para ordenarla, lo que rompía el botón en silencio. Ya funciona con datos reales.
 - Nuevo botón de Excel en el informe de Tutelas: descarga todas las tutelas (no solo las de la fecha elegida) con columnas Id/No Tutela/Cliente/Ciudad/Prestación/Usuario/No Identificación/Fecha Notificación/Vencimiento/Tema/Solicita/Tipo Respuesta/Valor Entidad/Valor Abogado/Abogado Tutela — mismo formato institucional que los demás Excel de Informes.

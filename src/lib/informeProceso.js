@@ -6,7 +6,7 @@
 // (prepararDocumentoPDF en informesPDF.js) que los demás PDF de la app.
 // Ver CHANGELOG 2026-08-16 y [[project_informes_modulo]].
 import { stripHtml, parseMonto, fmtMonto } from './graph';
-import { prepararDocumentoPDF, fechaCorta, VERDE_OSCURO, GRIS_ZEBRA, TEXTO, MARGEN } from './informesPDF';
+import { prepararDocumentoPDF, fechaCorta, VERDE_OSCURO, GRIS_ZEBRA, TEXTO, MARGEN, CONTENIDO_Y_INICIAL, CONTENIDO_Y_MAXIMO } from './informesPDF';
 
 function despachoConcatenado(p){
   const despacho = (p.Despacho||"").trim();
@@ -19,13 +19,11 @@ function nombreArchivoSeguro(s){
 }
 
 export async function generarFichaProcesoPDF(proceso){
-  const { doc, autoTable, pageWidth, dibujarEncabezadoYPie, numerarPaginas } = await prepararDocumentoPDF('Ficha del proceso');
+  const tituloDocumento = `Ficha del proceso — ${proceso.Radicado || proceso.NoCompleto || "—"}`;
+  const { doc, autoTable, pageWidth, dibujarEncabezadoYPie, numerarPaginas } = await prepararDocumentoPDF(tituloDocumento);
 
   dibujarEncabezadoYPie();
-  let y = 34;
-  doc.setFont('helvetica','bold'); doc.setFontSize(13); doc.setTextColor(...VERDE_OSCURO);
-  doc.text(`Ficha del proceso — ${proceso.Radicado || proceso.NoCompleto || "—"}`, MARGEN, y);
-  y += 8;
+  let y = CONTENIDO_Y_INICIAL;
   doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(...TEXTO);
   doc.text(`Cliente: ${proceso.Cliente || "—"}`, MARGEN, y);
   y += 8;
@@ -54,7 +52,7 @@ export async function generarFichaProcesoPDF(proceso){
 
   autoTable(doc, {
     startY: y,
-    margin: { left: MARGEN, right: MARGEN, top: 30, bottom: 22 },
+    margin: { left: MARGEN, right: MARGEN, top: CONTENIDO_Y_INICIAL, bottom: 297 - CONTENIDO_Y_MAXIMO },
     body: filas,
     styles: { font:'helvetica', fontSize:9, cellPadding:3, valign:'top', lineColor:[224,226,224], lineWidth:0.15, textColor:TEXTO },
     alternateRowStyles: { fillColor: GRIS_ZEBRA },

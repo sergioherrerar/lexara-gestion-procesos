@@ -5,7 +5,7 @@
 // de Informes (por Entidad), este junta TODAS las Tutelas sin filtrar por
 // Entidad, igual que la consulta original de Access.
 // Ver [[project_tutelas_modulo]].
-import { prepararDocumentoPDF, fechaCorta, VERDE_OSCURO, GRIS_ZEBRA, TEXTO, MARGEN } from './informesPDF';
+import { prepararDocumentoPDF, fechaCorta, VERDE_OSCURO, GRIS_ZEBRA, TEXTO, MARGEN, CONTENIDO_Y_INICIAL, CONTENIDO_Y_MAXIMO } from './informesPDF';
 import { stripHtml, parseMonto } from './graph';
 
 const DIAS = ["domingo","lunes","martes","miércoles","jueves","viernes","sábado"];
@@ -65,7 +65,7 @@ function dibujarSeccion(doc, autoTable, titulo, columnas, filas, y, pageWidth, d
   doc.text(titulo, MARGEN + 2, y + 5);
   autoTable(doc, {
     startY: y + 7,
-    margin: { left: MARGEN, right: MARGEN, top: 30, bottom: 22 },
+    margin: { left: MARGEN, right: MARGEN, top: CONTENIDO_Y_INICIAL, bottom: 297 - CONTENIDO_Y_MAXIMO },
     head: [columnas],
     body: filas,
     styles: { font:'helvetica', fontSize:8.5, cellPadding:2.4, valign:'top', lineColor:[224,226,224], lineWidth:0.15, textColor:TEXTO },
@@ -81,9 +81,7 @@ export async function generarInformeTutelasPDF(tutelas, fechaNotificacionISO){
   const { doc, autoTable, pageWidth, dibujarEncabezadoYPie, numerarPaginas } = await prepararDocumentoPDF('Tutelas notificadas y vencimiento');
 
   dibujarEncabezadoYPie();
-  let y = 32;
-  doc.setFont('helvetica','bold'); doc.setFontSize(12); doc.setTextColor(...VERDE_OSCURO);
-  doc.text('Tutelas Notificadas y con vencimiento', MARGEN, y);
+  let y = CONTENIDO_Y_INICIAL;
   doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(...TEXTO);
   doc.text(fechaHoraLarga(new Date()), pageWidth - MARGEN, y, {align:'right'});
   y += 8;
