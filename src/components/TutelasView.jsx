@@ -11,6 +11,7 @@ const COLUMNS = [
   {key:'entidad', label:'Entidad', value: t => t.Entidad || ""},
   {key:'tema', label:'Tema', value: t => t.Tema || ""},
   {key:'juzgado', label:'Juzgado', value: t => t.Juzgado || ""},
+  {key:'tipoRespuesta', label:'Tipo Respuesta', value: t => t.TipoRespuesta || ""},
   {key:'fechaNotificacion', label:'Fecha Notificación', value: t => t.FechaNotificacion || ""},
   {key:'fechaVencimiento', label:'Fecha Vencimiento', value: t => t.FechaVencimiento || ""},
   {key:'acciones', label:'Acciones', filterable:false},
@@ -52,7 +53,8 @@ export default function TutelasView({ tutelas, searchQuery, onOpenTutela, onCrea
                 <td>{t.Cliente || "—"}</td>
                 <td>{t.Entidad || "—"}</td>
                 <td>{t.Tema || "—"}</td>
-                <td>{t.Juzgado || "—"}</td>
+                <td><span className="juzgado-truncate">{t.Juzgado || "—"}</span></td>
+                <td>{t.TipoRespuesta || "—"}</td>
                 <td>{fmtDate(t.FechaNotificacion)}</td>
                 <td>{fmtDate(t.FechaVencimiento)}</td>
                 <td style={{whiteSpace:'nowrap'}}>
@@ -63,7 +65,7 @@ export default function TutelasView({ tutelas, searchQuery, onOpenTutela, onCrea
                 </td>
               </tr>
             )) : (
-              <tr><td colSpan={8}><div className="empty-state"><div className="mark" dangerouslySetInnerHTML={{__html: ICON_SVG}} />No hay tutelas para mostrar.</div></td></tr>
+              <tr><td colSpan={9}><div className="empty-state"><div className="mark" dangerouslySetInnerHTML={{__html: ICON_SVG}} />No hay tutelas para mostrar.</div></td></tr>
             )}
           </tbody>
         </table>

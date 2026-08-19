@@ -278,6 +278,10 @@
      color que la columna Estado (badge-verde), pero sin fondo de color (no
      es un indicador de semáforo). */
   .obs-truncate{display:inline-block; max-width:280px; white-space:normal; line-height:1.5; vertical-align:middle; font-size:11.5px; color:var(--verde-oscuro);}
+  /* Columna "Juzgado" de Tutelas — sin esto, una fila con un nombre de
+     juzgado muy largo estira toda la columna (y de paso empuja Fecha
+     Notificación/Vencimiento) para todas las demás filas, aunque digan "—". */
+  .juzgado-truncate{display:inline-block; max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; vertical-align:middle;}
 
   /* ---------- Procesos table ---------- */
   .toolbar{display:flex; align-items:center; gap:10px; margin-bottom:16px; flex-wrap:wrap;}

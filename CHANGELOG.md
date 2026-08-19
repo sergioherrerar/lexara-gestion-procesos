@@ -3,6 +3,7 @@
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
 ## 2026-08-18
+- En la tabla de Tutelas: la columna "Juzgado" ya no se estira con nombres largos (se acorta con puntos suspensivos) y se agregó la columna "Tipo Respuesta".
 - En el formulario de Tutela: "Prestación" y "Tipo Respuesta" ahora son listas desplegables fijas (Asistencial/Económica/Administrativa; y ACLARACION/ALCANCE/APLAZAMIENTO/CUMPLIMIENTO FALLO/IMPUGNACION/NULIDAD/REQUERIMIENTO/TUTELA). Se agregó el campo "Abogado Respuesta" (lista desplegable: Ariana Martin Mendoza/Mónica Paola Quintero/Daniel Santiago Flechas), que en una tutela nueva arranca en "Ariana Martin Mendoza". El campo "Tema" ahora depende de "Prestación" (antes dependía de "Tipo Vinculación Entidad").
 - Se agregó la columna "Observación" a la tabla de Procesos judiciales (entre Estado y Carpeta), con el mismo tamaño de letra y color que la columna Estado.
 - Corregido el informe diario de Tutelas: el campo de fecha ahora es "Fecha Notificación" (antes decía "Fecha de Vencimiento" y estaba al revés) — las tutelas Notificadas se filtran por esa fecha elegida, y las de Vencimiento siempre son las de la fecha real de hoy al momento de generar el PDF o el correo. El cuerpo del correo ahora sí trae las dos listas de tutelas (Contestaciones con Vencimiento / Tutelas Asignadas), igual que el correo real de Access que se usó de modelo.
