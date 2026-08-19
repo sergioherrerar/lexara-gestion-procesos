@@ -11,6 +11,12 @@ import { stripHtml, parseMonto } from './graph';
 const DIAS = ["domingo","lunes","martes","miércoles","jueves","viernes","sábado"];
 const MESES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
 
+// Verde claro pedido explícito por el usuario 2026-08-19 para resaltar la
+// fila de "Total de registros" en las tablas de Tutelas — PANTONE 7472C,
+// #52bbb5. Solo se usa acá (no es el VERDE_CLARO institucional, más pálido,
+// que usan las cajas de resumen del resto de Informes).
+const VERDE_CLARO_TUTELAS = [82, 187, 181];
+
 // "lunes, 17 de agosto de 2026    10:45:41 a. m." — igual al formato del
 // encabezado del reporte de Access (día + hora exacta de generación).
 function fechaHoraLarga(d){
@@ -73,7 +79,7 @@ function dibujarSeccion(doc, autoTable, titulo, filas, y, pageWidth, dibujarEnca
     margin: { left: MARGEN, right: MARGEN, top: CONTENIDO_Y_INICIAL, bottom: 297 - CONTENIDO_Y_MAXIMO },
     head: [['Ítem','No Tutela','Cliente','Tipo Respuesta']],
     body: filasNumeradas,
-    foot: [[{ content: `Total de registros: ${filas.length}`, colSpan: 4, styles:{halign:'right', fontStyle:'bold', fillColor:VERDE_OSCURO, textColor:255, fontSize:8.5} }]],
+    foot: [[{ content: `Total de registros: ${filas.length}`, colSpan: 4, styles:{halign:'right', fontStyle:'bold', fillColor:VERDE_CLARO_TUTELAS, textColor:VERDE_OSCURO, fontSize:8.5} }]],
     styles: { font:'helvetica', fontSize:8.5, cellPadding:2.4, valign:'top', lineColor:BORDE_SUAVE, lineWidth:0.15, textColor:TEXTO },
     headStyles: { fillColor:VERDE_OSCURO, textColor:255, fontStyle:'bold', halign:'center', fontSize:8.5 },
     // "Ítem" y "No Tutela" son valores numéricos — alineados a la derecha

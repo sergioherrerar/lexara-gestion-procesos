@@ -147,7 +147,22 @@ export async function prepararDocumentoPDF(tituloEncabezado = 'Reporte procesos 
     // Membrete completo (logo + cintas arriba, franja dorada de contacto
     // abajo, ya con su propio texto/íconos incrustados en la imagen) —
     // estirado a la hoja A4 entera, igual que en la impresión de Facturas.
-    doc.addImage(membreteDataUrl, 'JPEG', 0, 0, pageWidth, pageHeight, 'lexara-membrete-pdf', 'MEDIUM');
+    // SIN alias fijo a propósito (a diferencia del logo chico original) —
+    // bug real encontrado 2026-08-19 con un informe SOS de 48 procesos/7
+    // páginas real: cuando esta función se llama repetidas veces desde
+    // `didDrawPage` de autoTable DURANTE su paginación en vivo (no antes de
+    // empezar la tabla, sino en cada página nueva que la tabla va creando
+    // sola), reusar el MISMO alias corrompía el estado interno de autoTable
+    // y dejaba el contenido de las páginas pares totalmente invisible
+    // (el texto seguía existiendo en el PDF — por eso no se notaba con un
+    // `grep` del contenido — pero no se veía nada al abrirlo). Confirmado
+    // aislando la causa paso a paso (quitando zebra, quitando el total,
+    // quitando el hook entero, y por último quitando solo el alias) contra
+    // el mismo informe real de 48 procesos. Sin alias, jsPDF sigue sin
+    // inflar el peso del archivo (mismo tamaño final que con alias, ~120KB
+    // para 7 páginas) — internamente deduplica por el contenido de la
+    // imagen igual, así que no vuelve el bug viejo de los 100MB+.
+    doc.addImage(membreteDataUrl, 'JPEG', 0, 0, pageWidth, pageHeight, undefined, 'MEDIUM');
     doc.setFont('helvetica','bold'); doc.setFontSize(13); doc.setTextColor(...VERDE_OSCURO);
     doc.text(tituloEncabezado, MARGEN, 60);
     doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(...GRIS_SUAVE);
