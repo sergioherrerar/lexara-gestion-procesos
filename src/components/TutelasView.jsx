@@ -17,9 +17,20 @@ const COLUMNS = [
   {key:'acciones', label:'Acciones', filterable:false},
 ];
 
+// Fecha de hoy en formato "yyyy-mm-dd", para comparar contra Fecha
+// Vencimiento (que llega como fecha/hora ISO) sin líos de huso horario.
+function hoyISO(){
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
 export default function TutelasView({ tutelas, searchQuery, onOpenTutela, onCreateTutela, onDeleteTutela, canWrite = true }){
   const { filters, setFilter, clearFilters, rowMatches, hasActiveFilters } = useColumnFilters();
   const { sort, setSortKey, sortRows } = useColumnSort();
+  // Contador de tutelas que vencen hoy — se recalcula en cada render, así
+  // que siempre queda al día con lo último que haya en `tutelas` (recién
+  // cargado o después de un refresh).
+  const vencenHoy = tutelas.filter(t => String(t.FechaVencimiento||"").slice(0,10) === hoyISO()).length;
   const query = (searchQuery||"").trim().toLowerCase();
   // "No Tutela" es una columna numérica en SharePoint (llega como number,
   // no string) — .toLowerCase()/.localeCompare no existen en números y
@@ -38,7 +49,12 @@ export default function TutelasView({ tutelas, searchQuery, onOpenTutela, onCrea
           <h1>Tutelas</h1>
           <p>{rows.length} de {tutelas.length} tutelas{hasActiveFilters && <> · <button type="button" className="clear-filters-link" onClick={clearFilters}>Limpiar filtros de columna</button></>}</p>
         </div>
-        {canWrite && <IconTextButton icon="add" variant="primary" onClick={onCreateTutela}>Nueva tutela</IconTextButton>}
+        <div style={{display:'flex', alignItems:'center', gap:12}}>
+          <span className={"badge " + (vencenHoy > 0 ? "badge-rojo" : "badge-gris")} style={{fontSize:13, padding:'7px 14px'}}>
+            {vencenHoy} {vencenHoy === 1 ? "vence" : "vencen"} hoy
+          </span>
+          {canWrite && <IconTextButton icon="add" variant="primary" onClick={onCreateTutela}>Nueva tutela</IconTextButton>}
+        </div>
       </div>
       <div className="table-wrap">
         <table>
