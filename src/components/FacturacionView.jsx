@@ -1,5 +1,6 @@
+import { useState } from 'react';
 import { ICON_SVG } from '../config';
-import { clienteForFactura, procesoForFactura, facturaNumero, computeFacturaTotals, fmtMonto, fmtDate, fechaFromPartes, estadoFacturaBadgeClass, compareFacturaNumero } from '../lib/graph';
+import { clienteForFactura, procesoForFactura, facturaNumero, computeFacturaTotals, fmtMonto, fmtDate, fechaFromPartes, estadoFacturaBadgeClass, compareFacturaNumero, abrirFacturaSiigo } from '../lib/graph';
 import IconButton, { IconTextButton } from './IconButton';
 import ColumnHeaderMenu from './ColumnHeaderMenu';
 import { useColumnFilters } from '../hooks/useColumnFilters';
@@ -9,9 +10,21 @@ function fechaOrdenable(f){
   return fechaFromPartes(f.Dia, f.Mes, f.Anio) || f.Fecha || "";
 }
 
-export default function FacturacionView({ facturas, clientes, procesos, searchQuery, onOpenFactura, onCreateFactura, onPrintFactura }){
+export default function FacturacionView({ facturas, clientes, procesos, searchQuery, onOpenFactura, onCreateFactura, onPrintFactura, config, notify }){
   const { filters, setFilter, clearFilters, rowMatches, hasActiveFilters } = useColumnFilters();
   const { sort, setSortKey, sortRows } = useColumnSort();
+  const [buscandoSiigo, setBuscandoSiigo] = useState(null); // id de la factura mientras se busca su PDF
+
+  async function handleBuscarSiigo(f){
+    setBuscandoSiigo(f.id);
+    try{
+      await abrirFacturaSiigo(f, config.SIIGO_SHARE_URL);
+    }catch(err){
+      console.error(err);
+      notify(err.message, 'error');
+    }
+    setBuscandoSiigo(null);
+  }
 
   const COLUMNS = [
     {key:'numero', label:'No. factura', value: f => facturaNumero(f)},
@@ -81,6 +94,7 @@ export default function FacturacionView({ facturas, clientes, procesos, searchQu
                     <div className="row-actions">
                       <IconButton icon="edit" variant="edit" label="Ver / editar factura" onClick={e => { e.stopPropagation(); onOpenFactura(f.id); }} />
                       <IconButton icon="print" variant="print" label="Imprimir factura" onClick={e => { e.stopPropagation(); onPrintFactura(f.id); }} />
+                      <IconButton icon="open" variant="open" label="Buscar y abrir factura electrónica (Siigo)" spinning={buscandoSiigo===f.id} onClick={e => { e.stopPropagation(); handleBuscarSiigo(f); }} />
                     </div>
                   </td>
                 </tr>

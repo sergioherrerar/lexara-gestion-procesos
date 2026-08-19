@@ -419,6 +419,60 @@ export function compareFacturaNumero(a, b){
   if(numB !== numA) return numB - numA;
   return nb.localeCompare(na);
 }
+
+// --- Facturas electrónicas de Siigo (carpeta compartida por link) ---
+// Pedido explícito del usuario 2026-08-19: cada factura tiene su PDF
+// generado por Siigo en una carpeta de SharePoint/OneDrive compartida por
+// link (no es una de las listas ya conectadas — se resuelve aparte). El
+// nombre de archivo sigue un patrón fijo confirmado con una captura real de
+// esa carpeta: "F003" + 8 ceros + el número de factura (4 dígitos, con
+// ceros a la izquierda) + "0000" + ".pdf" — p.ej. factura 804 →
+// "F0030000000008040000.pdf".
+export function siigoNombreArchivo(factura){
+  const numero = facturaNumero(factura);
+  // La numeración con letra (heredada de Access, p.ej. "193a") no sigue este
+  // patrón — no hay forma de calcular su nombre de archivo.
+  if(!/^\d+$/.test(numero)) return null;
+  return `F003${"0".repeat(8)}${numero.padStart(4,'0')}0000.pdf`;
+}
+
+// Codifica una URL de "compartir" de SharePoint/OneDrive al formato que
+// espera /shares/{id} de Graph — ver
+// https://learn.microsoft.com/graph/api/shares-get
+function codificarUrlCompartida(url){
+  const base64 = btoa(url).replace(/=+$/, "").replace(/\//g, "_").replace(/\+/g, "-");
+  return "u!" + base64;
+}
+
+// La carpeta de Siigo se resuelve UNA sola vez por sesión (driveId + id de
+// la carpeta) — se reusa en cada botón "Abrir factura electrónica" sin
+// volver a pedirle a Graph que resuelva el link compartido cada vez.
+let carpetaSiigo = null;
+async function resolverCarpetaSiigo(shareUrl){
+  if(carpetaSiigo) return carpetaSiigo;
+  const id = codificarUrlCompartida(shareUrl);
+  const item = await graphFetch(`/shares/${id}/driveItem?$select=id,parentReference`);
+  carpetaSiigo = { driveId: item.parentReference.driveId, folderId: item.id };
+  return carpetaSiigo;
+}
+
+// Busca el PDF de la factura electrónica en la carpeta de Siigo y lo abre en
+// una pestaña nueva. Lanza un error (con mensaje para mostrar al usuario) si
+// la numeración no aplica o si Graph no encuentra el archivo.
+export async function abrirFacturaSiigo(factura, shareUrl){
+  const nombre = siigoNombreArchivo(factura);
+  if(!nombre){
+    throw new Error(`No se puede calcular el nombre del archivo para la factura "${facturaNumero(factura)}" (numeración antigua con letra).`);
+  }
+  const { driveId, folderId } = await resolverCarpetaSiigo(shareUrl);
+  let item;
+  try{
+    item = await graphFetch(`/drives/${driveId}/items/${folderId}:/${encodeURIComponent(nombre)}?$select=webUrl`);
+  }catch(err){
+    throw new Error(`No se encontró "${nombre}" en la carpeta de Siigo.`);
+  }
+  window.open(item.webUrl, '_blank', 'noopener');
+}
 // Dia/Mes/Año son los campos que se digitan; Fecha se guarda concatenándolos
 // y dándoles formato de fecha (no se digita directamente).
 export function fechaFromPartes(dia, mes, anio){

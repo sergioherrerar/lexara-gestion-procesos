@@ -1077,7 +1077,7 @@ export function useLexaraApp(){
     refreshData, refreshing,
     signIn, enterDemo, goSetup, signOut,
     saving, signingIn,
-    toast, closeToast, confirmState, acceptConfirm, cancelConfirm,
+    toast, closeToast, confirmState, acceptConfirm, cancelConfirm, notify,
     procesos, clientes, facturas, ordenesCompra, colaboradores, formasPago, desistimientos, tiposAccion,
     tutelas, temas, valoresEntidad,
     currentFilter, setFilter: setCurrentFilter, searchQuery, setSearchQuery: setSearchQuery,

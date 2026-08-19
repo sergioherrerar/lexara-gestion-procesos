@@ -132,6 +132,8 @@ export default function App(){
             onOpenFactura={app.openFactura}
             onCreateFactura={app.newFactura}
             onPrintFactura={app.printFactura}
+            config={app.config}
+            notify={app.notify}
           />
         )}
         {app.view === 'ordenesCompra' && canAccessView(app.role, 'ordenesCompra') && (
