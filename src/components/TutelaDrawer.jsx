@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { FieldCard, RichTextEditor } from './FormFields';
 import { IconTextButton } from './IconButton';
 import { temasParaPrestacion } from '../lib/graph';
+import { DEPARTAMENTOS_COLOMBIA, municipiosDe } from '../lib/colombiaGeo';
 import { useEscapeToClose } from '../hooks/useEscapeToClose';
 
 // Campos que todavía no se sabe si son un select fijo en SharePoint (el
@@ -62,6 +63,14 @@ export default function TutelaDrawer({
   // cuya Prestación Tema coincida con la Prestación elegida acá — mismo
   // criterio de selects dependientes que Tipo de Acción/Tipo de Proceso en
   // Procesos judiciales (ver temasParaPrestacion en graph.js).
+  // Departamento / Ciudad — mismo criterio (lista oficial de Colombia).
+  function setDepartamento(value){
+    setForm(prev => {
+      const next = {...prev, Departamento: value};
+      if(prev.Ciudad && !municipiosDe(value).includes(prev.Ciudad)) next.Ciudad = "";
+      return next;
+    });
+  }
   function setPrestacion(value){
     setForm(prev => {
       const next = {...prev, Prestacion: value};
@@ -100,6 +109,10 @@ export default function TutelaDrawer({
   if(form.AbogadoRespuesta && !abogadoRespuestaOpciones.includes(form.AbogadoRespuesta)) abogadoRespuestaOpciones.unshift(form.AbogadoRespuesta);
   const temaOpciones = temasParaPrestacion(temas, form.Prestacion);
   if(form.Tema && !temaOpciones.includes(form.Tema)) temaOpciones.unshift(form.Tema);
+  const departamentoOpciones = [...DEPARTAMENTOS_COLOMBIA];
+  if(form.Departamento && !departamentoOpciones.includes(form.Departamento)) departamentoOpciones.unshift(form.Departamento);
+  const ciudadOpciones = municipiosDe(form.Departamento);
+  if(form.Ciudad && !ciudadOpciones.includes(form.Ciudad)) ciudadOpciones.unshift(form.Ciudad);
 
   return (
     <>
@@ -151,10 +164,16 @@ export default function TutelaDrawer({
             <h4>Trámite</h4>
             <div className="field-card-grid">
               <FieldCard label="Departamento">
-                <input type="text" value={form.Departamento} onChange={e => setField('Departamento', e.target.value)} readOnly={!canWrite} />
+                <select value={form.Departamento} onChange={e => setDepartamento(e.target.value)} disabled={!canWrite}>
+                  <option value="">— seleccionar —</option>
+                  {departamentoOpciones.map(n => <option value={n} key={n}>{n}</option>)}
+                </select>
               </FieldCard>
               <FieldCard label="Ciudad">
-                <input type="text" value={form.Ciudad} onChange={e => setField('Ciudad', e.target.value)} readOnly={!canWrite} />
+                <select value={form.Ciudad} onChange={e => setField('Ciudad', e.target.value)} disabled={!canWrite || !form.Departamento}>
+                  <option value="">{form.Departamento ? "— seleccionar —" : "— elige primero el Departamento —"}</option>
+                  {ciudadOpciones.map(n => <option value={n} key={n}>{n}</option>)}
+                </select>
               </FieldCard>
               <FieldCard label="Juzgado">
                 <input type="text" value={form.Juzgado} onChange={e => setField('Juzgado', e.target.value)} readOnly={!canWrite} />

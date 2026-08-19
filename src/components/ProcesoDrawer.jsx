@@ -10,6 +10,7 @@ import IconButton, { IconTextButton } from './IconButton';
 import { FieldCard, RichTextEditor } from './FormFields';
 import { useEscapeToClose } from '../hooks/useEscapeToClose';
 import { ICON_SVG } from '../config';
+import { DEPARTAMENTOS_COLOMBIA, municipiosDe } from '../lib/colombiaGeo';
 
 const TABS = [
   {key:'datos', label:'Datos generales'},
@@ -75,11 +76,19 @@ const DATE_FIELDS = ["FechaAdmision","FechaContestacion","FechaInstancia","Fecha
 // columna real de SharePoint; mientras tanto quedan en blanco).
 const FIELD_SECTIONS = [
   {title:"Identificación del proceso", fields:[
-    ["NoCompleto","text"],["NumeroContrato","text"],["Numero5Digitos","text"],["RadicadoActual","text"],["HistoricoNumerosCompletos","textarea"],
-    ["NaturalezaProceso","text"],["Subclasificacion","text"],
+    // Numero5Digitos, RadicadoActual, NaturalezaProceso y Subclasificacion
+    // no se muestran acá — cada uno es la MISMA columna real de SharePoint
+    // que otro campo ya visible (Radicado/NoCompleto/TipoAccion/TipoProceso,
+    // ver mapping en config.js) — mostrarlos aparte repetía el mismo valor
+    // dos veces. Siguen existiendo como campos para los informes que ya los
+    // usan (informeSOS.js).
+    ["NoCompleto","text"],["NumeroContrato","text"],["HistoricoNumerosCompletos","textarea"],
   ]},
   {title:"Partes", fields:[
-    ["Cliente","text"],["Entidad","text"],["Demandante","text"],["DemandanteIdentificacion","text"],["Demandado","text"],["ParteActuamos","select"],
+    // DemandanteIdentificacion no se muestra acá — es la misma columna real
+    // que Cliente (ver mapping en config.js); sigue existiendo para el
+    // informe SOS.
+    ["Cliente","text"],["Entidad","text"],["Demandante","text"],["Demandado","text"],["ParteActuamos","select"],
   ]},
   {title:"Representación", fields:[
     ["Apoderado","select"],["CCApoderada","text"],["AbogadoEncargado","select"],
@@ -106,7 +115,10 @@ const FIELD_SECTIONS = [
     ["MedidaCautelar","select"],["MontoMedidaCautelar","money"],
   ]},
   {title:"Enlaces y observaciones", fields:[
-    ["LinkContrato","link"],["LinkCliente","link"],["LinkCarpeta","link"],["EnlaceProceso","link"],["Observaciones","richtext"],
+    // EnlaceProceso no se muestra acá — es la misma columna real que
+    // LinkCliente (ver mapping en config.js); sigue existiendo para los
+    // informes SOS/Lexara.
+    ["LinkContrato","link"],["LinkCliente","link"],["LinkCarpeta","link"],["Observaciones","richtext"],
   ]},
 ];
 // "Historico" es la bitácora narrativa del proceso (distinta de "Histórico
@@ -120,8 +132,10 @@ const TRAZABILIDAD_SECTION = {title:"Fechas del proceso", fields: [
   ["FechaTerminacion","date"],
   ["Admitida","select"],
   ["PruebaPericial","select"],
+  // GlosaDemandada no se muestra acá — es la misma columna real que
+  // OrigenTipoGlosa (ver mapping en config.js); sigue existiendo para el
+  // informe SOS.
   ["OrigenTipoGlosa","text"],
-  ["GlosaDemandada","text"],
   ["CalificacionContingencia","select"],
   ["PorcentajeCalificacion","text"],
   ["Historico","richtext"],
@@ -270,6 +284,20 @@ export default function ProcesoDrawer({ proceso, clientes, colaboradores, factur
     });
   }
 
+  // Departamento / Municipio — selects dependientes (lista oficial de
+  // Colombia, ver colombiaGeo.js). Ojo: en SharePoint estos dos campos
+  // mapean a la MISMA columna real "Ciudad" (confirmado en el mapeo real) —
+  // esto ya pasaba antes con texto libre, no lo cambia este ajuste; al
+  // guardar, el valor de Municipio es el que de verdad queda en SharePoint
+  // (Departamento solo ayuda a acotar la lista de municipios en pantalla).
+  function setDepartamento(value){
+    setForm(prev => {
+      const next = {...prev, Departamento: value};
+      if(prev.Municipio && !municipiosDe(value).includes(prev.Municipio)) next.Municipio = "";
+      return next;
+    });
+  }
+
   // Al elegir el Apoderado, se busca su Identificación en la lista de
   // Colaboradores (Equipo MD) y se rellena sola en "CC Apoderada" — solo si
   // ese campo está vacío o todavía tiene el CC del apoderado anterior, para
@@ -312,6 +340,12 @@ export default function ProcesoDrawer({ proceso, clientes, colaboradores, factur
   if(form.TipoProceso && !tipoProcesoOpciones.includes(form.TipoProceso)) tipoProcesoOpciones.unshift(form.TipoProceso);
   const despachoOpciones = despachosParaAccion(tiposAccion, form.TipoAccion);
   if(form.Despacho && !despachoOpciones.includes(form.Despacho)) despachoOpciones.unshift(form.Despacho);
+
+  // Departamento / Municipio — mismo criterio (lista oficial de Colombia).
+  const departamentoOpciones = [...DEPARTAMENTOS_COLOMBIA];
+  if(form.Departamento && !departamentoOpciones.includes(form.Departamento)) departamentoOpciones.unshift(form.Departamento);
+  const municipioOpciones = municipiosDe(form.Departamento);
+  if(form.Municipio && !municipioOpciones.includes(form.Municipio)) municipioOpciones.unshift(form.Municipio);
 
   // Entidad: lista de valores reales que ya existen en la lista de Clientes
   // (no una lista fija). Apoderado: nombres reales de Colaborador Lexara
@@ -552,6 +586,26 @@ export default function ProcesoDrawer({ proceso, clientes, colaboradores, factur
                         <select value={form.Despacho} onChange={e => setField('Despacho', e.target.value)} disabled={!canWrite || !form.TipoAccion}>
                           <option value="">{form.TipoAccion ? "— seleccionar —" : "— elige primero el Tipo de Acción —"}</option>
                           {despachoOpciones.map(n => <option value={n} key={n}>{n}</option>)}
+                        </select>
+                      </FieldCard>
+                    );
+                  }
+                  if(key==='Departamento'){
+                    return (
+                      <FieldCard label={LABELS[key]} key={key}>
+                        <select value={form.Departamento} onChange={e => setDepartamento(e.target.value)} disabled={!canWrite}>
+                          <option value="">— seleccionar —</option>
+                          {departamentoOpciones.map(n => <option value={n} key={n}>{n}</option>)}
+                        </select>
+                      </FieldCard>
+                    );
+                  }
+                  if(key==='Municipio'){
+                    return (
+                      <FieldCard label={LABELS[key]} key={key}>
+                        <select value={form.Municipio} onChange={e => setField('Municipio', e.target.value)} disabled={!canWrite || !form.Departamento}>
+                          <option value="">{form.Departamento ? "— seleccionar —" : "— elige primero el Departamento —"}</option>
+                          {municipioOpciones.map(n => <option value={n} key={n}>{n}</option>)}
                         </select>
                       </FieldCard>
                     );

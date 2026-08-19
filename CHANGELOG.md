@@ -3,6 +3,8 @@
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
 ## 2026-08-18
+- "Departamento" y "Ciudad"/"Municipio" ahora son listas desplegables dependientes (departamento → sus municipios reales), con los 32 departamentos de Colombia + Bogotá D.C., en Procesos judiciales y en Tutelas.
+- Revisé el resto de campos de Procesos judiciales por el mismo problema del punto anterior (dos campos mostrando el mismo dato dos veces): encontré 6 casos más — Naturaleza del proceso/Subclasificación/Número 5 dígitos/Radicado actual/No. identificación demandante/Enlace proceso/Glosa demandada — y los quité del formulario (siguen existiendo para los informes que ya los usan, como el de SOS). Ninguna otra lista (Tutelas, Clientes, Facturación, Órdenes de compra, Colaborador Lexara, Formas de pago, Desistimientos) tiene este problema.
 - Corregido: en el panel de Proceso judicial (pestaña Datos generales, sección Valores) ya no se muestra "Valor cartera actual" duplicado junto a "Valor actual demanda" — en SharePoint son la misma columna, mostrar los dos repetía el mismo valor dos veces. El campo sigue existiendo para el informe de SOS, solo se quitó del formulario.
 - En el formulario de Tutela: en Identificación, "Entidad" ahora va antes que "Cliente", y "Prestación" se movió junto a "Tipo Vinculación Entidad" (antes estaba en Trámite).
 - Corregido: "Tipo Vinculación Entidad" no depende de nada — es una lista fija propia (Accionada/Vinculada), sin relación con Tema/Prestación (se había armado por error tomando sus opciones de la lista Tema).
