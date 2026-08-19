@@ -55,6 +55,8 @@ export const VERDE_OSCURO = [0, 73, 65];
 export const GRIS_SUAVE = [92, 107, 104];
 export const TEXTO = [28, 38, 36];
 export const GRIS_ZEBRA = [247, 248, 247];
+export const BORDE_SUAVE = [224, 226, 224];
+export const VERDE_CLARO = [230, 239, 237]; // tinte muy suave de VERDE_OSCURO, para cajas de resumen/destacados
 export const MARGEN = 18;
 // El membrete completo ocupa el logo/cintas arriba y la barra dorada de
 // contacto abajo — el contenido de cada informe tiene que dejar espacio
@@ -63,8 +65,40 @@ export const MARGEN = 18;
 // título del documento; el cuerpo de cada informe empieza un poco más
 // abajo, después del título/subtítulo/línea. CONTENIDO_Y_MAXIMO es hasta
 // dónde puede llegar el contenido antes de la franja dorada del pie.
+// Ajustados 2026-08-19 (rediseño de informes, pedido explícito del usuario
+// "reduce un poco el formato" porque los informes cortos se veían vacíos):
+// el arte del membrete deja libre hasta ~277mm antes de la franja dorada,
+// así que CONTENIDO_Y_MAXIMO se corrió de 255 a 268 para recuperar ~13mm de
+// espacio útil real (quedando aun así con margen de sobra antes del dorado).
 export const CONTENIDO_Y_INICIAL = 76;
-export const CONTENIDO_Y_MAXIMO = 255;
+export const CONTENIDO_Y_MAXIMO = 268;
+
+// Caja de resumen ("stat cards" en fila) — pensada para que una carta con
+// pocos procesos igual se vea completa y profesional en vez de vacía: un
+// bloque destacado con 2-3 datos clave (fecha de corte, cantidad, etc.) justo
+// debajo del saludo, en vez de líneas de texto plano sueltas. Devuelve el Y
+// donde sigue el contenido (ya con el alto de la caja sumado).
+export function dibujarResumenBox(doc, x, y, width, items){
+  const alto = 17;
+  doc.setFillColor(...VERDE_CLARO);
+  doc.setDrawColor(...VERDE_OSCURO);
+  doc.setLineWidth(0.3);
+  doc.roundedRect(x, y, width, alto, 2, 2, 'FD');
+  const anchoCelda = width / items.length;
+  items.forEach((item, i) => {
+    const cx = x + anchoCelda * i;
+    if(i > 0){
+      doc.setDrawColor(...VERDE_OSCURO); doc.setLineWidth(0.15);
+      doc.line(cx, y + 3.5, cx, y + alto - 3.5);
+    }
+    doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(...GRIS_SUAVE);
+    doc.text(item.label.toUpperCase(), cx + anchoCelda/2, y + 6.5, {align:'center'});
+    const valor = String(item.value);
+    doc.setFont('helvetica','bold'); doc.setFontSize(valor.length > 16 ? 9.5 : 12.5); doc.setTextColor(...VERDE_OSCURO);
+    doc.text(valor, cx + anchoCelda/2, y + 13.5, {align:'center'});
+  });
+  return y + alto;
+}
 
 // Firmante por defecto de las cartas de informe — mismo dato real que ya
 // usaba el despacho (tarjeta profesional, dato público). Si algún informe
@@ -94,7 +128,22 @@ export async function prepararDocumentoPDF(tituloEncabezado = 'Reporte procesos 
   const hoy = new Date();
   const fecha = fechaLarga(hoy);
 
+  // BUG REAL encontrado 2026-08-19 (causa raíz de "los informes salen
+  // vacíos"): esta función se llama a mano UNA vez antes de armar cada
+  // página, pero TAMBIÉN se pasa como `didDrawPage` a autoTable — y
+  // autoTable dispara `didDrawPage` para la página donde la tabla EMPIEZA
+  // (normalmente la página 1, la misma que ya se dibujó a mano), después de
+  // haber dibujado ya el saludo/caja de resumen/tabla ahí. El segundo
+  // dibujo (imagen de página completa + título) pintaba ENCIMA de todo eso,
+  // dejando la carta visualmente "vacía" aunque el texto siguiera existiendo
+  // en el PDF (por eso no se notaba con un simple `grep` del contenido).
+  // Se hace la función IDEMPOTENTE por número de página: solo vuelve a
+  // dibujar si esa página en particular todavía no tiene encabezado.
+  let ultimaPaginaDibujada = 0;
   function dibujarEncabezadoYPie(){
+    const paginaActual = doc.internal.getCurrentPageInfo().pageNumber;
+    if(paginaActual === ultimaPaginaDibujada) return;
+    ultimaPaginaDibujada = paginaActual;
     // Membrete completo (logo + cintas arriba, franja dorada de contacto
     // abajo, ya con su propio texto/íconos incrustados en la imagen) —
     // estirado a la hoja A4 entera, igual que en la impresión de Facturas.
@@ -142,18 +191,26 @@ export async function generarCartaInformePDF(opts){
   dibujarEncabezadoYPie();
   let y = CONTENIDO_Y_INICIAL;
   doc.setFont('helvetica','normal'); doc.setFontSize(10.5); doc.setTextColor(...TEXTO);
-  doc.text(`Bogotá D.C., ${fecha}`, MARGEN, y); y += 8;
+  doc.text(`Bogotá D.C., ${fecha}`, MARGEN, y); y += 9;
   doc.text('Señores:', MARGEN, y); y += 5;
   doc.setFont('helvetica','bold'); doc.text(nombreEntidad, MARGEN, y); y += 5;
-  doc.setFont('helvetica','normal'); doc.text('Ciudad', MARGEN, y); y += 8;
-  doc.setFont('helvetica','bold'); doc.setTextColor(...VERDE_OSCURO);
-  doc.text('Asunto: Reporte procesos judiciales', MARGEN, y); y += 6;
-  doc.setFont('helvetica','normal'); doc.setTextColor(...TEXTO);
-  doc.text(`Cantidad de procesos: ${cantidadProcesos}`, MARGEN, y); y += 8;
+  doc.setFont('helvetica','normal'); doc.text('Ciudad', MARGEN, y); y += 9;
+  doc.setFont('helvetica','bold'); doc.setFontSize(11); doc.setTextColor(...VERDE_OSCURO);
+  doc.text('Asunto: Reporte procesos judiciales', MARGEN, y); y += 8;
+
+  // Caja de resumen destacada (fecha de corte + cantidad) — le da peso visual
+  // a la carta incluso cuando la tabla que sigue tiene pocas filas (pedido
+  // explícito del usuario 2026-08-19: "no se está llenando la información").
+  y = dibujarResumenBox(doc, MARGEN, y, pageWidth - MARGEN*2, [
+    { label:'Fecha de corte', value: fecha },
+    { label:'Cantidad de procesos', value: cantidadProcesos },
+  ]) + 9;
+
+  doc.setFont('helvetica','normal'); doc.setFontSize(10.5); doc.setTextColor(...TEXTO);
   doc.text('Cordial saludo,', MARGEN, y); y += 7;
   const lineasParrafo = doc.splitTextToSize(parrafo, pageWidth - MARGEN*2);
-  doc.text(lineasParrafo, MARGEN, y);
-  y += lineasParrafo.length * 5 + 6;
+  doc.text(lineasParrafo, MARGEN, y, {lineHeightFactor: 1.35});
+  y += lineasParrafo.length * 5.4 + 8;
 
   // --- Tabla (autoTable pagina sola y repite el encabezado en cada hoja) ---
   autoTable(doc, {
@@ -161,7 +218,10 @@ export async function generarCartaInformePDF(opts){
     margin: { left: MARGEN, right: MARGEN, top: CONTENIDO_Y_INICIAL, bottom: 297 - CONTENIDO_Y_MAXIMO },
     head: [columnas],
     body: filas,
-    styles: { font:'helvetica', fontSize:8.5, cellPadding:2.4, valign:'top', lineColor:[224,226,224], lineWidth:0.15, textColor:TEXTO },
+    // Fila de cierre con el total — le da a la tabla un final visible en vez
+    // de simplemente detenerse, y sirve de verificación rápida del conteo.
+    foot: [[{ content: `Total: ${filas.length} proceso${filas.length===1?'':'s'}`, colSpan: columnas.length, styles:{halign:'right', fontStyle:'bold', fillColor:VERDE_CLARO, textColor:VERDE_OSCURO, fontSize:8.5} }]],
+    styles: { font:'helvetica', fontSize:8.5, cellPadding:2.4, valign:'top', lineColor:BORDE_SUAVE, lineWidth:0.15, textColor:TEXTO },
     headStyles: { fillColor:VERDE_OSCURO, textColor:255, fontStyle:'bold', halign:'center', fontSize:8.5 },
     alternateRowStyles: { fillColor:GRIS_ZEBRA },
     columnStyles,
@@ -170,7 +230,9 @@ export async function generarCartaInformePDF(opts){
 
   // --- Firma, después de la tabla (nueva hoja si ya no cabe) ---
   let yFirma = doc.lastAutoTable.finalY + 16;
-  if(yFirma > CONTENIDO_Y_MAXIMO - 25){
+  // Se reserva espacio no solo para la firma sino también para la nota de
+  // cierre que sigue abajo (línea + texto), para que nunca quede cortada.
+  if(yFirma > CONTENIDO_Y_MAXIMO - 45){
     doc.addPage();
     dibujarEncabezadoYPie();
     yFirma = CONTENIDO_Y_INICIAL;
@@ -179,7 +241,15 @@ export async function generarCartaInformePDF(opts){
   doc.text('Certifico cordialmente,', MARGEN, yFirma); yFirma += 14;
   doc.setFont('helvetica','bold'); doc.text(firma.nombre, MARGEN, yFirma); yFirma += 5;
   doc.setFont('helvetica','normal'); doc.text(firma.cc, MARGEN, yFirma); yFirma += 5;
-  doc.text(firma.tp, MARGEN, yFirma);
+  doc.text(firma.tp, MARGEN, yFirma); yFirma += 12;
+
+  // Cierre profesional: línea sutil + nota de generación automática, para que
+  // la hoja no termine en blanco justo debajo de la firma (pedido explícito
+  // del usuario: que el informe se vea completo, no vacío).
+  doc.setDrawColor(...BORDE_SUAVE); doc.setLineWidth(0.3);
+  doc.line(MARGEN, yFirma, pageWidth - MARGEN, yFirma); yFirma += 5;
+  doc.setFont('helvetica','italic'); doc.setFontSize(7.5); doc.setTextColor(...GRIS_SUAVE);
+  doc.text('Este documento fue generado automáticamente por el sistema de gestión de procesos de MD Abogados SAS.', MARGEN, yFirma);
 
   numerarPaginas();
 
