@@ -97,7 +97,12 @@ const FIELD_SECTIONS = [
     ["LinkDespacho","link"],["CorreoDespacho","text"],["Instancia","select"],["Departamento","text"],["Municipio","text"],
   ]},
   {title:"Valores", fields:[
-    ["ValorRadicacion","money"],["ValorReforma","money"],["ValorActualDemanda","money"],["ValorCarteraActual","money"],
+    // "Valor cartera actual" no se muestra acá — en SharePoint es la misma
+    // columna real que "Valor actual demanda" (ver ValorCarteraActual en
+    // config.js, mapeo confirmado), mostrar los dos duplicaba el mismo
+    // valor dos veces. Sigue existiendo como campo para el informe SOS
+    // (informeSOS.js), solo se quitó de este formulario.
+    ["ValorRadicacion","money"],["ValorReforma","money"],["ValorActualDemanda","money"],
     ["MedidaCautelar","select"],["MontoMedidaCautelar","money"],
   ]},
   {title:"Enlaces y observaciones", fields:[

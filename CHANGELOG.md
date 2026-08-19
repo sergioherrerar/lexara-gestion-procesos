@@ -3,6 +3,7 @@
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
 ## 2026-08-18
+- Corregido: en el panel de Proceso judicial (pestaña Datos generales, sección Valores) ya no se muestra "Valor cartera actual" duplicado junto a "Valor actual demanda" — en SharePoint son la misma columna, mostrar los dos repetía el mismo valor dos veces. El campo sigue existiendo para el informe de SOS, solo se quitó del formulario.
 - En el formulario de Tutela: en Identificación, "Entidad" ahora va antes que "Cliente", y "Prestación" se movió junto a "Tipo Vinculación Entidad" (antes estaba en Trámite).
 - Corregido: "Tipo Vinculación Entidad" no depende de nada — es una lista fija propia (Accionada/Vinculada), sin relación con Tema/Prestación (se había armado por error tomando sus opciones de la lista Tema).
 - En la tabla de Tutelas: la columna "Juzgado" ya no se estira con nombres largos (se acorta con puntos suspensivos) y se agregó la columna "Tipo Respuesta".
