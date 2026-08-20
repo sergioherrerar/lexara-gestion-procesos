@@ -244,11 +244,14 @@ export function fmtDate(dateStr){
 // clave dentro del propio texto de "Estado" (fallaba: p.ej. "vencimiento de
 // términos" se confundía con "Terminado"). Criterio confirmado por el
 // usuario, ahora basado en dos campos aparte:
-// - "Estado V/T" = Terminado → siempre gris, sin importar la fecha.
+// - "Estado V/T" = Terminado → siempre gris, sin importar la fecha. GRIS ES
+//   EXCLUSIVO DE TERMINADOS — no debe salir por ningún otro motivo (ver
+//   corrección 2026-08-20 más abajo).
 // - Si no está terminado, según qué tan vieja es "Fecha último estado"
-//   comparada con hoy: menos de 6 meses → verde, entre 6 meses y 1 año →
-//   naranja, más de 1 año → rojo.
-// - Sin fecha (o una fecha inválida) → gris, para no inventar un color.
+//   comparada con el momento real de hoy (al iniciar sesión o hacer F5,
+//   siempre se recalcula con la fecha/hora actual, nunca una guardada):
+//   menos de 6 meses → verde, entre 6 meses y 1 año → naranja, más de 1
+//   año → rojo.
 function mesesDesde(fechaStr){
   if(!fechaStr) return null;
   const fecha = new Date(fechaStr);
@@ -258,11 +261,33 @@ function mesesDesde(fechaStr){
   if(hoy.getDate() < fecha.getDate()) meses -= 1;
   return meses;
 }
-export function estadoBadgeClass(estadoVT, fechaUltimoEstado){
+// Busca la fecha MÁS RECIENTE que aparezca escrita dentro del texto de
+// "Estado" (formato DD-MM-AAAA, tal como quedan las entradas de la
+// bitácora, p.ej. "12-03-2026 Auto admite...") — se usa como respaldo
+// cuando la columna "Fecha último estado" viene vacía en SharePoint, para
+// no perder la fecha real que sí está escrita ahí adentro.
+function fechaMasRecienteEnTexto(html){
+  const texto = stripHtml(html);
+  const matches = [...texto.matchAll(/(\d{2})-(\d{2})-(\d{4})/g)];
+  if(!matches.length) return null;
+  const [, d, m, y] = matches[matches.length - 1];
+  return `${y}-${m}-${d}`;
+}
+// CORREGIDO 2026-08-20 — bug real señalado por el usuario con una captura
+// (Entidad "GTM", 4/4 procesos activos, semáforo mostraba "3 rojo, 1 gris"
+// — ese 1 gris NO era un proceso terminado): antes, si no había fecha
+// válida, la función devolvía 'badge-gris' igual que un proceso terminado,
+// mezclando "no sé la fecha" con "está cerrado". Corregido: gris queda
+// EXCLUSIVO para EstadoVT=Terminado. Si no hay fecha en "Fecha último
+// estado", se busca una fecha dentro del texto de "Estado" (parámetro
+// nuevo, opcional); si tampoco hay nada ahí, se trata como el caso que más
+// atención necesita (rojo) — nunca gris.
+export function estadoBadgeClass(estadoVT, fechaUltimoEstado, estadoTexto){
   const vt = (estadoVT||"").toLowerCase();
   if(vt.includes('termin')) return 'badge-gris';
-  const meses = mesesDesde(fechaUltimoEstado);
-  if(meses == null) return 'badge-gris';
+  let meses = mesesDesde(fechaUltimoEstado);
+  if(meses == null && estadoTexto) meses = mesesDesde(fechaMasRecienteEnTexto(estadoTexto));
+  if(meses == null) return 'badge-rojo';
   if(meses < 6) return 'badge-verde';
   if(meses < 12) return 'badge-naranja';
   return 'badge-rojo';

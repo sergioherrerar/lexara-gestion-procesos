@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   groupCount, estadoBadgeClass, fmtMonto, stripHtml, parseMonto,
-  facturasForProceso, clienteForFactura, clienteForOrdenCompra,
+  clienteForFactura, clienteForOrdenCompra,
 } from '../lib/graph';
 import BarChart from './BarChart';
 import IconButton from './IconButton';
@@ -80,19 +80,15 @@ export default function InformesView({ procesos, clientes, facturas, ordenesComp
     // 100x los valores que ya venían como número crudo (ver el mismo bug ya
     // corregido una vez en parseMonto(), [[project_facturacion_data_model]]).
     const valorEnDisputa = propios.reduce((sum,p) => sum + parseMonto(p.ValorActualDemanda), 0);
-    // Cantidad de facturas asociadas (no la suma de sus montos) — pedido
-    // explícito del usuario 2026-08-19: "acá no coloca la suma sino la
-    // cantidad de facturas".
-    const facturacionTotal = propios.reduce((sum,p) => sum + facturasForProceso(facturas, p).length, 0);
     const semaforo = {verde:0, naranja:0, rojo:0, gris:0};
     propios.forEach(p => {
-      const cls = estadoBadgeClass(p.EstadoVT, p.FechaUltimoEstado);
+      const cls = estadoBadgeClass(p.EstadoVT, p.FechaUltimoEstado, p.Estado);
       if(cls==='badge-verde') semaforo.verde++;
       else if(cls==='badge-naranja') semaforo.naranja++;
       else if(cls==='badge-rojo') semaforo.rojo++;
       else semaforo.gris++;
     });
-    return { entidad, total: propios.length, activos: activos.length, valorEnDisputa, facturacionTotal, semaforo };
+    return { entidad, total: propios.length, activos: activos.length, valorEnDisputa, semaforo };
   });
 
   async function handleGenerarExcel(entidad){
@@ -231,7 +227,6 @@ export default function InformesView({ procesos, clientes, facturas, ordenesComp
                     <th>Entidad</th>
                     <th>Procesos (activos/total)</th>
                     <th>Valor actual demanda</th>
-                    <th>Facturas</th>
                     <th>Semáforo de Estado</th>
                     <th>Informe</th>
                   </tr>
@@ -242,7 +237,6 @@ export default function InformesView({ procesos, clientes, facturas, ordenesComp
                       <td>{f.entidad}</td>
                       <td>{f.activos} / {f.total}</td>
                       <td>{fmtMonto(f.valorEnDisputa)}</td>
-                      <td>{f.facturacionTotal}</td>
                       <td>
                         <div style={{display:'flex', gap:6, flexWrap:'wrap'}}>
                           {f.semaforo.verde > 0 && <span className="badge badge-verde">{f.semaforo.verde} verde</span>}

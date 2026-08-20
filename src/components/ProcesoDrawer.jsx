@@ -429,7 +429,7 @@ export default function ProcesoDrawer({ proceso, clientes, colaboradores, factur
           </button>
           <div className="eyebrow">NUMERO_CORTO — {proceso.Radicado || "—"}</div>
           <h2>{proceso.Cliente || "Sin nombre"}</h2>
-          <span className={"badge badge-truncate " + estadoBadgeClass(proceso.EstadoVT, proceso.FechaUltimoEstado)}>{stripHtml(proceso.Estado) || "—"}</span>
+          <span className={"badge badge-truncate " + estadoBadgeClass(proceso.EstadoVT, proceso.FechaUltimoEstado, proceso.Estado)}>{stripHtml(proceso.Estado) || "—"}</span>
         </div>
         <div className="drawer-tabs">
           {TABS.map(t => (
