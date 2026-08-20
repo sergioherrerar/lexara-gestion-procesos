@@ -4,7 +4,7 @@ import {
   facturasForProceso, ordenesCompraForProceso, formasPagoForProceso, desistimientosForProceso, facturaNumero, ordenCompraNumero,
   computeFacturaTotals, computeOrdenCompraTotals, estadoFacturaBadgeClass,
   facturaForOrdenCompra, fmtMonto, fmtDate, fechaFromPartes, parseMonto,
-  tiposAccionDistinct, tiposProcesoParaAccion, despachosParaAccion,
+  tiposAccionDistinct, tiposProcesoParaAccion, despachosParaAccion, abrirFacturaSiigo,
 } from '../lib/graph';
 import IconButton, { IconTextButton } from './IconButton';
 import { FieldCard, RichTextEditor } from './FormFields';
@@ -27,7 +27,7 @@ function fechaOrdenable(row){
 
 // Lista compacta de facturas/órdenes de compra relacionadas con el proceso
 // abierto — reutilizada por las pestañas "Facturas" y "Órdenes de compra".
-function RelatedList({ emptyMsg, rows, columns, onOpen, onPrint }){
+function RelatedList({ emptyMsg, rows, columns, onOpen, onPrint, onBuscarSiigo, buscandoSiigoId }){
   if(!rows.length){
     return (
       <div className="empty-state empty-state-compact">
@@ -55,6 +55,7 @@ function RelatedList({ emptyMsg, rows, columns, onOpen, onPrint }){
                 <div className="row-actions">
                   <IconButton icon="edit" variant="edit" label="Ver / editar" onClick={e => { e.stopPropagation(); onOpen(row.id); }} />
                   {onPrint && <IconButton icon="print" variant="print" label="Imprimir" onClick={e => { e.stopPropagation(); onPrint(row.id); }} />}
+                  {onBuscarSiigo && <IconButton icon="open" variant="open" label="Buscar y abrir factura electrónica (Siigo)" spinning={buscandoSiigoId===row.id} onClick={e => { e.stopPropagation(); onBuscarSiigo(row); }} />}
                 </div>
               </td>
             </tr>
@@ -209,12 +210,20 @@ function renderGenericField(key, type, form, setField, canWrite){
 }
 const EMPTY_NEW_CLIENTE = {RazonSocial:"", Nit:"", Direccion:"", Telefono:"", Correo:""};
 
-export default function ProcesoDrawer({ proceso, clientes, colaboradores, facturas, ordenesCompra, formasPago, desistimientos, tiposAccion, liveMode, onClose, onSave, onNavigateAway, onCreateCliente, onOpenFactura, onPrintFactura, onCreateFactura, onOpenOrdenCompra, onPrintOrdenCompra, onCreateOrdenCompra, onOpenFormaPago, onCreateFormaPago, onOpenDesistimiento, onCreateDesistimiento, saving, canWrite = true }){
+export default function ProcesoDrawer({ proceso, clientes, colaboradores, facturas, ordenesCompra, formasPago, desistimientos, tiposAccion, liveMode, onClose, onSave, onNavigateAway, onCreateCliente, onOpenFactura, onPrintFactura, onCreateFactura, onOpenOrdenCompra, onPrintOrdenCompra, onCreateOrdenCompra, onOpenFormaPago, onCreateFormaPago, onOpenDesistimiento, onCreateDesistimiento, saving, canWrite = true, config, notify }){
   const [form, setForm] = useState(null);
   const [showNewCliente, setShowNewCliente] = useState(false);
   const [newCliente, setNewCliente] = useState(EMPTY_NEW_CLIENTE);
   const [nuevoClienteError, setNuevoClienteError] = useState("");
   const [activeTab, setActiveTab] = useState('datos');
+  const [buscandoSiigo, setBuscandoSiigo] = useState(null);
+
+  async function handleBuscarSiigo(f){
+    setBuscandoSiigo(f.id);
+    try{ await abrirFacturaSiigo(f, config.SIIGO_SHARE_URL); }
+    catch(err){ console.error(err); notify(err.message, 'error'); }
+    setBuscandoSiigo(null);
+  }
 
   useEffect(() => {
     if(proceso){
@@ -460,6 +469,8 @@ export default function ProcesoDrawer({ proceso, clientes, colaboradores, factur
                 columns={FACTURA_COLUMNS}
                 onOpen={goToFactura}
                 onPrint={goToPrintFactura}
+                onBuscarSiigo={config ? handleBuscarSiigo : undefined}
+                buscandoSiigoId={buscandoSiigo}
               />
             </div>
           )}

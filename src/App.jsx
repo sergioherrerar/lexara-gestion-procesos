@@ -200,6 +200,8 @@ export default function App(){
         onCreateDesistimiento={app.newDesistimientoFromProceso}
         saving={app.saving}
         canWrite={app.canWrite && !app.procesoViewOnly}
+        config={app.config}
+        notify={app.notify}
       />
       <ClienteDrawer
         cliente={app.activeCliente}
