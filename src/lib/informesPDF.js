@@ -128,17 +128,53 @@ export async function prepararDocumentoPDF(tituloEncabezado = 'Reporte procesos 
   const hoy = new Date();
   const fecha = fechaLarga(hoy);
 
-  // BUG REAL encontrado 2026-08-19 (causa raíz de "los informes salen
-  // vacíos"): esta función se llama a mano UNA vez antes de armar cada
-  // página, pero TAMBIÉN se pasa como `didDrawPage` a autoTable — y
-  // autoTable dispara `didDrawPage` para la página donde la tabla EMPIEZA
-  // (normalmente la página 1, la misma que ya se dibujó a mano), después de
-  // haber dibujado ya el saludo/caja de resumen/tabla ahí. El segundo
-  // dibujo (imagen de página completa + título) pintaba ENCIMA de todo eso,
-  // dejando la carta visualmente "vacía" aunque el texto siguiera existiendo
-  // en el PDF (por eso no se notaba con un simple `grep` del contenido).
-  // Se hace la función IDEMPOTENTE por número de página: solo vuelve a
-  // dibujar si esa página en particular todavía no tiene encabezado.
+  // BUG REAL, causa raíz definitiva de "los informes salen vacíos"
+  // (encontrado y corregido en dos rondas el 2026-08-19 — la primera ronda
+  // dejó un caso sin cubrir, esta segunda ronda lo cierra del todo):
+  //
+  // Esta función dibuja el membrete de fondo + título, y tiene que correr
+  // ANTES de que se dibuje cualquier fila de tabla en esa página (si corre
+  // después, la imagen de página completa tapa todo lo que ya estaba ahí).
+  // El error real: se estaba pasando como `didDrawPage` a autoTable — y
+  // revisando el código fuente de jspdf-autotable (node_modules/jspdf-autotable/
+  // dist/jspdf.plugin.autotable.js), `didDrawPage` está implementado como
+  // `callEndPageHooks`, y la propia librería lo documenta con un comentario
+  // textual: "Add user content just before adding new page ensure it will
+  // be drawn ABOVE other things on the page" — es decir, `didDrawPage` es
+  // a propósito un hook de "ya terminé esta página, dibujá algo ENCIMA"
+  // (para cosas como un pie de página u "Página X de Y"), NO un lugar para
+  // pintar un fondo. Se dispara en 2 momentos, ninguno antes de las filas:
+  //   1. A mitad de tabla, cuando una fila no cabe y hay que pasar de
+  //      página — se llama sobre la página que se está por abandonar,
+  //      DESPUÉS de que sus filas ya se imprimieron.
+  //   2. Al terminar TODA la tabla (drawTable(), línea ~1753 de la
+  //      librería) — se llama una vez más sobre la ÚLTIMA página, otra vez
+  //      DESPUÉS de que todas sus filas (y el total, si iba ahí) ya se
+  //      imprimieron.
+  // La primera corrección (quitar el alias fijo de doc.addImage) arregló el
+  // caso de una sola tabla larga (Informe SOS) casi de pura casualidad: el
+  // efecto de este bug ahí quedaba disimulado. Pero se reprodujo limpio con
+  // el informe de Tutelas (dos tablas autoTable separadas en el mismo
+  // documento): la llamada #2 de arriba disparaba sobre la página 2 justo
+  // después de imprimir sus filas + el total, y como esa página nunca había
+  // sido "marcada" por la llamada #1 (que solo marca la página que se
+  // ABANDONA, no la nueva), el chequeo de "ya dibujé esta página" fallaba y
+  // volvía a dibujar el membrete completo ENCIMA de esas filas — invisibles
+  // a simple vista pero con el texto real todavía adentro del PDF (por eso
+  // no se detectaba extrayendo el texto, solo abriendo el PDF y mirándolo).
+  //
+  // FIX definitivo: usar `willDrawPage` en vez de `didDrawPage` al pasar
+  // esta función a autoTable (ver más abajo, en generarCartaInformePDF y en
+  // dibujarSeccion de informeTutelas.js). `willDrawPage` es el hook
+  // simétrico que SÍ corre ANTES de las filas de cada página — se dispara
+  // una vez al empezar cada autoTable() (para su primera página) y una vez
+  // por cada página nueva que se cree durante la paginación, siempre antes
+  // de imprimir nada en ella. Se mantiene la función IDEMPOTENTE por número
+  // de página (con `ultimaPaginaDibujada`) porque `willDrawPage` SÍ se
+  // dispara también para la página inicial de la carta, que ya se dibujó a
+  // mano antes de llamar a autoTable — sin este chequeo, ese primer dibujo
+  // se repetiría y taparía el saludo/caja de resumen ya puestos ahí (el bug
+  // original, de la primera ronda).
   let ultimaPaginaDibujada = 0;
   function dibujarEncabezadoYPie(){
     const paginaActual = doc.internal.getCurrentPageInfo().pageNumber;
@@ -147,21 +183,11 @@ export async function prepararDocumentoPDF(tituloEncabezado = 'Reporte procesos 
     // Membrete completo (logo + cintas arriba, franja dorada de contacto
     // abajo, ya con su propio texto/íconos incrustados en la imagen) —
     // estirado a la hoja A4 entera, igual que en la impresión de Facturas.
-    // SIN alias fijo a propósito (a diferencia del logo chico original) —
-    // bug real encontrado 2026-08-19 con un informe SOS de 48 procesos/7
-    // páginas real: cuando esta función se llama repetidas veces desde
-    // `didDrawPage` de autoTable DURANTE su paginación en vivo (no antes de
-    // empezar la tabla, sino en cada página nueva que la tabla va creando
-    // sola), reusar el MISMO alias corrompía el estado interno de autoTable
-    // y dejaba el contenido de las páginas pares totalmente invisible
-    // (el texto seguía existiendo en el PDF — por eso no se notaba con un
-    // `grep` del contenido — pero no se veía nada al abrirlo). Confirmado
-    // aislando la causa paso a paso (quitando zebra, quitando el total,
-    // quitando el hook entero, y por último quitando solo el alias) contra
-    // el mismo informe real de 48 procesos. Sin alias, jsPDF sigue sin
-    // inflar el peso del archivo (mismo tamaño final que con alias, ~120KB
-    // para 7 páginas) — internamente deduplica por el contenido de la
-    // imagen igual, así que no vuelve el bug viejo de los 100MB+.
+    // SIN alias fijo a propósito (a diferencia del logo chico original):
+    // reusar el mismo alias mientras autoTable pagina en vivo corrompía su
+    // estado interno (bug real, primera ronda 2026-08-19, informe SOS de
+    // 48 procesos). Sin alias, jsPDF sigue sin inflar el peso del archivo
+    // (mismo tamaño final que con alias) — deduplica por contenido igual.
     doc.addImage(membreteDataUrl, 'JPEG', 0, 0, pageWidth, pageHeight, undefined, 'MEDIUM');
     doc.setFont('helvetica','bold'); doc.setFontSize(13); doc.setTextColor(...VERDE_OSCURO);
     doc.text(tituloEncabezado, MARGEN, 60);
@@ -244,7 +270,11 @@ export async function generarCartaInformePDF(opts){
     headStyles: { fillColor:VERDE_OSCURO, textColor:255, fontStyle:'bold', halign:'center', fontSize:8.5 },
     alternateRowStyles: { fillColor:GRIS_ZEBRA },
     columnStyles,
-    didDrawPage: dibujarEncabezadoYPie,
+    // willDrawPage, NO didDrawPage — ver la explicación completa junto a
+    // dibujarEncabezadoYPie más arriba: didDrawPage dispara DESPUÉS de que
+    // el contenido de esa página ya se dibujó (así lo llama la propia
+    // librería por dentro: "callEndPageHooks"), tapando las filas reales.
+    willDrawPage: dibujarEncabezadoYPie,
   });
 
   // --- Firma, después de la tabla (nueva hoja si ya no cabe) ---

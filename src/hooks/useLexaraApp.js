@@ -42,6 +42,14 @@ export function useLexaraApp(){
     return SHAREPOINT_LISTS_CONFIG.map(l => ({...l, mapping:{...l.mapping, ...(saved[l.key]||{})}}));
   });
   const [liveMode, setLiveMode] = useState(false);
+  // Corregido 2026-08-19: desde que "ya inició sesión" dejó de esperar a que
+  // terminen de cargar las listas (ver finishSignIn más abajo), hay una
+  // ventana real donde `colaboradores` todavía está vacío — sin esta bandera,
+  // el rol se calculaba como "correo no encontrado" (el caso MÁS
+  // restringido: sin Facturación/Órdenes de compra/Configuración, todo en
+  // solo lectura) durante esa ventana, en vez de simplemente "todavía no se
+  // sabe". Mientras esto sea false, el rol se trata como sin restringir.
+  const [colaboradoresListos, setColaboradoresListos] = useState(false);
   const [account, setAccount] = useState(null);
   const [appActive, setAppActive] = useState(false);
   const [view, setView] = useState('dashboard');
@@ -99,13 +107,18 @@ export function useLexaraApp(){
   const [confirmState, setConfirmState] = useState(null); // {message, onConfirm}
 
   // Reemplaza alert() — un aviso flotante con el estilo de la app en vez del
-  // cuadro nativo del navegador. Se cierra solo a los 5s o al hacer clic en la X.
+  // cuadro nativo del navegador. Los de tipo 'error' se quedan hasta que se
+  // cierren a mano con la X (2026-08-19: un aviso de error que desaparece
+  // solo a los 5s es fácil de perder justo cuando más hace falta leerlo
+  // completo para reportarlo — como el error real de carga de datos que
+  // ahora puede salir después de iniciar sesión). Los demás (info/éxito)
+  // se cierran solos a los 5s como antes.
   const notify = useCallback((msg, type = 'info') => {
     setToast({ msg, type });
   }, []);
   function closeToast(){ setToast(null); }
   useEffect(() => {
-    if(!toast) return;
+    if(!toast || toast.type === 'error') return;
     const t = setTimeout(() => setToast(null), 5000);
     return () => clearTimeout(t);
   }, [toast]);
@@ -262,6 +275,7 @@ export function useLexaraApp(){
       setFacturas(updated.find(l => l.key==='facturacion')?.items || []);
       setOrdenesCompra(updated.find(l => l.key==='ordenesCompra')?.items || []);
       setColaboradores(colaboradoresItems);
+      setColaboradoresListos(true);
       setFormasPago(updated.find(l => l.key==='formasPago')?.items || []);
       setDesistimientos(updated.find(l => l.key==='desistimientos')?.items || []);
       setTiposAccion(updated.find(l => l.key==='tiposAccion')?.items || []);
@@ -335,6 +349,7 @@ export function useLexaraApp(){
       setFacturas(updated.find(l => l.key==='facturacion')?.items || []);
       setOrdenesCompra(updated.find(l => l.key==='ordenesCompra')?.items || []);
       setColaboradores(updated.find(l => l.key==='colaboradores')?.items || []);
+      setColaboradoresListos(true);
       setFormasPago(updated.find(l => l.key==='formasPago')?.items || []);
       setDesistimientos(updated.find(l => l.key==='desistimientos')?.items || []);
       setTiposAccion(updated.find(l => l.key==='tiposAccion')?.items || []);
@@ -415,6 +430,7 @@ export function useLexaraApp(){
     setAccount(null);
     setSiteId(null);
     setAppActive(false);
+    setColaboradoresListos(false);
   }
 
   const activeProceso = draftProceso || procesos.find(p => p.id===activeProcesoId) || null;
@@ -431,8 +447,12 @@ export function useLexaraApp(){
   // Modo demo: acceso completo, para poder mostrar toda la app. En vivo, un
   // correo que no aparece en Equipo MD queda en null — permissions.js lo
   // trata como el caso más restringido: bloqueo de menú + solo lectura en
-  // todas partes (nunca como acceso total).
-  const role = !liveMode ? 'Administrador' : (() => {
+  // todas partes (nunca como acceso total). Mientras `colaboradoresListos`
+  // sea false (la lista todavía no terminó de cargar tras iniciar sesión —
+  // ver el bug de F5 corregido 2026-08-19), se trata igual que demo: no hay
+  // manera de saber todavía si el correo está o no en Equipo MD, así que no
+  // se le puede aplicar el bloqueo más restringido sin haberlo confirmado.
+  const role = (!liveMode || !colaboradoresListos) ? 'Administrador' : (() => {
     const email = (account?.username || '').trim().toLowerCase();
     const match = colaboradores.find(c => (c.Correo||'').trim().toLowerCase() === email);
     return match?.Rol || null;

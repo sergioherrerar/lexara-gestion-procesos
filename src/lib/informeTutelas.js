@@ -94,7 +94,14 @@ function dibujarSeccion(doc, autoTable, titulo, filas, y, pageWidth, dibujarEnca
       1: { halign:'right', cellWidth:24 },
     },
     alternateRowStyles: { fillColor:GRIS_ZEBRA },
-    didDrawPage: dibujarEncabezadoYPie,
+    // willDrawPage, NO didDrawPage — ver la explicación completa en
+    // dibujarEncabezadoYPie (informesPDF.js): didDrawPage dispara DESPUÉS
+    // de imprimir las filas de esa página (así lo llama la propia
+    // librería por dentro: "callEndPageHooks"), incluida una llamada final
+    // sobre la ÚLTIMA página justo después de imprimir su total — eso era
+    // lo que tapaba "Tutelas con Vencimiento" en la página 2 cuando esa
+    // tabla seguía en una segunda hoja.
+    willDrawPage: dibujarEncabezadoYPie,
   });
   return doc.lastAutoTable.finalY + 10;
 }
