@@ -86,6 +86,7 @@ export default function App(){
           onOpenMobileNav={() => setMobileNavOpen(true)}
           onRefresh={app.refreshData}
           refreshing={app.refreshing}
+          cargandoInicial={app.signingIn && app.liveMode}
         />
 
         {app.view === 'dashboard' && <DashboardView procesos={app.procesos} clientes={app.clientes} facturas={app.facturas} ordenesCompra={app.ordenesCompra} />}

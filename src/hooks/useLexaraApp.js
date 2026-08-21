@@ -35,6 +35,27 @@ async function siteIdForList(config, list, defaultSiteId, cache){
   return sid;
 }
 
+// Carga TODAS las listas de golpe (Procesos, Facturación, Tutelas, etc.).
+// Antes cada lista se esperaba una detrás de otra (await dentro de un for),
+// aunque son llamadas a Graph totalmente independientes entre sí — con ~11
+// listas (una de casi mil facturas incluida) eso hacía que iniciar sesión o
+// actualizar se sintiera "colgado" más de un minuto. Ahora primero se
+// resuelven (en secuencia, son solo 1-2 sitios distintos) los site id de las
+// listas que viven en otro sitio de SharePoint, y luego TODAS las listas se
+// conectan en paralelo — el tiempo total pasa a ser el de la lista más
+// lenta, no la suma de las 11.
+async function cargarTodasLasListas(config, lists, sid){
+  const siteCache = {};
+  for(const list of lists){
+    await siteIdForList(config, list, sid, siteCache); // solo para dejar el cache tibio antes del paralelo
+  }
+  return Promise.all(lists.map(async list => {
+    const listSiteId = await siteIdForList(config, list, sid, siteCache);
+    const connected = await Graph.connectList(listSiteId, list);
+    return {...connected, items: Graph.transformListItems(connected)};
+  }));
+}
+
 export function useLexaraApp(){
   const [config, setConfigState] = useState(INITIAL_CONFIG);
   const [lists, setLists] = useState(() => {
@@ -247,13 +268,7 @@ export function useLexaraApp(){
     setAppActive(true);
     try{
       const sid = await Graph.fetchSiteId(config);
-      const siteCache = {};
-      const updated = [];
-      for(const list of lists){
-        const listSiteId = await siteIdForList(config, list, sid, siteCache);
-        const connected = await Graph.connectList(listSiteId, list);
-        updated.push({...connected, items: Graph.transformListItems(connected)});
-      }
+      const updated = await cargarTodasLasListas(config, lists, sid);
       // DESACTIVADO TEMPORALMENTE (2026-08-08) a pedido del usuario: este
       // bloqueo por Correo en Colaborador Lexara estaba dejando afuera a
       // TODAS las cuentas, incluidas las 4 autorizadas. Con el cambio de
@@ -336,13 +351,7 @@ export function useLexaraApp(){
     try{
       const sid = siteId || await Graph.fetchSiteId(config);
       setSiteId(sid);
-      const siteCache = {};
-      const updated = [];
-      for(const list of lists){
-        const listSiteId = await siteIdForList(config, list, sid, siteCache);
-        const connected = await Graph.connectList(listSiteId, list);
-        updated.push({...connected, items: Graph.transformListItems(connected)});
-      }
+      const updated = await cargarTodasLasListas(config, lists, sid);
       setLists(updated);
       setProcesos(updated.find(l => l.key==='procesos')?.items || []);
       setClientes(updated.find(l => l.key==='clientes')?.items || []);

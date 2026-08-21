@@ -2,7 +2,8 @@ import IconButton from './IconButton';
 
 const TITLES = {dashboard:"Dashboard", procesos:"Procesos judiciales", clientes:"Clientes", facturacion:"Facturación", ordenesCompra:"Órdenes de compra", colaboradores:"Colaborador Lexara", setup:"Configuración"};
 
-export default function Topbar({ view, liveMode, searchQuery, onSearch, onOpenMobileNav, onRefresh, refreshing }){
+export default function Topbar({ view, liveMode, searchQuery, onSearch, onOpenMobileNav, onRefresh, refreshing, cargandoInicial }){
+  const cargando = refreshing || cargandoInicial;
   return (
     <div className="topbar">
       <button className="mobile-nav-btn" aria-label="Abrir menú" onClick={onOpenMobileNav}>
@@ -17,11 +18,12 @@ export default function Topbar({ view, liveMode, searchQuery, onSearch, onOpenMo
             <IconButton
               icon="refresh"
               variant="refresh"
-              label={refreshing ? "Actualizando…" : "Actualizar datos desde SharePoint"}
-              spinning={refreshing}
+              label={cargandoInicial ? "Cargando datos de SharePoint…" : refreshing ? "Actualizando…" : "Actualizar datos desde SharePoint"}
+              spinning={cargando}
               onClick={onRefresh}
             />
           )}
+          {cargandoInicial && <span className="status-pill status-loading">Cargando datos…</span>}
         </div>
         <h2>{TITLES[view] || view}</h2>
       </div>

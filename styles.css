@@ -660,6 +660,11 @@
   .status-pill{display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:600; padding:5px 11px; border-radius:20px;}
   .status-demo{background:#fef4de; color:#8a6410;}
   .status-live{background:#e3efee; color:var(--verde-oscuro);}
+  /* Se muestra junto a "Conectado a SharePoint" mientras se cargan las
+     listas por primera vez tras iniciar sesión — antes esa carga era
+     invisible y el Dashboard se veía en blanco/en cero como si algo
+     estuviera roto, cuando en realidad seguía cargando. */
+  .status-loading{background:#eaf1fb; color:#2f5fa8;}
 
   @media (max-width:900px){
     .stat-grid{grid-template-columns:repeat(2,1fr);}
