@@ -13,6 +13,7 @@ import { generarInformeGrupoPDF } from '../lib/informeGrupo';
 import { generarInformeLexaraExcel, generarInformeLexaraPDF } from '../lib/informeLexara';
 import { generarInformeFacturasExcel, generarInformeOrdenesCompraExcel } from '../lib/informeFacturacion';
 import { generarInformeTutelasPDF, abrirCorreoTutelas, generarInformeTutelasExcel } from '../lib/informeTutelas';
+import { generarInformeGeneralProcesosExcel } from '../lib/informeGeneral';
 
 // Entidades con formato de informe formal ya confirmado, y qué generador usa
 // cada una — cada Entidad puede tener un formato distinto (columnas/orden
@@ -48,7 +49,7 @@ function entidadDeCliente(clientes, codigoClienteOrNombre, matchFn){
   return matchFn(clientes, codigoClienteOrNombre)?.Entidad || "Sin dato";
 }
 
-export default function InformesView({ procesos, clientes, facturas, ordenesCompra, desistimientos, tutelas, valoresEntidad }){
+export default function InformesView({ procesos, clientes, facturas, ordenesCompra, desistimientos, tutelas, valoresEntidad, notify }){
   const [generando, setGenerando] = useState(null); // nombre de la entidad mientras genera el Excel
   const [generandoPDF, setGenerandoPDF] = useState(null); // nombre de la entidad mientras genera el PDF
   const [generandoDesistimientos, setGenerandoDesistimientos] = useState(null);
@@ -60,6 +61,7 @@ export default function InformesView({ procesos, clientes, facturas, ordenesComp
   const [fechaInformeTutelas, setFechaInformeTutelas] = useState(() => new Date().toISOString().slice(0,10));
   const [generandoTutelasPDF, setGenerandoTutelasPDF] = useState(false);
   const [generandoTutelasExcel, setGenerandoTutelasExcel] = useState(false);
+  const [generandoGeneral, setGenerandoGeneral] = useState(false);
 
   const procesosPorEntidad = groupCount(procesos, p => p.Entidad);
   const clientesPorEntidad = groupCount(clientes, c => c.Entidad);
@@ -91,11 +93,21 @@ export default function InformesView({ procesos, clientes, facturas, ordenesComp
     return { entidad, total: propios.length, activos: activos.length, valorEnDisputa, semaforo };
   });
 
+  // Todos los handlers de este archivo notifican el error real en vez de
+  // fallar en silencio — antes, si algo adentro del generador (jsPDF/
+  // ExcelJS, o un dato real con una forma inesperada) lanzaba una excepción,
+  // no había ningún aviso: el botón simplemente "no hacía nada" a los ojos
+  // del usuario, aunque en la consola sí quedara un error. Reportado
+  // 2026-08-22 ("los informes no están sacando ninguno ni pdf excel") — no
+  // se pudo reproducir en modo demo (funciona bien acá), así que esto
+  // asegura que la PRÓXIMA vez que falle contra datos reales, se vea el
+  // mensaje real en pantalla en vez de nada.
   async function handleGenerarExcel(entidad){
     const formato = FORMATOS_POR_ENTIDAD[entidad.toUpperCase()];
     if(!formato?.excel) return;
     setGenerando(entidad);
     try{ await formato.excel(entidad, procesos.filter(p => p.Entidad === entidad)); }
+    catch(err){ console.error(err); notify?.("No se pudo generar el Excel de " + entidad + ": " + err.message, 'error'); }
     finally { setGenerando(null); }
   }
   // "la cantidad de procesos son todos los vigentes de SOS" — la carta en
@@ -109,7 +121,8 @@ export default function InformesView({ procesos, clientes, facturas, ordenesComp
     try{
       const vigentes = procesos.filter(p => p.Entidad === entidad && !(p.EstadoVT||"").toLowerCase().includes('termin'));
       await formato.pdf(entidad, vigentes);
-    } finally {
+    } catch(err){ console.error(err); notify?.("No se pudo generar el PDF de " + entidad + ": " + err.message, 'error'); }
+    finally {
       setGenerandoPDF(null);
     }
   }
@@ -121,6 +134,7 @@ export default function InformesView({ procesos, clientes, facturas, ordenesComp
     if(!formato?.desistimientos) return;
     setGenerandoDesistimientos(entidad);
     try{ await formato.desistimientos(desistimientos, procesos.filter(p => p.Entidad === entidad)); }
+    catch(err){ console.error(err); notify?.("No se pudo generar los Desistimientos de " + entidad + ": " + err.message, 'error'); }
     finally { setGenerandoDesistimientos(null); }
   }
   // Excel de Facturación/Órdenes de compra completas (no por Entidad, la
@@ -129,26 +143,43 @@ export default function InformesView({ procesos, clientes, facturas, ordenesComp
   async function handleGenerarExcelFacturas(){
     setGenerandoFacturas(true);
     try{ await generarInformeFacturasExcel(facturas, clientes); }
+    catch(err){ console.error(err); notify?.("No se pudo generar el Excel de Facturación: " + err.message, 'error'); }
     finally { setGenerandoFacturas(false); }
   }
   async function handleGenerarExcelOrdenes(){
     setGenerandoOrdenes(true);
     try{ await generarInformeOrdenesCompraExcel(ordenesCompra, clientes, facturas); }
+    catch(err){ console.error(err); notify?.("No se pudo generar el Excel de Órdenes de compra: " + err.message, 'error'); }
     finally { setGenerandoOrdenes(false); }
   }
 
   async function handleGenerarTutelasPDF(){
     setGenerandoTutelasPDF(true);
     try{ await generarInformeTutelasPDF(tutelas, fechaInformeTutelas); }
+    catch(err){ console.error(err); notify?.("No se pudo generar el PDF de Tutelas: " + err.message, 'error'); }
     finally { setGenerandoTutelasPDF(false); }
   }
-  function handleAbrirCorreoTutelas(){
-    abrirCorreoTutelas(tutelas, fechaInformeTutelas);
+  async function handleAbrirCorreoTutelas(){
+    try{
+      const copiadoHtml = await abrirCorreoTutelas(tutelas, fechaInformeTutelas);
+      if(copiadoHtml) notify?.('Se abrió el borrador del correo y ya se copiaron las tablas con el formato del PDF — pégalas (Ctrl+V) donde dice "[Pega aquí las tablas]".', 'info');
+    }
+    catch(err){ console.error(err); notify?.("No se pudo abrir el correo de Tutelas: " + err.message, 'error'); }
   }
   async function handleGenerarTutelasExcel(){
     setGenerandoTutelasExcel(true);
     try{ await generarInformeTutelasExcel(tutelas, valoresEntidad); }
+    catch(err){ console.error(err); notify?.("No se pudo generar el Excel de Tutelas: " + err.message, 'error'); }
     finally { setGenerandoTutelasExcel(false); }
+  }
+  // Excel con el mismo formato de columnas del Excel de SOS, pero de TODOS
+  // los procesos (todas las Entidades, incluidos terminados) — para hacer
+  // cruces. Pedido explícito del usuario 2026-08-22.
+  async function handleGenerarExcelGeneral(){
+    setGenerandoGeneral(true);
+    try{ await generarInformeGeneralProcesosExcel(procesos); }
+    catch(err){ console.error(err); notify?.("No se pudo generar el Excel general de procesos: " + err.message, 'error'); }
+    finally { setGenerandoGeneral(false); }
   }
 
   return (
@@ -215,7 +246,10 @@ export default function InformesView({ procesos, clientes, facturas, ordenesComp
       </div>
 
       <div className="panel" style={{marginTop:20}}>
-        <div className="panel-head"><h3>Detalle de Procesos judiciales por Entidad</h3></div>
+        <div className="panel-head">
+          <h3>Detalle de Procesos judiciales por Entidad</h3>
+          <IconButton icon="excel" variant="excel" label="Descargar Excel de todos los procesos (formato SOS, para cruces)" spinning={generandoGeneral} onClick={handleGenerarExcelGeneral} />
+        </div>
         <div className="panel-body" style={{padding:0}}>
           {!filas.length ? (
             <div className="empty-state empty-state-compact">No hay procesos con Entidad asignada todavía.</div>

@@ -15,7 +15,12 @@ import { generarCartaInformePDF, fechaLarga, fechaCorta, VERDE_OSCURO, GRIS_SUAV
 
 // [columna Excel, header exacto que la Entidad SOS espera, campo interno de
 // la app, tipo]. El orden de este arreglo ES el orden de columnas del Excel.
-const COLUMNAS_SOS = [
+// Exportado (junto con ANCHOS/COLOR_ENCABEZADO/fechaISOaExcel/limpiarHash)
+// para que informeGeneral.js pueda reusar exactamente este mismo formato en
+// el Excel de "todos los procesos" (2026-08-22) sin duplicar las 34 filas —
+// no es mezclar el modelo de otra Entidad, es la misma plantilla aplicada a
+// un universo distinto de filas (todos los procesos, no solo SOS).
+export const COLUMNAS_SOS = [
   ["_Id", "id", "id"],
   ["Naturaleza del Proceso", "NaturalezaProceso", "text"],
   ["Subclasificacion", "Subclasificacion", "text"],
@@ -54,11 +59,11 @@ const COLUMNAS_SOS = [
 
 // Anchos de columna del macro original (A-V) + los que faltaban (W-AH),
 // completados con un ancho razonable para que ninguna quede angosta.
-const ANCHOS = [5,15,11,9,9,10,24,24,17,15,18,13,13,18,10,10,45,45,18,14,14,14,20,18,14,14,24,24,24,24,14,16,20,13];
+export const ANCHOS = [5,15,11,9,9,10,24,24,17,15,18,13,13,18,10,10,45,45,18,14,14,14,20,18,14,14,24,24,24,24,14,16,20,13];
 
-const COLOR_ENCABEZADO = "FF004941"; // var(--verde-oscuro) — mismo verde institucional que el macro original.
+export const COLOR_ENCABEZADO = "FF004941"; // var(--verde-oscuro) — mismo verde institucional que el macro original.
 
-function fechaISOaExcel(iso){
+export function fechaISOaExcel(iso){
   if(!iso) return null;
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
   if(!m) return null;
@@ -66,7 +71,7 @@ function fechaISOaExcel(iso){
 }
 // Los enlaces del sistema anterior venían envueltos en "#" al inicio y al
 // final (ver macro original) — se limpia igual para no arrastrar ese resto.
-function limpiarHash(v){
+export function limpiarHash(v){
   return (v||"").toString().trim().replace(/^#/, "").replace(/#$/, "");
 }
 

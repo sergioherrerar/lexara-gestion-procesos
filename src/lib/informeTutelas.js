@@ -133,19 +133,27 @@ export async function generarInformeTutelasPDF(tutelas, fechaNotificacionISO){
 
 // --- Correo ---
 // Destinatarios/asunto/texto igual a un correo .msg real generado por la
-// macro de Access que el usuario compartió 2026-08-18. IMPORTANTE: un
-// enlace mailto: (a diferencia de la automatización COM de Outlook que usaba
-// la macro) NO puede adjuntar archivos ni mandar el cuerpo en HTML con
-// tablas de colores e imagen de firma — solo abre un borrador con
-// Para/CC/Asunto/cuerpo en TEXTO PLANO en el cliente de correo
-// predeterminado del equipo (Outlook, si está configurado así). El PDF se
-// descarga aparte (con el otro botón) y hay que adjuntarlo a mano.
+// macro de Access que el usuario compartió 2026-08-18. Un enlace mailto: (a
+// diferencia de la automatización COM de Outlook que usaba la macro) NO
+// puede llevar el cuerpo en HTML ni adjuntar archivos — solo abre un
+// borrador con Para/CC/Asunto/cuerpo en TEXTO PLANO. El PDF se descarga
+// aparte (con el otro botón) y hay que adjuntarlo a mano.
+// 2026-08-22: para que las tablas SÍ se vean con el mismo formato del PDF
+// (bordes, encabezado verde, fila de Total resaltada) — algo que un mailto:
+// no puede llevar en el cuerpo — se copian esas tablas ya armadas en HTML al
+// portapapeles (`navigator.clipboard.write` con un `ClipboardItem` de tipo
+// "text/html") justo antes de abrir el borrador; el usuario solo tiene que
+// pegarlas (Ctrl+V) dentro del correo ya abierto, y Outlook (o el cliente
+// que sea) las respeta como una tabla real, no como texto. Si el navegador
+// no soporta copiar HTML (o el usuario le niega el permiso), cae de vuelta
+// al cuerpo de solo texto que ya existía, para no perder la información.
 const DESTINATARIO_TO = "daniacp@aliansalud.com.co";
 const DESTINATARIOS_CC = ["asesoriajuridica@lexaraabogados.com", "Gerencia@lexaraabogados.com", "myd.abogados.monica@hotmail.com"];
 
 // Un mailto: muy largo puede fallar o cortarse en algunos clientes/SO — se
 // limita cuántas filas se listan en el cuerpo (el PDF adjunto siempre trae
-// el listado completo, sin límite).
+// el listado completo, sin límite). Solo aplica al cuerpo de TEXTO plano
+// (el de respaldo); la tabla HTML copiada al portapapeles no tiene tope.
 const TOPE_FILAS_CORREO = 25;
 function listadoTexto(filas){
   const mostrar = filas.slice(0, TOPE_FILAS_CORREO);
@@ -155,20 +163,81 @@ function listadoTexto(filas){
   return texto;
 }
 
+function escapeHtml(v){
+  return String(v==null ? "" : v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// Misma estructura visual que dibujarSeccion() en el PDF (barra de título
+// verde oscuro + tabla con encabezado verde + fila de Total en verde claro
+// Pantone 7472C) pero como HTML, para pegar en un correo.
+function tablaHtml(titulo, filas){
+  const filasHtml = filas.map((t,i) => `
+    <tr style="background:${i % 2 ? '#f7f8f7' : '#ffffff'};">
+      <td style="border:1px solid #e0e2e0;padding:4px 8px;text-align:right;">${i+1}</td>
+      <td style="border:1px solid #e0e2e0;padding:4px 8px;text-align:right;">${escapeHtml(t.NoTutela||'—')}</td>
+      <td style="border:1px solid #e0e2e0;padding:4px 8px;">${escapeHtml(t.Cliente||'—')}</td>
+      <td style="border:1px solid #e0e2e0;padding:4px 8px;">${escapeHtml(t.TipoRespuesta||'—')}</td>
+    </tr>`).join('');
+  const sinRegistros = `<tr><td colspan="4" style="border:1px solid #e0e2e0;padding:6px 8px;text-align:center;color:#666666;">(sin registros)</td></tr>`;
+  return `
+    <table cellspacing="0" cellpadding="0" style="border-collapse:collapse;width:100%;margin:10px 0 16px;font-family:Calibri,Arial,sans-serif;font-size:10.5pt;color:#1c2624;">
+      <tr><td colspan="4" style="background:#004941;color:#ffffff;font-weight:bold;padding:6px 8px;">${escapeHtml(titulo)}</td></tr>
+      <tr style="background:#004941;color:#ffffff;font-weight:bold;">
+        <td style="border:1px solid #e0e2e0;padding:4px 8px;text-align:right;">Ítem</td>
+        <td style="border:1px solid #e0e2e0;padding:4px 8px;text-align:right;">No Tutela</td>
+        <td style="border:1px solid #e0e2e0;padding:4px 8px;">Cliente</td>
+        <td style="border:1px solid #e0e2e0;padding:4px 8px;">Tipo Respuesta</td>
+      </tr>
+      ${filasHtml || sinRegistros}
+      <tr>
+        <td colspan="4" style="background:#52bbb5;color:#004941;font-weight:bold;text-align:right;padding:5px 8px;">Total de registros: ${filas.length}</td>
+      </tr>
+    </table>`;
+}
+
+// Copia el HTML (tipo "text/html") y un texto plano de respaldo (tipo
+// "text/plain") al portapapeles a la vez — así, si el cliente donde se pega
+// no soporta HTML, cae solo al texto. Devuelve true si se alcanzó a copiar
+// el HTML (para saber si conviene simplificar el cuerpo del mailto), false
+// si solo se pudo copiar texto plano o nada.
+// NUNCA lanza — esto es un extra (la tabla bonita para pegar), no la acción
+// principal (abrir el borrador del correo). Si algo falla, cualquier cosa
+// (permiso denegado, navegador sin soporte, documento sin foco, etc.) tiene
+// que degradar en silencio a "no se copió nada" y dejar que el correo se
+// abra igual con el cuerpo de texto de respaldo — nunca bloquear eso.
+async function copiarTablaAlPortapapeles(html, texto){
+  try{
+    if(navigator.clipboard && window.ClipboardItem){
+      const item = new ClipboardItem({
+        'text/html': new Blob([html], {type:'text/html'}),
+        'text/plain': new Blob([texto], {type:'text/plain'}),
+      });
+      await navigator.clipboard.write([item]);
+      return true;
+    }
+  }catch(err){ console.error('No se pudo copiar la tabla en HTML, se intenta solo texto:', err); }
+  try{
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      await navigator.clipboard.writeText(texto);
+    }
+  }catch(err){ console.error('No se pudo copiar ni siquiera el texto plano:', err); }
+  return false;
+}
+
 // Las dos tablas del correo real de Access no tienen columna de fecha (van
 // numeradas con "Ítem" y llevan No Tutela/Cliente/Tipo Respuesta) — orden
 // real: primero Vencimiento (hoy), después Notificación.
-export function abrirCorreoTutelas(tutelas, fechaNotificacionISO){
+// Devuelve true si logró copiar las tablas en HTML al portapapeles (para
+// que quien llama pueda avisarle al usuario que las pegue con Ctrl+V).
+export async function abrirCorreoTutelas(tutelas, fechaNotificacionISO){
   const { fechaVencimiento, fechaNotificacion } = calcularFechasInforme(fechaNotificacionISO);
   const notificadas = filasPorFecha(tutelas, 'FechaNotificacion', fechaNotificacion);
   const vencimiento = filasPorFecha(tutelas, 'FechaVencimiento', fechaVencimiento);
 
   const asunto = `Notificación de Tutelas del (${fechaCorta(fechaNotificacion)}) y Vencimiento de las respuestas del (${fechaCorta(fechaVencimiento)})`;
-  const cuerpo = [
-    'Buenos días,',
-    '',
-    `En el documento adjunto se encuentran las tutelas asignadas el día ${fechaLargaSinHora(fechaNotificacion)}, así como aquellas que se encuentran en término de vencimiento para el día de hoy, ${fechaLargaSinHora(fechaVencimiento)}.`,
-    '',
+  const introTexto = `Buenos días,\n\nEn el documento adjunto se encuentran las tutelas asignadas el día ${fechaLargaSinHora(fechaNotificacion)}, así como aquellas que se encuentran en término de vencimiento para el día de hoy, ${fechaLargaSinHora(fechaVencimiento)}.`;
+  const cuerpoConListado = [
+    introTexto, '',
     'Contestaciones con Vencimiento el día de hoy',
     listadoTexto(vencimiento),
     `Total de registros: ${vencimiento.length}`,
@@ -180,9 +249,20 @@ export function abrirCorreoTutelas(tutelas, fechaNotificacionISO){
     'Saludos,',
   ].join('\n');
 
+  const htmlTablas = tablaHtml('Contestaciones con Vencimiento el día de hoy', vencimiento) + tablaHtml('Tutelas Asignadas el Día Anterior', notificadas);
+  const copiadoHtml = await copiarTablaAlPortapapeles(htmlTablas, cuerpoConListado);
+
+  // Si sí se copió el HTML, el cuerpo del mailto se deja simple (sin el
+  // listado en texto) con un aviso de dónde pegar — evita duplicar la misma
+  // información dos veces dentro del correo.
+  const cuerpo = copiadoHtml
+    ? `${introTexto}\n\n[Pega aquí las tablas: Ctrl+V]\n\nSaludos,`
+    : cuerpoConListado;
+
   const enc = encodeURIComponent;
   const url = `mailto:${DESTINATARIO_TO}?cc=${enc(DESTINATARIOS_CC.join(','))}&subject=${enc(asunto)}&body=${enc(cuerpo)}`;
   window.location.href = url;
+  return copiadoHtml;
 }
 
 // --- Excel ---
