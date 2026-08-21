@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { INITIAL_CONFIG, SHAREPOINT_LISTS_CONFIG, DEMO_PROCESOS, DEMO_CLIENTES, DEMO_FACTURAS, DEMO_ORDENES_COMPRA, DEMO_COLABORADORES, DEMO_FORMAS_PAGO, DEMO_DESISTIMIENTOS, DEMO_TIPOS_ACCION, DEMO_TUTELAS, DEMO_TEMAS, DEMO_VALORES_ENTIDAD } from '../config';
 import * as Graph from '../lib/graph';
-import { canWrite as canWriteForRole } from '../lib/permissions';
+import { canWrite as canWriteForColaborador, modulosPermitidosDe, MODULOS_DISPONIBLES } from '../lib/permissions';
 
 // El mapeo de columnas que se confirma en Configuración vivía solo en memoria
 // de React — al recargar la página o volver a iniciar sesión normal (sin
@@ -451,22 +451,25 @@ export function useLexaraApp(){
   const activeDesistimiento = draftDesistimiento || desistimientos.find(d => d.id===activeDesistimientoId) || null;
   const activeTutela = draftTutela || tutelas.find(t => t.id===activeTutelaId) || null;
 
-  // Rol del usuario que inició sesión, cruzando su correo de Microsoft 365
-  // contra la lista de Colaborador Lexara — ver src/lib/permissions.js.
-  // Modo demo: acceso completo, para poder mostrar toda la app. En vivo, un
-  // correo que no aparece en Equipo MD queda en null — permissions.js lo
-  // trata como el caso más restringido: bloqueo de menú + solo lectura en
-  // todas partes (nunca como acceso total). Mientras `colaboradoresListos`
-  // sea false (la lista todavía no terminó de cargar tras iniciar sesión —
-  // ver el bug de F5 corregido 2026-08-19), se trata igual que demo: no hay
-  // manera de saber todavía si el correo está o no en Equipo MD, así que no
-  // se le puede aplicar el bloqueo más restringido sin haberlo confirmado.
-  const role = (!liveMode || !colaboradoresListos) ? 'Administrador' : (() => {
+  // Colaborador (fila completa de Equipo MD) que hace match por Correo con
+  // la cuenta de Microsoft 365 con la que se inició sesión — de ahí salen
+  // tanto los módulos permitidos como el permiso de escritura, ver
+  // src/lib/permissions.js. Modo demo: acceso completo, para poder mostrar
+  // toda la app. Mientras `colaboradoresListos` sea false (la lista todavía
+  // no terminó de cargar tras iniciar sesión — ver el bug de F5 corregido
+  // 2026-08-19), se trata igual que demo: no hay manera de saber todavía si
+  // el correo está o no en Equipo MD, así que no se le puede aplicar ningún
+  // bloqueo sin haberlo confirmado primero.
+  const colaboradorActual = (!liveMode || !colaboradoresListos) ? null : (() => {
     const email = (account?.username || '').trim().toLowerCase();
-    const match = colaboradores.find(c => (c.Correo||'').trim().toLowerCase() === email);
-    return match?.Rol || null;
+    return colaboradores.find(c => (c.Correo||'').trim().toLowerCase() === email) || null;
   })();
-  const canWrite = canWriteForRole(role);
+  const cargandoPermisos = !liveMode || !colaboradoresListos;
+  // `role` ya no decide el acceso (ver permissions.js) — se conserva solo
+  // para mostrarlo como dato informativo si hace falta en algún lado.
+  const role = cargandoPermisos ? 'Administrador' : (colaboradorActual?.Rol || null);
+  const modulosPermitidos = cargandoPermisos ? MODULOS_DISPONIBLES.map(m => m.key) : modulosPermitidosDe(colaboradorActual);
+  const canWrite = cargandoPermisos ? true : canWriteForColaborador(colaboradorActual);
 
   function openProceso(id, opts){ setDraftProceso(null); setActiveProcesoId(id); setProcesoViewOnly(!!(opts && opts.viewOnly)); }
   function closeDrawer(){ setActiveProcesoId(null); setDraftProceso(null); setProcesoViewOnly(false); }
@@ -1122,7 +1125,7 @@ export function useLexaraApp(){
   return {
     config, saveConfig, clearConfig,
     lists, listByKey, updateListMapping,
-    liveMode, account, appActive, view, setView, role, canWrite,
+    liveMode, account, appActive, view, setView, role, canWrite, modulosPermitidos,
     testStatus, testConnection, applyAllMappings, downloadAllMappings,
     refreshData, refreshing,
     signIn, enterDemo, goSetup, signOut,

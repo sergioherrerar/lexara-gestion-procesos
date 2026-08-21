@@ -26,14 +26,14 @@ function resolveDisplayName(account){
   return "Usuario";
 }
 
-export default function Sidebar({ view, onGoView, account, liveMode, accessRole, onSignOut, mobileOpen }){
+export default function Sidebar({ view, onGoView, account, liveMode, modulosPermitidos, onSignOut, mobileOpen }){
   const name = resolveDisplayName(account);
   const correo = account?.username || account?.idTokenClaims?.preferred_username || "";
   const sessionLabel = liveMode
     ? (correo || "Sesión Microsoft 365")
     : (account?.username==="demo@lexara.com" ? "Datos de ejemplo" : "Sesión Microsoft 365 (sin mapear)");
-  const visibleNavItems = NAV_ITEMS.filter(item => canAccessView(accessRole, item.view));
-  const puedeConfiguracion = canAccessView(accessRole, 'setup');
+  const visibleNavItems = NAV_ITEMS.filter(item => canAccessView(modulosPermitidos, item.view));
+  const puedeConfiguracion = canAccessView(modulosPermitidos, 'setup');
   return (
     <aside className={"sidebar" + (mobileOpen ? " mobile-open" : "")}>
       <div className="sidebar-logo"><img src={logoSidebar} alt="Lexara Abogados" /></div>

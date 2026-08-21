@@ -359,10 +359,14 @@ export const SHAREPOINT_LISTS_CONFIG = [
     key: "colaboradores",
     listName: "Equipo MD",
     label: "Colaborador Lexara",
-    // Base del sistema de roles/permisos: el campo "Rol" (Administrador /
-    // Jefe / Colaborador) define qué partes del menú puede ver cada quien —
-    // ver src/lib/permissions.js. Se cruza por Correo contra la cuenta de
-    // Microsoft 365 con la que se inició sesión.
+    // Base del sistema de permisos (ver src/lib/permissions.js): "Módulos
+    // permitidos" (texto, lista separada por comas de los módulos que puede
+    // ver esta persona) y "Solo lectura" (Sí/No) son las columnas que de
+    // verdad deciden el acceso — se cruza por Correo contra la cuenta de
+    // Microsoft 365 con la que se inició sesión. El "Rol" (Administrador/
+    // Jefe/Colaborador) ya no decide nada por sí solo: se conserva solo como
+    // etiqueta informativa y como valor de respaldo mientras "Módulos
+    // permitidos" esté vacío (colaboradores creados antes de este cambio).
     semanticFields: [
       {key:"Nombre", label:"Nombre", hint:["nombre"], required:true},
       {key:"TipoIdentificacion", label:"Tipo de identificación", hint:["tipo identif","tipo de identificacion","tipo de identificación"]},
@@ -372,6 +376,8 @@ export const SHAREPOINT_LISTS_CONFIG = [
       {key:"Correo", label:"Correo", hint:["correo","email"], required:true},
       {key:"Activo", label:"Activo", hint:["activo"]},
       {key:"Rol", label:"Rol", hint:["rol"], required:true},
+      {key:"ModulosPermitidos", label:"Módulos permitidos", hint:["modulos permitidos","módulos permitidos","modulos permi"]},
+      {key:"SoloLectura", label:"Solo lectura", hint:["solo lectura"]},
     ],
     mapping: {
       Nombre: "Nombre",

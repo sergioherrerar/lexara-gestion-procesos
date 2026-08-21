@@ -27,15 +27,15 @@ export default function App(){
   const app = useLexaraApp();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
-  // Si el rol del usuario cambia (o ya estaba en una sección restringida)
-  // lo devuelve al Dashboard — no solo se oculta del menú, se bloquea el
-  // acceso aunque ya estuviera ahí.
+  // Si los módulos permitidos cambian (o ya estaba en una sección
+  // restringida) lo devuelve al Dashboard — no solo se oculta del menú, se
+  // bloquea el acceso aunque ya estuviera ahí.
   useEffect(() => {
-    if(app.appActive && !canAccessView(app.role, app.view)){
+    if(app.appActive && !canAccessView(app.modulosPermitidos, app.view)){
       app.setView('dashboard');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [app.appActive, app.role, app.view]);
+  }, [app.appActive, app.modulosPermitidos, app.view]);
 
   const feedback = (
     <>
@@ -73,7 +73,7 @@ export default function App(){
         onGoView={goView}
         account={app.account}
         liveMode={app.liveMode}
-        accessRole={app.role}
+        modulosPermitidos={app.modulosPermitidos}
         onSignOut={app.signOut}
         mobileOpen={mobileNavOpen}
       />
@@ -90,10 +90,10 @@ export default function App(){
         />
 
         {app.view === 'dashboard' && <DashboardView procesos={app.procesos} clientes={app.clientes} facturas={app.facturas} ordenesCompra={app.ordenesCompra} />}
-        {app.view === 'informes' && canAccessView(app.role, 'informes') && (
+        {app.view === 'informes' && canAccessView(app.modulosPermitidos, 'informes') && (
           <InformesView procesos={app.procesos} clientes={app.clientes} facturas={app.facturas} ordenesCompra={app.ordenesCompra} desistimientos={app.desistimientos} tutelas={app.tutelas} valoresEntidad={app.valoresEntidad} />
         )}
-        {app.view === 'procesos' && canAccessView(app.role, 'procesos') && (
+        {app.view === 'procesos' && canAccessView(app.modulosPermitidos, 'procesos') && (
           <ProcesosView
             procesos={app.procesos}
             currentFilter={app.currentFilter}
@@ -104,7 +104,7 @@ export default function App(){
             canWrite={app.canWrite}
           />
         )}
-        {app.view === 'tutelas' && canAccessView(app.role, 'tutelas') && (
+        {app.view === 'tutelas' && canAccessView(app.modulosPermitidos, 'tutelas') && (
           <TutelasView
             tutelas={app.tutelas}
             searchQuery={app.searchQuery}
@@ -114,7 +114,7 @@ export default function App(){
             canWrite={app.canWrite}
           />
         )}
-        {app.view === 'clientes' && canAccessView(app.role, 'clientes') && (
+        {app.view === 'clientes' && canAccessView(app.modulosPermitidos, 'clientes') && (
           <ClientesView
             clientes={app.clientes}
             procesos={app.procesos}
@@ -124,7 +124,7 @@ export default function App(){
             canWrite={app.canWrite}
           />
         )}
-        {app.view === 'facturacion' && canAccessView(app.role, 'facturacion') && (
+        {app.view === 'facturacion' && canAccessView(app.modulosPermitidos, 'facturacion') && (
           <FacturacionView
             facturas={app.facturas}
             clientes={app.clientes}
@@ -137,7 +137,7 @@ export default function App(){
             notify={app.notify}
           />
         )}
-        {app.view === 'ordenesCompra' && canAccessView(app.role, 'ordenesCompra') && (
+        {app.view === 'ordenesCompra' && canAccessView(app.modulosPermitidos, 'ordenesCompra') && (
           <OrdenesCompraView
             ordenesCompra={app.ordenesCompra}
             clientes={app.clientes}
@@ -150,7 +150,7 @@ export default function App(){
             onCreateFacturaFromOrdenCompra={app.createFacturaFromOrdenCompra}
           />
         )}
-        {app.view === 'colaboradores' && canAccessView(app.role, 'colaboradores') && (
+        {app.view === 'colaboradores' && canAccessView(app.modulosPermitidos, 'colaboradores') && (
           <ColaboradoresView
             colaboradores={app.colaboradores}
             searchQuery={app.searchQuery}
@@ -160,7 +160,7 @@ export default function App(){
             canWrite={app.canWrite}
           />
         )}
-        {app.view === 'setup' && canAccessView(app.role, 'setup') && (
+        {app.view === 'setup' && canAccessView(app.modulosPermitidos, 'setup') && (
           <SetupView
             config={app.config}
             saveConfig={app.saveConfig}

@@ -439,6 +439,11 @@
   .field textarea{resize:vertical; min-height:64px;}
   .field-warning{margin-top:2px; padding:8px 10px; border:1px solid #f3d78e; background:#fff7e8; border-radius:8px; font-size:12.5px; color:#6b5115;}
   .field-info{margin-top:2px; padding:8px 10px; border:1px solid var(--gris-linea); background:var(--gris-claro); border-radius:8px; font-size:12.5px; color:var(--verde-oscuro); font-weight:600;}
+  .field-hint-text{font-size:12.5px; color:var(--texto-suave); margin:-4px 0 12px; line-height:1.5;}
+  /* Casillas de "Acceso a módulos" (Colaborador Lexara) — ver src/lib/permissions.js */
+  .checkbox-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px 18px;}
+  .checkbox-field{display:flex; align-items:center; gap:8px; font-size:13.5px; color:var(--texto); cursor:pointer;}
+  .checkbox-field input[type="checkbox"]{width:16px; height:16px; accent-color:var(--verde-oscuro); cursor:pointer; flex-shrink:0;}
 
   /* ---------- Tarjetas de campo (pestañas "Datos generales" y "Trazabilidad
      fechas" del panel de Proceso judicial) — mismo formato del formulario
