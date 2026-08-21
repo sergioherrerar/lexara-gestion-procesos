@@ -3,6 +3,11 @@ import { useEscapeToClose } from '../hooks/useEscapeToClose';
 import { MODULOS_DISPONIBLES, modulosPermitidosDe, parseModulosPermitidos, serializeModulosPermitidos } from '../lib/permissions';
 
 const ROL_OPTIONS = ["Administrador", "Jefe", "Colaborador"];
+// Columna "Tipo de Colaborador" en Equipo MD — el usuario ya la venía usando
+// directo en SharePoint con estos 2 valores (Trabajador para el equipo
+// interno, Contratista para externos como una contadora). Si en SharePoint
+// aparece algún valor distinto a estos dos, avisar para agregarlo aquí.
+const TIPO_COLABORADOR_OPTIONS = ["Trabajador", "Contratista"];
 
 function emptyForm(colaborador){
   return {
@@ -14,6 +19,7 @@ function emptyForm(colaborador){
     Correo: colaborador.Correo || "",
     Activo: colaborador.Activo != null ? !!colaborador.Activo : true,
     Rol: colaborador.Rol || "",
+    TipoColaborador: colaborador.TipoColaborador || "",
     // Si "Módulos permitidos" todavía está vacío en SharePoint (colaboradores
     // creados antes de este cambio), las casillas arrancan marcadas con lo
     // que ese Rol ya le daba por defecto (ver modulosPermitidosDe en
@@ -83,6 +89,13 @@ export default function ColaboradorDrawer({ colaborador, liveMode, onClose, onSa
                 <select value={form.Activo ? "si" : "no"} onChange={e => setField('Activo', e.target.value === "si")} disabled={!canWrite}>
                   <option value="si">Sí</option>
                   <option value="no">No</option>
+                </select>
+              </div>
+              <div className="field">
+                <label>Tipo de colaborador</label>
+                <select value={form.TipoColaborador} onChange={e => setField('TipoColaborador', e.target.value)} disabled={!canWrite}>
+                  <option value="">— seleccionar —</option>
+                  {TIPO_COLABORADOR_OPTIONS.map(o => <option value={o} key={o}>{o}</option>)}
                 </select>
               </div>
             </div>

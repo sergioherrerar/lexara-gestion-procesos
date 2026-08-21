@@ -376,6 +376,7 @@ export const SHAREPOINT_LISTS_CONFIG = [
       {key:"Correo", label:"Correo", hint:["correo","email"], required:true},
       {key:"Activo", label:"Activo", hint:["activo"]},
       {key:"Rol", label:"Rol", hint:["rol"], required:true},
+      {key:"TipoColaborador", label:"Tipo de colaborador", hint:["tipo de colaborador","tipo colaborador"]},
       {key:"ModulosPermitidos", label:"Módulos permitidos", hint:["modulos permitidos","módulos permitidos","modulos permi"]},
       {key:"SoloLectura", label:"Solo lectura", hint:["solo lectura"]},
     ],
