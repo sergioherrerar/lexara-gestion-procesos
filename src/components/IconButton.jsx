@@ -1,3 +1,5 @@
+import miniVerdeOscuro from '../assets/Mini verde oscuro.png';
+
 export const ICONS = {
   edit: (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -19,11 +21,10 @@ export const ICONS = {
       <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><path d="M15 3h6v6"/><path d="M10 14L21 3"/>
     </svg>
   ),
-  refresh: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M21 12a9 9 0 0 1-15.3 6.4M3 12a9 9 0 0 1 15.3-6.4"/><path d="M21 3v6h-6"/><path d="M3 21v-6h6"/>
-    </svg>
-  ),
+  // Logo real de Lexara (no un ícono genérico de flechas) — pedido explícito
+  // del usuario 2026-08-22, para que el mismo mark que gira mientras carga
+  // los datos de SharePoint sea la marca del despacho.
+  refresh: <img src={miniVerdeOscuro} alt="" />,
   print: (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/>

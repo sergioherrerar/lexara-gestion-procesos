@@ -604,6 +604,7 @@
   }
   .icon-btn:active{transform:translateY(1px);}
   .icon-btn svg{width:16px; height:16px;}
+  .icon-btn img{width:16px; height:16px; object-fit:contain;}
   .icon-btn-edit{color:var(--verde-oscuro); background:#e3efee;}
   .icon-btn-edit:hover{background:var(--verde-oscuro); color:#fff;}
   .icon-btn-open{color:var(--verde-claro); background:#e4f4f3;}
@@ -627,7 +628,7 @@
   .icon-btn-mail{color:#1d5fa3; background:#e4edf7;}
   .icon-btn-mail:hover{background:#1d5fa3; color:#fff;}
   .icon-btn-spinning{cursor:default;}
-  .icon-btn-spinning svg{animation:icon-spin .8s linear infinite;}
+  .icon-btn-spinning svg, .icon-btn-spinning img{animation:icon-spin .8s linear infinite;}
   @keyframes icon-spin{to{transform:rotate(360deg);}}
   .row-actions{display:flex; gap:6px; align-items:center;}
 
