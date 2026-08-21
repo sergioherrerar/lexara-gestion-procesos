@@ -389,6 +389,9 @@ export const SHAREPOINT_LISTS_CONFIG = [
       Correo: "Correo",
       Activo: "Activo",
       Rol: "Rol",
+      TipoColaborador: "TipodeColaborador",
+      ModulosPermitidos: "Modulospermitidos",
+      SoloLectura: "Sololectura",
     },
   },
   {
