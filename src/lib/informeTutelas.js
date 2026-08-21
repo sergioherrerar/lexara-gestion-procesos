@@ -6,7 +6,7 @@
 // Entidad, igual que la consulta original de Access.
 // Ver [[project_tutelas_modulo]].
 import { prepararDocumentoPDF, fechaCorta, VERDE_OSCURO, GRIS_ZEBRA, BORDE_SUAVE, TEXTO, MARGEN, CONTENIDO_Y_INICIAL, CONTENIDO_Y_MAXIMO } from './informesPDF';
-import { stripHtml, parseMonto } from './graph';
+import { stripHtml, parseMonto, crearBorradorCorreo } from './graph';
 
 const DIAS = ["domingo","lunes","martes","miércoles","jueves","viernes","sábado"];
 const MESES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
@@ -106,7 +106,11 @@ function dibujarSeccion(doc, autoTable, titulo, filas, y, pageWidth, dibujarEnca
   return doc.lastAutoTable.finalY + 10;
 }
 
-export async function generarInformeTutelasPDF(tutelas, fechaNotificacionISO){
+// Arma el documento (sin guardarlo) — extraído 2026-08-22 para poder
+// reusarlo también al crear el borrador de correo por Graph (adjunta el
+// mismo PDF en bytes, sin descargarlo aparte). `generarInformeTutelasPDF` de
+// abajo es el único que lo guarda como archivo.
+async function construirPDFTutelas(tutelas, fechaNotificacionISO){
   const { fechaVencimiento, fechaNotificacion } = calcularFechasInforme(fechaNotificacionISO);
   const { doc, autoTable, pageWidth, dibujarEncabezadoYPie, numerarPaginas } = await prepararDocumentoPDF('Tutelas notificadas y vencimiento');
 
@@ -128,7 +132,12 @@ export async function generarInformeTutelasPDF(tutelas, fechaNotificacionISO){
     y, pageWidth, dibujarEncabezadoYPie);
 
   numerarPaginas();
-  doc.save(`Tutelas Notificadas y con vencimiento ${fechaNotificacion}.pdf`);
+  return { doc, nombreArchivo: `Tutelas Notificadas y con vencimiento ${fechaNotificacion}.pdf` };
+}
+
+export async function generarInformeTutelasPDF(tutelas, fechaNotificacionISO){
+  const { doc, nombreArchivo } = await construirPDFTutelas(tutelas, fechaNotificacionISO);
+  doc.save(nombreArchivo);
 }
 
 // --- Correo ---
@@ -149,6 +158,11 @@ export async function generarInformeTutelasPDF(tutelas, fechaNotificacionISO){
 // al cuerpo de solo texto que ya existía, para no perder la información.
 const DESTINATARIO_TO = "daniacp@aliansalud.com.co";
 const DESTINATARIOS_CC = ["asesoriajuridica@lexaraabogados.com", "Gerencia@lexaraabogados.com", "myd.abogados.monica@hotmail.com"];
+// Misma imagen de firma que usaba la macro de Access original (URL real de
+// SharePoint, no un archivo aparte) — se incluye tal cual, tanto en la tabla
+// copiada al portapapeles como en el borrador creado por Graph.
+const FIRMA_URL = "https://mydabogados.sharepoint.com/sites/NuevosProcesosMD/Documentos%20compartidos/Lexara%20Abogados/Imagenes%20Corporativas/Firma%20Correo%20Ariana.jpg";
+const FIRMA_HTML = `<img src="${FIRMA_URL}" alt="" style="width:227px;height:113px;" />`;
 
 // Un mailto: muy largo puede fallar o cortarse en algunos clientes/SO — se
 // limita cuántas filas se listan en el cuerpo (el PDF adjunto siempre trae
@@ -249,7 +263,7 @@ export async function abrirCorreoTutelas(tutelas, fechaNotificacionISO){
     'Saludos,',
   ].join('\n');
 
-  const htmlTablas = tablaHtml('Contestaciones con Vencimiento el día de hoy', vencimiento) + tablaHtml('Tutelas Asignadas el Día Anterior', notificadas);
+  const htmlTablas = tablaHtml('Contestaciones con Vencimiento el día de hoy', vencimiento) + tablaHtml('Tutelas Asignadas el Día Anterior', notificadas) + FIRMA_HTML;
   const copiadoHtml = await copiarTablaAlPortapapeles(htmlTablas, cuerpoConListado);
 
   // Si sí se copió el HTML, el cuerpo del mailto se deja simple (sin el
@@ -263,6 +277,51 @@ export async function abrirCorreoTutelas(tutelas, fechaNotificacionISO){
   const url = `mailto:${DESTINATARIO_TO}?cc=${enc(DESTINATARIOS_CC.join(','))}&subject=${enc(asunto)}&body=${enc(cuerpo)}`;
   window.location.href = url;
   return copiadoHtml;
+}
+
+function arrayBufferABase64(buffer){
+  let binario = '';
+  const bytes = new Uint8Array(buffer);
+  const TAMANO_BLOQUE = 0x8000; // de a pedazos — de una sola vez con un PDF grande revienta el límite de argumentos de fromCharCode
+  for(let i = 0; i < bytes.length; i += TAMANO_BLOQUE){
+    binario += String.fromCharCode.apply(null, bytes.subarray(i, i + TAMANO_BLOQUE));
+  }
+  return btoa(binario);
+}
+
+// Igual que abrirCorreoTutelas(), pero crea el borrador DIRECTO en Outlook
+// vía Microsoft Graph (ver crearBorradorCorreo en graph.js) — con las tablas
+// ya en HTML de verdad (no copiadas al portapapeles, ya están puestas) y el
+// PDF ya adjunto, sin ningún paso manual. Requiere el permiso "Mail.ReadWrite"
+// aprobado en Azure AD — si falla por cualquier motivo (permiso no aprobado
+// todavía, sin conexión, lo que sea), lanza para que quien llama (ver
+// InformesView.jsx) caiga de vuelta a abrirCorreoTutelas().
+// Devuelve el mensaje creado por Graph (usar su `webLink` para abrirlo).
+export async function enviarBorradorTutelasGraph(tutelas, fechaNotificacionISO){
+  const { fechaVencimiento, fechaNotificacion } = calcularFechasInforme(fechaNotificacionISO);
+  const notificadas = filasPorFecha(tutelas, 'FechaNotificacion', fechaNotificacion);
+  const vencimiento = filasPorFecha(tutelas, 'FechaVencimiento', fechaVencimiento);
+
+  const asunto = `Notificación de Tutelas del (${fechaCorta(fechaNotificacion)}) y Vencimiento de las respuestas del (${fechaCorta(fechaVencimiento)})`;
+  const htmlBody = `<html><body style="font-family:Calibri,Arial,sans-serif;font-size:14px;color:#1c2624;">` +
+    `<p>Buenos días,</p>` +
+    `<p>En el documento adjunto se encuentran las tutelas asignadas el día <strong>${fechaLargaSinHora(fechaNotificacion)}</strong>, así como aquellas que se encuentran en término de vencimiento para el día de hoy, <strong>${fechaLargaSinHora(fechaVencimiento)}</strong>.</p>` +
+    tablaHtml('Contestaciones con Vencimiento el día de hoy', vencimiento) +
+    tablaHtml('Tutelas Asignadas el Día Anterior', notificadas) +
+    FIRMA_HTML +
+    `</body></html>`;
+
+  const { doc, nombreArchivo } = await construirPDFTutelas(tutelas, fechaNotificacionISO);
+  const adjuntoBase64 = arrayBufferABase64(doc.output('arraybuffer'));
+
+  return crearBorradorCorreo({
+    to: DESTINATARIO_TO,
+    cc: DESTINATARIOS_CC,
+    subject: asunto,
+    htmlBody,
+    adjuntoNombre: nombreArchivo,
+    adjuntoBase64,
+  });
 }
 
 // --- Excel ---

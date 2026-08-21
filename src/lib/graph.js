@@ -74,6 +74,66 @@ async function getGraphToken(){
   return res.accessToken;
 }
 
+// Token para crear/leer correo (Mail.ReadWrite) — a propósito NUNCA se pide
+// junto con Sites.ReadWrite.All en beginSignIn()/getGraphToken(): agregar un
+// permiso nuevo ahí rompería el inicio de sesión de TODO el mundo hasta que
+// el permiso quede aprobado en Azure AD (Entra) por un administrador. En vez
+// de eso, este permiso se pide de forma aislada, solo la primera vez que se
+// usa alguna función de correo (ver crearBorradorCorreo) — si ya está
+// aprobado en Azure AD pero el usuario nunca lo consintió en esta cuenta,
+// acquireTokenSilent falla y se reintenta una sola vez con un popup chiquito
+// (NO loginRedirect — no hace falta navegar toda la página solo para un
+// permiso adicional). Si el permiso ni siquiera existe todavía en el
+// registro de la app, esto sigue fallando y quien llama debe caer de vuelta
+// al método anterior (mailto + copiar tabla al portapapeles).
+async function getMailToken(){
+  const scopes = ["Mail.ReadWrite"];
+  try{
+    const res = await msalInstance.acquireTokenSilent({ scopes, account });
+    return res.accessToken;
+  }catch(err){
+    const res = await msalInstance.acquireTokenPopup({ scopes });
+    return res.accessToken;
+  }
+}
+
+// Crea un borrador de correo DIRECTO en el buzón de Outlook del usuario que
+// inició sesión (vía Microsoft Graph, POST /me/messages) — con el cuerpo en
+// HTML real (tablas con color) y el PDF ya adjunto, sin que el usuario tenga
+// que pegar ni adjuntar nada a mano. Requiere el permiso delegado
+// "Mail.ReadWrite" aprobado en Azure AD (Entra) — si no está aprobado
+// todavía, esto lanza y quien llama debe caer de vuelta al método anterior
+// (mailto + copiar tabla al portapapeles), ver informeTutelas.js.
+// Devuelve el mensaje creado por Graph — su campo `webLink` abre ese
+// borrador exacto en Outlook en la Web, ya con todo listo para revisar y
+// darle Enviar (mismo criterio que `.Display` en la macro de Access
+// original, que mostraba el borrador en vez de enviarlo directo).
+export async function crearBorradorCorreo({ to, cc, subject, htmlBody, adjuntoNombre, adjuntoBase64 }){
+  const token = await getMailToken();
+  const body = {
+    subject,
+    body: { contentType: "HTML", content: htmlBody },
+    toRecipients: [{ emailAddress: { address: to } }],
+    ccRecipients: (cc||[]).map(correo => ({ emailAddress: { address: correo } })),
+    attachments: adjuntoBase64 ? [{
+      "@odata.type": "#microsoft.graph.fileAttachment",
+      name: adjuntoNombre,
+      contentType: "application/pdf",
+      contentBytes: adjuntoBase64,
+    }] : [],
+  };
+  const res = await fetch('https://graph.microsoft.com/v1.0/me/messages', {
+    method: "POST",
+    headers: { Authorization:`Bearer ${token}`, "Content-Type":"application/json" },
+    body: JSON.stringify(body),
+  });
+  if(!res.ok){
+    const errBody = await res.text();
+    throw new Error(`Graph ${res.status}: ${errBody.substring(0,300)}`);
+  }
+  return res.json();
+}
+
 export async function graphFetch(path, opts){
   const token = await getGraphToken();
   const res = await fetch(path.startsWith('http') ? path : `https://graph.microsoft.com/v1.0${path}`, {

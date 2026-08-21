@@ -12,7 +12,7 @@ import { generarInformeColmedicaExcel, generarInformeColmedicaPDF } from '../lib
 import { generarInformeGrupoPDF } from '../lib/informeGrupo';
 import { generarInformeLexaraExcel, generarInformeLexaraPDF } from '../lib/informeLexara';
 import { generarInformeFacturasExcel, generarInformeOrdenesCompraExcel } from '../lib/informeFacturacion';
-import { generarInformeTutelasPDF, abrirCorreoTutelas, generarInformeTutelasExcel } from '../lib/informeTutelas';
+import { generarInformeTutelasPDF, abrirCorreoTutelas, enviarBorradorTutelasGraph, generarInformeTutelasExcel } from '../lib/informeTutelas';
 import { generarInformeGeneralProcesosExcel } from '../lib/informeGeneral';
 
 // Entidades con formato de informe formal ya confirmado, y qué generador usa
@@ -49,7 +49,7 @@ function entidadDeCliente(clientes, codigoClienteOrNombre, matchFn){
   return matchFn(clientes, codigoClienteOrNombre)?.Entidad || "Sin dato";
 }
 
-export default function InformesView({ procesos, clientes, facturas, ordenesCompra, desistimientos, tutelas, valoresEntidad, notify }){
+export default function InformesView({ procesos, clientes, facturas, ordenesCompra, desistimientos, tutelas, valoresEntidad, notify, liveMode }){
   const [generando, setGenerando] = useState(null); // nombre de la entidad mientras genera el Excel
   const [generandoPDF, setGenerandoPDF] = useState(null); // nombre de la entidad mientras genera el PDF
   const [generandoDesistimientos, setGenerandoDesistimientos] = useState(null);
@@ -160,9 +160,27 @@ export default function InformesView({ procesos, clientes, facturas, ordenesComp
     finally { setGenerandoTutelasPDF(false); }
   }
   async function handleAbrirCorreoTutelas(){
+    // Primero intenta crear el borrador DIRECTO en Outlook por Microsoft
+    // Graph (tablas + PDF ya adjunto, sin pasos manuales) — necesita el
+    // permiso "Mail.ReadWrite" aprobado en Azure AD Y una sesión real de
+    // Microsoft 365 (nunca en modo demo — ahí no hay cuenta real, e
+    // intentarlo mostraría de la nada un popup pidiendo iniciar sesión con
+    // Microsoft, algo que no tiene sentido mientras se están viendo datos
+    // de ejemplo). Si falla por cualquier otro motivo (permiso no aprobado
+    // todavía, sin conexión, etc.), cae de vuelta al método anterior
+    // (mailto + copiar tabla al portapapeles) — nunca se queda sin abrir nada.
+    if(liveMode){
+      try{
+        const mensaje = await enviarBorradorTutelasGraph(tutelas, fechaInformeTutelas);
+        if(mensaje?.webLink) window.open(mensaje.webLink, '_blank');
+        notify?.('Se creó el borrador en Outlook con las tablas y el PDF ya adjunto — revísalo y dale Enviar cuando quieras.', 'info');
+        return;
+      }catch(err){ console.error('No se pudo crear el borrador por Graph, se usa el método anterior:', err); }
+    }
+
     try{
       const copiadoHtml = await abrirCorreoTutelas(tutelas, fechaInformeTutelas);
-      if(copiadoHtml) notify?.('Se abrió el borrador del correo y ya se copiaron las tablas con el formato del PDF — pégalas (Ctrl+V) donde dice "[Pega aquí las tablas]".', 'info');
+      if(copiadoHtml) notify?.('No se pudo crear el borrador automático todavía (puede que falte aprobar el permiso nuevo en Azure AD) — se abrió el correo por el método anterior; las tablas ya están copiadas, pégalas con Ctrl+V.', 'info');
     }
     catch(err){ console.error(err); notify?.("No se pudo abrir el correo de Tutelas: " + err.message, 'error'); }
   }

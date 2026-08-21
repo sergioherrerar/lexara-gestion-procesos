@@ -20,7 +20,7 @@ export default function SetupView({ config, saveConfig, clearConfig, lists, upda
           <li>Entra a <code>entra.microsoft.com</code> → <strong>Registros de aplicaciones</strong> → <strong>Nuevo registro</strong>.</li>
           <li>Nombre sugerido: <code>Lexara – Gestión de Procesos</code>. Tipo de cuenta: solo este directorio.</li>
           <li>En <strong>URI de redirección</strong> elige tipo <em>SPA (Single-page application)</em> y coloca la URL donde publiques este archivo.</li>
-          <li>En <strong>Permisos de API</strong>, agrega Microsoft Graph → Delegados: <code>Sites.ReadWrite.All</code> y <code>User.Read</code>. Pide a un administrador que otorgue consentimiento.</li>
+          <li>En <strong>Permisos de API</strong>, agrega Microsoft Graph → Delegados: <code>Sites.ReadWrite.All</code>, <code>User.Read</code> y <code>Mail.ReadWrite</code> (este último para crear el borrador del informe de Tutelas directo en Outlook, con el PDF ya adjunto). Pide a un administrador que otorgue consentimiento.</li>
           <li>Copia el <strong>ID de aplicación (cliente)</strong> y el <strong>ID de directorio (inquilino)</strong>.</li>
         </ul>
       </div>
