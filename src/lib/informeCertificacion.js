@@ -7,40 +7,16 @@
 // diferencia de las cartas de informe por Entidad, que listan varios
 // procesos).
 // Ver [[project_colaboradores_roles_permisos]].
-import { prepararDocumentoPDF, fechaLarga, VERDE_OSCURO, TEXTO, GRIS_SUAVE, BORDE_SUAVE, MARGEN, CONTENIDO_Y_INICIAL, CONTENIDO_Y_MAXIMO, dibujarResumenBox, FIRMA_DEFECTO } from './informesPDF';
-import firmaMonica from '../assets/Firma Monica.png';
+// `imagenComoDataUrl`/`ANCHO_FIRMA_COMPLETA_MM` y la imagen del cierre
+// ("Cordial saludo," + firma real + nombre/CC/TP, ya armada como una sola
+// pieza) viven en informesPDF.js — se extendieron ahí mismo 2026-08-22 para
+// que TODAS las cartas de informe (SOS/Famisanar/Aliansalud/Colpatria/
+// Colmédica/genérico) usaran el mismo bloque de cierre, no solo esta
+// certificación (que fue donde se armó primero).
+import { prepararDocumentoPDF, fechaLarga, VERDE_OSCURO, TEXTO, GRIS_SUAVE, BORDE_SUAVE, MARGEN, CONTENIDO_Y_INICIAL, CONTENIDO_Y_MAXIMO, dibujarResumenBox, FIRMA_DEFECTO, imagenComoDataUrl, ANCHO_FIRMA_COMPLETA_MM } from './informesPDF';
+import firmaCompleta from '../assets/Firma Monica Completa.png';
 
 const MESES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
-
-// jsPDF no puede usar directamente la URL del asset empaquetado por Vite —
-// necesita los píxeles ya decodificados (dataURL). Misma técnica (y mismo
-// motivo) que membreteParaPDF() en informesPDF.js: la imagen original (PNG,
-// 792×612) re-incrustada tal cual pesaba ~2MB dentro del PDF (un solo
-// certificado de una hoja terminó pesando más que un informe de 48
-// procesos) — un PDF de una sola firma no necesita esa resolución. Se
-// reescala a un ancho fijo en píxeles y se convierte a JPEG antes de
-// dársela a jsPDF, igual que el membrete.
-function imagenComoDataUrl(url, anchoDestinoPx = 500){
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => {
-      const escala = Math.min(1, anchoDestinoPx / img.naturalWidth);
-      const anchoDestino = Math.round(img.naturalWidth * escala);
-      const altoDestino = Math.round(img.naturalHeight * escala);
-      const canvas = document.createElement('canvas');
-      canvas.width = anchoDestino; canvas.height = altoDestino;
-      const ctx = canvas.getContext('2d');
-      ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, anchoDestino, altoDestino);
-      ctx.drawImage(img, 0, 0, anchoDestino, altoDestino);
-      resolve({ dataUrl: canvas.toDataURL('image/jpeg', 0.9), ancho: anchoDestino, alto: altoDestino });
-    };
-    img.onerror = reject;
-    img.src = url;
-  });
-}
-// Ancho fijo de la firma en la hoja (mm) — el alto se calcula solo, según la
-// proporción real de la imagen, para no deformarla.
-const ANCHO_FIRMA_MM = 45;
 
 // "15 de enero de 2024" — para meter dentro del párrafo de texto corrido
 // (fechaCorta de informesPDF.js da "dd/mm/aaaa", muy numérico para una
@@ -61,11 +37,16 @@ function nombreArchivoSeguro(s){
   return (s||"").toString().replace(/[\/\\?%*:|"<>]/g, "-");
 }
 
-// Párrafo central — cambia según sea Trabajador (relación laboral) o
-// Contratista (prestación de servicios independiente). Si no hay Fecha de
-// retiro, se certifica como vigente "a la fecha de expedición" en vez de
-// mostrar un rango cerrado.
-function parrafoCertificacion(colaborador, esContratista){
+// Párrafo central, como una lista de "tramos" ({text, bold}) en vez de un
+// solo string — jsPDF no soporta negrita a mitad de una línea con su
+// doc.text() normal, así que se arma por tramos y se dibuja tramo por tramo
+// más abajo (dibujarParrafoConNegritas). {parrafo:true} marca un salto de
+// párrafo (línea en blanco). Nombre e identificación en negrita — pedido
+// explícito del usuario 2026-08-22 (los señaló en un PDF real). Cambia
+// según sea Trabajador (relación laboral) o Contratista (prestación de
+// servicios independiente); si no hay Fecha de retiro, certifica como
+// vigente "a la fecha de expedición" en vez de mostrar un rango cerrado.
+function segmentosCertificacion(colaborador, esContratista){
   const nombre = (colaborador.Nombre || "").toUpperCase();
   const tipoId = colaborador.TipoIdentificacion || "C.C.";
   const identificacion = colaborador.Identificacion || "—";
@@ -77,17 +58,53 @@ function parrafoCertificacion(colaborador, esContratista){
     ? (hasta ? `desde el ${desde} hasta el ${hasta}` : `desde el ${desde} a la fecha de expedición del presente documento, vinculación que continúa vigente`)
     : `durante el tiempo que se relaciona en los registros del despacho`;
 
+  const encabezado = { text: 'MD ABOGADOS SAS, identificada con Nit. 900.495.788-3, CERTIFICA QUE:' };
+  const nombreBold = { text: nombre + ',', bold: true };
+  const conectorId = { text: `identificado(a) con ${tipoId} No.` };
+  const idBold = { text: identificacion + ',', bold: true };
+  const cierre = { text: 'La presente certificación se expide a solicitud del interesado, para los fines que estime convenientes.' };
+
   if(esContratista){
     const verbo = vigente ? 'presta' : 'ha prestado';
-    return `MD ABOGADOS SAS, identificada con Nit. 900.495.788-3, CERTIFICA QUE:\n\n` +
-      `${nombre}, identificado(a) con ${tipoId} No. ${identificacion}, ${verbo} sus servicios profesionales de forma independiente a esta firma, mediante contrato de prestación de servicios, ${rangoFechas}, desempeñándose como ${cargo}.\n\n` +
-      `Se aclara que dicha vinculación NO corresponde a una relación laboral, sino a un contrato de prestación de servicios profesionales, sin subordinación ni dependencia.\n\n` +
-      `La presente certificación se expide a solicitud del interesado, para los fines que estime convenientes.`;
+    return [
+      encabezado, { parrafo:true },
+      nombreBold, conectorId, idBold,
+      { text: `${verbo} sus servicios profesionales de forma independiente a esta firma, mediante contrato de prestación de servicios, ${rangoFechas}, desempeñándose como ${cargo}.` },
+      { parrafo:true },
+      { text: 'Se aclara que dicha vinculación NO corresponde a una relación laboral, sino a un contrato de prestación de servicios profesionales, sin subordinación ni dependencia.' },
+      { parrafo:true }, cierre,
+    ];
   }
   const verbo = vigente ? 'labora' : 'laboró';
-  return `MD ABOGADOS SAS, identificada con Nit. 900.495.788-3, CERTIFICA QUE:\n\n` +
-    `${nombre}, identificado(a) con ${tipoId} No. ${identificacion}, ${verbo} en esta firma ${rangoFechas}, desempeñando el cargo de ${cargo}.\n\n` +
-    `La presente certificación se expide a solicitud del interesado, para los fines que estime convenientes.`;
+  return [
+    encabezado, { parrafo:true },
+    nombreBold, conectorId, idBold,
+    { text: `${verbo} en esta firma ${rangoFechas}, desempeñando el cargo de ${cargo}.` },
+    { parrafo:true }, cierre,
+  ];
+}
+
+// Dibuja los tramos de segmentosCertificacion() en la hoja, ajustando línea
+// por línea (palabra por palabra) contra `maxWidth` — necesario porque
+// doc.splitTextToSize()/doc.text() de jsPDF trabajan con UN solo estilo de
+// letra por llamada, no pueden mezclar negrita a mitad de una oración.
+// Requiere que ya se haya llamado doc.setFontSize()/doc.setTextColor()
+// antes (el tamaño/color no cambian por tramo, solo bold/normal).
+function dibujarParrafoConNegritas(doc, segmentos, x, y, maxWidth, lineHeight){
+  let cursorX = x, cursorY = y;
+  segmentos.forEach(seg => {
+    if(seg.parrafo){ cursorY += lineHeight * 1.6; cursorX = x; return; }
+    doc.setFont('helvetica', seg.bold ? 'bold' : 'normal');
+    seg.text.split(' ').filter(Boolean).forEach(palabra => {
+      if(cursorX + doc.getTextWidth(palabra) > x + maxWidth){
+        cursorY += lineHeight;
+        cursorX = x;
+      }
+      doc.text(palabra, cursorX, cursorY);
+      cursorX += doc.getTextWidth(palabra + ' ');
+    });
+  });
+  return cursorY + lineHeight;
 }
 
 export async function generarCertificacionColaboradorPDF(colaborador){
@@ -111,32 +128,33 @@ export async function generarCertificacionColaboradorPDF(colaborador){
     { label: colaborador.FechaRetiro ? 'Fecha de retiro' : 'Estado', value: colaborador.FechaRetiro ? fechaCortaVisible(colaborador.FechaRetiro) : 'Vigente' },
   ]) + 9;
 
-  doc.setFont('helvetica','normal'); doc.setFontSize(10.5); doc.setTextColor(...TEXTO);
-  const lineasParrafo = doc.splitTextToSize(parrafoCertificacion(colaborador, esContratista), pageWidth - MARGEN*2);
-  doc.text(lineasParrafo, MARGEN, y, {lineHeightFactor: 1.35});
-  y += lineasParrafo.length * 5.4 + 16;
+  doc.setFontSize(10.5); doc.setTextColor(...TEXTO);
+  y = dibujarParrafoConNegritas(doc, segmentosCertificacion(colaborador, esContratista), MARGEN, y, pageWidth - MARGEN*2, 5.4) + 11;
 
   if(y > CONTENIDO_Y_MAXIMO - 45){
     doc.addPage();
     dibujarEncabezadoYPie();
     y = CONTENIDO_Y_INICIAL;
   }
-  doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(...TEXTO);
-  doc.text('Cordial saludo,', MARGEN, y); y += 8;
-  // Firma real (imagen) — solo para Mónica, la firmante por defecto de
-  // todos los Informes (FIRMA_DEFECTO). Si algún día firma otra persona,
-  // esto necesita su propia imagen. La imagen tiene bastante aire en blanco
-  // debajo del trazo — se sube el nombre impreso para que quede pegado al
-  // trazo real, en vez de dejar todo ese blanco entre la firma y el nombre.
+  // Bloque de cierre completo ("Cordial saludo," + firma real + nombre/CC/TP
+  // impresos) como una sola imagen — solo para Mónica, la firmante por
+  // defecto de todos los Informes (FIRMA_DEFECTO). Si algún día firma otra
+  // persona, esto necesita su propia imagen equivalente. Si la imagen no
+  // carga por lo que sea, cae de vuelta al mismo bloque armado con texto
+  // (sin la firma real) para no dejar la certificación sin cierre.
   try{
-    const { dataUrl, ancho, alto } = await imagenComoDataUrl(firmaMonica);
-    const altoFirma = ANCHO_FIRMA_MM * (alto/ancho);
-    doc.addImage(dataUrl, 'JPEG', MARGEN - 3, y, ANCHO_FIRMA_MM, altoFirma);
-    y += altoFirma - 6;
-  }catch(err){ console.error('No se pudo cargar la imagen de la firma:', err); y += 10; }
-  doc.setFont('helvetica','bold'); doc.text(FIRMA_DEFECTO.nombre, MARGEN, y); y += 5;
-  doc.setFont('helvetica','normal'); doc.text(FIRMA_DEFECTO.cc, MARGEN, y); y += 5;
-  doc.text(FIRMA_DEFECTO.tp, MARGEN, y); y += 12;
+    const { dataUrl, ancho, alto } = await imagenComoDataUrl(firmaCompleta);
+    const altoBloque = ANCHO_FIRMA_COMPLETA_MM * (alto/ancho);
+    doc.addImage(dataUrl, 'JPEG', MARGEN - 3, y, ANCHO_FIRMA_COMPLETA_MM, altoBloque);
+    y += altoBloque + 6;
+  }catch(err){
+    console.error('No se pudo cargar la imagen de cierre, se usa el texto de respaldo:', err);
+    doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(...TEXTO);
+    doc.text('Cordial saludo,', MARGEN, y); y += 20;
+    doc.setFont('helvetica','bold'); doc.text(FIRMA_DEFECTO.nombre, MARGEN, y); y += 5;
+    doc.setFont('helvetica','normal'); doc.text(FIRMA_DEFECTO.cc, MARGEN, y); y += 5;
+    doc.text(FIRMA_DEFECTO.tp, MARGEN, y); y += 12;
+  }
 
   doc.setDrawColor(...BORDE_SUAVE); doc.setLineWidth(0.3);
   doc.line(MARGEN, y, pageWidth - MARGEN, y); y += 5;

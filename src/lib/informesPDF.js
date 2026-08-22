@@ -11,6 +11,18 @@
 // usuario: "el encabezado sea igual...como el de facturas".
 // Ver [[project_informes_modulo]].
 import membreteLexara from '../assets/Membrete Lexara.png';
+// Bloque de cierre completo ("Cordial saludo," + firma real + nombre/CC/TP
+// impresos, ya armado como una sola pieza) — pedido explícito del usuario
+// 2026-08-22, primero solo en la certificación de colaboradores
+// (informeCertificacion.js) y extendido el mismo día a TODAS las cartas de
+// informe (SOS/Famisanar/Aliansalud/Colpatria/Colmédica/genérico Lexara),
+// ya que todas comparten esta misma función. Con transparencia real (canal
+// alfa) en el archivo — el que subió el usuario tenía un cuadriculado gris
+// incrustado en los píxeles en vez de transparencia de verdad (PNG sin
+// canal alfa) — se regeneró una sola vez con un script aparte, convirtiendo
+// a transparente todo lo casi blanco (fondo/cuadros) y dejando opaco solo
+// el trazo/texto negro real.
+import firmaCompleta from '../assets/Firma Monica Completa.png';
 
 const DIAS = ["domingo","lunes","martes","miércoles","jueves","viernes","sábado"];
 const MESES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
@@ -109,6 +121,38 @@ export const FIRMA_DEFECTO = {
   tp: "T. P. No. 97.956 del C. S. de la J.",
 };
 
+// jsPDF no puede usar directamente la URL del asset empaquetado por Vite —
+// necesita los píxeles ya decodificados (dataURL). La imagen SÍ tiene
+// transparencia real, pero acá se rellena con blanco antes de convertir a
+// JPEG: como este bloque siempre queda sobre el fondo blanco liso de la
+// hoja (nunca sobre nada más), rellenar de blanco se ve exactamente igual
+// que dejarla transparente, y JPEG comprime muchísimo mejor que PNG con
+// alfa para este tipo de imagen (evita que el PDF pese varios MB por una
+// sola firma — mismo motivo/técnica que membreteParaPDF() más abajo).
+// Reescalada a un ancho fijo en píxeles (la original, 1536×1024, es de
+// sobra para el tamaño real al que se imprime — unos 78mm).
+export function imagenComoDataUrl(url, anchoDestinoPx = 700){
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const escala = Math.min(1, anchoDestinoPx / img.naturalWidth);
+      const anchoDestino = Math.round(img.naturalWidth * escala);
+      const altoDestino = Math.round(img.naturalHeight * escala);
+      const canvas = document.createElement('canvas');
+      canvas.width = anchoDestino; canvas.height = altoDestino;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, anchoDestino, altoDestino);
+      ctx.drawImage(img, 0, 0, anchoDestino, altoDestino);
+      resolve({ dataUrl: canvas.toDataURL('image/jpeg', 0.92), ancho: anchoDestino, alto: altoDestino });
+    };
+    img.onerror = reject;
+    img.src = url;
+  });
+}
+// Ancho fijo del bloque de cierre en la hoja (mm) — el alto se calcula
+// solo, según la proporción real de la imagen, para no deformarla.
+export const ANCHO_FIRMA_COMPLETA_MM = 78;
+
 // Arma el documento jsPDF + carga el membrete una sola vez — lo comparten la
 // carta de informe (generarCartaInformePDF), la ficha individual de proceso
 // (generarFichaProcesoPDF en informeProceso.js) y el informe de Tutelas
@@ -122,7 +166,23 @@ export async function prepararDocumentoPDF(tituloEncabezado = 'Reporte procesos 
     membreteParaPDF(membreteLexara),
   ]);
 
-  const doc = new jsPDF({ unit:'mm', format:'a4' });
+  // Protegido contra modificaciones (pedido explícito del usuario
+  // 2026-08-22) — cualquiera puede ABRIR e IMPRIMIR el PDF sin contraseña
+  // (userPassword vacío), pero editarlo/agregarle anotaciones requiere la
+  // contraseña de propietario, que no se le entrega a nadie. Aplica a TODOS
+  // los PDF de Informes (esta función es compartida por todos). No es un
+  // candado inviolable — es la protección estándar de PDF (la respetan
+  // Adobe/Word/etc., pero alguien con herramientas técnicas podría
+  // quitarla) — sirve para evitar ediciones casuales, no falsificación
+  // deliberada.
+  const doc = new jsPDF({
+    unit:'mm', format:'a4',
+    encryption: {
+      userPassword: '',
+      ownerPassword: 'LexaraMD-2026-NoEditar',
+      userPermissions: ['print', 'copy'],
+    },
+  });
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
   const hoy = new Date();
@@ -289,11 +349,28 @@ export async function generarCartaInformePDF(opts){
     dibujarEncabezadoYPie();
     yFirma = CONTENIDO_Y_INICIAL;
   }
-  doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(...TEXTO);
-  doc.text('Certifico cordialmente,', MARGEN, yFirma); yFirma += 14;
-  doc.setFont('helvetica','bold'); doc.text(firma.nombre, MARGEN, yFirma); yFirma += 5;
-  doc.setFont('helvetica','normal'); doc.text(firma.cc, MARGEN, yFirma); yFirma += 5;
-  doc.text(firma.tp, MARGEN, yFirma); yFirma += 12;
+  // Bloque de cierre completo como una sola imagen ("Cordial saludo," +
+  // firma real + nombre/CC/TP) — SOLO si el firmante es el de por defecto
+  // (Mónica); si algún informe llegara a pasar un `firma` distinto, esa
+  // imagen no le corresponde. Si la imagen no carga por lo que sea, o el
+  // firmante es otro, cae de vuelta al bloque de siempre armado con texto.
+  let imagenDibujada = false;
+  if(firma === FIRMA_DEFECTO){
+    try{
+      const { dataUrl, ancho, alto } = await imagenComoDataUrl(firmaCompleta);
+      const altoBloque = ANCHO_FIRMA_COMPLETA_MM * (alto/ancho);
+      doc.addImage(dataUrl, 'JPEG', MARGEN - 3, yFirma, ANCHO_FIRMA_COMPLETA_MM, altoBloque);
+      yFirma += altoBloque + 6;
+      imagenDibujada = true;
+    }catch(err){ console.error('No se pudo cargar la imagen de cierre, se usa el texto de respaldo:', err); }
+  }
+  if(!imagenDibujada){
+    doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(...TEXTO);
+    doc.text('Certifico cordialmente,', MARGEN, yFirma); yFirma += 14;
+    doc.setFont('helvetica','bold'); doc.text(firma.nombre, MARGEN, yFirma); yFirma += 5;
+    doc.setFont('helvetica','normal'); doc.text(firma.cc, MARGEN, yFirma); yFirma += 5;
+    doc.text(firma.tp, MARGEN, yFirma); yFirma += 12;
+  }
 
   // Cierre profesional: línea sutil + nota de generación automática, para que
   // la hoja no termine en blanco justo debajo de la firma (pedido explícito
