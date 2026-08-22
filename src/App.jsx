@@ -89,7 +89,7 @@ export default function App(){
           cargandoInicial={app.signingIn && app.liveMode}
         />
 
-        {app.view === 'dashboard' && <DashboardView procesos={app.procesos} clientes={app.clientes} facturas={app.facturas} ordenesCompra={app.ordenesCompra} />}
+        {app.view === 'dashboard' && <DashboardView procesos={app.procesos} clientes={app.clientes} facturas={app.facturas} ordenesCompra={app.ordenesCompra} desistimientos={app.desistimientos} />}
         {app.view === 'informes' && canAccessView(app.modulosPermitidos, 'informes') && (
           <InformesView procesos={app.procesos} clientes={app.clientes} facturas={app.facturas} ordenesCompra={app.ordenesCompra} desistimientos={app.desistimientos} tutelas={app.tutelas} valoresEntidad={app.valoresEntidad} notify={app.notify} liveMode={app.liveMode} />
         )}

@@ -255,6 +255,38 @@
   .bar-row .bar-track{flex:1; background:var(--gris-claro); border-radius:5px; height:16px; overflow:hidden;}
   .bar-row .bar-fill{height:100%; border-radius:5px; min-width:3px;}
   .bar-row .bar-value{width:24px; text-align:right; font-family:var(--font-mono); font-size:11.5px; color:var(--texto-suave); flex-shrink:0;}
+
+  /* ---------- Filtros tipo "slicer" del panel de análisis por Entidad
+     (Dashboard) — lista con casillas, mismo criterio visual que el resto
+     de tarjetas de la app. ---------- */
+  .checklist-filter-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(190px, 1fr)); gap:14px; margin-bottom:6px;}
+  .checklist-filter{background:#fff; border:1px solid var(--gris-linea); border-radius:10px; overflow:hidden; display:flex; flex-direction:column;}
+  .checklist-filter-head{display:flex; align-items:center; justify-content:space-between; gap:8px; padding:9px 12px; background:var(--gris-claro); border-bottom:1px solid var(--gris-linea); font-size:12px; font-weight:700; color:var(--verde-oscuro); text-transform:uppercase; letter-spacing:.02em;}
+  .checklist-filter-clear{border:none; background:none; color:var(--texto-suave); cursor:pointer; font-size:13px; padding:0; line-height:1;}
+  .checklist-filter-clear:hover{color:#a3281c;}
+  .checklist-filter-body{max-height:150px; overflow-y:auto; padding:4px 0;}
+  .checklist-filter-row{display:flex; align-items:center; gap:8px; padding:5px 12px; font-size:12.5px; color:var(--texto); cursor:pointer;}
+  .checklist-filter-row:hover{background:var(--gris-claro);}
+  .checklist-filter-row input{flex-shrink:0; accent-color:var(--verde-oscuro); cursor:pointer;}
+  .checklist-filter-label{flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .checklist-filter-count{color:var(--texto-suave); font-family:var(--font-mono); font-size:11px; flex-shrink:0;}
+  .checklist-filter-empty{padding:14px 12px; font-size:12px; color:var(--texto-suave); text-align:center;}
+  .checklist-filter-stat-body{display:flex; align-items:center; justify-content:center; padding:12px;}
+
+  /* ---------- Gráfico de torta/dona (PieChart.jsx) ---------- */
+  .pie-chart{display:flex; align-items:center; gap:16px; padding:14px 20px 18px; flex-wrap:wrap;}
+  .pie-legend{display:flex; flex-direction:column; gap:6px; min-width:0; flex:1;}
+  .pie-legend-row{display:flex; align-items:center; gap:7px; font-size:12.5px; color:var(--texto);}
+  .pie-legend-dot{width:10px; height:10px; border-radius:50%; flex-shrink:0;}
+  .pie-legend-label{flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .pie-legend-value{font-family:var(--font-mono); font-size:11.5px; color:var(--texto-suave); flex-shrink:0;}
+
+  /* ---------- Anillo con valor destacado en el centro (StatRing en PieChart.jsx) ---------- */
+  .stat-ring{position:relative; flex-shrink:0;}
+  .stat-ring-text{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:0 14px; gap:4px;}
+  .stat-ring-small{font-size:10.5px; color:var(--texto-suave); text-transform:uppercase; letter-spacing:.02em; line-height:1.3;}
+  .stat-ring-big{font-size:14px; font-weight:700; color:var(--verde-oscuro); line-height:1.25; word-break:break-word;}
+
   .panel{background:#fff; border:1px solid var(--gris-linea); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden;}
   .panel-head{display:flex; align-items:center; justify-content:space-between; padding:16px 20px; border-bottom:1px solid var(--gris-linea);}
   .panel-head h3{font-family:var(--font-display); font-size:16px; font-weight:600; margin:0; color:var(--verde-oscuro);}
