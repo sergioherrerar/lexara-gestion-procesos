@@ -8,6 +8,12 @@ const ROL_OPTIONS = ["Administrador", "Jefe", "Colaborador"];
 // interno, Contratista para externos como una contadora). Si en SharePoint
 // aparece algún valor distinto a estos dos, avisar para agregarlo aquí.
 const TIPO_COLABORADOR_OPTIONS = ["Trabajador", "Contratista"];
+// Lista fija (no texto libre) para poder agrupar/filtrar por Cargo más
+// adelante sin que un typo ("Abogada junior" vs "Abogada Junior") rompa el
+// agrupamiento — pedido explícito del usuario 2026-08-22. Cargos reales
+// confirmados por el usuario (perfiles del equipo). Si aparece alguien con
+// un cargo nuevo que no esté acá, agregarlo a esta lista.
+const CARGO_OPTIONS = ["Gerente", "Abogado de Procesos", "Abogada Junior", "Soporte técnico y administrativo"];
 
 function emptyForm(colaborador){
   return {
@@ -20,6 +26,12 @@ function emptyForm(colaborador){
     Activo: colaborador.Activo != null ? !!colaborador.Activo : true,
     Rol: colaborador.Rol || "",
     TipoColaborador: colaborador.TipoColaborador || "",
+    // Cargo real (Gerente, Abogado de Procesos, etc.) — distinto del Rol de
+    // permisos de arriba. Se usan en la certificación laboral/de prestación
+    // de servicios en PDF (ver informeCertificacion.js).
+    Cargo: colaborador.Cargo || "",
+    FechaIngreso: colaborador.FechaIngreso || "",
+    FechaRetiro: colaborador.FechaRetiro || "",
     // Si "Módulos permitidos" todavía está vacío en SharePoint (colaboradores
     // creados antes de este cambio), las casillas arrancan marcadas con lo
     // que ese Rol ya le daba por defecto (ver modulosPermitidosDe en
@@ -98,6 +110,16 @@ export default function ColaboradorDrawer({ colaborador, liveMode, onClose, onSa
                   {TIPO_COLABORADOR_OPTIONS.map(o => <option value={o} key={o}>{o}</option>)}
                 </select>
               </div>
+              <div className="field">
+                <label>Cargo</label>
+                <select value={form.Cargo} onChange={e => setField('Cargo', e.target.value)} disabled={!canWrite}>
+                  <option value="">— seleccionar —</option>
+                  {/* si el valor ya guardado no está en la lista fija (cargo nuevo, o mayúsculas distintas), se agrega igual para no esconderlo */}
+                  {(form.Cargo && !CARGO_OPTIONS.includes(form.Cargo) ? [form.Cargo, ...CARGO_OPTIONS] : CARGO_OPTIONS).map(o => <option value={o} key={o}>{o}</option>)}
+                </select>
+              </div>
+              <div className="field"><label>Fecha de ingreso</label><input type="date" value={form.FechaIngreso} onChange={e => setField('FechaIngreso', e.target.value)} readOnly={!canWrite} /></div>
+              <div className="field"><label>Fecha de retiro</label><input type="date" value={form.FechaRetiro} onChange={e => setField('FechaRetiro', e.target.value)} readOnly={!canWrite} /></div>
             </div>
           </div>
           <div className="field-section">

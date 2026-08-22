@@ -379,6 +379,14 @@ export const SHAREPOINT_LISTS_CONFIG = [
       {key:"TipoColaborador", label:"Tipo de colaborador", hint:["tipo de colaborador","tipo colaborador"]},
       {key:"ModulosPermitidos", label:"Módulos permitidos", hint:["modulos permitidos","módulos permitidos","modulos permi"]},
       {key:"SoloLectura", label:"Solo lectura", hint:["solo lectura"]},
+      // Agregados 2026-08-22 para la certificación laboral/de prestación de
+      // servicios en PDF (ver informeCertificacion.js) — "Cargo" es el
+      // título real del puesto (Gerente, Abogado de Procesos, Abogada
+      // Junior, etc.), DISTINTO del "Rol" de arriba (que es solo el nivel de
+      // permiso del sistema, no un cargo real).
+      {key:"Cargo", label:"Cargo", hint:["cargo"]},
+      {key:"FechaIngreso", label:"Fecha de ingreso", hint:["fecha de ingreso","fecha ingreso"]},
+      {key:"FechaRetiro", label:"Fecha de retiro", hint:["fecha de retiro","fecha retiro"]},
     ],
     mapping: {
       Nombre: "Nombre",

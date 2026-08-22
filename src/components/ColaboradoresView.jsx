@@ -1,8 +1,10 @@
+import { useState } from 'react';
 import { ICON_SVG } from '../config';
 import IconButton, { IconTextButton } from './IconButton';
 import ColumnHeaderMenu from './ColumnHeaderMenu';
 import { useColumnFilters } from '../hooks/useColumnFilters';
 import { useColumnSort } from '../hooks/useColumnSort';
+import { generarCertificacionColaboradorPDF } from '../lib/informeCertificacion';
 
 const COLUMNS = [
   {key:'nombre', label:'Nombre', value: c => c.Nombre || ""},
@@ -15,9 +17,24 @@ const COLUMNS = [
   {key:'acciones', label:'Acciones', filterable:false},
 ];
 
-export default function ColaboradoresView({ colaboradores, searchQuery, onOpenColaborador, onCreateColaborador, onDeleteColaborador, canWrite = true }){
+export default function ColaboradoresView({ colaboradores, searchQuery, onOpenColaborador, onCreateColaborador, onDeleteColaborador, canWrite = true, notify }){
   const { filters, setFilter, clearFilters, rowMatches, hasActiveFilters } = useColumnFilters();
   const { sort, setSortKey, sortRows } = useColumnSort();
+  const [generandoCertificacion, setGenerandoCertificacion] = useState(null); // id del colaborador mientras genera su certificación
+
+  // Requiere Cargo y Fecha de ingreso para que el texto de la certificación
+  // tenga sentido — sin esto avisa en vez de generar un PDF con "—" por todos
+  // lados (ver ColaboradorDrawer.jsx para completar esos campos).
+  async function handleGenerarCertificacion(colaborador){
+    if(!colaborador.Cargo || !colaborador.FechaIngreso){
+      notify?.(`Antes de generar la certificación de ${colaborador.Nombre}, completa su Cargo y Fecha de ingreso en la ficha del colaborador.`, 'error');
+      return;
+    }
+    setGenerandoCertificacion(colaborador.id);
+    try{ await generarCertificacionColaboradorPDF(colaborador); }
+    catch(err){ console.error(err); notify?.("No se pudo generar la certificación: " + err.message, 'error'); }
+    finally { setGenerandoCertificacion(null); }
+  }
   const query = (searchQuery||"").trim().toLowerCase();
   const rows = colaboradores.filter(c => (!query ||
     (c.Nombre||"").toLowerCase().includes(query) ||
@@ -56,6 +73,7 @@ export default function ColaboradoresView({ colaboradores, searchQuery, onOpenCo
                 <td style={{whiteSpace:'nowrap'}}>
                   <div className="row-actions">
                     <IconButton icon="edit" variant="edit" label={canWrite ? "Editar colaborador" : "Ver colaborador"} onClick={() => onOpenColaborador(c.id)} />
+                    <IconButton icon="pdf" variant="pdf" label="Descargar certificación (PDF)" spinning={generandoCertificacion===c.id} onClick={() => handleGenerarCertificacion(c)} />
                     {canWrite && <IconButton icon="delete" variant="delete" label="Eliminar colaborador" onClick={() => onDeleteColaborador(c.id)} />}
                   </div>
                 </td>

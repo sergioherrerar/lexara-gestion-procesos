@@ -158,6 +158,7 @@ export default function App(){
             onCreateColaborador={app.newColaborador}
             onDeleteColaborador={app.deleteColaborador}
             canWrite={app.canWrite}
+            notify={app.notify}
           />
         )}
         {app.view === 'setup' && canAccessView(app.modulosPermitidos, 'setup') && (
