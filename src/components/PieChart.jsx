@@ -65,15 +65,34 @@ export default function PieChart({ data, emptyMsg, size = 150 }){
   );
 }
 
-// Anillo decorativo con 1-2 líneas de texto en el centro — para un solo
-// valor destacado (ej. una suma en pesos), no una categoría con porciones.
-export function StatRing({ color = 'var(--verde-oscuro)', lines, size = 150 }){
+// Anillo decorativo con 1-2 líneas de texto — para un solo valor destacado
+// (ej. una suma en pesos), no una categoría con porciones. Dos formatos:
+// - "centro" (por defecto): el texto va DENTRO del anillo — solo sirve para
+//   números cortos, un valor largo (ej. "$ 152.041.453.358,50") se ve
+//   apretado y se corta feo.
+// - "lado": el anillo queda chico y decorativo, y el texto va AL LADO,
+//   sin límite de ancho — pedido explícito del usuario 2026-08-22 para que
+//   el valor completo de la cartera/desistimientos se vea entero.
+export function StatRing({ color = 'var(--verde-oscuro)', lines, size = 150, layout = 'centro' }){
   const r = size/2;
+  const anillo = (
+    <svg viewBox={`0 0 ${size} ${size}`} width={size} height={size} style={{flexShrink:0}}>
+      <circle cx={r} cy={r} r={r-6} fill="none" stroke={color} strokeWidth="11" strokeLinecap="round" />
+    </svg>
+  );
+  if(layout === 'lado'){
+    return (
+      <div className="stat-ring-lado">
+        {anillo}
+        <div className="stat-ring-lado-text">
+          {lines.map((l, i) => <div key={i} className={l.big ? "stat-ring-lado-big" : "stat-ring-lado-small"}>{l.text}</div>)}
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="stat-ring" style={{width:size, height:size}}>
-      <svg viewBox={`0 0 ${size} ${size}`} width={size} height={size}>
-        <circle cx={r} cy={r} r={r-6} fill="none" stroke={color} strokeWidth="11" strokeLinecap="round" />
-      </svg>
+      {anillo}
       <div className="stat-ring-text">
         {lines.map((l, i) => (
           <div key={i} className={l.big ? "stat-ring-big" : "stat-ring-small"}>{l.text}</div>

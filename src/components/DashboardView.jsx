@@ -92,19 +92,24 @@ export default function DashboardView({ procesos, clientes = [], facturas = [], 
   // no tienen NINGÚN desistimiento — no es un valor real del campo
   // Aprobación, se agrega a mano. Los demás baldes son los valores REALES
   // que tenga ese campo en los datos (no se adivinan/inventan nombres fijos).
+  // IMPORTANTE: se cuenta un PROCESO por balde (no un desistimiento) — así
+  // la suma de las porciones siempre coincide exactamente con la cantidad
+  // de procesos filtrados (bug real encontrado 2026-08-22: antes, un
+  // proceso con más de un desistimiento se contaba una vez por cada
+  // desistimiento que tuviera, y el total del gráfico terminaba siendo
+  // mayor que la cantidad real de procesos filtrados). Si un proceso tiene
+  // más de un desistimiento, se usa el primero para decidir su balde.
   const dataDesistimientosEstado = (() => {
     const mapa = new Map();
     procesosFiltrados.forEach(p => {
       const propios = desistimientosForProceso(desistimientos, p);
       if(!propios.length){ mapa.set('Sin desistimiento', (mapa.get('Sin desistimiento')||0)+1); return; }
-      propios.forEach(d => {
-        // Normaliza may/minúsculas (dato real: "Aprobado" y "APROBADO" en el
-        // mismo campo) para que no salgan como 2 categorías separadas en el
-        // gráfico por un simple problema de digitación.
-        const crudo = stripHtml(d.Aprobacion) || "Sin dato";
-        const estado = crudo === "Sin dato" ? crudo : crudo.charAt(0).toUpperCase() + crudo.slice(1).toLowerCase();
-        mapa.set(estado, (mapa.get(estado)||0)+1);
-      });
+      // Normaliza may/minúsculas (dato real: "Aprobado" y "APROBADO" en el
+      // mismo campo) para que no salgan como 2 categorías separadas en el
+      // gráfico por un simple problema de digitación.
+      const crudo = stripHtml(propios[0].Aprobacion) || "Sin dato";
+      const estado = crudo === "Sin dato" ? crudo : crudo.charAt(0).toUpperCase() + crudo.slice(1).toLowerCase();
+      mapa.set(estado, (mapa.get(estado)||0)+1);
     });
     return Array.from(mapa.entries()).map(([label,value])=>({label,value})).sort((a,b)=>b.value-a.value);
   })();
@@ -175,10 +180,19 @@ export default function DashboardView({ procesos, clientes = [], facturas = [], 
             <ChecklistFilter title="Subclasificación" options={opcionesConConteo(procesosPorEntidad, campoSubclasificacion)} selected={filtros.subclasificacion} onToggle={v => toggleFiltro('subclasificacion', v)} onClear={() => limpiarFiltro('subclasificacion')} />
             <ChecklistFilter title="Prueba Pericial" options={opcionesConConteo(procesosPorEntidad, campoPrueba)} selected={filtros.pruebaPericial} onToggle={v => toggleFiltro('pruebaPericial', v)} onClear={() => limpiarFiltro('pruebaPericial')} />
             <ChecklistFilter title="Etapa del proceso" options={opcionesConConteo(procesosPorEntidad, campoEtapa)} selected={filtros.etapa} onToggle={v => toggleFiltro('etapa', v)} onClear={() => limpiarFiltro('etapa')} />
-            <div className="checklist-filter checklist-filter-stat">
-              <div className="checklist-filter-head"><span>Valor cartera actual</span></div>
-              <div className="checklist-filter-stat-body">
-                <StatRing size={150} lines={[{text:'Total filtrado'}, {text: '$ '+fmtMonto(valorCarteraActual), big:true}]} />
+          </div>
+
+          <div className="panel-grid panel-grid-2" style={{marginTop:18}}>
+            <div className="panel">
+              <div className="panel-head"><h3>Procesos filtrados</h3></div>
+              <div className="panel-body" style={{padding:'20px'}}>
+                <StatRing layout="lado" size={90} color="var(--verde-oscuro)" lines={[{text:'Cantidad de procesos'}, {text: String(procesosFiltrados.length), big:true}]} />
+              </div>
+            </div>
+            <div className="panel">
+              <div className="panel-head"><h3>Valor cartera actual</h3></div>
+              <div className="panel-body" style={{padding:'20px'}}>
+                <StatRing layout="lado" size={90} color="var(--naranja)" lines={[{text:'Suma de procesos filtrados'}, {text: '$ '+fmtMonto(valorCarteraActual), big:true}]} />
               </div>
             </div>
           </div>
@@ -201,15 +215,15 @@ export default function DashboardView({ procesos, clientes = [], facturas = [], 
               <div className="panel-body"><PieChart data={dataPrueba} emptyMsg="No hay datos de Prueba Pericial." /></div>
             </div>
             <div className="panel">
-              <div className="panel-head"><h3>Desistimientos</h3></div>
-              <div className="panel-body" style={{display:'flex', justifyContent:'center', alignItems:'center', minHeight:150}}>
+              <div className="panel-head"><h3>Total de desistimientos</h3></div>
+              <div className="panel-body" style={{display:'flex', alignItems:'center', minHeight:150, padding:'20px'}}>
                 {desistimientosFiltrados.length
-                  ? <StatRing color="var(--verde-claro)" lines={[{text:`${desistimientosFiltrados.length} desistimiento${desistimientosFiltrados.length===1?'':'s'}`}, {text:'$ '+fmtMonto(valorDesistimientos), big:true}]} />
+                  ? <StatRing layout="lado" size={110} color="var(--verde-claro)" lines={[{text:`${desistimientosFiltrados.length} desistimiento${desistimientosFiltrados.length===1?'':'s'}`}, {text:'$ '+fmtMonto(valorDesistimientos), big:true}]} />
                   : <div className="empty-state empty-state-compact">No hay desistimientos para estos procesos.</div>}
               </div>
             </div>
             <div className="panel">
-              <div className="panel-head"><h3>Desistimientos Aprobados</h3></div>
+              <div className="panel-head"><h3>Desistimientos</h3></div>
               <div className="panel-body"><PieChart data={dataDesistimientosEstado} emptyMsg="No hay desistimientos para estos procesos." /></div>
             </div>
           </div>
