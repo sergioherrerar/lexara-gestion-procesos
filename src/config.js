@@ -400,6 +400,9 @@ export const SHAREPOINT_LISTS_CONFIG = [
       TipoColaborador: "TipodeColaborador",
       ModulosPermitidos: "Modulospermitidos",
       SoloLectura: "Sololectura",
+      Cargo: "Cargo",
+      FechaIngreso: "Fechadeingreso",
+      FechaRetiro: "FechaTerminaci_x00f3_n",
     },
   },
   {

@@ -106,7 +106,7 @@ export function dibujarResumenBox(doc, x, y, width, items){
 export const FIRMA_DEFECTO = {
   nombre: "MÓNICA PAOLA QUINTERO JIMÉNEZ",
   cc: "C.C. No. 40.039.240 de Tunja",
-  tp: "T.P. No. 97.956 del C. S. de la J.",
+  tp: "T. P. No. 97.956 del C. S. de la J.",
 };
 
 // Arma el documento jsPDF + carga el membrete una sola vez — lo comparten la
@@ -189,10 +189,13 @@ export async function prepararDocumentoPDF(tituloEncabezado = 'Reporte procesos 
     // 48 procesos). Sin alias, jsPDF sigue sin inflar el peso del archivo
     // (mismo tamaño final que con alias) — deduplica por contenido igual.
     doc.addImage(membreteDataUrl, 'JPEG', 0, 0, pageWidth, pageHeight, undefined, 'MEDIUM');
+    // Centrado (pedido explícito del usuario 2026-08-22, visto en la
+    // certificación pero aplica a este encabezado COMPARTIDO por todos los
+    // PDF de Informes) — antes alineado a la izquierda contra el margen.
     doc.setFont('helvetica','bold'); doc.setFontSize(13); doc.setTextColor(...VERDE_OSCURO);
-    doc.text(tituloEncabezado, MARGEN, 60);
+    doc.text(tituloEncabezado, pageWidth/2, 60, {align:'center'});
     doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(...GRIS_SUAVE);
-    doc.text('MD ABOGADOS SAS · Nit 900.495.788-3', MARGEN, 66);
+    doc.text('MD ABOGADOS SAS · Nit 900.495.788-3', pageWidth/2, 66, {align:'center'});
     doc.setDrawColor(...VERDE_OSCURO); doc.setLineWidth(0.8);
     doc.line(MARGEN, 70, pageWidth - MARGEN, 70);
   }

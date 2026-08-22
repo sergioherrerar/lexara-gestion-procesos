@@ -8,8 +8,39 @@
 // procesos).
 // Ver [[project_colaboradores_roles_permisos]].
 import { prepararDocumentoPDF, fechaLarga, VERDE_OSCURO, TEXTO, GRIS_SUAVE, BORDE_SUAVE, MARGEN, CONTENIDO_Y_INICIAL, CONTENIDO_Y_MAXIMO, dibujarResumenBox, FIRMA_DEFECTO } from './informesPDF';
+import firmaMonica from '../assets/Firma Monica.png';
 
 const MESES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+
+// jsPDF no puede usar directamente la URL del asset empaquetado por Vite —
+// necesita los píxeles ya decodificados (dataURL). Misma técnica (y mismo
+// motivo) que membreteParaPDF() en informesPDF.js: la imagen original (PNG,
+// 792×612) re-incrustada tal cual pesaba ~2MB dentro del PDF (un solo
+// certificado de una hoja terminó pesando más que un informe de 48
+// procesos) — un PDF de una sola firma no necesita esa resolución. Se
+// reescala a un ancho fijo en píxeles y se convierte a JPEG antes de
+// dársela a jsPDF, igual que el membrete.
+function imagenComoDataUrl(url, anchoDestinoPx = 500){
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const escala = Math.min(1, anchoDestinoPx / img.naturalWidth);
+      const anchoDestino = Math.round(img.naturalWidth * escala);
+      const altoDestino = Math.round(img.naturalHeight * escala);
+      const canvas = document.createElement('canvas');
+      canvas.width = anchoDestino; canvas.height = altoDestino;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, anchoDestino, altoDestino);
+      ctx.drawImage(img, 0, 0, anchoDestino, altoDestino);
+      resolve({ dataUrl: canvas.toDataURL('image/jpeg', 0.9), ancho: anchoDestino, alto: altoDestino });
+    };
+    img.onerror = reject;
+    img.src = url;
+  });
+}
+// Ancho fijo de la firma en la hoja (mm) — el alto se calcula solo, según la
+// proporción real de la imagen, para no deformarla.
+const ANCHO_FIRMA_MM = 45;
 
 // "15 de enero de 2024" — para meter dentro del párrafo de texto corrido
 // (fechaCorta de informesPDF.js da "dd/mm/aaaa", muy numérico para una
@@ -68,9 +99,11 @@ export async function generarCertificacionColaboradorPDF(colaborador){
   let y = CONTENIDO_Y_INICIAL;
   doc.setFont('helvetica','normal'); doc.setFontSize(10.5); doc.setTextColor(...TEXTO);
   doc.text(`Bogotá D.C., ${fecha}`, MARGEN, y); y += 9;
-  doc.text('A quien interese:', MARGEN, y); y += 9;
+  // "A quien interese" / Asunto centrados (pedido explícito del usuario
+  // 2026-08-22) — la fecha de arriba se queda alineada al margen.
+  doc.text('A quien interese:', pageWidth/2, y, {align:'center'}); y += 9;
   doc.setFont('helvetica','bold'); doc.setFontSize(11); doc.setTextColor(...VERDE_OSCURO);
-  doc.text(`Asunto: ${titulo}`, MARGEN, y); y += 8;
+  doc.text(`Asunto: ${titulo}`, pageWidth/2, y, {align:'center'}); y += 8;
 
   y = dibujarResumenBox(doc, MARGEN, y, pageWidth - MARGEN*2, [
     { label:'Cargo', value: colaborador.Cargo || "—" },
@@ -89,7 +122,18 @@ export async function generarCertificacionColaboradorPDF(colaborador){
     y = CONTENIDO_Y_INICIAL;
   }
   doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(...TEXTO);
-  doc.text('Certifico cordialmente,', MARGEN, y); y += 14;
+  doc.text('Cordial saludo,', MARGEN, y); y += 8;
+  // Firma real (imagen) — solo para Mónica, la firmante por defecto de
+  // todos los Informes (FIRMA_DEFECTO). Si algún día firma otra persona,
+  // esto necesita su propia imagen. La imagen tiene bastante aire en blanco
+  // debajo del trazo — se sube el nombre impreso para que quede pegado al
+  // trazo real, en vez de dejar todo ese blanco entre la firma y el nombre.
+  try{
+    const { dataUrl, ancho, alto } = await imagenComoDataUrl(firmaMonica);
+    const altoFirma = ANCHO_FIRMA_MM * (alto/ancho);
+    doc.addImage(dataUrl, 'JPEG', MARGEN - 3, y, ANCHO_FIRMA_MM, altoFirma);
+    y += altoFirma - 6;
+  }catch(err){ console.error('No se pudo cargar la imagen de la firma:', err); y += 10; }
   doc.setFont('helvetica','bold'); doc.text(FIRMA_DEFECTO.nombre, MARGEN, y); y += 5;
   doc.setFont('helvetica','normal'); doc.text(FIRMA_DEFECTO.cc, MARGEN, y); y += 5;
   doc.text(FIRMA_DEFECTO.tp, MARGEN, y); y += 12;
