@@ -677,6 +677,8 @@
   .icon-btn-mail:hover{background:#1d5fa3; color:#fff;}
   .icon-btn-html{color:var(--verde-oscuro); background:#e3efee;}
   .icon-btn-html:hover{background:var(--verde-oscuro); color:#fff;}
+  .icon-btn-word{color:#1d5fa3; background:#e4edf7;}
+  .icon-btn-word:hover{background:#1d5fa3; color:#fff;}
   .icon-btn-spinning{cursor:default;}
   .icon-btn-spinning svg, .icon-btn-spinning img{animation:icon-spin .8s linear infinite;}
   @keyframes icon-spin{to{transform:rotate(360deg);}}

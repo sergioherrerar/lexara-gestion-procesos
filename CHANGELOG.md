@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-08-24
+- **Nuevo botón "Descargar análisis en Word" en "Análisis de procesos por Entidad" (Dashboard)** — complementa al HTML interactivo: genera un .docx formal, con el mismo membrete y firma real que las cartas de Informes en PDF, un cuadro de resumen (procesos filtrados, valor de cartera, total de desistimientos) y cada gráfico pegado como imagen (Naturaleza del Proceso, Subclasificación, Admitida, Prueba Pericial, Desistimientos). A diferencia del HTML, este queda fijo/estático una vez descargado — pensado para imprimir o enviar por correo como informe formal.
+
 ## 2026-08-22
 - **Nuevo botón "Descargar análisis interactivo (HTML)" en "Análisis de procesos por Entidad" (Dashboard)** — descarga un archivo .html independiente con los datos de la Entidad elegida (o de todas, si no se filtró ninguna) ya adentro, y con los mismos 6 filtros y gráficos funcionando de verdad al abrirlo en el navegador, sin conexión ni depender de la app — a diferencia del Excel/PDF (que quedan fijos una vez descargados), este sí se puede seguir explorando después de guardarlo.
 - **Corregido un bug real en el gráfico "Desistimientos" del Dashboard: la suma de aprobado/no aprobado/sin desistimiento podía salir mayor a la cantidad real de procesos filtrados** (encontrado por el usuario probando con SOS: 55 procesos, pero el gráfico sumaba 109) — pasaba porque un proceso con más de un desistimiento se contaba una vez por cada desistimiento en vez de una sola vez por proceso. Ahora cada proceso cuenta exactamente una vez.

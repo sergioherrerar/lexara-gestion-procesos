@@ -4,6 +4,7 @@ import PieChart, { StatRing } from './PieChart';
 import ChecklistFilter from './ChecklistFilter';
 import { stripHtml, groupCount, parseMonto, fmtMonto, desistimientosForProceso } from '../lib/graph';
 import { generarDashboardEntidadHTML } from '../lib/exportarDashboardHTML';
+import { generarDashboardEntidadWord } from '../lib/exportarDashboardWord';
 import IconButton from './IconButton';
 
 function IconFolder(){
@@ -137,6 +138,23 @@ export default function DashboardView({ procesos, clientes = [], facturas = [], 
     }
   }
 
+  // Exporta el mismo panel a un .docx formal (mismo membrete/firma que las
+  // cartas de Informes) con cada gráfico pegado como imagen — a diferencia
+  // del HTML, este queda estático una vez descargado (pedido explícito del
+  // usuario como complemento del HTML, 2026-08-24).
+  const [generandoWord, setGenerandoWord] = useState(false);
+  async function handleExportarWord(){
+    setGenerandoWord(true);
+    try{
+      await generarDashboardEntidadWord(procesos, desistimientos, entidadSel);
+    } catch(err){
+      console.error(err);
+      notify?.("No se pudo exportar el Word: " + err.message, 'error');
+    } finally {
+      setGenerandoWord(false);
+    }
+  }
+
   return (
     <div className="view">
       <div className="view-header">
@@ -174,7 +192,10 @@ export default function DashboardView({ procesos, clientes = [], facturas = [], 
       <div className="panel" style={{marginTop:20}}>
         <div className="panel-head">
           <h3>Análisis de procesos por Entidad</h3>
-          <IconButton icon="html" variant="html" label="Descargar análisis interactivo (HTML)" onClick={handleExportarHTML} />
+          <div style={{display:'flex', gap:8}}>
+            <IconButton icon="html" variant="html" label="Descargar análisis interactivo (HTML)" onClick={handleExportarHTML} />
+            <IconButton icon="word" variant="word" label="Descargar análisis en Word" spinning={generandoWord} onClick={handleExportarWord} />
+          </div>
         </div>
         <div className="panel-body">
           <div className="toolbar">
