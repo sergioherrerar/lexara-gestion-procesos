@@ -3,6 +3,8 @@ import BarChart from './BarChart';
 import PieChart, { StatRing } from './PieChart';
 import ChecklistFilter from './ChecklistFilter';
 import { stripHtml, groupCount, parseMonto, fmtMonto, desistimientosForProceso } from '../lib/graph';
+import { generarDashboardEntidadHTML } from '../lib/exportarDashboardHTML';
+import IconButton from './IconButton';
 
 function IconFolder(){
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/></svg>;
@@ -37,7 +39,7 @@ function opcionesConConteo(lista, campoFn){
 
 const FILTROS_VACIOS = { glosa: new Set(), naturaleza: new Set(), admitida: new Set(), subclasificacion: new Set(), pruebaPericial: new Set(), etapa: new Set() };
 
-export default function DashboardView({ procesos, clientes = [], facturas = [], ordenesCompra = [], desistimientos = [] }){
+export default function DashboardView({ procesos, clientes = [], facturas = [], ordenesCompra = [], desistimientos = [], notify }){
   const activos = procesos.filter(p => !(p.Estado||"").toLowerCase().includes('termin'));
   const tiposDistintos = new Set(procesos.map(p => stripHtml(p.TipoAccion) || "Sin dato"));
 
@@ -90,29 +92,50 @@ export default function DashboardView({ procesos, clientes = [], facturas = [], 
   const valorDesistimientos = desistimientosFiltrados.reduce((sum,d) => sum + parseMonto(d.DesistimientoValor), 0);
   // "Sin desistimiento" es un balde aparte para los procesos filtrados que
   // no tienen NINGÚN desistimiento — no es un valor real del campo
-  // Aprobación, se agrega a mano. Los demás baldes son los valores REALES
-  // que tenga ese campo en los datos (no se adivinan/inventan nombres fijos).
+  // Aprobación, se agrega a mano (con valor $0, no tiene un desistimiento
+  // real detrás). Los demás baldes son los valores REALES que tenga ese
+  // campo en los datos (no se adivinan/inventan nombres fijos).
   // IMPORTANTE: se cuenta un PROCESO por balde (no un desistimiento) — así
   // la suma de las porciones siempre coincide exactamente con la cantidad
   // de procesos filtrados (bug real encontrado 2026-08-22: antes, un
   // proceso con más de un desistimiento se contaba una vez por cada
   // desistimiento que tuviera, y el total del gráfico terminaba siendo
   // mayor que la cantidad real de procesos filtrados). Si un proceso tiene
-  // más de un desistimiento, se usa el primero para decidir su balde.
-  const dataDesistimientosEstado = (() => {
-    const mapa = new Map();
+  // más de un desistimiento, se usa el primero para decidir su balde (y su
+  // valor, para el desglose de $ por categoría que pide el usuario).
+  const desistimientosPorEstado = (() => {
+    const mapa = new Map(); // estado -> {cantidad, valor}
     procesosFiltrados.forEach(p => {
       const propios = desistimientosForProceso(desistimientos, p);
-      if(!propios.length){ mapa.set('Sin desistimiento', (mapa.get('Sin desistimiento')||0)+1); return; }
-      // Normaliza may/minúsculas (dato real: "Aprobado" y "APROBADO" en el
-      // mismo campo) para que no salgan como 2 categorías separadas en el
-      // gráfico por un simple problema de digitación.
-      const crudo = stripHtml(propios[0].Aprobacion) || "Sin dato";
-      const estado = crudo === "Sin dato" ? crudo : crudo.charAt(0).toUpperCase() + crudo.slice(1).toLowerCase();
-      mapa.set(estado, (mapa.get(estado)||0)+1);
+      let estado, valor;
+      if(!propios.length){ estado = 'Sin desistimiento'; valor = 0; }
+      else {
+        // Normaliza may/minúsculas (dato real: "Aprobado" y "APROBADO" en
+        // el mismo campo) para que no salgan como 2 categorías separadas
+        // por un simple problema de digitación.
+        const crudo = stripHtml(propios[0].Aprobacion) || "Sin dato";
+        estado = crudo === "Sin dato" ? crudo : crudo.charAt(0).toUpperCase() + crudo.slice(1).toLowerCase();
+        valor = parseMonto(propios[0].DesistimientoValor);
+      }
+      const actual = mapa.get(estado) || { cantidad:0, valor:0 };
+      mapa.set(estado, { cantidad: actual.cantidad+1, valor: actual.valor+valor });
     });
-    return Array.from(mapa.entries()).map(([label,value])=>({label,value})).sort((a,b)=>b.value-a.value);
+    return Array.from(mapa.entries()).map(([label,d]) => ({ label, cantidad:d.cantidad, valor:d.valor })).sort((a,b)=>b.cantidad-a.cantidad);
   })();
+  const dataDesistimientosEstado = desistimientosPorEstado.map(d => ({ label:d.label, value:d.cantidad }));
+
+  // Exporta el panel de "Análisis de procesos por Entidad" a un .html
+  // autocontenido: los datos de la Entidad elegida quedan embebidos y los 6
+  // filtros/gráficos siguen funcionando de verdad al abrirlo, sin depender
+  // de la app ni de internet (ver [[project_dashboard_analisis_entidad]]).
+  function handleExportarHTML(){
+    try{
+      generarDashboardEntidadHTML(procesos, desistimientos, entidadSel);
+    } catch(err){
+      console.error(err);
+      notify?.("No se pudo exportar el análisis: " + err.message, 'error');
+    }
+  }
 
   return (
     <div className="view">
@@ -149,7 +172,10 @@ export default function DashboardView({ procesos, clientes = [], facturas = [], 
       </div>
 
       <div className="panel" style={{marginTop:20}}>
-        <div className="panel-head"><h3>Análisis de procesos por Entidad</h3></div>
+        <div className="panel-head">
+          <h3>Análisis de procesos por Entidad</h3>
+          <IconButton icon="html" variant="html" label="Descargar análisis interactivo (HTML)" onClick={handleExportarHTML} />
+        </div>
         <div className="panel-body">
           <div className="toolbar">
             <div
@@ -216,10 +242,20 @@ export default function DashboardView({ procesos, clientes = [], facturas = [], 
             </div>
             <div className="panel">
               <div className="panel-head"><h3>Total de desistimientos</h3></div>
-              <div className="panel-body" style={{display:'flex', alignItems:'center', minHeight:150, padding:'20px'}}>
-                {desistimientosFiltrados.length
-                  ? <StatRing layout="lado" size={110} color="var(--verde-claro)" lines={[{text:`${desistimientosFiltrados.length} desistimiento${desistimientosFiltrados.length===1?'':'s'}`}, {text:'$ '+fmtMonto(valorDesistimientos), big:true}]} />
-                  : <div className="empty-state empty-state-compact">No hay desistimientos para estos procesos.</div>}
+              <div className="panel-body" style={{padding:'20px'}}>
+                {desistimientosFiltrados.length ? (
+                  <>
+                    <StatRing layout="lado" size={90} color="var(--verde-claro)" lines={[{text:`${desistimientosFiltrados.length} desistimiento${desistimientosFiltrados.length===1?'':'s'}`}, {text:'$ '+fmtMonto(valorDesistimientos), big:true}]} />
+                    <div className="valor-por-estado-lista">
+                      {desistimientosPorEstado.map(d => (
+                        <div className="valor-por-estado-row" key={d.label}>
+                          <span className="valor-por-estado-label">{d.label}</span>
+                          <span className="valor-por-estado-valor">$ {fmtMonto(d.valor)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                ) : <div className="empty-state empty-state-compact">No hay desistimientos para estos procesos.</div>}
               </div>
             </div>
             <div className="panel">

@@ -66,6 +66,13 @@ export const ICONS = {
       <rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 6 10 7 10-7"/>
     </svg>
   ),
+  // Ventana de navegador con flecha de descarga — exportar a un .html
+  // autocontenido e interactivo (Dashboard por Entidad).
+  html: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 9h20"/><path d="M12 13v6m0 0l-2.5-2.5M12 19l2.5-2.5"/>
+    </svg>
+  ),
 };
 
 // Muchos links vienen de SharePoint sin "https://" delante (o con espacios

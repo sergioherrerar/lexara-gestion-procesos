@@ -295,6 +295,14 @@
   .stat-ring-lado-small{font-size:11.5px; color:var(--texto-suave); text-transform:uppercase; letter-spacing:.02em;}
   .stat-ring-lado-big{font-size:24px; font-weight:700; color:var(--verde-oscuro); line-height:1.15;}
 
+  /* Desglose de $ por categoría (Sin desistimiento/Aprobado/No aprobado) —
+     debajo del StatRing de "Total de desistimientos". Valores siempre
+     alineados a la derecha (regla del proyecto para toda cifra numérica). */
+  .valor-por-estado-lista{margin-top:16px; border-top:1px solid var(--gris-linea); padding-top:10px;}
+  .valor-por-estado-row{display:flex; justify-content:space-between; gap:10px; padding:5px 0; font-size:13px;}
+  .valor-por-estado-label{color:var(--texto);}
+  .valor-por-estado-valor{color:var(--verde-oscuro); font-weight:600; text-align:right; font-family:var(--font-mono);}
+
   .panel{background:#fff; border:1px solid var(--gris-linea); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden;}
   .panel-head{display:flex; align-items:center; justify-content:space-between; padding:16px 20px; border-bottom:1px solid var(--gris-linea);}
   .panel-head h3{font-family:var(--font-display); font-size:16px; font-weight:600; margin:0; color:var(--verde-oscuro);}
@@ -667,6 +675,8 @@
   .icon-btn-checklist:hover{background:var(--verde-claro); color:#fff;}
   .icon-btn-mail{color:#1d5fa3; background:#e4edf7;}
   .icon-btn-mail:hover{background:#1d5fa3; color:#fff;}
+  .icon-btn-html{color:var(--verde-oscuro); background:#e3efee;}
+  .icon-btn-html:hover{background:var(--verde-oscuro); color:#fff;}
   .icon-btn-spinning{cursor:default;}
   .icon-btn-spinning svg, .icon-btn-spinning img{animation:icon-spin .8s linear infinite;}
   @keyframes icon-spin{to{transform:rotate(360deg);}}
