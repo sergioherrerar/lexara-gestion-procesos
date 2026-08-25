@@ -60,6 +60,7 @@ export default function InformesView({ procesos, clientes, facturas, ordenesComp
   // generar. Ver [[project_tutelas_modulo]] / informeTutelas.js.
   const [fechaInformeTutelas, setFechaInformeTutelas] = useState(() => new Date().toISOString().slice(0,10));
   const [generandoTutelasPDF, setGenerandoTutelasPDF] = useState(false);
+  const [generandoCorreoTutelas, setGenerandoCorreoTutelas] = useState(false);
   const [generandoTutelasExcel, setGenerandoTutelasExcel] = useState(false);
   const [generandoGeneral, setGenerandoGeneral] = useState(false);
 
@@ -160,29 +161,50 @@ export default function InformesView({ procesos, clientes, facturas, ordenesComp
     finally { setGenerandoTutelasPDF(false); }
   }
   async function handleAbrirCorreoTutelas(){
-    // Primero intenta crear el borrador DIRECTO en Outlook por Microsoft
-    // Graph (tablas + PDF ya adjunto, sin pasos manuales) — necesita el
-    // permiso "Mail.ReadWrite" aprobado en Azure AD Y una sesión real de
-    // Microsoft 365 (nunca en modo demo — ahí no hay cuenta real, e
-    // intentarlo mostraría de la nada un popup pidiendo iniciar sesión con
-    // Microsoft, algo que no tiene sentido mientras se están viendo datos
-    // de ejemplo). Si falla por cualquier otro motivo (permiso no aprobado
-    // todavía, sin conexión, etc.), cae de vuelta al método anterior
-    // (mailto + copiar tabla al portapapeles) — nunca se queda sin abrir nada.
-    if(liveMode){
-      try{
-        const mensaje = await enviarBorradorTutelasGraph(tutelas, fechaInformeTutelas);
-        if(mensaje?.webLink) window.open(mensaje.webLink, '_blank');
-        notify?.('Se creó el borrador en Outlook con las tablas y el PDF ya adjunto — revísalo y dale Enviar cuando quieras.', 'info');
-        return;
-      }catch(err){ console.error('No se pudo crear el borrador por Graph, se usa el método anterior:', err); }
-    }
-
+    // Mientras se está creando un borrador, ignora clics repetidos — evita
+    // crear 2+ borradores duplicados si se le da clic otra vez antes de que
+    // termine el primero (bug real reportado 2026-08-24: al darle clic dos
+    // veces seguidas, la segunda pestaña abría un enlace que Outlook ya no
+    // reconocía — "es posible que este mensaje se haya movido o eliminado").
+    if(generandoCorreoTutelas) return;
+    setGenerandoCorreoTutelas(true);
     try{
-      const copiadoHtml = await abrirCorreoTutelas(tutelas, fechaInformeTutelas);
-      if(copiadoHtml) notify?.('No se pudo crear el borrador automático todavía (puede que falte aprobar el permiso nuevo en Azure AD) — se abrió el correo por el método anterior; las tablas ya están copiadas, pégalas con Ctrl+V.', 'info');
+      // Primero intenta crear el borrador DIRECTO en Outlook por Microsoft
+      // Graph (tablas + PDF ya adjunto, sin pasos manuales) — necesita el
+      // permiso "Mail.ReadWrite" aprobado en Azure AD Y una sesión real de
+      // Microsoft 365 (nunca en modo demo — ahí no hay cuenta real, e
+      // intentarlo mostraría de la nada un popup pidiendo iniciar sesión con
+      // Microsoft, algo que no tiene sentido mientras se están viendo datos
+      // de ejemplo). Si falla por cualquier otro motivo (permiso no aprobado
+      // todavía, sin conexión, etc.), cae de vuelta al método anterior
+      // (mailto + copiar tabla al portapapeles) — nunca se queda sin abrir nada.
+      if(liveMode){
+        try{
+          const mensaje = await enviarBorradorTutelasGraph(tutelas, fechaInformeTutelas);
+          if(mensaje?.webLink){
+            // Espera un momento antes de abrir el borrador recién creado:
+            // Outlook en la Web a veces tarda un instante en "ver" un correo
+            // que Microsoft Graph acaba de crear — abrir el enlace de
+            // inmediato podía mostrar "es posible que este mensaje se haya
+            // movido o eliminado" aunque el borrador sí existe (encontrado
+            // por el usuario en vivo, 2026-08-24). Con este respiro se
+            // encontró estable en las pruebas.
+            await new Promise(r => setTimeout(r, 1500));
+            window.open(mensaje.webLink, '_blank');
+          }
+          notify?.('Se creó el borrador en Outlook con las tablas y el PDF ya adjunto — revísalo y dale Enviar cuando quieras.', 'info');
+          return;
+        }catch(err){ console.error('No se pudo crear el borrador por Graph, se usa el método anterior:', err); }
+      }
+
+      try{
+        const copiadoHtml = await abrirCorreoTutelas(tutelas, fechaInformeTutelas);
+        if(copiadoHtml) notify?.('No se pudo crear el borrador automático todavía (puede que falte aprobar el permiso nuevo en Azure AD) — se abrió el correo por el método anterior; las tablas ya están copiadas, pégalas con Ctrl+V.', 'info');
+      }
+      catch(err){ console.error(err); notify?.("No se pudo abrir el correo de Tutelas: " + err.message, 'error'); }
+    } finally {
+      setGenerandoCorreoTutelas(false);
     }
-    catch(err){ console.error(err); notify?.("No se pudo abrir el correo de Tutelas: " + err.message, 'error'); }
   }
   async function handleGenerarTutelasExcel(){
     setGenerandoTutelasExcel(true);
@@ -255,7 +277,7 @@ export default function InformesView({ procesos, clientes, facturas, ordenesComp
             </div>
             <div style={{display:'flex', gap:8}}>
               <IconButton icon="pdf" variant="pdf" label="Descargar PDF de Tutelas" spinning={generandoTutelasPDF} onClick={handleGenerarTutelasPDF} />
-              <IconButton icon="mail" variant="mail" label="Abrir correo con este informe" onClick={handleAbrirCorreoTutelas} />
+              <IconButton icon="mail" variant="mail" label="Abrir correo con este informe" spinning={generandoCorreoTutelas} onClick={handleAbrirCorreoTutelas} />
               <IconButton icon="excel" variant="excel" label="Descargar Excel con todas las Tutelas" spinning={generandoTutelasExcel} onClick={handleGenerarTutelasExcel} />
             </div>
           </div>

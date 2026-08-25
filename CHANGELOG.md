@@ -3,6 +3,7 @@
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
 ## 2026-08-24
+- **Corregido un error real al abrir el borrador de correo de Tutelas ("es posible que este mensaje se haya movido o eliminado")** — pasaba al darle clic al botón "Abrir correo con este informe" una segunda vez seguida: Outlook a veces tarda un instante en reconocer un correo recién creado por Microsoft Graph, y abrirlo de inmediato mostraba ese error aunque el borrador sí existía. Ahora espera un momento antes de abrirlo, y el botón se desactiva mientras se está creando el borrador (para no crear varios de un tirón sin querer).
 - **Nuevo botón "Descargar análisis en Word" en "Análisis de procesos por Entidad" (Dashboard)** — complementa al HTML interactivo: genera un .docx formal, con el mismo membrete y firma real que las cartas de Informes en PDF, un cuadro de resumen (procesos filtrados, valor de cartera, total de desistimientos) y cada gráfico pegado como imagen (Naturaleza del Proceso, Subclasificación, Admitida, Prueba Pericial, Desistimientos). A diferencia del HTML, este queda fijo/estático una vez descargado — pensado para imprimir o enviar por correo como informe formal.
 
 ## 2026-08-22
