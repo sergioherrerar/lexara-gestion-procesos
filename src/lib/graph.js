@@ -133,26 +133,23 @@ export async function crearBorradorCorreo({ to, cc, subject, htmlBody, adjuntoNo
   }
   const mensaje = await res.json();
 
-  // Outlook en la Web a veces tarda un instante en "ver" un correo que Graph
-  // ACABA de crear — abrir su webLink de inmediato podía mostrar "es posible
-  // que este mensaje se haya movido o eliminado" aunque el borrador sí
-  // existía (bug real reportado por el usuario 2026-08-24, y otra vez
-  // 2026-08-25 después de un primer intento de arreglo con solo una espera
-  // fija). En vez de adivinar cuánto esperar, se confirma DE VERDAD que el
-  // mensaje ya se puede leer (GET repetido sobre su propio id) antes de
-  // devolverlo — quien llama recién ahí abre el webLink. Si los reintentos
-  // se agotan, igual se devuelve el mensaje (mejor abrirlo con algo de
-  // riesgo que no abrirlo nunca).
-  for(let intento=0; intento<6; intento++){
-    await new Promise(r => setTimeout(r, 700));
-    try{
-      const check = await fetch(`https://graph.microsoft.com/v1.0/me/messages/${mensaje.id}?$select=id`, {
-        headers: { Authorization:`Bearer ${token}` },
-      });
-      if(check.ok) break;
-    }catch(err){ /* red momentánea — sigue reintentando */ }
-  }
-  return mensaje;
+  // El "webLink" de un mensaje recién creado por Graph seguía mostrando "es
+  // posible que este mensaje se haya movido o eliminado" en Outlook — ni
+  // esperando un tiempo fijo (primer intento, 2026-08-24) ni confirmando con
+  // un GET repetido que el mensaje ya se puede leer por Graph (segundo
+  // intento, 2026-08-25 — el GET SÍ confirmaba que el mensaje existe, pero
+  // Outlook igual no podía abrir ESE enlace puntual) resolvió el problema:
+  // no es un tema de tiempo, es que el deeplink a un mensaje puntual no es
+  // confiable para esta cuenta/dominio (`outlook.cloud.microsoft`, el
+  // dominio unificado nuevo de Outlook, visto en capturas reales del
+  // usuario). Fix definitivo: en vez de apuntar al mensaje exacto, se abre
+  // la carpeta de Borradores completa — ahí va a estar, como el más
+  // reciente, y esa URL sí es estable. Se arma tomando el dominio real del
+  // propio `webLink` (`new URL(...).origin`) en vez de asumir uno fijo, para
+  // que siga funcionando si Microsoft cambia de dominio otra vez.
+  let carpetaBorradores = null;
+  try{ carpetaBorradores = new URL(mensaje.webLink).origin + '/mail/drafts'; }catch(err){ /* si el webLink viene raro, se ignora */ }
+  return { ...mensaje, carpetaBorradores };
 }
 
 export async function graphFetch(path, opts){

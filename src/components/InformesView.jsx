@@ -180,13 +180,14 @@ export default function InformesView({ procesos, clientes, facturas, ordenesComp
       // (mailto + copiar tabla al portapapeles) — nunca se queda sin abrir nada.
       if(liveMode){
         try{
-          // crearBorradorCorreo (graph.js) ya confirma que el mensaje se
-          // puede leer de vuelta antes de devolverlo — no hace falta esperar
-          // acá también (ver el comentario ahí: primer intento con solo una
-          // espera fija no bastó, encontrado por el usuario 2026-08-25).
           const mensaje = await enviarBorradorTutelasGraph(tutelas, fechaInformeTutelas);
-          if(mensaje?.webLink) window.open(mensaje.webLink, '_blank');
-          notify?.('Se creó el borrador en Outlook con las tablas y el PDF ya adjunto — revísalo y dale Enviar cuando quieras.', 'info');
+          // El enlace directo al correo (webLink) resultó no ser confiable
+          // para esta cuenta — seguía mostrando "es posible que este mensaje
+          // se haya movido o eliminado" aunque el borrador sí existía (visto
+          // en vivo dos veces, 2026-08-24 y 2026-08-25). Se abre la carpeta
+          // de Borradores completa en su lugar — el nuevo queda de primero.
+          if(mensaje?.carpetaBorradores) window.open(mensaje.carpetaBorradores, '_blank');
+          notify?.('Se creó el borrador en Outlook con las tablas y el PDF ya adjunto — ábrelo desde tu carpeta de Borradores (queda como el más reciente) y dale Enviar cuando quieras.', 'info');
           return;
         }catch(err){ console.error('No se pudo crear el borrador por Graph, se usa el método anterior:', err); }
       }
