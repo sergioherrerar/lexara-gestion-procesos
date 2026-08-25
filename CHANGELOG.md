@@ -3,6 +3,7 @@
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
 ## 2026-08-25
+- **El manual de usuario ya cubre los 7 módulos completos** (Tutelas, Procesos judiciales, Dashboard, Solicitud De Factura E., Órdenes de compra, Clientes y Colaborador Lexara) — antes solo tenía Tutelas. El botón en Informes ahora dice "Descargar manual completo".
 - **Nuevo manual de usuario del módulo Tutelas** — banner destacado "Manuales de usuario" al inicio de Informes, con botón para descargarlo (guía paso a paso con vistas del formulario real, más el informe diario). Se irá completando con el resto de los módulos.
 - Corregido el texto de ayuda del botón de correo de Tutelas, que todavía describía el método viejo (mailto manual) en vez del nuevo (borrador directo en Outlook con el PDF ya adjunto).
 - El borrador de correo de Tutelas ahora se crea apuntando directo a la carpeta de Borradores (antes se dejaba a Outlook decidir dónde guardarlo) y el aviso ahora confirma en qué carpeta quedó realmente guardado.

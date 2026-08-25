@@ -234,12 +234,12 @@ export default function InformesView({ procesos, clientes, facturas, ordenesComp
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
         </span>
         <div className="manuales-text">
-          <div className="manuales-label">Manuales de usuario</div>
-          <div className="manuales-sub">Guía paso a paso de cada módulo, con capturas del formulario real — se va completando de a poco.</div>
+          <div className="manuales-label">Manual de usuario</div>
+          <div className="manuales-sub">Guía paso a paso de los 7 módulos, con vistas del formulario real.</div>
         </div>
-        <a className="btn-primary" href={`${import.meta.env.BASE_URL}manuales/manual-tutelas.html`} download="Manual de usuario - Tutelas.html">
+        <a className="btn-primary" href={`${import.meta.env.BASE_URL}manuales/manual-usuario.html`} download="Manual de usuario - Lexara.html">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:14,height:14}}><path d="M12 3v13m0 0l-5-5m5 5l5-5M4 21h16"/></svg>
-          Descargar manual — Tutelas
+          Descargar manual completo
         </a>
       </div>
 

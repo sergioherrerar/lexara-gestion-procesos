@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Manual de usuario — Tutelas — Lexara</title>
+<title>Manual de usuario — Lexara Gestión de Procesos</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
@@ -189,6 +189,23 @@
   .ss-chip{display:inline-flex; padding:3px 9px; border-radius:20px; font-size:10.5px; font-weight:700;}
   .ss-chip.green{background:#e3efee; color:#004941;}
   .ss-chip.gray{background:#eceeed; color:#5c6b68;}
+  .ss-chip.orange{background:#fdf1e2; color:#b3590a;}
+  .ss-chip.red{background:#fbe4e2; color:#a3281c;}
+  .ss-tab-bar{display:flex; gap:4px; flex-wrap:wrap; margin-bottom:16px; border-bottom:1px solid #e4e4e1; padding-bottom:0;}
+  .ss-tab{font-size:12px; font-weight:600; padding:8px 14px; color:#5c6b68; border-bottom:2px solid transparent;}
+  .ss-tab.active{color:#004941; border-bottom-color:#004941;}
+  .ss-kpi-row{display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:16px;}
+  .ss-kpi{background:#fff; border:1px solid #e4e4e1; border-radius:10px; padding:12px 14px;}
+  .ss-kpi-label{font-size:9.5px; text-transform:uppercase; letter-spacing:.04em; color:#5c6b68; display:flex; align-items:center; justify-content:space-between;}
+  .ss-kpi-value{font-family:var(--font-display); font-size:20px; font-weight:600; color:#004941; margin-top:4px;}
+  .ss-checkbox-grid{display:grid; grid-template-columns:1fr 1fr; gap:8px 16px; margin:6px 0;}
+  .ss-checkbox-row{display:flex; align-items:center; gap:8px; font-size:12px; color:#1c2624;}
+  .ss-checkbox{width:14px; height:14px; border:1.5px solid #004941; border-radius:4px; flex-shrink:0; display:flex; align-items:center; justify-content:center;}
+  .ss-checkbox.checked{background:#004941;}
+  .ss-checkbox.checked svg{width:10px; height:10px; color:#fff;}
+  .ss-chip-selector{display:flex; gap:6px; flex-wrap:wrap; margin-bottom:14px;}
+  .ss-fchip{font-size:11px; font-weight:600; padding:6px 12px; border-radius:20px; border:1px solid #d8d8d4; color:#5c6b68; background:#fff;}
+  .ss-fchip.active{background:#004941; color:#fff; border-color:#004941;}
   .ss-icon-row{display:flex; gap:6px;}
   .ss-icon{width:26px; height:26px; border-radius:7px; display:flex; align-items:center; justify-content:center;}
   .ss-icon.edit{background:#e3efee; color:#004941;}
@@ -252,23 +269,49 @@
     <a href="#informes">Informe diario de Tutelas</a>
     <a href="#preguntas">Preguntas frecuentes</a>
 
-    <div class="toc-group-label">Otros módulos</div>
-    <div class="toc-module">Procesos judiciales <span class="toc-soon">Próximamente</span></div>
-    <div class="toc-module">Dashboard <span class="toc-soon">Próximamente</span></div>
-    <div class="toc-module">Solicitud de Factura E. <span class="toc-soon">Próximamente</span></div>
-    <div class="toc-module">Órdenes de compra <span class="toc-soon">Próximamente</span></div>
-    <div class="toc-module">Clientes <span class="toc-soon">Próximamente</span></div>
-    <div class="toc-module">Colaborador Lexara <span class="toc-soon">Próximamente</span></div>
+    <div class="toc-group-label">Procesos judiciales</div>
+    <a href="#pj-que-es">Qué es este módulo</a>
+    <a href="#pj-lista">La lista de Procesos</a>
+    <a href="#pj-informe-cliente">Informe para un cliente</a>
+    <a href="#pj-formulario">El formulario del proceso</a>
+    <a href="#pj-preguntas">Preguntas frecuentes</a>
+
+    <div class="toc-group-label">Dashboard</div>
+    <a href="#db-que-es">Qué es este módulo</a>
+    <a href="#db-panorama">Panorama general</a>
+    <a href="#db-entidad">Análisis por Entidad</a>
+    <a href="#db-exportar">Exportar el análisis</a>
+
+    <div class="toc-group-label">Solicitud De Factura E.</div>
+    <a href="#fa-que-es">Qué es este módulo</a>
+    <a href="#fa-lista">La lista de facturas</a>
+    <a href="#fa-formulario">Crear o editar una factura</a>
+    <a href="#fa-preguntas">Preguntas frecuentes</a>
+
+    <div class="toc-group-label">Órdenes de compra</div>
+    <a href="#oc-que-es">Qué es este módulo</a>
+    <a href="#oc-formulario">Crear o editar una orden</a>
+
+    <div class="toc-group-label">Clientes</div>
+    <a href="#cl-que-es">Qué es este módulo</a>
+    <a href="#cl-formulario">Registrar un cliente</a>
+
+    <div class="toc-group-label">Colaborador Lexara</div>
+    <a href="#co-que-es">Qué es este módulo</a>
+    <a href="#co-formulario">Crear o editar un colaborador</a>
+    <a href="#co-certificacion">Certificación en PDF</a>
+    <a href="#co-preguntas">Preguntas frecuentes</a>
   </nav>
 
   <main class="content">
     <div class="doc-header">
-      <div class="doc-eyebrow"><span class="dot"></span>Módulo 1 de 7</div>
-      <h1>Tutelas</h1>
-      <p class="lede">Cómo registrar una tutela nueva, mantenerla al día, y generar el informe diario que se envía cada mañana con las notificaciones y los vencimientos.</p>
+      <div class="doc-eyebrow"><span class="dot"></span>Manual de usuario</div>
+      <h1>Lexara — Gestión de Procesos</h1>
+      <p class="lede">Guía paso a paso de cada módulo de la aplicación — con vistas del formulario real, no capturas de pantalla que se desactualizan. Usa el menú de la izquierda para saltar a lo que necesites.</p>
     </div>
 
     <section id="que-es">
+      <div class="doc-eyebrow"><span class="dot"></span>Módulo 1 de 7 · Tutelas</div>
       <h2>Qué es este módulo</h2>
       <p>El módulo <strong>Tutelas</strong> lleva el control de cada acción de tutela que le llega al despacho: quién la notifica, contra qué Entidad, en qué juzgado, y para cuándo hay que responder. Reemplaza la planilla que se llevaba antes — cada tutela queda guardada una sola vez y cualquier persona del equipo con acceso la puede consultar o actualizar.</p>
       <p>Todos los días, el módulo también arma el <strong>informe de tutelas notificadas y por vencer</strong> — el mismo que antes se armaba a mano — listo para descargar en PDF, Excel, o enviar por correo con un clic.</p>
@@ -452,9 +495,337 @@
       </div>
     </section>
 
+    <!-- ============================= PROCESOS JUDICIALES ============================= -->
+    <section id="pj-que-es">
+      <div class="doc-eyebrow"><span class="dot"></span>Módulo 2 de 7 · Procesos judiciales</div>
+      <h2>Qué es este módulo</h2>
+      <p>Es el corazón de la aplicación: cada <strong>proceso judicial</strong> del despacho queda registrado acá — quién es el cliente, contra qué Entidad, en qué despacho, y en qué va. Desde el mismo proceso se cuelgan sus <strong>facturas</strong>, <strong>órdenes de compra</strong>, <strong>formas de pago</strong> y <strong>desistimientos</strong> — no hay que ir a buscarlos por separado.</p>
+    </section>
+
+    <section id="pj-lista">
+      <span class="step-num">1</span>
+      <h2>La lista de Procesos</h2>
+      <p class="section-sub">Se puede filtrar por Entidad con los chips de arriba, y alternar entre procesos vigentes y terminados.</p>
+
+      <div class="screen">
+        <div class="screen-bar"><span class="screen-dot"></span><span class="screen-dot"></span><span class="screen-dot"></span><span class="screen-label">Procesos judiciales</span></div>
+        <div class="screen-pad">
+          <div class="ss-topline">
+            <div><div class="ss-h1">Procesos judiciales</div><div class="ss-sub">162 de 162 procesos</div></div>
+            <button class="ss-btn">+ Nuevo proceso judicial</button>
+          </div>
+          <div class="ss-chip-selector">
+            <span class="ss-fchip active">Todos</span><span class="ss-fchip">SOS</span><span class="ss-fchip">Famisanar</span><span class="ss-fchip">Colpatria</span>
+          </div>
+          <table class="ss-table">
+            <thead><tr><th>Numero_Corto</th><th>Cliente</th><th>Despacho</th><th>Estado</th><th></th></tr></thead>
+            <tbody>
+              <tr><td>2024-00088</td><td>Servicio Occidental de Salud</td><td>Juzgado Administrativo · 23</td><td><span class="ss-chip red">3 rojo</span></td><td>⋯</td></tr>
+              <tr><td>2023-00218</td><td>Grupo Andino S.A.S.</td><td>Juzgado 45 Civil del Circuito</td><td><span class="ss-chip green">1 verde</span></td><td>⋯</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="caption">Vista real de la lista, filtrada por Entidad</div>
+      </div>
+
+      <h3>El semáforo de Estado</h3>
+      <p>El color junto al Estado te dice qué tan reciente es la última novedad del proceso, no si va bien o mal:</p>
+      <table class="field-table">
+        <tr><td><span class="ss-chip green" style="margin-right:0;">Verde</span></td><td>Última novedad hace menos de 6 meses.</td></tr>
+        <tr><td><span class="ss-chip orange" style="margin-right:0;">Naranja</span></td><td>Entre 6 meses y un año sin novedad.</td></tr>
+        <tr><td><span class="ss-chip red" style="margin-right:0;">Rojo</span></td><td>Más de un año sin novedad — o no hay ninguna fecha registrada (por seguridad, se trata como si necesitara atención).</td></tr>
+        <tr><td><span class="ss-chip gray" style="margin-right:0;">Gris</span></td><td>El proceso está <strong>Terminado</strong> — el único caso donde el color no depende de fechas.</td></tr>
+      </table>
+
+      <h3>Otras acciones</h3>
+      <ul>
+        <li><strong>Ver terminados (N)</strong> — a la derecha de los chips de Entidad, alterna entre ver los procesos vigentes o los ya terminados.</li>
+        <li>El ícono de <strong>carpeta</strong> en la columna homónima abre el link a la carpeta del proceso, si está registrado.</li>
+        <li>Por fila: <strong>ojo</strong> (ver, solo consulta), <strong>lápiz</strong> (editar, si tienes permiso), <strong>PDF</strong> (descarga una ficha de una página con los datos principales del proceso).</li>
+      </ul>
+    </section>
+
+    <section id="pj-informe-cliente">
+      <span class="step-num">2</span>
+      <h2>Informe para un cliente</h2>
+      <p class="section-sub">Justo debajo de los filtros — genera un informe para enviarle a un cliente, sin darle acceso a la aplicación.</p>
+
+      <div class="screen">
+        <div class="screen-bar"><span class="screen-dot"></span><span class="screen-dot"></span><span class="screen-dot"></span><span class="screen-label">Procesos judiciales</span></div>
+        <div class="screen-pad">
+          <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; background:linear-gradient(135deg,#e9f5f3,#f4faf9); border:1px solid #52bbb5; border-left:4px solid #004941; border-radius:12px; padding:12px 14px;">
+            <span style="font-size:12px; font-weight:600; color:#1c2624;">Informe para un cliente:</span>
+            <span style="font-size:11.5px; border:1px solid #d8d8d4; border-radius:6px; padding:5px 9px; background:#fff; color:#1c2624;">Servicio Occidental de Salud S.A. ▾</span>
+            <button class="ss-btn" style="padding:7px 12px; font-size:11.5px;">⬇ Descargar informe del cliente</button>
+          </div>
+        </div>
+        <div class="caption">Barra real, arriba de la tabla de Procesos</div>
+      </div>
+
+      <p>Elige el cliente en el desplegable y dale a <strong>"Descargar informe del cliente"</strong> — se descarga un archivo <code>.html</code> con:</p>
+      <ul>
+        <li>Cuántos procesos tiene (total, vigentes y terminados) y el valor de cartera actual sumado.</li>
+        <li>El detalle de cada proceso: número corto, despacho, estado actual e histórico completo.</li>
+        <li>Un botón grande de <strong>"Pagar factura"</strong>, que abre el portal de pagos del despacho (Davivienda).</li>
+      </ul>
+      <div class="callout tip">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        <div>Este archivo se descarga a tu computador — tú decides cuándo y a quién enviárselo (por correo, por ejemplo). No es un acceso permanente ni en vivo: es una foto de los datos al momento de generarlo.</div>
+      </div>
+    </section>
+
+    <section id="pj-formulario">
+      <span class="step-num">3</span>
+      <h2>El formulario del proceso</h2>
+      <p class="section-sub">Al abrir un proceso, la información está organizada en 6 pestañas.</p>
+
+      <div class="screen">
+        <div class="screen-bar"><span class="screen-dot"></span><span class="screen-dot"></span><span class="screen-dot"></span><span class="screen-label">2024-00088</span></div>
+        <div class="screen-pad">
+          <div class="ss-tab-bar">
+            <span class="ss-tab active">Datos generales</span><span class="ss-tab">Trazabilidad</span><span class="ss-tab">Facturas</span><span class="ss-tab">Órdenes de compra</span><span class="ss-tab">Formas de pago</span><span class="ss-tab">Desistimientos</span>
+          </div>
+          <div class="ss-field-grid">
+            <div class="ss-field"><div class="ss-field-label">No. Completo</div><div class="ss-field-value">2024-00088</div></div>
+            <div class="ss-field"><div class="ss-field-label">Entidad</div><div class="ss-field-value">SOS ▾</div></div>
+          </div>
+        </div>
+        <div class="caption">Formulario del proceso — pestaña "Datos generales" (recortado)</div>
+      </div>
+
+      <table class="field-table">
+        <tr><th>Pestaña</th><th>Qué trae</th></tr>
+        <tr><td>Datos generales</td><td>Identificación del proceso (número, radicado), Partes (demandante/demandado), Representación (Apoderado, Abogado encargado), Despacho, Estado del proceso, Valores, y enlaces/observaciones.</td></tr>
+        <tr><td>Trazabilidad</td><td>Todas las fechas del proceso (Admisión, Contestación, Último estado), Admitida / Prueba Pericial (Sí/No), y el <strong>Histórico</strong> — la bitácora narrativa completa, con texto enriquecido (negrita, subrayado, resaltado).</td></tr>
+        <tr><td>Facturas</td><td>Las facturas asociadas a este proceso (por su número de contrato) — con botón para buscar la factura electrónica en Siigo directamente desde ahí.</td></tr>
+        <tr><td>Órdenes de compra</td><td>Igual que Facturas, pero con las órdenes de compra asociadas.</td></tr>
+        <tr><td>Formas de pago</td><td>Hasta 6 pagos por contrato, cada uno con su etapa procesal, valor y factura asociada.</td></tr>
+        <tr><td>Desistimientos</td><td>Los desistimientos registrados para este proceso, si los hay.</td></tr>
+      </table>
+
+      <h3>Selects dependientes</h3>
+      <p><strong>Tipo de Acción</strong> filtra las opciones válidas de <strong>Tipo de Proceso</strong> y <strong>Despacho</strong> — elegir uno primero acota los otros dos a combinaciones reales, para no dejar datos inconsistentes.</p>
+
+      <div class="callout tip">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        <div>El formulario solo envía a SharePoint los campos que de verdad cambiaste — no reescribe todo el proceso cada vez que guardas.</div>
+      </div>
+    </section>
+
+    <section id="pj-preguntas">
+      <h2>Preguntas frecuentes</h2>
+      <div class="faq">
+        <div class="faq-item">
+          <h4>¿Por qué un proceso activo sale con el semáforo en rojo?</h4>
+          <p>Puede ser porque de verdad lleva más de un año sin novedad registrada, o porque no tiene ninguna fecha de "último estado" guardada — en ese segundo caso, el sistema prefiere marcarlo en rojo (que necesita revisión) en vez de gris, para no confundirlo con uno terminado.</p>
+        </div>
+        <div class="faq-item">
+          <h4>¿Cómo hago para ver un proceso ya terminado?</h4>
+          <p>Dale clic a "Ver terminados" arriba a la derecha de los filtros de Entidad — la lista cambia a mostrar solo los terminados, y el botón se convierte en "← Ver vigentes" para volver.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================= DASHBOARD ============================= -->
+    <section id="db-que-es">
+      <div class="doc-eyebrow"><span class="dot"></span>Módulo 3 de 7 · Dashboard</div>
+      <h2>Qué es este módulo</h2>
+      <p>Es la pantalla de inicio — un panorama en vivo de todo el despacho, más un panel para analizar los procesos de una Entidad en particular con filtros tipo Excel. <strong>Dashboard e Informes son los dos únicos módulos que ve cualquier persona que inicie sesión</strong>, sin importar sus permisos.</p>
+    </section>
+
+    <section id="db-panorama">
+      <span class="step-num">1</span>
+      <h2>Panorama general</h2>
+      <div class="screen">
+        <div class="screen-bar"><span class="screen-dot"></span><span class="screen-dot"></span><span class="screen-dot"></span><span class="screen-label">Dashboard</span></div>
+        <div class="screen-pad">
+          <div class="ss-kpi-row">
+            <div class="ss-kpi"><div class="ss-kpi-label">Procesos Lexara</div><div class="ss-kpi-value">152</div></div>
+            <div class="ss-kpi"><div class="ss-kpi-label">Tipo de Acción</div><div class="ss-kpi-value">3</div></div>
+            <div class="ss-kpi"><div class="ss-kpi-label">Clientes</div><div class="ss-kpi-value">43</div></div>
+            <div class="ss-kpi"><div class="ss-kpi-label">Facturación</div><div class="ss-kpi-value">718</div></div>
+          </div>
+        </div>
+        <div class="caption">Las 4 tarjetas de arriba del Dashboard</div>
+      </div>
+      <p>Debajo de las 4 tarjetas hay dos gráficos de barras: <strong>Procesos activos por Estado</strong> y <strong>Tipo de Acción</strong> — un vistazo rápido a cómo está compuesto todo el despacho.</p>
+    </section>
+
+    <section id="db-entidad">
+      <span class="step-num">2</span>
+      <h2>Análisis de procesos por Entidad</h2>
+      <p class="section-sub">El panel más completo del Dashboard — elige una Entidad y ve todo lo suyo con filtros tipo Excel.</p>
+
+      <ol>
+        <li>Elige una Entidad arriba de todo (o deja "Todas las entidades").</li>
+        <li>Marca casillas en cualquiera de los 6 filtros — Glosa demandada, Naturaleza del Proceso, Admitida, Subclasificación, Prueba Pericial, Etapa del proceso — para acotar. Con varias casillas marcadas en el mismo filtro, se suman (OR); entre filtros distintos, se cruzan (Y).</li>
+        <li>Los contadores, el valor de cartera y las gráficas de abajo se actualizan solos con cada filtro que marques.</li>
+      </ol>
+
+      <p>Debajo de los filtros: <strong>Procesos filtrados</strong> y <strong>Valor cartera actual</strong> como contadores grandes, gráficos de <strong>Naturaleza del Proceso</strong> y <strong>Subclasificación</strong> (barras), <strong>Procesos Admitidos</strong> y <strong>Prueba Pericial</strong> (torta), y dos vistas de <strong>Desistimientos</strong> — cuántos hay y su valor total, y cuántos están Aprobados/No aprobados/Sin desistimiento.</p>
+
+      <div class="callout tip">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        <div>Las opciones de cada filtro (con su cuenta al lado) se calculan sobre TODOS los procesos de la Entidad elegida — no se van angostando entre sí. Solo lo que ves contado/graficado abajo respeta todos los filtros marcados a la vez.</div>
+      </div>
+    </section>
+
+    <section id="db-exportar">
+      <span class="step-num">3</span>
+      <h2>Exportar el análisis</h2>
+      <p>Arriba a la derecha del panel "Análisis de procesos por Entidad" hay 2 botones:</p>
+      <table class="field-table">
+        <tr><th>Botón</th><th>Qué genera</th></tr>
+        <tr><td>HTML interactivo</td><td>Un archivo que se puede abrir en cualquier navegador — los filtros y las gráficas siguen funcionando de verdad, sin conexión ni depender de la aplicación.</td></tr>
+        <tr><td>Word</td><td>Un documento formal (.docx), con el mismo membrete de las cartas del despacho, un resumen y cada gráfico pegado como imagen — pensado para imprimir o enviar como informe.</td></tr>
+      </table>
+      <p>Los dos exportan la Entidad y los filtros que tengas elegidos en ese momento.</p>
+    </section>
+
+    <!-- ============================= SOLICITUD DE FACTURA E. ============================= -->
+    <section id="fa-que-es">
+      <div class="doc-eyebrow"><span class="dot"></span>Módulo 4 de 7 · Solicitud De Factura E.</div>
+      <h2>Qué es este módulo</h2>
+      <p>Lleva el control de cada factura que emite el despacho: a quién, por qué contrato, con qué líneas de cobro, y en qué estado va (Radicada, Pagada, Anulada).</p>
+    </section>
+
+    <section id="fa-lista">
+      <span class="step-num">1</span>
+      <h2>La lista de facturas</h2>
+      <div class="screen">
+        <div class="screen-bar"><span class="screen-dot"></span><span class="screen-dot"></span><span class="screen-dot"></span><span class="screen-label">Solicitud De Factura E.</span></div>
+        <div class="screen-pad">
+          <table class="ss-table">
+            <thead><tr><th>No. factura</th><th>Cliente</th><th>Contrato</th><th>Total</th><th>Estado</th><th></th></tr></thead>
+            <tbody>
+              <tr><td>804</td><td>Constructora del Sur Ltda.</td><td>CT-2022-076</td><td>6.188.000,00</td><td><span class="ss-chip green">Pagada</span></td><td>⋯</td></tr>
+              <tr><td>803</td><td>Grupo Andino S.A.S.</td><td>CT-2023-118</td><td>3.501.810,03</td><td><span class="ss-chip orange">Radicada</span></td><td>⋯</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="caption">Vista real de Solicitud De Factura E.</div>
+      </div>
+      <p>Por cada factura: <strong>lápiz</strong> (ver/editar), <strong>impresora</strong> (imprime la factura con el membrete del despacho), y una tercera acción para <strong>buscar y abrir la factura electrónica en Siigo</strong> — la busca automáticamente por su número, sin que tengas que ir a Siigo a buscarla a mano.</p>
+    </section>
+
+    <section id="fa-formulario">
+      <span class="step-num">2</span>
+      <h2>Crear o editar una factura</h2>
+      <table class="field-table">
+        <tr><th>Sección</th><th>Qué trae</th></tr>
+        <tr><td>Relaciones</td><td>Cliente, Ciudad, y Número de contrato (con buscador — al elegir un contrato existente, el Proceso relacionado se completa solo).</td></tr>
+        <tr><td>Datos generales</td><td>Proceso, Estado de factura (Radicada/Pagada/Anulada), Día/Mes/Año, Etapa contrato, Observación.</td></tr>
+        <tr><td>Líneas de detalle</td><td>Hasta 6 líneas de Descripción/Cantidad/Valor unitario — el Total de cada línea se calcula solo.</td></tr>
+        <tr><td>Totales</td><td>Subtotal, IVA (19%) y Total — los calcula SharePoint automáticamente a partir de las líneas; lo que ves mientras editas es una vista previa.</td></tr>
+      </table>
+      <div class="callout tip">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        <div>El <strong>número de factura</strong> no se escribe a mano — se asigna solo al guardar por primera vez, y ya no cambia.</div>
+      </div>
+    </section>
+
+    <section id="fa-preguntas">
+      <h2>Preguntas frecuentes</h2>
+      <div class="faq">
+        <div class="faq-item">
+          <h4>¿Por qué no puedo escribir el Subtotal o el Total a mano?</h4>
+          <p>Son columnas que calcula SharePoint solo, a partir de las líneas de detalle — nunca se editan directamente, ni desde la aplicación ni desde Excel.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================= ÓRDENES DE COMPRA ============================= -->
+    <section id="oc-que-es">
+      <div class="doc-eyebrow"><span class="dot"></span>Módulo 5 de 7 · Órdenes de compra</div>
+      <h2>Qué es este módulo</h2>
+      <p>Funciona igual que Solicitud De Factura E. — mismas secciones (Relaciones, Datos generales, Líneas de detalle, Totales) y el mismo formulario de líneas — solo que para órdenes de compra en vez de facturas.</p>
+    </section>
+
+    <section id="oc-formulario">
+      <span class="step-num">1</span>
+      <h2>Qué cambia frente a Facturación</h2>
+      <ul>
+        <li>El número de la orden es directamente su número interno — no hay que escribirlo.</li>
+        <li>Trae un campo extra, <strong>"Factura relacionada"</strong>, que se completa solo si existe una factura con el mismo número de contrato.</li>
+        <li>El botón "Imprimir" genera la hoja "Solicitud de número orden de compra", con el mismo membrete institucional.</li>
+      </ul>
+    </section>
+
+    <!-- ============================= CLIENTES ============================= -->
+    <section id="cl-que-es">
+      <div class="doc-eyebrow"><span class="dot"></span>Módulo 6 de 7 · Clientes</div>
+      <h2>Qué es este módulo</h2>
+      <p>El directorio de empresas cliente del despacho — Razón social, NIT, dirección, teléfono, correo y la Entidad a la que pertenecen. La columna <strong>"Procesos"</strong> de la lista cuenta, para cada cliente, cuántos procesos tiene registrados.</p>
+    </section>
+
+    <section id="cl-formulario">
+      <span class="step-num">1</span>
+      <h2>Registrar un cliente</h2>
+      <p>El formulario es una sola sección con 6 campos: <strong>Razón social, NIT, Dirección, Teléfono, Correo</strong> y <strong>Entidad</strong>. No tiene pestañas ni campos dependientes — se llena y se guarda.</p>
+      <div class="callout tip">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        <div>El nombre del Cliente que eliges en Tutelas, Facturas u Órdenes de compra sale de esta misma lista — mantenerla completa y sin duplicados ayuda a que esos formularios funcionen bien.</div>
+      </div>
+    </section>
+
+    <!-- ============================= COLABORADOR LEXARA ============================= -->
+    <section id="co-que-es">
+      <div class="doc-eyebrow"><span class="dot"></span>Módulo 7 de 7 · Colaborador Lexara</div>
+      <h2>Qué es este módulo</h2>
+      <p>El directorio del equipo del despacho — y también donde se controla <strong>qué módulos puede ver cada persona</strong> cuando inicia sesión. Solo lo ven los Administradores.</p>
+    </section>
+
+    <section id="co-formulario">
+      <span class="step-num">1</span>
+      <h2>Crear o editar un colaborador</h2>
+      <p>Datos personales (Nombre, Correo, Identificación, Teléfono, Dirección), más <strong>Rol</strong> (informativo), <strong>Tipo de colaborador</strong> (Trabajador o Contratista), <strong>Cargo</strong>, y <strong>Fecha de ingreso / retiro</strong>.</p>
+
+      <div class="screen">
+        <div class="screen-bar"><span class="screen-dot"></span><span class="screen-dot"></span><span class="screen-dot"></span><span class="screen-label">Colaborador Lexara</span></div>
+        <div class="screen-pad">
+          <div class="ss-section-label" style="margin-top:0;">Acceso a módulos</div>
+          <div class="ss-checkbox-grid">
+            <label class="ss-checkbox-row"><span class="ss-checkbox checked"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></span>Procesos judiciales</label>
+            <label class="ss-checkbox-row"><span class="ss-checkbox checked"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></span>Tutelas</label>
+            <label class="ss-checkbox-row"><span class="ss-checkbox"></span>Clientes</label>
+            <label class="ss-checkbox-row"><span class="ss-checkbox"></span>Solicitud De Factura E.</label>
+          </div>
+          <label class="ss-checkbox-row" style="margin-top:8px;"><span class="ss-checkbox"></span>Solo lectura (puede consultar e imprimir, pero no crear, editar ni eliminar)</label>
+        </div>
+        <div class="caption">"Acceso a módulos" — formulario real de Colaborador Lexara</div>
+      </div>
+
+      <p>Marca solo los módulos que esa persona debe poder ver. <strong>Dashboard e Informes quedan siempre visibles para cualquiera que inicie sesión</strong>, no hace falta marcarlos.</p>
+      <p>La casilla <strong>"Solo lectura"</strong> le deja consultar e imprimir todo lo que tenga marcado arriba, pero sin crear, editar ni eliminar nada.</p>
+    </section>
+
+    <section id="co-certificacion">
+      <span class="step-num">2</span>
+      <h2>Certificación en PDF</h2>
+      <p>El botón con ícono de PDF, junto a cada colaborador en la lista, genera una <strong>certificación laboral</strong> (para Trabajadores) o <strong>de prestación de servicios</strong> (para Contratistas) — con el cargo real, las fechas de ingreso/retiro, y la firma del despacho.</p>
+      <div class="callout warn">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01M10.3 3.9L2.5 18a1.5 1.5 0 0 0 1.3 2.2h16.4a1.5 1.5 0 0 0 1.3-2.2L13.7 3.9a1.5 1.5 0 0 0-2.6 0z"/></svg>
+        <div>Necesita que el colaborador tenga <strong>Cargo</strong> y <strong>Fecha de ingreso</strong> completos — si falta alguno, el botón avisa en vez de generar un PDF con datos vacíos.</div>
+      </div>
+    </section>
+
+    <section id="co-preguntas">
+      <h2>Preguntas frecuentes</h2>
+      <div class="faq">
+        <div class="faq-item">
+          <h4>¿Qué pasa si no marco ningún módulo?</h4>
+          <p>Esa persona solo va a poder ver Dashboard e Informes al iniciar sesión — los únicos dos que quedan visibles para cualquiera, siempre.</p>
+        </div>
+        <div class="faq-item">
+          <h4>¿El "Rol" (Administrador/Jefe/Colaborador) todavía sirve para algo?</h4>
+          <p>Es solo informativo hoy en día — lo que de verdad decide qué ve cada persona es "Acceso a módulos". El Rol se sigue guardando como referencia, y como respaldo para colaboradores antiguos que todavía no tengan sus módulos marcados.</p>
+        </div>
+      </div>
+    </section>
+
     <footer class="doc-footer">
       Manual de usuario — Lexara Gestión de Procesos · MD Abogados SAS<br>
-      Este manual se irá completando módulo por módulo.
+      Guía completa de los 7 módulos — se irá actualizando a medida que la aplicación cambie.
     </footer>
   </main>
 </div>
