@@ -363,6 +363,21 @@
   .filter-chip-terminados:hover{color:#b3590a; border-color:#b3590a;}
   .filter-chip-terminados.active{background:var(--naranja); color:#fff; border-color:var(--naranja);}
   .filter-chip-terminados.active:hover{color:#fff;}
+  /* Barra "Informe para un cliente" (Procesos judiciales) — desplegable de
+     Cliente + botón para descargar el informe HTML de ese cliente (con
+     botón de pago adentro) — ver exportarInformeCliente.js. */
+  .informe-cliente-bar{
+    display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+    background:#fff; border:1px solid var(--gris-linea); border-radius:var(--radius);
+    padding:12px 16px; margin-bottom:16px;
+  }
+  .informe-cliente-label{font-size:13px; font-weight:600; color:var(--texto); flex-shrink:0;}
+  .informe-cliente-bar select{
+    border:1px solid var(--gris-linea); border-radius:7px; padding:8px 10px;
+    font-size:13.5px; font-family:var(--font-body); color:var(--texto); background:#fff;
+    min-width:260px; flex:1; max-width:420px;
+  }
+  .informe-cliente-bar select:focus{outline:none; border-color:var(--verde-claro);}
   .table-wrap{background:#fff; border:1px solid var(--gris-linea); border-radius:var(--radius); box-shadow:var(--shadow); overflow-x:auto; -webkit-overflow-scrolling:touch;}
   table{width:100%; border-collapse:collapse; font-size:13.5px;}
   thead th{
@@ -682,6 +697,8 @@
   .icon-btn-html:hover{background:var(--verde-oscuro); color:#fff;}
   .icon-btn-word{color:#1d5fa3; background:#e4edf7;}
   .icon-btn-word:hover{background:#1d5fa3; color:#fff;}
+  .icon-btn-pay{color:#d2151b; background:#fbe4e4;}
+  .icon-btn-pay:hover{background:#d2151b; color:#fff;}
   .icon-btn-spinning{cursor:default;}
   .icon-btn-spinning svg, .icon-btn-spinning img{animation:icon-spin .8s linear infinite;}
   @keyframes icon-spin{to{transform:rotate(360deg);}}

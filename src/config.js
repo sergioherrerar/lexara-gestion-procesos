@@ -17,6 +17,15 @@ export const INITIAL_CONFIG = {
   // ("F0030000000008040000.pdf"). Ver siigoNombresPosibles/abrirFacturaSiigo
   // en graph.js y [[project_facturacion_data_model]].
   SIIGO_SHARE_URL: "https://mydabogados.sharepoint.com/:f:/g/IgAk0b_81snoRKb78a5dUN0iAQOpYavGi8KaHX16JhvFC90?e=vJOmB3",
+  // Portal de pagos del comercio "MD" en Davivienda (código 16310) —
+  // entregado por el banco 2026-08-25. Es un formulario de LLENADO MANUAL
+  // (concepto, valor, cliente, etc. — no acepta esos datos por parámetros de
+  // URL, se probó con captura real del formulario), así que el botón de
+  // "Pagar" solo abre este mismo enlace fijo en una pestaña nueva — no hay
+  // forma de pre-llenar el valor/número de factura todavía. Si Davivienda
+  // llega a dar documentación de parámetros soportados, ahí sí se podría
+  // armar el link por factura.
+  DAVIVIENDA_PAGOS_URL: "https://portalpagos.davivienda.com/#/comercio/16310/MD",
 };
 
 // =========================================================================

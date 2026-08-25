@@ -102,6 +102,8 @@ export default function App(){
             onOpenProceso={app.openProceso}
             onCreateProceso={app.newProceso}
             canWrite={app.canWrite}
+            config={app.config}
+            notify={app.notify}
           />
         )}
         {app.view === 'tutelas' && canAccessView(app.modulosPermitidos, 'tutelas') && (
