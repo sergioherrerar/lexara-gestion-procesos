@@ -180,10 +180,13 @@
     margin-bottom:2px;
     position:relative;
   }
-  .nav-item .mark{opacity:0; transform:translateX(-4px); transition:.15s ease; color:var(--verde-claro);}
   .nav-item:hover{background:rgba(255,255,255,.06);}
   .nav-item.active{background:rgba(255,255,255,.1); color:#fff;}
-  .nav-item.active .mark{opacity:1; transform:translateX(0);}
+  /* Ícono propio por módulo, SIEMPRE visible (antes solo la marca de Lexara
+     aparecía, y solo en el ítem activo) — ver Sidebar.jsx. */
+  .nav-item-icon{width:18px; height:18px; flex-shrink:0; color:rgba(255,255,255,.65); transition:color .15s ease;}
+  .nav-item-icon svg{width:100%; height:100%; display:block;}
+  .nav-item.active .nav-item-icon{color:var(--verde-claro);}
   .nav-item .dot{width:6px; height:6px; border-radius:50%; background:currentColor; opacity:.5; flex-shrink:0;}
   .sidebar-foot{
     margin-top:auto;

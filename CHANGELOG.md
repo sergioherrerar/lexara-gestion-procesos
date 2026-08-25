@@ -3,6 +3,7 @@
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
 ## 2026-08-25
+- **Cada módulo del menú lateral ahora tiene su propio ícono, siempre visible** (antes solo se veía la marca de Lexara, y únicamente en el módulo activo) — Dashboard, Informes, Procesos judiciales, Tutelas, Clientes, Solicitud De Factura E., Órdenes de compra, Colaborador Lexara y Configuración. De paso corrige que en pantallas de tablet (donde el menú se angosta y solo se ven íconos) los módulos no activos quedaban invisibles.
 - **La aplicación ahora vive en DOS sitios en vivo a la vez**: el de siempre en GitHub Pages, y ahora también en el dominio propio del despacho, `https://www.lexaraabogados.com/app/` (hosting por cPanel). Se agregó el permiso de inicio de sesión (Azure AD) para la dirección nueva y se configuró el build para que cada sitio use sus propios archivos correctamente. De ahora en adelante, cada publicación se sube a los dos lugares.
 
 ## 2026-08-24
