@@ -505,10 +505,8 @@ export const SHAREPOINT_LISTS_CONFIG = [
     },
   },
   // ------------------------------------------------------------------
-  // Módulo "Tutelas" (agregado 2026-08-16) — nombres reales de lista y
-  // mapeo TODAVÍA sin confirmar (se adivinó cada campo a partir del
-  // formulario Access original que el usuario mostró) — se confirman uno
-  // a uno desde Configuración, igual que se hizo con Procesos Judiciales.
+  // Módulo "Tutelas" (agregado 2026-08-16) — mapeo confirmado y horneado en
+  // el código desde 2026-08-25 (antes solo vivía en Configuración/localStorage).
   // ------------------------------------------------------------------
   {
     key: "tutelas",
@@ -544,7 +542,34 @@ export const SHAREPOINT_LISTS_CONFIG = [
       // Historico/Observaciones en Procesos Judiciales.
       {key:"Solicita", label:"Solicita", hint:["solicita"]},
     ],
-    mapping: {},
+    // Mapeo real completo, confirmado por el usuario desde Configuración y
+    // exportado el 2026-08-25 ("mira el mapeo si quedó bien") — se deja
+    // horneado acá, mismo criterio que Procesos Judiciales arriba, para que
+    // no haga falta rehacer Configuración en ninguno de los 2 sitios en vivo
+    // (GitHub Pages + cPanel — cada uno tiene su propio localStorage, ver
+    // [[project_deploy_workflow]] y [[project_mapping_persistence_and_link_fields]]).
+    mapping: {
+      NoTutela: "No_x0020_Tutela",
+      Cliente: "Cliente",
+      Entidad: "Entidad",
+      TipoVinculacionEntidad: "Tipo_x0020_Vinculacion_x0020_Ent",
+      MedidaCautelar: "Medida_x0020_Cautelar",
+      Departamento: "Departamento",
+      Ciudad: "Ciudad",
+      Proceso: "Proceso",
+      FechaNotificacion: "fecha_x0020_Notificacion",
+      FechaVencimiento: "Vencimiento",
+      Prestacion: "Prestacion",
+      TipoRespuesta: "Tipo_x0020_Respuesta",
+      AbogadoRespuesta: "Abogado_x0020_Tutela",
+      Tema: "Tema",
+      AgenciaOficiosa: "Agencia_x0020_oficiosa",
+      Usuario: "Usuario",
+      NoIdentificacion: "No_x0020_Identificacion",
+      Juzgado: "juzgado",
+      Correo: "Correo_x0020_Juzgados",
+      Solicita: "Solicita",
+    },
   },
   // Lista de referencia para el select "Tema" de Tutelas — sin panel propio
   // por ahora, el botón "Editar Tema" del panel de Tutela edita/crea
@@ -564,7 +589,11 @@ export const SHAREPOINT_LISTS_CONFIG = [
       {key:"PrestacionTema", label:"Prestación Tema", hint:["prestacion tema","prestación tema"]},
       {key:"ClienteTema", label:"Cliente Tema", hint:["cliente tema"]},
     ],
-    mapping: {},
+    mapping: {
+      Nombre: "Tema",
+      PrestacionTema: "PrestacionTema",
+      ClienteTema: "ClienteTema",
+    },
   },
   // Lista de referencia para "Valores Entidad" — igual que "Tema", el botón
   // "Editar Valor Entidad" del panel de Tutela edita/crea registros acá.
@@ -584,7 +613,14 @@ export const SHAREPOINT_LISTS_CONFIG = [
       {key:"LinkCarpetas", label:"Link Carpetas", hint:["link carpetas"]},
       {key:"LinkFormatos", label:"Link Formatos", hint:["link formatos"]},
     ],
-    mapping: {},
+    mapping: {
+      Entidad: "Entidad",
+      Tipo: "Tipo",
+      ValorEntidad: "Valor_x0020_Entidad",
+      ValorAbogado: "Valor_x0020_Abogado",
+      LinkCarpetas: "Link_x0020_carpetas",
+      LinkFormatos: "Link_x0020_formatos",
+    },
   },
 ];
 
