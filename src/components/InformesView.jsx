@@ -279,7 +279,7 @@ export default function InformesView({ procesos, clientes, facturas, ordenesComp
               <IconButton icon="excel" variant="excel" label="Descargar Excel con todas las Tutelas" spinning={generandoTutelasExcel} onClick={handleGenerarTutelasExcel} />
             </div>
           </div>
-          <p className="save-hint" style={{marginTop:10}}>El botón de correo abre un borrador en tu cliente de correo (Outlook, si es el predeterminado) con destinatarios y asunto listos — el PDF se descarga aparte y hay que adjuntarlo a mano antes de enviar. El Excel descarga todas las Tutelas (no solo las de la fecha elegida arriba).</p>
+          <p className="save-hint" style={{marginTop:10}}>El botón de correo crea el borrador directo en tu buzón de Outlook, con las tablas y el PDF ya adjunto — ábrelo desde tu carpeta de Borradores y dale Enviar. Si por algún motivo no se puede crear así, se abre un borrador con `mailto:` en su lugar (con destinatarios y asunto listos, pero hay que pegar/adjuntar el contenido a mano). El Excel descarga todas las Tutelas (no solo las de la fecha elegida arriba).</p>
         </div>
       </div>
 
