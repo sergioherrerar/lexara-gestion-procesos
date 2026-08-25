@@ -122,7 +122,15 @@ export async function crearBorradorCorreo({ to, cc, subject, htmlBody, adjuntoNo
       contentBytes: adjuntoBase64,
     }] : [],
   };
-  const res = await fetch('https://graph.microsoft.com/v1.0/me/messages', {
+  // POST directo a la carpeta "drafts" (nombre bien-conocido de Graph,
+  // resuelve solo al ID real de esa carpeta en esta cuenta) en vez del
+  // endpoint genérico /me/messages — que por documentación de Microsoft
+  // debería crear el borrador en Drafts igual, pero en la práctica el
+  // usuario confirmó en vivo (2026-08-25) que el borrador ni siquiera
+  // aparecía en Borradores después de un F5 — así que se apunta explícito a
+  // esa carpeta, sin dejarlo a un comportamiento por defecto que en esta
+  // cuenta no se estaba cumpliendo.
+  const res = await fetch('https://graph.microsoft.com/v1.0/me/mailFolders/drafts/messages', {
     method: "POST",
     headers: { Authorization:`Bearer ${token}`, "Content-Type":"application/json" },
     body: JSON.stringify(body),
@@ -138,18 +146,29 @@ export async function crearBorradorCorreo({ to, cc, subject, htmlBody, adjuntoNo
   // esperando un tiempo fijo (primer intento, 2026-08-24) ni confirmando con
   // un GET repetido que el mensaje ya se puede leer por Graph (segundo
   // intento, 2026-08-25 — el GET SÍ confirmaba que el mensaje existe, pero
-  // Outlook igual no podía abrir ESE enlace puntual) resolvió el problema:
-  // no es un tema de tiempo, es que el deeplink a un mensaje puntual no es
-  // confiable para esta cuenta/dominio (`outlook.cloud.microsoft`, el
-  // dominio unificado nuevo de Outlook, visto en capturas reales del
-  // usuario). Fix definitivo: en vez de apuntar al mensaje exacto, se abre
-  // la carpeta de Borradores completa — ahí va a estar, como el más
-  // reciente, y esa URL sí es estable. Se arma tomando el dominio real del
-  // propio `webLink` (`new URL(...).origin`) en vez de asumir uno fijo, para
-  // que siga funcionando si Microsoft cambia de dominio otra vez.
+  // Outlook igual no podía abrir ESE enlace puntual) resolvió el problema.
+  // Tercer intento (abrir la carpeta completa en vez del mensaje puntual)
+  // TAMPOCO bastó — el usuario confirmó que ni con F5 aparecía ahí. Se arma
+  // igual la URL de la carpeta (para cuando sí funcione) tomando el dominio
+  // real del propio `webLink`, y ADEMÁS se busca en qué carpeta quedó
+  // REALMENTE el mensaje (`parentFolderId` → nombre real de la carpeta) para
+  // poder confirmarlo con datos reales en vez de seguir adivinando.
   let carpetaBorradores = null;
   try{ carpetaBorradores = new URL(mensaje.webLink).origin + '/mail/drafts'; }catch(err){ /* si el webLink viene raro, se ignora */ }
-  return { ...mensaje, carpetaBorradores };
+  let carpetaReal = null;
+  try{
+    const detalle = await fetch(`https://graph.microsoft.com/v1.0/me/messages/${mensaje.id}?$select=parentFolderId`, {
+      headers: { Authorization:`Bearer ${token}` },
+    });
+    if(detalle.ok){
+      const { parentFolderId } = await detalle.json();
+      const folderRes = await fetch(`https://graph.microsoft.com/v1.0/me/mailFolders/${parentFolderId}?$select=displayName`, {
+        headers: { Authorization:`Bearer ${token}` },
+      });
+      if(folderRes.ok) carpetaReal = (await folderRes.json()).displayName;
+    }
+  }catch(err){ /* diagnóstico best-effort — no debe romper la creación del borrador */ }
+  return { ...mensaje, carpetaBorradores, carpetaReal };
 }
 
 export async function graphFetch(path, opts){

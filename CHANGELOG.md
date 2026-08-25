@@ -3,6 +3,7 @@
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
 ## 2026-08-25
+- El borrador de correo de Tutelas ahora se crea apuntando directo a la carpeta de Borradores (antes se dejaba a Outlook decidir dónde guardarlo) y el aviso ahora confirma en qué carpeta quedó realmente guardado.
 - **Cambiado definitivamente cómo se abre el borrador de correo de Tutelas** — el enlace directo al correo (que seguía mostrando "es posible que este mensaje se haya movido o eliminado" incluso después del intento anterior) resultó no ser confiable para esta cuenta; ahora se abre directamente la carpeta de Borradores de Outlook, donde el nuevo borrador queda como el más reciente.
 - **El mapeo de Tutelas/Tema/Valores Entidad quedó fijo en el código** (ya no depende de Configuración/localStorage) — con los dos sitios en vivo (GitHub Pages + cPanel) cada uno guardaba su propia configuración por separado; ahora los tres módulos funcionan igual en cualquiera de los dos sin tener que volver a mapear nada.
 - El "Informe para un cliente" (Procesos judiciales) ahora incluye el **Histórico completo de cada proceso** (además del Estado actual), uno al lado del otro en una tarjeta por proceso — antes solo traía el Estado. La barra del desplegable de cliente también se hizo más visible (tinte verde, borde e ícono propio).
