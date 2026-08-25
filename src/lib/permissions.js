@@ -38,12 +38,12 @@ const VISTAS_SIEMPRE_VISIBLES = ['dashboard', 'informes'];
 // 2026-08-25: el módulo "Colaborador Lexara" se renombró/movió dentro de
 // "Administración" (junto con Vacaciones/Certificaciones/Documentos de la
 // empresa, ver [[project_administracion_modulo]]) — pedido explícito del
-// usuario: "en permisos solo los administradores". A diferencia del resto
-// de módulos (que Jefe también tenía), Administración quedó SOLO en el
-// respaldo legado del Rol Administrador — un Jefe (por ejemplo la propia
-// Gerente) NO lo ve automáticamente aunque antes sí viera "Colaborador
-// Lexara"; si alguien más necesita entrar, hay que marcarle la casilla
-// "Administración" a mano en Módulos permitidos (no es un cambio de código).
+// usuario: "en permisos solo los administradores". Por eso, para alguien SIN
+// nada guardado todavía en Módulos permitidos (cae acá, al respaldo por
+// Rol), Administración queda SOLO para Administrador — un Jefe nuevo no lo
+// vería de entrada, habría que marcarle la casilla a mano. (Quien YA tenía
+// "colaboradores" guardado explícitamente sigue viéndolo igual gracias al
+// alias conAliasAdministracion() de abajo — no perdió nada con el rename.)
 const MODULOS_POR_ROL_LEGADO = {
   Administrador: ['procesos','tutelas','clientes','facturacion','ordenesCompra','administracion','setup'],
   Jefe: ['procesos','tutelas','clientes','facturacion','ordenesCompra'],
@@ -60,6 +60,21 @@ export function serializeModulosPermitidos(lista){
   return (lista || []).filter(Boolean).join(',');
 }
 
+// 'colaboradores' era la clave vieja del módulo, antes de renombrarlo a
+// 'administracion' (ver [[project_administracion_modulo]]) — pero mucha
+// gente YA tenía "colaboradores" guardado tal cual en su propia columna real
+// de SharePoint "Módulos permitidos" (no dependían del respaldo por Rol).
+// Sin este alias esas personas perdían el acceso de la nada — bug real
+// reportado 2026-08-25 ("no se ve administración"), incluso para el propio
+// Administrador, porque una lista EXPLÍCITA siempre gana sobre el respaldo
+// legado (ver modulosPermitidosDe). Se normaliza acá, en un solo lugar, en
+// vez de tener que volver a guardar el campo de cada persona en SharePoint.
+function conAliasAdministracion(lista){
+  return lista.includes('colaboradores') && !lista.includes('administracion')
+    ? [...lista, 'administracion']
+    : lista;
+}
+
 function esVerdadero(v){
   return v === true || v === 1 || (typeof v === 'string' && /^(s[ií]|true|1)$/i.test(v.trim()));
 }
@@ -70,8 +85,8 @@ function esVerdadero(v){
 export function modulosPermitidosDe(colaborador){
   if(!colaborador) return MODULOS_SIN_REGISTRAR;
   const explicitos = parseModulosPermitidos(colaborador.ModulosPermitidos);
-  if(explicitos.length) return explicitos;
-  return MODULOS_POR_ROL_LEGADO[colaborador.Rol] || MODULOS_SIN_REGISTRAR;
+  if(explicitos.length) return conAliasAdministracion(explicitos);
+  return conAliasAdministracion(MODULOS_POR_ROL_LEGADO[colaborador.Rol] || MODULOS_SIN_REGISTRAR);
 }
 
 export function canAccessView(modulosPermitidos, view){
