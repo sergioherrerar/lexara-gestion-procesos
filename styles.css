@@ -388,6 +388,27 @@
     min-width:260px; flex:1; max-width:420px;
   }
   .informe-cliente-bar select:focus{outline:none; border-color:var(--verde-claro);}
+
+  /* Barra "Manuales de usuario" (Informes) — mismo tratamiento visual que
+     .informe-cliente-bar (tinte, borde izquierdo, ícono) para que sea igual
+     de fácil de ver — pedido explícito del usuario. */
+  .manuales-bar{
+    display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+    background:linear-gradient(135deg, #e9f5f3, #f4faf9);
+    border:1px solid var(--verde-claro); border-left:4px solid var(--verde-oscuro);
+    border-radius:var(--radius); box-shadow:var(--shadow);
+    padding:16px 18px; margin-bottom:20px;
+  }
+  .manuales-icon{
+    width:34px; height:34px; flex-shrink:0; border-radius:50%;
+    background:var(--verde-oscuro); color:#fff;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .manuales-icon svg{width:17px; height:17px;}
+  .manuales-text{flex:1; min-width:220px;}
+  .manuales-label{font-size:14.5px; font-weight:700; color:var(--verde-oscuro);}
+  .manuales-sub{font-size:12.5px; color:var(--texto-suave); margin-top:2px;}
+  .manuales-bar .btn-primary{flex-shrink:0; text-decoration:none;}
   .table-wrap{background:#fff; border:1px solid var(--gris-linea); border-radius:var(--radius); box-shadow:var(--shadow); overflow-x:auto; -webkit-overflow-scrolling:touch;}
   table{width:100%; border-collapse:collapse; font-size:13.5px;}
   thead th{

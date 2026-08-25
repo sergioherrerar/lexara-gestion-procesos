@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Manual de usuario — Tutelas — Lexara</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f4f4f2;
+    --surface:#ffffff;
+    --surface-2:#fbfbfa;
+    --border:#e4e4e1;
+    --border-soft:#ececea;
+    --text:#1c2624;
+    --text-soft:#5c6b68;
+    --text-faint:#8a9591;
+    --accent:#004941;
+    --accent-2:#52bbb5;
+    --accent-2-tint:#e3f3f1;
+    --accent-warm:#ef7d00;
+    --accent-warm-tint:#fdf1e2;
+    --red:#a3281c;
+    --red-tint:#fbe4e2;
+    --blue:#1d5fa3;
+    --blue-tint:#e4edf7;
+    --shadow:0 1px 3px rgba(0,20,18,.07), 0 8px 24px rgba(0,20,18,.04);
+    --radius:14px;
+    --font-display:'Fraunces', Georgia, serif;
+    --font-body:'Inter', system-ui, sans-serif;
+    --font-mono:'JetBrains Mono', ui-monospace, monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#0c1613;
+      --surface:#13201c;
+      --surface-2:#0f1a17;
+      --border:#223530;
+      --border-soft:#1b2a26;
+      --text:#eaf2f0;
+      --text-soft:#9fb3ad;
+      --text-faint:#6c8380;
+      --accent:#5fc9c1;
+      --accent-2:#3a8f88;
+      --accent-2-tint:#16302c;
+      --accent-warm:#f2954a;
+      --accent-warm-tint:#2c2013;
+      --red:#e2685a;
+      --red-tint:#2c1815;
+      --blue:#6ba3e0;
+      --blue-tint:#152230;
+      --shadow:0 1px 3px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.25);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0c1613;
+    --surface:#13201c;
+    --surface-2:#0f1a17;
+    --border:#223530;
+    --border-soft:#1b2a26;
+    --text:#eaf2f0;
+    --text-soft:#9fb3ad;
+    --text-faint:#6c8380;
+    --accent:#5fc9c1;
+    --accent-2:#3a8f88;
+    --accent-2-tint:#16302c;
+    --accent-warm:#f2954a;
+    --accent-warm-tint:#2c2013;
+    --red:#e2685a;
+    --red-tint:#2c1815;
+    --blue:#6ba3e0;
+    --blue-tint:#152230;
+    --shadow:0 1px 3px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.25);
+  }
+
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family:var(--font-body); font-size:15.5px; line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{background:var(--accent-2-tint); color:var(--accent);}
+  h1,h2,h3,h4{font-family:var(--font-display); color:var(--text); text-wrap:balance; margin:0;}
+  a{color:var(--accent);}
+  code{font-family:var(--font-mono); font-size:.88em; background:var(--surface-2); border:1px solid var(--border-soft); border-radius:4px; padding:1px 6px;}
+
+  .shell{display:flex; min-height:100vh; max-width:1180px; margin:0 auto;}
+
+  /* ---------- Sidebar de navegación (crece con cada módulo nuevo) ---------- */
+  .toc{
+    width:250px; flex-shrink:0; padding:38px 22px 40px 32px;
+    position:sticky; top:0; align-self:flex-start; height:100vh; overflow-y:auto;
+  }
+  .toc-brand{display:flex; align-items:center; gap:9px; margin-bottom:6px;}
+  .toc-mark{width:20px; height:20px; color:var(--accent); flex-shrink:0;}
+  .toc-brand span{font-size:11px; font-weight:700; letter-spacing:.09em; text-transform:uppercase; color:var(--text-soft);}
+  .toc-title{font-size:15.5px; font-weight:600; color:var(--text); margin:2px 0 30px; font-family:var(--font-body);}
+  .toc-group-label{font-size:10.5px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--text-faint); margin:22px 0 8px;}
+  .toc-group-label:first-of-type{margin-top:0;}
+  .toc a{
+    display:block; font-size:13.5px; color:var(--text-soft); text-decoration:none;
+    padding:6px 0 6px 14px; border-left:2px solid var(--border); margin-bottom:1px;
+    transition:color .12s ease, border-color .12s ease;
+  }
+  .toc a:hover{color:var(--accent);}
+  .toc a.active{color:var(--accent); border-left-color:var(--accent); font-weight:600;}
+  .toc-module{font-size:13.5px; color:var(--text-faint); padding:6px 0 6px 14px; border-left:2px solid var(--border-soft); display:flex; align-items:center; justify-content:space-between; gap:6px;}
+  .toc-soon{font-size:9.5px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--text-faint); background:var(--surface-2); border:1px solid var(--border-soft); padding:2px 6px; border-radius:20px; white-space:nowrap;}
+
+  /* ---------- Contenido ---------- */
+  .content{flex:1; min-width:0; padding:56px 48px 120px;}
+  .doc-header{max-width:640px; margin-bottom:56px;}
+  .doc-eyebrow{font-size:12px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--accent-2); margin-bottom:14px; display:flex; align-items:center; gap:8px;}
+  .doc-eyebrow .dot{width:6px; height:6px; border-radius:50%; background:var(--accent-warm);}
+  .doc-header h1{font-size:38px; font-weight:600; line-height:1.12; margin-bottom:14px;}
+  .doc-header .lede{font-size:16.5px; color:var(--text-soft); max-width:52ch;}
+
+  section{max-width:660px; margin-bottom:64px; scroll-margin-top:32px;}
+  section > .step-num{
+    display:inline-flex; align-items:center; justify-content:center; width:30px; height:30px;
+    border-radius:9px; background:var(--accent-2-tint); color:var(--accent); font-family:var(--font-display);
+    font-size:14px; font-weight:600; margin-bottom:14px;
+  }
+  section h2{font-size:25px; font-weight:600; margin-bottom:10px;}
+  section .section-sub{color:var(--text-soft); font-size:14.5px; margin-bottom:24px; max-width:58ch;}
+  section h3{font-size:17px; font-weight:600; margin:30px 0 10px; color:var(--accent);}
+  section p{margin:0 0 14px; max-width:62ch;}
+  section ul, section ol{margin:0 0 16px; padding-left:22px;}
+  section li{margin-bottom:7px; max-width:58ch;}
+  section li::marker{color:var(--text-faint);}
+
+  .callout{
+    display:flex; gap:12px; padding:14px 16px; border-radius:10px; margin:18px 0 22px;
+    border:1px solid var(--border); background:var(--surface-2); font-size:13.8px; max-width:58ch;
+  }
+  .callout .ic{flex-shrink:0; width:18px; height:18px; margin-top:1px;}
+  .callout.tip{border-color:var(--accent-2); background:var(--accent-2-tint);}
+  .callout.tip .ic{color:var(--accent);}
+  .callout.warn{border-color:var(--accent-warm); background:var(--accent-warm-tint);}
+  .callout.warn .ic{color:var(--accent-warm);}
+  .callout strong{color:var(--text);}
+
+  /* ---------- Tabla de campos ---------- */
+  .field-table{width:100%; border-collapse:collapse; margin:16px 0 26px; font-size:13.6px;}
+  .field-table th{
+    text-align:left; font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--text-faint);
+    padding:8px 12px; border-bottom:1px solid var(--border);
+  }
+  .field-table td{padding:10px 12px; border-bottom:1px solid var(--border-soft); vertical-align:top; color:var(--text-soft);}
+  .field-table td:first-child{color:var(--text); font-weight:600; white-space:nowrap;}
+  .field-table tr:last-child td{border-bottom:none;}
+  .field-table .tag{
+    display:inline-block; font-size:10.5px; font-weight:700; letter-spacing:.02em; padding:2px 7px; border-radius:5px;
+    background:var(--accent-2-tint); color:var(--accent); margin-left:6px; vertical-align:middle;
+  }
+
+  /* ---------- "Pantalla" de vista previa — recreación en vivo con las
+       mismas clases visuales de la app real, NO una captura de pantalla.
+       SIEMPRE en modo claro a propósito (la app real solo tiene tema claro)
+       — con colores fijos en vez de los --token del manual, para que no se
+       laven en modo oscuro (el manual sí cambia de tema, esta "pantalla"
+       dentro de él no debe hacerlo). ---------- */
+  .screen{
+    background:#ffffff; border:1px solid #e4e4e1; border-radius:14px;
+    box-shadow:0 1px 3px rgba(0,20,18,.07), 0 8px 24px rgba(0,20,18,.04); overflow:hidden; margin:22px 0 28px;
+  }
+  .screen-bar{display:flex; align-items:center; gap:7px; padding:11px 16px; border-bottom:1px solid #ececea; background:#fbfbfa;}
+  .screen-dot{width:8px; height:8px; border-radius:50%; background:#e4e4e1;}
+  .screen-label{font-size:11px; color:#8a9591; margin-left:6px; font-family:var(--font-mono);}
+  .screen-pad{padding:22px 24px; background:#ffffff;}
+
+  .ss-topline{display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:14px; margin-bottom:18px;}
+  .ss-h1{font-family:var(--font-display); font-size:21px; font-weight:600; color:#004941; margin:0;}
+  .ss-sub{font-size:12px; color:#5c6b68; margin-top:2px;}
+  .ss-badge{font-size:12px; font-weight:700; padding:5px 12px; border-radius:20px; background:#eceeed; color:#5c6b68;}
+  .ss-badge.alert{background:#fbe4e2; color:#a3281c;}
+  .ss-btn{
+    display:inline-flex; align-items:center; gap:7px; background:#004941; color:#fff; border:none;
+    padding:9px 16px; border-radius:8px; font-size:12.5px; font-weight:600; font-family:'Inter',sans-serif;
+  }
+  .ss-btn.secondary{background:#fff; color:#1c2624; border:1px solid #d8d8d4;}
+  .ss-table{width:100%; border-collapse:collapse; font-size:12px; background:#fff; border:1px solid #e4e4e1; border-radius:10px; overflow:hidden;}
+  .ss-table th{text-align:left; padding:9px 12px; font-size:10px; text-transform:uppercase; letter-spacing:.04em; color:#5c6b68; background:#f4f4f2; border-bottom:1px solid #e4e4e1;}
+  .ss-table td{padding:10px 12px; border-bottom:1px solid #f0f0ee; color:#1c2624;}
+  .ss-table tr:last-child td{border-bottom:none;}
+  .ss-chip{display:inline-flex; padding:3px 9px; border-radius:20px; font-size:10.5px; font-weight:700;}
+  .ss-chip.green{background:#e3efee; color:#004941;}
+  .ss-chip.gray{background:#eceeed; color:#5c6b68;}
+  .ss-icon-row{display:flex; gap:6px;}
+  .ss-icon{width:26px; height:26px; border-radius:7px; display:flex; align-items:center; justify-content:center;}
+  .ss-icon.edit{background:#e3efee; color:#004941;}
+  .ss-icon.del{background:#fbe4e2; color:#a3281c;}
+  .ss-icon svg{width:13px; height:13px;}
+
+  .ss-section-label{font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:#004941; border-bottom:1px solid #e4e4e1; padding-bottom:6px; margin:20px 0 12px;}
+  .ss-section-label:first-child{margin-top:0;}
+  .ss-field-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  .ss-field-grid.full > .ss-field{grid-column:1/-1;}
+  .ss-field{border:1px solid #004941; border-radius:8px; overflow:hidden;}
+  .ss-field-label{background:#004941; color:#fff; font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:.02em; padding:5px 9px;}
+  .ss-field-value{background:rgba(82,187,181,.1); padding:8px 9px; font-size:12px; color:#1c2624; display:flex; align-items:center; justify-content:space-between; gap:6px;}
+  .ss-field-value.muted{color:#8a9591;}
+  .ss-mini-btn{font-size:10px; font-weight:600; color:#004941; background:#fff; border:1px solid #004941; border-radius:5px; padding:3px 7px; white-space:nowrap;}
+
+  .ss-panel-actions{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:14px 0;}
+  .ss-date{font-size:12px; border:1px solid #d8d8d4; border-radius:7px; padding:7px 10px; color:#1c2624; background:#fff;}
+  .ss-round{width:36px; height:36px; border-radius:9px; display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+  .ss-round svg{width:16px; height:16px;}
+  .ss-round.pdf{background:#fbe4e2; color:#a3281c;}
+  .ss-round.mail{background:#e4edf7; color:#1d5fa3;}
+  .ss-round.xls{background:#e3f3ea; color:#1e7a4a;}
+  .ss-hint{font-size:11.5px; color:#5c6b68; max-width:52ch; margin-top:8px;}
+
+  .caption{font-size:12px; color:#8a9591; text-align:center; padding:10px 20px 10px; border-top:1px solid #ececea; background:#fbfbfa;}
+
+  .kbd{font-family:var(--font-mono); font-size:11.5px; background:var(--surface-2); border:1px solid var(--border); border-bottom-width:2px; border-radius:5px; padding:1px 6px;}
+
+  .faq{border-top:1px solid var(--border-soft);}
+  .faq-item{padding:18px 0; border-bottom:1px solid var(--border-soft);}
+  .faq-item h4{font-size:15px; font-weight:600; margin-bottom:6px; display:flex; gap:9px;}
+  .faq-item h4::before{content:'?'; flex-shrink:0; width:20px; height:20px; border-radius:50%; background:var(--accent-2-tint); color:var(--accent); font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; font-family:var(--font-body);}
+  .faq-item p{color:var(--text-soft); font-size:14px; margin:0 0 0 29px;}
+
+  footer.doc-footer{max-width:660px; padding-top:30px; border-top:1px solid var(--border-soft); color:var(--text-faint); font-size:12.5px;}
+
+  @media (max-width:860px){
+    .shell{display:block;}
+    .toc{position:static; width:auto; height:auto; padding:24px 20px 0; overflow:visible;}
+    .toc-group-label:first-of-type{margin-top:22px;}
+    .content{padding:32px 20px 80px;}
+    .ss-field-grid{grid-template-columns:1fr;}
+    .doc-header h1{font-size:30px;}
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+  <nav class="toc">
+    <div class="toc-brand">
+      <svg class="toc-mark" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 30 L50 50 L80 30" stroke="currentColor" stroke-width="14" fill="none" stroke-linecap="square"/><path d="M20 70 L50 50 L80 70" stroke="currentColor" stroke-width="14" fill="none" stroke-linecap="square"/></svg>
+      <span>Lexara Abogados</span>
+    </div>
+    <div class="toc-title">Manual de usuario</div>
+
+    <div class="toc-group-label">Tutelas</div>
+    <a href="#que-es">Qué es este módulo</a>
+    <a href="#lista">La lista de Tutelas</a>
+    <a href="#crear">Crear o editar una tutela</a>
+    <a href="#informes">Informe diario de Tutelas</a>
+    <a href="#preguntas">Preguntas frecuentes</a>
+
+    <div class="toc-group-label">Otros módulos</div>
+    <div class="toc-module">Procesos judiciales <span class="toc-soon">Próximamente</span></div>
+    <div class="toc-module">Dashboard <span class="toc-soon">Próximamente</span></div>
+    <div class="toc-module">Solicitud de Factura E. <span class="toc-soon">Próximamente</span></div>
+    <div class="toc-module">Órdenes de compra <span class="toc-soon">Próximamente</span></div>
+    <div class="toc-module">Clientes <span class="toc-soon">Próximamente</span></div>
+    <div class="toc-module">Colaborador Lexara <span class="toc-soon">Próximamente</span></div>
+  </nav>
+
+  <main class="content">
+    <div class="doc-header">
+      <div class="doc-eyebrow"><span class="dot"></span>Módulo 1 de 7</div>
+      <h1>Tutelas</h1>
+      <p class="lede">Cómo registrar una tutela nueva, mantenerla al día, y generar el informe diario que se envía cada mañana con las notificaciones y los vencimientos.</p>
+    </div>
+
+    <section id="que-es">
+      <h2>Qué es este módulo</h2>
+      <p>El módulo <strong>Tutelas</strong> lleva el control de cada acción de tutela que le llega al despacho: quién la notifica, contra qué Entidad, en qué juzgado, y para cuándo hay que responder. Reemplaza la planilla que se llevaba antes — cada tutela queda guardada una sola vez y cualquier persona del equipo con acceso la puede consultar o actualizar.</p>
+      <p>Todos los días, el módulo también arma el <strong>informe de tutelas notificadas y por vencer</strong> — el mismo que antes se armaba a mano — listo para descargar en PDF, Excel, o enviar por correo con un clic.</p>
+    </section>
+
+    <section id="lista">
+      <span class="step-num">1</span>
+      <h2>La lista de Tutelas</h2>
+      <p class="section-sub">Lo primero que ves al entrar al módulo — todas las tutelas registradas, más recientes primero.</p>
+
+      <div class="screen">
+        <div class="screen-bar"><span class="screen-dot"></span><span class="screen-dot"></span><span class="screen-dot"></span><span class="screen-label">Tutelas</span></div>
+        <div class="screen-pad">
+          <div class="ss-topline">
+            <div>
+              <div class="ss-h1">Tutelas</div>
+              <div class="ss-sub">9 de 9 tutelas</div>
+            </div>
+            <div style="display:flex; align-items:center; gap:10px;">
+              <span class="ss-badge alert">2 vencen hoy</span>
+              <button class="ss-btn">+ Nueva tutela</button>
+            </div>
+          </div>
+          <table class="ss-table">
+            <thead><tr><th>No. Tutela</th><th>Cliente</th><th>Tema</th><th>Tipo Respuesta</th><th>Vencimiento</th><th></th></tr></thead>
+            <tbody>
+              <tr><td>T-2026-0044</td><td>EPS Occidental de Salud</td><td>Suministro de medicamento</td><td>TUTELA</td><td>25/08/2026</td>
+                <td><div class="ss-icon-row"><span class="ss-icon edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></span><span class="ss-icon del"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></span></div></td></tr>
+              <tr><td>T-2026-0043</td><td>Grupo Colmédica</td><td>Prestación de servicio</td><td>REQUERIMIENTO</td><td>27/08/2026</td>
+                <td><div class="ss-icon-row"><span class="ss-icon edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></span><span class="ss-icon del"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></span></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="caption">Vista real de la lista de Tutelas, con datos de ejemplo</div>
+      </div>
+
+      <h3>El contador "vencen hoy"</h3>
+      <p>Arriba a la derecha siempre ves cuántas tutelas tienen su <strong>Fecha Vencimiento</strong> igual a la de hoy. Cuando hay al menos una, el aviso se pone en rojo — es la señal de que hay que responder ese mismo día.</p>
+
+      <h3>Buscar, ordenar y filtrar</h3>
+      <ul>
+        <li>La caja de búsqueda de arriba de todo (junto al logo) busca por <strong>No. Tutela</strong>, <strong>Cliente</strong> o <strong>Entidad</strong> a la vez.</li>
+        <li>Dale clic al nombre de cualquier columna (donde está la flechita <span class="kbd">▾</span>) para ordenarla, o para filtrarla a valores concretos — igual que en Excel.</li>
+        <li>Si tienes varios filtros de columna activos, aparece el enlace <strong>"Limpiar filtros de columna"</strong> junto al contador de resultados.</li>
+      </ul>
+
+      <h3>Acciones sobre una tutela</h3>
+      <ul>
+        <li><strong>Lápiz</strong> — abre la tutela para editarla (o solo para consultarla, si tu usuario es de solo lectura).</li>
+        <li><strong>Basurero</strong> — la elimina (solo visible si tienes permiso de edición). Te pide confirmar antes de borrar.</li>
+      </ul>
+    </section>
+
+    <section id="crear">
+      <span class="step-num">2</span>
+      <h2>Crear o editar una tutela</h2>
+      <p class="section-sub">Dale clic a <strong>"+ Nueva tutela"</strong> para crear una, o al lápiz de una fila para editarla — el formulario es el mismo en los dos casos.</p>
+
+      <div class="screen">
+        <div class="screen-bar"><span class="screen-dot"></span><span class="screen-dot"></span><span class="screen-dot"></span><span class="screen-label">Nueva tutela</span></div>
+        <div class="screen-pad">
+          <div class="ss-section-label">Identificación</div>
+          <div class="ss-field-grid">
+            <div class="ss-field"><div class="ss-field-label">No. Tutela</div><div class="ss-field-value">T-2026-0045</div></div>
+            <div class="ss-field"><div class="ss-field-label">Entidad</div><div class="ss-field-value">SOS ▾</div></div>
+          </div>
+          <div class="ss-field-grid full" style="margin-top:10px;">
+            <div class="ss-field"><div class="ss-field-label">Cliente</div><div class="ss-field-value">EPS Occidental de Salud S.A. ▾</div></div>
+          </div>
+          <div class="ss-field-grid" style="margin-top:10px;">
+            <div class="ss-field"><div class="ss-field-label">Tipo Vinculación Entidad</div><div class="ss-field-value">Accionada ▾</div></div>
+            <div class="ss-field"><div class="ss-field-label">Prestación</div><div class="ss-field-value">Asistencial ▾</div></div>
+          </div>
+
+          <div class="ss-section-label">Trámite</div>
+          <div class="ss-field-grid full">
+            <div class="ss-field"><div class="ss-field-label">Tema</div><div class="ss-field-value">Suministro de medicamento ▾ <span class="ss-mini-btn">✎ Tema</span></div></div>
+          </div>
+        </div>
+        <div class="caption">Formulario de tutela — secciones Identificación y Trámite (recortado)</div>
+      </div>
+
+      <h3>Sección "Identificación"</h3>
+      <table class="field-table">
+        <tr><th>Campo</th><th>Qué es</th></tr>
+        <tr><td>No. Tutela</td><td>El número/consecutivo con el que se identifica la tutela.</td></tr>
+        <tr><td>Entidad<span class="tag">lista</span></td><td>La Entidad frente a la que responde el despacho (SOS, Famisanar, etc.).</td></tr>
+        <tr><td>Cliente<span class="tag">lista</span></td><td>La empresa cliente asociada — se elige de la lista de Clientes ya registrados.</td></tr>
+        <tr><td>Tipo Vinculación Entidad<span class="tag">lista</span></td><td><em>Accionada</em> o <em>Vinculada</em> — el papel de la Entidad en la tutela.</td></tr>
+        <tr><td>Prestación<span class="tag">lista</span></td><td><em>Asistencial</em>, <em>Económica</em> o <em>Administrativa</em>. Elegirla primero habilita el campo Tema (ver abajo).</td></tr>
+      </table>
+
+      <h3>Sección "Trámite"</h3>
+      <table class="field-table">
+        <tr><th>Campo</th><th>Qué es</th></tr>
+        <tr><td>Departamento / Ciudad<span class="tag">lista</span></td><td>Se eligen en cadena: primero el Departamento, y Ciudad solo muestra los municipios de ese Departamento.</td></tr>
+        <tr><td>Juzgado</td><td>El despacho/juzgado que conoce la tutela.</td></tr>
+        <tr><td>Proceso</td><td>El número de proceso relacionado, si aplica.</td></tr>
+        <tr><td>Fecha Notificación</td><td>Cuándo le notificaron la tutela al despacho.</td></tr>
+        <tr><td>Fecha Vencimiento</td><td>Fecha límite para responder — es la que alimenta el aviso "vencen hoy".</td></tr>
+        <tr><td>Tipo Respuesta<span class="tag">lista</span></td><td>ACLARACION, ALCANCE, APLAZAMIENTO, CUMPLIMIENTO FALLO, IMPUGNACION, NULIDAD, REQUERIMIENTO o TUTELA.</td></tr>
+        <tr><td>Abogado Respuesta<span class="tag">lista</span></td><td>Quién queda a cargo de responder. En una tutela nueva empieza en Ariana Martin Mendoza — se puede cambiar.</td></tr>
+        <tr><td>Tema<span class="tag">lista</span></td><td>Depende de la Prestación elegida arriba — solo muestra los Temas de esa misma Prestación.</td></tr>
+        <tr><td>Medida Cautelar / Agencia oficiosa</td><td>Sí / No.</td></tr>
+      </table>
+
+      <div class="callout tip">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        <div><strong>El botón "✎ Tema"</strong>, junto al campo Tema, te deja crear un Tema nuevo o corregir el nombre de uno existente sin salir del formulario — solo tienes que haber elegido antes una Prestación.</div>
+      </div>
+
+      <h3>Sección "Enlaces y contacto"</h3>
+      <p>Usuario, No. Identificación y Correo de la persona que interpuso la tutela.</p>
+
+      <h3>Sección "Solicita"</h3>
+      <p>Un campo de texto con formato (puedes poner negrita, subrayado o resaltar en amarillo) para transcribir textualmente qué está pidiendo la tutela.</p>
+
+      <h3>Guardar</h3>
+      <p>Al final del formulario: <strong>"Guardar cambios"</strong> escribe todo en SharePoint. Si estás editando una tutela ya existente y tienes permiso, también ves <strong>"Eliminar"</strong>. Si tu usuario es de solo lectura, en vez de estos botones solo ves <strong>"Cerrar"</strong> y un aviso de que la información es de consulta.</p>
+    </section>
+
+    <section id="informes">
+      <span class="step-num">3</span>
+      <h2>Informe diario de Tutelas</h2>
+      <p class="section-sub">Vive dentro del módulo <strong>Informes</strong> (no en Tutelas) — junta TODAS las tutelas notificadas o por vencer en una fecha, sin importar la Entidad.</p>
+
+      <div class="screen">
+        <div class="screen-bar"><span class="screen-dot"></span><span class="screen-dot"></span><span class="screen-dot"></span><span class="screen-label">Informes → Informe diario de Tutelas</span></div>
+        <div class="screen-pad">
+          <p style="font-size:12.5px; color:#5c6b68; margin:0 0 14px;">Elige la fecha de <strong style="color:#1c2624;">Notificación</strong> a reportar — las de <strong style="color:#1c2624;">Vencimiento</strong> siempre son las de la fecha de hoy.</p>
+          <div class="ss-panel-actions">
+            <input class="ss-date" value="25/08/2026" readonly>
+            <span class="ss-round pdf"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></span>
+            <span class="ss-round mail"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 6 10 7 10-7"/></svg></span>
+            <span class="ss-round xls"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13l4 6M12 13l-4 6"/></svg></span>
+          </div>
+          <p class="ss-hint">El botón de correo crea el borrador directo en tu buzón de Outlook, con las tablas y el PDF ya adjunto — ábrelo desde tu carpeta de Borradores y dale Enviar.</p>
+        </div>
+        <div class="caption">Panel real dentro de Informes</div>
+      </div>
+
+      <h3>Cómo se calculan las dos fechas</h3>
+      <ul>
+        <li><strong>Notificadas</strong> — todas las tutelas cuya <em>Fecha Notificación</em> sea igual a la fecha que elijas en el campo de arriba.</li>
+        <li><strong>Por vencer</strong> — todas las tutelas cuya <em>Fecha Vencimiento</em> sea igual a <strong>hoy</strong>, siempre — no depende de la fecha que elijas arriba.</li>
+      </ul>
+
+      <h3>Los 3 botones</h3>
+      <table class="field-table">
+        <tr><th>Botón</th><th>Qué hace</th></tr>
+        <tr><td>PDF (rojo)</td><td>Descarga el informe con las dos tablas, listo para imprimir o adjuntar a mano.</td></tr>
+        <tr><td>Correo (azul)</td><td>Crea el borrador directo en tu Outlook — con las tablas ya en formato y el PDF adjunto — sin que tengas que copiar ni adjuntar nada. Ábrelo desde tu carpeta de Borradores.</td></tr>
+        <tr><td>Excel (verde)</td><td>Descarga <strong>todas</strong> las tutelas registradas (no solo las de la fecha elegida) — para cruces o revisiones completas.</td></tr>
+      </table>
+
+      <div class="callout warn">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01M10.3 3.9L2.5 18a1.5 1.5 0 0 0 1.3 2.2h16.4a1.5 1.5 0 0 0 1.3-2.2L13.7 3.9a1.5 1.5 0 0 0-2.6 0z"/></svg>
+        <div>Si por algún motivo el borrador no se puede crear directo en Outlook (por ejemplo, sin conexión), el botón de correo cae de vuelta a un método manual: copia las tablas al portapapeles y abre un correo en blanco con los destinatarios y el asunto ya listos — solo hay que pegar (<span class="kbd">Ctrl</span>+<span class="kbd">V</span>) donde diga "[Pega aquí las tablas]".</div>
+      </div>
+    </section>
+
+    <section id="preguntas">
+      <h2>Preguntas frecuentes</h2>
+      <div class="faq">
+        <div class="faq-item">
+          <h4>¿Por qué no veo el botón "Eliminar" ni puedo editar campos?</h4>
+          <p>Tu usuario tiene acceso de <strong>solo lectura</strong> a este módulo — puedes consultar toda la información, pero no cambiarla. Si necesitas editar, pídele a un Administrador que revise tus permisos en Colaborador Lexara.</p>
+        </div>
+        <div class="faq-item">
+          <h4>Elegí una Prestación distinta y el Tema que tenía puesto desapareció, ¿por qué?</h4>
+          <p>El Tema depende de la Prestación — si cambias la Prestación y el Tema anterior no pertenece a la nueva, el campo se limpia solo para que no quede un dato inconsistente. Solo tienes que volver a elegir un Tema de la lista nueva (o crear uno con el botón "✎ Tema").</p>
+        </div>
+        <div class="faq-item">
+          <h4>¿El Excel de Tutelas trae solo las de la fecha que elegí?</h4>
+          <p>No — el Excel siempre trae <strong>todas</strong> las tutelas registradas, sin filtrar por fecha. Lo que sí respeta la fecha elegida es el PDF y el correo.</p>
+        </div>
+        <div class="faq-item">
+          <h4>¿Dónde queda el borrador de correo después de crearlo?</h4>
+          <p>En tu carpeta de <strong>Borradores</strong> de Outlook, como el más reciente — ábrelo ahí, revísalo y dale Enviar cuando quieras. La app no lo envía sola.</p>
+        </div>
+      </div>
+    </section>
+
+    <footer class="doc-footer">
+      Manual de usuario — Lexara Gestión de Procesos · MD Abogados SAS<br>
+      Este manual se irá completando módulo por módulo.
+    </footer>
+  </main>
+</div>
+</body>
+</html>
