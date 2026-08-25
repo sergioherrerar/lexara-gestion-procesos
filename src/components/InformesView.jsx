@@ -4,7 +4,8 @@ import {
   clienteForFactura, clienteForOrdenCompra,
 } from '../lib/graph';
 import BarChart from './BarChart';
-import IconButton from './IconButton';
+import IconButton, { IconTextButton } from './IconButton';
+import { generarInformeClienteHTML } from '../lib/exportarInformeCliente';
 import { generarInformeSOSExcel, generarInformeSOSPDF, generarDesistimientosSOSExcel } from '../lib/informeSOS';
 import { generarInformeFamisanarExcel, generarInformeFamisanarPDF } from '../lib/informeFamisanar';
 import { generarInformeAliansaludExcel, generarInformeAliansaludPDF } from '../lib/informeAliansalud';
@@ -49,7 +50,7 @@ function entidadDeCliente(clientes, codigoClienteOrNombre, matchFn){
   return matchFn(clientes, codigoClienteOrNombre)?.Entidad || "Sin dato";
 }
 
-export default function InformesView({ procesos, clientes, facturas, ordenesCompra, desistimientos, tutelas, valoresEntidad, notify, liveMode }){
+export default function InformesView({ procesos, clientes, facturas, ordenesCompra, desistimientos, tutelas, valoresEntidad, notify, liveMode, config }){
   const [generando, setGenerando] = useState(null); // nombre de la entidad mientras genera el Excel
   const [generandoPDF, setGenerandoPDF] = useState(null); // nombre de la entidad mientras genera el PDF
   const [generandoDesistimientos, setGenerandoDesistimientos] = useState(null);
@@ -63,6 +64,21 @@ export default function InformesView({ procesos, clientes, facturas, ordenesComp
   const [generandoCorreoTutelas, setGenerandoCorreoTutelas] = useState(false);
   const [generandoTutelasExcel, setGenerandoTutelasExcel] = useState(false);
   const [generandoGeneral, setGenerandoGeneral] = useState(false);
+  // Informe HTML por Cliente (con botón de pago) — pedido explícito del
+  // usuario 2026-08-25, movido de Procesos judiciales a Informes el mismo
+  // día ("mejor mueve esta sección a informes") — ver
+  // [[project_informe_cliente_pagos]] / exportarInformeCliente.js.
+  const [clienteInforme, setClienteInforme] = useState('');
+  const clientesDistintos = Array.from(new Set(procesos.map(p => (p.Cliente||"").trim()).filter(Boolean))).sort((a,b)=>a.localeCompare(b));
+  function handleDescargarInformeCliente(){
+    if(!clienteInforme) return;
+    try{
+      generarInformeClienteHTML(procesos, clienteInforme, config?.DAVIVIENDA_PAGOS_URL);
+    } catch(err){
+      console.error(err);
+      notify?.("No se pudo generar el informe del cliente: " + err.message, 'error');
+    }
+  }
 
   const procesosPorEntidad = groupCount(procesos, p => p.Entidad);
   const clientesPorEntidad = groupCount(clientes, c => c.Entidad);
@@ -241,6 +257,18 @@ export default function InformesView({ procesos, clientes, facturas, ordenesComp
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:14,height:14}}><path d="M12 3v13m0 0l-5-5m5 5l5-5M4 21h16"/></svg>
           Descargar manual completo
         </a>
+      </div>
+
+      <div className="informe-cliente-bar">
+        <span className="informe-cliente-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 15h6M9 11h6"/></svg>
+        </span>
+        <span className="informe-cliente-label">Informe para un cliente:</span>
+        <select value={clienteInforme} onChange={e => setClienteInforme(e.target.value)}>
+          <option value="">— Selecciona un cliente —</option>
+          {clientesDistintos.map(c => <option key={c} value={c}>{c}</option>)}
+        </select>
+        <IconTextButton icon="html" variant="primary" onClick={handleDescargarInformeCliente} disabled={!clienteInforme}>Descargar informe del cliente</IconTextButton>
       </div>
 
       <div className="panel-grid panel-grid-2">

@@ -6,7 +6,6 @@ import ColumnHeaderMenu from './ColumnHeaderMenu';
 import { useColumnFilters } from '../hooks/useColumnFilters';
 import { useColumnSort } from '../hooks/useColumnSort';
 import { generarFichaProcesoPDF } from '../lib/informeProceso';
-import { generarInformeClienteHTML } from '../lib/exportarInformeCliente';
 
 function matchesFilter(p, currentFilter){
   if(currentFilter==='todos') return true;
@@ -26,10 +25,9 @@ const COLUMNS = [
   {key:'acciones', label:'Acciones', filterable:false},
 ];
 
-export default function ProcesosView({ procesos, currentFilter, setFilter, searchQuery, onOpenProceso, onCreateProceso, canWrite = true, config, notify }){
+export default function ProcesosView({ procesos, currentFilter, setFilter, searchQuery, onOpenProceso, onCreateProceso, canWrite = true }){
   const [showTerminados, setShowTerminados] = useState(false);
   const [generandoPDF, setGenerandoPDF] = useState(null); // id del proceso mientras genera su ficha en PDF
-  const [clienteInforme, setClienteInforme] = useState('');
   const { filters, setFilter: setColFilter, clearFilters, rowMatches, hasActiveFilters } = useColumnFilters();
   const { sort, setSortKey, sortRows } = useColumnSort();
 
@@ -41,22 +39,6 @@ export default function ProcesosView({ procesos, currentFilter, setFilter, searc
   const entidades = Array.from(new Set(procesos.map(p => stripHtml(p.Entidad) || "Sin entidad"))).sort((a,b)=>a.localeCompare(b));
   const filterChips = [{key:'todos', label:'Todos'}, ...entidades.map(e => ({key:e, label:e}))];
   const totalTerminados = procesos.filter(isTerminado).length;
-
-  // Informe HTML por Cliente (con botón de pago) — pedido explícito del
-  // usuario 2026-08-25: en vez de darle acceso al cliente para que inicie
-  // sesión y vea solo lo suyo, se genera un archivo aparte que el despacho
-  // descarga y envía por correo — ver [[project_dashboard_analisis_entidad]]
-  // (mismo patrón que el export HTML del Dashboard) y exportarInformeCliente.js.
-  const clientesDistintos = Array.from(new Set(procesos.map(p => (p.Cliente||"").trim()).filter(Boolean))).sort((a,b)=>a.localeCompare(b));
-  function handleDescargarInformeCliente(){
-    if(!clienteInforme) return;
-    try{
-      generarInformeClienteHTML(procesos, clienteInforme, config?.DAVIVIENDA_PAGOS_URL);
-    } catch(err){
-      console.error(err);
-      notify?.("No se pudo generar el informe del cliente: " + err.message, 'error');
-    }
-  }
 
   const query = (searchQuery||"").trim().toLowerCase();
   const rows = procesos.filter(p => matchesFilter(p, currentFilter) && (showTerminados ? isTerminado(p) : !isTerminado(p)) && (!query ||
@@ -94,17 +76,6 @@ export default function ProcesosView({ procesos, currentFilter, setFilter, searc
         >
           {showTerminados ? "← Ver vigentes" : `Ver terminados (${totalTerminados})`}
         </div>
-      </div>
-      <div className="informe-cliente-bar">
-        <span className="informe-cliente-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 15h6M9 11h6"/></svg>
-        </span>
-        <span className="informe-cliente-label">Informe para un cliente:</span>
-        <select value={clienteInforme} onChange={e => setClienteInforme(e.target.value)}>
-          <option value="">— Selecciona un cliente —</option>
-          {clientesDistintos.map(c => <option key={c} value={c}>{c}</option>)}
-        </select>
-        <IconTextButton icon="html" variant="primary" onClick={handleDescargarInformeCliente} disabled={!clienteInforme}>Descargar informe del cliente</IconTextButton>
       </div>
       <div className="table-wrap">
         <table>
