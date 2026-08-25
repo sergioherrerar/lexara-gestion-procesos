@@ -55,7 +55,7 @@ export default function FacturacionView({ facturas, clientes, procesos, searchQu
     <div className="view">
       <div className="view-header">
         <div>
-          <h1>Facturación</h1>
+          <h1>Solicitud De Factura E.</h1>
           <p>{rows.length} de {facturas.length} facturas{hasActiveFilters && <> · <button type="button" className="clear-filters-link" onClick={clearFilters}>Limpiar filtros de columna</button></>}</p>
         </div>
         <IconTextButton icon="add" variant="primary" onClick={onCreateFactura}>Nueva factura</IconTextButton>

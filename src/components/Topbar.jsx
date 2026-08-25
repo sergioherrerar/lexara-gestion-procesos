@@ -1,6 +1,6 @@
 import IconButton from './IconButton';
 
-const TITLES = {dashboard:"Dashboard", procesos:"Procesos judiciales", clientes:"Clientes", facturacion:"Facturación", ordenesCompra:"Órdenes de compra", colaboradores:"Colaborador Lexara", setup:"Configuración"};
+const TITLES = {dashboard:"Dashboard", procesos:"Procesos judiciales", clientes:"Clientes", facturacion:"Solicitud De Factura E.", ordenesCompra:"Órdenes de compra", colaboradores:"Colaborador Lexara", setup:"Configuración"};
 
 export default function Topbar({ view, liveMode, searchQuery, onSearch, onOpenMobileNav, onRefresh, refreshing, cargandoInicial }){
   const cargando = refreshing || cargandoInicial;

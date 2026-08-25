@@ -8,7 +8,7 @@ const NAV_ITEMS = [
   {view:'procesos', label:'Procesos judiciales'},
   {view:'tutelas', label:'Tutelas'},
   {view:'clientes', label:'Clientes'},
-  {view:'facturacion', label:'Facturación'},
+  {view:'facturacion', label:'Solicitud De Factura E.'},
   {view:'ordenesCompra', label:'Órdenes de compra'},
   {view:'colaboradores', label:'Colaborador Lexara'},
 ];

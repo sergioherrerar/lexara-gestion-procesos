@@ -21,7 +21,7 @@ export const MODULOS_DISPONIBLES = [
   {key:'procesos', label:'Procesos judiciales'},
   {key:'tutelas', label:'Tutelas'},
   {key:'clientes', label:'Clientes'},
-  {key:'facturacion', label:'Facturación'},
+  {key:'facturacion', label:'Solicitud De Factura E.'},
   {key:'ordenesCompra', label:'Órdenes de compra'},
   {key:'colaboradores', label:'Colaborador Lexara'},
   {key:'setup', label:'Configuración'},
