@@ -32,6 +32,10 @@ export function generarInformeClienteHTML(procesos, cliente, daviviendaUrl){
     radicado: p.Radicado || "Sin radicado",
     despacho: `${p.Despacho||""}${p.NumeroDespacho ? ' · '+p.NumeroDespacho : ''}`.trim() || "Sin dato",
     estado: stripHtml(p.Estado) || "Sin novedades registradas.",
+    // Histórico: el log cronológico completo del proceso — campo DISTINTO de
+    // Estado (que es la novedad más reciente), ver [[project_procesos_extended_fields]].
+    // Pedido explícito del usuario 2026-08-25 ("coloca el histórico").
+    historico: stripHtml(p.Historico) || "Sin histórico registrado.",
     badge: estadoBadgeClass(p.EstadoVT, p.FechaUltimoEstado, p.Estado),
     estadoVT: stripHtml(p.EstadoVT) || "Sin dato",
     terminado: (stripHtml(p.EstadoVT)||"").toLowerCase().includes('termin'),
@@ -45,13 +49,26 @@ export function generarInformeClienteHTML(procesos, cliente, daviviendaUrl){
   const fechaLarga = new Date().toLocaleDateString('es-CO', { day:'2-digit', month:'long', year:'numeric' });
   const iconoSvg = '<svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 30 L50 50 L80 30" stroke="currentColor" stroke-width="14" fill="none" stroke-linecap="square"/><path d="M20 70 L50 50 L80 70" stroke="currentColor" stroke-width="14" fill="none" stroke-linecap="square"/></svg>';
 
-  const filasHtml = filas.map(f => `
-    <tr>
-      <td style="font-weight:600;">${escapeHtml(f.radicado)}</td>
-      <td>${escapeHtml(f.despacho)}</td>
-      <td>${escapeHtml(f.estado)}</td>
-      <td style="text-align:center;"><span class="badge ${f.badge}">${escapeHtml(f.estadoVT)}</span></td>
-    </tr>`).join('');
+  const tarjetasHtml = filas.map(f => `
+    <div class="proceso-card">
+      <div class="proceso-card-head">
+        <div>
+          <div class="proceso-card-radicado">${escapeHtml(f.radicado)}</div>
+          <div class="proceso-card-despacho">${escapeHtml(f.despacho)}</div>
+        </div>
+        <span class="badge ${f.badge}">${escapeHtml(f.estadoVT)}</span>
+      </div>
+      <div class="proceso-card-body">
+        <div class="proceso-card-col">
+          <div class="proceso-card-col-title">Estado actual</div>
+          <p>${escapeHtml(f.estado)}</p>
+        </div>
+        <div class="proceso-card-col">
+          <div class="proceso-card-col-title">Histórico</div>
+          <p>${escapeHtml(f.historico)}</p>
+        </div>
+      </div>
+    </div>`).join('');
 
   const html = `<!DOCTYPE html>
 <html lang="es">
@@ -76,7 +93,7 @@ export function generarInformeClienteHTML(procesos, cliente, daviviendaUrl){
     .header .marca span{font-weight:700; letter-spacing:.06em; font-size:13px; text-transform:uppercase;}
     .header h1{font-family:var(--font-display); font-size:23px; font-weight:600; margin:0 0 4px;}
     .header p{margin:0; font-size:12.5px; color:rgba(255,255,255,.75);}
-    .contenido{max-width:900px; margin:0 auto; padding:24px 20px 60px;}
+    .contenido{max-width:1000px; margin:0 auto; padding:24px 20px 60px;}
     .kpi-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:22px;}
     .kpi{background:#fff; border:1px solid var(--gris-linea); border-radius:var(--radius); box-shadow:var(--shadow); padding:16px 18px;}
     .kpi .label{font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--texto-suave); margin-bottom:6px;}
@@ -88,18 +105,28 @@ export function generarInformeClienteHTML(procesos, cliente, daviviendaUrl){
     .panel{background:#fff; border:1px solid var(--gris-linea); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden;}
     .panel-head{padding:16px 20px; border-bottom:1px solid var(--gris-linea);}
     .panel-head h3{font-family:var(--font-display); font-size:16px; font-weight:600; margin:0; color:var(--verde-oscuro);}
-    table{width:100%; border-collapse:collapse; font-size:13px;}
-    thead th{text-align:left; padding:11px 16px; font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--texto-suave); border-bottom:1px solid var(--gris-linea); background:var(--gris-claro);}
-    tbody td{padding:11px 16px; border-bottom:1px solid #f0f0ee; vertical-align:top;}
-    tbody tr:last-child td{border-bottom:none;}
-    .badge{display:inline-flex; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:700; white-space:nowrap;}
+    .panel-body{padding:16px 20px;}
+    .badge{display:inline-flex; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:700; white-space:nowrap; flex-shrink:0;}
     .badge-verde{background:#e3efee; color:var(--verde-oscuro);}
     .badge-naranja{background:#fdf1e2; color:#b3590a;}
     .badge-rojo{background:#fbe4e2; color:#a3281c;}
     .badge-gris{background:#eceeed; color:var(--texto-suave);}
+    /* Una tarjeta por proceso — Estado actual e Histórico completo, uno al
+       lado del otro en pantallas anchas (en vez de una tabla, que dejaba el
+       texto largo apretado en una columna angosta). */
+    .proceso-card{border:1px solid var(--gris-linea); border-radius:var(--radius); margin-bottom:14px; overflow:hidden;}
+    .proceso-card:last-child{margin-bottom:0;}
+    .proceso-card-head{display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px 18px; background:var(--gris-claro); border-bottom:1px solid var(--gris-linea);}
+    .proceso-card-radicado{font-weight:700; color:var(--verde-oscuro); font-size:14px;}
+    .proceso-card-despacho{font-size:12px; color:var(--texto-suave); margin-top:2px;}
+    .proceso-card-body{display:grid; grid-template-columns:1fr 1fr; gap:0;}
+    .proceso-card-col{padding:14px 18px;}
+    .proceso-card-col:first-child{border-right:1px solid var(--gris-linea);}
+    .proceso-card-col-title{font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--texto-suave); font-weight:700; margin-bottom:6px;}
+    .proceso-card-col p{margin:0; font-size:13px; line-height:1.55; color:var(--texto);}
     .empty-state{padding:40px 20px; text-align:center; color:var(--texto-suave); font-size:13.5px;}
-    footer{max-width:900px; margin:0 auto; padding:20px 20px 30px; font-size:11.5px; color:var(--texto-suave); text-align:center;}
-    @media (max-width:640px){ .kpi-grid{grid-template-columns:repeat(2,1fr);} table{display:block; overflow-x:auto;} }
+    footer{max-width:1000px; margin:0 auto; padding:20px 20px 30px; font-size:11.5px; color:var(--texto-suave); text-align:center;}
+    @media (max-width:640px){ .kpi-grid{grid-template-columns:repeat(2,1fr);} .proceso-card-body{grid-template-columns:1fr;} .proceso-card-col:first-child{border-right:none; border-bottom:1px solid var(--gris-linea);} }
   </style>
 </head>
 <body>
@@ -121,10 +148,7 @@ export function generarInformeClienteHTML(procesos, cliente, daviviendaUrl){
     </div>` : ''}
     <div class="panel">
       <div class="panel-head"><h3>Detalle de procesos</h3></div>
-      ${filas.length ? `<table>
-        <thead><tr><th>Número corto</th><th>Despacho</th><th>Estado</th><th style="text-align:center;">Situación</th></tr></thead>
-        <tbody>${filasHtml}</tbody>
-      </table>` : `<div class="empty-state">No hay procesos registrados para este cliente.</div>`}
+      ${filas.length ? `<div class="panel-body">${tarjetasHtml}</div>` : `<div class="empty-state">No hay procesos registrados para este cliente.</div>`}
     </div>
   </div>
   <footer>MD Abogados SAS · Este informe se generó automáticamente con corte a la fecha indicada arriba y es solo para consulta — no reemplaza la comunicación directa con el despacho.</footer>

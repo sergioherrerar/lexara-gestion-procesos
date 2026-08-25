@@ -365,15 +365,25 @@
   .filter-chip-terminados.active:hover{color:#fff;}
   /* Barra "Informe para un cliente" (Procesos judiciales) — desplegable de
      Cliente + botón para descargar el informe HTML de ese cliente (con
-     botón de pago adentro) — ver exportarInformeCliente.js. */
+     botón de pago adentro) — ver exportarInformeCliente.js. Con tinte e
+     ícono propio (pedido explícito del usuario, "que sea más visible") para
+     que no se confunda con un filtro más de la tabla — es una acción aparte. */
   .informe-cliente-bar{
-    display:flex; align-items:center; gap:10px; flex-wrap:wrap;
-    background:#fff; border:1px solid var(--gris-linea); border-radius:var(--radius);
-    padding:12px 16px; margin-bottom:16px;
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+    background:linear-gradient(135deg, #e9f5f3, #f4faf9);
+    border:1px solid var(--verde-claro); border-left:4px solid var(--verde-oscuro);
+    border-radius:var(--radius); box-shadow:var(--shadow);
+    padding:16px 18px; margin-bottom:18px;
   }
-  .informe-cliente-label{font-size:13px; font-weight:600; color:var(--texto); flex-shrink:0;}
+  .informe-cliente-icon{
+    width:34px; height:34px; flex-shrink:0; border-radius:50%;
+    background:var(--verde-oscuro); color:#fff;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .informe-cliente-icon svg{width:18px; height:18px;}
+  .informe-cliente-label{font-size:14.5px; font-weight:700; color:var(--verde-oscuro); flex-shrink:0;}
   .informe-cliente-bar select{
-    border:1px solid var(--gris-linea); border-radius:7px; padding:8px 10px;
+    border:1px solid var(--gris-linea); border-radius:7px; padding:9px 11px;
     font-size:13.5px; font-family:var(--font-body); color:var(--texto); background:#fff;
     min-width:260px; flex:1; max-width:420px;
   }
