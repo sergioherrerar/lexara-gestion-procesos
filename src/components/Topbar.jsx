@@ -1,6 +1,9 @@
 import IconButton from './IconButton';
 
-const TITLES = {dashboard:"Dashboard", procesos:"Procesos judiciales", clientes:"Clientes", facturacion:"Solicitud De Factura E.", ordenesCompra:"Órdenes de compra", colaboradores:"Colaborador Lexara", setup:"Configuración"};
+// "informes"/"tutelas" faltaban acá desde que se agregaron esos módulos (el
+// <h2> caía al fallback TITLES[view]||view y mostraba el string crudo en
+// minúsculas) — corregido de paso al agregar "administracion".
+const TITLES = {dashboard:"Dashboard", informes:"Informes", procesos:"Procesos judiciales", tutelas:"Tutelas", clientes:"Clientes", facturacion:"Solicitud De Factura E.", ordenesCompra:"Órdenes de compra", administracion:"Administración", setup:"Configuración"};
 
 export default function Topbar({ view, liveMode, searchQuery, onSearch, onOpenMobileNav, onRefresh, refreshing, cargandoInicial }){
   const cargando = refreshing || cargandoInicial;
@@ -35,7 +38,7 @@ export default function Topbar({ view, liveMode, searchQuery, onSearch, onOpenMo
             view === 'clientes' ? "Buscar por razón social, NIT, correo o dirección…" :
             view === 'facturacion' ? "Buscar por no. de factura, contrato o cliente…" :
             view === 'ordenesCompra' ? "Buscar por no. de orden, contrato o cliente…" :
-            view === 'colaboradores' ? "Buscar por nombre, correo o cargo…" :
+            view === 'administracion' ? "Buscar por nombre, correo o cargo…" :
             "Buscar por numero corto, cliente o apoderado…"
           }
           value={searchQuery}

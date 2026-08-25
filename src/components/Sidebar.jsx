@@ -45,7 +45,7 @@ const NAV_ITEMS = [
   {view:'clientes', label:'Clientes', icon:<IconClientes/>},
   {view:'facturacion', label:'Solicitud De Factura E.', icon:<IconFacturacion/>},
   {view:'ordenesCompra', label:'Órdenes de compra', icon:<IconOrdenesCompra/>},
-  {view:'colaboradores', label:'Colaborador Lexara', icon:<IconColaboradores/>},
+  {view:'administracion', label:'Administración', icon:<IconColaboradores/>},
 ];
 
 // MSAL no siempre entrega account.name relleno (depende de qué claims traiga

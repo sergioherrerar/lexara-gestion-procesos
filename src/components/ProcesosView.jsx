@@ -6,6 +6,7 @@ import ColumnHeaderMenu from './ColumnHeaderMenu';
 import { useColumnFilters } from '../hooks/useColumnFilters';
 import { useColumnSort } from '../hooks/useColumnSort';
 import { generarFichaProcesoPDF } from '../lib/informeProceso';
+import { generarImpulsoProcesalWord, enviarBorradorImpulsoProcesalGraph, abrirCorreoImpulsoProcesal } from '../lib/formatoImpulsoProcesal';
 
 function matchesFilter(p, currentFilter){
   if(currentFilter==='todos') return true;
@@ -25,9 +26,11 @@ const COLUMNS = [
   {key:'acciones', label:'Acciones', filterable:false},
 ];
 
-export default function ProcesosView({ procesos, currentFilter, setFilter, searchQuery, onOpenProceso, onCreateProceso, canWrite = true }){
+export default function ProcesosView({ procesos, currentFilter, setFilter, searchQuery, onOpenProceso, onCreateProceso, canWrite = true, liveMode, notify }){
   const [showTerminados, setShowTerminados] = useState(false);
   const [generandoPDF, setGenerandoPDF] = useState(null); // id del proceso mientras genera su ficha en PDF
+  const [generandoWord, setGenerandoWord] = useState(null); // id del proceso mientras genera el Impulso Procesal en Word
+  const [generandoCorreo, setGenerandoCorreo] = useState(null); // id del proceso mientras crea el borrador de correo
   const { filters, setFilter: setColFilter, clearFilters, rowMatches, hasActiveFilters } = useColumnFilters();
   const { sort, setSortKey, sortRows } = useColumnSort();
 
@@ -35,6 +38,33 @@ export default function ProcesosView({ procesos, currentFilter, setFilter, searc
     setGenerandoPDF(proceso.id);
     try{ await generarFichaProcesoPDF(proceso); }
     finally { setGenerandoPDF(null); }
+  }
+  async function handleGenerarImpulsoWord(proceso){
+    setGenerandoWord(proceso.id);
+    try{ await generarImpulsoProcesalWord(proceso); }
+    catch(err){ console.error(err); notify?.("No se pudo generar el Impulso Procesal en Word: " + err.message, 'error'); }
+    finally { setGenerandoWord(null); }
+  }
+  // Mismo criterio que el correo de Tutelas (ver InformesView.jsx): primero
+  // intenta el borrador DIRECTO en Outlook por Microsoft Graph (nunca en modo
+  // demo, ahí no hay cuenta real) y si falla por cualquier motivo cae de
+  // vuelta a un mailto: con el mismo texto en plano.
+  async function handleAbrirCorreoImpulso(proceso){
+    if(generandoCorreo) return;
+    setGenerandoCorreo(proceso.id);
+    try{
+      if(liveMode){
+        try{
+          const mensaje = await enviarBorradorImpulsoProcesalGraph(proceso);
+          if(mensaje?.carpetaBorradores) window.open(mensaje.carpetaBorradores, '_blank');
+          const carpetaInfo = mensaje?.carpetaReal ? ` (quedó guardado en la carpeta "${mensaje.carpetaReal}")` : '';
+          notify?.(`Se creó el borrador en Outlook con el texto del Impulso Procesal${carpetaInfo} — complete los Antecedentes/Solicitud antes de enviarlo.`, 'info');
+          return;
+        }catch(err){ console.error('No se pudo crear el borrador por Graph, se usa mailto:', err); }
+      }
+      abrirCorreoImpulsoProcesal(proceso);
+    }catch(err){ console.error(err); notify?.("No se pudo abrir el correo del Impulso Procesal: " + err.message, 'error'); }
+    finally { setGenerandoCorreo(null); }
   }
   const entidades = Array.from(new Set(procesos.map(p => stripHtml(p.Entidad) || "Sin entidad"))).sort((a,b)=>a.localeCompare(b));
   const filterChips = [{key:'todos', label:'Todos'}, ...entidades.map(e => ({key:e, label:e}))];
@@ -105,6 +135,8 @@ export default function ProcesosView({ procesos, currentFilter, setFilter, searc
                     <IconButton icon="view" variant="view" label="Ver proceso (solo consulta)" onClick={e => { e.stopPropagation(); onOpenProceso(p.id, {viewOnly:true}); }} />
                     {canWrite && <IconButton icon="edit" variant="edit" label="Editar proceso" onClick={e => { e.stopPropagation(); onOpenProceso(p.id, {viewOnly:false}); }} />}
                     <IconButton icon="pdf" variant="pdf" label="Descargar ficha en PDF" spinning={generandoPDF===p.id} onClick={e => { e.stopPropagation(); handleGenerarFicha(p); }} />
+                    <IconButton icon="word" variant="word" label="Descargar Impulso Procesal en Word" spinning={generandoWord===p.id} onClick={e => { e.stopPropagation(); handleGenerarImpulsoWord(p); }} />
+                    <IconButton icon="mail" variant="mail" label="Crear borrador de correo — Impulso Procesal al Despacho" spinning={generandoCorreo===p.id} onClick={e => { e.stopPropagation(); handleAbrirCorreoImpulso(p); }} />
                   </div>
                 </td>
               </tr>

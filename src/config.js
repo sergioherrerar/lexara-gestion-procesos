@@ -26,6 +26,24 @@ export const INITIAL_CONFIG = {
   // llega a dar documentación de parámetros soportados, ahí sí se podría
   // armar el link por factura.
   DAVIVIENDA_PAGOS_URL: "https://portalpagos.davivienda.com/#/comercio/16310/MD",
+  // Módulo Administración > Vacaciones (agregado 2026-08-25) — el usuario
+  // pidió mantener el Excel REAL que ya usaban ("Vacaciones.xlsx", en
+  // Documentos compartidos > ADMINISTRACION > TALENTO HUMANO MD del sitio
+  // raíz del tenant) en vez de migrar a una lista de SharePoint nueva, pero
+  // que sus campos "se llenen desde el web". driveId/itemId identifican ese
+  // archivo de forma directa (vía Microsoft Graph Workbook API), sin
+  // depender de a qué sitio/carpeta pertenece — ver leerVacacionesExcel/
+  // escribirRangoVacacionesExcel en graph.js y src/lib/vacaciones.js. Si el
+  // archivo se llega a mover o recrear, estos 2 valores hay que
+  // actualizarlos (búscalo de nuevo y toma su driveId/id reales).
+  VACACIONES_DRIVE_ID: "b!-t11T9REjkqyzx1wKnIwXFJA41Usu_BHgNeLnjwCc5HYWkIHXxnYRpZMjukNKmtV",
+  VACACIONES_ITEM_ID: "01UE6YKCMH6JZMB52OTVB2JROCRYKGNL7B",
+  VACACIONES_HOJA: "Vacaciones",
+  // Módulo Administración > Documentos de la empresa — un solo enlace fijo a
+  // la carpeta real de SharePoint con todos los documentos (pedido explícito
+  // del usuario: "es un link para todos los documentos", sin lista/biblioteca
+  // propia dentro de la app).
+  DOCUMENTOS_EMPRESA_URL: "https://mydabogados.sharepoint.com/:f:/g/IgChHEoNJ81RTIM29zEZo0goASpa5NnRSXh6TeLdvLJ-QNA?e=uMeU0f",
 };
 
 // =========================================================================

@@ -171,6 +171,63 @@ export async function crearBorradorCorreo({ to, cc, subject, htmlBody, adjuntoNo
   return { ...mensaje, carpetaBorradores, carpetaReal };
 }
 
+// Token aislado para leer/escribir el Excel de Vacaciones (Files.ReadWrite)
+// — mismo criterio que getMailToken(): se pide APARTE de
+// Sites.ReadWrite.All en beginSignIn()/getGraphToken() para no romper el
+// inicio de sesión de todo el mundo mientras este permiso nuevo no esté
+// aprobado en Azure AD (Entra). Se pide la primera vez que se usa Vacaciones
+// (ver src/lib/vacaciones.js) — acquireTokenSilent falla la primera vez y
+// se reintenta una sola vez con un popup chiquito.
+async function getFilesToken(){
+  const scopes = ["Files.ReadWrite"];
+  try{
+    const res = await msalInstance.acquireTokenSilent({ scopes, account });
+    return res.accessToken;
+  }catch(err){
+    const res = await msalInstance.acquireTokenPopup({ scopes });
+    return res.accessToken;
+  }
+}
+
+// Lee el rango usado de una hoja de un Excel real (no una lista de
+// SharePoint) vía Microsoft Graph Workbook API — usado por Administración >
+// Vacaciones para seguir mostrando/editando el mismo "Vacaciones.xlsx" que
+// ya usaba el despacho (ver [[project_administracion_modulo]]). Devuelve
+// `values` tal cual Graph las calcula (array de arrays, una fila por fila
+// real de la hoja, incluyendo las 2 filas de encabezado).
+export async function leerVacacionesExcel(driveId, itemId, hoja){
+  const token = await getFilesToken();
+  const res = await fetch(`https://graph.microsoft.com/v1.0/drives/${driveId}/items/${itemId}/workbook/worksheets('${encodeURIComponent(hoja)}')/usedRange(valuesOnly=true)`, {
+    headers: { Authorization:`Bearer ${token}` },
+  });
+  if(!res.ok){
+    const body = await res.text();
+    throw new Error(`Graph ${res.status}: ${body.substring(0,300)}`);
+  }
+  const data = await res.json();
+  return data.values || [];
+}
+
+// Escribe un rango puntual (ej. "I3:J3") — usado para agregar un período de
+// vacaciones tomado en las primeras 2 celdas VACÍAS (Días/Nota) de la fila
+// de esa persona, nunca sobre celdas que ya tengan datos (ver
+// primeraColumnaVaciaDePeriodo en vacaciones.js). El resto de la hoja
+// (fórmulas de Días Pendientes/Tomados) no se toca — ya suman por fórmula
+// esas mismas columnas, así que se recalculan solas.
+export async function escribirRangoVacacionesExcel(driveId, itemId, hoja, rango, valores){
+  const token = await getFilesToken();
+  const res = await fetch(`https://graph.microsoft.com/v1.0/drives/${driveId}/items/${itemId}/workbook/worksheets('${encodeURIComponent(hoja)}')/range(address='${rango}')`, {
+    method: "PATCH",
+    headers: { Authorization:`Bearer ${token}`, "Content-Type":"application/json" },
+    body: JSON.stringify({ values: [valores] }),
+  });
+  if(!res.ok){
+    const body = await res.text();
+    throw new Error(`Graph ${res.status}: ${body.substring(0,300)}`);
+  }
+  return res.json();
+}
+
 export async function graphFetch(path, opts){
   const token = await getGraphToken();
   const res = await fetch(path.startsWith('http') ? path : `https://graph.microsoft.com/v1.0${path}`, {

@@ -23,7 +23,7 @@ export const MODULOS_DISPONIBLES = [
   {key:'clientes', label:'Clientes'},
   {key:'facturacion', label:'Solicitud De Factura E.'},
   {key:'ordenesCompra', label:'Órdenes de compra'},
-  {key:'colaboradores', label:'Colaborador Lexara'},
+  {key:'administracion', label:'Administración'},
   {key:'setup', label:'Configuración'},
 ];
 const VISTAS_SIEMPRE_VISIBLES = ['dashboard', 'informes'];
@@ -34,10 +34,20 @@ const VISTAS_SIEMPRE_VISIBLES = ['dashboard', 'informes'];
 // que nadie pierda acceso el día que esto se publique. En cuanto alguien
 // edite y guarde sus módulos desde la app, este respaldo deja de aplicarle
 // (ModulosPermitidos ya no estará vacío).
+//
+// 2026-08-25: el módulo "Colaborador Lexara" se renombró/movió dentro de
+// "Administración" (junto con Vacaciones/Certificaciones/Documentos de la
+// empresa, ver [[project_administracion_modulo]]) — pedido explícito del
+// usuario: "en permisos solo los administradores". A diferencia del resto
+// de módulos (que Jefe también tenía), Administración quedó SOLO en el
+// respaldo legado del Rol Administrador — un Jefe (por ejemplo la propia
+// Gerente) NO lo ve automáticamente aunque antes sí viera "Colaborador
+// Lexara"; si alguien más necesita entrar, hay que marcarle la casilla
+// "Administración" a mano en Módulos permitidos (no es un cambio de código).
 const MODULOS_POR_ROL_LEGADO = {
-  Administrador: ['procesos','tutelas','clientes','facturacion','ordenesCompra','colaboradores','setup'],
-  Jefe: ['procesos','tutelas','clientes','facturacion','ordenesCompra','colaboradores'],
-  Colaborador: ['procesos','tutelas','clientes','colaboradores'],
+  Administrador: ['procesos','tutelas','clientes','facturacion','ordenesCompra','administracion','setup'],
+  Jefe: ['procesos','tutelas','clientes','facturacion','ordenesCompra'],
+  Colaborador: ['procesos','tutelas','clientes'],
 };
 // Correo que no aparece en Equipo MD: mismo bloqueo de menú que Colaborador
 // (el más restringido de los 3 roles reales) — nunca acceso total a ciegas.

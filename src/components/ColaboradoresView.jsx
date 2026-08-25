@@ -17,7 +17,14 @@ const COLUMNS = [
   {key:'acciones', label:'Acciones', filterable:false},
 ];
 
-export default function ColaboradoresView({ colaboradores, searchQuery, onOpenColaborador, onCreateColaborador, onDeleteColaborador, canWrite = true, notify }){
+// `embedded`/`titulo`: agregados 2026-08-25 al mudar este módulo dentro de
+// la pestaña "Colaboradores MD" de Administración (ver AdministracionView.jsx
+// y [[project_administracion_modulo]]) — con embedded=true no repite su
+// propio <h1>/.view-header grande (quedaría duplicado con el de
+// Administración), solo el contador + botón "Nuevo colaborador" en una
+// franja liviana. Por defecto queda igual que siempre (embedded=false), por
+// si este componente se vuelve a usar solo en algún otro lugar.
+export default function ColaboradoresView({ colaboradores, searchQuery, onOpenColaborador, onCreateColaborador, onDeleteColaborador, canWrite = true, notify, embedded = false, titulo = "Colaborador Lexara" }){
   const { filters, setFilter, clearFilters, rowMatches, hasActiveFilters } = useColumnFilters();
   const { sort, setSortKey, sortRows } = useColumnSort();
   const [generandoCertificacion, setGenerandoCertificacion] = useState(null); // id del colaborador mientras genera su certificación
@@ -42,15 +49,10 @@ export default function ColaboradoresView({ colaboradores, searchQuery, onOpenCo
     .sort((a,b) => (a.Nombre||"").localeCompare(b.Nombre||""));
   const sortedRows = sortRows(rows, COLUMNS);
 
-  return (
-    <div className="view">
-      <div className="view-header">
-        <div>
-          <h1>Colaborador Lexara</h1>
-          <p>{rows.length} de {colaboradores.length} colaboradores{hasActiveFilters && <> · <button type="button" className="clear-filters-link" onClick={clearFilters}>Limpiar filtros de columna</button></>}</p>
-        </div>
-        {canWrite && <IconTextButton icon="add" variant="primary" onClick={onCreateColaborador}>Nuevo colaborador</IconTextButton>}
-      </div>
+  const contadorYFiltro = (
+    <p>{rows.length} de {colaboradores.length} colaboradores{hasActiveFilters && <> · <button type="button" className="clear-filters-link" onClick={clearFilters}>Limpiar filtros de columna</button></>}</p>
+  );
+  const tabla = (
       <div className="table-wrap">
         <table>
           <thead>
@@ -84,6 +86,29 @@ export default function ColaboradoresView({ colaboradores, searchQuery, onOpenCo
           </tbody>
         </table>
       </div>
+  );
+
+  if(embedded){
+    return (
+      <div>
+        <div className="view-header" style={{marginBottom:14}}>
+          <div>{contadorYFiltro}</div>
+          {canWrite && <IconTextButton icon="add" variant="primary" onClick={onCreateColaborador}>Nuevo colaborador</IconTextButton>}
+        </div>
+        {tabla}
+      </div>
+    );
+  }
+  return (
+    <div className="view">
+      <div className="view-header">
+        <div>
+          <h1>{titulo}</h1>
+          {contadorYFiltro}
+        </div>
+        {canWrite && <IconTextButton icon="add" variant="primary" onClick={onCreateColaborador}>Nuevo colaborador</IconTextButton>}
+      </div>
+      {tabla}
     </div>
   );
 }

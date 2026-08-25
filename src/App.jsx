@@ -16,7 +16,7 @@ import ProcesoDrawer from './components/ProcesoDrawer';
 import ClienteDrawer from './components/ClienteDrawer';
 import FacturaDrawer from './components/FacturaDrawer';
 import OrdenCompraDrawer from './components/OrdenCompraDrawer';
-import ColaboradoresView from './components/ColaboradoresView';
+import AdministracionView from './components/AdministracionView';
 import ColaboradorDrawer from './components/ColaboradorDrawer';
 import FormaPagoDrawer from './components/FormaPagoDrawer';
 import DesistimientoDrawer from './components/DesistimientoDrawer';
@@ -102,6 +102,8 @@ export default function App(){
             onOpenProceso={app.openProceso}
             onCreateProceso={app.newProceso}
             canWrite={app.canWrite}
+            liveMode={app.liveMode}
+            notify={app.notify}
           />
         )}
         {app.view === 'tutelas' && canAccessView(app.modulosPermitidos, 'tutelas') && (
@@ -150,8 +152,8 @@ export default function App(){
             onCreateFacturaFromOrdenCompra={app.createFacturaFromOrdenCompra}
           />
         )}
-        {app.view === 'colaboradores' && canAccessView(app.modulosPermitidos, 'colaboradores') && (
-          <ColaboradoresView
+        {app.view === 'administracion' && canAccessView(app.modulosPermitidos, 'administracion') && (
+          <AdministracionView
             colaboradores={app.colaboradores}
             searchQuery={app.searchQuery}
             onOpenColaborador={app.openColaborador}
@@ -159,6 +161,8 @@ export default function App(){
             onDeleteColaborador={app.deleteColaborador}
             canWrite={app.canWrite}
             notify={app.notify}
+            liveMode={app.liveMode}
+            config={app.config}
           />
         )}
         {app.view === 'setup' && canAccessView(app.modulosPermitidos, 'setup') && (
