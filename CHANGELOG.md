@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-08-25
+- **La aplicación ahora vive en DOS sitios en vivo a la vez**: el de siempre en GitHub Pages, y ahora también en el dominio propio del despacho, `https://www.lexaraabogados.com/app/` (hosting por cPanel). Se agregó el permiso de inicio de sesión (Azure AD) para la dirección nueva y se configuró el build para que cada sitio use sus propios archivos correctamente. De ahora en adelante, cada publicación se sube a los dos lugares.
+
 ## 2026-08-24
 - Renombrado el módulo "Facturación" a **"Solicitud De Factura E."** en el menú lateral, el título de la página y el listado de "Acceso a módulos" de Colaborador Lexara (permisos).
 - **Corregido un error real al abrir el borrador de correo de Tutelas ("es posible que este mensaje se haya movido o eliminado")** — pasaba al darle clic al botón "Abrir correo con este informe" una segunda vez seguida: Outlook a veces tarda un instante en reconocer un correo recién creado por Microsoft Graph, y abrirlo de inmediato mostraba ese error aunque el borrador sí existía. Ahora espera un momento antes de abrirlo, y el botón se desactiva mientras se está creando el borrador (para no crear varios de un tirón sin querer).

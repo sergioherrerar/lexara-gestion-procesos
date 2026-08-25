@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:cpanel": "vite build --config vite.config.cpanel.js",
     "preview": "vite preview"
   },
   "dependencies": {
