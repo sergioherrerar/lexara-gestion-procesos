@@ -180,18 +180,12 @@ export default function InformesView({ procesos, clientes, facturas, ordenesComp
       // (mailto + copiar tabla al portapapeles) — nunca se queda sin abrir nada.
       if(liveMode){
         try{
+          // crearBorradorCorreo (graph.js) ya confirma que el mensaje se
+          // puede leer de vuelta antes de devolverlo — no hace falta esperar
+          // acá también (ver el comentario ahí: primer intento con solo una
+          // espera fija no bastó, encontrado por el usuario 2026-08-25).
           const mensaje = await enviarBorradorTutelasGraph(tutelas, fechaInformeTutelas);
-          if(mensaje?.webLink){
-            // Espera un momento antes de abrir el borrador recién creado:
-            // Outlook en la Web a veces tarda un instante en "ver" un correo
-            // que Microsoft Graph acaba de crear — abrir el enlace de
-            // inmediato podía mostrar "es posible que este mensaje se haya
-            // movido o eliminado" aunque el borrador sí existe (encontrado
-            // por el usuario en vivo, 2026-08-24). Con este respiro se
-            // encontró estable en las pruebas.
-            await new Promise(r => setTimeout(r, 1500));
-            window.open(mensaje.webLink, '_blank');
-          }
+          if(mensaje?.webLink) window.open(mensaje.webLink, '_blank');
           notify?.('Se creó el borrador en Outlook con las tablas y el PDF ya adjunto — revísalo y dale Enviar cuando quieras.', 'info');
           return;
         }catch(err){ console.error('No se pudo crear el borrador por Graph, se usa el método anterior:', err); }

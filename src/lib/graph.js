@@ -131,7 +131,28 @@ export async function crearBorradorCorreo({ to, cc, subject, htmlBody, adjuntoNo
     const errBody = await res.text();
     throw new Error(`Graph ${res.status}: ${errBody.substring(0,300)}`);
   }
-  return res.json();
+  const mensaje = await res.json();
+
+  // Outlook en la Web a veces tarda un instante en "ver" un correo que Graph
+  // ACABA de crear — abrir su webLink de inmediato podía mostrar "es posible
+  // que este mensaje se haya movido o eliminado" aunque el borrador sí
+  // existía (bug real reportado por el usuario 2026-08-24, y otra vez
+  // 2026-08-25 después de un primer intento de arreglo con solo una espera
+  // fija). En vez de adivinar cuánto esperar, se confirma DE VERDAD que el
+  // mensaje ya se puede leer (GET repetido sobre su propio id) antes de
+  // devolverlo — quien llama recién ahí abre el webLink. Si los reintentos
+  // se agotan, igual se devuelve el mensaje (mejor abrirlo con algo de
+  // riesgo que no abrirlo nunca).
+  for(let intento=0; intento<6; intento++){
+    await new Promise(r => setTimeout(r, 700));
+    try{
+      const check = await fetch(`https://graph.microsoft.com/v1.0/me/messages/${mensaje.id}?$select=id`, {
+        headers: { Authorization:`Bearer ${token}` },
+      });
+      if(check.ok) break;
+    }catch(err){ /* red momentánea — sigue reintentando */ }
+  }
+  return mensaje;
 }
 
 export async function graphFetch(path, opts){
