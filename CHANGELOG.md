@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-08-26
+- **Encabezado más grande en los Word que genera la app** (Dashboard > Análisis por Entidad, y Procesos judiciales > Impulso Procesal) — el membrete quedaba chico comparado con el mismo membrete en PDF; ahora ocupa casi todo el ancho de la página, con la misma proporción de recorte que usa el PDF, y el cuerpo del texto se corre lo justo para no encimarse.
+
 ## 2026-08-25
 - **Corregido: "Administración" no se veía para quien ya tenía permisos guardados** — al renombrar el módulo "Colaborador Lexara" a "Administración", quien ya tenía "Colaborador Lexara" marcado explícitamente en su ficha (no dependía del respaldo por Rol) se quedó sin verlo, aunque fuera Administrador. Ahora se reconoce el nombre viejo como si fuera el nuevo, sin tener que volver a marcar nada en SharePoint.
 - **Nuevo módulo "Administración"** — agrupa en pestañas lo que antes era el módulo suelto "Colaborador Lexara" (ahora "Colaboradores MD") más 3 piezas nuevas: **Vacaciones** (lee y escribe en vivo el mismo Excel real que ya usaba el despacho — agregar un período nuevo por colaborador se hace desde la app, sin abrir Excel; los días pendientes/tomados se siguen calculando solos, son fórmulas del propio archivo), **Certificaciones** (el mismo botón de certificación en PDF que ya existía por colaborador, ahora en su propia pestaña organizada) y **Documentos de la empresa** (un botón que abre la carpeta real de SharePoint con todos los documentos). Acceso restringido solo a Administrador — quien ya tenía acceso al viejo "Colaborador Lexara" con otro Rol (Jefe/Colaborador) necesita que le marquen la casilla nueva "Administración" a mano.

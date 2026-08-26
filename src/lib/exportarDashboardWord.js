@@ -1,6 +1,6 @@
 import { stripHtml, parseMonto, fmtMonto, desistimientosForProceso, groupCount } from './graph';
 import { imagenComoDataUrl } from './informesPDF';
-import membreteLexara from '../assets/Membrete Lexara.png';
+import { crearHeaderMembreteWord } from './membreteWord';
 import firmaCompleta from '../assets/Firma Monica Completa.png';
 
 // Exportación Word (.docx) del panel "Análisis de procesos por Entidad" del
@@ -182,29 +182,6 @@ async function prepararImagen(construido){
   return { bytes: dataUrlABytes(dataUrl), ancho: construido.ancho, alto: construido.alto };
 }
 
-// Recorta solo la franja superior del membrete completo (logo + figura
-// decorativa) — la imagen original está pensada para una hoja A4 entera,
-// con una franja dorada inclinada al final que no tiene sentido repetir
-// como encabezado de página en un Word (se ve cortada a la mitad). El pie
-// de página de este documento usa texto simple en su lugar (ver más abajo).
-function membreteEncabezadoPng(url){
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => {
-      const w = img.naturalWidth;
-      const h = Math.round(img.naturalHeight * 0.23);
-      const canvas = document.createElement('canvas');
-      canvas.width = w; canvas.height = h;
-      const ctx = canvas.getContext('2d');
-      ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, w, h);
-      ctx.drawImage(img, 0, 0, w, h, 0, 0, w, h);
-      resolve({ dataUrl: canvas.toDataURL('image/png'), w, h });
-    };
-    img.onerror = reject;
-    img.src = url;
-  });
-}
-
 const DIAS = ["domingo","lunes","martes","miércoles","jueves","viernes","sábado"];
 const MESES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
 function fechaLarga(d){
@@ -231,20 +208,23 @@ export async function generarDashboardEntidadWord(procesos, desistimientos, enti
   const dataSubclasificacion = groupCount(filas, r => r.subclasificacion);
   const dataPrueba = groupCount(filas, r => r.pruebaPericial);
 
-  const [pngNaturaleza, pngAdmitida, pngSubclasificacion, pngPrueba, pngDesistimientos, membrete, firma] = await Promise.all([
+  const [pngNaturaleza, pngAdmitida, pngSubclasificacion, pngPrueba, pngDesistimientos, { header: headerMembrete, alturaMm: alturaMembreteMm }, firma] = await Promise.all([
     prepararImagen(svgBarChart(dataNaturaleza, VERDE_OSCURO)),
     prepararImagen(svgPieChart(dataAdmitida)),
     prepararImagen(svgBarChart(dataSubclasificacion, NARANJA)),
     prepararImagen(svgPieChart(dataPrueba)),
     prepararImagen(svgPieChart(dataDesistimientosEstado)),
-    membreteEncabezadoPng(membreteLexara),
+    crearHeaderMembreteWord({ Header, ImageRun, Paragraph, AlignmentType }),
     imagenComoDataUrl(firmaCompleta, 700),
   ]);
-  const membreteBytes = dataUrlABytes(membrete.dataUrl);
   const firmaBytes = dataUrlABytes(firma.dataUrl);
 
-  const anchoMembrete = 420;
   const anchoFirma = 230;
+  // El cuerpo tiene que empezar DESPUÉS de que termine el membrete (si no,
+  // se encima con las primeras líneas) — se le suma un respiro fijo de 8mm,
+  // igual criterio que el "CONTENIDO_Y_INICIAL" de los PDF (ver
+  // informesPDF.js), que también deja un margen fijo después del membrete.
+  const margenSuperiorMm = alturaMembreteMm + 8;
 
   function celdaResumen(label, value){
     return new TableCell({
@@ -292,12 +272,10 @@ export async function generarDashboardEntidadWord(procesos, desistimientos, enti
   const doc = new Document({
     sections: [{
       properties: {
-        page: { margin: { top: convertMillimetersToTwip(14), bottom: convertMillimetersToTwip(16), left: convertMillimetersToTwip(20), right: convertMillimetersToTwip(20) } },
+        page: { margin: { top: convertMillimetersToTwip(margenSuperiorMm), bottom: convertMillimetersToTwip(16), left: convertMillimetersToTwip(20), right: convertMillimetersToTwip(20) } },
       },
       headers: {
-        default: new Header({ children: [
-          new Paragraph({ alignment: AlignmentType.CENTER, children: [ new ImageRun({ type:'png', data: membreteBytes, transformation: { width: anchoMembrete, height: Math.round(anchoMembrete * membrete.h/membrete.w) } }) ] }),
-        ]}),
+        default: headerMembrete,
       },
       footers: {
         default: new Footer({ children: [

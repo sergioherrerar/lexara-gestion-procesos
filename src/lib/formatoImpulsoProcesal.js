@@ -30,6 +30,7 @@
 // Superior de la Judicatura.".
 import { fechaLarga } from './informesPDF';
 import { crearBorradorCorreo } from './graph';
+import { crearHeaderMembreteWord } from './membreteWord';
 import firmaRubrica from '../assets/Firma Monica Rubrica.png';
 
 const APODERADA_NOMBRE = "MÓNICA PAOLA QUINTERO JIMÉNEZ";
@@ -120,11 +121,20 @@ function lineasDocumento(proceso){
 /* ---------------- 1) Word ---------------- */
 
 export async function generarImpulsoProcesalWord(proceso){
-  const [{ Document, Packer, Paragraph, TextRun, ImageRun, AlignmentType, TabStopType }] = await Promise.all([
+  const [{ Document, Packer, Paragraph, TextRun, ImageRun, AlignmentType, TabStopType, Header, convertMillimetersToTwip }] = await Promise.all([
     import('docx'),
   ]);
   const { d } = lineasDocumento(proceso);
-  const firmaBytes = await bytesDeAsset(firmaRubrica);
+  // Membrete real de Lexara como encabezado — pedido explícito del usuario
+  // 2026-08-26 ("de igual forma para el formato de Word que saca desde los
+  // procesos judiciales"), mismo tratamiento que el Word del Dashboard (ver
+  // membreteWord.js) — reemplaza el margen superior grande que traía el
+  // modelo original (pensado para papel membretado ya impreso).
+  const [{ header: headerMembrete, alturaMm: alturaMembreteMm }, firmaBytes] = await Promise.all([
+    crearHeaderMembreteWord({ Header, ImageRun, Paragraph, AlignmentType }),
+    bytesDeAsset(firmaRubrica),
+  ]);
+  const margenSuperiorMm = alturaMembreteMm + 8;
 
   function p(text, opts={}){
     return new Paragraph({
@@ -140,7 +150,8 @@ export async function generarImpulsoProcesalWord(proceso){
 
   const doc = new Document({
     sections: [{
-      properties: { page: { margin: { top: 1700, bottom: 1000, left: 1100, right: 1100 } } },
+      properties: { page: { margin: { top: convertMillimetersToTwip(margenSuperiorMm), bottom: 1000, left: 1100, right: 1100 } } },
+      headers: { default: headerMembrete },
       children: [
         p(d.numeroCorto, { bold:true }),
         vacio(400),
