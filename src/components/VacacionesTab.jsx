@@ -13,8 +13,8 @@ import { IconTextButton } from './IconButton';
 // src/lib/vacaciones.js y [[project_administracion_modulo]].
 //
 // Solo funciona con sesión real (nunca en modo demo — no tiene sentido
-// simular un Excel ajeno, y evita pedir el permiso Files.ReadWrite sin una
-// cuenta real detrás).
+// simular un Excel ajeno). Usa el mismo token que ya usa el resto de la app
+// (Sites.ReadWrite.All) — no hace falta ningún permiso nuevo.
 export default function VacacionesTab({ config, liveMode, notify, canWrite }){
   const [filas, setFilas] = useState(null); // null = todavía no cargó ni una vez
   const [cargando, setCargando] = useState(false);
@@ -28,13 +28,13 @@ export default function VacacionesTab({ config, liveMode, notify, canWrite }){
     if(!liveMode) return;
     setCargando(true); setError("");
     try{
-      const values = await leerVacacionesExcel(config.VACACIONES_DRIVE_ID, config.VACACIONES_ITEM_ID, config.VACACIONES_HOJA);
+      const values = await leerVacacionesExcel(config, config.VACACIONES_HOJA);
       setFilas(parseVacaciones(values));
     }catch(err){
       console.error(err);
       setError("No se pudo leer el Excel de Vacaciones: " + err.message);
     }finally{ setCargando(false); }
-  }, [liveMode, config.VACACIONES_DRIVE_ID, config.VACACIONES_ITEM_ID, config.VACACIONES_HOJA]);
+  }, [liveMode, config]);
 
   useEffect(() => { cargar(); }, [cargar]);
 
@@ -52,13 +52,13 @@ export default function VacacionesTab({ config, liveMode, notify, canWrite }){
       // Se vuelve a leer el Excel justo antes de escribir (no se reutiliza la
       // fila ya mostrada en pantalla) para tomar el estado más fresco y no
       // pisar un período que alguien más haya agregado mientras tanto.
-      const values = await leerVacacionesExcel(config.VACACIONES_DRIVE_ID, config.VACACIONES_ITEM_ID, config.VACACIONES_HOJA);
+      const values = await leerVacacionesExcel(config, config.VACACIONES_HOJA);
       const ubicacion = ubicarFilaCruda(values, nombre);
       if(!ubicacion) throw new Error(`No se encontró a "${nombre}" en el Excel (¿cambió de nombre en la hoja?).`);
       const colIndex = primeraColumnaVaciaDePeriodo(ubicacion.fila, Math.max(ubicacion.fila.length, 200));
       if(colIndex === null) throw new Error("Esta persona ya no tiene columnas libres para un período nuevo en el Excel — hay que agregar columnas a mano.");
       const rango = rangoNuevoPeriodo(ubicacion.excelRow, colIndex);
-      await escribirRangoVacacionesExcel(config.VACACIONES_DRIVE_ID, config.VACACIONES_ITEM_ID, config.VACACIONES_HOJA, rango, [Number(formDias), formNota.trim()]);
+      await escribirRangoVacacionesExcel(config, config.VACACIONES_HOJA, rango, [Number(formDias), formNota.trim()]);
       notify?.(`Período agregado para ${nombre} en el Excel real — Días pendientes/tomados se recalculan solos (son fórmulas del propio archivo).`, 'info');
       setAbiertoPara("");
       await cargar();

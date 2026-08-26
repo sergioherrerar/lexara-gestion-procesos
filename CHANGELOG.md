@@ -3,6 +3,7 @@
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
 ## 2026-08-26
+- **Corregido: Vacaciones daba "404 ItemNotFound" al abrir la pestaña** — el Excel se ubicaba por un driveId/itemId guardados a mano, que no resolvían con el permiso normal de la app. Ahora se ubica por la ruta real del archivo, con el mismo permiso que ya usa el resto de la app (sin pedir ningún permiso nuevo).
 - **Membrete completo (con la franja dorada de contacto) en los Word que genera la app** (Dashboard > Análisis por Entidad, y Procesos judiciales > Impulso Procesal) — antes el encabezado quedaba chico y sin la franja dorada del pie. Ahora usa el membrete completo como imagen de página, igual que ya lo hace el PDF y la plantilla real del despacho — el logo arriba y la franja dorada de contacto abajo salen de la misma imagen, sin recortar nada.
 
 ## 2026-08-25

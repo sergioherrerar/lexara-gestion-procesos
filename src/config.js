@@ -30,14 +30,13 @@ export const INITIAL_CONFIG = {
   // pidió mantener el Excel REAL que ya usaban ("Vacaciones.xlsx", en
   // Documentos compartidos > ADMINISTRACION > TALENTO HUMANO MD del sitio
   // raíz del tenant) en vez de migrar a una lista de SharePoint nueva, pero
-  // que sus campos "se llenen desde el web". driveId/itemId identifican ese
-  // archivo de forma directa (vía Microsoft Graph Workbook API), sin
-  // depender de a qué sitio/carpeta pertenece — ver leerVacacionesExcel/
-  // escribirRangoVacacionesExcel en graph.js y src/lib/vacaciones.js. Si el
-  // archivo se llega a mover o recrear, estos 2 valores hay que
-  // actualizarlos (búscalo de nuevo y toma su driveId/id reales).
-  VACACIONES_DRIVE_ID: "b!-t11T9REjkqyzx1wKnIwXFJA41Usu_BHgNeLnjwCc5HYWkIHXxnYRpZMjukNKmtV",
-  VACACIONES_ITEM_ID: "01UE6YKCMH6JZMB52OTVB2JROCRYKGNL7B",
+  // que sus campos "se llenen desde el web". Se ubica por RUTA real (no por
+  // driveId/itemId fijos — un intento anterior guardó esos IDs a mano y dio
+  // "404 ItemNotFound" con el token normal de la app, ver graph.js
+  // resolverArchivoVacaciones/leerVacacionesExcel/escribirRangoVacacionesExcel
+  // y [[project_administracion_modulo]]). Si el archivo se llega a mover o
+  // renombrar, solo hay que actualizar esta ruta.
+  VACACIONES_RUTA: "ADMINISTRACION/TALENTO%20HUMANO%20MD/Vacaciones.xlsx",
   VACACIONES_HOJA: "Vacaciones",
   // Módulo Administración > Documentos de la empresa — un solo enlace fijo a
   // la carpeta real de SharePoint con todos los documentos (pedido explícito
