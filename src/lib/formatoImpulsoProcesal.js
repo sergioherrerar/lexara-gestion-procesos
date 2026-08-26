@@ -30,7 +30,7 @@
 // Superior de la Judicatura.".
 import { fechaLarga } from './informesPDF';
 import { crearBorradorCorreo } from './graph';
-import { crearHeaderMembreteWord } from './membreteWord';
+import { crearHeaderMembreteWord, MARGEN_SUPERIOR_MEMBRETE_MM, MARGEN_INFERIOR_MEMBRETE_MM } from './membreteWord';
 import firmaRubrica from '../assets/Firma Monica Rubrica.png';
 
 const APODERADA_NOMBRE = "MÓNICA PAOLA QUINTERO JIMÉNEZ";
@@ -121,7 +121,7 @@ function lineasDocumento(proceso){
 /* ---------------- 1) Word ---------------- */
 
 export async function generarImpulsoProcesalWord(proceso){
-  const [{ Document, Packer, Paragraph, TextRun, ImageRun, AlignmentType, TabStopType, Header, convertMillimetersToTwip }] = await Promise.all([
+  const [{ Document, Packer, Paragraph, TextRun, ImageRun, AlignmentType, TabStopType, Header, convertMillimetersToTwip, HorizontalPositionAlign, HorizontalPositionRelativeFrom, VerticalPositionAlign, VerticalPositionRelativeFrom, TextWrappingType }] = await Promise.all([
     import('docx'),
   ]);
   const { d } = lineasDocumento(proceso);
@@ -130,11 +130,10 @@ export async function generarImpulsoProcesalWord(proceso){
   // procesos judiciales"), mismo tratamiento que el Word del Dashboard (ver
   // membreteWord.js) — reemplaza el margen superior grande que traía el
   // modelo original (pensado para papel membretado ya impreso).
-  const [{ header: headerMembrete, alturaMm: alturaMembreteMm }, firmaBytes] = await Promise.all([
-    crearHeaderMembreteWord({ Header, ImageRun, Paragraph, AlignmentType }),
+  const [headerMembrete, firmaBytes] = await Promise.all([
+    crearHeaderMembreteWord({ Header, ImageRun, Paragraph, HorizontalPositionAlign, HorizontalPositionRelativeFrom, VerticalPositionAlign, VerticalPositionRelativeFrom, TextWrappingType }),
     bytesDeAsset(firmaRubrica),
   ]);
-  const margenSuperiorMm = alturaMembreteMm + 8;
 
   function p(text, opts={}){
     return new Paragraph({
@@ -150,7 +149,7 @@ export async function generarImpulsoProcesalWord(proceso){
 
   const doc = new Document({
     sections: [{
-      properties: { page: { margin: { top: convertMillimetersToTwip(margenSuperiorMm), bottom: 1000, left: 1100, right: 1100 } } },
+      properties: { page: { margin: { top: convertMillimetersToTwip(MARGEN_SUPERIOR_MEMBRETE_MM), bottom: convertMillimetersToTwip(MARGEN_INFERIOR_MEMBRETE_MM), left: 1100, right: 1100 } } },
       headers: { default: headerMembrete },
       children: [
         p(d.numeroCorto, { bold:true }),
@@ -193,8 +192,10 @@ export async function generarImpulsoProcesalWord(proceso){
 
   const blob = await Packer.toBlob(doc);
   const hoyISO = new Date().toISOString().slice(0,10);
-  const nombreArchivo = nombreArchivoSeguro(`Impulso Procesal - ${d.numeroCorto}`);
-  descargarWord(blob, `${nombreArchivo} ${hoyISO}.docx`);
+  // "Impulso Procesal {Numero corto} {fecha}" — pedido explícito del usuario
+  // 2026-08-26, sin guion entre el nombre del formato y el número.
+  const nombreArchivo = nombreArchivoSeguro(`Impulso Procesal ${d.numeroCorto} ${hoyISO}`);
+  descargarWord(blob, `${nombreArchivo}.docx`);
 }
 
 function descargarWord(blob, nombreArchivo){

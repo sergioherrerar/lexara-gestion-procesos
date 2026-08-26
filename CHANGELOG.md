@@ -3,7 +3,7 @@
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
 ## 2026-08-26
-- **Encabezado más grande en los Word que genera la app** (Dashboard > Análisis por Entidad, y Procesos judiciales > Impulso Procesal) — el membrete quedaba chico comparado con el mismo membrete en PDF; ahora ocupa casi todo el ancho de la página, con la misma proporción de recorte que usa el PDF, y el cuerpo del texto se corre lo justo para no encimarse.
+- **Membrete completo (con la franja dorada de contacto) en los Word que genera la app** (Dashboard > Análisis por Entidad, y Procesos judiciales > Impulso Procesal) — antes el encabezado quedaba chico y sin la franja dorada del pie. Ahora usa el membrete completo como imagen de página, igual que ya lo hace el PDF y la plantilla real del despacho — el logo arriba y la franja dorada de contacto abajo salen de la misma imagen, sin recortar nada.
 
 ## 2026-08-25
 - **Corregido: "Administración" no se veía para quien ya tenía permisos guardados** — al renombrar el módulo "Colaborador Lexara" a "Administración", quien ya tenía "Colaborador Lexara" marcado explícitamente en su ficha (no dependía del respaldo por Rol) se quedó sin verlo, aunque fuera Administrador. Ahora se reconoce el nombre viejo como si fuera el nuevo, sin tener que volver a marcar nada en SharePoint.

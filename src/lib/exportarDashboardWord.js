@@ -1,6 +1,6 @@
 import { stripHtml, parseMonto, fmtMonto, desistimientosForProceso, groupCount } from './graph';
 import { imagenComoDataUrl } from './informesPDF';
-import { crearHeaderMembreteWord } from './membreteWord';
+import { crearHeaderMembreteWord, MARGEN_SUPERIOR_MEMBRETE_MM, MARGEN_INFERIOR_MEMBRETE_MM } from './membreteWord';
 import firmaCompleta from '../assets/Firma Monica Completa.png';
 
 // Exportación Word (.docx) del panel "Análisis de procesos por Entidad" del
@@ -189,7 +189,7 @@ function fechaLarga(d){
 }
 
 export async function generarDashboardEntidadWord(procesos, desistimientos, entidad){
-  const [{ Document, Packer, Paragraph, TextRun, ImageRun, Table, TableRow, TableCell, WidthType, AlignmentType, BorderStyle, ShadingType, Header, Footer, convertMillimetersToTwip }] = await Promise.all([
+  const [{ Document, Packer, Paragraph, TextRun, ImageRun, Table, TableRow, TableCell, WidthType, AlignmentType, BorderStyle, ShadingType, Header, convertMillimetersToTwip, HorizontalPositionAlign, HorizontalPositionRelativeFrom, VerticalPositionAlign, VerticalPositionRelativeFrom, TextWrappingType }] = await Promise.all([
     import('docx'),
   ]);
 
@@ -208,23 +208,18 @@ export async function generarDashboardEntidadWord(procesos, desistimientos, enti
   const dataSubclasificacion = groupCount(filas, r => r.subclasificacion);
   const dataPrueba = groupCount(filas, r => r.pruebaPericial);
 
-  const [pngNaturaleza, pngAdmitida, pngSubclasificacion, pngPrueba, pngDesistimientos, { header: headerMembrete, alturaMm: alturaMembreteMm }, firma] = await Promise.all([
+  const [pngNaturaleza, pngAdmitida, pngSubclasificacion, pngPrueba, pngDesistimientos, headerMembrete, firma] = await Promise.all([
     prepararImagen(svgBarChart(dataNaturaleza, VERDE_OSCURO)),
     prepararImagen(svgPieChart(dataAdmitida)),
     prepararImagen(svgBarChart(dataSubclasificacion, NARANJA)),
     prepararImagen(svgPieChart(dataPrueba)),
     prepararImagen(svgPieChart(dataDesistimientosEstado)),
-    crearHeaderMembreteWord({ Header, ImageRun, Paragraph, AlignmentType }),
+    crearHeaderMembreteWord({ Header, ImageRun, Paragraph, HorizontalPositionAlign, HorizontalPositionRelativeFrom, VerticalPositionAlign, VerticalPositionRelativeFrom, TextWrappingType }),
     imagenComoDataUrl(firmaCompleta, 700),
   ]);
   const firmaBytes = dataUrlABytes(firma.dataUrl);
 
   const anchoFirma = 230;
-  // El cuerpo tiene que empezar DESPUÉS de que termine el membrete (si no,
-  // se encima con las primeras líneas) — se le suma un respiro fijo de 8mm,
-  // igual criterio que el "CONTENIDO_Y_INICIAL" de los PDF (ver
-  // informesPDF.js), que también deja un margen fijo después del membrete.
-  const margenSuperiorMm = alturaMembreteMm + 8;
 
   function celdaResumen(label, value){
     return new TableCell({
@@ -272,20 +267,10 @@ export async function generarDashboardEntidadWord(procesos, desistimientos, enti
   const doc = new Document({
     sections: [{
       properties: {
-        page: { margin: { top: convertMillimetersToTwip(margenSuperiorMm), bottom: convertMillimetersToTwip(16), left: convertMillimetersToTwip(20), right: convertMillimetersToTwip(20) } },
+        page: { margin: { top: convertMillimetersToTwip(MARGEN_SUPERIOR_MEMBRETE_MM), bottom: convertMillimetersToTwip(MARGEN_INFERIOR_MEMBRETE_MM), left: convertMillimetersToTwip(20), right: convertMillimetersToTwip(20) } },
       },
       headers: {
         default: headerMembrete,
-      },
-      footers: {
-        default: new Footer({ children: [
-          new Paragraph({
-            alignment: AlignmentType.CENTER,
-            border: { top: { style: BorderStyle.SINGLE, size: 4, color: GRIS_LINEA } },
-            spacing: { before: 100 },
-            children: [ new TextRun({ text: 'MD Abogados SAS · www.lexaraabogados.com · Gerencia@lexaraabogados.com · +57 312 442 0026', size: 15, color: GRIS_SUAVE }) ],
-          }),
-        ]}),
       },
       children: [
         new Paragraph({ alignment: AlignmentType.CENTER, spacing:{before:200, after:60}, children: [ new TextRun({ text: `Análisis de procesos — ${titulo}`, bold:true, size:32, color:VERDE_OSCURO, font:'Georgia' }) ] }),
