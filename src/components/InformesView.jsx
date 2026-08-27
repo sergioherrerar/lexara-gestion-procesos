@@ -70,10 +70,10 @@ export default function InformesView({ procesos, clientes, facturas, ordenesComp
   // [[project_informe_cliente_pagos]] / exportarInformeCliente.js.
   const [clienteInforme, setClienteInforme] = useState('');
   const clientesDistintos = Array.from(new Set(procesos.map(p => (p.Cliente||"").trim()).filter(Boolean))).sort((a,b)=>a.localeCompare(b));
-  function handleDescargarInformeCliente(){
+  async function handleDescargarInformeCliente(){
     if(!clienteInforme) return;
     try{
-      generarInformeClienteHTML(procesos, clienteInforme, config?.DAVIVIENDA_PAGOS_URL);
+      await generarInformeClienteHTML(procesos, clienteInforme, config?.DAVIVIENDA_PAGOS_URL);
     } catch(err){
       console.error(err);
       notify?.("No se pudo generar el informe del cliente: " + err.message, 'error');

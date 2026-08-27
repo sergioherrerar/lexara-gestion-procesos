@@ -1,4 +1,5 @@
 import { stripHtml, parseMonto, fmtMonto, estadoBadgeClass } from './graph';
+import logoBlanco from '../assets/Logo Blanco.png';
 
 // Informe HTML por Cliente — pedido explícito del usuario 2026-08-25: en vez
 // de un portal con inicio de sesión para que cada cliente vea solo sus
@@ -24,7 +25,19 @@ function escapeHtml(s){
   return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
-export function generarInformeClienteHTML(procesos, cliente, daviviendaUrl){
+// El informe es un .html AUTOCONTENIDO (se abre suelto, sin depender de que
+// seguna corriendo la app) — el logo real no se puede referenciar por su URL
+// interna de Vite, hay que incrustarlo como data: URI.
+function dataUrlDeAsset(url){
+  return fetch(url).then(res => res.blob()).then(blob => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  }));
+}
+
+export async function generarInformeClienteHTML(procesos, cliente, daviviendaUrl){
   const nombreCliente = (cliente||"").trim();
   const propios = procesos.filter(p => (p.Cliente||"").trim() === nombreCliente);
 
@@ -48,6 +61,7 @@ export function generarInformeClienteHTML(procesos, cliente, daviviendaUrl){
 
   const fechaLarga = new Date().toLocaleDateString('es-CO', { day:'2-digit', month:'long', year:'numeric' });
   const iconoSvg = '<svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 30 L50 50 L80 30" stroke="currentColor" stroke-width="14" fill="none" stroke-linecap="square"/><path d="M20 70 L50 50 L80 70" stroke="currentColor" stroke-width="14" fill="none" stroke-linecap="square"/></svg>';
+  const logoDataUrl = await dataUrlDeAsset(logoBlanco);
 
   const tarjetasHtml = filas.map(f => `
     <div class="proceso-card">
@@ -87,10 +101,12 @@ export function generarInformeClienteHTML(procesos, cliente, daviviendaUrl){
     }
     *{box-sizing:border-box;}
     body{margin:0; font-family:var(--font-body); background:var(--gris-claro); color:var(--texto); -webkit-font-smoothing:antialiased;}
-    .header{background:radial-gradient(circle at 15% 20%, var(--verde-oscuro-2), var(--verde-oscuro) 65%); color:#fff; padding:26px 28px;}
-    .header .marca{display:flex; align-items:center; gap:10px; margin-bottom:14px;}
+    .header{background:radial-gradient(circle at 15% 20%, var(--verde-oscuro-2), var(--verde-oscuro) 65%); color:#fff; padding:26px 110px 26px 28px; position:relative;}
+    .header-top{display:flex; align-items:center; gap:16px; margin-bottom:14px;}
+    .header .marca{display:flex; align-items:center; gap:10px;}
     .header .marca svg{width:22px; height:22px; color:#fff;}
     .header .marca span{font-weight:700; letter-spacing:.06em; font-size:13px; text-transform:uppercase;}
+    .header .logo-lexara{position:absolute; top:50%; right:28px; transform:translateY(-50%); height:90px; width:auto;}
     .header h1{font-family:var(--font-display); font-size:23px; font-weight:600; margin:0 0 4px;}
     .header p{margin:0; font-size:12.5px; color:rgba(255,255,255,.75);}
     .contenido{max-width:1000px; margin:0 auto; padding:24px 20px 60px;}
@@ -126,12 +142,15 @@ export function generarInformeClienteHTML(procesos, cliente, daviviendaUrl){
     .proceso-card-col p{margin:0; font-size:13px; line-height:1.55; color:var(--texto);}
     .empty-state{padding:40px 20px; text-align:center; color:var(--texto-suave); font-size:13.5px;}
     footer{max-width:1000px; margin:0 auto; padding:20px 20px 30px; font-size:11.5px; color:var(--texto-suave); text-align:center;}
-    @media (max-width:640px){ .kpi-grid{grid-template-columns:repeat(2,1fr);} .proceso-card-body{grid-template-columns:1fr;} .proceso-card-col:first-child{border-right:none; border-bottom:1px solid var(--gris-linea);} }
+    @media (max-width:640px){ .kpi-grid{grid-template-columns:repeat(2,1fr);} .proceso-card-body{grid-template-columns:1fr;} .proceso-card-col:first-child{border-right:none; border-bottom:1px solid var(--gris-linea);} .header{padding-right:28px;} .header-top{justify-content:space-between;} .header .logo-lexara{position:static; transform:none; height:32px;} }
   </style>
 </head>
 <body>
   <div class="header">
-    <div class="marca">${iconoSvg}<span>MD Abogados SAS</span></div>
+    <div class="header-top">
+      <div class="marca">${iconoSvg}<span>MD Abogados SAS</span></div>
+      <img class="logo-lexara" src="${logoDataUrl}" alt="Lexara Abogados">
+    </div>
     <h1>Informe de procesos — ${escapeHtml(nombreCliente)}</h1>
     <p>Generado el ${escapeHtml(fechaLarga)} · Lexara Abogados</p>
   </div>
