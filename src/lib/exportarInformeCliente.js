@@ -144,7 +144,7 @@ export function generarInformeClienteHTML(procesos, cliente, daviviendaUrl){
     </div>
     ${daviviendaUrl ? `<div class="pago">
       <p>Puedes realizar el pago de tus obligaciones con MD Abogados SAS a través de nuestro portal seguro con Davivienda.</p>
-      <a class="btn-pagar" href="${escapeHtml(daviviendaUrl)}" target="_blank" rel="noopener noreferrer">Pagar factura</a>
+      <a class="btn-pagar" href="${escapeHtml(daviviendaUrl)}" target="_blank" rel="noopener noreferrer">Pago Seguro MD ABOGADOS</a>
     </div>` : ''}
     <div class="panel">
       <div class="panel-head"><h3>Detalle de procesos</h3></div>
