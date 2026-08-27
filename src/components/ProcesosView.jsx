@@ -17,6 +17,11 @@ function isTerminado(p){
 }
 
 const COLUMNS = [
+  // ID interno del proceso en SharePoint — pedido explícito del usuario
+  // 2026-08-27 ("incluye el campo de procesos judiciales 'ID' al lado del
+  // proceso judicial"), útil para verificar a mano la relación por ID que
+  // ya usan Desistimientos con este mismo proceso (ver [[project_desistimientos_data_model]]).
+  {key:'id', label:'ID', value: p => String(p.id||"")},
   {key:'radicado', label:'Numero_Corto', value: p => p.Radicado || ""},
   {key:'cliente', label:'Cliente', value: p => p.Cliente || ""},
   {key:'despacho', label:'Despacho', value: p => `${p.Despacho||""} ${p.NumeroDespacho||""}`.trim()},
@@ -124,6 +129,7 @@ export default function ProcesosView({ procesos, currentFilter, setFilter, searc
                 role="button" tabIndex={0}
                 onKeyDown={e => { if(e.key==='Enter' || e.key===' '){ e.preventDefault(); onOpenProceso(p.id, {viewOnly: !canWrite}); } }}
               >
+                <td style={{textAlign:'right'}}>{p.id}</td>
                 <td className="radicado">{p.Radicado || "—"}</td>
                 <td className="cliente">{p.Cliente || "—"}</td>
                 <td>{p.Despacho || "—"}{p.NumeroDespacho ? ` · ${p.NumeroDespacho}` : ""}</td>
@@ -141,7 +147,7 @@ export default function ProcesosView({ procesos, currentFilter, setFilter, searc
                 </td>
               </tr>
             )) : (
-              <tr><td colSpan={7}><div className="empty-state"><div className="mark" dangerouslySetInnerHTML={{__html: ICON_SVG}} />No se encontraron procesos con ese criterio.</div></td></tr>
+              <tr><td colSpan={8}><div className="empty-state"><div className="mark" dangerouslySetInnerHTML={{__html: ICON_SVG}} />No se encontraron procesos con ese criterio.</div></td></tr>
             )}
           </tbody>
         </table>
