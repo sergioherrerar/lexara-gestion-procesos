@@ -36,6 +36,18 @@ export const MESES_NOMBRES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","
 // el mismo orden, no alfabético a secas.
 const ORDEN_TIPO_RESPUESTA = ["ACLARACION","ALCANCE","APLAZAMIENTO","CUMPLIMIENTO FALLO","IMPUGNACION","NULIDAD","REQUERIMIENTO","TUTELA"];
 
+// Un color institucional fijo por Tipo Respuesta (por posición en
+// ORDEN_TIPO_RESPUESTA, no por orden de aparición) — así el mismo Tipo
+// Respuesta siempre sale del mismo color en el gráfico y en las tarjetas de
+// detalle, sin importar qué abogados/categorías traiga cada mes. Paleta
+// institucional (mismos 8 colores que ya usa PieChart.jsx), 1 a 1 con las 8
+// opciones fijas de Tipo Respuesta.
+const PALETA_TIPO_RESPUESTA = ['#004941', '#ef7d00', '#52bbb5', '#a3281c', '#1d5fa3', '#8a6410', '#6b5115', '#5c6b68'];
+export function colorDeTipoRespuesta(tipo){
+  const i = ORDEN_TIPO_RESPUESTA.indexOf(tipo);
+  return PALETA_TIPO_RESPUESTA[i === -1 ? PALETA_TIPO_RESPUESTA.length - 1 : i % PALETA_TIPO_RESPUESTA.length];
+}
+
 export function rangoVencimientoDelMes(anio, mesIndex0){
   const fin = new Date(anio, mesIndex0, 28, 23, 59, 59, 999);
   const inicio = new Date(anio, mesIndex0 - 1, 29, 0, 0, 0, 0);

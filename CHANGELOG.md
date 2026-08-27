@@ -3,6 +3,7 @@
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
 ## 2026-08-27
+- El detalle de "Tutelas por Abogado" ahora muestra una tarjeta por abogado (su valor total en el encabezado, cada Tipo Respuesta con su monto debajo) y un cuadro de "Total general" al final, además del gráfico de barras.
 - **Nuevo informe "Tutelas por Abogado" en Informes** — elige un mes (filtra las tutelas por fecha de Vencimiento, con el corte fijo el día 28 de cada mes) y muestra un gráfico de barras apiladas por Abogado/Tipo Respuesta con el valor a pagar a cada abogado. El botón de Excel descarga 2 hojas: la de Tutelas de siempre (ya filtrada por ese mes) y una nueva "Por Abogado" agrupada con subtotales, igual de la que ya usan en Excel (con los controles +/- para colapsar cada abogado).
 
 ## 2026-08-26

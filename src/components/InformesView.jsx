@@ -15,7 +15,7 @@ import { generarInformeLexaraExcel, generarInformeLexaraPDF } from '../lib/infor
 import { generarInformeFacturasExcel, generarInformeOrdenesCompraExcel } from '../lib/informeFacturacion';
 import { generarInformeTutelasPDF, abrirCorreoTutelas, enviarBorradorTutelasGraph, generarInformeTutelasExcel } from '../lib/informeTutelas';
 import { generarInformeGeneralProcesosExcel } from '../lib/informeGeneral';
-import { agruparPorAbogado, filtrarTutelasPorMes, generarInformeAbogadosTutelasExcel, MESES_NOMBRES } from '../lib/informeAbogadosTutelas';
+import { agruparPorAbogado, filtrarTutelasPorMes, generarInformeAbogadosTutelasExcel, colorDeTipoRespuesta, MESES_NOMBRES } from '../lib/informeAbogadosTutelas';
 import StackedBarChart from './StackedBarChart';
 
 // Entidades con formato de informe formal ya confirmado, y qué generador usa
@@ -90,7 +90,7 @@ export default function InformesView({ procesos, clientes, facturas, ordenesComp
   }
 
   const tutelasDelMesAbogados = filtrarTutelasPorMes(tutelas, anioAbogados, mesAbogados);
-  const { grupos: gruposAbogados } = agruparPorAbogado(tutelasDelMesAbogados, valoresEntidad);
+  const { grupos: gruposAbogados, totalGeneral: totalGeneralAbogados } = agruparPorAbogado(tutelasDelMesAbogados, valoresEntidad);
   async function handleGenerarAbogadosExcel(){
     setGenerandoAbogadosExcel(true);
     try{ await generarInformeAbogadosTutelasExcel(tutelas, valoresEntidad, anioAbogados, mesAbogados); }
@@ -359,6 +359,40 @@ export default function InformesView({ procesos, clientes, facturas, ordenesComp
             <IconButton icon="excel" variant="excel" label="Descargar Excel de Tutelas por Abogado" spinning={generandoAbogadosExcel} onClick={handleGenerarAbogadosExcel} />
           </div>
           <StackedBarChart grupos={gruposAbogados} emptyMsg={`No hay tutelas con vencimiento entre el 29 de ${MESES_NOMBRES[(mesAbogados+11)%12].toLowerCase()} y el 28 de ${MESES_NOMBRES[mesAbogados].toLowerCase()}.`} />
+          {/* Detalle por abogado — pedido explícito del usuario 2026-08-27
+              mirando el gráfico ya en vivo: "incluye las cantidades y
+              separa cada uno de los abogados y una casilla al final del
+              total... cada abogado tenga su valor encima de sus tipos de
+              contestacion" — una tarjeta por abogado (nombre + su total en
+              el encabezado) con cada Tipo Respuesta y su monto debajo, y un
+              cuadro de Total general al final. El gráfico apilado de arriba
+              se queda como comparativo visual rápido; esto es el detalle
+              con los números exactos. */}
+          {gruposAbogados.length > 0 && (
+            <div className="abogados-detalle">
+              {gruposAbogados.map(g => (
+                <div className="abogado-card" key={g.abogado}>
+                  <div className="abogado-card-head">
+                    <span className="abogado-nombre">{g.abogado}</span>
+                    <span className="abogado-total">$ {fmtMonto(g.totalAbogado)}</span>
+                  </div>
+                  <div className="abogado-card-body">
+                    {g.filas.map(f => (
+                      <div className="abogado-card-row" key={f.tipoRespuesta}>
+                        <span className="abogado-tipo-dot" style={{background: colorDeTipoRespuesta(f.tipoRespuesta)}}></span>
+                        <span className="abogado-tipo-label">{f.tipoRespuesta}</span>
+                        <span className="abogado-tipo-valor">$ {fmtMonto(f.total)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+              <div className="abogados-total-general">
+                <span className="abogado-nombre">Total general</span>
+                <span className="abogado-total">$ {fmtMonto(totalGeneralAbogados)}</span>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

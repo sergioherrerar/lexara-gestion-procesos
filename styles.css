@@ -265,7 +265,24 @@
   .bar-track-stacked{display:flex;}
   .bar-segment{height:100%;}
   .bar-value-monto{width:auto; min-width:96px;}
-  .stacked-legend{flex-direction:row; flex-wrap:wrap; gap:10px 18px; padding:10px 0 0; margin-top:4px; border-top:1px solid var(--gris-linea);}
+  /* Detalle por abogado (InformesView.jsx, debajo del gráfico apilado) —
+     una tarjeta por abogado con su valor total en el encabezado y cada
+     Tipo Respuesta con su propio monto debajo; regla del proyecto de
+     alinear todo valor numérico a la derecha. */
+  .abogados-detalle{display:flex; flex-direction:column; gap:12px; margin-top:18px;}
+  .abogado-card{border:1px solid var(--gris-linea); border-radius:10px; overflow:hidden;}
+  .abogado-card-head{display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 16px; background:var(--verde-oscuro); color:#fff;}
+  .abogado-card-head .abogado-nombre{font-weight:700; font-size:13.5px;}
+  .abogado-card-head .abogado-total{font-family:var(--font-mono); font-weight:700; font-size:14px;}
+  .abogado-card-body{padding:4px 16px;}
+  .abogado-card-row{display:flex; align-items:center; gap:10px; padding:7px 0; border-bottom:1px solid var(--gris-linea);}
+  .abogado-card-row:last-child{border-bottom:none;}
+  .abogado-card-row .abogado-tipo-dot{width:9px; height:9px; border-radius:50%; flex-shrink:0;}
+  .abogado-card-row .abogado-tipo-label{flex:1; font-size:12.5px; color:var(--texto);}
+  .abogado-card-row .abogado-tipo-valor{font-family:var(--font-mono); font-size:12.5px; color:var(--texto-suave); text-align:right;}
+  .abogados-total-general{display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 16px; background:var(--verde-claro); border-radius:10px; color:var(--verde-oscuro);}
+  .abogados-total-general .abogado-nombre{font-weight:700; font-size:13.5px; text-transform:uppercase; letter-spacing:.03em;}
+  .abogados-total-general .abogado-total{font-family:var(--font-mono); font-weight:700; font-size:16px;}
 
   /* ---------- Filtros tipo "slicer" del panel de análisis por Entidad
      (Dashboard) — lista con casillas, mismo criterio visual que el resto
