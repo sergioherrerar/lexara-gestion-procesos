@@ -332,15 +332,15 @@ export async function enviarBorradorTutelasGraph(tutelas, fechaNotificacionISO){
 // diferencia del PDF/Correo). "Valor Entidad"/"Valor Abogado" no son
 // campos propios de la Tutela — se buscan en Valores Entidad por la
 // Entidad de cada tutela.
-const COLOR_ENCABEZADO_XLSX = "FF004941";
+export const COLOR_ENCABEZADO_XLSX = "FF004941";
 
-function fechaISOaExcel(iso){
+export function fechaISOaExcel(iso){
   if(!iso) return null;
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso));
   if(!m) return null;
   return new Date(Number(m[1]), Number(m[2])-1, Number(m[3]));
 }
-function estilizarEncabezadoXlsx(row){
+export function estilizarEncabezadoXlsx(row){
   row.height = 30;
   row.eachCell(cell => {
     cell.fill = { type:'pattern', pattern:'solid', fgColor:{argb: COLOR_ENCABEZADO_XLSX} };
@@ -352,10 +352,15 @@ function estilizarFilaXlsx(row){
   row.eachCell(cell => { cell.alignment = { horizontal:'center', vertical:'middle', wrapText:true }; });
 }
 
-export async function generarInformeTutelasExcel(tutelas, valoresEntidad){
-  const { default: ExcelJS } = await import('exceljs');
-  const wb = new ExcelJS.Workbook();
-  const ws = wb.addWorksheet("Tutelas");
+// Arma la hoja "Tutelas" (columnas/estilo institucional) dentro de un
+// workbook YA CREADO — extraído 2026-08-27 para reusarla también en el
+// Excel filtrado por mes de "Informe de Abogados" (ver
+// informeAbogadosTutelas.js), que la necesita como su PRIMERA hoja, con las
+// tutelas ya filtradas por rango de Vencimiento, seguida de una segunda hoja
+// nueva agrupada por Abogado. No guarda el archivo — quien llama decide
+// cuándo y con qué nombre.
+export function construirHojaTutelasXlsx(wb, tutelas, valoresEntidad, nombreHoja = "Tutelas"){
+  const ws = wb.addWorksheet(nombreHoja);
 
   const columnas = ["Id","No Tutela","Cliente","Ciudad","Prestación","Usuario","No Identificación",
     "fecha Notificación","Vencimiento","Tema","Solicita","Tipo Respuesta","Valor Entidad","Valor Abogado","Abogado Tutela"];
@@ -382,6 +387,13 @@ export async function generarInformeTutelasExcel(tutelas, valoresEntidad){
   });
 
   ws.views = [{ state:'frozen', ySplit:1 }];
+  return ws;
+}
+
+export async function generarInformeTutelasExcel(tutelas, valoresEntidad){
+  const { default: ExcelJS } = await import('exceljs');
+  const wb = new ExcelJS.Workbook();
+  construirHojaTutelasXlsx(wb, tutelas, valoresEntidad);
 
   const buffer = await wb.xlsx.writeBuffer();
   const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
