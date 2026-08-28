@@ -21,6 +21,10 @@ const PRESTACION_OPCIONES = ["Asistencial", "Económica", "Administrativa"];
 const TIPO_RESPUESTA_OPCIONES = ["ACLARACION", "ALCANCE", "APLAZAMIENTO", "CUMPLIMIENTO FALLO", "IMPUGNACION", "NULIDAD", "REQUERIMIENTO", "TUTELA"];
 const ABOGADO_RESPUESTA_OPCIONES = ["Ariana Martin Mendoza", "Mónica Paola Quintero", "Daniel Santiago Flechas"];
 const ABOGADO_RESPUESTA_DEFECTO = "Ariana Martin Mendoza";
+// Pedido explícito del usuario 2026-08-28, mientras "Entidad" en Tutelas
+// (columna real de Búsqueda en SharePoint, ver graphFieldsFromUpdates en
+// graph.js) prácticamente solo maneja este valor en la práctica.
+const ENTIDAD_DEFECTO = "GRUPO COLMEDICA";
 
 const FIELDS = ["NoTutela", "MedidaCautelar",
   "Departamento", "Ciudad", "Proceso", "FechaNotificacion", "FechaVencimiento", "Prestacion", "TipoRespuesta",
@@ -28,8 +32,18 @@ const FIELDS = ["NoTutela", "MedidaCautelar",
 
 function emptyForm(tutela){
   const esNuevo = tutela.id == null;
-  const initial = { Cliente: tutela.Cliente || "", Entidad: tutela.Entidad || "", TipoVinculacionEntidad: tutela.TipoVinculacionEntidad || "", Tema: tutela.Tema || "" };
+  const initial = { Cliente: tutela.Cliente || "", Entidad: tutela.Entidad || (esNuevo ? ENTIDAD_DEFECTO : ""), TipoVinculacionEntidad: tutela.TipoVinculacionEntidad || "", Tema: tutela.Tema || "" };
   FIELDS.forEach(k => { initial[k] = tutela[k] || ""; });
+  // "Fecha Notificación"/"Fecha Vencimiento" son columnas de Fecha y hora en
+  // SharePoint (no Solo fecha) — Graph las devuelve con hora y "Z"
+  // (ej. "2026-08-27T07:00:00Z"), que un <input type="date"> no reconoce y
+  // muestra en blanco (confirmado por el usuario 2026-08-28, viendo el aviso
+  // en la consola del navegador). Se recorta a los primeros 10 caracteres
+  // ("yyyy-MM-dd") solo para MOSTRAR el campo; al guardar se sigue mandando
+  // ese mismo formato corto, que SharePoint acepta igual para una columna de
+  // Fecha y hora (queda con hora 00:00).
+  initial.FechaNotificacion = (initial.FechaNotificacion || "").slice(0, 10);
+  initial.FechaVencimiento = (initial.FechaVencimiento || "").slice(0, 10);
   // "Abogado Respuesta" arranca en Ariana Martin Mendoza para una tutela
   // nueva (pedido explícito del usuario) — una ya existente respeta lo que
   // tenga guardado, aunque venga vacío.

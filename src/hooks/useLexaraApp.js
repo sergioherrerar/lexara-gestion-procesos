@@ -513,7 +513,7 @@ export function useLexaraApp(){
       if(liveMode){
         setSaving(true);
         const list = listByKey('procesos');
-        const graphFields = Graph.graphFieldsFromUpdates(list, updates);
+        const graphFields = await Graph.graphFieldsFromUpdates(list.siteId || siteId, list, updates);
         try{
           const created = await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items`, {
             method:"POST", body: JSON.stringify({ fields: graphFields })
@@ -535,7 +535,7 @@ export function useLexaraApp(){
     if(liveMode){
       setSaving(true);
       const list = listByKey('procesos');
-      const graphBody = Graph.graphFieldsFromUpdates(list, updates);
+      const graphBody = await Graph.graphFieldsFromUpdates(list.siteId || siteId, list, updates);
       try{
         await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items/${activeProceso._graphId}/fields`, {
           method:"PATCH", body: JSON.stringify(graphBody)
@@ -563,7 +563,7 @@ export function useLexaraApp(){
     if(liveMode){
       setSaving(true);
       const list = listByKey('clientes');
-      const fields = Graph.graphFieldsFromUpdates(list, updates);
+      const fields = await Graph.graphFieldsFromUpdates(list.siteId || siteId, list, updates);
       try{
         await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items/${activeCliente._graphId || activeCliente.id}/fields`, {
           method:"PATCH", body: JSON.stringify(fields)
@@ -582,7 +582,7 @@ export function useLexaraApp(){
     setClientes(prev => prev.map(c => c.id===cliente.id ? {...c, ...updates} : c));
     if(liveMode){
       const list = listByKey('clientes');
-      const fields = Graph.graphFieldsFromUpdates(list, updates);
+      const fields = await Graph.graphFieldsFromUpdates(list.siteId || siteId, list, updates);
       try{
         await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items/${cliente._graphId || cliente.id}/fields`, {
           method:"PATCH", body: JSON.stringify(fields)
@@ -617,7 +617,7 @@ export function useLexaraApp(){
       setSaving(true);
       const list = listByKey('clientes');
       const { id, ...nuevoSinId } = nuevo;
-      const graphFields = Graph.graphFieldsFromUpdates(list, nuevoSinId);
+      const graphFields = await Graph.graphFieldsFromUpdates(list.siteId || siteId, list, nuevoSinId);
       try{
         const created = await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items`, {
           method:"POST", body: JSON.stringify({ fields: graphFields })
@@ -747,7 +747,7 @@ export function useLexaraApp(){
       if(liveMode){
         setSaving(true);
         const list = listByKey('ordenesCompra');
-        const graphFields = Graph.graphFieldsFromUpdates(list, updates);
+        const graphFields = await Graph.graphFieldsFromUpdates(list.siteId || siteId, list, updates);
         try{
           const created = await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items`, {
             method:"POST", body: JSON.stringify({ fields: graphFields })
@@ -770,7 +770,7 @@ export function useLexaraApp(){
     if(liveMode){
       setSaving(true);
       const list = listByKey('ordenesCompra');
-      const graphBody = Graph.graphFieldsFromUpdates(list, updates);
+      const graphBody = await Graph.graphFieldsFromUpdates(list.siteId || siteId, list, updates);
       try{
         await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items/${activeOrdenCompra._graphId}/fields`, {
           method:"PATCH", body: JSON.stringify(graphBody)
@@ -796,7 +796,7 @@ export function useLexaraApp(){
       if(liveMode){
         setSaving(true);
         const list = listByKey('colaboradores');
-        const graphFields = Graph.graphFieldsFromUpdates(list, updates);
+        const graphFields = await Graph.graphFieldsFromUpdates(list.siteId || siteId, list, updates);
         try{
           const created = await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items`, {
             method:"POST", body: JSON.stringify({ fields: graphFields })
@@ -818,7 +818,7 @@ export function useLexaraApp(){
     if(liveMode){
       setSaving(true);
       const list = listByKey('colaboradores');
-      const fields = Graph.graphFieldsFromUpdates(list, updates);
+      const fields = await Graph.graphFieldsFromUpdates(list.siteId || siteId, list, updates);
       try{
         await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items/${activeColaborador._graphId}/fields`, {
           method:"PATCH", body: JSON.stringify(fields)
@@ -865,7 +865,7 @@ export function useLexaraApp(){
       if(liveMode){
         setSaving(true);
         const list = listByKey('formasPago');
-        const graphFields = Graph.graphFieldsFromUpdates(list, updates);
+        const graphFields = await Graph.graphFieldsFromUpdates(list.siteId || siteId, list, updates);
         try{
           const created = await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items`, {
             method:"POST", body: JSON.stringify({ fields: graphFields })
@@ -888,7 +888,7 @@ export function useLexaraApp(){
     if(liveMode){
       setSaving(true);
       const list = listByKey('formasPago');
-      const graphBody = Graph.graphFieldsFromUpdates(list, updates);
+      const graphBody = await Graph.graphFieldsFromUpdates(list.siteId || siteId, list, updates);
       try{
         await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items/${activeFormaPago._graphId}/fields`, {
           method:"PATCH", body: JSON.stringify(graphBody)
@@ -934,7 +934,7 @@ export function useLexaraApp(){
       if(liveMode){
         setSaving(true);
         const list = listByKey('desistimientos');
-        const graphFields = Graph.graphFieldsFromUpdates(list, updates);
+        const graphFields = await Graph.graphFieldsFromUpdates(list.siteId || siteId, list, updates);
         try{
           const created = await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items`, {
             method:"POST", body: JSON.stringify({ fields: graphFields })
@@ -957,7 +957,7 @@ export function useLexaraApp(){
     if(liveMode){
       setSaving(true);
       const list = listByKey('desistimientos');
-      const graphBody = Graph.graphFieldsFromUpdates(list, updates);
+      const graphBody = await Graph.graphFieldsFromUpdates(list.siteId || siteId, list, updates);
       try{
         await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items/${activeDesistimiento._graphId}/fields`, {
           method:"PATCH", body: JSON.stringify(graphBody)
@@ -999,7 +999,7 @@ export function useLexaraApp(){
       if(liveMode){
         setSaving(true);
         const list = listByKey('tutelas');
-        const graphFields = Graph.graphFieldsFromUpdates(list, updates);
+        const graphFields = await Graph.graphFieldsFromUpdates(list.siteId || siteId, list, updates);
         try{
           const created = await Graph.graphFetch(`/sites/${list.siteId || siteId}/lists/${list.listId}/items`, {
             method:"POST", body: JSON.stringify({ fields: graphFields })
@@ -1021,7 +1021,7 @@ export function useLexaraApp(){
     if(liveMode){
       setSaving(true);
       const list = listByKey('tutelas');
-      const graphBody = Graph.graphFieldsFromUpdates(list, updates);
+      const graphBody = await Graph.graphFieldsFromUpdates(list.siteId || siteId, list, updates);
       try{
         await Graph.graphFetch(`/sites/${list.siteId || siteId}/lists/${list.listId}/items/${activeTutela._graphId}/fields`, {
           method:"PATCH", body: JSON.stringify(graphBody)
@@ -1059,7 +1059,7 @@ export function useLexaraApp(){
       setSaving(true);
       const list = listByKey('temas');
       const { id, ...nuevoSinId } = nuevo;
-      const graphFields = Graph.graphFieldsFromUpdates(list, nuevoSinId);
+      const graphFields = await Graph.graphFieldsFromUpdates(list.siteId || siteId, list, nuevoSinId);
       try{
         const created = await Graph.graphFetch(`/sites/${list.siteId || siteId}/lists/${list.listId}/items`, {
           method:"POST", body: JSON.stringify({ fields: graphFields })
@@ -1078,7 +1078,7 @@ export function useLexaraApp(){
     if(liveMode){
       setSaving(true);
       const list = listByKey('temas');
-      const fields = Graph.graphFieldsFromUpdates(list, updates);
+      const fields = await Graph.graphFieldsFromUpdates(list.siteId || siteId, list, updates);
       try{
         await Graph.graphFetch(`/sites/${list.siteId || siteId}/lists/${list.listId}/items/${tema._graphId || tema.id}/fields`, {
           method:"PATCH", body: JSON.stringify(fields)
@@ -1093,7 +1093,7 @@ export function useLexaraApp(){
       setSaving(true);
       const list = listByKey('valoresEntidad');
       const { id, ...nuevoSinId } = nuevo;
-      const graphFields = Graph.graphFieldsFromUpdates(list, nuevoSinId);
+      const graphFields = await Graph.graphFieldsFromUpdates(list.siteId || siteId, list, nuevoSinId);
       try{
         const created = await Graph.graphFetch(`/sites/${list.siteId || siteId}/lists/${list.listId}/items`, {
           method:"POST", body: JSON.stringify({ fields: graphFields })
@@ -1112,7 +1112,7 @@ export function useLexaraApp(){
     if(liveMode){
       setSaving(true);
       const list = listByKey('valoresEntidad');
-      const fields = Graph.graphFieldsFromUpdates(list, updates);
+      const fields = await Graph.graphFieldsFromUpdates(list.siteId || siteId, list, updates);
       try{
         await Graph.graphFetch(`/sites/${list.siteId || siteId}/lists/${list.listId}/items/${valor._graphId || valor.id}/fields`, {
           method:"PATCH", body: JSON.stringify(fields)

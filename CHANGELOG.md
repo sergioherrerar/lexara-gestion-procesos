@@ -3,6 +3,8 @@
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
 ## 2026-08-28
+- **Corregido: "Fecha Notificación"/"Fecha Vencimiento" de una tutela ya existente a veces se veían en blanco al editarla** — esas columnas guardan fecha y hora en SharePoint; ahora el formulario las muestra bien (recortadas a solo la fecha).
+- **Corregido de raíz: no se podía crear ni guardar una Tutela** ("Graph 400: badArgument") — el campo "Entidad" es en realidad una columna de Búsqueda (Lookup) en SharePoint, y la app la mandaba como texto plano, que SharePoint siempre rechaza. Ahora la app busca (o crea, si no existe) el valor real en la lista de origen y lo guarda correctamente — corregido para cualquier lista con una columna de este tipo, no solo Tutelas. De paso, "Entidad" en una Tutela nueva arranca en "GRUPO COLMEDICA" por defecto.
 - **Corregido: no se podía crear una Tutela nueva si "Fecha Notificación"/"Fecha Vencimiento" quedaban en blanco** — SharePoint rechazaba la creación completa con un error genérico. Ahora un campo vacío simplemente no se envía (en vez de mandarse como texto vacío), en cualquier módulo que tenga este mismo caso.
 
 ## 2026-08-27

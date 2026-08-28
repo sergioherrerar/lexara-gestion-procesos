@@ -343,6 +343,24 @@ export function guessListMapping(list){
   return guessed;
 }
 
+// Busca en la lista de origen de una columna de Búsqueda (Lookup) un
+// elemento cuyo valor (columna `lookup.columnName`, normalmente "Title")
+// coincida con el texto elegido en el desplegable de la app; si no existe
+// todavía, lo crea. Devuelve el id numérico real que Graph exige para
+// escribir en ese campo (`<Columna>LookupId`). Ver nota grande en
+// graphFieldsFromUpdates — bug real 2026-08-28, "Entidad" en Tutelas.
+async function resolverOCrearLookupId(siteId, lookupInfo, valor){
+  const columnaDestino = lookupInfo.columnName || "Title";
+  const listaDestinoId = lookupInfo.listId;
+  const itemsRes = await graphFetch(`/sites/${siteId}/lists/${listaDestinoId}/items?$expand=fields($select=${columnaDestino})&$top=500`);
+  const existente = (itemsRes.value||[]).find(it => normalize(it.fields?.[columnaDestino]||"") === normalize(valor));
+  if(existente) return Number(existente.id);
+  const creado = await graphFetch(`/sites/${siteId}/lists/${listaDestinoId}/items`, {
+    method:"POST", body: JSON.stringify({ fields: { [columnaDestino]: valor } })
+  });
+  return Number(creado.id);
+}
+
 // Traduce claves semánticas a nombres reales de columna para un PATCH/POST.
 // Un valor vacío ("") se OMITE en vez de mandarse tal cual — bug real
 // reportado 2026-08-28: crear una Tutela nueva dejando "Fecha Notificación"/
@@ -355,13 +373,37 @@ export function guessListMapping(list){
 // fila nueva, igual que si nunca se hubiera tocado. Esto afecta a CUALQUIER
 // módulo que cree un registro con un campo fecha/numérico opcional sin
 // llenar, no solo Tutelas — se corrige acá, en el único lugar compartido.
-export function graphFieldsFromUpdates(list, updates){
+//
+// SEGUNDA CAUSA del mismo bug (2026-08-28, confirmada por el usuario
+// revisando la configuración real de columnas en SharePoint): "Entidad" en
+// Tutelas resultó ser una columna de Búsqueda (Lookup) de verdad — la app la
+// escribía como texto plano (ej. "GRUPO COLMEDICA"), pero Graph nunca acepta
+// texto plano para una columna Lookup, solo `{<Columna>LookupId: <id>}` —
+// de ahí el 400 genérico sin nombre de campo (a diferencia de una columna
+// Choice, que sí lo nombra en el mensaje). Por eso esta función ahora es
+// asíncrona: por cada columna que `list.columns` marque como `.lookup`,
+// busca (o crea) el elemento real en la lista de origen del Lookup y manda
+// su id en `<Columna>LookupId` en vez del texto. Afecta a CUALQUIER lista
+// con una columna Lookup, no solo Tutelas — mismo criterio de "un solo lugar
+// compartido" que el resto de esta función.
+export async function graphFieldsFromUpdates(siteId, list, updates){
   const fields = {};
+  const lookupsPendientes = [];
   Object.keys(updates).forEach(key => {
     if(!list.mapping[key]) return;
     if(updates[key] === "") return;
-    fields[list.mapping[key]] = updates[key];
+    const internalName = list.mapping[key];
+    const col = (list.columns||[]).find(c => c.name === internalName);
+    if(col && col.lookup && col.lookup.listId){
+      lookupsPendientes.push({ internalName, lookup: col.lookup, valor: updates[key] });
+    } else {
+      fields[internalName] = updates[key];
+    }
   });
+  for(const { internalName, lookup, valor } of lookupsPendientes){
+    const id = await resolverOCrearLookupId(siteId, lookup, valor);
+    fields[`${internalName}LookupId`] = id;
+  }
   return fields;
 }
 
