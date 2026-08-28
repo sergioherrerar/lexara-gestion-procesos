@@ -156,7 +156,10 @@ export async function generarInformeAbogadosTutelasExcel(tutelas, valoresEntidad
   const { grupos, totalGeneral } = agruparPorAbogado(filtradas, valoresEntidad);
 
   const wb = new ExcelJS.Workbook();
-  construirHojaTutelasXlsx(wb, filtradas, valoresEntidad, "Tutelas");
+  // Pedido explícito del usuario 2026-08-27: quitar "Valor Entidad" de esta
+  // hoja específicamente (el Excel de "Total Tutelas" de siempre sí la
+  // conserva) — acá solo interesa lo que se le paga al abogado.
+  construirHojaTutelasXlsx(wb, filtradas, valoresEntidad, "Tutelas", { incluirValorEntidad: false });
   construirHojaPorAbogado(wb, grupos, totalGeneral);
 
   const buffer = await wb.xlsx.writeBuffer();

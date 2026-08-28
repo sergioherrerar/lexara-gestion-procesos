@@ -264,7 +264,11 @@
      ancho que el número corto de .bar-value normal. */
   .bar-track-stacked{display:flex;}
   .bar-segment{height:100%;}
-  .bar-value-monto{width:auto; min-width:96px;}
+  /* Más específico que ".bar-row .bar-value" (que fija width:24px) para
+     que sí gane acá — bug real: antes perdía la pulseada de especificidad
+     y el monto en pesos quedaba apretado en 24px, partiéndose en 2 líneas
+     ("$" arriba, el número abajo). */
+  .bar-row .bar-value.bar-value-monto{width:auto; min-width:100px; white-space:nowrap;}
   /* Detalle por abogado (InformesView.jsx, debajo del gráfico apilado) —
      una tarjeta por abogado con su valor total en el encabezado y cada
      Tipo Respuesta con su propio monto debajo; regla del proyecto de

@@ -359,27 +359,35 @@ function estilizarFilaXlsx(row){
 // tutelas ya filtradas por rango de Vencimiento, seguida de una segunda hoja
 // nueva agrupada por Abogado. No guarda el archivo — quien llama decide
 // cuándo y con qué nombre.
-export function construirHojaTutelasXlsx(wb, tutelas, valoresEntidad, nombreHoja = "Tutelas"){
+// `opciones.incluirValorEntidad` (default true) — el Excel de "Tutelas por
+// Abogado" pidió explícitamente quitar la columna "Valor Entidad" de esta
+// misma hoja (solo ahí, el de "Total Tutelas" de siempre la conserva).
+export function construirHojaTutelasXlsx(wb, tutelas, valoresEntidad, nombreHoja = "Tutelas", opciones = {}){
+  const incluirValorEntidad = opciones.incluirValorEntidad !== false;
   const ws = wb.addWorksheet(nombreHoja);
 
+  const columnasValores = incluirValorEntidad ? ["Valor Entidad","Valor Abogado"] : ["Valor Abogado"];
   const columnas = ["Id","No Tutela","Cliente","Ciudad","Prestación","Usuario","No Identificación",
-    "fecha Notificación","Vencimiento","Tema","Solicita","Tipo Respuesta","Valor Entidad","Valor Abogado","Abogado Tutela"];
-  const anchos = [8, 12, 34, 16, 16, 26, 16, 16, 16, 26, 40, 16, 14, 14, 22];
+    "fecha Notificación","Vencimiento","Tema","Solicita","Tipo Respuesta", ...columnasValores, "Abogado Tutela"];
+  const anchosValores = incluirValorEntidad ? [14, 14] : [14];
+  const anchos = [8, 12, 34, 16, 16, 26, 16, 16, 16, 26, 40, 16, ...anchosValores, 22];
   ws.columns = columnas.map((c,i) => ({ width: anchos[i] }));
   estilizarEncabezadoXlsx(ws.addRow(columnas));
 
   tutelas.forEach(t => {
     const valorEnt = (valoresEntidad||[]).find(v => v.Entidad === t.Entidad) || null;
+    const valores = incluirValorEntidad
+      ? [valorEnt ? parseMonto(valorEnt.ValorEntidad) : "", valorEnt ? parseMonto(valorEnt.ValorAbogado) : ""]
+      : [valorEnt ? parseMonto(valorEnt.ValorAbogado) : ""];
     const row = ws.addRow([
       t.id, t.NoTutela||"", t.Cliente||"", t.Ciudad||"", t.Prestacion||"", t.Usuario||"", t.NoIdentificacion||"",
       fechaISOaExcel(t.FechaNotificacion), fechaISOaExcel(t.FechaVencimiento), t.Tema||"", stripHtml(t.Solicita)||"",
-      t.TipoRespuesta||"", valorEnt ? parseMonto(valorEnt.ValorEntidad) : "", valorEnt ? parseMonto(valorEnt.ValorAbogado) : "",
-      t.AbogadoRespuesta||"",
+      t.TipoRespuesta||"", ...valores, t.AbogadoRespuesta||"",
     ]);
     estilizarFilaXlsx(row);
   });
 
-  ["Valor Entidad","Valor Abogado"].forEach(header => {
+  columnasValores.forEach(header => {
     ws.getColumn(columnas.indexOf(header)+1).numFmt = '"$"#,##0.00';
   });
   ["fecha Notificación","Vencimiento"].forEach(header => {

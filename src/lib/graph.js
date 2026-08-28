@@ -344,10 +344,22 @@ export function guessListMapping(list){
 }
 
 // Traduce claves semánticas a nombres reales de columna para un PATCH/POST.
+// Un valor vacío ("") se OMITE en vez de mandarse tal cual — bug real
+// reportado 2026-08-28: crear una Tutela nueva dejando "Fecha Notificación"/
+// "Fecha Vencimiento" en blanco (nada obliga a llenarlas) mandaba
+// `fecha_x0020_Notificacion: ""` a Graph, y SharePoint rechaza una columna
+// de tipo Fecha (o Número) con "" con un 400 genérico ("One of the provided
+// arguments is not acceptable" / badArgument) — no es un error de validación
+// con nombre de campo como el de una columna Choice, así que costó más
+// ubicarlo. Al omitir el campo, SharePoint simplemente lo deja vacío en la
+// fila nueva, igual que si nunca se hubiera tocado. Esto afecta a CUALQUIER
+// módulo que cree un registro con un campo fecha/numérico opcional sin
+// llenar, no solo Tutelas — se corrige acá, en el único lugar compartido.
 export function graphFieldsFromUpdates(list, updates){
   const fields = {};
   Object.keys(updates).forEach(key => {
     if(!list.mapping[key]) return;
+    if(updates[key] === "") return;
     fields[list.mapping[key]] = updates[key];
   });
   return fields;

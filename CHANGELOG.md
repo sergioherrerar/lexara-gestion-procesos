@@ -2,7 +2,12 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-08-28
+- **Corregido: no se podía crear una Tutela nueva si "Fecha Notificación"/"Fecha Vencimiento" quedaban en blanco** — SharePoint rechazaba la creación completa con un error genérico. Ahora un campo vacío simplemente no se envía (en vez de mandarse como texto vacío), en cualquier módulo que tenga este mismo caso.
+
 ## 2026-08-27
+- El Excel de "Tutelas por Abogado" ya no incluye la columna "Valor Entidad" en la hoja de Tutelas (solo queda "Valor Abogado") — el Excel de "Total Tutelas" de siempre sigue igual, con las 2 columnas.
+- **Corregido: en "Tutelas por Abogado" el monto al lado de cada barra se partía en 2 líneas** (el "$" arriba y el número abajo, apretado en una columna muy angosta) — ahora sale completo en una sola línea.
 - **Corregido: "Etapa contrato" (Órdenes de compra y Solicitud de Factura E.) rechazaba con error al guardar** — la lista de opciones estaba desactualizada contra la real de SharePoint (por ejemplo "Entrega de Poder" ya no existe, ahora es "Entrega Poder"); se actualizó con la lista real completa en los 2 formularios, y si un registro viejo tiene guardado un texto que ya no existe en la lista, ahora se muestra igual (no se pierde ni se borra solo).
 - La tabla de Procesos judiciales ahora muestra el ID interno del proceso, en una columna nueva junto a "Numero_Corto".
 - El detalle de "Tutelas por Abogado" ahora muestra una tarjeta por abogado (su valor total en el encabezado, cada Tipo Respuesta con su monto debajo) y un cuadro de "Total general" al final, además del gráfico de barras.
