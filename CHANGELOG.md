@@ -3,6 +3,7 @@
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
 ## 2026-08-27
+- **Corregido: "Etapa contrato" (Órdenes de compra y Solicitud de Factura E.) rechazaba con error al guardar** — la lista de opciones estaba desactualizada contra la real de SharePoint (por ejemplo "Entrega de Poder" ya no existe, ahora es "Entrega Poder"); se actualizó con la lista real completa en los 2 formularios, y si un registro viejo tiene guardado un texto que ya no existe en la lista, ahora se muestra igual (no se pierde ni se borra solo).
 - La tabla de Procesos judiciales ahora muestra el ID interno del proceso, en una columna nueva junto a "Numero_Corto".
 - El detalle de "Tutelas por Abogado" ahora muestra una tarjeta por abogado (su valor total en el encabezado, cada Tipo Respuesta con su monto debajo) y un cuadro de "Total general" al final, además del gráfico de barras.
 - **Nuevo informe "Tutelas por Abogado" en Informes** — elige un mes (filtra las tutelas por fecha de Vencimiento, con el corte fijo el día 28 de cada mes) y muestra un gráfico de barras apiladas por Abogado/Tipo Respuesta con el valor a pagar a cada abogado. El botón de Excel descarga 2 hojas: la de Tutelas de siempre (ya filtrada por ese mes) y una nueva "Por Abogado" agrupada con subtotales, igual de la que ya usan en Excel (con los controles +/- para colapsar cada abogado).

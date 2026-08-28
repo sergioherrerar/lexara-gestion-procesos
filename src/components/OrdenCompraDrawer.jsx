@@ -21,13 +21,18 @@ function imprimirCuandoListo(){
 const LINE_NUMS = [1,2,3,4,5,6];
 const OTHER_FIELDS = ["Proceso","Dia","Mes","Anio","EtapaContrato","Observacion"];
 
+// Corregida 2026-08-27 contra la lista REAL de la columna "ETAPA CONTRATO"
+// en SharePoint (captura del usuario) — la anterior venía desactualizada
+// (algunas opciones ya no existen, otras cambiaron de texto) y SharePoint
+// rechazaba con 400 "El texto que ha escrito no es un elemento de la
+// lista" apenas el valor no calzaba EXACTO — bug real reportado por el
+// usuario con "Entrega de Poder" (ahora es "Entrega Poder", sin "de").
 const ETAPA_CONTRATO_OPTIONS = [
-  "Acta Audiencia","Administracion Proceso","Admision","Asesoria","Asesorias","Auditoria",
-  "Audiencia de Conciliacion","Auto de Pruebas","Contestacion","Cuota Litis","Entrega de Poder",
-  "Entrega poder Demanda","Escrito de Oposicion","Honorarios","Pronunciamiento Frente a las exepciones",
-  "Radicacion Conciliacion","Radicacion de contestacion","Radicacion Demanda","Reforma",
-  "Sentencia 1ra","Sentencia 2da","Tutelas","% Antes de Sentencia","% Por Conciliacion",
-  "% Por Sentencia","% Reconocimiento Por Recurso",
+  "% Antes de Sentencia","% Por Conciliacion","% Por Sentencia","% Reconocimiento Por Recurso",
+  "Administración Proceso","Admision","Asesoria","Asesorias","Aud artículo 72","Aud Artículo 77 del CPL y  SS",
+  "Audiencia de Conciliacion","Auto de Pruebas","Contestacion","Cuota Litis","Entrega Poder","Entrega poder Demanda",
+  "Escrito de Oposicion","Honorarios","Pro Frente a las exepciones","Radicacion Conciliacion","Radicacion Demanda",
+  "Reforma","Sentencia 1ra","Sentencia 2da","Tutelas","Acta de audiencia","Recurso de Reposicion",
 ];
 
 function emptyForm(oc, clientes){
@@ -184,8 +189,15 @@ export default function OrdenCompraDrawer({ ordenCompra, clientes, procesos, fac
               </div>
               <div className="field full" style={{gridColumn:'1/-1'}}>
                 <label>Etapa contrato</label>
+                {/* Si el valor ya guardado no coincide con ninguna opción fija
+                    (ej. una orden vieja con un texto que ya no existe en
+                    SharePoint, como "Acta Audiencia" o "Entrega de Poder"
+                    antes de esta corrección) se agrega igual como opción —
+                    mismo criterio que otros selects de la app — para no
+                    perderlo de vista ni pisarlo con "" al guardar sin querer. */}
                 <select value={form.EtapaContrato} onChange={e => setField('EtapaContrato', e.target.value)}>
                   <option value="">— seleccionar etapa —</option>
+                  {form.EtapaContrato && !ETAPA_CONTRATO_OPTIONS.includes(form.EtapaContrato) && <option value={form.EtapaContrato}>{form.EtapaContrato}</option>}
                   {ETAPA_CONTRATO_OPTIONS.map(o => <option value={o} key={o}>{o}</option>)}
                 </select>
               </div>
