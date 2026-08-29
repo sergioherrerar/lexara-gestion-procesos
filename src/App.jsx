@@ -135,6 +135,7 @@ export default function App(){
             searchQuery={app.searchQuery}
             onOpenFactura={app.openFactura}
             onCreateFactura={app.newFactura}
+            onDuplicateFactura={app.duplicateFactura}
             onPrintFactura={app.printFactura}
             config={app.config}
             notify={app.notify}
@@ -149,6 +150,7 @@ export default function App(){
             searchQuery={app.searchQuery}
             onOpenOrdenCompra={app.openOrdenCompra}
             onCreateOrdenCompra={app.newOrdenCompra}
+            onDuplicateOrdenCompra={app.duplicateOrdenCompra}
             onPrintOrdenCompra={app.printOrdenCompra}
             onCreateFacturaFromOrdenCompra={app.createFacturaFromOrdenCompra}
           />
@@ -164,6 +166,10 @@ export default function App(){
             notify={app.notify}
             liveMode={app.liveMode}
             config={app.config}
+            tutelas={app.tutelas}
+            valoresEntidad={app.valoresEntidad}
+            clientes={app.clientes}
+            onAbrirBorradorOrdenCompra={app.abrirBorradorOrdenCompra}
           />
         )}
         {app.view === 'setup' && canAccessView(app.modulosPermitidos, 'setup') && (

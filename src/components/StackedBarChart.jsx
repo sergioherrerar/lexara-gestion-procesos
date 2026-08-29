@@ -10,7 +10,11 @@ import { colorDeTipoRespuesta } from '../lib/informeAbogadosTutelas';
 // por Tipo Respuesta va aparte, en tarjetas por abogado (ver
 // AbogadosDetalle en InformesView.jsx) — este gráfico es solo el
 // comparativo visual rápido entre abogados.
-export default function StackedBarChart({ grupos, emptyMsg }){
+// `labelKey`/`totalKey` (2026-08-29) — generalizado para reusarlo también en
+// "Tutelas por Cliente" (agrupado por Cliente en vez de Abogado Tutela):
+// por defecto sigue leyendo `g.abogado`/`g.totalAbogado`, sin cambiar nada
+// para el llamado ya existente.
+export default function StackedBarChart({ grupos, emptyMsg, labelKey = 'abogado', totalKey = 'totalAbogado' }){
   if(!grupos || !grupos.length){
     return (
       <div className="empty-state empty-state-compact">
@@ -19,13 +23,13 @@ export default function StackedBarChart({ grupos, emptyMsg }){
       </div>
     );
   }
-  const max = Math.max(...grupos.map(g => g.totalAbogado), 1);
+  const max = Math.max(...grupos.map(g => g[totalKey]), 1);
 
   return (
     <div className="bar-chart">
       {grupos.map(g => (
-        <div className="bar-row" key={g.abogado}>
-          <div className="bar-label" title={g.abogado}>{g.abogado}</div>
+        <div className="bar-row" key={g[labelKey]}>
+          <div className="bar-label" title={g[labelKey]}>{g[labelKey]}</div>
           <div className="bar-track bar-track-stacked">
             {g.filas.map(f => (
               <div
@@ -36,7 +40,7 @@ export default function StackedBarChart({ grupos, emptyMsg }){
               />
             ))}
           </div>
-          <div className="bar-value bar-value-monto">$ {fmtMonto(g.totalAbogado)}</div>
+          <div className="bar-value bar-value-monto">$ {fmtMonto(g[totalKey])}</div>
         </div>
       ))}
     </div>

@@ -16,6 +16,7 @@ import { generarInformeFacturasExcel, generarInformeOrdenesCompraExcel } from '.
 import { generarInformeTutelasPDF, abrirCorreoTutelas, enviarBorradorTutelasGraph, generarInformeTutelasExcel } from '../lib/informeTutelas';
 import { generarInformeGeneralProcesosExcel } from '../lib/informeGeneral';
 import { agruparPorAbogado, filtrarTutelasPorMes, generarInformeAbogadosTutelasExcel, colorDeTipoRespuesta, MESES_NOMBRES } from '../lib/informeAbogadosTutelas';
+import { agruparPorCliente, generarInformeClientesTutelasExcel } from '../lib/informeClientesTutelas';
 import StackedBarChart from './StackedBarChart';
 
 // Entidades con formato de informe formal ya confirmado, y qué generador usa
@@ -93,6 +94,13 @@ export default function InformesView({ procesos, clientes, facturas, ordenesComp
     try{ await corregirEntidadFaltanteTutelas(); }
     finally{ setCorrigiendoEntidad(false); }
   }
+  // Tutelas por Cliente — pedido explícito del usuario 2026-08-29: "parecido
+  // al de por abogado... cambia que ya no está la columna valor abogado
+  // ahora va estar valor entidad". Mismo mes/corte, agrupado por Cliente en
+  // vez de Abogado Tutela, sumando Valor Entidad. Ver informeClientesTutelas.js.
+  const [mesClientes, setMesClientes] = useState(hoyRef.getMonth());
+  const [anioClientes] = useState(hoyRef.getFullYear());
+  const [generandoClientesExcel, setGenerandoClientesExcel] = useState(false);
   // Informe HTML por Cliente (con botón de pago) — pedido explícito del
   // usuario 2026-08-25, movido de Procesos judiciales a Informes el mismo
   // día ("mejor mueve esta sección a informes") — ver
@@ -116,6 +124,15 @@ export default function InformesView({ procesos, clientes, facturas, ordenesComp
     try{ await generarInformeAbogadosTutelasExcel(tutelas, valoresEntidad, anioAbogados, mesAbogados); }
     catch(err){ console.error(err); notify?.("No se pudo generar el Excel de Tutelas por Abogado: " + err.message, 'error'); }
     finally { setGenerandoAbogadosExcel(false); }
+  }
+
+  const tutelasDelMesClientes = filtrarTutelasPorMes(tutelas, anioClientes, mesClientes);
+  const { grupos: gruposClientes, totalGeneral: totalGeneralClientes } = agruparPorCliente(tutelasDelMesClientes, valoresEntidad);
+  async function handleGenerarClientesExcel(){
+    setGenerandoClientesExcel(true);
+    try{ await generarInformeClientesTutelasExcel(tutelas, valoresEntidad, anioClientes, mesClientes); }
+    catch(err){ console.error(err); notify?.("No se pudo generar el Excel de Tutelas por Cliente: " + err.message, 'error'); }
+    finally { setGenerandoClientesExcel(false); }
   }
 
   const procesosPorEntidad = groupCount(procesos, p => p.Entidad);
@@ -426,6 +443,50 @@ export default function InformesView({ procesos, clientes, facturas, ordenesComp
               <div className="abogados-total-general">
                 <span className="abogado-nombre">Total general</span>
                 <span className="abogado-total">$ {fmtMonto(totalGeneralAbogados)}</span>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="panel" style={{marginTop:20}}>
+        <div className="panel-head"><h3>Tutelas por Cliente</h3></div>
+        <div className="panel-body">
+          <p style={{margin:'0 0 14px', color:'var(--texto-suave)', fontSize:13}}>
+            Filtra las tutelas por fecha de <strong>Vencimiento</strong> según el mes elegido (corte fijo el día 28: del 29 del mes anterior al 28 de este) y suma el <strong>Valor Entidad</strong> de cada una (buscado por Entidad en Valores Entidad), agrupado por Cliente y Tipo Respuesta.
+          </p>
+          <div style={{display:'flex', alignItems:'center', gap:14, flexWrap:'wrap', marginBottom:16}}>
+            <div className="field" style={{maxWidth:200}}>
+              <label>Mes</label>
+              <select value={mesClientes} onChange={e => setMesClientes(Number(e.target.value))}>
+                {MESES_NOMBRES.map((m,i) => <option key={m} value={i}>{m}</option>)}
+              </select>
+            </div>
+            <IconButton icon="excel" variant="excel" label="Descargar Excel de Tutelas por Cliente" spinning={generandoClientesExcel} onClick={handleGenerarClientesExcel} />
+          </div>
+          <StackedBarChart grupos={gruposClientes} labelKey="cliente" totalKey="totalCliente" emptyMsg={`No hay tutelas con vencimiento entre el 29 de ${MESES_NOMBRES[(mesClientes+11)%12].toLowerCase()} y el 28 de ${MESES_NOMBRES[mesClientes].toLowerCase()}.`} />
+          {gruposClientes.length > 0 && (
+            <div className="abogados-detalle">
+              {gruposClientes.map(g => (
+                <div className="abogado-card" key={g.cliente}>
+                  <div className="abogado-card-head">
+                    <span className="abogado-nombre">{g.cliente}</span>
+                    <span className="abogado-total">$ {fmtMonto(g.totalCliente)}</span>
+                  </div>
+                  <div className="abogado-card-body">
+                    {g.filas.map(f => (
+                      <div className="abogado-card-row" key={f.tipoRespuesta}>
+                        <span className="abogado-tipo-dot" style={{background: colorDeTipoRespuesta(f.tipoRespuesta)}}></span>
+                        <span className="abogado-tipo-label">{f.tipoRespuesta}</span>
+                        <span className="abogado-tipo-valor">$ {fmtMonto(f.total)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+              <div className="abogados-total-general">
+                <span className="abogado-nombre">Total general</span>
+                <span className="abogado-total">$ {fmtMonto(totalGeneralClientes)}</span>
               </div>
             </div>
           )}

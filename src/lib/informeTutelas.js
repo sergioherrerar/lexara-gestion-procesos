@@ -362,23 +362,27 @@ function estilizarFilaXlsx(row){
 // `opciones.incluirValorEntidad` (default true) — el Excel de "Tutelas por
 // Abogado" pidió explícitamente quitar la columna "Valor Entidad" de esta
 // misma hoja (solo ahí, el de "Total Tutelas" de siempre la conserva).
+// `opciones.soloValorEntidad` (2026-08-29) — al revés: el Excel de "Tutelas
+// por Cliente" pidió quitar "Valor Abogado" y dejar solo "Valor Entidad".
 export function construirHojaTutelasXlsx(wb, tutelas, valoresEntidad, nombreHoja = "Tutelas", opciones = {}){
-  const incluirValorEntidad = opciones.incluirValorEntidad !== false;
+  const modoValores = opciones.soloValorEntidad ? 'entidad' : (opciones.incluirValorEntidad === false ? 'abogado' : 'ambas');
   const ws = wb.addWorksheet(nombreHoja);
 
-  const columnasValores = incluirValorEntidad ? ["Valor Entidad","Valor Abogado"] : ["Valor Abogado"];
+  const columnasValores = modoValores === 'ambas' ? ["Valor Entidad","Valor Abogado"] : modoValores === 'entidad' ? ["Valor Entidad"] : ["Valor Abogado"];
   const columnas = ["Id","No Tutela","Cliente","Ciudad","Prestación","Usuario","No Identificación",
     "fecha Notificación","Vencimiento","Tema","Solicita","Tipo Respuesta", ...columnasValores, "Abogado Tutela"];
-  const anchosValores = incluirValorEntidad ? [14, 14] : [14];
+  const anchosValores = modoValores === 'ambas' ? [14, 14] : [14];
   const anchos = [8, 12, 34, 16, 16, 26, 16, 16, 16, 26, 40, 16, ...anchosValores, 22];
   ws.columns = columnas.map((c,i) => ({ width: anchos[i] }));
   estilizarEncabezadoXlsx(ws.addRow(columnas));
 
   tutelas.forEach(t => {
     const valorEnt = (valoresEntidad||[]).find(v => v.Entidad === t.Entidad) || null;
-    const valores = incluirValorEntidad
+    const valores = modoValores === 'ambas'
       ? [valorEnt ? parseMonto(valorEnt.ValorEntidad) : "", valorEnt ? parseMonto(valorEnt.ValorAbogado) : ""]
-      : [valorEnt ? parseMonto(valorEnt.ValorAbogado) : ""];
+      : modoValores === 'entidad'
+        ? [valorEnt ? parseMonto(valorEnt.ValorEntidad) : ""]
+        : [valorEnt ? parseMonto(valorEnt.ValorAbogado) : ""];
     const row = ws.addRow([
       t.id, t.NoTutela||"", t.Cliente||"", t.Ciudad||"", t.Prestacion||"", t.Usuario||"", t.NoIdentificacion||"",
       fechaISOaExcel(t.FechaNotificacion), fechaISOaExcel(t.FechaVencimiento), t.Tema||"", stripHtml(t.Solicita)||"",

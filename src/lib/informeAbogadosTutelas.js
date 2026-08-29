@@ -71,7 +71,9 @@ export function filtrarTutelasPorMes(tutelas, anio, mesIndex0){
   });
 }
 
-function ordenTipoRespuesta(a, b){
+// Exportado (2026-08-29) para que "Tutelas por Cliente" (informeClientesTutelas.js)
+// ordene sus filas de Tipo Respuesta igual que acá, sin duplicar el arreglo fijo.
+export function ordenTipoRespuesta(a, b){
   const ia = ORDEN_TIPO_RESPUESTA.indexOf(a), ib = ORDEN_TIPO_RESPUESTA.indexOf(b);
   if(ia===-1 && ib===-1) return a.localeCompare(b);
   if(ia===-1) return 1;

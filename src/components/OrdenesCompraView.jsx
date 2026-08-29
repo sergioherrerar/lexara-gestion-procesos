@@ -9,7 +9,7 @@ function fechaOrdenable(oc){
   return fechaFromPartes(oc.Dia, oc.Mes, oc.Anio) || oc.Fecha || "";
 }
 
-export default function OrdenesCompraView({ ordenesCompra, clientes, procesos, facturas, searchQuery, onOpenOrdenCompra, onCreateOrdenCompra, onPrintOrdenCompra, onCreateFacturaFromOrdenCompra }){
+export default function OrdenesCompraView({ ordenesCompra, clientes, procesos, facturas, searchQuery, onOpenOrdenCompra, onCreateOrdenCompra, onDuplicateOrdenCompra, onPrintOrdenCompra, onCreateFacturaFromOrdenCompra }){
   const { filters, setFilter, clearFilters, rowMatches, hasActiveFilters } = useColumnFilters();
   const { sort, setSortKey, sortRows } = useColumnSort();
 
@@ -81,6 +81,7 @@ export default function OrdenesCompraView({ ordenesCompra, clientes, procesos, f
                   <td style={{whiteSpace:'nowrap'}}>
                     <div className="row-actions">
                       <IconButton icon="edit" variant="edit" label="Ver / editar orden de compra" onClick={e => { e.stopPropagation(); onOpenOrdenCompra(oc.id); }} />
+                      <IconButton icon="duplicate" variant="duplicate" label="Duplicar orden de compra" onClick={e => { e.stopPropagation(); onDuplicateOrdenCompra(oc.id); }} />
                       <IconButton icon="print" variant="print" label="Imprimir orden de compra" onClick={e => { e.stopPropagation(); onPrintOrdenCompra(oc.id); }} />
                       <IconButton icon="invoice" variant="invoice" label="Generar factura con estos mismos datos" onClick={e => { e.stopPropagation(); onCreateFacturaFromOrdenCompra(oc.id); }} />
                     </div>

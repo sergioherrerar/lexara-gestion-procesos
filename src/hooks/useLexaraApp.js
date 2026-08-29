@@ -642,6 +642,20 @@ export function useLexaraApp(){
     setActiveFacturaId(null);
     setDraftFactura({ Contrato: proceso.NumeroContrato || "", Proceso: proceso.Radicado || "" });
   }
+  // Pedido explícito del usuario 2026-08-29 (mismo criterio que
+  // duplicateTutela): abre un borrador nuevo con todos los datos ya
+  // copiados de la factura elegida — salvo "Factura" (el número de factura
+  // real, calculado como id+91 de SharePoint — ver [[project_facturacion_data_model]] —
+  // no tiene sentido copiarlo, se recalcula solo con el id nuevo al
+  // guardar). No toca SharePoint hasta "Guardar cambios".
+  function duplicateFactura(id){
+    const original = facturas.find(f => f.id===id);
+    if(!original) return;
+    // eslint-disable-next-line no-unused-vars
+    const { id: _id, _graphId, Factura, ...resto } = original;
+    setActiveFacturaId(null);
+    setDraftFactura(resto);
+  }
   // Botón "generar factura" de cada orden de compra: abre un borrador de
   // factura precargado con los mismos datos (cliente, contrato, proceso,
   // líneas de detalle) — solo el Día/Mes/Año cambia, al de hoy. Sigue sin
@@ -727,11 +741,31 @@ export function useLexaraApp(){
   // "+ Nueva orden de compra" solo abre un borrador local — no toca SharePoint
   // hasta que el usuario le da "Guardar cambios" (mismo criterio que Facturación).
   function newOrdenCompra(){ setActiveOrdenCompraId(null); setDraftOrdenCompra({}); }
+  // Pedido explícito del usuario 2026-08-29 (mismo criterio que
+  // duplicateTutela/duplicateFactura): abre un borrador nuevo con todos los
+  // datos ya copiados de la orden de compra elegida. No toca SharePoint
+  // hasta "Guardar cambios".
+  function duplicateOrdenCompra(id){
+    const original = ordenesCompra.find(o => o.id===id);
+    if(!original) return;
+    // eslint-disable-next-line no-unused-vars
+    const { id: _id, _graphId, ...resto } = original;
+    setActiveOrdenCompraId(null);
+    setDraftOrdenCompra(resto);
+  }
   // Botón "+ Nueva orden de compra" dentro del panel de un Proceso judicial —
   // mismo criterio que newFacturaFromProceso.
   function newOrdenCompraFromProceso(proceso){
     setActiveOrdenCompraId(null);
     setDraftOrdenCompra({ Contrato: proceso.NumeroContrato || "", Proceso: proceso.Radicado || "" });
+  }
+  // Genérico (2026-08-29): abre un borrador de Orden de compra con datos ya
+  // armados desde afuera (ver "Órdenes Colmédica" en Administración,
+  // src/components/OrdenesColmedicaTab.jsx) — mismo criterio de siempre:
+  // no toca SharePoint hasta que se le dé "Guardar cambios" en el drawer.
+  function abrirBorradorOrdenCompra(datosIniciales){
+    setActiveOrdenCompraId(null);
+    setDraftOrdenCompra(datosIniciales);
   }
   function closeOrdenCompraDrawer(){ setActiveOrdenCompraId(null); setDraftOrdenCompra(null); reabrirProcesoSiCorresponde(); }
   async function saveOrdenCompra(updates){
@@ -1192,9 +1226,9 @@ export function useLexaraApp(){
     onSearch: setSearchQuery,
     activeProceso, openProceso, newProceso, closeDrawer, saveProceso, procesoViewOnly, rememberReturnToProceso,
     activeCliente, openCliente, closeClienteDrawer, saveCliente, deleteCliente, createCliente, updateCliente,
-    activeFactura, openFactura, newFactura, closeFacturaDrawer, saveFactura,
+    activeFactura, openFactura, newFactura, duplicateFactura, closeFacturaDrawer, saveFactura,
     printFactura, autoPrintFacturaId, clearAutoPrint, createFacturaFromOrdenCompra, newFacturaFromProceso,
-    activeOrdenCompra, openOrdenCompra, newOrdenCompra, newOrdenCompraFromProceso, closeOrdenCompraDrawer, saveOrdenCompra,
+    activeOrdenCompra, openOrdenCompra, newOrdenCompra, duplicateOrdenCompra, newOrdenCompraFromProceso, abrirBorradorOrdenCompra, closeOrdenCompraDrawer, saveOrdenCompra,
     printOrdenCompra, autoPrintOrdenCompraId, clearAutoPrintOrdenCompra,
     activeColaborador, openColaborador, newColaborador, closeColaboradorDrawer, saveColaborador, deleteColaborador,
     activeFormaPago, openFormaPago, newFormaPagoFromProceso, closeFormaPagoDrawer, saveFormaPago, deleteFormaPago,

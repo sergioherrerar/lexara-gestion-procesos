@@ -10,7 +10,7 @@ function fechaOrdenable(f){
   return fechaFromPartes(f.Dia, f.Mes, f.Anio) || f.Fecha || "";
 }
 
-export default function FacturacionView({ facturas, clientes, procesos, searchQuery, onOpenFactura, onCreateFactura, onPrintFactura, config, notify }){
+export default function FacturacionView({ facturas, clientes, procesos, searchQuery, onOpenFactura, onCreateFactura, onDuplicateFactura, onPrintFactura, config, notify }){
   const { filters, setFilter, clearFilters, rowMatches, hasActiveFilters } = useColumnFilters();
   const { sort, setSortKey, sortRows } = useColumnSort();
   const [buscandoSiigo, setBuscandoSiigo] = useState(null); // id de la factura mientras se busca su PDF
@@ -93,6 +93,7 @@ export default function FacturacionView({ facturas, clientes, procesos, searchQu
                   <td style={{whiteSpace:'nowrap'}}>
                     <div className="row-actions">
                       <IconButton icon="edit" variant="edit" label="Ver / editar factura" onClick={e => { e.stopPropagation(); onOpenFactura(f.id); }} />
+                      <IconButton icon="duplicate" variant="duplicate" label="Duplicar factura" onClick={e => { e.stopPropagation(); onDuplicateFactura(f.id); }} />
                       <IconButton icon="print" variant="print" label="Imprimir factura" onClick={e => { e.stopPropagation(); onPrintFactura(f.id); }} />
                       <IconButton icon="open" variant="open" label="Buscar y abrir factura electrónica (Siigo)" spinning={buscandoSiigo===f.id} onClick={e => { e.stopPropagation(); handleBuscarSiigo(f); }} />
                     </div>
