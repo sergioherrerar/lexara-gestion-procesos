@@ -751,6 +751,8 @@
   .icon-btn-pdf:hover{background:#a3281c; color:#fff;}
   .icon-btn-checklist{color:var(--verde-claro); background:#e4f4f3;}
   .icon-btn-checklist:hover{background:var(--verde-claro); color:#fff;}
+  .icon-btn-duplicate{color:var(--verde-claro); background:#e4f4f3;}
+  .icon-btn-duplicate:hover{background:var(--verde-claro); color:#fff;}
   .icon-btn-mail{color:#1d5fa3; background:#e4edf7;}
   .icon-btn-mail:hover{background:#1d5fa3; color:#fff;}
   .icon-btn-html{color:var(--verde-oscuro); background:#e3efee;}

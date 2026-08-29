@@ -80,6 +80,13 @@ export const ICONS = {
       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13l1.3 6L11 14l1.7 5L14 13"/>
     </svg>
   ),
+  // Dos hojas superpuestas — duplicar un registro (Tutelas: varios casos
+  // reales comparten los mismos datos y solo cambian de Cliente/Entidad).
+  duplicate: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+    </svg>
+  ),
   // Tarjeta — abrir el portal de pagos (Davivienda) en una pestaña nueva.
   pay: (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

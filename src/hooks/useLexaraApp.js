@@ -525,6 +525,7 @@ export function useLexaraApp(){
       setProcesos(prev => [...prev, nuevo]);
       setDraftProceso(null);
       setActiveProcesoId(null);
+      notify("Creado con éxito en Lexara", 'success');
       return;
     }
 
@@ -550,6 +551,7 @@ export function useLexaraApp(){
       setSaving(false);
     }
     setActiveProcesoId(null);
+    notify("Guardado con éxito en Lexara", 'success');
   }
 
   function openCliente(id){ setActiveClienteId(id); }
@@ -569,6 +571,7 @@ export function useLexaraApp(){
       setSaving(false);
     }
     setActiveClienteId(null);
+    notify("Guardado con éxito en Lexara", 'success');
   }
   // A diferencia de saveCliente, no depende del cliente "activo" en su propio
   // drawer — permite corregir un dato del cliente (p.ej. Ciudad) desde otra
@@ -621,6 +624,7 @@ export function useLexaraApp(){
       setSaving(false);
     }
     setClientes(prev => [...prev, nuevo]);
+    notify("Creado con éxito en Lexara", 'success');
     return nuevo;
   }
 
@@ -695,6 +699,7 @@ export function useLexaraApp(){
       setDraftFactura(null);
       setActiveFacturaId(null);
       reabrirProcesoSiCorresponde();
+      notify("Creado con éxito en Lexara", 'success');
       return;
     }
 
@@ -702,8 +707,7 @@ export function useLexaraApp(){
     if(liveMode){
       setSaving(true);
       const list = listByKey('facturacion');
-      const graphBody = {};
-      Object.keys(updates).forEach(key => { if(list.mapping[key]) graphBody[list.mapping[key]] = updates[key]; });
+      const graphBody = await Graph.graphFieldsFromUpdates(list.siteId || siteId, list, updates);
       try{
         await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items/${activeFactura._graphId}/fields`, {
           method:"PATCH", body: JSON.stringify(graphBody)
@@ -713,6 +717,7 @@ export function useLexaraApp(){
     }
     setActiveFacturaId(null);
     reabrirProcesoSiCorresponde();
+    notify("Guardado con éxito en Lexara", 'success');
   }
 
   function openOrdenCompra(id){ setDraftOrdenCompra(null); setActiveOrdenCompraId(id); }
@@ -750,6 +755,7 @@ export function useLexaraApp(){
       setDraftOrdenCompra(null);
       setActiveOrdenCompraId(null);
       reabrirProcesoSiCorresponde();
+      notify("Creado con éxito en Lexara", 'success');
       return;
     }
 
@@ -767,6 +773,7 @@ export function useLexaraApp(){
     }
     setActiveOrdenCompraId(null);
     reabrirProcesoSiCorresponde();
+    notify("Guardado con éxito en Lexara", 'success');
   }
 
   function openColaborador(id){ setDraftColaborador(null); setActiveColaboradorId(id); }
@@ -795,6 +802,7 @@ export function useLexaraApp(){
       setColaboradores(prev => [...prev, nuevo]);
       setDraftColaborador(null);
       setActiveColaboradorId(null);
+      notify("Creado con éxito en Lexara", 'success');
       return;
     }
 
@@ -811,6 +819,7 @@ export function useLexaraApp(){
       setSaving(false);
     }
     setActiveColaboradorId(null);
+    notify("Guardado con éxito en Lexara", 'success');
   }
   async function performDeleteColaborador(id){
     const colaborador = colaboradores.find(c => c.id===id);
@@ -862,6 +871,7 @@ export function useLexaraApp(){
       setDraftFormaPago(null);
       setActiveFormaPagoId(null);
       reabrirProcesoSiCorresponde();
+      notify("Creado con éxito en Lexara", 'success');
       return;
     }
 
@@ -879,6 +889,7 @@ export function useLexaraApp(){
     }
     setActiveFormaPagoId(null);
     reabrirProcesoSiCorresponde();
+    notify("Guardado con éxito en Lexara", 'success');
   }
   async function performDeleteFormaPago(id){
     const formaPago = formasPago.find(f => f.id===id);
@@ -928,6 +939,7 @@ export function useLexaraApp(){
       setDraftDesistimiento(null);
       setActiveDesistimientoId(null);
       reabrirProcesoSiCorresponde();
+      notify("Creado con éxito en Lexara", 'success');
       return;
     }
 
@@ -945,6 +957,7 @@ export function useLexaraApp(){
     }
     setActiveDesistimientoId(null);
     reabrirProcesoSiCorresponde();
+    notify("Guardado con éxito en Lexara", 'success');
   }
   async function performDeleteDesistimiento(id){
     const desistimiento = desistimientos.find(d => d.id===id);
@@ -968,6 +981,21 @@ export function useLexaraApp(){
   // "+ Nueva tutela" solo abre un borrador local — no toca SharePoint hasta
   // que el usuario le da "Guardar cambios" (mismo criterio que el resto de módulos).
   function newTutela(){ setActiveTutelaId(null); setDraftTutela({}); }
+  // Pedido explícito del usuario 2026-08-29: varios casos reales de Tutelas
+  // comparten TODOS los datos (mismo Proceso/Tema/Juzgado/fechas) y solo
+  // cambian de Cliente/Entidad — en vez de repetir el formulario completo a
+  // mano, "Duplicar" abre un borrador nuevo (igual que "+ Nueva tutela")
+  // pre-llenado con los mismos datos de la tutela elegida, listo para solo
+  // cambiar el Cliente y guardar. No toca SharePoint hasta que se le dé
+  // "Guardar cambios" — mismo criterio de siempre para un registro nuevo.
+  function duplicateTutela(id){
+    const original = tutelas.find(t => t.id===id);
+    if(!original) return;
+    // eslint-disable-next-line no-unused-vars
+    const { id: _id, _graphId, ...resto } = original;
+    setActiveTutelaId(null);
+    setDraftTutela(resto);
+  }
   function closeTutelaDrawer(){ setActiveTutelaId(null); setDraftTutela(null); }
   async function saveTutela(updates){
     if(!activeTutela) return;
@@ -989,6 +1017,7 @@ export function useLexaraApp(){
       setTutelas(prev => [...prev, nuevo]);
       setDraftTutela(null);
       setActiveTutelaId(null);
+      notify("Creado con éxito en Lexara", 'success');
       return;
     }
 
@@ -1005,6 +1034,7 @@ export function useLexaraApp(){
       setSaving(false);
     }
     setActiveTutelaId(null);
+    notify("Guardado con éxito en Lexara", 'success');
   }
   // Corrección masiva puntual 2026-08-28, pedida explícitamente por el
   // usuario: 285 de 322 tutelas (las de agosto) quedaron con "Entidad"
@@ -1093,6 +1123,7 @@ export function useLexaraApp(){
       setSaving(false);
     }
     setTemas(prev => [...prev, nuevo]);
+    notify("Creado con éxito en Lexara", 'success');
     return nuevo;
   }
   async function saveTema(id, updates){
@@ -1107,9 +1138,10 @@ export function useLexaraApp(){
         await Graph.graphFetch(`/sites/${list.siteId || siteId}/lists/${list.listId}/items/${tema._graphId || tema.id}/fields`, {
           method:"PATCH", body: JSON.stringify(fields)
         });
-      }catch(err){ console.error(err); notify("No se pudo guardar el tema en SharePoint: " + err.message, 'error'); }
+      }catch(err){ console.error(err); notify("No se pudo guardar el tema en SharePoint: " + err.message, 'error'); setSaving(false); return; }
       setSaving(false);
     }
+    notify("Guardado con éxito en Lexara", 'success');
   }
   async function createValorEntidad(fields){
     const nuevo = { id: 'tmp-' + Math.random().toString(36).slice(2), ...fields };
@@ -1124,6 +1156,7 @@ export function useLexaraApp(){
       setSaving(false);
     }
     setValoresEntidad(prev => [...prev, nuevo]);
+    notify("Creado con éxito en Lexara", 'success');
     return nuevo;
   }
   async function saveValorEntidad(id, updates){
@@ -1138,9 +1171,10 @@ export function useLexaraApp(){
         await Graph.graphFetch(`/sites/${list.siteId || siteId}/lists/${list.listId}/items/${valor._graphId || valor.id}/fields`, {
           method:"PATCH", body: JSON.stringify(fields)
         });
-      }catch(err){ console.error(err); notify("No se pudo guardar el valor de entidad en SharePoint: " + err.message, 'error'); }
+      }catch(err){ console.error(err); notify("No se pudo guardar el valor de entidad en SharePoint: " + err.message, 'error'); setSaving(false); return; }
       setSaving(false);
     }
+    notify("Guardado con éxito en Lexara", 'success');
   }
 
   return {
@@ -1165,7 +1199,7 @@ export function useLexaraApp(){
     activeColaborador, openColaborador, newColaborador, closeColaboradorDrawer, saveColaborador, deleteColaborador,
     activeFormaPago, openFormaPago, newFormaPagoFromProceso, closeFormaPagoDrawer, saveFormaPago, deleteFormaPago,
     activeDesistimiento, openDesistimiento, newDesistimientoFromProceso, closeDesistimientoDrawer, saveDesistimiento, deleteDesistimiento,
-    activeTutela, openTutela, newTutela, closeTutelaDrawer, saveTutela, deleteTutela, corregirEntidadFaltanteTutelas,
+    activeTutela, openTutela, newTutela, duplicateTutela, closeTutelaDrawer, saveTutela, deleteTutela, corregirEntidadFaltanteTutelas,
     createTema, saveTema, createValorEntidad, saveValorEntidad,
   };
 }

@@ -24,7 +24,7 @@ function hoyISO(){
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 
-export default function TutelasView({ tutelas, searchQuery, onOpenTutela, onCreateTutela, onDeleteTutela, canWrite = true }){
+export default function TutelasView({ tutelas, searchQuery, onOpenTutela, onCreateTutela, onDuplicateTutela, onDeleteTutela, canWrite = true }){
   const { filters, setFilter, clearFilters, rowMatches, hasActiveFilters } = useColumnFilters();
   const { sort, setSortKey, sortRows } = useColumnSort();
   // Contador de tutelas que vencen hoy — se recalcula en cada render, así
@@ -79,6 +79,7 @@ export default function TutelasView({ tutelas, searchQuery, onOpenTutela, onCrea
                 <td style={{whiteSpace:'nowrap'}}>
                   <div className="row-actions">
                     <IconButton icon="edit" variant="edit" label={canWrite ? "Editar tutela" : "Ver tutela"} onClick={() => onOpenTutela(t.id)} />
+                    {canWrite && <IconButton icon="duplicate" variant="duplicate" label="Duplicar tutela" onClick={() => onDuplicateTutela(t.id)} />}
                     {canWrite && <IconButton icon="delete" variant="delete" label="Eliminar tutela" onClick={() => onDeleteTutela(t.id)} />}
                   </div>
                 </td>

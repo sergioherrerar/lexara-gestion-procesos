@@ -112,6 +112,7 @@ export default function App(){
             searchQuery={app.searchQuery}
             onOpenTutela={app.openTutela}
             onCreateTutela={app.newTutela}
+            onDuplicateTutela={app.duplicateTutela}
             onDeleteTutela={app.deleteTutela}
             canWrite={app.canWrite}
           />
