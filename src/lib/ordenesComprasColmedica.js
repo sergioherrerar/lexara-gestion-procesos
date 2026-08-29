@@ -115,6 +115,10 @@ export function construirBorradorOrdenCompra(grupoCliente, mesIndex0, anio, valo
 // que acá filtrado por el mes CALENDARIO completo de esta pestaña (no el
 // corte-28 que usa el informe de Informes). Reusa `descargarExcelClientesTutelas`
 // (informeClientesTutelas.js) para no duplicar el armado del workbook.
-export async function generarExcelOrdenesColmedica(tutelasDelMes, valoresEntidad, mesIndex0, anio){
-  await descargarExcelClientesTutelas(tutelasDelMes, valoresEntidad, `Tutelas por Cliente - Colmédica - ${MESES_NOMBRES[mesIndex0]} ${anio}.xlsx`);
+// `cliente` opcional (2026-08-29) — para el Excel de un solo cliente
+// (botón por fila), se agrega su nombre al archivo para no confundirlo con
+// el general de todos juntos.
+export async function generarExcelOrdenesColmedica(tutelasDelMes, valoresEntidad, mesIndex0, anio, cliente){
+  const sufijo = cliente ? ` - ${cliente}` : "";
+  await descargarExcelClientesTutelas(tutelasDelMes, valoresEntidad, `Tutelas por Cliente - Colmédica${sufijo} - ${MESES_NOMBRES[mesIndex0]} ${anio}.xlsx`);
 }

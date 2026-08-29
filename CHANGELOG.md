@@ -3,6 +3,7 @@
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
 ## 2026-08-29
+- **"Órdenes Colmédica" ahora tiene un botón de Excel por cada cliente** (además del general de arriba con todos juntos) — descarga solo las tutelas de ese cliente en ese mes.
 - **Ajustes a "Órdenes Colmédica" (probado con datos reales)**: el texto completo de honorarios ahora va en la Descripción de la 1ª línea (Observación queda vacía), y el Excel es el mismo de 2 hojas de "Tutelas por Abogado"/"Tutelas por Cliente" (antes era una tabla simple de una sola hoja).
 - **Nueva pestaña "Órdenes Colmédica" en Administración** — elige un mes (mes calendario completo, día 1 al 30/31, por fecha de Vencimiento de Tutelas — corte distinto al de los otros informes de Tutelas) y por cada Cliente con tutelas ese mes arma un borrador de Orden de compra ya listo (Cliente, Contrato, Ciudad, y 3 líneas: Tutelas/Impugnaciones/Otras contestaciones con su cantidad y valor) para revisar y darle "Guardar cambios" — no crea nada en SharePoint solo. También descarga un Excel de referencia con el detalle de todos los clientes del mes juntos.
 - **Nuevo informe "Tutelas por Cliente" en Informes** — igual que "Tutelas por Abogado" (mismo filtro de mes por Vencimiento, mismo Excel de 2 hojas con la tabla agrupada), pero agrupado por Cliente en vez de Abogado, y sumando "Valor Entidad" en vez de "Valor Abogado".

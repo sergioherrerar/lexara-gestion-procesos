@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { IconTextButton } from './IconButton';
+import IconButton, { IconTextButton } from './IconButton';
 import {
   MESES_NOMBRES, filtrarTutelasPorMesCalendario, agruparPorClienteParaOrden,
   construirBorradorOrdenCompra, generarExcelOrdenesColmedica,
@@ -19,6 +19,9 @@ export default function OrdenesColmedicaTab({ tutelas, valoresEntidad, clientes,
   const [mes, setMes] = useState(hoyRef.getMonth());
   const [anio] = useState(hoyRef.getFullYear());
   const [generandoExcel, setGenerandoExcel] = useState(false);
+  // Pedido explícito del usuario 2026-08-29 (probando con datos reales): un
+  // Excel por cliente, además del general de arriba con todos juntos.
+  const [generandoExcelCliente, setGenerandoExcelCliente] = useState(null);
 
   const tutelasDelMes = filtrarTutelasPorMesCalendario(tutelas, anio, mes);
   const grupos = agruparPorClienteParaOrden(tutelasDelMes);
@@ -33,6 +36,16 @@ export default function OrdenesColmedicaTab({ tutelas, valoresEntidad, clientes,
     try{ await generarExcelOrdenesColmedica(tutelasDelMes, valoresEntidad, mes, anio); }
     catch(err){ console.error(err); notify?.("No se pudo generar el Excel de Órdenes Colmédica: " + err.message, 'error'); }
     finally{ setGenerandoExcel(false); }
+  }
+
+  async function handleDescargarExcelCliente(cliente){
+    setGenerandoExcelCliente(cliente);
+    try{
+      const tutelasDelCliente = tutelasDelMes.filter(t => (t.Cliente||"").trim() === cliente);
+      await generarExcelOrdenesColmedica(tutelasDelCliente, valoresEntidad, mes, anio, cliente);
+    }
+    catch(err){ console.error(err); notify?.(`No se pudo generar el Excel de ${cliente}: ` + err.message, 'error'); }
+    finally{ setGenerandoExcelCliente(null); }
   }
 
   return (
@@ -57,7 +70,7 @@ export default function OrdenesColmedicaTab({ tutelas, valoresEntidad, clientes,
           <div className="table-wrap">
             <table>
               <thead>
-                <tr><th>Cliente</th><th>Tutelas</th><th>Impugnaciones</th><th>Otras contestaciones</th><th>Orden de compra</th></tr>
+                <tr><th>Cliente</th><th>Tutelas</th><th>Impugnaciones</th><th>Otras contestaciones</th><th>Excel</th><th>Orden de compra</th></tr>
               </thead>
               <tbody>
                 {grupos.map(g => (
@@ -66,6 +79,14 @@ export default function OrdenesColmedicaTab({ tutelas, valoresEntidad, clientes,
                     <td>{g.cantidadTutela}</td>
                     <td>{g.cantidadImpugnacion}</td>
                     <td>{g.cantidadOtras}</td>
+                    <td>
+                      <IconButton
+                        icon="excel" variant="excel"
+                        label={`Descargar Excel de ${g.cliente}`}
+                        spinning={generandoExcelCliente===g.cliente}
+                        onClick={() => handleDescargarExcelCliente(g.cliente)}
+                      />
+                    </td>
                     <td>
                       <IconTextButton icon="add" variant="secondary" onClick={() => handleGenerarBorrador(g)}>
                         Generar borrador
