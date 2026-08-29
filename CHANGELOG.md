@@ -3,6 +3,7 @@
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
 ## 2026-08-29
+- **Corregido de raíz (de verdad esta vez): no se podía crear una Tutela nueva** — "Cliente" es una columna de Búsqueda (Lookup) real, y Graph no acepta crear un registro con ese campo ya resuelto en la misma petición (da un error 500 interno, no de validación). Ahora cualquier módulo que cree un registro nuevo con un campo de Búsqueda lo hace en 2 pasos: primero crea el registro, y en un segundo paso le agrega el valor de Búsqueda — aplica a los 10 módulos que crean registros nuevos, no solo Tutelas.
 - Se agregaron "CORRECION" y "MODULACION" a la lista de "Tipo Respuesta" de Tutelas (y al reporte "Tutelas por Abogado", con su propio color).
 
 ## 2026-08-28

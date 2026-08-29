@@ -361,32 +361,23 @@ async function resolverOCrearLookupId(siteId, lookupInfo, valor){
   return Number(creado.id);
 }
 
-// Traduce claves semánticas a nombres reales de columna para un PATCH/POST.
-// Un valor vacío ("") se OMITE en vez de mandarse tal cual — bug real
-// reportado 2026-08-28: crear una Tutela nueva dejando "Fecha Notificación"/
-// "Fecha Vencimiento" en blanco (nada obliga a llenarlas) mandaba
-// `fecha_x0020_Notificacion: ""` a Graph, y SharePoint rechaza una columna
-// de tipo Fecha (o Número) con "" con un 400 genérico ("One of the provided
-// arguments is not acceptable" / badArgument) — no es un error de validación
-// con nombre de campo como el de una columna Choice, así que costó más
-// ubicarlo. Al omitir el campo, SharePoint simplemente lo deja vacío en la
-// fila nueva, igual que si nunca se hubiera tocado. Esto afecta a CUALQUIER
-// módulo que cree un registro con un campo fecha/numérico opcional sin
-// llenar, no solo Tutelas — se corrige acá, en el único lugar compartido.
+// Separa las claves semánticas de `updates` en dos grupos, ya traducidas a
+// nombres reales de columna: `fields` (todo lo normal, listo para mandar tal
+// cual) y `lookupFields` (columnas de Búsqueda ya resueltas a
+// `<Columna>LookupId: <id>`). Un valor vacío ("") se OMITE en vez de
+// mandarse tal cual — bug real reportado 2026-08-28: crear una Tutela nueva
+// dejando "Fecha Notificación"/"Fecha Vencimiento" en blanco mandaba
+// `fecha_x0020_Notificacion: ""`, y SharePoint rechaza una columna de Fecha
+// (o Número) con "" con un 400 genérico. Al omitir el campo, SharePoint
+// simplemente lo deja vacío, igual que si nunca se hubiera tocado. Afecta a
+// CUALQUIER módulo, no solo Tutelas.
 //
-// SEGUNDA CAUSA del mismo bug (2026-08-28, confirmada por el usuario
-// revisando la configuración real de columnas en SharePoint): "Entidad" en
-// Tutelas resultó ser una columna de Búsqueda (Lookup) de verdad — la app la
-// escribía como texto plano (ej. "GRUPO COLMEDICA"), pero Graph nunca acepta
-// texto plano para una columna Lookup, solo `{<Columna>LookupId: <id>}` —
-// de ahí el 400 genérico sin nombre de campo (a diferencia de una columna
-// Choice, que sí lo nombra en el mensaje). Por eso esta función ahora es
-// asíncrona: por cada columna que `list.columns` marque como `.lookup`,
-// busca (o crea) el elemento real en la lista de origen del Lookup y manda
-// su id en `<Columna>LookupId` en vez del texto. Afecta a CUALQUIER lista
-// con una columna Lookup, no solo Tutelas — mismo criterio de "un solo lugar
-// compartido" que el resto de esta función.
-export async function graphFieldsFromUpdates(siteId, list, updates){
+// Columnas de Búsqueda (Lookup) real: la app las escribía como texto plano
+// (ej. "Cliente": "ALIANSALUD..."), pero Graph nunca acepta texto plano ahí,
+// solo `{<Columna>LookupId: <id>}` — de ahí el 400 genérico. Por cada
+// columna que `list.columns` marque como `.lookup`, se busca (o crea) el
+// elemento real en la lista de origen del Lookup y se arma su LookupId.
+async function separarCamposYLookups(siteId, list, updates){
   const fields = {};
   const lookupsPendientes = [];
   Object.keys(updates).forEach(key => {
@@ -394,39 +385,52 @@ export async function graphFieldsFromUpdates(siteId, list, updates){
     if(updates[key] === "") return;
     const internalName = list.mapping[key];
     const col = (list.columns||[]).find(c => c.name === internalName);
-    // DIAGNÓSTICO TEMPORAL 2026-08-29 — el 400 al crear una Tutela persiste;
-    // "Entidad" resultó ser Choice (con allowTextEntry) y no Lookup, así que
-    // el fix anterior nunca aplicaba ahí. Deja un resumen de TODOS los
-    // campos que se mandan (tipo de columna real + valor) para ubicar cuál
-    // es el que de verdad está fallando, sin tener que ir campo por campo.
-    // Quitar en cuanto se confirme la causa.
-    let tipoColumna = 'otro';
-    if(col){
-      if(col.choice) tipoColumna = 'choice';
-      else if(col.lookup) tipoColumna = 'lookup';
-      else if(col.personOrGroup) tipoColumna = 'personOrGroup';
-      else if(col.dateTime) tipoColumna = 'dateTime';
-      else if(col.number) tipoColumna = 'number';
-      else if(col.text) tipoColumna = 'text';
-    }
-    console.log(`[Lexara][debug-campos] ${key} -> ${internalName}:`, {
-      valor: updates[key],
-      tipo: tipoColumna,
-      choices: col && col.choice ? col.choice.choices : undefined,
-      allowTextEntry: col && col.choice ? col.choice.allowTextEntry : undefined,
-      lookupCompleto: col && col.lookup ? col.lookup : undefined,
-    });
     if(col && col.lookup && col.lookup.listId){
       lookupsPendientes.push({ internalName, lookup: col.lookup, valor: updates[key] });
     } else {
       fields[internalName] = updates[key];
     }
   });
+  const lookupFields = {};
   for(const { internalName, lookup, valor } of lookupsPendientes){
     const id = await resolverOCrearLookupId(siteId, lookup, valor);
-    fields[`${internalName}LookupId`] = id;
+    lookupFields[`${internalName}LookupId`] = id;
   }
-  return fields;
+  return { fields, lookupFields };
+}
+
+// Traduce claves semánticas a nombres reales de columna para un PATCH — un
+// solo objeto combinado (fields + lookupFields), tal como se usaba antes.
+// Para EDITAR un registro que ya existe esto funciona bien en un solo
+// PATCH. Ver `crearItemConLookups` para el caso de CREAR uno nuevo, que
+// necesita los campos Lookup en un paso aparte.
+export async function graphFieldsFromUpdates(siteId, list, updates){
+  const { fields, lookupFields } = await separarCamposYLookups(siteId, list, updates);
+  return { ...fields, ...lookupFields };
+}
+
+// Crea un registro nuevo evitando un bug real de Graph (reportado
+// 2026-08-29, confirmado con datos reales): mandar un campo de Búsqueda ya
+// resuelto (`ClienteLookupId: 3`) JUNTO con el resto de campos en el mismo
+// POST de creación hace que SharePoint responda 500 "General exception
+// while processing" — un error interno, no de validación (ya no es el 400
+// de antes). La solución real es crear el registro en dos pasos: primero
+// SIN los campos de Búsqueda, y apenas se crea, un PATCH aparte solo con
+// esos campos sobre el registro ya creado. Devuelve el item creado (con su
+// id definitivo). Reemplaza el patrón anterior de "graphFieldsFromUpdates +
+// POST directo" en todos los `crear...` — mismo criterio de "un solo lugar
+// compartido" que el resto de este archivo.
+export async function crearItemConLookups(siteId, list, updates){
+  const { fields, lookupFields } = await separarCamposYLookups(siteId, list, updates);
+  const creado = await graphFetch(`/sites/${siteId}/lists/${list.listId}/items`, {
+    method:"POST", body: JSON.stringify({ fields })
+  });
+  if(Object.keys(lookupFields).length){
+    await graphFetch(`/sites/${siteId}/lists/${list.listId}/items/${creado.id}/fields`, {
+      method:"PATCH", body: JSON.stringify(lookupFields)
+    });
+  }
+  return creado;
 }
 
 // Casi todo el resto de la app da por hecho que un campo es texto/número

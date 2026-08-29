@@ -513,11 +513,8 @@ export function useLexaraApp(){
       if(liveMode){
         setSaving(true);
         const list = listByKey('procesos');
-        const graphFields = await Graph.graphFieldsFromUpdates(list.siteId || siteId, list, updates);
         try{
-          const created = await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items`, {
-            method:"POST", body: JSON.stringify({ fields: graphFields })
-          });
+          const created = await Graph.crearItemConLookups(list.siteId || siteId, list, updates);
           nuevo.id = created.id; nuevo._graphId = created.id;
         }catch(err){ console.error(err); notify("No se pudo crear el proceso en SharePoint: " + err.message, 'error'); setSaving(false); return; }
         setSaving(false);
@@ -617,11 +614,8 @@ export function useLexaraApp(){
       setSaving(true);
       const list = listByKey('clientes');
       const { id, ...nuevoSinId } = nuevo;
-      const graphFields = await Graph.graphFieldsFromUpdates(list.siteId || siteId, list, nuevoSinId);
       try{
-        const created = await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items`, {
-          method:"POST", body: JSON.stringify({ fields: graphFields })
-        });
+        const created = await Graph.crearItemConLookups(list.siteId || siteId, list, nuevoSinId);
         nuevo.id = created.id; nuevo._graphId = created.id;
       }catch(err){ console.error(err); notify("No se pudo crear el cliente en SharePoint: " + err.message, 'error'); setSaving(false); return null; }
       setSaving(false);
@@ -680,12 +674,8 @@ export function useLexaraApp(){
       if(liveMode){
         setSaving(true);
         const list = listByKey('facturacion');
-        const graphFields = {};
-        Object.keys(updates).forEach(key => { if(list.mapping[key]) graphFields[list.mapping[key]] = updates[key]; });
         try{
-          const created = await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items`, {
-            method:"POST", body: JSON.stringify({ fields: graphFields })
-          });
+          const created = await Graph.crearItemConLookups(list.siteId || siteId, list, updates);
           nuevo.id = created.id; nuevo._graphId = created.id;
           const numero = String(Number(created.id) + 91);
           nuevo.Factura = numero;
@@ -747,11 +737,8 @@ export function useLexaraApp(){
       if(liveMode){
         setSaving(true);
         const list = listByKey('ordenesCompra');
-        const graphFields = await Graph.graphFieldsFromUpdates(list.siteId || siteId, list, updates);
         try{
-          const created = await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items`, {
-            method:"POST", body: JSON.stringify({ fields: graphFields })
-          });
+          const created = await Graph.crearItemConLookups(list.siteId || siteId, list, updates);
           nuevo.id = created.id; nuevo._graphId = created.id;
         }catch(err){ console.error(err); notify("No se pudo crear la orden de compra en SharePoint: " + err.message, 'error'); setSaving(false); return; }
         setSaving(false);
@@ -796,11 +783,8 @@ export function useLexaraApp(){
       if(liveMode){
         setSaving(true);
         const list = listByKey('colaboradores');
-        const graphFields = await Graph.graphFieldsFromUpdates(list.siteId || siteId, list, updates);
         try{
-          const created = await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items`, {
-            method:"POST", body: JSON.stringify({ fields: graphFields })
-          });
+          const created = await Graph.crearItemConLookups(list.siteId || siteId, list, updates);
           nuevo.id = created.id; nuevo._graphId = created.id;
         }catch(err){ console.error(err); notify("No se pudo crear el colaborador en SharePoint: " + err.message, 'error'); setSaving(false); return; }
         setSaving(false);
@@ -865,11 +849,8 @@ export function useLexaraApp(){
       if(liveMode){
         setSaving(true);
         const list = listByKey('formasPago');
-        const graphFields = await Graph.graphFieldsFromUpdates(list.siteId || siteId, list, updates);
         try{
-          const created = await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items`, {
-            method:"POST", body: JSON.stringify({ fields: graphFields })
-          });
+          const created = await Graph.crearItemConLookups(list.siteId || siteId, list, updates);
           nuevo.id = created.id; nuevo._graphId = created.id;
         }catch(err){ console.error(err); notify("No se pudo crear la forma de pago en SharePoint: " + err.message, 'error'); setSaving(false); return; }
         setSaving(false);
@@ -934,11 +915,8 @@ export function useLexaraApp(){
       if(liveMode){
         setSaving(true);
         const list = listByKey('desistimientos');
-        const graphFields = await Graph.graphFieldsFromUpdates(list.siteId || siteId, list, updates);
         try{
-          const created = await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items`, {
-            method:"POST", body: JSON.stringify({ fields: graphFields })
-          });
+          const created = await Graph.crearItemConLookups(list.siteId || siteId, list, updates);
           nuevo.id = created.id; nuevo._graphId = created.id;
         }catch(err){ console.error(err); notify("No se pudo crear el desistimiento en SharePoint: " + err.message, 'error'); setSaving(false); return; }
         setSaving(false);
@@ -999,19 +977,10 @@ export function useLexaraApp(){
       if(liveMode){
         setSaving(true);
         const list = listByKey('tutelas');
-        const graphFields = await Graph.graphFieldsFromUpdates(list.siteId || siteId, list, updates);
-        // DIAGNÓSTICO TEMPORAL 2026-08-28 — el fix de "Entidad" (Lookup) no
-        // resolvió el 400 al crear una Tutela; deja en consola el cuerpo
-        // real que se manda, para ver si sigue mandando texto plano (caché
-        // vieja) o si el problema real es otro campo. Quitar en cuanto se
-        // confirme la causa.
-        console.log('[Lexara][debug] Crear Tutela — fields enviados a Graph:', graphFields);
         try{
-          const created = await Graph.graphFetch(`/sites/${list.siteId || siteId}/lists/${list.listId}/items`, {
-            method:"POST", body: JSON.stringify({ fields: graphFields })
-          });
+          const created = await Graph.crearItemConLookups(list.siteId || siteId, list, updates);
           nuevo.id = created.id; nuevo._graphId = created.id;
-        }catch(err){ console.error('[Lexara][debug] Error real de Graph:', err); notify("No se pudo crear la tutela en SharePoint: " + err.message, 'error'); setSaving(false); return; }
+        }catch(err){ console.error(err); notify("No se pudo crear la tutela en SharePoint: " + err.message, 'error'); setSaving(false); return; }
         setSaving(false);
       } else {
         const maxId = tutelas.reduce((max,t) => Math.max(max, Number(t.id)||0), 0);
@@ -1117,11 +1086,8 @@ export function useLexaraApp(){
       setSaving(true);
       const list = listByKey('temas');
       const { id, ...nuevoSinId } = nuevo;
-      const graphFields = await Graph.graphFieldsFromUpdates(list.siteId || siteId, list, nuevoSinId);
       try{
-        const created = await Graph.graphFetch(`/sites/${list.siteId || siteId}/lists/${list.listId}/items`, {
-          method:"POST", body: JSON.stringify({ fields: graphFields })
-        });
+        const created = await Graph.crearItemConLookups(list.siteId || siteId, list, nuevoSinId);
         nuevo.id = created.id; nuevo._graphId = created.id;
       }catch(err){ console.error(err); notify("No se pudo crear el tema en SharePoint: " + err.message, 'error'); setSaving(false); return null; }
       setSaving(false);
@@ -1151,11 +1117,8 @@ export function useLexaraApp(){
       setSaving(true);
       const list = listByKey('valoresEntidad');
       const { id, ...nuevoSinId } = nuevo;
-      const graphFields = await Graph.graphFieldsFromUpdates(list.siteId || siteId, list, nuevoSinId);
       try{
-        const created = await Graph.graphFetch(`/sites/${list.siteId || siteId}/lists/${list.listId}/items`, {
-          method:"POST", body: JSON.stringify({ fields: graphFields })
-        });
+        const created = await Graph.crearItemConLookups(list.siteId || siteId, list, nuevoSinId);
         nuevo.id = created.id; nuevo._graphId = created.id;
       }catch(err){ console.error(err); notify("No se pudo crear el valor de entidad en SharePoint: " + err.message, 'error'); setSaving(false); return null; }
       setSaving(false);
