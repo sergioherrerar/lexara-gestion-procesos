@@ -414,6 +414,7 @@ export async function graphFieldsFromUpdates(siteId, list, updates){
       tipo: tipoColumna,
       choices: col && col.choice ? col.choice.choices : undefined,
       allowTextEntry: col && col.choice ? col.choice.allowTextEntry : undefined,
+      lookupCompleto: col && col.lookup ? col.lookup : undefined,
     });
     if(col && col.lookup && col.lookup.listId){
       lookupsPendientes.push({ internalName, lookup: col.lookup, valor: updates[key] });
