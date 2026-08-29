@@ -390,7 +390,7 @@ export default function InformesView({ procesos, clientes, facturas, ordenesComp
                   handleCorregirEntidad
                 )}
               >
-                {corrigiendoEntidad ? "Corrigiendo…" : "Corregir Entidad faltante"}
+                {corrigiendoEntidad ? "Corrigiendo…" : "Unificar Entidad a GRUPO COLMEDICA"}
               </button>
             </div>
           )}
