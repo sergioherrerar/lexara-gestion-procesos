@@ -75,16 +75,18 @@ export default function InformesView({ procesos, clientes, facturas, ordenesComp
   const [generandoAbogadosExcel, setGenerandoAbogadosExcel] = useState(false);
   const [corrigiendoEntidad, setCorrigiendoEntidad] = useState(false);
   // Corrección masiva puntual 2026-08-28 (ver corregirEntidadFaltanteTutelas
-  // en useLexaraApp.js). AJUSTE el mismo día: el aviso original solo contaba
-  // Entidad TEXTUALMENTE vacía ("") — pero en datos reales resultó que la
-  // mayoría no está vacía, tiene un valor que NO coincide con ninguna
-  // Entidad real de la lista "Valores Entidad" (por eso el Valor Abogado
-  // salía en 0 igual: la búsqueda por Entidad nunca encontraba nada). Ahora
-  // cuenta "no coincide con ninguna Entidad real" en vez de solo "vacía", y
-  // muestra qué valores distintos hay para poder confirmar antes de
-  // sobreescribirlos todos.
-  const entidadesReales = new Set((valoresEntidad||[]).map(v => v.Entidad));
-  const tutelasEntidadInvalida = tutelas.filter(t => !entidadesReales.has(t.Entidad));
+  // en useLexaraApp.js). 2 ajustes el mismo día:
+  // 1) el aviso original solo contaba Entidad TEXTUALMENTE vacía ("") — pero
+  //    en datos reales la mayoría no está vacía, tenía un valor que no
+  //    coincidía con ninguna Entidad real de "Valores Entidad".
+  // 2) Después de correr esa versión, quedaron ~700 tutelas en "Colmedica"
+  //    (sin "GRUPO ") sin tocar — resultó que ese SÍ es un valor real
+  //    distinto en la lista de origen del Lookup, así que no calificaba
+  //    como "inválido". El usuario confirmó explícitamente: quiere TODAS las
+  //    tutelas en "GRUPO COLMEDICA", sin excepción — así que el criterio ya
+  //    no es "inválida", es simplemente "no es exactamente GRUPO COLMEDICA".
+  const ENTIDAD_UNIFICADA = "GRUPO COLMEDICA";
+  const tutelasEntidadInvalida = tutelas.filter(t => t.Entidad !== ENTIDAD_UNIFICADA);
   const valoresEntidadInvalidosDistintos = Array.from(new Set(tutelasEntidadInvalida.map(t => t.Entidad || "(vacío)")));
   async function handleCorregirEntidad(){
     setCorrigiendoEntidad(true);
@@ -378,13 +380,13 @@ export default function InformesView({ procesos, clientes, facturas, ordenesComp
           </div>
           {tutelasEntidadInvalida.length > 0 && (
             <div className="field-warning" style={{display:'flex', alignItems:'center', gap:10, flexWrap:'wrap', marginBottom:16}}>
-              <span>{tutelasEntidadInvalida.length} tutela(s) tienen "Entidad" vacía o con un valor que no coincide con ninguna Entidad real de "Valores Entidad" (valores encontrados: {valoresEntidadInvalidosDistintos.join(", ")}) — su Valor Abogado no se puede calcular hasta corregirlo.</span>
+              <span>{tutelasEntidadInvalida.length} tutela(s) no tienen "Entidad" en GRUPO COLMEDICA (valores encontrados: {valoresEntidadInvalidosDistintos.join(", ")}) — su Valor Abogado no se puede calcular hasta corregirlo.</span>
               <button
                 type="button"
                 className="btn-secondary"
                 disabled={corrigiendoEntidad}
                 onClick={() => requestConfirm(
-                  `¿Poner "Entidad" en GRUPO COLMEDICA para las ${tutelasEntidadInvalida.length} tutela(s) con Entidad vacía o inválida? Esto actualiza SharePoint de una vez.`,
+                  `¿Poner "Entidad" en GRUPO COLMEDICA para las ${tutelasEntidadInvalida.length} tutela(s) que todavía no la tienen así? Esto actualiza SharePoint de una vez.`,
                   handleCorregirEntidad
                 )}
               >

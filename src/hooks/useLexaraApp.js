@@ -1046,16 +1046,21 @@ export function useLexaraApp(){
   // Resuelve el LookupId UNA sola vez (todas van al mismo valor) y lo
   // reutiliza en cada PATCH, en vez de repetir la búsqueda 285 veces.
   //
-  // AJUSTE el mismo día: en datos reales, "Entidad" casi nunca estaba
+  // AJUSTE el mismo día (1): en datos reales, "Entidad" casi nunca estaba
   // TEXTUALMENTE vacía — tenía un valor que no coincide con ninguna Entidad
   // real de "Valores Entidad" (por eso el filtro `!t.Entidad` de la primera
   // versión no encontraba nada que corregir, aunque el Valor Abogado seguía
-  // saliendo en 0). Ahora el criterio es "no coincide con ninguna Entidad
-  // real", igual que en InformesView.jsx.
+  // saliendo en 0).
+  // AJUSTE (2): tras correr esa versión quedaron ~700 tutelas en "Colmedica"
+  // (sin "GRUPO ") sin tocar, porque ese SÍ es un valor real distinto en la
+  // lista de origen del Lookup (no calificaba como "inválido"). El usuario
+  // confirmó explícitamente que quiere TODAS las tutelas en "GRUPO
+  // COLMEDICA" sin excepción — el criterio ya no es "inválida", es
+  // simplemente "no es exactamente GRUPO COLMEDICA".
   async function corregirEntidadFaltanteTutelas(){
-    const entidadesReales = new Set((valoresEntidad||[]).map(v => v.Entidad));
-    const pendientes = tutelas.filter(t => !entidadesReales.has(t.Entidad));
-    if(!pendientes.length){ notify?.("No hay tutelas con Entidad inválida.", 'info'); return { ok:0, fallidas:0 }; }
+    const ENTIDAD_UNIFICADA = "GRUPO COLMEDICA";
+    const pendientes = tutelas.filter(t => t.Entidad !== ENTIDAD_UNIFICADA);
+    if(!pendientes.length){ notify?.("Todas las tutelas ya tienen Entidad en GRUPO COLMEDICA.", 'info'); return { ok:0, fallidas:0 }; }
     setSaving(true);
     const list = listByKey('tutelas');
     const siteIdReal = list.siteId || siteId;
@@ -1074,6 +1079,10 @@ export function useLexaraApp(){
         });
         ok++; idsOk.add(t.id);
       }catch(err){ console.error('Entidad fix falló para tutela', t.id, err); fallidas++; }
+      // Con ~700 registros esto puede tardar varios minutos — deja avance en
+      // consola para poder confirmar que sigue corriendo (no se ve nada en
+      // pantalla mientras tanto, el botón solo dice "Corrigiendo…").
+      if((ok+fallidas) % 25 === 0) console.log(`[Lexara] Corrigiendo Entidad: ${ok+fallidas}/${pendientes.length}`);
     }
     setTutelas(prev => prev.map(t => idsOk.has(t.id) ? {...t, Entidad: "GRUPO COLMEDICA"} : t));
     setSaving(false);
