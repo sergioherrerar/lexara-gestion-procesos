@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-08-29
+- Se agregaron "CORRECION" y "MODULACION" a la lista de "Tipo Respuesta" de Tutelas (y al reporte "Tutelas por Abogado", con su propio color).
+
 ## 2026-08-28
 - **Ajustado "Corregir Entidad faltante": ahora unifica TODAS las tutelas en GRUPO COLMEDICA, sin excepción** — la corrección anterior dejaba sin tocar unas ~700 tutelas que ya tenían "Colmedica" (sin "GRUPO"), un valor real pero distinto; confirmado por el usuario que también deben quedar en GRUPO COLMEDICA.
 - **Corregido el aviso/botón "Corregir Entidad faltante" (Informes > Tutelas por Abogado): no detectaba el problema real** — en datos reales, "Entidad" casi nunca está vacía, tiene un valor que no coincide con ninguna Entidad real de "Valores Entidad" (por eso el Valor Abogado seguía saliendo en 0 aunque el botón no apareciera). Ahora detecta y corrige eso también, y el mensaje muestra qué valores encontró antes de corregir.

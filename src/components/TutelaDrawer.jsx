@@ -18,7 +18,7 @@ const SI_NO = ["Sí", "No"];
 // de la lista Tema por error).
 const TIPO_VINCULACION_OPCIONES = ["Accionada", "Vinculada"];
 const PRESTACION_OPCIONES = ["Asistencial", "Económica", "Administrativa"];
-const TIPO_RESPUESTA_OPCIONES = ["ACLARACION", "ALCANCE", "APLAZAMIENTO", "CUMPLIMIENTO FALLO", "IMPUGNACION", "NULIDAD", "REQUERIMIENTO", "TUTELA"];
+const TIPO_RESPUESTA_OPCIONES = ["ACLARACION", "ALCANCE", "APLAZAMIENTO", "CUMPLIMIENTO FALLO", "CORRECION", "IMPUGNACION", "MODULACION", "NULIDAD", "REQUERIMIENTO", "TUTELA"];
 const ABOGADO_RESPUESTA_OPCIONES = ["Ariana Martin Mendoza", "Mónica Paola Quintero", "Daniel Santiago Flechas"];
 const ABOGADO_RESPUESTA_DEFECTO = "Ariana Martin Mendoza";
 // Pedido explícito del usuario 2026-08-28, mientras "Entidad" en Tutelas

@@ -33,16 +33,18 @@ export const MESES_NOMBRES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","
 
 // Mismo orden que ya usa el select fijo de "Tipo Respuesta" en
 // TutelaDrawer.jsx — para que las filas de cada abogado salgan siempre en
-// el mismo orden, no alfabético a secas.
-const ORDEN_TIPO_RESPUESTA = ["ACLARACION","ALCANCE","APLAZAMIENTO","CUMPLIMIENTO FALLO","IMPUGNACION","NULIDAD","REQUERIMIENTO","TUTELA"];
+// el mismo orden, no alfabético a secas. Ampliado 2026-08-28 con "CORRECION"
+// y "MODULACION" (pedido explícito del usuario).
+const ORDEN_TIPO_RESPUESTA = ["ACLARACION","ALCANCE","APLAZAMIENTO","CUMPLIMIENTO FALLO","CORRECION","IMPUGNACION","MODULACION","NULIDAD","REQUERIMIENTO","TUTELA"];
 
 // Un color institucional fijo por Tipo Respuesta (por posición en
 // ORDEN_TIPO_RESPUESTA, no por orden de aparición) — así el mismo Tipo
 // Respuesta siempre sale del mismo color en el gráfico y en las tarjetas de
-// detalle, sin importar qué abogados/categorías traiga cada mes. Paleta
-// institucional (mismos 8 colores que ya usa PieChart.jsx), 1 a 1 con las 8
-// opciones fijas de Tipo Respuesta.
-const PALETA_TIPO_RESPUESTA = ['#004941', '#ef7d00', '#52bbb5', '#a3281c', '#1d5fa3', '#8a6410', '#6b5115', '#5c6b68'];
+// detalle, sin importar qué abogados/categorías traiga cada mes. Empieza de
+// los mismos 8 colores institucionales que ya usa PieChart.jsx, más 2
+// adicionales (mismo criterio de paleta) agregados el 2026-08-28 al ampliar
+// a 10 Tipo Respuesta.
+const PALETA_TIPO_RESPUESTA = ['#004941', '#ef7d00', '#52bbb5', '#a3281c', '#1d5fa3', '#8a6410', '#6b5115', '#5c6b68', '#7a4fa3', '#c2703d'];
 export function colorDeTipoRespuesta(tipo){
   const i = ORDEN_TIPO_RESPUESTA.indexOf(tipo);
   return PALETA_TIPO_RESPUESTA[i === -1 ? PALETA_TIPO_RESPUESTA.length - 1 : i % PALETA_TIPO_RESPUESTA.length];
