@@ -75,9 +75,17 @@ export default function InformesView({ procesos, clientes, facturas, ordenesComp
   const [generandoAbogadosExcel, setGenerandoAbogadosExcel] = useState(false);
   const [corrigiendoEntidad, setCorrigiendoEntidad] = useState(false);
   // Corrección masiva puntual 2026-08-28 (ver corregirEntidadFaltanteTutelas
-  // en useLexaraApp.js) — cuenta cuántas tutelas siguen sin Entidad, para
-  // solo mostrar el botón cuando de verdad hace falta.
-  const tutelasSinEntidad = tutelas.filter(t => !t.Entidad).length;
+  // en useLexaraApp.js). AJUSTE el mismo día: el aviso original solo contaba
+  // Entidad TEXTUALMENTE vacía ("") — pero en datos reales resultó que la
+  // mayoría no está vacía, tiene un valor que NO coincide con ninguna
+  // Entidad real de la lista "Valores Entidad" (por eso el Valor Abogado
+  // salía en 0 igual: la búsqueda por Entidad nunca encontraba nada). Ahora
+  // cuenta "no coincide con ninguna Entidad real" en vez de solo "vacía", y
+  // muestra qué valores distintos hay para poder confirmar antes de
+  // sobreescribirlos todos.
+  const entidadesReales = new Set((valoresEntidad||[]).map(v => v.Entidad));
+  const tutelasEntidadInvalida = tutelas.filter(t => !entidadesReales.has(t.Entidad));
+  const valoresEntidadInvalidosDistintos = Array.from(new Set(tutelasEntidadInvalida.map(t => t.Entidad || "(vacío)")));
   async function handleCorregirEntidad(){
     setCorrigiendoEntidad(true);
     try{ await corregirEntidadFaltanteTutelas(); }
@@ -368,15 +376,15 @@ export default function InformesView({ procesos, clientes, facturas, ordenesComp
             </div>
             <IconButton icon="excel" variant="excel" label="Descargar Excel de Tutelas por Abogado" spinning={generandoAbogadosExcel} onClick={handleGenerarAbogadosExcel} />
           </div>
-          {tutelasSinEntidad > 0 && (
+          {tutelasEntidadInvalida.length > 0 && (
             <div className="field-warning" style={{display:'flex', alignItems:'center', gap:10, flexWrap:'wrap', marginBottom:16}}>
-              <span>{tutelasSinEntidad} tutela(s) tienen "Entidad" vacía en SharePoint — su Valor Abogado no se puede calcular hasta corregirlo.</span>
+              <span>{tutelasEntidadInvalida.length} tutela(s) tienen "Entidad" vacía o con un valor que no coincide con ninguna Entidad real de "Valores Entidad" (valores encontrados: {valoresEntidadInvalidosDistintos.join(", ")}) — su Valor Abogado no se puede calcular hasta corregirlo.</span>
               <button
                 type="button"
                 className="btn-secondary"
                 disabled={corrigiendoEntidad}
                 onClick={() => requestConfirm(
-                  `¿Poner "Entidad" en GRUPO COLMEDICA para las ${tutelasSinEntidad} tutela(s) que la tienen vacía? Esto actualiza SharePoint de una vez.`,
+                  `¿Poner "Entidad" en GRUPO COLMEDICA para las ${tutelasEntidadInvalida.length} tutela(s) con Entidad vacía o inválida? Esto actualiza SharePoint de una vez.`,
                   handleCorregirEntidad
                 )}
               >

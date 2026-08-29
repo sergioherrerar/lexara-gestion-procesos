@@ -1045,9 +1045,17 @@ export function useLexaraApp(){
   // quedar Grupo Colmedica si las puedes colocar tos por favor de una vez".
   // Resuelve el LookupId UNA sola vez (todas van al mismo valor) y lo
   // reutiliza en cada PATCH, en vez de repetir la búsqueda 285 veces.
+  //
+  // AJUSTE el mismo día: en datos reales, "Entidad" casi nunca estaba
+  // TEXTUALMENTE vacía — tenía un valor que no coincide con ninguna Entidad
+  // real de "Valores Entidad" (por eso el filtro `!t.Entidad` de la primera
+  // versión no encontraba nada que corregir, aunque el Valor Abogado seguía
+  // saliendo en 0). Ahora el criterio es "no coincide con ninguna Entidad
+  // real", igual que en InformesView.jsx.
   async function corregirEntidadFaltanteTutelas(){
-    const pendientes = tutelas.filter(t => !t.Entidad);
-    if(!pendientes.length){ notify?.("No hay tutelas con Entidad vacía.", 'info'); return { ok:0, fallidas:0 }; }
+    const entidadesReales = new Set((valoresEntidad||[]).map(v => v.Entidad));
+    const pendientes = tutelas.filter(t => !entidadesReales.has(t.Entidad));
+    if(!pendientes.length){ notify?.("No hay tutelas con Entidad inválida.", 'info'); return { ok:0, fallidas:0 }; }
     setSaving(true);
     const list = listByKey('tutelas');
     const siteIdReal = list.siteId || siteId;
