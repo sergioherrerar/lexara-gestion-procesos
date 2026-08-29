@@ -394,13 +394,27 @@ export async function graphFieldsFromUpdates(siteId, list, updates){
     if(updates[key] === "") return;
     const internalName = list.mapping[key];
     const col = (list.columns||[]).find(c => c.name === internalName);
-    // DIAGNÓSTICO TEMPORAL 2026-08-29 — el 400 al crear una Tutela persiste
-    // pese al fix de Lookup; hay que confirmar si "Entidad" de verdad se
-    // está reconociendo como columna Lookup en este momento. Quitar en
-    // cuanto se confirme la causa.
-    if(internalName === "Entidad"){
-      console.log('[Lexara][debug-lookup] columna Entidad encontrada:', col, '— total columnas cargadas:', (list.columns||[]).length);
+    // DIAGNÓSTICO TEMPORAL 2026-08-29 — el 400 al crear una Tutela persiste;
+    // "Entidad" resultó ser Choice (con allowTextEntry) y no Lookup, así que
+    // el fix anterior nunca aplicaba ahí. Deja un resumen de TODOS los
+    // campos que se mandan (tipo de columna real + valor) para ubicar cuál
+    // es el que de verdad está fallando, sin tener que ir campo por campo.
+    // Quitar en cuanto se confirme la causa.
+    let tipoColumna = 'otro';
+    if(col){
+      if(col.choice) tipoColumna = 'choice';
+      else if(col.lookup) tipoColumna = 'lookup';
+      else if(col.personOrGroup) tipoColumna = 'personOrGroup';
+      else if(col.dateTime) tipoColumna = 'dateTime';
+      else if(col.number) tipoColumna = 'number';
+      else if(col.text) tipoColumna = 'text';
     }
+    console.log(`[Lexara][debug-campos] ${key} -> ${internalName}:`, {
+      valor: updates[key],
+      tipo: tipoColumna,
+      choices: col && col.choice ? col.choice.choices : undefined,
+      allowTextEntry: col && col.choice ? col.choice.allowTextEntry : undefined,
+    });
     if(col && col.lookup && col.lookup.listId){
       lookupsPendientes.push({ internalName, lookup: col.lookup, valor: updates[key] });
     } else {
