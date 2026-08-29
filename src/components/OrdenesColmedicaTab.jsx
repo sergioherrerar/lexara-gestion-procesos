@@ -30,7 +30,7 @@ export default function OrdenesColmedicaTab({ tutelas, valoresEntidad, clientes,
 
   async function handleDescargarExcel(){
     setGenerandoExcel(true);
-    try{ await generarExcelOrdenesColmedica(grupos, mes, anio, valoresEntidad); }
+    try{ await generarExcelOrdenesColmedica(tutelasDelMes, valoresEntidad, mes, anio); }
     catch(err){ console.error(err); notify?.("No se pudo generar el Excel de Órdenes Colmédica: " + err.message, 'error'); }
     finally{ setGenerandoExcel(false); }
   }

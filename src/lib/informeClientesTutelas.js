@@ -45,7 +45,12 @@ export function agruparPorCliente(tutelasFiltradas, valoresEntidad){
 
 // 2ª hoja del Excel — mismo criterio de outline/agrupado que "Por Abogado"
 // (ver informeAbogadosTutelas.js), con "Cliente" en vez de "Abogado Tutela".
-function construirHojaPorCliente(wb, grupos, totalGeneral){
+// Exportada (2026-08-29) para que "Órdenes Colmédica" (Administración,
+// ordenesComprasColmedica.js) arme el MISMO Excel de 2 hojas, solo que
+// filtrando las tutelas por mes calendario completo en vez del corte-28 —
+// pidió explícitamente el usuario "el Excel esta mal debe ser el mismo de
+// tutelas por abogado" (viendo el de acá armado distinto, más simple).
+export function construirHojaPorCliente(wb, grupos, totalGeneral){
   const ws = wb.addWorksheet("Por Cliente");
   ws.columns = [{width:32},{width:26},{width:16}];
   ws.properties.outlineProperties = { summaryBelow: true, summaryRight: false };
@@ -86,16 +91,18 @@ function construirHojaPorCliente(wb, grupos, totalGeneral){
   return ws;
 }
 
-// Excel completo: hoja 1 = las tutelas del mes (mismo formato de siempre, ya
-// filtradas, sin "Valor Abogado" — solo "Valor Entidad"), hoja 2 = el
-// resumen agrupado por Cliente.
-export async function generarInformeClientesTutelasExcel(tutelas, valoresEntidad, anio, mesIndex0){
+// Arma el workbook completo (hoja 1 = tutelas ya filtradas, sin "Valor
+// Abogado" — solo "Valor Entidad"; hoja 2 = resumen agrupado por Cliente) y
+// lo descarga con el nombre dado. Extraído 2026-08-29 (recibe las tutelas
+// YA FILTRADAS, sin opinar de qué mes/corte usar) para que "Órdenes
+// Colmédica" (mes calendario completo) y este informe (corte-28) armen
+// exactamente el mismo Excel, cada uno con su propio filtro de mes.
+export async function descargarExcelClientesTutelas(tutelasFiltradas, valoresEntidad, nombreArchivo){
   const { default: ExcelJS } = await import('exceljs');
-  const filtradas = filtrarTutelasPorMes(tutelas, anio, mesIndex0);
-  const { grupos, totalGeneral } = agruparPorCliente(filtradas, valoresEntidad);
+  const { grupos, totalGeneral } = agruparPorCliente(tutelasFiltradas, valoresEntidad);
 
   const wb = new ExcelJS.Workbook();
-  construirHojaTutelasXlsx(wb, filtradas, valoresEntidad, "Tutelas", { soloValorEntidad: true });
+  construirHojaTutelasXlsx(wb, tutelasFiltradas, valoresEntidad, "Tutelas", { soloValorEntidad: true });
   construirHojaPorCliente(wb, grupos, totalGeneral);
 
   const buffer = await wb.xlsx.writeBuffer();
@@ -103,9 +110,17 @@ export async function generarInformeClientesTutelasExcel(tutelas, valoresEntidad
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `Tutelas por Cliente - ${MESES_NOMBRES[mesIndex0]} ${anio}.xlsx`;
+  a.download = nombreArchivo;
   document.body.appendChild(a);
   a.click();
   a.remove();
   URL.revokeObjectURL(url);
+}
+
+// Excel completo: hoja 1 = las tutelas del mes (mismo formato de siempre, ya
+// filtradas, sin "Valor Abogado" — solo "Valor Entidad"), hoja 2 = el
+// resumen agrupado por Cliente.
+export async function generarInformeClientesTutelasExcel(tutelas, valoresEntidad, anio, mesIndex0){
+  const filtradas = filtrarTutelasPorMes(tutelas, anio, mesIndex0);
+  await descargarExcelClientesTutelas(filtradas, valoresEntidad, `Tutelas por Cliente - ${MESES_NOMBRES[mesIndex0]} ${anio}.xlsx`);
 }

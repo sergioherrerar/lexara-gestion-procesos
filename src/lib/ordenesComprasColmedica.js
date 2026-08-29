@@ -9,6 +9,7 @@
 // usuario pidió explícitamente el mes calendario completo, día 1 al 30/31
 // según el mes, por fecha de Vencimiento.
 import { parseMonto, fmtMonto } from './graph';
+import { descargarExcelClientesTutelas } from './informeClientesTutelas';
 
 export const MESES_NOMBRES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 
@@ -84,53 +85,36 @@ export function construirBorradorOrdenCompra(grupoCliente, mesIndex0, anio, valo
   const contrato = CONTRATO_POR_CLIENTE[cliente] || "";
   const valorUnitario = valorUnitarioPara(entidad, valoresEntidad);
   const hoy = new Date();
-  const observacion = `Honorarios generados dentro del Contrato ${contrato || "—"} en MD ABOGADOS SAS y ${cliente} por las contestaciones de tutelas hechas en el mes de ${MESES_NOMBRES[mesIndex0]} del ${anio}`;
+  // Pedido explícito del usuario 2026-08-29 (viendo el borrador real ya
+  // armado): este texto va en la Descripción de la 1ª línea, no en
+  // Observación (que queda vacía) — reemplaza el "Tutelas" corto que tenía
+  // esa línea.
+  const descripcionLinea1 = `Honorarios generados dentro del Contrato ${contrato || "—"} en MD ABOGADOS SAS y ${cliente} por las contestaciones de tutelas hechas en el mes de ${MESES_NOMBRES[mesIndex0]} del ${anio}`;
   return {
     CodigoCliente: clienteReal ? String(clienteReal.id) : "",
     Contrato: contrato,
     Ciudad: clienteReal?.Ciudad || "Bogota D.C",
     Proceso: "Tutelas",
     EtapaContrato: "Tutelas",
-    Observacion: observacion,
+    Observacion: "",
     Dia: String(hoy.getDate()),
     Mes: String(hoy.getMonth() + 1).padStart(2, '0'),
     Anio: String(hoy.getFullYear()),
-    Descripcion1: "Tutelas", Cantidad1: String(cantidadTutela), ValorUnitario1: cantidadTutela ? fmtMonto(valorUnitario) : "",
+    Descripcion1: descripcionLinea1, Cantidad1: String(cantidadTutela), ValorUnitario1: cantidadTutela ? fmtMonto(valorUnitario) : "",
     Descripcion2: "Impugnaciones", Cantidad2: String(cantidadImpugnacion), ValorUnitario2: cantidadImpugnacion ? fmtMonto(valorUnitario) : "",
     Descripcion3: "Otras contestaciones", Cantidad3: String(cantidadOtras), ValorUnitario3: cantidadOtras ? fmtMonto(valorUnitario) : "",
   };
 }
 
-// Excel de referencia con el detalle de TODOS los clientes de ese mes junto
-// — mismo estilo institucional del resto de Informes.
-export async function generarExcelOrdenesColmedica(gruposPorCliente, mesIndex0, anio, valoresEntidad){
-  const { default: ExcelJS } = await import('exceljs');
-  const wb = new ExcelJS.Workbook();
-  const ws = wb.addWorksheet("Órdenes Colmédica");
-  ws.columns = [{width:34},{width:20},{width:14},{width:14},{width:16},{width:16}];
-  const header = ws.addRow(["Cliente","Contrato","Tutelas","Impugnaciones","Otras contestaciones","Valor unitario"]);
-  header.height = 26;
-  header.eachCell(cell => {
-    cell.fill = { type:'pattern', pattern:'solid', fgColor:{argb:'FF004941'} };
-    cell.font = { name:'Aptos Narrow', size:11, bold:true, color:{argb:'FFFFFFFF'} };
-    cell.alignment = { horizontal:'center', vertical:'middle', wrapText:true };
-  });
-  gruposPorCliente.forEach(g => {
-    const valorUnitario = valorUnitarioPara(g.entidad, valoresEntidad);
-    const row = ws.addRow([g.cliente, CONTRATO_POR_CLIENTE[g.cliente] || "", g.cantidadTutela, g.cantidadImpugnacion, g.cantidadOtras, valorUnitario]);
-    row.getCell(6).numFmt = '"$"#,##0.00';
-    row.eachCell(cell => { cell.alignment = { horizontal:'center', vertical:'middle' }; });
-  });
-  ws.views = [{ state:'frozen', ySplit:1 }];
-
-  const buffer = await wb.xlsx.writeBuffer();
-  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `Órdenes Colmédica - ${MESES_NOMBRES[mesIndex0]} ${anio}.xlsx`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
+// Excel — pedido explícito del usuario 2026-08-29 viendo el primero armado
+// ("El Excel esta mal debe ser el mismo de tutelas por abogado solo
+// cambiamos la columna Valor Abogado dejamos valor entidad"): el MISMO
+// Excel de 2 hojas que ya arma "Tutelas por Cliente" (Informes) — hoja 1
+// con las tutelas ya filtradas (columna "Valor Entidad", sin "Valor
+// Abogado"), hoja 2 agrupada por Cliente con outline tipo dinámica — solo
+// que acá filtrado por el mes CALENDARIO completo de esta pestaña (no el
+// corte-28 que usa el informe de Informes). Reusa `descargarExcelClientesTutelas`
+// (informeClientesTutelas.js) para no duplicar el armado del workbook.
+export async function generarExcelOrdenesColmedica(tutelasDelMes, valoresEntidad, mesIndex0, anio){
+  await descargarExcelClientesTutelas(tutelasDelMes, valoresEntidad, `Tutelas por Cliente - Colmédica - ${MESES_NOMBRES[mesIndex0]} ${anio}.xlsx`);
 }
