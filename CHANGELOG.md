@@ -3,7 +3,8 @@
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
 ## 2026-08-29
-- **Corregido de raíz (de verdad esta vez): no se podía crear una Tutela nueva** — "Cliente" es una columna de Búsqueda (Lookup) real, y Graph no acepta crear un registro con ese campo ya resuelto en la misma petición (da un error 500 interno, no de validación). Ahora cualquier módulo que cree un registro nuevo con un campo de Búsqueda lo hace en 2 pasos: primero crea el registro, y en un segundo paso le agrega el valor de Búsqueda — aplica a los 10 módulos que crean registros nuevos, no solo Tutelas.
+- **Corregido de raíz (definitivo): no se podía crear una Tutela nueva ("Graph 500: General exception")** — las columnas de tipo Sí/No ("Medida Cautelar", "Agencia Oficiosa") se mandaban como texto ("Sí"/"No") en vez de un booleano real, y SharePoint truena por dentro al crear un registro así (un error interno sin nombrar el campo, mucho más difícil de ubicar que un rechazo normal). Corregido para cualquier columna Sí/No de cualquier módulo, no solo Tutelas. De paso, se recorta cualquier espacio de sobra en los campos de texto antes de guardar.
+- **Corregido de raíz: no se podía crear una Tutela nueva** — "Cliente" es una columna de Búsqueda (Lookup) real, y Graph no acepta crear un registro con ese campo ya resuelto en la misma petición (da un error 500 interno, no de validación). Ahora cualquier módulo que cree un registro nuevo con un campo de Búsqueda lo hace en 2 pasos: primero crea el registro, y en un segundo paso le agrega el valor de Búsqueda — aplica a los 10 módulos que crean registros nuevos, no solo Tutelas.
 - Se agregaron "CORRECION" y "MODULACION" a la lista de "Tipo Respuesta" de Tutelas (y al reporte "Tutelas por Abogado", con su propio color).
 
 ## 2026-08-28

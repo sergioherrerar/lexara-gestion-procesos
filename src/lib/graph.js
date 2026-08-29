@@ -387,8 +387,21 @@ async function separarCamposYLookups(siteId, list, updates){
     const col = (list.columns||[]).find(c => c.name === internalName);
     if(col && col.lookup && col.lookup.listId){
       lookupsPendientes.push({ internalName, lookup: col.lookup, valor: updates[key] });
+    } else if(col && col.boolean){
+      // Bug real 2026-08-29, confirmado con datos reales: columnas de tipo
+      // Sí/No (booleano) en SharePoint — la app las maneja como un <select>
+      // de texto ("Sí"/"No"), pero Graph nunca acepta texto ahí, solo un
+      // booleano real (true/false). Mandar el texto tal cual provocaba un
+      // 500 "General exception while processing" al CREAR un registro (un
+      // error interno, no de validación como el 400 de un Choice) — mucho
+      // más difícil de ubicar porque no nombra el campo ni el motivo.
+      fields[internalName] = (updates[key] === "Sí" || updates[key] === true);
     } else {
-      fields[internalName] = updates[key];
+      // Choice con texto libre (allowTextEntry) a veces trae espacios de
+      // sobra en los valores que arman los <select> de la app (ej. "GRUPO
+      // COLMEDICA " en vez de "GRUPO COLMEDICA") — se recorta por las
+      // dudas, nunca hace daño a un campo de texto plano.
+      fields[internalName] = typeof updates[key] === 'string' ? updates[key].trim() : updates[key];
     }
   });
   const lookupFields = {};
