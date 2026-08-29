@@ -52,7 +52,7 @@ function entidadDeCliente(clientes, codigoClienteOrNombre, matchFn){
   return matchFn(clientes, codigoClienteOrNombre)?.Entidad || "Sin dato";
 }
 
-export default function InformesView({ procesos, clientes, facturas, ordenesCompra, desistimientos, tutelas, valoresEntidad, notify, liveMode, config }){
+export default function InformesView({ procesos, clientes, facturas, ordenesCompra, desistimientos, tutelas, valoresEntidad, notify, liveMode, config, requestConfirm, corregirEntidadFaltanteTutelas }){
   const [generando, setGenerando] = useState(null); // nombre de la entidad mientras genera el Excel
   const [generandoPDF, setGenerandoPDF] = useState(null); // nombre de la entidad mientras genera el PDF
   const [generandoDesistimientos, setGenerandoDesistimientos] = useState(null);
@@ -73,6 +73,16 @@ export default function InformesView({ procesos, clientes, facturas, ordenesComp
   const [mesAbogados, setMesAbogados] = useState(hoyRef.getMonth());
   const [anioAbogados] = useState(hoyRef.getFullYear());
   const [generandoAbogadosExcel, setGenerandoAbogadosExcel] = useState(false);
+  const [corrigiendoEntidad, setCorrigiendoEntidad] = useState(false);
+  // Corrección masiva puntual 2026-08-28 (ver corregirEntidadFaltanteTutelas
+  // en useLexaraApp.js) — cuenta cuántas tutelas siguen sin Entidad, para
+  // solo mostrar el botón cuando de verdad hace falta.
+  const tutelasSinEntidad = tutelas.filter(t => !t.Entidad).length;
+  async function handleCorregirEntidad(){
+    setCorrigiendoEntidad(true);
+    try{ await corregirEntidadFaltanteTutelas(); }
+    finally{ setCorrigiendoEntidad(false); }
+  }
   // Informe HTML por Cliente (con botón de pago) — pedido explícito del
   // usuario 2026-08-25, movido de Procesos judiciales a Informes el mismo
   // día ("mejor mueve esta sección a informes") — ver
@@ -358,6 +368,22 @@ export default function InformesView({ procesos, clientes, facturas, ordenesComp
             </div>
             <IconButton icon="excel" variant="excel" label="Descargar Excel de Tutelas por Abogado" spinning={generandoAbogadosExcel} onClick={handleGenerarAbogadosExcel} />
           </div>
+          {tutelasSinEntidad > 0 && (
+            <div className="field-warning" style={{display:'flex', alignItems:'center', gap:10, flexWrap:'wrap', marginBottom:16}}>
+              <span>{tutelasSinEntidad} tutela(s) tienen "Entidad" vacía en SharePoint — su Valor Abogado no se puede calcular hasta corregirlo.</span>
+              <button
+                type="button"
+                className="btn-secondary"
+                disabled={corrigiendoEntidad}
+                onClick={() => requestConfirm(
+                  `¿Poner "Entidad" en GRUPO COLMEDICA para las ${tutelasSinEntidad} tutela(s) que la tienen vacía? Esto actualiza SharePoint de una vez.`,
+                  handleCorregirEntidad
+                )}
+              >
+                {corrigiendoEntidad ? "Corrigiendo…" : "Corregir Entidad faltante"}
+              </button>
+            </div>
+          )}
           <StackedBarChart grupos={gruposAbogados} emptyMsg={`No hay tutelas con vencimiento entre el 29 de ${MESES_NOMBRES[(mesAbogados+11)%12].toLowerCase()} y el 28 de ${MESES_NOMBRES[mesAbogados].toLowerCase()}.`} />
           {/* Detalle por abogado — pedido explícito del usuario 2026-08-27
               mirando el gráfico ya en vivo: "incluye las cantidades y

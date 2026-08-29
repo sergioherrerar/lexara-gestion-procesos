@@ -1000,12 +1000,18 @@ export function useLexaraApp(){
         setSaving(true);
         const list = listByKey('tutelas');
         const graphFields = await Graph.graphFieldsFromUpdates(list.siteId || siteId, list, updates);
+        // DIAGNÓSTICO TEMPORAL 2026-08-28 — el fix de "Entidad" (Lookup) no
+        // resolvió el 400 al crear una Tutela; deja en consola el cuerpo
+        // real que se manda, para ver si sigue mandando texto plano (caché
+        // vieja) o si el problema real es otro campo. Quitar en cuanto se
+        // confirme la causa.
+        console.log('[Lexara][debug] Crear Tutela — fields enviados a Graph:', graphFields);
         try{
           const created = await Graph.graphFetch(`/sites/${list.siteId || siteId}/lists/${list.listId}/items`, {
             method:"POST", body: JSON.stringify({ fields: graphFields })
           });
           nuevo.id = created.id; nuevo._graphId = created.id;
-        }catch(err){ console.error(err); notify("No se pudo crear la tutela en SharePoint: " + err.message, 'error'); setSaving(false); return; }
+        }catch(err){ console.error('[Lexara][debug] Error real de Graph:', err); notify("No se pudo crear la tutela en SharePoint: " + err.message, 'error'); setSaving(false); return; }
         setSaving(false);
       } else {
         const maxId = tutelas.reduce((max,t) => Math.max(max, Number(t.id)||0), 0);
@@ -1030,6 +1036,41 @@ export function useLexaraApp(){
       setSaving(false);
     }
     setActiveTutelaId(null);
+  }
+  // Corrección masiva puntual 2026-08-28, pedida explícitamente por el
+  // usuario: 285 de 322 tutelas (las de agosto) quedaron con "Entidad"
+  // vacía en SharePoint — consecuencia directa del bug de la columna Lookup
+  // (ver graphFieldsFromUpdates) que hasta hoy impedía guardar cualquier
+  // valor real ahí. El usuario confirmó por chat: "el campo entidad debe
+  // quedar Grupo Colmedica si las puedes colocar tos por favor de una vez".
+  // Resuelve el LookupId UNA sola vez (todas van al mismo valor) y lo
+  // reutiliza en cada PATCH, en vez de repetir la búsqueda 285 veces.
+  async function corregirEntidadFaltanteTutelas(){
+    const pendientes = tutelas.filter(t => !t.Entidad);
+    if(!pendientes.length){ notify?.("No hay tutelas con Entidad vacía.", 'info'); return { ok:0, fallidas:0 }; }
+    setSaving(true);
+    const list = listByKey('tutelas');
+    const siteIdReal = list.siteId || siteId;
+    let graphBody;
+    try{
+      graphBody = await Graph.graphFieldsFromUpdates(siteIdReal, list, { Entidad: "GRUPO COLMEDICA" });
+    }catch(err){
+      console.error(err); notify?.("No se pudo resolver la Entidad: " + err.message, 'error'); setSaving(false); return { ok:0, fallidas: pendientes.length };
+    }
+    let ok = 0, fallidas = 0;
+    const idsOk = new Set();
+    for(const t of pendientes){
+      try{
+        await Graph.graphFetch(`/sites/${siteIdReal}/lists/${list.listId}/items/${t._graphId || t.id}/fields`, {
+          method:"PATCH", body: JSON.stringify(graphBody)
+        });
+        ok++; idsOk.add(t.id);
+      }catch(err){ console.error('Entidad fix falló para tutela', t.id, err); fallidas++; }
+    }
+    setTutelas(prev => prev.map(t => idsOk.has(t.id) ? {...t, Entidad: "GRUPO COLMEDICA"} : t));
+    setSaving(false);
+    notify?.(`Entidad actualizada en ${ok} tutela(s)${fallidas ? ` — ${fallidas} fallaron (revisa la consola)` : ""}.`, fallidas ? 'error' : 'success');
+    return { ok, fallidas };
   }
   async function performDeleteTutela(id){
     const tutela = tutelas.find(t => t.id===id);
@@ -1130,7 +1171,7 @@ export function useLexaraApp(){
     refreshData, refreshing,
     signIn, enterDemo, goSetup, signOut,
     saving, signingIn,
-    toast, closeToast, confirmState, acceptConfirm, cancelConfirm, notify,
+    toast, closeToast, confirmState, acceptConfirm, cancelConfirm, notify, requestConfirm,
     procesos, clientes, facturas, ordenesCompra, colaboradores, formasPago, desistimientos, tiposAccion,
     tutelas, temas, valoresEntidad,
     currentFilter, setFilter: setCurrentFilter, searchQuery, setSearchQuery: setSearchQuery,
@@ -1144,7 +1185,7 @@ export function useLexaraApp(){
     activeColaborador, openColaborador, newColaborador, closeColaboradorDrawer, saveColaborador, deleteColaborador,
     activeFormaPago, openFormaPago, newFormaPagoFromProceso, closeFormaPagoDrawer, saveFormaPago, deleteFormaPago,
     activeDesistimiento, openDesistimiento, newDesistimientoFromProceso, closeDesistimientoDrawer, saveDesistimiento, deleteDesistimiento,
-    activeTutela, openTutela, newTutela, closeTutelaDrawer, saveTutela, deleteTutela,
+    activeTutela, openTutela, newTutela, closeTutelaDrawer, saveTutela, deleteTutela, corregirEntidadFaltanteTutelas,
     createTema, saveTema, createValorEntidad, saveValorEntidad,
   };
 }
