@@ -434,6 +434,7 @@ export default function InformesView({ procesos, clientes, facturas, ordenesComp
                       <div className="abogado-card-row" key={f.tipoRespuesta}>
                         <span className="abogado-tipo-dot" style={{background: colorDeTipoRespuesta(f.tipoRespuesta)}}></span>
                         <span className="abogado-tipo-label">{f.tipoRespuesta}</span>
+                        <span className="abogado-tipo-cantidad">{f.cantidad}</span>
                         <span className="abogado-tipo-valor">$ {fmtMonto(f.total)}</span>
                       </div>
                     ))}

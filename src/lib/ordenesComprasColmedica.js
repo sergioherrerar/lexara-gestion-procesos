@@ -122,9 +122,9 @@ export function calcularDetalleValoresPorCliente(grupos, valoresEntidad){
     const totalImpugnacion = g.cantidadImpugnacion * (valorImpugnacion ? parseMonto(valorImpugnacion.ValorEntidad) : 0);
     const totalOtras = g.cantidadOtras * (valorOtras ? parseMonto(valorOtras.ValorEntidad) : 0);
     const filas = [];
-    if(g.cantidadTutela) filas.push({ tipoRespuesta: "TUTELA", total: totalTutela });
-    if(g.cantidadImpugnacion) filas.push({ tipoRespuesta: "IMPUGNACION", total: totalImpugnacion });
-    if(g.cantidadOtras) filas.push({ tipoRespuesta: "Otras contestaciones", total: totalOtras });
+    if(g.cantidadTutela) filas.push({ tipoRespuesta: "TUTELA", total: totalTutela, cantidad: g.cantidadTutela });
+    if(g.cantidadImpugnacion) filas.push({ tipoRespuesta: "IMPUGNACION", total: totalImpugnacion, cantidad: g.cantidadImpugnacion });
+    if(g.cantidadOtras) filas.push({ tipoRespuesta: "Otras contestaciones", total: totalOtras, cantidad: g.cantidadOtras });
     const totalCliente = totalTutela + totalImpugnacion + totalOtras;
     totalGeneral += totalCliente;
     return { cliente: g.cliente, filas, totalCliente };

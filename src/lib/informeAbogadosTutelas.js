@@ -81,9 +81,13 @@ export function ordenTipoRespuesta(a, b){
   return ia - ib;
 }
 
-// Agrupa Abogado Tutela -> Tipo Respuesta, sumando Valor Abogado. Devuelve
-// {grupos:[{abogado, filas:[{tipoRespuesta,total}], totalAbogado}], totalGeneral}
+// Agrupa Abogado Tutela -> Tipo Respuesta, sumando Valor Abogado y contando
+// cuántas tutelas hay de cada tipo. Devuelve
+// {grupos:[{abogado, filas:[{tipoRespuesta,total,cantidad}], totalAbogado}], totalGeneral}
 // — mismo dato que usan tanto el Excel (2ª hoja) como el gráfico en la app.
+// `cantidad` agregado 2026-08-30 (pedido explícito del usuario viendo la
+// tarjeta de detalle en vivo: "incluye cantidades, cuantos alcances
+// tutelas y demás").
 export function agruparPorAbogado(tutelasFiltradas, valoresEntidad){
   const porAbogado = new Map();
   (tutelasFiltradas||[]).forEach(t => {
@@ -93,13 +97,17 @@ export function agruparPorAbogado(tutelasFiltradas, valoresEntidad){
     const valor = valorEnt ? parseMonto(valorEnt.ValorAbogado) : 0;
     if(!porAbogado.has(abogado)) porAbogado.set(abogado, new Map());
     const porTipo = porAbogado.get(abogado);
-    porTipo.set(tipo, (porTipo.get(tipo)||0) + valor);
+    const actual = porTipo.get(tipo) || { total: 0, cantidad: 0 };
+    porTipo.set(tipo, { total: actual.total + valor, cantidad: actual.cantidad + 1 });
   });
   const abogados = Array.from(porAbogado.keys()).sort((a,b)=>a.localeCompare(b));
   let totalGeneral = 0;
   const grupos = abogados.map(abogado => {
     const porTipo = porAbogado.get(abogado);
-    const filas = Array.from(porTipo.keys()).sort(ordenTipoRespuesta).map(tipo => ({ tipoRespuesta: tipo, total: porTipo.get(tipo) }));
+    const filas = Array.from(porTipo.keys()).sort(ordenTipoRespuesta).map(tipo => {
+      const d = porTipo.get(tipo);
+      return { tipoRespuesta: tipo, total: d.total, cantidad: d.cantidad };
+    });
     const totalAbogado = filas.reduce((s,f) => s+f.total, 0);
     totalGeneral += totalAbogado;
     return { abogado, filas, totalAbogado };
