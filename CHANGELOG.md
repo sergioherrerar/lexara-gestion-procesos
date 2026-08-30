@@ -3,7 +3,7 @@
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
 ## 2026-08-30
-- **Posible corrección: "Vacaciones" volvió a dar 404 "El recurso solicitado no existe"** — la ruta seguía siendo correcta, pero el código solo buscaba en la biblioteca de documentos POR DEFECTO del sitio; si la biblioteca real ("Administracion Lexara - Documentos") es otra distinta, ahí nunca se encontraba. Ahora, si la biblioteca por defecto falla, se buscan todas las bibliotecas del sitio raíz.
+- **"Vacaciones" seguía dando 404 aun probando todas las bibliotecas del sitio raíz** — el archivo ya no vive ahí (se movió a otro sitio de SharePoint). Se resuelve ahora directo con el link real de "Compartir" del archivo (API `/shares/` de Graph), sin depender de adivinar en qué sitio/ruta quedó.
 
 ## 2026-08-29
 - **"Órdenes Colmédica" ahora también tiene el gráfico de barras + tarjetas de detalle en pesos** (mismo estilo que "Tutelas por Abogado"/"Tutelas por Cliente"), con los valores ya corregidos de Tutelas/Impugnaciones/Otras contestaciones por cliente.

@@ -37,6 +37,12 @@ export const INITIAL_CONFIG = {
   // y [[project_administracion_modulo]]). Si el archivo se llega a mover o
   // renombrar, solo hay que actualizar esta ruta.
   VACACIONES_RUTA: "ADMINISTRACION/TALENTO%20HUMANO%20MD/Vacaciones.xlsx",
+  // Link real de "Compartir" del archivo (2026-08-30) — el 404 por ruta
+  // seguía apareciendo incluso probando todas las bibliotecas del sitio
+  // raíz, así que el archivo ya no vive ahí. En vez de seguir adivinando la
+  // ruta/sitio nuevo, se resuelve directo con este link (API de Graph
+  // /shares/) — ver resolverArchivoVacaciones en graph.js.
+  VACACIONES_SHARE_URL: "https://mydabogados.sharepoint.com/:x:/g/IQCH8nLA906dQ6TFwo4UZq_hAUmIOXkkZaeXDmFjPfb1dSE?e=gMbw6P",
   VACACIONES_HOJA: "Vacaciones",
   // Módulo Administración > Documentos de la empresa — un solo enlace fijo a
   // la carpeta real de SharePoint con todos los documentos (pedido explícito

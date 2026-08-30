@@ -216,20 +216,37 @@ async function fetchRootSiteId(config){
 // congelado que puede no resolver igual para cada cuenta. Se cachea en
 // memoria (dura toda la sesión de la pestaña) para no repetir 2 llamadas
 // extra cada vez que se abre la pestaña Vacaciones.
+// Codifica un link de "Compartir" de SharePoint/OneDrive al formato que
+// exige el endpoint /shares/ de Graph ("u!" + base64url del link, sin
+// padding) — documentado por Microsoft, ver
+// https://learn.microsoft.com/graph/api/shares-get
+function codificarLinkCompartido(url){
+  const base64 = btoa(unescape(encodeURIComponent(url)))
+    .replace(/=+$/, '').replace(/\//g, '_').replace(/\+/g, '-');
+  return `u!${base64}`;
+}
+
 let _vacacionesItemCache = null;
-// 2026-08-30 — bug real reportado: la ruta seguía siendo correcta (el
-// usuario confirmó con una captura real que el archivo sigue en
-// ADMINISTRACION/TALENTO HUMANO MD/Vacaciones.xlsx), pero igual daba 404.
-// `/sites/{id}/drive` SOLO mira la biblioteca de documentos POR DEFECTO del
-// sitio — si "Administracion Lexara" es una biblioteca de documentos
-// DISTINTA a la de por defecto (se ve en la ruta real: "Administracion
-// Lexara - Documentos", no el nombre por defecto "Documentos
-// compartidos"), esa ruta nunca aparece ahí y da ItemNotFound aunque el
-// archivo exista de verdad. Si la biblioteca por defecto falla con 404, se
-// prueban TODAS las bibliotecas del sitio raíz (normalmente son pocas) por
-// si el archivo vive en alguna de las otras.
+// 2026-08-30 — el 404 seguía apareciendo incluso con la ruta confirmada
+// correcta (captura real del usuario) y probando TODAS las bibliotecas del
+// sitio raíz — el archivo ya no vive en ese sitio en absoluto (se movió a
+// otro sitio de SharePoint, probablemente uno nuevo dedicado). En vez de
+// seguir adivinando en qué sitio/ruta quedó, se resuelve directo con el
+// link real de "Compartir" del archivo (`config.VACACIONES_SHARE_URL`, el
+// usuario lo pasó por chat) vía el endpoint /shares/ de Graph — funciona
+// sin importar en qué sitio esté, con el mismo token normal de la app. Si
+// ese link llegara a fallar algún día, cae al intento viejo por ruta (sitio
+// raíz, todas las bibliotecas) como respaldo.
 async function resolverArchivoVacaciones(config){
   if(_vacacionesItemCache) return _vacacionesItemCache;
+  if(config.VACACIONES_SHARE_URL){
+    try{
+      const encoded = codificarLinkCompartido(config.VACACIONES_SHARE_URL);
+      const item = await graphFetch(`/shares/${encoded}/driveItem`);
+      _vacacionesItemCache = { driveId: item.parentReference.driveId, itemId: item.id };
+      return _vacacionesItemCache;
+    }catch(err){ console.error('No se pudo resolver Vacaciones por el link compartido, se intenta por ruta:', err); }
+  }
   const siteId = await fetchRootSiteId(config);
   try{
     const item = await graphFetch(`/sites/${siteId}/drive/root:/${config.VACACIONES_RUTA}`);
