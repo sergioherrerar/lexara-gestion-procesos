@@ -2,6 +2,7 @@ import { useState } from 'react';
 import ColaboradoresView from './ColaboradoresView';
 import VacacionesTab from './VacacionesTab';
 import OrdenesColmedicaTab from './OrdenesColmedicaTab';
+import HonorariosPorProcesoTab from './HonorariosPorProcesoTab';
 import { IconTextButton } from './IconButton';
 import { generarCertificacionColaboradorPDF } from '../lib/informeCertificacion';
 
@@ -19,6 +20,7 @@ const TABS = [
   {key:'certificaciones', label:'Certificaciones'},
   {key:'documentos', label:'Documentos de la empresa'},
   {key:'ordenesColmedica', label:'Órdenes Colmédica'},
+  {key:'honorariosPorProceso', label:'Honorarios por Proceso'},
 ];
 
 function CertificacionesTab({ colaboradores, notify }){
@@ -85,7 +87,7 @@ function DocumentosTab({ config }){
   );
 }
 
-export default function AdministracionView({ colaboradores, searchQuery, onOpenColaborador, onCreateColaborador, onDeleteColaborador, canWrite = true, notify, liveMode, config, tutelas, valoresEntidad, clientes, onAbrirBorradorOrdenCompra }){
+export default function AdministracionView({ colaboradores, searchQuery, onOpenColaborador, onCreateColaborador, onDeleteColaborador, canWrite = true, notify, liveMode, config, tutelas, valoresEntidad, clientes, procesos, onAbrirBorradorOrdenCompra, onAbrirBorradorFactura }){
   const [tab, setTab] = useState('colaboradores');
   return (
     <div className="view">
@@ -127,6 +129,14 @@ export default function AdministracionView({ colaboradores, searchQuery, onOpenC
           clientes={clientes}
           onAbrirBorradorOrdenCompra={onAbrirBorradorOrdenCompra}
           notify={notify}
+        />
+      )}
+      {tab==='honorariosPorProceso' && (
+        <HonorariosPorProcesoTab
+          procesos={procesos}
+          clientes={clientes}
+          onAbrirBorradorFactura={onAbrirBorradorFactura}
+          onAbrirBorradorOrdenCompra={onAbrirBorradorOrdenCompra}
         />
       )}
     </div>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { clienteForOrdenCompra, procesoForOrdenCompra, ordenCompraNumero, facturaForOrdenCompra, facturaNumero, parseMonto, fmtMonto, IVA_RATE_DEFAULT } from '../lib/graph';
+import { clienteForOrdenCompra, procesoForOrdenCompra, ordenCompraNumero, facturaForOrdenCompra, facturaNumero, parseMonto, fmtMonto, IVA_RATE_DEFAULT, ETAPA_CONTRATO_OPTIONS } from '../lib/graph';
 import { useEscapeToClose } from '../hooks/useEscapeToClose';
 import membrete from '../assets/Membrete Lexara.png';
 import qrRedes from '../assets/Qr_Redes.png';
@@ -20,20 +20,6 @@ function imprimirCuandoListo(){
 
 const LINE_NUMS = [1,2,3,4,5,6];
 const OTHER_FIELDS = ["Proceso","Dia","Mes","Anio","EtapaContrato","Observacion"];
-
-// Corregida 2026-08-27 contra la lista REAL de la columna "ETAPA CONTRATO"
-// en SharePoint (captura del usuario) — la anterior venía desactualizada
-// (algunas opciones ya no existen, otras cambiaron de texto) y SharePoint
-// rechazaba con 400 "El texto que ha escrito no es un elemento de la
-// lista" apenas el valor no calzaba EXACTO — bug real reportado por el
-// usuario con "Entrega de Poder" (ahora es "Entrega Poder", sin "de").
-const ETAPA_CONTRATO_OPTIONS = [
-  "% Antes de Sentencia","% Por Conciliacion","% Por Sentencia","% Reconocimiento Por Recurso",
-  "Administración Proceso","Admision","Asesoria","Asesorias","Aud artículo 72","Aud Artículo 77 del CPL y  SS",
-  "Audiencia de Conciliacion","Auto de Pruebas","Contestacion","Cuota Litis","Entrega Poder","Entrega poder Demanda",
-  "Escrito de Oposicion","Honorarios","Pro Frente a las exepciones","Radicacion Conciliacion","Radicacion Demanda",
-  "Reforma","Sentencia 1ra","Sentencia 2da","Tutelas","Acta de audiencia","Recurso de Reposicion",
-];
 
 function emptyForm(oc, clientes){
   const cliente = clienteForOrdenCompra(clientes, oc);

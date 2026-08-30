@@ -860,6 +860,20 @@ export function fmtMonto(n){
 // vista previa en la app cuando el dato calculado real todavía no existe (factura
 // recién creada, antes de que SharePoint la recalcule).
 export const IVA_RATE_DEFAULT = 19;
+
+// Lista real de "Etapa Contrato" (Facturas y Órdenes de compra) — centralizada
+// acá 2026-08-29 (antes vivía duplicada, byte-idéntica, en FacturaDrawer.jsx
+// y OrdenCompraDrawer.jsx — ya causó un bug real cuando una copia quedó
+// desactualizada contra la real de SharePoint, ver [[project_facturacion_data_model]]).
+// Un solo lugar compartido de ahora en más, incluida la nueva sección
+// "Honorarios por Proceso" que también la necesita.
+export const ETAPA_CONTRATO_OPTIONS = [
+  "% Antes de Sentencia","% Por Conciliacion","% Por Sentencia","% Reconocimiento Por Recurso",
+  "Administración Proceso","Admision","Asesoria","Asesorias","Aud artículo 72","Aud Artículo 77 del CPL y  SS",
+  "Audiencia de Conciliacion","Auto de Pruebas","Contestacion","Cuota Litis","Entrega Poder","Entrega poder Demanda",
+  "Escrito de Oposicion","Honorarios","Pro Frente a las exepciones","Radicacion Conciliacion","Radicacion Demanda",
+  "Reforma","Sentencia 1ra","Sentencia 2da","Tutelas","Acta de audiencia","Recurso de Reposicion",
+];
 export function computeFacturaTotals(factura){
   // Comparamos numéricamente (>0), no con un simple truthy: un "0" guardado
   // literalmente en Subtotal/Total (factura incompleta) es texto no-vacío y

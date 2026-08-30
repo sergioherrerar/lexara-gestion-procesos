@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { clienteForFactura, procesoForFactura, facturaNumero, parseMonto, fmtMonto, IVA_RATE_DEFAULT } from '../lib/graph';
+import { clienteForFactura, procesoForFactura, facturaNumero, parseMonto, fmtMonto, IVA_RATE_DEFAULT, ETAPA_CONTRATO_OPTIONS } from '../lib/graph';
 import { useEscapeToClose } from '../hooks/useEscapeToClose';
 import membrete from '../assets/Membrete Lexara.png';
 import qrRedes from '../assets/Qr_Redes.png';
@@ -22,19 +22,6 @@ function imprimirCuandoListo(){
 
 const LINE_NUMS = [1,2,3,4,5,6];
 const OTHER_FIELDS = ["Proceso","Dia","Mes","Anio","EtapaContrato","EstadoFactura","Observacion"];
-
-// Corregida 2026-08-27 contra la lista REAL de la columna "ETAPA CONTRATO"
-// en SharePoint (captura del usuario, misma corrección que en
-// OrdenCompraDrawer.jsx — este archivo tenía una copia idéntica y
-// desactualizada de la misma lista) — SharePoint rechaza con 400 apenas el
-// valor no calce EXACTO con una opción real.
-const ETAPA_CONTRATO_OPTIONS = [
-  "% Antes de Sentencia","% Por Conciliacion","% Por Sentencia","% Reconocimiento Por Recurso",
-  "Administración Proceso","Admision","Asesoria","Asesorias","Aud artículo 72","Aud Artículo 77 del CPL y  SS",
-  "Audiencia de Conciliacion","Auto de Pruebas","Contestacion","Cuota Litis","Entrega Poder","Entrega poder Demanda",
-  "Escrito de Oposicion","Honorarios","Pro Frente a las exepciones","Radicacion Conciliacion","Radicacion Demanda",
-  "Reforma","Sentencia 1ra","Sentencia 2da","Tutelas","Acta de audiencia","Recurso de Reposicion",
-];
 const ESTADO_FACTURA_OPTIONS = ["Pagada","Radicada","Anulada"];
 
 function emptyForm(factura, clientes){

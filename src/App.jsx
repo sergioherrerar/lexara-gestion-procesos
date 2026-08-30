@@ -169,7 +169,9 @@ export default function App(){
             tutelas={app.tutelas}
             valoresEntidad={app.valoresEntidad}
             clientes={app.clientes}
+            procesos={app.procesos}
             onAbrirBorradorOrdenCompra={app.abrirBorradorOrdenCompra}
+            onAbrirBorradorFactura={app.abrirBorradorFactura}
           />
         )}
         {app.view === 'setup' && canAccessView(app.modulosPermitidos, 'setup') && (

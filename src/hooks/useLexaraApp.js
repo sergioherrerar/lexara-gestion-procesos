@@ -635,6 +635,14 @@ export function useLexaraApp(){
   // "+ Nueva factura" solo abre un borrador local — no toca SharePoint hasta
   // que el usuario le da "Guardar cambios" (evita registros vacíos huérfanos).
   function newFactura(){ setActiveFacturaId(null); setDraftFactura({}); }
+  // Genérico (2026-08-29, mismo criterio que abrirBorradorOrdenCompra): abre
+  // un borrador de Factura con datos ya armados desde afuera — ver
+  // "Honorarios por Proceso" en Administración. No toca SharePoint hasta
+  // que se le dé "Guardar cambios" en el drawer.
+  function abrirBorradorFactura(datosIniciales){
+    setActiveFacturaId(null);
+    setDraftFactura(datosIniciales);
+  }
   // Botón "+ Nueva factura" dentro del panel de un Proceso judicial: abre un
   // borrador con el Contrato (y Proceso) ya llenos desde ese proceso, para
   // no tener que volver a escribirlos.
@@ -1226,7 +1234,7 @@ export function useLexaraApp(){
     onSearch: setSearchQuery,
     activeProceso, openProceso, newProceso, closeDrawer, saveProceso, procesoViewOnly, rememberReturnToProceso,
     activeCliente, openCliente, closeClienteDrawer, saveCliente, deleteCliente, createCliente, updateCliente,
-    activeFactura, openFactura, newFactura, duplicateFactura, closeFacturaDrawer, saveFactura,
+    activeFactura, openFactura, newFactura, duplicateFactura, abrirBorradorFactura, closeFacturaDrawer, saveFactura,
     printFactura, autoPrintFacturaId, clearAutoPrint, createFacturaFromOrdenCompra, newFacturaFromProceso,
     activeOrdenCompra, openOrdenCompra, newOrdenCompra, duplicateOrdenCompra, newOrdenCompraFromProceso, abrirBorradorOrdenCompra, closeOrdenCompraDrawer, saveOrdenCompra,
     printOrdenCompra, autoPrintOrdenCompraId, clearAutoPrintOrdenCompra,
