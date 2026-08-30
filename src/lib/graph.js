@@ -838,6 +838,26 @@ export function parseMonto(val){
   const n = parseFloat(limpio);
   return isNaN(n) ? 0 : n;
 }
+
+// Cruce REAL de "Valores Entidad" — corregido 2026-08-29, confirmado por el
+// usuario con una captura real de la lista: el valor de una tutela NO
+// depende solo de su Entidad (como se asumía antes) — depende de
+// **Entidad + Cliente + Tipo** (Tipo == Tipo Respuesta de la tutela). La
+// lista real tiene una fila distinta por cada combinación de esas 3 cosas
+// (ej. GRUPO COLMEDICA + "COLMEDICA MEDICINA PREPAGADA S.A." + "TUTELA" da
+// un valor; la misma Entidad+Cliente pero Tipo "IMPUGNACION" da OTRO
+// distinto). Buscar solo por Entidad (como hacía antes toda la app) daba
+// el MISMO valor sin importar Cliente/Tipo — una diferencia real de casi
+// $6.000.000 en un solo mes, confirmada comparando contra un Excel de
+// referencia del usuario. Un solo lugar compartido — usado por
+// informeTutelas.js, informeAbogadosTutelas.js, informeClientesTutelas.js
+// y ordenesComprasColmedica.js.
+export function buscarValorEntidad(valoresEntidad, entidad, cliente, tipoRespuesta){
+  return (valoresEntidad||[]).find(v =>
+    v.Entidad === entidad && v.Cliente === cliente && v.Tipo === tipoRespuesta
+  ) || null;
+}
+
 // Total1..6 sí son columnas reales: se calculan al crear la factura (Cantidad ×
 // Valor unitario) y ese valor queda guardado. Pero si esa columna llegó vacía o en
 // 0 (factura antigua/incompleta), se recalcula en el momento desde Cantidad × Valor

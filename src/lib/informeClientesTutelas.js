@@ -8,7 +8,7 @@
 // cada tutela — buscado igual en la lista "Valores Entidad" por la Entidad
 // de esa tutela. Ver [[project_tutelas_por_abogado]].
 import { construirHojaTutelasXlsx, COLOR_ENCABEZADO_XLSX } from './informeTutelas';
-import { parseMonto } from './graph';
+import { parseMonto, buscarValorEntidad } from './graph';
 import { MESES_NOMBRES, rangoVencimientoDelMes, filtrarTutelasPorMes, colorDeTipoRespuesta, ordenTipoRespuesta } from './informeAbogadosTutelas';
 
 // Re-exportados tal cual — mismo criterio de mes/corte/colores que "Tutelas
@@ -25,7 +25,7 @@ export function agruparPorCliente(tutelasFiltradas, valoresEntidad){
   (tutelasFiltradas||[]).forEach(t => {
     const cliente = (t.Cliente||"").trim() || "Sin cliente";
     const tipo = (t.TipoRespuesta||"").trim() || "Sin tipo";
-    const valorEnt = (valoresEntidad||[]).find(v => v.Entidad === t.Entidad);
+    const valorEnt = buscarValorEntidad(valoresEntidad, t.Entidad, t.Cliente, t.TipoRespuesta);
     const valor = valorEnt ? parseMonto(valorEnt.ValorEntidad) : 0;
     if(!porCliente.has(cliente)) porCliente.set(cliente, new Map());
     const porTipo = porCliente.get(cliente);

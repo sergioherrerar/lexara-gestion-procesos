@@ -8,7 +8,7 @@
 // Abogado"/"Tutelas por Cliente" (que cortan siempre el día 28): acá el
 // usuario pidió explícitamente el mes calendario completo, día 1 al 30/31
 // según el mes, por fecha de Vencimiento.
-import { parseMonto, fmtMonto } from './graph';
+import { parseMonto, fmtMonto, buscarValorEntidad } from './graph';
 import { descargarExcelClientesTutelas } from './informeClientesTutelas';
 
 export const MESES_NOMBRES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
@@ -49,41 +49,42 @@ export function filtrarTutelasPorMesCalendario(tutelas, anio, mesIndex0){
 
 // Agrupa por Cliente las 3 líneas pedidas: Tutelas / Impugnaciones / Otras
 // contestaciones (todo lo que no sea ni Tutela ni Impugnación) — cada una
-// con su cantidad, y el Entidad de esas tutelas (para buscar el Valor
-// Entidad, debería ser el mismo "GRUPO COLMEDICA" para todas).
+// con su cantidad. También guarda un Tipo Respuesta "de muestra" para la
+// línea de Otras (`tipoMuestraOtras`) — esa línea junta VARIOS Tipo
+// Respuesta reales distintos (Aclaración, Alcance, etc.), pero el cruce
+// real de "Valores Entidad" da el MISMO valor para todos esos tipos por
+// cliente (confirmado con datos reales 2026-08-29) — con cualquiera de
+// ellos alcanza para buscar el valor correcto de esa línea.
 export function agruparPorClienteParaOrden(tutelasDelMes){
   const porCliente = new Map();
   (tutelasDelMes||[]).forEach(t => {
     const cliente = (t.Cliente||"").trim();
     if(!cliente) return;
-    if(!porCliente.has(cliente)) porCliente.set(cliente, { cliente, entidad: t.Entidad || "", cantidadTutela: 0, cantidadImpugnacion: 0, cantidadOtras: 0 });
+    if(!porCliente.has(cliente)) porCliente.set(cliente, { cliente, entidad: t.Entidad || "", cantidadTutela: 0, cantidadImpugnacion: 0, cantidadOtras: 0, tipoMuestraOtras: "" });
     const g = porCliente.get(cliente);
     if(!g.entidad && t.Entidad) g.entidad = t.Entidad;
     const tipo = (t.TipoRespuesta||"").trim().toUpperCase();
     if(tipo === "TUTELA") g.cantidadTutela++;
     else if(tipo === "IMPUGNACION") g.cantidadImpugnacion++;
-    else g.cantidadOtras++;
+    else { g.cantidadOtras++; if(!g.tipoMuestraOtras) g.tipoMuestraOtras = t.TipoRespuesta; }
   });
   return Array.from(porCliente.values()).sort((a,b) => a.cliente.localeCompare(b.cliente));
 }
 
-// Valor unitario de cada línea — buscado en Valores Entidad por la Entidad
-// de las tutelas de ese cliente ("Valor Entidad", es lo que se le cobra AL
-// cliente — la misma columna que ya usa "Tutelas por Cliente" — no "Valor
-// Abogado", que es lo que se le paga al abogado).
-function valorUnitarioPara(entidad, valoresEntidad){
-  const valorEnt = (valoresEntidad||[]).find(v => v.Entidad === entidad);
-  return valorEnt ? parseMonto(valorEnt.ValorEntidad) : 0;
-}
-
 // Arma el borrador de Orden de compra para un Cliente — mismos campos que
 // espera OrdenCompraDrawer.jsx (`emptyForm`/`handleSave`), listo para
-// abrirse con `abrirBorradorOrdenCompra` en useLexaraApp.js.
+// abrirse con `abrirBorradorOrdenCompra` en useLexaraApp.js. Corregido
+// 2026-08-29: cada línea (Tutelas/Impugnaciones/Otras) busca su PROPIO
+// valor unitario real (Entidad + Cliente + Tipo, ver buscarValorEntidad en
+// graph.js) — antes se usaba un solo valor para las 3 líneas, buscado solo
+// por Entidad, que daba un total muy por encima del real.
 export function construirBorradorOrdenCompra(grupoCliente, mesIndex0, anio, valoresEntidad, clientes){
-  const { cliente, entidad, cantidadTutela, cantidadImpugnacion, cantidadOtras } = grupoCliente;
+  const { cliente, entidad, cantidadTutela, cantidadImpugnacion, cantidadOtras, tipoMuestraOtras } = grupoCliente;
   const clienteReal = (clientes||[]).find(c => c.RazonSocial === cliente);
   const contrato = CONTRATO_POR_CLIENTE[cliente] || "";
-  const valorUnitario = valorUnitarioPara(entidad, valoresEntidad);
+  const valorTutela = buscarValorEntidad(valoresEntidad, entidad, cliente, "TUTELA");
+  const valorImpugnacion = buscarValorEntidad(valoresEntidad, entidad, cliente, "IMPUGNACION");
+  const valorOtras = tipoMuestraOtras ? buscarValorEntidad(valoresEntidad, entidad, cliente, tipoMuestraOtras) : null;
   const hoy = new Date();
   // Pedido explícito del usuario 2026-08-29 (viendo el borrador real ya
   // armado): este texto va en la Descripción de la 1ª línea, no en
@@ -100,9 +101,9 @@ export function construirBorradorOrdenCompra(grupoCliente, mesIndex0, anio, valo
     Dia: String(hoy.getDate()),
     Mes: String(hoy.getMonth() + 1).padStart(2, '0'),
     Anio: String(hoy.getFullYear()),
-    Descripcion1: descripcionLinea1, Cantidad1: String(cantidadTutela), ValorUnitario1: cantidadTutela ? fmtMonto(valorUnitario) : "",
-    Descripcion2: "Impugnaciones", Cantidad2: String(cantidadImpugnacion), ValorUnitario2: cantidadImpugnacion ? fmtMonto(valorUnitario) : "",
-    Descripcion3: "Otras contestaciones", Cantidad3: String(cantidadOtras), ValorUnitario3: cantidadOtras ? fmtMonto(valorUnitario) : "",
+    Descripcion1: descripcionLinea1, Cantidad1: String(cantidadTutela), ValorUnitario1: (cantidadTutela && valorTutela) ? fmtMonto(parseMonto(valorTutela.ValorEntidad)) : "",
+    Descripcion2: "Impugnaciones", Cantidad2: String(cantidadImpugnacion), ValorUnitario2: (cantidadImpugnacion && valorImpugnacion) ? fmtMonto(parseMonto(valorImpugnacion.ValorEntidad)) : "",
+    Descripcion3: "Otras contestaciones", Cantidad3: String(cantidadOtras), ValorUnitario3: (cantidadOtras && valorOtras) ? fmtMonto(parseMonto(valorOtras.ValorEntidad)) : "",
   };
 }
 

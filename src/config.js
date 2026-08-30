@@ -624,6 +624,13 @@ export const SHAREPOINT_LISTS_CONFIG = [
     sitePathKey: "SP_SITE_PATH_TUTELAS",
     semanticFields: [
       {key:"Entidad", label:"Entidad", hint:["entidad"], required:true},
+      // "Cliente" — agregado 2026-08-29: la lista real tiene una columna
+      // "Clientess" (así, con doble "s", confirmado por el usuario con una
+      // captura real) — el cruce correcto para Valor Entidad/Valor Abogado
+      // de una Tutela es por Entidad + Cliente + Tipo (Tipo == Tipo
+      // Respuesta de la tutela), no solo por Entidad — ver
+      // buscarValorEntidad en graph.js.
+      {key:"Cliente", label:"Cliente", hint:["clientess","cliente"]},
       {key:"Tipo", label:"Tipo", hint:["tipo"]},
       {key:"ValorEntidad", label:"Valor Entidad", hint:["valor entidad"]},
       {key:"ValorAbogado", label:"Valor Abogado", hint:["valor abogado"]},
@@ -632,6 +639,7 @@ export const SHAREPOINT_LISTS_CONFIG = [
     ],
     mapping: {
       Entidad: "Entidad",
+      Cliente: "Clientess",
       Tipo: "Tipo",
       ValorEntidad: "Valor_x0020_Entidad",
       ValorAbogado: "Valor_x0020_Abogado",
@@ -848,9 +856,15 @@ export const DEMO_TEMAS = [
   {id:2, Nombre:"Prestación de servicio", PrestacionTema:"Asistencial", ClienteTema:""},
   {id:3, Nombre:"Suministro de medicamento", PrestacionTema:"Asistencial", ClienteTema:""},
 ];
+// "Tipo" y "Cliente" (2026-08-29, corregido con datos reales — ver
+// [[project_graph_create_lookup_boolean_bug]] y buscarValorEntidad en
+// graph.js): el cruce real no es solo por Entidad, es Entidad + Cliente +
+// Tipo (Tipo == Tipo Respuesta de la tutela). La fila 1 calza exacto con la
+// única tutela de ejemplo (DEMO_TUTELAS) para que el demo siga mostrando
+// datos reales en los informes de Tutelas.
 export const DEMO_VALORES_ENTIDAD = [
-  {id:1, Entidad:"SOS", Tipo:"EPS", ValorEntidad:"350.000,00", ValorAbogado:"150.000,00", LinkCarpetas:"", LinkFormatos:""},
-  {id:2, Entidad:"Famisanar", Tipo:"EPS", ValorEntidad:"400.000,00", ValorAbogado:"180.000,00", LinkCarpetas:"", LinkFormatos:""},
+  {id:1, Entidad:"SOS", Cliente:"EPS Ejemplo de Salud S.A.", Tipo:"ACLARACION", ValorEntidad:"350.000,00", ValorAbogado:"150.000,00", LinkCarpetas:"", LinkFormatos:""},
+  {id:2, Entidad:"Famisanar", Cliente:"Aseguradora Ejemplo S.A.", Tipo:"TUTELA", ValorEntidad:"400.000,00", ValorAbogado:"180.000,00", LinkCarpetas:"", LinkFormatos:""},
 ];
 export const DEMO_TUTELAS = [
   {id:1, NoTutela:"T-2026-0001", Cliente:"EPS Ejemplo de Salud S.A.", Entidad:"SOS", TipoVinculacionEntidad:"Accionada", MedidaCautelar:"No",

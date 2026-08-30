@@ -27,7 +27,7 @@
 // el rango de MARZO (empieza el 29-feb en vez del 1-mar), sin que ningún
 // día quede afuera y sin ningún caso especial escrito a mano.
 import { construirHojaTutelasXlsx, COLOR_ENCABEZADO_XLSX } from './informeTutelas';
-import { parseMonto } from './graph';
+import { parseMonto, buscarValorEntidad } from './graph';
 
 export const MESES_NOMBRES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 
@@ -89,7 +89,7 @@ export function agruparPorAbogado(tutelasFiltradas, valoresEntidad){
   (tutelasFiltradas||[]).forEach(t => {
     const abogado = (t.AbogadoRespuesta||"").trim() || "Sin abogado";
     const tipo = (t.TipoRespuesta||"").trim() || "Sin tipo";
-    const valorEnt = (valoresEntidad||[]).find(v => v.Entidad === t.Entidad);
+    const valorEnt = buscarValorEntidad(valoresEntidad, t.Entidad, t.Cliente, t.TipoRespuesta);
     const valor = valorEnt ? parseMonto(valorEnt.ValorAbogado) : 0;
     if(!porAbogado.has(abogado)) porAbogado.set(abogado, new Map());
     const porTipo = porAbogado.get(abogado);

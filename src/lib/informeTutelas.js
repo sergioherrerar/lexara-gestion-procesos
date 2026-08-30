@@ -6,7 +6,7 @@
 // Entidad, igual que la consulta original de Access.
 // Ver [[project_tutelas_modulo]].
 import { prepararDocumentoPDF, fechaCorta, VERDE_OSCURO, GRIS_ZEBRA, BORDE_SUAVE, TEXTO, MARGEN, CONTENIDO_Y_INICIAL, CONTENIDO_Y_MAXIMO } from './informesPDF';
-import { stripHtml, parseMonto, crearBorradorCorreo } from './graph';
+import { stripHtml, parseMonto, crearBorradorCorreo, buscarValorEntidad } from './graph';
 
 const DIAS = ["domingo","lunes","martes","miércoles","jueves","viernes","sábado"];
 const MESES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
@@ -377,7 +377,7 @@ export function construirHojaTutelasXlsx(wb, tutelas, valoresEntidad, nombreHoja
   estilizarEncabezadoXlsx(ws.addRow(columnas));
 
   tutelas.forEach(t => {
-    const valorEnt = (valoresEntidad||[]).find(v => v.Entidad === t.Entidad) || null;
+    const valorEnt = buscarValorEntidad(valoresEntidad, t.Entidad, t.Cliente, t.TipoRespuesta);
     const valores = modoValores === 'ambas'
       ? [valorEnt ? parseMonto(valorEnt.ValorEntidad) : "", valorEnt ? parseMonto(valorEnt.ValorAbogado) : ""]
       : modoValores === 'entidad'
