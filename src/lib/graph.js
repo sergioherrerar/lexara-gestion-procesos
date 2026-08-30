@@ -217,12 +217,38 @@ async function fetchRootSiteId(config){
 // memoria (dura toda la sesión de la pestaña) para no repetir 2 llamadas
 // extra cada vez que se abre la pestaña Vacaciones.
 let _vacacionesItemCache = null;
+// 2026-08-30 — bug real reportado: la ruta seguía siendo correcta (el
+// usuario confirmó con una captura real que el archivo sigue en
+// ADMINISTRACION/TALENTO HUMANO MD/Vacaciones.xlsx), pero igual daba 404.
+// `/sites/{id}/drive` SOLO mira la biblioteca de documentos POR DEFECTO del
+// sitio — si "Administracion Lexara" es una biblioteca de documentos
+// DISTINTA a la de por defecto (se ve en la ruta real: "Administracion
+// Lexara - Documentos", no el nombre por defecto "Documentos
+// compartidos"), esa ruta nunca aparece ahí y da ItemNotFound aunque el
+// archivo exista de verdad. Si la biblioteca por defecto falla con 404, se
+// prueban TODAS las bibliotecas del sitio raíz (normalmente son pocas) por
+// si el archivo vive en alguna de las otras.
 async function resolverArchivoVacaciones(config){
   if(_vacacionesItemCache) return _vacacionesItemCache;
   const siteId = await fetchRootSiteId(config);
-  const item = await graphFetch(`/sites/${siteId}/drive/root:/${config.VACACIONES_RUTA}`);
-  _vacacionesItemCache = { driveId: item.parentReference.driveId, itemId: item.id };
-  return _vacacionesItemCache;
+  try{
+    const item = await graphFetch(`/sites/${siteId}/drive/root:/${config.VACACIONES_RUTA}`);
+    _vacacionesItemCache = { driveId: item.parentReference.driveId, itemId: item.id };
+    return _vacacionesItemCache;
+  }catch(err){
+    if(!String(err.message).startsWith('Graph 404')) throw err;
+  }
+  const drives = await graphFetch(`/sites/${siteId}/drives?$select=id,name`);
+  for(const drive of (drives.value||[])){
+    try{
+      const item = await graphFetch(`/drives/${drive.id}/root:/${config.VACACIONES_RUTA}`);
+      _vacacionesItemCache = { driveId: item.parentReference.driveId, itemId: item.id };
+      return _vacacionesItemCache;
+    }catch(err){
+      if(!String(err.message).startsWith('Graph 404')) throw err;
+    }
+  }
+  throw new Error(`No se encontró "${config.VACACIONES_RUTA}" en ninguna biblioteca de documentos del sitio raíz.`);
 }
 
 // Lee el rango usado de una hoja de un Excel real (no una lista de
