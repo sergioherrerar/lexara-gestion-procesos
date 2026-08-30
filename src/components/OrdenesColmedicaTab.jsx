@@ -2,8 +2,11 @@ import { useState } from 'react';
 import IconButton, { IconTextButton } from './IconButton';
 import {
   MESES_NOMBRES, filtrarTutelasPorMesCalendario, agruparPorClienteParaOrden,
-  construirBorradorOrdenCompra, generarExcelOrdenesColmedica,
+  construirBorradorOrdenCompra, generarExcelOrdenesColmedica, calcularDetalleValoresPorCliente,
 } from '../lib/ordenesComprasColmedica';
+import { colorDeTipoRespuesta } from '../lib/informeAbogadosTutelas';
+import { fmtMonto } from '../lib/graph';
+import StackedBarChart from './StackedBarChart';
 
 // "Órdenes Colmédica" (Administración) — pedido explícito del usuario
 // 2026-08-29: por cada Cliente con tutelas en el mes elegido (mes calendario
@@ -25,6 +28,11 @@ export default function OrdenesColmedicaTab({ tutelas, valoresEntidad, clientes,
 
   const tutelasDelMes = filtrarTutelasPorMesCalendario(tutelas, anio, mes);
   const grupos = agruparPorClienteParaOrden(tutelasDelMes);
+  // Visual (2026-08-29, pedido explícito: "démosle una visual de estos
+  // resultados así como en Tutelas por Abogado") — mismo gráfico apilado +
+  // tarjetas de detalle que ya usan "Tutelas por Abogado"/"Tutelas por
+  // Cliente", con los valores reales en pesos de cada línea.
+  const { detalle: detalleValores, totalGeneral: totalGeneralValores } = calcularDetalleValoresPorCliente(grupos, valoresEntidad);
 
   function handleGenerarBorrador(grupo){
     const borrador = construirBorradorOrdenCompra(grupo, mes, anio, valoresEntidad, clientes);
@@ -66,7 +74,33 @@ export default function OrdenesColmedicaTab({ tutelas, valoresEntidad, clientes,
             {generandoExcel ? "Generando…" : "Descargar Excel"}
           </IconTextButton>
         </div>
-        {grupos.length ? (
+        <StackedBarChart grupos={detalleValores} labelKey="cliente" totalKey="totalCliente" emptyMsg={`No hay tutelas con vencimiento en ${MESES_NOMBRES[mes]} de ${anio}.`} />
+        {detalleValores.length > 0 && (
+          <div className="abogados-detalle" style={{marginBottom:20}}>
+            {detalleValores.map(g => (
+              <div className="abogado-card" key={g.cliente}>
+                <div className="abogado-card-head">
+                  <span className="abogado-nombre">{g.cliente}</span>
+                  <span className="abogado-total">$ {fmtMonto(g.totalCliente)}</span>
+                </div>
+                <div className="abogado-card-body">
+                  {g.filas.map(f => (
+                    <div className="abogado-card-row" key={f.tipoRespuesta}>
+                      <span className="abogado-tipo-dot" style={{background: colorDeTipoRespuesta(f.tipoRespuesta)}}></span>
+                      <span className="abogado-tipo-label">{f.tipoRespuesta}</span>
+                      <span className="abogado-tipo-valor">$ {fmtMonto(f.total)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+            <div className="abogados-total-general">
+              <span className="abogado-nombre">Total general</span>
+              <span className="abogado-total">$ {fmtMonto(totalGeneralValores)}</span>
+            </div>
+          </div>
+        )}
+        {grupos.length > 0 && (
           <div className="table-wrap">
             <table>
               <thead>
@@ -97,8 +131,6 @@ export default function OrdenesColmedicaTab({ tutelas, valoresEntidad, clientes,
               </tbody>
             </table>
           </div>
-        ) : (
-          <div className="empty-state empty-state-compact">No hay tutelas con vencimiento en {MESES_NOMBRES[mes]} de {anio}.</div>
         )}
       </div>
     </div>

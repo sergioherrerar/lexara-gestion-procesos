@@ -107,6 +107,31 @@ export function construirBorradorOrdenCompra(grupoCliente, mesIndex0, anio, valo
   };
 }
 
+// Detalle en pesos por cliente (Tutelas/Impugnaciones/Otras) — pedido
+// explícito del usuario 2026-08-29: "démosle una visual de estos
+// resultados así como en Tutelas por Abogado". Misma forma de resultado
+// que agruparPorAbogado/agruparPorCliente (`{cliente, filas, totalCliente}`)
+// para reusar StackedBarChart y las tarjetas de detalle sin cambios.
+export function calcularDetalleValoresPorCliente(grupos, valoresEntidad){
+  let totalGeneral = 0;
+  const detalle = (grupos||[]).map(g => {
+    const valorTutela = buscarValorEntidad(valoresEntidad, g.entidad, g.cliente, "TUTELA");
+    const valorImpugnacion = buscarValorEntidad(valoresEntidad, g.entidad, g.cliente, "IMPUGNACION");
+    const valorOtras = g.tipoMuestraOtras ? buscarValorEntidad(valoresEntidad, g.entidad, g.cliente, g.tipoMuestraOtras) : null;
+    const totalTutela = g.cantidadTutela * (valorTutela ? parseMonto(valorTutela.ValorEntidad) : 0);
+    const totalImpugnacion = g.cantidadImpugnacion * (valorImpugnacion ? parseMonto(valorImpugnacion.ValorEntidad) : 0);
+    const totalOtras = g.cantidadOtras * (valorOtras ? parseMonto(valorOtras.ValorEntidad) : 0);
+    const filas = [];
+    if(g.cantidadTutela) filas.push({ tipoRespuesta: "TUTELA", total: totalTutela });
+    if(g.cantidadImpugnacion) filas.push({ tipoRespuesta: "IMPUGNACION", total: totalImpugnacion });
+    if(g.cantidadOtras) filas.push({ tipoRespuesta: "Otras contestaciones", total: totalOtras });
+    const totalCliente = totalTutela + totalImpugnacion + totalOtras;
+    totalGeneral += totalCliente;
+    return { cliente: g.cliente, filas, totalCliente };
+  });
+  return { detalle, totalGeneral };
+}
+
 // Excel — pedido explícito del usuario 2026-08-29 viendo el primero armado
 // ("El Excel esta mal debe ser el mismo de tutelas por abogado solo
 // cambiamos la columna Valor Abogado dejamos valor entidad"): el MISMO
