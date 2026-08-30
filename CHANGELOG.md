@@ -5,6 +5,7 @@ Registro de qué cambió en cada publicación, en orden del más reciente al má
 ## 2026-08-30
 - **"Vacaciones" seguía dando 404 aun probando todas las bibliotecas del sitio raíz** — el archivo ya no vive ahí (se movió a otro sitio de SharePoint). Se resuelve ahora directo con el link real de "Compartir" del archivo (API `/shares/` de Graph), sin depender de adivinar en qué sitio/ruta quedó.
 - **"Tutelas por Abogado" y "Órdenes Colmédica" ahora muestran la cantidad de cada tipo de contestación** (junto al valor en pesos, en las tarjetas de detalle) — antes solo se veía el total, sin saber cuántas Tutelas/Alcances/Aclaraciones lo componían.
+- **Se retiró "Tutelas por Cliente" de Informes** — pedido explícito del usuario: es información financiera por cliente que no puede ver cualquiera con acceso a Informes. El mismo detalle por cliente ya vive en Administración → Órdenes Colmédica (Administrador únicamente).
 
 ## 2026-08-29
 - **"Órdenes Colmédica" ahora también tiene el gráfico de barras + tarjetas de detalle en pesos** (mismo estilo que "Tutelas por Abogado"/"Tutelas por Cliente"), con los valores ya corregidos de Tutelas/Impugnaciones/Otras contestaciones por cliente.
