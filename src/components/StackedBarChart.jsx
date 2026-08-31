@@ -14,7 +14,12 @@ import { colorDeTipoRespuesta } from '../lib/informeAbogadosTutelas';
 // "Tutelas por Cliente" (agrupado por Cliente en vez de Abogado Tutela):
 // por defecto sigue leyendo `g.abogado`/`g.totalAbogado`, sin cambiar nada
 // para el llamado ya existente.
-export default function StackedBarChart({ grupos, emptyMsg, labelKey = 'abogado', totalKey = 'totalAbogado' }){
+// `formatValue`/`colorFor` (2026-08-31) — generalizado otra vez para "Horas
+// Extras" (Administración), que apila HORAS por tipo de recargo, no pesos
+// por Tipo Respuesta — por defecto siguen siendo "$ " + fmtMonto y los
+// colores institucionales de Tipo Respuesta, sin cambiar nada para los
+// llamados ya existentes (Tutelas por Abogado/Órdenes Colmédica).
+export default function StackedBarChart({ grupos, emptyMsg, labelKey = 'abogado', totalKey = 'totalAbogado', formatValue = v => `$ ${fmtMonto(v)}`, colorFor = colorDeTipoRespuesta }){
   if(!grupos || !grupos.length){
     return (
       <div className="empty-state empty-state-compact">
@@ -35,12 +40,12 @@ export default function StackedBarChart({ grupos, emptyMsg, labelKey = 'abogado'
               <div
                 key={f.tipoRespuesta}
                 className="bar-segment"
-                title={`${f.tipoRespuesta}: $ ${fmtMonto(f.total)}`}
-                style={{ width: Math.max(2, (f.total / max) * 100) + '%', background: colorDeTipoRespuesta(f.tipoRespuesta) }}
+                title={`${f.tipoRespuesta}: ${formatValue(f.total)}`}
+                style={{ width: Math.max(2, (f.total / max) * 100) + '%', background: colorFor(f.tipoRespuesta) }}
               />
             ))}
           </div>
-          <div className="bar-value bar-value-monto">$ {fmtMonto(g[totalKey])}</div>
+          <div className="bar-value bar-value-monto">{formatValue(g[totalKey])}</div>
         </div>
       ))}
     </div>

@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-08-31
+- **Nuevo módulo "Horas Extras" dentro de Administración** — registra Colaborador, Fecha y horario, y la app calcula sola cuántas horas son Diurnas (6:00 a.m.–7:00 p.m.), Nocturnas (7:00 p.m.–6:00 a.m.), Diurnas Festivas y Nocturnas Festivas (festivo colombiano real, calculado, no cargado a mano). Chulo de aprobación, gráfico + tarjetas + PDF con la relación mensual (solo horas aprobadas). No calcula valores en pesos, solo cantidad de horas, por pedido explícito.
+
 ## 2026-08-30
 - **"Vacaciones" seguía dando 404 aun probando todas las bibliotecas del sitio raíz** — el archivo ya no vive ahí (se movió a otro sitio de SharePoint). Se resuelve ahora directo con el link real de "Compartir" del archivo (API `/shares/` de Graph), sin depender de adivinar en qué sitio/ruta quedó.
 - **"Tutelas por Abogado" y "Órdenes Colmédica" ahora muestran la cantidad de cada tipo de contestación** (junto al valor en pesos, en las tarjetas de detalle) — antes solo se veía el total, sin saber cuántas Tutelas/Alcances/Aclaraciones lo componían.

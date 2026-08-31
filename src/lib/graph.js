@@ -198,7 +198,12 @@ export async function fetchSiteId(config, sitePath){
 // ningún "/sites/algo" detrás) se resuelve distinto — sin los dos puntos
 // finales de fetchSiteId(), que siempre agregan un path. Ahí vive el Excel
 // de Vacaciones (ver resolverArchivoVacaciones más abajo).
-async function fetchRootSiteId(config){
+// Exportada (2026-08-31) — "Horas Extras" también vive en el sitio raíz
+// ("Administracion Lexara" en la UI de SharePoint, mismo sitio del Excel de
+// Vacaciones), a diferencia de Vacaciones (un archivo) esto es una LISTA, así
+// que se conecta con el flujo normal de Graph.connectList — solo hacía falta
+// exportar esto para que siteIdForList (useLexaraApp.js) la pueda usar.
+export async function fetchRootSiteId(config){
   const site = await graphFetch(`/sites/${config.SP_HOST}`);
   return site.id;
 }

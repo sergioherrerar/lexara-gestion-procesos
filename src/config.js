@@ -653,6 +653,50 @@ export const SHAREPOINT_LISTS_CONFIG = [
       LinkFormatos: "Link_x0020_formatos",
     },
   },
+  // Módulo "Horas Extras" (Administración) — agregado 2026-08-31, pedido
+  // explícito del usuario, con la normatividad colombiana de recargos (ver
+  // [[project_horas_extras]]). La lista vive en el sitio RAÍZ del tenant
+  // ("Administracion Lexara" en la UI, mismo sitio del Excel de Vacaciones,
+  // NO el sitio principal "NuevosProcesosMD") — useRootSite en vez de
+  // sitePathKey (ver siteIdForList en useLexaraApp.js). Colaborador se dejó
+  // como texto simple (no Búsqueda/Lookup real) a propósito — la lista de
+  // origen (Equipo MD) vive en otro sitio, y una Búsqueda de SharePoint no
+  // puede apuntar a un sitio distinto; el desplegable de nombres reales lo arma
+  // la app en el formulario, no una relación nativa de SharePoint. "Aprobado"
+  // es un Sí/No real (se detecta solo como booleano, igual que Medida
+  // Cautelar en Tutelas — ver separarCamposYLookups en graph.js).
+  {
+    key: "horasExtras",
+    listName: "Horas Extras",
+    label: "Horas Extras",
+    useRootSite: true,
+    semanticFields: [
+      {key:"Colaborador", label:"Colaborador", hint:["colaborador"], required:true},
+      {key:"Fecha", label:"Fecha", hint:["fecha"], required:true},
+      {key:"HoraInicio", label:"Hora Inicio", hint:["hora inicio","horainicio"], required:true},
+      {key:"HoraFin", label:"Hora Fin", hint:["hora fin","horafin"], required:true},
+      {key:"HorasDiurnas", label:"Horas Diurnas", hint:["horas diurnas","horasdiurnas"]},
+      {key:"HorasNocturnas", label:"Horas Nocturnas", hint:["horas nocturnas","horasnocturnas"]},
+      {key:"HorasDiurnasFestivas", label:"Horas Diurnas Festivas", hint:["horas diurnas festivas","horasdiurnasfestivas"]},
+      {key:"HorasNocturnasFestivas", label:"Horas Nocturnas Festivas", hint:["horas nocturnas festivas","horasnocturnasfestivas"]},
+      {key:"Aprobado", label:"Aprobado", hint:["aprobado"]},
+      {key:"Observaciones", label:"Observaciones", hint:["observaciones"]},
+    ],
+    // Nombres reales = igual al nombre semántico (ninguna columna tiene
+    // espacios, así que SharePoint no les agregó ningún "_x0020_").
+    mapping: {
+      Colaborador: "Colaborador",
+      Fecha: "Fecha",
+      HoraInicio: "HoraInicio",
+      HoraFin: "HoraFin",
+      HorasDiurnas: "HorasDiurnas",
+      HorasNocturnas: "HorasNocturnas",
+      HorasDiurnasFestivas: "HorasDiurnasFestivas",
+      HorasNocturnasFestivas: "HorasNocturnasFestivas",
+      Aprobado: "Aprobado",
+      Observaciones: "Observaciones",
+    },
+  },
 ];
 
 export const DEMO_PROCESOS = [
@@ -878,6 +922,15 @@ export const DEMO_TUTELAS = [
     Prestacion:"Asistencial", TipoRespuesta:"ACLARACION", AbogadoRespuesta:"Ariana Martin Mendoza", Tema:"Suministro de medicamento", AgenciaOficiosa:"No",
     Usuario:"Juan Ejemplo Pérez", NoIdentificacion:"1.000.111.222", Juzgado:"Juzgado 5 Civil Municipal de Bogotá", Correo:"ejemplo@correo.com",
     Solicita:"<div>Solicita el suministro inmediato del medicamento formulado.</div>"},
+];
+
+// Horas Extras (2026-08-31) — datos ficticios: HorasDiurnas/Nocturnas/etc. ya
+// vienen calculadas (así se guardan de verdad, ver clasificarHorasExtra en
+// lib/horasExtras.js) para no depender del cálculo de festivos en el demo.
+export const DEMO_HORAS_EXTRAS = [
+  {id:1, Colaborador:"Ariana Martin Mendoza", Fecha:"2026-08-05", HoraInicio:"18:00", HoraFin:"19:30", HorasDiurnas:1, HorasNocturnas:0.5, HorasDiurnasFestivas:0, HorasNocturnasFestivas:0, Aprobado:true, Observaciones:""},
+  {id:2, Colaborador:"Ariana Martin Mendoza", Fecha:"2026-08-16", HoraInicio:"20:00", HoraFin:"22:30", HorasDiurnas:0, HorasNocturnas:2.5, HorasDiurnasFestivas:0, HorasNocturnasFestivas:0, Aprobado:false, Observaciones:""},
+  {id:3, Colaborador:"Daniel Santiago Flechas", Fecha:"2026-08-09", HoraInicio:"20:00", HoraFin:"22:00", HorasDiurnas:0, HorasNocturnas:0, HorasDiurnasFestivas:0, HorasNocturnasFestivas:2, Aprobado:true, Observaciones:"Domingo — apoyo turno de tutelas"},
 ];
 
 export const ICON_SVG = `<svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 30 L50 50 L80 30" stroke="currentColor" stroke-width="14" fill="none" stroke-linecap="square"/><path d="M20 70 L50 50 L80 70" stroke="currentColor" stroke-width="14" fill="none" stroke-linecap="square"/></svg>`;

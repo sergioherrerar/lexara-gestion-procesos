@@ -3,6 +3,7 @@ import ColaboradoresView from './ColaboradoresView';
 import VacacionesTab from './VacacionesTab';
 import OrdenesColmedicaTab from './OrdenesColmedicaTab';
 import HonorariosPorProcesoTab from './HonorariosPorProcesoTab';
+import HorasExtrasTab from './HorasExtrasTab';
 import { IconTextButton } from './IconButton';
 import { generarCertificacionColaboradorPDF } from '../lib/informeCertificacion';
 
@@ -21,6 +22,7 @@ const TABS = [
   {key:'documentos', label:'Documentos de la empresa'},
   {key:'ordenesColmedica', label:'Órdenes Colmédica'},
   {key:'honorariosPorProceso', label:'Honorarios por Proceso'},
+  {key:'horasExtras', label:'Horas Extras'},
 ];
 
 function CertificacionesTab({ colaboradores, notify }){
@@ -87,7 +89,7 @@ function DocumentosTab({ config }){
   );
 }
 
-export default function AdministracionView({ colaboradores, searchQuery, onOpenColaborador, onCreateColaborador, onDeleteColaborador, canWrite = true, notify, liveMode, config, tutelas, valoresEntidad, clientes, procesos, onAbrirBorradorOrdenCompra, onAbrirBorradorFactura }){
+export default function AdministracionView({ colaboradores, searchQuery, onOpenColaborador, onCreateColaborador, onDeleteColaborador, canWrite = true, notify, liveMode, config, tutelas, valoresEntidad, clientes, procesos, onAbrirBorradorOrdenCompra, onAbrirBorradorFactura, horasExtras, onCreateHoraExtra, onAprobarHoraExtra }){
   const [tab, setTab] = useState('colaboradores');
   return (
     <div className="view">
@@ -137,6 +139,15 @@ export default function AdministracionView({ colaboradores, searchQuery, onOpenC
           clientes={clientes}
           onAbrirBorradorFactura={onAbrirBorradorFactura}
           onAbrirBorradorOrdenCompra={onAbrirBorradorOrdenCompra}
+        />
+      )}
+      {tab==='horasExtras' && (
+        <HorasExtrasTab
+          horasExtras={horasExtras}
+          colaboradores={colaboradores}
+          onCreateHoraExtra={onCreateHoraExtra}
+          onAprobarHoraExtra={onAprobarHoraExtra}
+          notify={notify}
         />
       )}
     </div>

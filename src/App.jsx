@@ -172,6 +172,9 @@ export default function App(){
             procesos={app.procesos}
             onAbrirBorradorOrdenCompra={app.abrirBorradorOrdenCompra}
             onAbrirBorradorFactura={app.abrirBorradorFactura}
+            horasExtras={app.horasExtras}
+            onCreateHoraExtra={app.createHoraExtra}
+            onAprobarHoraExtra={app.aprobarHoraExtra}
           />
         )}
         {app.view === 'setup' && canAccessView(app.modulosPermitidos, 'setup') && (

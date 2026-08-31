@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { INITIAL_CONFIG, SHAREPOINT_LISTS_CONFIG, DEMO_PROCESOS, DEMO_CLIENTES, DEMO_FACTURAS, DEMO_ORDENES_COMPRA, DEMO_COLABORADORES, DEMO_FORMAS_PAGO, DEMO_DESISTIMIENTOS, DEMO_TIPOS_ACCION, DEMO_TUTELAS, DEMO_TEMAS, DEMO_VALORES_ENTIDAD } from '../config';
+import { INITIAL_CONFIG, SHAREPOINT_LISTS_CONFIG, DEMO_PROCESOS, DEMO_CLIENTES, DEMO_FACTURAS, DEMO_ORDENES_COMPRA, DEMO_COLABORADORES, DEMO_FORMAS_PAGO, DEMO_DESISTIMIENTOS, DEMO_TIPOS_ACCION, DEMO_TUTELAS, DEMO_TEMAS, DEMO_VALORES_ENTIDAD, DEMO_HORAS_EXTRAS } from '../config';
 import * as Graph from '../lib/graph';
 import { canWrite as canWriteForColaborador, modulosPermitidosDe, MODULOS_DISPONIBLES } from '../lib/permissions';
 
@@ -23,7 +23,18 @@ function loadSavedMappings(){
 // de INITIAL_CONFIG con la URL de su propio sitio — acá se resuelve (y se
 // cachea en `cache`, para no pedirle a Graph el mismo siteId una vez por
 // lista) cuál siteId real le toca a cada lista antes de conectarla.
+// `useRootSite` (2026-08-31, Horas Extras) — para una lista que vive en el
+// sitio RAÍZ del tenant ("Administracion Lexara" en la UI, sin ningún
+// "/sites/algo" en su URL, mismo sitio del Excel de Vacaciones) en vez de un
+// sitio con nombre propio — se resuelve distinto (Graph.fetchRootSiteId, sin
+// el ":" + ruta que sitePathKey siempre agrega).
 async function siteIdForList(config, list, defaultSiteId, cache){
+  if(list.useRootSite){
+    if(cache.__root) return cache.__root;
+    const sid = await Graph.fetchRootSiteId(config);
+    cache.__root = sid;
+    return sid;
+  }
   if(!list.sitePathKey) return defaultSiteId;
   const path = config[list.sitePathKey];
   if(!path){
@@ -114,6 +125,10 @@ export function useLexaraApp(){
   const [draftTutela, setDraftTutela] = useState(null);
   const [temas, setTemas] = useState([]);
   const [valoresEntidad, setValoresEntidad] = useState([]);
+  // Horas Extras (Administración, agregado 2026-08-31) — mismo criterio
+  // "sin panel propio" que Tema/Valores Entidad, ver createHoraExtra/
+  // aprobarHoraExtra más abajo. Ver [[project_horas_extras]].
+  const [horasExtras, setHorasExtras] = useState([]);
   // Cuando se abre/crea una factura, orden de compra, forma de pago o
   // desistimiento DESDE dentro de un proceso, se guarda aquí su id — al
   // cerrar ese panel se reabre el mismo proceso en vez de dejar solo la
@@ -182,6 +197,7 @@ export function useLexaraApp(){
     setTutelas(JSON.parse(JSON.stringify(DEMO_TUTELAS)));
     setTemas(JSON.parse(JSON.stringify(DEMO_TEMAS)));
     setValoresEntidad(JSON.parse(JSON.stringify(DEMO_VALORES_ENTIDAD)));
+    setHorasExtras(JSON.parse(JSON.stringify(DEMO_HORAS_EXTRAS)));
     setAccount({ name:"Usuario Demo", username:"demo@lexara.com" });
     setAppActive(true);
     if(!silent) setView('dashboard');
@@ -297,6 +313,7 @@ export function useLexaraApp(){
       setTutelas(updated.find(l => l.key==='tutelas')?.items || []);
       setTemas(updated.find(l => l.key==='temas')?.items || []);
       setValoresEntidad(updated.find(l => l.key==='valoresEntidad')?.items || []);
+      setHorasExtras(updated.find(l => l.key==='horasExtras')?.items || []);
     }catch(err){
       console.error(err);
       notify("Se inició sesión, pero no se pudieron cargar los datos de SharePoint: " + err.message + " — probá el botón de Actualizar.", 'error');
@@ -365,6 +382,7 @@ export function useLexaraApp(){
       setTutelas(updated.find(l => l.key==='tutelas')?.items || []);
       setTemas(updated.find(l => l.key==='temas')?.items || []);
       setValoresEntidad(updated.find(l => l.key==='valoresEntidad')?.items || []);
+      setHorasExtras(updated.find(l => l.key==='horasExtras')?.items || []);
     }catch(err){
       console.error(err);
       notify("No se pudo actualizar la información: " + err.message, 'error');
@@ -405,6 +423,7 @@ export function useLexaraApp(){
     setTutelas(updated.find(l => l.key==='tutelas')?.items || []);
     setTemas(updated.find(l => l.key==='temas')?.items || []);
     setValoresEntidad(updated.find(l => l.key==='valoresEntidad')?.items || []);
+    setHorasExtras(updated.find(l => l.key==='horasExtras')?.items || []);
     setLiveMode(true);
   }
 
@@ -1219,6 +1238,48 @@ export function useLexaraApp(){
     notify("Guardado con éxito en Lexara", 'success');
   }
 
+  // Horas Extras (Administración) — mismo criterio "sin panel propio" que
+  // Tema/Valores Entidad. `fields` ya viene con las 4 categorías calculadas
+  // (ver clasificarHorasExtra en lib/horasExtras.js) — acá solo se crea el
+  // registro, siempre con Aprobado:false al principio (lo aprueba
+  // Administrador/jefe aparte, ver aprobarHoraExtra).
+  async function createHoraExtra(fields){
+    const nuevo = { id: 'tmp-' + Math.random().toString(36).slice(2), Aprobado: false, ...fields };
+    if(liveMode){
+      setSaving(true);
+      const list = listByKey('horasExtras');
+      const { id, ...nuevoSinId } = nuevo;
+      try{
+        const created = await Graph.crearItemConLookups(list.siteId || siteId, list, nuevoSinId);
+        nuevo.id = created.id; nuevo._graphId = created.id;
+      }catch(err){ console.error(err); notify("No se pudo crear la hora extra en SharePoint: " + err.message, 'error'); setSaving(false); return null; }
+      setSaving(false);
+    }
+    setHorasExtras(prev => [...prev, nuevo]);
+    notify("Creado con éxito en Lexara", 'success');
+    return nuevo;
+  }
+  // Chulo de aprobación — separado de un "saveHoraExtra" genérico porque es
+  // la ÚNICA edición que tiene esta lista (los demás campos no se editan
+  // después de creados, si algo quedó mal se borra y se vuelve a registrar).
+  async function aprobarHoraExtra(id, aprobado){
+    const hora = horasExtras.find(h => h.id===id);
+    if(!hora) return;
+    setHorasExtras(prev => prev.map(h => h.id===id ? {...h, Aprobado: aprobado} : h));
+    if(liveMode){
+      setSaving(true);
+      const list = listByKey('horasExtras');
+      const fields = await Graph.graphFieldsFromUpdates(list.siteId || siteId, list, { Aprobado: aprobado });
+      try{
+        await Graph.graphFetch(`/sites/${list.siteId || siteId}/lists/${list.listId}/items/${hora._graphId || hora.id}/fields`, {
+          method:"PATCH", body: JSON.stringify(fields)
+        });
+      }catch(err){ console.error(err); notify("No se pudo guardar la aprobación en SharePoint: " + err.message, 'error'); setSaving(false); return; }
+      setSaving(false);
+    }
+    notify("Guardado con éxito en Lexara", 'success');
+  }
+
   return {
     config, saveConfig, clearConfig,
     lists, listByKey, updateListMapping,
@@ -1229,7 +1290,7 @@ export function useLexaraApp(){
     saving, signingIn,
     toast, closeToast, confirmState, acceptConfirm, cancelConfirm, notify, requestConfirm,
     procesos, clientes, facturas, ordenesCompra, colaboradores, formasPago, desistimientos, tiposAccion,
-    tutelas, temas, valoresEntidad,
+    tutelas, temas, valoresEntidad, horasExtras,
     currentFilter, setFilter: setCurrentFilter, searchQuery, setSearchQuery: setSearchQuery,
     onSearch: setSearchQuery,
     activeProceso, openProceso, newProceso, closeDrawer, saveProceso, procesoViewOnly, rememberReturnToProceso,
@@ -1243,5 +1304,6 @@ export function useLexaraApp(){
     activeDesistimiento, openDesistimiento, newDesistimientoFromProceso, closeDesistimientoDrawer, saveDesistimiento, deleteDesistimiento,
     activeTutela, openTutela, newTutela, duplicateTutela, closeTutelaDrawer, saveTutela, deleteTutela, corregirEntidadFaltanteTutelas,
     createTema, saveTema, createValorEntidad, saveValorEntidad,
+    createHoraExtra, aprobarHoraExtra,
   };
 }
