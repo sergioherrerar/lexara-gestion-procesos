@@ -1303,6 +1303,29 @@ export function useLexaraApp(){
     }
     notify("Guardado con éxito en Lexara", 'success');
   }
+  // Eliminar una hora extra (Informes, "botón eliminar de la misma forma
+  // editar si ya está aprobado no se pueda eliminar") — pedido explícito del
+  // usuario 2026-08-31, mismo bloqueo que editarHoraExtra (ya aprobada =
+  // bloqueada, reforzado en el código, no solo ocultando el botón).
+  async function performEliminarHoraExtra(id){
+    const hora = horasExtras.find(h => h.id===id);
+    if(!hora) return;
+    if(hora.Aprobado){ notify("Esta hora extra ya fue aprobada, no se puede eliminar.", 'error'); return; }
+    if(liveMode){
+      setSaving(true);
+      const list = listByKey('horasExtras');
+      try{
+        await Graph.graphFetch(`/sites/${list.siteId || siteId}/lists/${list.listId}/items/${hora._graphId || hora.id}`, { method:"DELETE" });
+      }catch(err){ console.error(err); notify("No se pudo eliminar en SharePoint: " + err.message, 'error'); setSaving(false); return; }
+      setSaving(false);
+    }
+    setHorasExtras(prev => prev.filter(h => h.id !== id));
+  }
+  function eliminarHoraExtra(id){
+    const hora = horasExtras.find(h => h.id===id);
+    if(hora?.Aprobado){ notify("Esta hora extra ya fue aprobada, no se puede eliminar.", 'error'); return; }
+    requestConfirm("¿Eliminar esta hora extra? Esta acción no se puede deshacer.", () => performEliminarHoraExtra(id));
+  }
 
   return {
     config, saveConfig, clearConfig,
@@ -1328,6 +1351,6 @@ export function useLexaraApp(){
     activeDesistimiento, openDesistimiento, newDesistimientoFromProceso, closeDesistimientoDrawer, saveDesistimiento, deleteDesistimiento,
     activeTutela, openTutela, newTutela, duplicateTutela, closeTutelaDrawer, saveTutela, deleteTutela, corregirEntidadFaltanteTutelas,
     createTema, saveTema, createValorEntidad, saveValorEntidad,
-    createHoraExtra, aprobarHoraExtra, editarHoraExtra,
+    createHoraExtra, aprobarHoraExtra, editarHoraExtra, eliminarHoraExtra,
   };
 }

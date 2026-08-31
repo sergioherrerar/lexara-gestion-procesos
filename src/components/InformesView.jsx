@@ -53,7 +53,7 @@ function entidadDeCliente(clientes, codigoClienteOrNombre, matchFn){
   return matchFn(clientes, codigoClienteOrNombre)?.Entidad || "Sin dato";
 }
 
-export default function InformesView({ procesos, clientes, facturas, ordenesCompra, desistimientos, tutelas, valoresEntidad, notify, liveMode, config, requestConfirm, corregirEntidadFaltanteTutelas, colaboradores, onCreateHoraExtra, onEditarHoraExtra, horasExtras }){
+export default function InformesView({ procesos, clientes, facturas, ordenesCompra, desistimientos, tutelas, valoresEntidad, notify, liveMode, config, requestConfirm, corregirEntidadFaltanteTutelas, colaboradores, onCreateHoraExtra, onEditarHoraExtra, onEliminarHoraExtra, horasExtras }){
   const [generando, setGenerando] = useState(null); // nombre de la entidad mientras genera el Excel
   const [generandoPDF, setGenerandoPDF] = useState(null); // nombre de la entidad mientras genera el PDF
   const [generandoDesistimientos, setGenerandoDesistimientos] = useState(null);
@@ -515,7 +515,7 @@ export default function InformesView({ procesos, clientes, facturas, ordenesComp
                   <div className="table-wrap" key={i}>
                     <table className="table-compact">
                       <thead>
-                        <tr><th>Colaborador</th><th>Fecha</th><th>Horario</th><th>Total</th><th>Estado</th><th>Editar</th></tr>
+                        <tr><th>Colaborador</th><th>Fecha</th><th>Horario</th><th>Total</th><th>Estado</th><th>Acciones</th></tr>
                       </thead>
                       <tbody>
                         {columna.map(h => {
@@ -530,7 +530,12 @@ export default function InformesView({ procesos, clientes, facturas, ordenesComp
                               <td>
                                 {h.Aprobado
                                   ? <span className="save-hint" style={{fontSize:11}}>No editable</span>
-                                  : <IconButton icon="edit" variant="edit" label={`Editar hora extra de ${h.Colaborador}`} onClick={() => handleEditarHoraExtraClick(h)} />}
+                                  : (
+                                    <div className="row-actions">
+                                      <IconButton icon="edit" variant="edit" label={`Editar hora extra de ${h.Colaborador}`} onClick={() => handleEditarHoraExtraClick(h)} />
+                                      <IconButton icon="delete" variant="delete" label={`Eliminar hora extra de ${h.Colaborador}`} onClick={() => onEliminarHoraExtra?.(h.id)} />
+                                    </div>
+                                  )}
                               </td>
                             </tr>
                           );

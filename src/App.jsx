@@ -91,7 +91,7 @@ export default function App(){
 
         {app.view === 'dashboard' && <DashboardView procesos={app.procesos} clientes={app.clientes} facturas={app.facturas} ordenesCompra={app.ordenesCompra} desistimientos={app.desistimientos} notify={app.notify} />}
         {app.view === 'informes' && canAccessView(app.modulosPermitidos, 'informes') && (
-          <InformesView procesos={app.procesos} clientes={app.clientes} facturas={app.facturas} ordenesCompra={app.ordenesCompra} desistimientos={app.desistimientos} tutelas={app.tutelas} valoresEntidad={app.valoresEntidad} notify={app.notify} liveMode={app.liveMode} config={app.config} requestConfirm={app.requestConfirm} corregirEntidadFaltanteTutelas={app.corregirEntidadFaltanteTutelas} colaboradores={app.colaboradores} onCreateHoraExtra={app.createHoraExtra} onEditarHoraExtra={app.editarHoraExtra} horasExtras={app.horasExtras} />
+          <InformesView procesos={app.procesos} clientes={app.clientes} facturas={app.facturas} ordenesCompra={app.ordenesCompra} desistimientos={app.desistimientos} tutelas={app.tutelas} valoresEntidad={app.valoresEntidad} notify={app.notify} liveMode={app.liveMode} config={app.config} requestConfirm={app.requestConfirm} corregirEntidadFaltanteTutelas={app.corregirEntidadFaltanteTutelas} colaboradores={app.colaboradores} onCreateHoraExtra={app.createHoraExtra} onEditarHoraExtra={app.editarHoraExtra} onEliminarHoraExtra={app.eliminarHoraExtra} horasExtras={app.horasExtras} />
         )}
         {app.view === 'procesos' && canAccessView(app.modulosPermitidos, 'procesos') && (
           <ProcesosView
