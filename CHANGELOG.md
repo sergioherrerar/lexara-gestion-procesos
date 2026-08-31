@@ -3,6 +3,7 @@
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
 ## 2026-08-31
+- **"Vacaciones" (Administración) ya no depende del Excel real** — se reemplazó por una lista de SharePoint (una fila por período tomado, sin el límite de 36 columnas fijas que tenía el archivo). Los totales (Días laborados/generados/pendientes/tomados) se calculan en vivo con la misma fórmula real, y por primera vez esta pestaña funciona en modo demo. Se agregó también una tabla-resumen por trabajador (Fecha de ingreso, Días generados, Períodos, Días tomados, Días pendientes).
 - **"Registros de horas extras" (Informes) ahora tiene botón Eliminar, junto al de Editar** — con confirmación antes de borrar, y bloqueado (igual que Editar) en cuanto la hora extra queda Aprobada.
 - **La lista de Tutelas ahora muestra cuántas son Tutelas, Impugnaciones y Otras contestaciones** (sobre lo que esté filtrado/buscado en ese momento), junto al total de siempre.
 - **Cada sección (panel) del portal ahora tiene un acento verde institucional arriba** — con varios paneles seguidos era difícil distinguir dónde termina uno y empieza el otro; aplica automáticamente a todo el portal (Informes, Administración, Procesos, etc.), un solo cambio de estilo.

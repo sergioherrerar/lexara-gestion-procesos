@@ -26,24 +26,6 @@ export const INITIAL_CONFIG = {
   // llega a dar documentación de parámetros soportados, ahí sí se podría
   // armar el link por factura.
   DAVIVIENDA_PAGOS_URL: "https://portalpagos.davivienda.com/#/comercio/16310/MD",
-  // Módulo Administración > Vacaciones (agregado 2026-08-25) — el usuario
-  // pidió mantener el Excel REAL que ya usaban ("Vacaciones.xlsx", en
-  // Documentos compartidos > ADMINISTRACION > TALENTO HUMANO MD del sitio
-  // raíz del tenant) en vez de migrar a una lista de SharePoint nueva, pero
-  // que sus campos "se llenen desde el web". Se ubica por RUTA real (no por
-  // driveId/itemId fijos — un intento anterior guardó esos IDs a mano y dio
-  // "404 ItemNotFound" con el token normal de la app, ver graph.js
-  // resolverArchivoVacaciones/leerVacacionesExcel/escribirRangoVacacionesExcel
-  // y [[project_administracion_modulo]]). Si el archivo se llega a mover o
-  // renombrar, solo hay que actualizar esta ruta.
-  VACACIONES_RUTA: "ADMINISTRACION/TALENTO%20HUMANO%20MD/Vacaciones.xlsx",
-  // Link real de "Compartir" del archivo (2026-08-30) — el 404 por ruta
-  // seguía apareciendo incluso probando todas las bibliotecas del sitio
-  // raíz, así que el archivo ya no vive ahí. En vez de seguir adivinando la
-  // ruta/sitio nuevo, se resuelve directo con este link (API de Graph
-  // /shares/) — ver resolverArchivoVacaciones en graph.js.
-  VACACIONES_SHARE_URL: "https://mydabogados.sharepoint.com/:x:/g/IQCH8nLA906dQ6TFwo4UZq_hAUmIOXkkZaeXDmFjPfb1dSE?e=gMbw6P",
-  VACACIONES_HOJA: "Vacaciones",
   // Módulo Administración > Documentos de la empresa — un solo enlace fijo a
   // la carpeta real de SharePoint con todos los documentos (pedido explícito
   // del usuario: "es un link para todos los documentos", sin lista/biblioteca
@@ -697,6 +679,39 @@ export const SHAREPOINT_LISTS_CONFIG = [
       Observaciones: "Observaciones",
     },
   },
+  // Módulo "Vacaciones" (Administración) — reemplaza por completo el Excel
+  // real que se usaba antes ("Vacaciones.xlsx", ver la saga de 404 en
+  // [[project_administracion_modulo]]) — pedido explícito del usuario
+  // 2026-08-31: "no vamos a dejar el excel, vamos a crear lista en
+  // SharePoint". A diferencia del Excel (una fila por persona + 36 pares fijos
+  // de columnas Días/Nota — un tope arbitrario y nada relacional), esta lista
+  // tiene UNA FILA POR PERÍODO tomado — sin límite de cuántos puede tener
+  // cada quien. Los totales (Días laborados/generados/pendientes/tomados)
+  // YA NO son fórmulas de ningún archivo — la app los calcula en vivo a
+  // partir de "Fecha de Ingreso" (ya existe en Equipo MD) + la suma de "Dias"
+  // de esta lista (ver lib/vacaciones.js). Vive en el sitio principal
+  // NuevosProcesosMD (igual que Equipo MD) — sin sitePathKey ni useRootSite.
+  {
+    key: "vacacionesPeriodos",
+    listName: "Vacaciones",
+    label: "Vacaciones",
+    semanticFields: [
+      {key:"Colaborador", label:"Colaborador", hint:["colaborador"], required:true},
+      {key:"FechaInicio", label:"Fecha Inicio", hint:["fecha inicio","fechainicio"], required:true},
+      {key:"FechaFin", label:"Fecha Fin", hint:["fecha fin","fechafin"], required:true},
+      {key:"Dias", label:"Días", hint:["dias","días"], required:true},
+      {key:"Observaciones", label:"Observaciones", hint:["observaciones"]},
+    ],
+    // Nombres reales = igual al nombre semántico (ninguna columna tiene
+    // espacios, así que SharePoint no les agregó ningún "_x0020_").
+    mapping: {
+      Colaborador: "Colaborador",
+      FechaInicio: "FechaInicio",
+      FechaFin: "FechaFin",
+      Dias: "Dias",
+      Observaciones: "Observaciones",
+    },
+  },
 ];
 
 export const DEMO_PROCESOS = [
@@ -826,11 +841,11 @@ export const DEMO_ORDENES_COMPRA = [
 ];
 
 export const DEMO_COLABORADORES = [
-  {id:1, Nombre:"Monica Paola Gómez", TipoIdentificacion:"C.C.", Identificacion:"40.039.240", Telefono:"+57 312 4420026", Direccion:"Carrera 56B", Correo:"Gerencia@lexaraabogados.com", Activo:true, Rol:"Jefe"},
-  {id:2, Nombre:"Sergio Alexander Herrera", TipoIdentificacion:"C.C.", Identificacion:"80.728.333", Telefono:"+57 310 4380043", Direccion:"Calle 128 No 87", Correo:"Soporte@lexaraabogados.com", Activo:true, Rol:"Administrador"},
-  {id:3, Nombre:"Dahiana Camila Pedraza", TipoIdentificacion:"C.C.", Identificacion:"1.014.300.118", Telefono:"+57 3202751824", Direccion:"Cll 69a #105-35", Correo:"dcpedrazap@lexaraabogados.com", Activo:true, Rol:"Colaborador"},
-  {id:4, Nombre:"Daniel Santiago Flechas", TipoIdentificacion:"C.C.", Identificacion:"1.032.502.681", Telefono:"+57 310 4112130", Direccion:"Carrera 49B", Correo:"Asesoriajuridica@lexaraabogados.com", Activo:true, Rol:"Colaborador"},
-  {id:5, Nombre:"Ariana Andrea Torres", TipoIdentificacion:"C.C", Identificacion:"1.006.415.925", Telefono:"+57 3124720", Direccion:"Calle 27a #33-6", Correo:"Tutelas@lexaraabogados.com", Activo:true, Rol:"Colaborador"},
+  {id:1, Nombre:"Monica Paola Gómez", TipoIdentificacion:"C.C.", Identificacion:"40.039.240", Telefono:"+57 312 4420026", Direccion:"Carrera 56B", Correo:"Gerencia@lexaraabogados.com", Activo:true, Rol:"Jefe", FechaIngreso:"2021-01-01"},
+  {id:2, Nombre:"Sergio Alexander Herrera", TipoIdentificacion:"C.C.", Identificacion:"80.728.333", Telefono:"+57 310 4380043", Direccion:"Calle 128 No 87", Correo:"Soporte@lexaraabogados.com", Activo:true, Rol:"Administrador", FechaIngreso:"2023-01-10"},
+  {id:3, Nombre:"Dahiana Camila Pedraza", TipoIdentificacion:"C.C.", Identificacion:"1.014.300.118", Telefono:"+57 3202751824", Direccion:"Cll 69a #105-35", Correo:"dcpedrazap@lexaraabogados.com", Activo:true, Rol:"Colaborador", FechaIngreso:"2024-01-15"},
+  {id:4, Nombre:"Daniel Santiago Flechas", TipoIdentificacion:"C.C.", Identificacion:"1.032.502.681", Telefono:"+57 310 4112130", Direccion:"Carrera 49B", Correo:"Asesoriajuridica@lexaraabogados.com", Activo:true, Rol:"Colaborador", FechaIngreso:"2023-02-07"},
+  {id:5, Nombre:"Ariana Andrea Torres", TipoIdentificacion:"C.C", Identificacion:"1.006.415.925", Telefono:"+57 3124720", Direccion:"Calle 27a #33-6", Correo:"Tutelas@lexaraabogados.com", Activo:true, Rol:"Colaborador", FechaIngreso:"2024-08-26"},
 ];
 
 export const DEMO_FORMAS_PAGO = [
@@ -931,6 +946,13 @@ export const DEMO_HORAS_EXTRAS = [
   {id:1, Colaborador:"Ariana Andrea Torres", Fecha:"2026-08-05", HoraInicio:"18:00", HoraFin:"19:30", HorasDiurnas:1, HorasNocturnas:0.5, HorasDiurnasFestivas:0, HorasNocturnasFestivas:0, Aprobado:true, Observaciones:""},
   {id:2, Colaborador:"Ariana Andrea Torres", Fecha:"2026-08-16", HoraInicio:"20:00", HoraFin:"22:30", HorasDiurnas:0, HorasNocturnas:2.5, HorasDiurnasFestivas:0, HorasNocturnasFestivas:0, Aprobado:false, Observaciones:""},
   {id:3, Colaborador:"Daniel Santiago Flechas", Fecha:"2026-08-09", HoraInicio:"20:00", HoraFin:"22:00", HorasDiurnas:0, HorasNocturnas:0, HorasDiurnasFestivas:0, HorasNocturnasFestivas:2, Aprobado:true, Observaciones:"Domingo — apoyo turno de tutelas"},
+];
+
+// Vacaciones (2026-08-31) — reemplaza el Excel real, una fila por período
+// tomado (no una fila por persona). Ver [[project_administracion_modulo]].
+export const DEMO_VACACIONES_PERIODOS = [
+  {id:1, Colaborador:"Ariana Andrea Torres", FechaInicio:"2025-01-30", FechaFin:"2025-01-31", Dias:2, Observaciones:""},
+  {id:2, Colaborador:"Daniel Santiago Flechas", FechaInicio:"2025-12-15", FechaFin:"2025-12-19", Dias:5, Observaciones:""},
 ];
 
 export const ICON_SVG = `<svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 30 L50 50 L80 30" stroke="currentColor" stroke-width="14" fill="none" stroke-linecap="square"/><path d="M20 70 L50 50 L80 70" stroke="currentColor" stroke-width="14" fill="none" stroke-linecap="square"/></svg>`;

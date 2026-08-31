@@ -89,7 +89,7 @@ function DocumentosTab({ config }){
   );
 }
 
-export default function AdministracionView({ colaboradores, searchQuery, onOpenColaborador, onCreateColaborador, onDeleteColaborador, canWrite = true, notify, liveMode, config, tutelas, valoresEntidad, clientes, procesos, onAbrirBorradorOrdenCompra, onAbrirBorradorFactura, horasExtras, onAprobarHoraExtra }){
+export default function AdministracionView({ colaboradores, searchQuery, onOpenColaborador, onCreateColaborador, onDeleteColaborador, canWrite = true, notify, config, tutelas, valoresEntidad, clientes, procesos, onAbrirBorradorOrdenCompra, onAbrirBorradorFactura, horasExtras, onAprobarHoraExtra, vacacionesPeriodos, onCrearPeriodoVacaciones, onEliminarPeriodoVacaciones }){
   const [tab, setTab] = useState('colaboradores');
   return (
     <div className="view">
@@ -121,7 +121,16 @@ export default function AdministracionView({ colaboradores, searchQuery, onOpenC
           titulo="Colaboradores MD"
         />
       )}
-      {tab==='vacaciones' && <VacacionesTab config={config} liveMode={liveMode} notify={notify} canWrite={canWrite} />}
+      {tab==='vacaciones' && (
+        <VacacionesTab
+          colaboradores={colaboradores}
+          vacacionesPeriodos={vacacionesPeriodos}
+          onCrearPeriodo={onCrearPeriodoVacaciones}
+          onEliminarPeriodo={onEliminarPeriodoVacaciones}
+          notify={notify}
+          canWrite={canWrite}
+        />
+      )}
       {tab==='certificaciones' && <CertificacionesTab colaboradores={colaboradores} notify={notify} />}
       {tab==='documentos' && <DocumentosTab config={config} />}
       {tab==='ordenesColmedica' && (

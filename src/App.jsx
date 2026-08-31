@@ -164,7 +164,6 @@ export default function App(){
             onDeleteColaborador={app.deleteColaborador}
             canWrite={app.canWrite}
             notify={app.notify}
-            liveMode={app.liveMode}
             config={app.config}
             tutelas={app.tutelas}
             valoresEntidad={app.valoresEntidad}
@@ -174,6 +173,9 @@ export default function App(){
             onAbrirBorradorFactura={app.abrirBorradorFactura}
             horasExtras={app.horasExtras}
             onAprobarHoraExtra={app.aprobarHoraExtra}
+            vacacionesPeriodos={app.vacacionesPeriodos}
+            onCrearPeriodoVacaciones={app.crearPeriodoVacaciones}
+            onEliminarPeriodoVacaciones={app.eliminarPeriodoVacaciones}
           />
         )}
         {app.view === 'setup' && canAccessView(app.modulosPermitidos, 'setup') && (

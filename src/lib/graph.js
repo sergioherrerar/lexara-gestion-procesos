@@ -196,107 +196,17 @@ export async function fetchSiteId(config, sitePath){
 
 // El sitio RAÍZ del tenant (https://mydabogados.sharepoint.com a secas, sin
 // ningún "/sites/algo" detrás) se resuelve distinto — sin los dos puntos
-// finales de fetchSiteId(), que siempre agregan un path. Ahí vive el Excel
-// de Vacaciones (ver resolverArchivoVacaciones más abajo).
-// Exportada (2026-08-31) — "Horas Extras" también vive en el sitio raíz
-// ("Administracion Lexara" en la UI de SharePoint, mismo sitio del Excel de
-// Vacaciones), a diferencia de Vacaciones (un archivo) esto es una LISTA, así
-// que se conecta con el flujo normal de Graph.connectList — solo hacía falta
-// exportar esto para que siteIdForList (useLexaraApp.js) la pueda usar.
+// finales de fetchSiteId(), que siempre agregan un path.
+// Exportada (2026-08-31) — "Horas Extras" vive en el sitio raíz
+// ("Administracion Lexara" en la UI de SharePoint) — se conecta con el flujo
+// normal de Graph.connectList, solo hacía falta exportar esto para que
+// siteIdForList (useLexaraApp.js) la pueda usar. (Vacaciones vivió un tiempo
+// en un Excel de este mismo sitio raíz — 2026-08-31: se reemplazó por la
+// lista real "Vacaciones" en NuevosProcesosMD, ver [[project_horas_extras]]
+// / [[project_administracion_modulo]] — ya no se usa esta función para eso.)
 export async function fetchRootSiteId(config){
   const site = await graphFetch(`/sites/${config.SP_HOST}`);
   return site.id;
-}
-
-// Ubica el Excel de Vacaciones por RUTA real (sitio raíz > Documentos
-// compartidos > carpeta) en vez de un driveId/itemId guardado a mano en
-// config.js — 2026-08-26, corrigiendo un bug real: los IDs que se habían
-// capturado con una herramienta de búsqueda (con permisos de tenant más
-// amplios que los de una persona normal) daban "404 ItemNotFound" al usarlos
-// con el token normal de la app (Sites.ReadWrite.All, delegado, el mismo que
-// ya usa el resto de la app para las listas — nunca se llegó a necesitar un
-// permiso nuevo "Files.ReadWrite" después de todo). Resolviendo por ruta con
-// el MISMO token que ya funciona para todo lo demás, cualquier persona con
-// acceso real al sitio lo puede leer/escribir sin depender de un ID
-// congelado que puede no resolver igual para cada cuenta. Se cachea en
-// memoria (dura toda la sesión de la pestaña) para no repetir 2 llamadas
-// extra cada vez que se abre la pestaña Vacaciones.
-// Codifica un link de "Compartir" de SharePoint/OneDrive al formato que
-// exige el endpoint /shares/ de Graph ("u!" + base64url del link, sin
-// padding) — documentado por Microsoft, ver
-// https://learn.microsoft.com/graph/api/shares-get
-function codificarLinkCompartido(url){
-  const base64 = btoa(unescape(encodeURIComponent(url)))
-    .replace(/=+$/, '').replace(/\//g, '_').replace(/\+/g, '-');
-  return `u!${base64}`;
-}
-
-let _vacacionesItemCache = null;
-// 2026-08-30 — el 404 seguía apareciendo incluso con la ruta confirmada
-// correcta (captura real del usuario) y probando TODAS las bibliotecas del
-// sitio raíz — el archivo ya no vive en ese sitio en absoluto (se movió a
-// otro sitio de SharePoint, probablemente uno nuevo dedicado). En vez de
-// seguir adivinando en qué sitio/ruta quedó, se resuelve directo con el
-// link real de "Compartir" del archivo (`config.VACACIONES_SHARE_URL`, el
-// usuario lo pasó por chat) vía el endpoint /shares/ de Graph — funciona
-// sin importar en qué sitio esté, con el mismo token normal de la app. Si
-// ese link llegara a fallar algún día, cae al intento viejo por ruta (sitio
-// raíz, todas las bibliotecas) como respaldo.
-async function resolverArchivoVacaciones(config){
-  if(_vacacionesItemCache) return _vacacionesItemCache;
-  if(config.VACACIONES_SHARE_URL){
-    try{
-      const encoded = codificarLinkCompartido(config.VACACIONES_SHARE_URL);
-      const item = await graphFetch(`/shares/${encoded}/driveItem`);
-      _vacacionesItemCache = { driveId: item.parentReference.driveId, itemId: item.id };
-      return _vacacionesItemCache;
-    }catch(err){ console.error('No se pudo resolver Vacaciones por el link compartido, se intenta por ruta:', err); }
-  }
-  const siteId = await fetchRootSiteId(config);
-  try{
-    const item = await graphFetch(`/sites/${siteId}/drive/root:/${config.VACACIONES_RUTA}`);
-    _vacacionesItemCache = { driveId: item.parentReference.driveId, itemId: item.id };
-    return _vacacionesItemCache;
-  }catch(err){
-    if(!String(err.message).startsWith('Graph 404')) throw err;
-  }
-  const drives = await graphFetch(`/sites/${siteId}/drives?$select=id,name`);
-  for(const drive of (drives.value||[])){
-    try{
-      const item = await graphFetch(`/drives/${drive.id}/root:/${config.VACACIONES_RUTA}`);
-      _vacacionesItemCache = { driveId: item.parentReference.driveId, itemId: item.id };
-      return _vacacionesItemCache;
-    }catch(err){
-      if(!String(err.message).startsWith('Graph 404')) throw err;
-    }
-  }
-  throw new Error(`No se encontró "${config.VACACIONES_RUTA}" en ninguna biblioteca de documentos del sitio raíz.`);
-}
-
-// Lee el rango usado de una hoja de un Excel real (no una lista de
-// SharePoint) vía Microsoft Graph Workbook API — usado por Administración >
-// Vacaciones para seguir mostrando/editando el mismo "Vacaciones.xlsx" que
-// ya usaba el despacho (ver [[project_administracion_modulo]]). Devuelve
-// `values` tal cual Graph las calcula (array de arrays, una fila por fila
-// real de la hoja, incluyendo las 2 filas de encabezado).
-export async function leerVacacionesExcel(config, hoja){
-  const { driveId, itemId } = await resolverArchivoVacaciones(config);
-  const data = await graphFetch(`/drives/${driveId}/items/${itemId}/workbook/worksheets('${encodeURIComponent(hoja)}')/usedRange(valuesOnly=true)`);
-  return data.values || [];
-}
-
-// Escribe un rango puntual (ej. "I3:J3") — usado para agregar un período de
-// vacaciones tomado en las primeras 2 celdas VACÍAS (Días/Nota) de la fila
-// de esa persona, nunca sobre celdas que ya tengan datos (ver
-// primeraColumnaVaciaDePeriodo en vacaciones.js). El resto de la hoja
-// (fórmulas de Días Pendientes/Tomados) no se toca — ya suman por fórmula
-// esas mismas columnas, así que se recalculan solas.
-export async function escribirRangoVacacionesExcel(config, hoja, rango, valores){
-  const { driveId, itemId } = await resolverArchivoVacaciones(config);
-  return graphFetch(`/drives/${driveId}/items/${itemId}/workbook/worksheets('${encodeURIComponent(hoja)}')/range(address='${rango}')`, {
-    method: "PATCH",
-    body: JSON.stringify({ values: [valores] }),
-  });
 }
 
 export function normalize(str){

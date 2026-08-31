@@ -1,90 +1,82 @@
-import { useState, useEffect, useCallback } from 'react';
-import { leerVacacionesExcel, escribirRangoVacacionesExcel } from '../lib/graph';
-import { parseVacaciones, ubicarFilaCruda, primeraColumnaVaciaDePeriodo, rangoNuevoPeriodo } from '../lib/vacaciones';
+import { useState } from 'react';
+import { agruparVacacionesPorColaborador } from '../lib/vacaciones';
 import { FieldCard } from './FormFields';
-import { IconTextButton } from './IconButton';
+import IconButton, { IconTextButton } from './IconButton';
 
-// Pestaña "Vacaciones" de Administración — a diferencia de todo el resto de
-// la app (que lee/escribe LISTAS de SharePoint), esta lee/escribe un Excel
-// real ("Vacaciones.xlsx") vía Microsoft Graph Workbook API — el usuario
-// pidió explícitamente seguir usando ese mismo archivo (no migrar a una
-// lista nueva), solo que sus campos "se llenen desde el web". Ver
-// leerVacacionesExcel/escribirRangoVacacionesExcel en graph.js,
-// src/lib/vacaciones.js y [[project_administracion_modulo]].
-//
-// Solo funciona con sesión real (nunca en modo demo — no tiene sentido
-// simular un Excel ajeno). Usa el mismo token que ya usa el resto de la app
-// (Sites.ReadWrite.All) — no hace falta ningún permiso nuevo.
-export default function VacacionesTab({ config, liveMode, notify, canWrite }){
-  const [filas, setFilas] = useState(null); // null = todavía no cargó ni una vez
-  const [cargando, setCargando] = useState(false);
-  const [error, setError] = useState("");
+// Pestaña "Vacaciones" de Administración — reescrita por completo 2026-08-31:
+// reemplaza el Excel real que se usaba antes ("Vacaciones.xlsx", ver la saga
+// de 404 en [[project_administracion_modulo]]) por la lista real "Vacaciones"
+// (una fila por PERÍODO tomado, sin límite de cuántos puede tener cada
+// quien — a diferencia del Excel, que reservaba 36 pares fijos de columnas
+// por persona). Los totales (Días laborados/generados/pendientes/tomados) ya
+// no son fórmulas de ningún archivo — se calculan acá mismo a partir de
+// "Fecha de Ingreso" (Equipo MD) + la suma de "Dias" de esta lista (ver
+// lib/vacaciones.js) — la MISMA fórmula real que ya usaba el Excel.
+// A diferencia del Excel (que solo funcionaba con sesión real), esta pestaña
+// ahora es una lista de SharePoint normal — SÍ funciona en modo demo.
+const FORM_VACIO = { FechaInicio:"", FechaFin:"", Dias:"", Observaciones:"" };
+
+export default function VacacionesTab({ colaboradores, vacacionesPeriodos, onCrearPeriodo, onEliminarPeriodo, notify, canWrite }){
   const [abiertoPara, setAbiertoPara] = useState("");
-  const [formDias, setFormDias] = useState("");
-  const [formNota, setFormNota] = useState("");
+  const [form, setForm] = useState(FORM_VACIO);
   const [guardando, setGuardando] = useState(false);
 
-  const cargar = useCallback(async () => {
-    if(!liveMode) return;
-    setCargando(true); setError("");
-    try{
-      const values = await leerVacacionesExcel(config, config.VACACIONES_HOJA);
-      setFilas(parseVacaciones(values));
-    }catch(err){
-      console.error(err);
-      setError("No se pudo leer el Excel de Vacaciones: " + err.message);
-    }finally{ setCargando(false); }
-  }, [liveMode, config]);
-
-  useEffect(() => { cargar(); }, [cargar]);
+  const filas = agruparVacacionesPorColaborador(colaboradores, vacacionesPeriodos);
 
   function abrirFormulario(nombre){
-    setAbiertoPara(nombre); setFormDias(""); setFormNota("");
+    setAbiertoPara(nombre); setForm(FORM_VACIO);
   }
+  function setField(key, value){ setForm(prev => ({...prev, [key]: value})); }
 
   async function handleGuardarPeriodo(nombre){
-    if(!formDias || !formNota.trim()){
-      notify?.("Completa los días y la nota del período antes de guardar.", 'error');
+    if(!form.FechaInicio || !form.FechaFin || !form.Dias){
+      notify?.("Completa Fecha inicio, Fecha fin y Días antes de guardar.", 'error');
       return;
     }
     setGuardando(true);
     try{
-      // Se vuelve a leer el Excel justo antes de escribir (no se reutiliza la
-      // fila ya mostrada en pantalla) para tomar el estado más fresco y no
-      // pisar un período que alguien más haya agregado mientras tanto.
-      const values = await leerVacacionesExcel(config, config.VACACIONES_HOJA);
-      const ubicacion = ubicarFilaCruda(values, nombre);
-      if(!ubicacion) throw new Error(`No se encontró a "${nombre}" en el Excel (¿cambió de nombre en la hoja?).`);
-      const colIndex = primeraColumnaVaciaDePeriodo(ubicacion.fila, Math.max(ubicacion.fila.length, 200));
-      if(colIndex === null) throw new Error("Esta persona ya no tiene columnas libres para un período nuevo en el Excel — hay que agregar columnas a mano.");
-      const rango = rangoNuevoPeriodo(ubicacion.excelRow, colIndex);
-      await escribirRangoVacacionesExcel(config, config.VACACIONES_HOJA, rango, [Number(formDias), formNota.trim()]);
-      notify?.(`Período agregado para ${nombre} en el Excel real — Días pendientes/tomados se recalculan solos (son fórmulas del propio archivo).`, 'info');
-      setAbiertoPara("");
-      await cargar();
-    }catch(err){
-      console.error(err);
-      notify?.("No se pudo guardar el período: " + err.message, 'error');
-    }finally{ setGuardando(false); }
-  }
-
-  if(!liveMode){
-    return <div className="empty-state">El Excel de Vacaciones solo se puede leer/editar con una sesión real de Microsoft 365 — inicia sesión para verlo (no aplica en modo demo).</div>;
-  }
-  if(error){
-    return <div className="empty-state">{error}</div>;
-  }
-  if(cargando && !filas){
-    return <div className="empty-state">Cargando el Excel de Vacaciones…</div>;
+      await onCrearPeriodo?.({
+        Colaborador: nombre, FechaInicio: form.FechaInicio, FechaFin: form.FechaFin,
+        Dias: Number(form.Dias), Observaciones: form.Observaciones,
+      });
+      setAbiertoPara(""); setForm(FORM_VACIO);
+    } finally { setGuardando(false); }
   }
 
   return (
     <div>
       <p className="save-hint" style={{marginBottom:14}}>
-        Esta pestaña lee y escribe directo sobre el mismo Vacaciones.xlsx que ya usaba el despacho — no es una copia. "Días pendientes/tomados" son fórmulas del propio Excel y se recalculan solas al agregar un período nuevo.
+        Días laborados/generados/pendientes/tomados se calculan en vivo (Fecha de Ingreso + la suma de los períodos de abajo) — no son celdas de ningún Excel.
       </p>
-      {(filas||[]).map(f => (
-        <div className="panel" key={f.nombre} style={{marginBottom:16}}>
+
+      {/* Vista resumen por trabajador — pedido explícito del usuario
+          2026-08-31: busca la Fecha de Ingreso en Colaboradores MD, calcula
+          Días generados a la fecha de hoy, cuenta cuántos períodos tiene,
+          suma sus Días tomados, y resta generados-tomados = pendientes. */}
+      {filas.length > 0 && (
+        <div className="table-wrap" style={{marginBottom:20}}>
+          <table>
+            <thead>
+              <tr><th>Colaborador</th><th>Fecha de ingreso</th><th>Días generados</th><th>Períodos</th><th>Días tomados</th><th>Días pendientes</th></tr>
+            </thead>
+            <tbody>
+              {filas.map(f => (
+                <tr key={f.id}>
+                  <td className="cliente">{f.nombre}</td>
+                  <td>{f.fechaIngreso}</td>
+                  <td>{f.diasGenerados ?? "—"}</td>
+                  <td>{f.cantidadPeriodos}</td>
+                  <td>{f.diasTomados ?? "—"}</td>
+                  <td>{f.diasPendientes ?? "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {filas.map(f => (
+        <div className="panel" key={f.id} style={{marginBottom:16}}>
           <div className="panel-head">
             <h3>{f.nombre}</h3>
             {canWrite && (abiertoPara===f.nombre
@@ -94,22 +86,30 @@ export default function VacacionesTab({ config, liveMode, notify, canWrite }){
           <div className="panel-body" style={{padding:'14px 20px'}}>
             <div className="field-card-grid">
               <FieldCard label="Fecha de ingreso">{f.fechaIngreso}</FieldCard>
-              <FieldCard label="Días laborados">{f.diasLaborados || "—"}</FieldCard>
-              <FieldCard label="Días generados">{f.diasGenerados || "—"}</FieldCard>
-              <FieldCard label="Días pendientes">{f.diasPendientes || "—"}</FieldCard>
-              <FieldCard label="Días tomados">{f.diasTomados || "—"}</FieldCard>
+              <FieldCard label="Días laborados">{f.diasLaborados ?? "—"}</FieldCard>
+              <FieldCard label="Días generados">{f.diasGenerados ?? "—"}</FieldCard>
+              <FieldCard label="Días pendientes">{f.diasPendientes ?? "—"}</FieldCard>
+              <FieldCard label="Días tomados">{f.diasTomados ?? "—"}</FieldCard>
             </div>
 
             {abiertoPara===f.nombre && (
               <div className="panel" style={{marginTop:14}}>
                 <div className="panel-body" style={{padding:'14px 20px', display:'flex', gap:12, flexWrap:'wrap', alignItems:'flex-end'}}>
-                  <div className="field" style={{maxWidth:110}}>
+                  <div className="field" style={{maxWidth:160}}>
+                    <label>Fecha inicio</label>
+                    <input type="date" value={form.FechaInicio} onChange={e => setField('FechaInicio', e.target.value)} />
+                  </div>
+                  <div className="field" style={{maxWidth:160}}>
+                    <label>Fecha fin</label>
+                    <input type="date" value={form.FechaFin} onChange={e => setField('FechaFin', e.target.value)} />
+                  </div>
+                  <div className="field" style={{maxWidth:100}}>
                     <label>Días</label>
-                    <input type="number" min="0" step="0.5" value={formDias} onChange={e => setFormDias(e.target.value)} />
+                    <input type="number" min="0" step="0.5" value={form.Dias} onChange={e => setField('Dias', e.target.value)} />
                   </div>
                   <div className="field" style={{flex:1, minWidth:220}}>
-                    <label>Nota (fechas / detalle del período)</label>
-                    <input type="text" value={formNota} onChange={e => setFormNota(e.target.value)} placeholder="Ej: 15 al 19 de diciembre 2026" />
+                    <label>Observaciones (opcional)</label>
+                    <input type="text" value={form.Observaciones} onChange={e => setField('Observaciones', e.target.value)} placeholder="Ej: días no consecutivos, 1, 4, 5, 6 y 8" />
                   </div>
                   <IconTextButton icon="add" variant="primary" onClick={() => handleGuardarPeriodo(f.nombre)} disabled={guardando}>{guardando ? "Guardando…" : "Guardar período"}</IconTextButton>
                 </div>
@@ -121,9 +121,17 @@ export default function VacacionesTab({ config, liveMode, notify, canWrite }){
               {f.historial.length ? (
                 <div className="table-wrap">
                   <table>
-                    <thead><tr><th>Días</th><th>Nota</th></tr></thead>
+                    <thead><tr><th>Fecha inicio</th><th>Fecha fin</th><th>Días</th><th>Observaciones</th>{canWrite && <th>Eliminar</th>}</tr></thead>
                     <tbody>
-                      {f.historial.map((h,i) => <tr key={i}><td>{h.dias || "—"}</td><td>{h.nota || "—"}</td></tr>)}
+                      {f.historial.map(h => (
+                        <tr key={h.id}>
+                          <td>{h.FechaInicio || "—"}</td>
+                          <td>{h.FechaFin || "—"}</td>
+                          <td>{h.Dias ?? "—"}</td>
+                          <td>{h.Observaciones || "—"}</td>
+                          {canWrite && <td><IconButton icon="delete" variant="delete" label={`Eliminar período de ${f.nombre}`} onClick={() => onEliminarPeriodo?.(h.id)} /></td>}
+                        </tr>
+                      ))}
                     </tbody>
                   </table>
                 </div>
@@ -132,7 +140,7 @@ export default function VacacionesTab({ config, liveMode, notify, canWrite }){
           </div>
         </div>
       ))}
-      {!(filas||[]).length && <div className="empty-state">No hay filas en el Excel de Vacaciones.</div>}
+      {!filas.length && <div className="empty-state">No hay colaboradores activos con Fecha de Ingreso cargada — complétala en Colaboradores MD para que aparezcan acá.</div>}
     </div>
   );
 }

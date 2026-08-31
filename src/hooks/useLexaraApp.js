@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { INITIAL_CONFIG, SHAREPOINT_LISTS_CONFIG, DEMO_PROCESOS, DEMO_CLIENTES, DEMO_FACTURAS, DEMO_ORDENES_COMPRA, DEMO_COLABORADORES, DEMO_FORMAS_PAGO, DEMO_DESISTIMIENTOS, DEMO_TIPOS_ACCION, DEMO_TUTELAS, DEMO_TEMAS, DEMO_VALORES_ENTIDAD, DEMO_HORAS_EXTRAS } from '../config';
+import { INITIAL_CONFIG, SHAREPOINT_LISTS_CONFIG, DEMO_PROCESOS, DEMO_CLIENTES, DEMO_FACTURAS, DEMO_ORDENES_COMPRA, DEMO_COLABORADORES, DEMO_FORMAS_PAGO, DEMO_DESISTIMIENTOS, DEMO_TIPOS_ACCION, DEMO_TUTELAS, DEMO_TEMAS, DEMO_VALORES_ENTIDAD, DEMO_HORAS_EXTRAS, DEMO_VACACIONES_PERIODOS } from '../config';
 import * as Graph from '../lib/graph';
 import { canWrite as canWriteForColaborador, modulosPermitidosDe, MODULOS_DISPONIBLES } from '../lib/permissions';
 
@@ -129,6 +129,10 @@ export function useLexaraApp(){
   // "sin panel propio" que Tema/Valores Entidad, ver createHoraExtra/
   // aprobarHoraExtra más abajo. Ver [[project_horas_extras]].
   const [horasExtras, setHorasExtras] = useState([]);
+  // Vacaciones (2026-08-31) — mismo criterio simple "sin panel propio" que
+  // Horas Extras: una fila por período de vacaciones tomado, ver
+  // crearPeriodoVacaciones/eliminarPeriodoVacaciones y lib/vacaciones.js.
+  const [vacacionesPeriodos, setVacacionesPeriodos] = useState([]);
   // Cuando se abre/crea una factura, orden de compra, forma de pago o
   // desistimiento DESDE dentro de un proceso, se guarda aquí su id — al
   // cerrar ese panel se reabre el mismo proceso en vez de dejar solo la
@@ -198,6 +202,7 @@ export function useLexaraApp(){
     setTemas(JSON.parse(JSON.stringify(DEMO_TEMAS)));
     setValoresEntidad(JSON.parse(JSON.stringify(DEMO_VALORES_ENTIDAD)));
     setHorasExtras(JSON.parse(JSON.stringify(DEMO_HORAS_EXTRAS)));
+    setVacacionesPeriodos(JSON.parse(JSON.stringify(DEMO_VACACIONES_PERIODOS)));
     setAccount({ name:"Usuario Demo", username:"demo@lexara.com" });
     setAppActive(true);
     if(!silent) setView('dashboard');
@@ -314,6 +319,7 @@ export function useLexaraApp(){
       setTemas(updated.find(l => l.key==='temas')?.items || []);
       setValoresEntidad(updated.find(l => l.key==='valoresEntidad')?.items || []);
       setHorasExtras(updated.find(l => l.key==='horasExtras')?.items || []);
+      setVacacionesPeriodos(updated.find(l => l.key==='vacacionesPeriodos')?.items || []);
     }catch(err){
       console.error(err);
       notify("Se inició sesión, pero no se pudieron cargar los datos de SharePoint: " + err.message + " — probá el botón de Actualizar.", 'error');
@@ -383,6 +389,7 @@ export function useLexaraApp(){
       setTemas(updated.find(l => l.key==='temas')?.items || []);
       setValoresEntidad(updated.find(l => l.key==='valoresEntidad')?.items || []);
       setHorasExtras(updated.find(l => l.key==='horasExtras')?.items || []);
+      setVacacionesPeriodos(updated.find(l => l.key==='vacacionesPeriodos')?.items || []);
     }catch(err){
       console.error(err);
       notify("No se pudo actualizar la información: " + err.message, 'error');
@@ -424,6 +431,7 @@ export function useLexaraApp(){
     setTemas(updated.find(l => l.key==='temas')?.items || []);
     setValoresEntidad(updated.find(l => l.key==='valoresEntidad')?.items || []);
     setHorasExtras(updated.find(l => l.key==='horasExtras')?.items || []);
+    setVacacionesPeriodos(updated.find(l => l.key==='vacacionesPeriodos')?.items || []);
     setLiveMode(true);
   }
 
@@ -1327,6 +1335,42 @@ export function useLexaraApp(){
     requestConfirm("¿Eliminar esta hora extra? Esta acción no se puede deshacer.", () => performEliminarHoraExtra(id));
   }
 
+  // Vacaciones — reemplaza el Excel real (2026-08-31). Una fila por período
+  // tomado, mismo patrón simple "sin panel propio" que createTema. Ver
+  // lib/vacaciones.js (los totales se calculan ahí, no acá).
+  async function crearPeriodoVacaciones(fields){
+    const nuevo = { id: 'tmp-' + Math.random().toString(36).slice(2), ...fields };
+    if(liveMode){
+      setSaving(true);
+      const list = listByKey('vacacionesPeriodos');
+      const { id, ...nuevoSinId } = nuevo;
+      try{
+        const created = await Graph.crearItemConLookups(list.siteId || siteId, list, nuevoSinId);
+        nuevo.id = created.id; nuevo._graphId = created.id;
+      }catch(err){ console.error(err); notify("No se pudo crear el período de vacaciones en SharePoint: " + err.message, 'error'); setSaving(false); return null; }
+      setSaving(false);
+    }
+    setVacacionesPeriodos(prev => [...prev, nuevo]);
+    notify("Creado con éxito en Lexara", 'success');
+    return nuevo;
+  }
+  async function performEliminarPeriodoVacaciones(id){
+    const periodo = vacacionesPeriodos.find(p => p.id===id);
+    if(!periodo) return;
+    if(liveMode){
+      setSaving(true);
+      const list = listByKey('vacacionesPeriodos');
+      try{
+        await Graph.graphFetch(`/sites/${list.siteId || siteId}/lists/${list.listId}/items/${periodo._graphId || periodo.id}`, { method:"DELETE" });
+      }catch(err){ console.error(err); notify("No se pudo eliminar en SharePoint: " + err.message, 'error'); setSaving(false); return; }
+      setSaving(false);
+    }
+    setVacacionesPeriodos(prev => prev.filter(p => p.id !== id));
+  }
+  function eliminarPeriodoVacaciones(id){
+    requestConfirm("¿Eliminar este período de vacaciones? Esta acción no se puede deshacer.", () => performEliminarPeriodoVacaciones(id));
+  }
+
   return {
     config, saveConfig, clearConfig,
     lists, listByKey, updateListMapping,
@@ -1337,7 +1381,7 @@ export function useLexaraApp(){
     saving, signingIn,
     toast, closeToast, confirmState, acceptConfirm, cancelConfirm, notify, requestConfirm,
     procesos, clientes, facturas, ordenesCompra, colaboradores, formasPago, desistimientos, tiposAccion,
-    tutelas, temas, valoresEntidad, horasExtras,
+    tutelas, temas, valoresEntidad, horasExtras, vacacionesPeriodos,
     currentFilter, setFilter: setCurrentFilter, searchQuery, setSearchQuery: setSearchQuery,
     onSearch: setSearchQuery,
     activeProceso, openProceso, newProceso, closeDrawer, saveProceso, procesoViewOnly, rememberReturnToProceso,
@@ -1352,5 +1396,6 @@ export function useLexaraApp(){
     activeTutela, openTutela, newTutela, duplicateTutela, closeTutelaDrawer, saveTutela, deleteTutela, corregirEntidadFaltanteTutelas,
     createTema, saveTema, createValorEntidad, saveValorEntidad,
     createHoraExtra, aprobarHoraExtra, editarHoraExtra, eliminarHoraExtra,
+    crearPeriodoVacaciones, eliminarPeriodoVacaciones,
   };
 }
