@@ -447,31 +447,45 @@ export default function InformesView({ procesos, clientes, facturas, ordenesComp
           {!registrosHoraExtraDelMes.length ? (
             <div className="empty-state empty-state-compact">No hay horas extras registradas en {MESES_NOMBRES[mesHoraExtra]} de {anioHoraExtra}.</div>
           ) : (
-            <div className="table-wrap">
-              <table>
-                <thead>
-                  <tr><th>Colaborador</th><th>Fecha</th><th>Horario</th><th>Total horas</th><th>Estado</th><th>Editar</th></tr>
-                </thead>
-                <tbody>
-                  {registrosHoraExtraDelMes.map(h => {
-                    const total = (Number(h.HorasDiurnas)||0) + (Number(h.HorasNocturnas)||0) + (Number(h.HorasDiurnasFestivas)||0) + (Number(h.HorasNocturnasFestivas)||0);
-                    return (
-                      <tr key={h.id}>
-                        <td className="cliente">{h.Colaborador || "—"}</td>
-                        <td>{soloFecha(h.Fecha)}</td>
-                        <td>{h.HoraInicio || "—"} - {h.HoraFin || "—"}</td>
-                        <td>{total}</td>
-                        <td>{h.Aprobado ? <span className="badge badge-verde">Aprobada</span> : <span className="badge badge-naranja">Pendiente</span>}</td>
-                        <td>
-                          {h.Aprobado
-                            ? <span className="save-hint" style={{fontSize:12}}>No editable</span>
-                            : <IconButton icon="edit" variant="edit" label={`Editar hora extra de ${h.Colaborador}`} onClick={() => handleEditarHoraExtraClick(h)} />}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+            // Pedido explícito del usuario 2026-08-31 viendo la lista real con
+            // muchas filas de un mismo mes ("mucho menos espacio más
+            // compacto hasta en dos columnas") — filas más bajas
+            // (.table-compact) y partidas en 2 tablas lado a lado en vez de
+            // una sola columna larga, para que quepan muchas más filas sin
+            // scroll.
+            <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(340px, 1fr))', gap:16, alignItems:'start'}}>
+              {(() => {
+                const mitad = Math.ceil(registrosHoraExtraDelMes.length / 2);
+                const columnas = [registrosHoraExtraDelMes.slice(0, mitad), registrosHoraExtraDelMes.slice(mitad)];
+                return columnas.filter(col => col.length).map((columna, i) => (
+                  <div className="table-wrap" key={i}>
+                    <table className="table-compact">
+                      <thead>
+                        <tr><th>Colaborador</th><th>Fecha</th><th>Horario</th><th>Total</th><th>Estado</th><th>Editar</th></tr>
+                      </thead>
+                      <tbody>
+                        {columna.map(h => {
+                          const total = (Number(h.HorasDiurnas)||0) + (Number(h.HorasNocturnas)||0) + (Number(h.HorasDiurnasFestivas)||0) + (Number(h.HorasNocturnasFestivas)||0);
+                          return (
+                            <tr key={h.id}>
+                              <td className="cliente">{h.Colaborador || "—"}</td>
+                              <td>{soloFecha(h.Fecha)}</td>
+                              <td>{h.HoraInicio || "—"} - {h.HoraFin || "—"}</td>
+                              <td>{total}</td>
+                              <td>{h.Aprobado ? <span className="badge badge-verde">Aprobada</span> : <span className="badge badge-naranja">Pendiente</span>}</td>
+                              <td>
+                                {h.Aprobado
+                                  ? <span className="save-hint" style={{fontSize:11}}>No editable</span>
+                                  : <IconButton icon="edit" variant="edit" label={`Editar hora extra de ${h.Colaborador}`} onClick={() => handleEditarHoraExtraClick(h)} />}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                ));
+              })()}
             </div>
           )}
         </div>

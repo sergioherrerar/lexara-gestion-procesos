@@ -449,6 +449,11 @@
   tbody td{padding:13px 16px; border-bottom:1px solid #f0f0ee; vertical-align:middle;}
   tbody tr:last-child td{border-bottom:none;}
   tbody tr{cursor:pointer; transition:background .1s ease;}
+  /* Variante compacta — pedido explícito del usuario 2026-08-31 viendo la
+     lista de Horas Extras con muchas filas ("mucho menos espacio más
+     compacto"): mismo look, celdas mucho más bajas. */
+  .table-compact thead th{padding:8px 12px; font-size:10px;}
+  .table-compact tbody td{padding:5px 12px; font-size:12.5px;}
   /* ---------- Encabezado de columna con menú (ordenar + filtrar), estilo
      lista de SharePoint/Excel — reemplaza la fila fija de filtros. ---------- */
   thead th.col-header-cell{padding:0;}
