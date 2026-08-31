@@ -3,6 +3,7 @@
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
 ## 2026-08-31
+- **"Registros de horas extras" (Informes) ahora muestra un resumen por Colaborador junto al selector de Mes** — total de cada tipo (Diurnas/Nocturnas/Diurnas Festivas/Nocturnas Festivas) y el total general de todos, del mes elegido.
 - **La lista de "Registros de horas extras" (Informes) quedó mucho más compacta y en 2 columnas lado a lado** — antes cada fila ocupaba mucho espacio vertical y con varios registros del mes había que hacer mucho scroll.
 - **La tabla de Horas Extras en Administración ahora muestra cuántas Tutelas, Impugnaciones y Otras contestaciones tenían vencimiento ese mismo día** (buscado en la lista de Tutelas) — le da contexto a quien aprueba, sin tener que ir a mirar la lista aparte. De paso se corrigió que la Fecha se mostraba con la hora completa pegada ("2026-08-31T07:00:00Z") en vez de solo la fecha.
 - **El registro de "Horas Extras" en Informes ahora tiene lista de registros con filtro de mes y botón Editar** — antes solo se veía un resumen agrupado (totales por persona/mes); ahora se ve cada registro por separado, con estado (Aprobada/Pendiente) y un botón para corregir uno mal cargado — se bloquea automáticamente en cuanto queda Aprobado.

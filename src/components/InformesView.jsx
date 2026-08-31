@@ -179,6 +179,31 @@ export default function InformesView({ procesos, clientes, facturas, ordenesComp
       return Number(y) === anioHoraExtra && Number(m)-1 === mesHoraExtra;
     })
     .sort((a,b) => String(b.Fecha||"").localeCompare(String(a.Fecha||"")));
+  // Resumen por Colaborador (pedido explícito del usuario, mismo día: "al
+  // lado un resumen de total de cada tipo de hora extra y todas sumadas")
+  // — mismo mes elegido arriba, TODOS los registros (aprobados o no, igual
+  // que la lista de al lado), sumando las 4 categorías + el total.
+  const resumenColaboradorHoraExtra = (() => {
+    const porColaborador = new Map();
+    registrosHoraExtraDelMes.forEach(h => {
+      const nombre = h.Colaborador || "Sin colaborador";
+      if(!porColaborador.has(nombre)) porColaborador.set(nombre, {diurnas:0, nocturnas:0, diurnasFestivas:0, nocturnasFestivas:0});
+      const g = porColaborador.get(nombre);
+      g.diurnas += Number(h.HorasDiurnas)||0;
+      g.nocturnas += Number(h.HorasNocturnas)||0;
+      g.diurnasFestivas += Number(h.HorasDiurnasFestivas)||0;
+      g.nocturnasFestivas += Number(h.HorasNocturnasFestivas)||0;
+    });
+    const nombres = Array.from(porColaborador.keys()).sort((a,b)=>a.localeCompare(b));
+    let totalGeneral = 0;
+    const grupos = nombres.map(nombre => {
+      const g = porColaborador.get(nombre);
+      const total = g.diurnas + g.nocturnas + g.diurnasFestivas + g.nocturnasFestivas;
+      totalGeneral += total;
+      return { colaborador: nombre, ...g, total };
+    });
+    return { grupos, totalGeneral };
+  })();
 
   const tutelasDelMesAbogados = filtrarTutelasPorMes(tutelas, anioAbogados, mesAbogados);
   const { grupos: gruposAbogados, totalGeneral: totalGeneralAbogados } = agruparPorAbogado(tutelasDelMesAbogados, valoresEntidad);
@@ -438,11 +463,40 @@ export default function InformesView({ procesos, clientes, facturas, ordenesComp
       <div className="panel" style={{marginTop:20}}>
         <div className="panel-head"><h3>Registros de horas extras</h3></div>
         <div className="panel-body">
-          <div className="field" style={{maxWidth:200, marginBottom:16}}>
-            <label>Mes</label>
-            <select value={mesHoraExtra} onChange={e => setMesHoraExtra(Number(e.target.value))}>
-              {MESES_NOMBRES.map((m,i) => <option key={m} value={i}>{m}</option>)}
-            </select>
+          {/* Resumen por Colaborador — pedido explícito del usuario, mismo
+              día: "al lado un resumen de total de cada tipo de hora extra y
+              todas sumadas", señalado con una captura marcando justo este
+              espacio (a la derecha del selector de Mes). Mismo mes elegido
+              abajo, TODOS los registros del mes (aprobados o no, igual que
+              la lista de al lado). */}
+          <div style={{display:'flex', alignItems:'flex-start', gap:16, flexWrap:'wrap', marginBottom:16}}>
+            <div className="field" style={{maxWidth:200}}>
+              <label>Mes</label>
+              <select value={mesHoraExtra} onChange={e => setMesHoraExtra(Number(e.target.value))}>
+                {MESES_NOMBRES.map((m,i) => <option key={m} value={i}>{m}</option>)}
+              </select>
+            </div>
+            {resumenColaboradorHoraExtra.grupos.length > 0 && (
+              <div style={{display:'flex', gap:10, flexWrap:'wrap', flex:1}}>
+                {resumenColaboradorHoraExtra.grupos.map(g => (
+                  <div key={g.colaborador} style={{padding:'7px 12px', background:'var(--gris-claro)', borderRadius:8, minWidth:230}}>
+                    <div style={{display:'flex', justifyContent:'space-between', gap:10, fontWeight:700, fontSize:12.5, color:'var(--verde-oscuro)'}}>
+                      <span>{g.colaborador}</span>
+                      <span>{g.total} h</span>
+                    </div>
+                    <div style={{display:'flex', gap:10, flexWrap:'wrap', fontSize:11, color:'var(--texto-suave)', marginTop:3}}>
+                      <span>Diurnas {g.diurnas}</span>
+                      <span>Nocturnas {g.nocturnas}</span>
+                      <span>Diurnas Fest. {g.diurnasFestivas}</span>
+                      <span>Nocturnas Fest. {g.nocturnasFestivas}</span>
+                    </div>
+                  </div>
+                ))}
+                <div style={{padding:'7px 14px', background:'var(--verde-claro)', borderRadius:8, display:'flex', alignItems:'center', gap:8, fontWeight:700, color:'var(--verde-oscuro)', fontSize:12.5}}>
+                  Total general: {resumenColaboradorHoraExtra.totalGeneral} horas
+                </div>
+              </div>
+            )}
           </div>
           {!registrosHoraExtraDelMes.length ? (
             <div className="empty-state empty-state-compact">No hay horas extras registradas en {MESES_NOMBRES[mesHoraExtra]} de {anioHoraExtra}.</div>
