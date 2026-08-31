@@ -2,9 +2,37 @@ import { useState } from 'react';
 import { IconTextButton } from './IconButton';
 import StackedBarChart from './StackedBarChart';
 import {
-  MESES_NOMBRES, filtrarHorasExtrasPorMes,
+  MESES_NOMBRES, filtrarHorasExtrasPorMes, soloFecha,
   agruparPorColaborador, colorDeTipoHoraExtra, generarPDFHorasExtras,
 } from '../lib/horasExtras';
+import { colorDeTipoRespuesta } from '../lib/informeAbogadosTutelas';
+
+// "Cajas visuales" del día — pedido explícito del usuario 2026-08-31, viendo
+// la tabla de aprobación en vivo: por cada hora extra, cuántas Tutelas,
+// Impugnaciones y Otras contestaciones tenían Vencimiento ESE mismo día —
+// le da contexto a quien aprueba (¿de verdad había carga de trabajo ese
+// día?) sin tener que ir a mirar la lista de Tutelas aparte.
+function contarTutelasDelDia(tutelas, fechaHoraExtra){
+  const dia = soloFecha(fechaHoraExtra);
+  const conteo = { TUTELA:0, IMPUGNACION:0, Otras:0 };
+  (tutelas||[]).forEach(t => {
+    if(soloFecha(t.FechaVencimiento) !== dia) return;
+    const tipo = (t.TipoRespuesta||"").trim().toUpperCase();
+    if(tipo === 'TUTELA') conteo.TUTELA++;
+    else if(tipo === 'IMPUGNACION') conteo.IMPUGNACION++;
+    else conteo.Otras++;
+  });
+  return conteo;
+}
+const CAJA_ESTILO = { display:'inline-flex', flexDirection:'column', alignItems:'center', minWidth:44, padding:'3px 6px', borderRadius:6, background:'var(--gris-claro)' };
+function CajaConteo({ label, valor, color }){
+  return (
+    <div style={CAJA_ESTILO}>
+      <span style={{fontWeight:700, fontSize:14, color}}>{valor}</span>
+      <span style={{fontSize:9.5, color:'var(--texto-suave)', textTransform:'uppercase', letterSpacing:'.02em'}}>{label}</span>
+    </div>
+  );
+}
 
 // "Horas Extras" (Administración) — pedido explícito del usuario 2026-08-31.
 // El REGISTRO se movió a Informes ("la idea es que el trabajador en informes
@@ -16,7 +44,7 @@ import {
 // Festivas (normatividad colombiana real, sin calcular pesos — el usuario
 // pidió explícitamente solo la cantidad de horas). Ver [[project_horas_extras]]
 // y lib/horasExtras.js.
-export default function HorasExtrasTab({ horasExtras, onAprobarHoraExtra, notify }){
+export default function HorasExtrasTab({ horasExtras, tutelas, onAprobarHoraExtra, notify }){
   const [generandoPDF, setGenerandoPDF] = useState(false);
   const hoyRef = new Date();
   const [mes, setMes] = useState(hoyRef.getMonth());
@@ -48,26 +76,37 @@ export default function HorasExtrasTab({ horasExtras, onAprobarHoraExtra, notify
               <tr>
                 <th>Colaborador</th><th>Fecha</th><th>Horario</th>
                 <th>Diurnas</th><th>Nocturnas</th><th>Diurnas Fest.</th><th>Nocturnas Fest.</th>
+                <th>Tutelas del día</th>
                 <th>Observaciones</th><th>Aprobado</th>
               </tr>
             </thead>
             <tbody>
-              {registros.length ? registros.map(h => (
+              {registros.length ? registros.map(h => {
+                const conteo = contarTutelasDelDia(tutelas, h.Fecha);
+                return (
                 <tr key={h.id}>
                   <td className="cliente">{h.Colaborador || "—"}</td>
-                  <td>{h.Fecha || "—"}</td>
+                  <td>{soloFecha(h.Fecha)}</td>
                   <td>{h.HoraInicio || "—"} - {h.HoraFin || "—"}</td>
                   <td>{h.HorasDiurnas || 0}</td>
                   <td>{h.HorasNocturnas || 0}</td>
                   <td>{h.HorasDiurnasFestivas || 0}</td>
                   <td>{h.HorasNocturnasFestivas || 0}</td>
+                  <td>
+                    <div style={{display:'flex', gap:6}}>
+                      <CajaConteo label="Tutelas" valor={conteo.TUTELA} color={colorDeTipoRespuesta('TUTELA')} />
+                      <CajaConteo label="Impugn." valor={conteo.IMPUGNACION} color={colorDeTipoRespuesta('IMPUGNACION')} />
+                      <CajaConteo label="Otras" valor={conteo.Otras} color="var(--texto-suave)" />
+                    </div>
+                  </td>
                   <td>{h.Observaciones || "—"}</td>
                   <td className="linea-pago-check">
                     <input type="checkbox" checked={!!h.Aprobado} onChange={e => onAprobarHoraExtra?.(h.id, e.target.checked)} />
                   </td>
                 </tr>
-              )) : (
-                <tr><td colSpan={9}><div className="empty-state empty-state-compact">Todavía no hay horas extras registradas.</div></td></tr>
+                );
+              }) : (
+                <tr><td colSpan={10}><div className="empty-state empty-state-compact">Todavía no hay horas extras registradas.</div></td></tr>
               )}
             </tbody>
           </table>

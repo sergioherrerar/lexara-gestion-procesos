@@ -1279,6 +1279,30 @@ export function useLexaraApp(){
     }
     notify("Guardado con éxito en Lexara", 'success');
   }
+  // Editar una hora extra ya registrada (Informes, "botón de editar por si
+  // algo quedó mal") — pedido explícito del usuario 2026-08-31, MISMO día que
+  // se agregó el registro ahí. Bloqueado en el código (no solo ocultando el
+  // botón en la UI) si ya está Aprobada — "después de aprobados no se pueden
+  // modificar" — así ni una llamada directa a esta función podría saltarse la
+  // regla.
+  async function editarHoraExtra(id, updates){
+    const hora = horasExtras.find(h => h.id===id);
+    if(!hora) return;
+    if(hora.Aprobado){ notify("Esta hora extra ya fue aprobada, no se puede modificar.", 'error'); return; }
+    setHorasExtras(prev => prev.map(h => h.id===id ? {...h, ...updates} : h));
+    if(liveMode){
+      setSaving(true);
+      const list = listByKey('horasExtras');
+      const fields = await Graph.graphFieldsFromUpdates(list.siteId || siteId, list, updates);
+      try{
+        await Graph.graphFetch(`/sites/${list.siteId || siteId}/lists/${list.listId}/items/${hora._graphId || hora.id}/fields`, {
+          method:"PATCH", body: JSON.stringify(fields)
+        });
+      }catch(err){ console.error(err); notify("No se pudo guardar los cambios en SharePoint: " + err.message, 'error'); setSaving(false); return; }
+      setSaving(false);
+    }
+    notify("Guardado con éxito en Lexara", 'success');
+  }
 
   return {
     config, saveConfig, clearConfig,
@@ -1304,6 +1328,6 @@ export function useLexaraApp(){
     activeDesistimiento, openDesistimiento, newDesistimientoFromProceso, closeDesistimientoDrawer, saveDesistimiento, deleteDesistimiento,
     activeTutela, openTutela, newTutela, duplicateTutela, closeTutelaDrawer, saveTutela, deleteTutela, corregirEntidadFaltanteTutelas,
     createTema, saveTema, createValorEntidad, saveValorEntidad,
-    createHoraExtra, aprobarHoraExtra,
+    createHoraExtra, aprobarHoraExtra, editarHoraExtra,
   };
 }

@@ -144,6 +144,7 @@ export default function AdministracionView({ colaboradores, searchQuery, onOpenC
       {tab==='horasExtras' && (
         <HorasExtrasTab
           horasExtras={horasExtras}
+          tutelas={tutelas}
           onAprobarHoraExtra={onAprobarHoraExtra}
           notify={notify}
         />

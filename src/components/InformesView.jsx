@@ -17,7 +17,7 @@ import { generarInformeTutelasPDF, abrirCorreoTutelas, enviarBorradorTutelasGrap
 import { generarInformeGeneralProcesosExcel } from '../lib/informeGeneral';
 import { agruparPorAbogado, filtrarTutelasPorMes, generarInformeAbogadosTutelasExcel, colorDeTipoRespuesta, MESES_NOMBRES } from '../lib/informeAbogadosTutelas';
 import StackedBarChart from './StackedBarChart';
-import { clasificarHorasExtra } from '../lib/horasExtras';
+import { clasificarHorasExtra, soloFecha } from '../lib/horasExtras';
 
 // Entidades con formato de informe formal ya confirmado, y qué generador usa
 // cada una — cada Entidad puede tener un formato distinto (columnas/orden
@@ -53,7 +53,7 @@ function entidadDeCliente(clientes, codigoClienteOrNombre, matchFn){
   return matchFn(clientes, codigoClienteOrNombre)?.Entidad || "Sin dato";
 }
 
-export default function InformesView({ procesos, clientes, facturas, ordenesCompra, desistimientos, tutelas, valoresEntidad, notify, liveMode, config, requestConfirm, corregirEntidadFaltanteTutelas, colaboradores, onCreateHoraExtra, horasExtras }){
+export default function InformesView({ procesos, clientes, facturas, ordenesCompra, desistimientos, tutelas, valoresEntidad, notify, liveMode, config, requestConfirm, corregirEntidadFaltanteTutelas, colaboradores, onCreateHoraExtra, onEditarHoraExtra, horasExtras }){
   const [generando, setGenerando] = useState(null); // nombre de la entidad mientras genera el Excel
   const [generandoPDF, setGenerandoPDF] = useState(null); // nombre de la entidad mientras genera el PDF
   const [generandoDesistimientos, setGenerandoDesistimientos] = useState(null);
@@ -120,6 +120,15 @@ export default function InformesView({ procesos, clientes, facturas, ordenesComp
   const HORA_EXTRA_VACIA = { Colaborador:"", Fecha:"", HoraInicio:"", HoraFin:"", Observaciones:"" };
   const [horaExtraForm, setHoraExtraForm] = useState(HORA_EXTRA_VACIA);
   const [registrandoHoraExtra, setRegistrandoHoraExtra] = useState(false);
+  // "Editar por si algo quedó mal" (pedido explícito del usuario, mismo día)
+  // — al hacer clic en Editar en la lista de abajo, se precarga el mismo
+  // formulario de arriba (editandoHoraExtraId != null) y "Registrar" pasa a
+  // decir "Guardar cambios", llamando onEditarHoraExtra en vez de crear uno
+  // nuevo. Bloqueado (botón oculto) si esa hora extra ya está Aprobada —
+  // "después de aprobados no se pueden modificar" — también reforzado del
+  // lado del hook (ver editarHoraExtra en useLexaraApp.js).
+  const [editandoHoraExtraId, setEditandoHoraExtraId] = useState(null);
+  const [mesHoraExtra, setMesHoraExtra] = useState(hoyRef.getMonth());
   const colaboradoresActivos = [...(colaboradores||[])]
     .filter(c => (c.Activo||"Sí") !== "No")
     .sort((a,b) => (a.Nombre||"").localeCompare(b.Nombre||""));
@@ -127,6 +136,14 @@ export default function InformesView({ procesos, clientes, facturas, ordenesComp
     ? clasificarHorasExtra(horaExtraForm.Fecha, horaExtraForm.HoraInicio, horaExtraForm.HoraFin)
     : null;
   function setHoraExtraField(key, value){ setHoraExtraForm(prev => ({...prev, [key]: value})); }
+  function handleEditarHoraExtraClick(h){
+    setEditandoHoraExtraId(h.id);
+    setHoraExtraForm({ Colaborador: h.Colaborador||"", Fecha: h.Fecha||"", HoraInicio: h.HoraInicio||"", HoraFin: h.HoraFin||"", Observaciones: h.Observaciones||"" });
+  }
+  function handleCancelarEdicionHoraExtra(){
+    setEditandoHoraExtraId(null);
+    setHoraExtraForm(HORA_EXTRA_VACIA);
+  }
   async function handleRegistrarHoraExtra(){
     if(!horaExtraForm.Colaborador || !horaExtraForm.Fecha || !horaExtraForm.HoraInicio || !horaExtraForm.HoraFin){
       notify?.("Completa Colaborador, Fecha, Hora inicio y Hora fin antes de registrar.", 'error');
@@ -139,30 +156,29 @@ export default function InformesView({ procesos, clientes, facturas, ordenesComp
     }
     setRegistrandoHoraExtra(true);
     try{
-      await onCreateHoraExtra?.({
+      const datos = {
         Colaborador: horaExtraForm.Colaborador, Fecha: horaExtraForm.Fecha, HoraInicio: horaExtraForm.HoraInicio, HoraFin: horaExtraForm.HoraFin,
         Observaciones: horaExtraForm.Observaciones, ...clasificado,
-      });
+      };
+      if(editandoHoraExtraId) await onEditarHoraExtra?.(editandoHoraExtraId, datos);
+      else await onCreateHoraExtra?.(datos);
+      setEditandoHoraExtraId(null);
       setHoraExtraForm(HORA_EXTRA_VACIA);
     } finally { setRegistrandoHoraExtra(false); }
   }
-  // Histórico por trabajador y mes (pedido explícito del usuario, mismo
-  // día): en Informes solo se ve el histórico (cuántas horas registró cada
-  // quien, aprobadas o no) — NO se puede aprobar desde acá, eso sigue en
-  // Administración (ver HorasExtrasTab.jsx).
-  const historicoHorasExtras = (() => {
-    const porGrupo = new Map();
-    (horasExtras||[]).forEach(h => {
-      const mes = String(h.Fecha||"").slice(0,7); // "YYYY-MM"
-      if(!mes) return;
-      const key = h.Colaborador + '|' + mes;
-      if(!porGrupo.has(key)) porGrupo.set(key, { colaborador: h.Colaborador, mes, horas: 0, aprobadas: 0, pendientes: 0 });
-      const g = porGrupo.get(key);
-      g.horas += (Number(h.HorasDiurnas)||0) + (Number(h.HorasNocturnas)||0) + (Number(h.HorasDiurnasFestivas)||0) + (Number(h.HorasNocturnasFestivas)||0);
-      if(h.Aprobado) g.aprobadas++; else g.pendientes++;
-    });
-    return Array.from(porGrupo.values()).sort((a,b) => b.mes.localeCompare(a.mes) || (a.colaborador||"").localeCompare(b.colaborador||""));
-  })();
+  // Lista de registros (pedido explícito del usuario, mismo día: "para saber
+  // cuántos se ingresaron... botón de editar... lista desplegable para
+  // filtrar por mes") — ya NO es un resumen agrupado, es el detalle
+  // registro-por-registro del mes elegido. La aprobación sigue siendo SOLO
+  // en Administración (ver HorasExtrasTab.jsx) — acá el chulo es de solo
+  // lectura (badge), no un checkbox.
+  const anioHoraExtra = hoyRef.getFullYear();
+  const registrosHoraExtraDelMes = (horasExtras||[])
+    .filter(h => {
+      const [y,m] = String(h.Fecha||"").split('-');
+      return Number(y) === anioHoraExtra && Number(m)-1 === mesHoraExtra;
+    })
+    .sort((a,b) => String(b.Fecha||"").localeCompare(String(a.Fecha||"")));
 
   const tutelasDelMesAbogados = filtrarTutelasPorMes(tutelas, anioAbogados, mesAbogados);
   const { grupos: gruposAbogados, totalGeneral: totalGeneralAbogados } = agruparPorAbogado(tutelasDelMesAbogados, valoresEntidad);
@@ -408,33 +424,49 @@ export default function InformesView({ procesos, clientes, facturas, ordenesComp
               <span>Nocturnas Festivas: <strong>{previewHoraExtra.HorasNocturnasFestivas}</strong></span>
             </div>
           )}
-          <IconTextButton icon="add" variant="primary" onClick={handleRegistrarHoraExtra} disabled={registrandoHoraExtra}>
-            {registrandoHoraExtra ? "Registrando…" : "Registrar hora extra"}
-          </IconTextButton>
+          <div style={{display:'flex', gap:10}}>
+            <IconTextButton icon="add" variant="primary" onClick={handleRegistrarHoraExtra} disabled={registrandoHoraExtra}>
+              {registrandoHoraExtra ? "Guardando…" : (editandoHoraExtraId ? "Guardar cambios" : "Registrar hora extra")}
+            </IconTextButton>
+            {editandoHoraExtraId && (
+              <button type="button" className="btn-secondary" onClick={handleCancelarEdicionHoraExtra}>Cancelar</button>
+            )}
+          </div>
         </div>
       </div>
 
       <div className="panel" style={{marginTop:20}}>
-        <div className="panel-head"><h3>Histórico de horas extras</h3></div>
-        <div className="panel-body" style={{padding:0}}>
-          {!historicoHorasExtras.length ? (
-            <div className="empty-state empty-state-compact">Todavía no hay horas extras registradas.</div>
+        <div className="panel-head"><h3>Registros de horas extras</h3></div>
+        <div className="panel-body">
+          <div className="field" style={{maxWidth:200, marginBottom:16}}>
+            <label>Mes</label>
+            <select value={mesHoraExtra} onChange={e => setMesHoraExtra(Number(e.target.value))}>
+              {MESES_NOMBRES.map((m,i) => <option key={m} value={i}>{m}</option>)}
+            </select>
+          </div>
+          {!registrosHoraExtraDelMes.length ? (
+            <div className="empty-state empty-state-compact">No hay horas extras registradas en {MESES_NOMBRES[mesHoraExtra]} de {anioHoraExtra}.</div>
           ) : (
             <div className="table-wrap">
               <table>
                 <thead>
-                  <tr><th>Colaborador</th><th>Mes</th><th>Total horas</th><th>Aprobadas</th><th>Pendientes</th></tr>
+                  <tr><th>Colaborador</th><th>Fecha</th><th>Horario</th><th>Total horas</th><th>Estado</th><th>Editar</th></tr>
                 </thead>
                 <tbody>
-                  {historicoHorasExtras.map(g => {
-                    const [y,m] = g.mes.split('-');
+                  {registrosHoraExtraDelMes.map(h => {
+                    const total = (Number(h.HorasDiurnas)||0) + (Number(h.HorasNocturnas)||0) + (Number(h.HorasDiurnasFestivas)||0) + (Number(h.HorasNocturnasFestivas)||0);
                     return (
-                      <tr key={g.colaborador+g.mes}>
-                        <td className="cliente">{g.colaborador || "—"}</td>
-                        <td>{MESES_NOMBRES[Number(m)-1]} {y}</td>
-                        <td>{g.horas}</td>
-                        <td><span className="badge badge-verde">{g.aprobadas}</span></td>
-                        <td>{g.pendientes > 0 ? <span className="badge badge-naranja">{g.pendientes}</span> : <span className="save-hint">0</span>}</td>
+                      <tr key={h.id}>
+                        <td className="cliente">{h.Colaborador || "—"}</td>
+                        <td>{soloFecha(h.Fecha)}</td>
+                        <td>{h.HoraInicio || "—"} - {h.HoraFin || "—"}</td>
+                        <td>{total}</td>
+                        <td>{h.Aprobado ? <span className="badge badge-verde">Aprobada</span> : <span className="badge badge-naranja">Pendiente</span>}</td>
+                        <td>
+                          {h.Aprobado
+                            ? <span className="save-hint" style={{fontSize:12}}>No editable</span>
+                            : <IconButton icon="edit" variant="edit" label={`Editar hora extra de ${h.Colaborador}`} onClick={() => handleEditarHoraExtraClick(h)} />}
+                        </td>
                       </tr>
                     );
                   })}

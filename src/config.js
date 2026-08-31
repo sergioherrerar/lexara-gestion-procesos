@@ -928,8 +928,8 @@ export const DEMO_TUTELAS = [
 // vienen calculadas (así se guardan de verdad, ver clasificarHorasExtra en
 // lib/horasExtras.js) para no depender del cálculo de festivos en el demo.
 export const DEMO_HORAS_EXTRAS = [
-  {id:1, Colaborador:"Ariana Martin Mendoza", Fecha:"2026-08-05", HoraInicio:"18:00", HoraFin:"19:30", HorasDiurnas:1, HorasNocturnas:0.5, HorasDiurnasFestivas:0, HorasNocturnasFestivas:0, Aprobado:true, Observaciones:""},
-  {id:2, Colaborador:"Ariana Martin Mendoza", Fecha:"2026-08-16", HoraInicio:"20:00", HoraFin:"22:30", HorasDiurnas:0, HorasNocturnas:2.5, HorasDiurnasFestivas:0, HorasNocturnasFestivas:0, Aprobado:false, Observaciones:""},
+  {id:1, Colaborador:"Ariana Andrea Torres", Fecha:"2026-08-05", HoraInicio:"18:00", HoraFin:"19:30", HorasDiurnas:1, HorasNocturnas:0.5, HorasDiurnasFestivas:0, HorasNocturnasFestivas:0, Aprobado:true, Observaciones:""},
+  {id:2, Colaborador:"Ariana Andrea Torres", Fecha:"2026-08-16", HoraInicio:"20:00", HoraFin:"22:30", HorasDiurnas:0, HorasNocturnas:2.5, HorasDiurnasFestivas:0, HorasNocturnasFestivas:0, Aprobado:false, Observaciones:""},
   {id:3, Colaborador:"Daniel Santiago Flechas", Fecha:"2026-08-09", HoraInicio:"20:00", HoraFin:"22:00", HorasDiurnas:0, HorasNocturnas:0, HorasDiurnasFestivas:0, HorasNocturnasFestivas:2, Aprobado:true, Observaciones:"Domingo — apoyo turno de tutelas"},
 ];
 

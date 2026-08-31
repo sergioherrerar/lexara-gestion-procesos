@@ -135,6 +135,12 @@ export function clasificarHorasExtra(fechaISO, horaInicioStr, horaFinStr){
   return out;
 }
 
+// Muestra solo la parte de fecha ("2026-08-31") de un valor que puede venir
+// como fecha simple (demo) o como fecha y hora completa de SharePoint
+// ("2026-08-31T07:00:00Z") — sin esto se imprimía el string crudo tal cual
+// en las tablas de Informes/Administración.
+export function soloFecha(v){ return String(v||"").slice(0,10) || "—"; }
+
 export function filtrarHorasExtrasPorMes(horasExtras, anio, mesIndex0, soloAprobadas = true){
   return (horasExtras||[]).filter(h => {
     if(soloAprobadas && !h.Aprobado) return false;
