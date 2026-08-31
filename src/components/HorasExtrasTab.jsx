@@ -1,58 +1,26 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { IconTextButton } from './IconButton';
 import StackedBarChart from './StackedBarChart';
 import {
-  MESES_NOMBRES, clasificarHorasExtra, filtrarHorasExtrasPorMes,
+  MESES_NOMBRES, filtrarHorasExtrasPorMes,
   agruparPorColaborador, colorDeTipoHoraExtra, generarPDFHorasExtras,
 } from '../lib/horasExtras';
 
-// "Horas Extras" (Administración) — pedido explícito del usuario 2026-08-31,
-// TODO dentro de Administración (registrar, aprobar y ver el resumen), no en
-// Informes, porque es información sensible por persona (mismo criterio que
-// se aplicó al retirar "Tutelas por Cliente" de Informes). La app calcula
-// sola Diurnas/Nocturnas/Diurnas Festivas/Nocturnas Festivas (normatividad
-// colombiana real, sin calcular pesos — el usuario pidió explícitamente solo
-// la cantidad de horas). Ver [[project_horas_extras]] y lib/horasExtras.js.
-const FORM_VACIO = { Colaborador:"", Fecha:"", HoraInicio:"", HoraFin:"", Observaciones:"" };
-
-export default function HorasExtrasTab({ horasExtras, colaboradores, onCreateHoraExtra, onAprobarHoraExtra, notify }){
-  const [form, setForm] = useState(FORM_VACIO);
-  const [guardando, setGuardando] = useState(false);
+// "Horas Extras" (Administración) — pedido explícito del usuario 2026-08-31.
+// El REGISTRO se movió a Informes ("la idea es que el trabajador en informes
+// llene sus horas extras y ya en administración se les da la aprobación") —
+// acá solo queda la aprobación (chulo) y la relación mensual (gráfico +
+// tarjetas + PDF), restringido a Administrador — es información sensible por
+// persona, mismo criterio que se aplicó al retirar "Tutelas por Cliente" de
+// Informes. La app calcula sola Diurnas/Nocturnas/Diurnas Festivas/Nocturnas
+// Festivas (normatividad colombiana real, sin calcular pesos — el usuario
+// pidió explícitamente solo la cantidad de horas). Ver [[project_horas_extras]]
+// y lib/horasExtras.js.
+export default function HorasExtrasTab({ horasExtras, onAprobarHoraExtra, notify }){
   const [generandoPDF, setGenerandoPDF] = useState(false);
   const hoyRef = new Date();
   const [mes, setMes] = useState(hoyRef.getMonth());
   const [anio] = useState(hoyRef.getFullYear());
-
-  const activos = [...(colaboradores||[])]
-    .filter(c => (c.Activo||"Sí") !== "No")
-    .sort((a,b) => (a.Nombre||"").localeCompare(b.Nombre||""));
-
-  const preview = useMemo(() => {
-    if(!form.Fecha || !form.HoraInicio || !form.HoraFin) return null;
-    return clasificarHorasExtra(form.Fecha, form.HoraInicio, form.HoraFin);
-  }, [form.Fecha, form.HoraInicio, form.HoraFin]);
-
-  function setField(key, value){ setForm(prev => ({...prev, [key]: value})); }
-
-  async function handleRegistrar(){
-    if(!form.Colaborador || !form.Fecha || !form.HoraInicio || !form.HoraFin){
-      notify?.("Completa Colaborador, Fecha, Hora inicio y Hora fin antes de registrar.", 'error');
-      return;
-    }
-    const clasificado = clasificarHorasExtra(form.Fecha, form.HoraInicio, form.HoraFin);
-    if(!clasificado.HorasDiurnas && !clasificado.HorasNocturnas && !clasificado.HorasDiurnasFestivas && !clasificado.HorasNocturnasFestivas){
-      notify?.("La hora de fin debe ser distinta a la hora de inicio.", 'error');
-      return;
-    }
-    setGuardando(true);
-    try{
-      await onCreateHoraExtra?.({
-        Colaborador: form.Colaborador, Fecha: form.Fecha, HoraInicio: form.HoraInicio, HoraFin: form.HoraFin,
-        Observaciones: form.Observaciones, ...clasificado,
-      });
-      setForm(FORM_VACIO);
-    } finally { setGuardando(false); }
-  }
 
   async function handleDescargarPDF(){
     setGenerandoPDF(true);
@@ -71,49 +39,10 @@ export default function HorasExtrasTab({ horasExtras, colaboradores, onCreateHor
       <div className="panel-head"><h3>Horas Extras</h3></div>
       <div className="panel-body">
         <p style={{margin:'0 0 16px', color:'var(--texto-suave)', fontSize:13}}>
-          Registra Colaborador, Fecha y horario — la app calcula sola cuántas horas son Diurnas (6:00 a.m.–7:00 p.m.), Nocturnas (7:00 p.m.–6:00 a.m.) y si el día es domingo/festivo colombiano. Solo cuentan para el resumen mensual las horas ya <strong>Aprobadas</strong>.
+          El registro lo hace cada colaborador desde Informes — acá se aprueba (chulo) y se ve la relación mensual. Solo cuentan para el resumen mensual las horas ya <strong>Aprobadas</strong>.
         </p>
 
-        <div className="form-grid" style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(160px,1fr))', gap:14, marginBottom:8}}>
-          <div className="field">
-            <label>Colaborador</label>
-            <select value={form.Colaborador} onChange={e => setField('Colaborador', e.target.value)}>
-              <option value="">— Selecciona —</option>
-              {activos.map(c => <option key={c.id} value={c.Nombre}>{c.Nombre}</option>)}
-            </select>
-          </div>
-          <div className="field">
-            <label>Fecha</label>
-            <input type="date" value={form.Fecha} onChange={e => setField('Fecha', e.target.value)} />
-          </div>
-          <div className="field">
-            <label>Hora inicio</label>
-            <input type="time" value={form.HoraInicio} onChange={e => setField('HoraInicio', e.target.value)} />
-          </div>
-          <div className="field">
-            <label>Hora fin</label>
-            <input type="time" value={form.HoraFin} onChange={e => setField('HoraFin', e.target.value)} />
-          </div>
-          <div className="field" style={{gridColumn:'1 / -1'}}>
-            <label>Observaciones (opcional)</label>
-            <input type="text" value={form.Observaciones} onChange={e => setField('Observaciones', e.target.value)} placeholder="Ej: apoyo turno de tutelas" />
-          </div>
-        </div>
-
-        {preview && (
-          <div style={{display:'flex', gap:16, flexWrap:'wrap', margin:'0 0 14px', padding:'10px 14px', background:'var(--gris-claro)', borderRadius:8, fontSize:12.5}}>
-            <span>Diurnas: <strong>{preview.HorasDiurnas}</strong></span>
-            <span>Nocturnas: <strong>{preview.HorasNocturnas}</strong></span>
-            <span>Diurnas Festivas: <strong>{preview.HorasDiurnasFestivas}</strong></span>
-            <span>Nocturnas Festivas: <strong>{preview.HorasNocturnasFestivas}</strong></span>
-          </div>
-        )}
-
-        <IconTextButton icon="add" variant="primary" onClick={handleRegistrar} disabled={guardando}>
-          {guardando ? "Registrando…" : "Registrar hora extra"}
-        </IconTextButton>
-
-        <div className="table-wrap" style={{marginTop:24}}>
+        <div className="table-wrap">
           <table>
             <thead>
               <tr>

@@ -89,7 +89,7 @@ function DocumentosTab({ config }){
   );
 }
 
-export default function AdministracionView({ colaboradores, searchQuery, onOpenColaborador, onCreateColaborador, onDeleteColaborador, canWrite = true, notify, liveMode, config, tutelas, valoresEntidad, clientes, procesos, onAbrirBorradorOrdenCompra, onAbrirBorradorFactura, horasExtras, onCreateHoraExtra, onAprobarHoraExtra }){
+export default function AdministracionView({ colaboradores, searchQuery, onOpenColaborador, onCreateColaborador, onDeleteColaborador, canWrite = true, notify, liveMode, config, tutelas, valoresEntidad, clientes, procesos, onAbrirBorradorOrdenCompra, onAbrirBorradorFactura, horasExtras, onAprobarHoraExtra }){
   const [tab, setTab] = useState('colaboradores');
   return (
     <div className="view">
@@ -144,8 +144,6 @@ export default function AdministracionView({ colaboradores, searchQuery, onOpenC
       {tab==='horasExtras' && (
         <HorasExtrasTab
           horasExtras={horasExtras}
-          colaboradores={colaboradores}
-          onCreateHoraExtra={onCreateHoraExtra}
           onAprobarHoraExtra={onAprobarHoraExtra}
           notify={notify}
         />

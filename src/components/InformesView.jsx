@@ -17,6 +17,7 @@ import { generarInformeTutelasPDF, abrirCorreoTutelas, enviarBorradorTutelasGrap
 import { generarInformeGeneralProcesosExcel } from '../lib/informeGeneral';
 import { agruparPorAbogado, filtrarTutelasPorMes, generarInformeAbogadosTutelasExcel, colorDeTipoRespuesta, MESES_NOMBRES } from '../lib/informeAbogadosTutelas';
 import StackedBarChart from './StackedBarChart';
+import { clasificarHorasExtra } from '../lib/horasExtras';
 
 // Entidades con formato de informe formal ya confirmado, y qué generador usa
 // cada una — cada Entidad puede tener un formato distinto (columnas/orden
@@ -52,7 +53,7 @@ function entidadDeCliente(clientes, codigoClienteOrNombre, matchFn){
   return matchFn(clientes, codigoClienteOrNombre)?.Entidad || "Sin dato";
 }
 
-export default function InformesView({ procesos, clientes, facturas, ordenesCompra, desistimientos, tutelas, valoresEntidad, notify, liveMode, config, requestConfirm, corregirEntidadFaltanteTutelas }){
+export default function InformesView({ procesos, clientes, facturas, ordenesCompra, desistimientos, tutelas, valoresEntidad, notify, liveMode, config, requestConfirm, corregirEntidadFaltanteTutelas, colaboradores, onCreateHoraExtra, horasExtras }){
   const [generando, setGenerando] = useState(null); // nombre de la entidad mientras genera el Excel
   const [generandoPDF, setGenerandoPDF] = useState(null); // nombre de la entidad mientras genera el PDF
   const [generandoDesistimientos, setGenerandoDesistimientos] = useState(null);
@@ -108,6 +109,60 @@ export default function InformesView({ procesos, clientes, facturas, ordenesComp
       notify?.("No se pudo generar el informe del cliente: " + err.message, 'error');
     }
   }
+
+  // Horas Extras — REGISTRO, movido a Informes 2026-08-31 (pedido explícito
+  // del usuario: "la idea es que el trabajador en informes llene sus horas
+  // extras y ya en administración se les da la aprobación"). Acá solo vive
+  // el formulario (cualquiera con acceso a Informes lo puede usar, "informes"
+  // está siempre visible para todos los roles — ver permissions.js); la
+  // aprobación y el resumen mensual siguen SOLO en Administración
+  // (Administrador), ver HorasExtrasTab.jsx / [[project_horas_extras]].
+  const HORA_EXTRA_VACIA = { Colaborador:"", Fecha:"", HoraInicio:"", HoraFin:"", Observaciones:"" };
+  const [horaExtraForm, setHoraExtraForm] = useState(HORA_EXTRA_VACIA);
+  const [registrandoHoraExtra, setRegistrandoHoraExtra] = useState(false);
+  const colaboradoresActivos = [...(colaboradores||[])]
+    .filter(c => (c.Activo||"Sí") !== "No")
+    .sort((a,b) => (a.Nombre||"").localeCompare(b.Nombre||""));
+  const previewHoraExtra = (horaExtraForm.Fecha && horaExtraForm.HoraInicio && horaExtraForm.HoraFin)
+    ? clasificarHorasExtra(horaExtraForm.Fecha, horaExtraForm.HoraInicio, horaExtraForm.HoraFin)
+    : null;
+  function setHoraExtraField(key, value){ setHoraExtraForm(prev => ({...prev, [key]: value})); }
+  async function handleRegistrarHoraExtra(){
+    if(!horaExtraForm.Colaborador || !horaExtraForm.Fecha || !horaExtraForm.HoraInicio || !horaExtraForm.HoraFin){
+      notify?.("Completa Colaborador, Fecha, Hora inicio y Hora fin antes de registrar.", 'error');
+      return;
+    }
+    const clasificado = clasificarHorasExtra(horaExtraForm.Fecha, horaExtraForm.HoraInicio, horaExtraForm.HoraFin);
+    if(!clasificado.HorasDiurnas && !clasificado.HorasNocturnas && !clasificado.HorasDiurnasFestivas && !clasificado.HorasNocturnasFestivas){
+      notify?.("La hora de fin debe ser distinta a la hora de inicio.", 'error');
+      return;
+    }
+    setRegistrandoHoraExtra(true);
+    try{
+      await onCreateHoraExtra?.({
+        Colaborador: horaExtraForm.Colaborador, Fecha: horaExtraForm.Fecha, HoraInicio: horaExtraForm.HoraInicio, HoraFin: horaExtraForm.HoraFin,
+        Observaciones: horaExtraForm.Observaciones, ...clasificado,
+      });
+      setHoraExtraForm(HORA_EXTRA_VACIA);
+    } finally { setRegistrandoHoraExtra(false); }
+  }
+  // Histórico por trabajador y mes (pedido explícito del usuario, mismo
+  // día): en Informes solo se ve el histórico (cuántas horas registró cada
+  // quien, aprobadas o no) — NO se puede aprobar desde acá, eso sigue en
+  // Administración (ver HorasExtrasTab.jsx).
+  const historicoHorasExtras = (() => {
+    const porGrupo = new Map();
+    (horasExtras||[]).forEach(h => {
+      const mes = String(h.Fecha||"").slice(0,7); // "YYYY-MM"
+      if(!mes) return;
+      const key = h.Colaborador + '|' + mes;
+      if(!porGrupo.has(key)) porGrupo.set(key, { colaborador: h.Colaborador, mes, horas: 0, aprobadas: 0, pendientes: 0 });
+      const g = porGrupo.get(key);
+      g.horas += (Number(h.HorasDiurnas)||0) + (Number(h.HorasNocturnas)||0) + (Number(h.HorasDiurnasFestivas)||0) + (Number(h.HorasNocturnasFestivas)||0);
+      if(h.Aprobado) g.aprobadas++; else g.pendientes++;
+    });
+    return Array.from(porGrupo.values()).sort((a,b) => b.mes.localeCompare(a.mes) || (a.colaborador||"").localeCompare(b.colaborador||""));
+  })();
 
   const tutelasDelMesAbogados = filtrarTutelasPorMes(tutelas, anioAbogados, mesAbogados);
   const { grupos: gruposAbogados, totalGeneral: totalGeneralAbogados } = agruparPorAbogado(tutelasDelMesAbogados, valoresEntidad);
@@ -312,6 +367,82 @@ export default function InformesView({ procesos, clientes, facturas, ordenesComp
           {clientesDistintos.map(c => <option key={c} value={c}>{c}</option>)}
         </select>
         <IconTextButton icon="html" variant="primary" onClick={handleDescargarInformeCliente} disabled={!clienteInforme}>Descargar informe del cliente</IconTextButton>
+      </div>
+
+      <div className="panel" style={{marginTop:20}}>
+        <div className="panel-head"><h3>Registrar hora extra</h3></div>
+        <div className="panel-body">
+          <p style={{margin:'0 0 16px', color:'var(--texto-suave)', fontSize:13}}>
+            Registra tu Fecha y horario — la app calcula sola cuántas horas son Diurnas (6:00 a.m.–7:00 p.m.), Nocturnas (7:00 p.m.–6:00 a.m.) y si el día es domingo/festivo. La aprobación y el resumen mensual los ve Administración.
+          </p>
+          <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(160px,1fr))', gap:14, marginBottom:8}}>
+            <div className="field">
+              <label>Colaborador</label>
+              <select value={horaExtraForm.Colaborador} onChange={e => setHoraExtraField('Colaborador', e.target.value)}>
+                <option value="">— Selecciona —</option>
+                {colaboradoresActivos.map(c => <option key={c.id} value={c.Nombre}>{c.Nombre}</option>)}
+              </select>
+            </div>
+            <div className="field">
+              <label>Fecha</label>
+              <input type="date" value={horaExtraForm.Fecha} onChange={e => setHoraExtraField('Fecha', e.target.value)} />
+            </div>
+            <div className="field">
+              <label>Hora inicio</label>
+              <input type="time" value={horaExtraForm.HoraInicio} onChange={e => setHoraExtraField('HoraInicio', e.target.value)} />
+            </div>
+            <div className="field">
+              <label>Hora fin</label>
+              <input type="time" value={horaExtraForm.HoraFin} onChange={e => setHoraExtraField('HoraFin', e.target.value)} />
+            </div>
+            <div className="field" style={{gridColumn:'1 / -1'}}>
+              <label>Observaciones (opcional)</label>
+              <input type="text" value={horaExtraForm.Observaciones} onChange={e => setHoraExtraField('Observaciones', e.target.value)} placeholder="Ej: apoyo turno de tutelas" />
+            </div>
+          </div>
+          {previewHoraExtra && (
+            <div style={{display:'flex', gap:16, flexWrap:'wrap', margin:'0 0 14px', padding:'10px 14px', background:'var(--gris-claro)', borderRadius:8, fontSize:12.5}}>
+              <span>Diurnas: <strong>{previewHoraExtra.HorasDiurnas}</strong></span>
+              <span>Nocturnas: <strong>{previewHoraExtra.HorasNocturnas}</strong></span>
+              <span>Diurnas Festivas: <strong>{previewHoraExtra.HorasDiurnasFestivas}</strong></span>
+              <span>Nocturnas Festivas: <strong>{previewHoraExtra.HorasNocturnasFestivas}</strong></span>
+            </div>
+          )}
+          <IconTextButton icon="add" variant="primary" onClick={handleRegistrarHoraExtra} disabled={registrandoHoraExtra}>
+            {registrandoHoraExtra ? "Registrando…" : "Registrar hora extra"}
+          </IconTextButton>
+        </div>
+      </div>
+
+      <div className="panel" style={{marginTop:20}}>
+        <div className="panel-head"><h3>Histórico de horas extras</h3></div>
+        <div className="panel-body" style={{padding:0}}>
+          {!historicoHorasExtras.length ? (
+            <div className="empty-state empty-state-compact">Todavía no hay horas extras registradas.</div>
+          ) : (
+            <div className="table-wrap">
+              <table>
+                <thead>
+                  <tr><th>Colaborador</th><th>Mes</th><th>Total horas</th><th>Aprobadas</th><th>Pendientes</th></tr>
+                </thead>
+                <tbody>
+                  {historicoHorasExtras.map(g => {
+                    const [y,m] = g.mes.split('-');
+                    return (
+                      <tr key={g.colaborador+g.mes}>
+                        <td className="cliente">{g.colaborador || "—"}</td>
+                        <td>{MESES_NOMBRES[Number(m)-1]} {y}</td>
+                        <td>{g.horas}</td>
+                        <td><span className="badge badge-verde">{g.aprobadas}</span></td>
+                        <td>{g.pendientes > 0 ? <span className="badge badge-naranja">{g.pendientes}</span> : <span className="save-hint">0</span>}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="panel-grid panel-grid-2">

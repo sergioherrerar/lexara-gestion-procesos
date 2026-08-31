@@ -3,6 +3,7 @@
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
 ## 2026-08-31
+- **"Horas Extras" se dividió entre Informes y Administración** — el registro (formulario con la clasificación automática) ahora está en Informes, para que cada colaborador registre las suyas; Administración conserva solo la aprobación y la relación mensual. Se agregó también un histórico de solo lectura en Informes (por Colaborador y Mes: total de horas, aprobadas y pendientes).
 - **El Excel y el Excel de Desistimientos por Entidad (Informes) ahora solo incluyen procesos activos** — antes filtraban por Entidad pero traían también los Terminados; el PDF de cada Entidad ya filtraba bien desde antes, ahora los 3 usan la misma regla.
 - **Nuevo módulo "Horas Extras" dentro de Administración** — registra Colaborador, Fecha y horario, y la app calcula sola cuántas horas son Diurnas (6:00 a.m.–7:00 p.m.), Nocturnas (7:00 p.m.–6:00 a.m.), Diurnas Festivas y Nocturnas Festivas (festivo colombiano real, calculado, no cargado a mano). Chulo de aprobación, gráfico + tarjetas + PDF con la relación mensual (solo horas aprobadas). No calcula valores en pesos, solo cantidad de horas, por pedido explícito.
 
