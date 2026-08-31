@@ -3,6 +3,7 @@
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
 ## 2026-08-31
+- **La lista de Tutelas ahora muestra cuántas son Tutelas, Impugnaciones y Otras contestaciones** (sobre lo que esté filtrado/buscado en ese momento), junto al total de siempre.
 - **Cada sección (panel) del portal ahora tiene un acento verde institucional arriba** — con varios paneles seguidos era difícil distinguir dónde termina uno y empieza el otro; aplica automáticamente a todo el portal (Informes, Administración, Procesos, etc.), un solo cambio de estilo.
 - **"Registros de horas extras" (Informes) ahora muestra un resumen por Colaborador junto al selector de Mes** — total de cada tipo (Diurnas/Nocturnas/Diurnas Festivas/Nocturnas Festivas) y el total general de todos, del mes elegido.
 - **La lista de "Registros de horas extras" (Informes) quedó mucho más compacta y en 2 columnas lado a lado** — antes cada fila ocupaba mucho espacio vertical y con varios registros del mes había que hacer mucho scroll.

@@ -41,6 +41,12 @@ export default function TutelasView({ tutelas, searchQuery, onOpenTutela, onCrea
     String(t.Entidad||"").toLowerCase().includes(query)) && rowMatches(t, COLUMNS))
     .sort((a,b) => String(b.FechaVencimiento||"").localeCompare(String(a.FechaVencimiento||"")));
   const sortedRows = sortRows(rows, COLUMNS);
+  // Diferencia por tipo (pedido explícito del usuario 2026-08-31) — sobre lo
+  // que se ve ahí mismo abajo (ya filtrado por búsqueda/columnas), no sobre
+  // el total sin filtrar.
+  const conteoTutela = rows.filter(t => (t.TipoRespuesta||"").trim().toUpperCase() === 'TUTELA').length;
+  const conteoImpugnacion = rows.filter(t => (t.TipoRespuesta||"").trim().toUpperCase() === 'IMPUGNACION').length;
+  const conteoOtras = rows.length - conteoTutela - conteoImpugnacion;
 
   return (
     <div className="view">
@@ -49,12 +55,21 @@ export default function TutelasView({ tutelas, searchQuery, onOpenTutela, onCrea
           <h1>Tutelas</h1>
           <p>{rows.length} de {tutelas.length} tutelas{hasActiveFilters && <> · <button type="button" className="clear-filters-link" onClick={clearFilters}>Limpiar filtros de columna</button></>}</p>
         </div>
-        <div style={{display:'flex', alignItems:'center', gap:12}}>
+        <div style={{display:'flex', alignItems:'center', gap:12, flexWrap:'wrap'}}>
           <span className={"badge " + (vencenHoy > 0 ? "badge-alerta" : "badge-gris")} style={{fontSize:14, padding:'8px 16px'}}>
             {vencenHoy} {vencenHoy === 1 ? "vence" : "vencen"} hoy
           </span>
           {canWrite && <IconTextButton icon="add" variant="primary" onClick={onCreateTutela}>Nueva tutela</IconTextButton>}
         </div>
+      </div>
+      {/* Diferencia por tipo (pedido explícito del usuario 2026-08-31) — en
+          su propia fila, separada del título/botón de arriba: metida en la
+          misma fila del view-header (que no tiene flex-wrap) empujaba el
+          título hacia abajo en pantallas angostas. */}
+      <div style={{display:'flex', gap:10, flexWrap:'wrap', marginBottom:16}}>
+        <span className="badge badge-verde">{conteoTutela} Tutelas</span>
+        <span className="badge badge-naranja">{conteoImpugnacion} Impugnaciones</span>
+        <span className="badge badge-gris">{conteoOtras} Otras contestaciones</span>
       </div>
       <div className="table-wrap">
         <table>
