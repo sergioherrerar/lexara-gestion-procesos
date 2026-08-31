@@ -336,7 +336,15 @@
   .valor-por-estado-label{color:var(--texto);}
   .valor-por-estado-valor{color:var(--verde-oscuro); font-weight:600; text-align:right; font-family:var(--font-mono);}
 
-  .panel{background:#fff; border:1px solid var(--gris-linea); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden;}
+  /* Acento institucional arriba de cada sección — pedido explícito del
+     usuario 2026-08-31 ("genera diferencia de cada sección en todo el
+     portal"): con varios paneles seguidos en una misma pantalla (Informes,
+     Administración, etc.) el borde/sombra sutil de siempre no bastaba para
+     distinguir dónde termina uno y empieza el otro. Una franja sólida
+     arriba (mismo verde institucional, sin degradados ni color por módulo)
+     resuelve eso en TODOS los paneles del portal de una sola vez, sin
+     alterar el resto del look ya establecido. */
+  .panel{background:#fff; border:1px solid var(--gris-linea); border-top:3px solid var(--verde-oscuro); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden;}
   .panel-head{display:flex; align-items:center; justify-content:space-between; padding:16px 20px; border-bottom:1px solid var(--gris-linea);}
   .panel-head h3{font-family:var(--font-display); font-size:16px; font-weight:600; margin:0; color:var(--verde-oscuro);}
   .panel-body{padding:6px 0;}
