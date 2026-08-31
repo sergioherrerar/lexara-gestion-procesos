@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   groupCount, estadoBadgeClass, fmtMonto, stripHtml, parseMonto,
-  clienteForFactura, clienteForOrdenCompra,
+  clienteForFactura, clienteForOrdenCompra, esProcesoActivo,
 } from '../lib/graph';
 import BarChart from './BarChart';
 import IconButton, { IconTextButton } from './IconButton';
@@ -128,7 +128,7 @@ export default function InformesView({ procesos, clientes, facturas, ordenesComp
   const entidades = Array.from(new Set(procesos.map(p => p.Entidad).filter(Boolean))).sort((a,b)=>a.localeCompare(b));
   const filas = entidades.map(entidad => {
     const propios = procesos.filter(p => p.Entidad === entidad);
-    const activos = propios.filter(p => !(p.EstadoVT||"").toLowerCase().includes('termin'));
+    const activos = propios.filter(esProcesoActivo);
     // Suma "Valor actual demanda" de todos los procesos de la Entidad — usa
     // parseMonto() (igual que el resto de la app) en vez de un regex propio:
     // SharePoint devuelve este valor a veces como número crudo (1471348.75) y
@@ -157,11 +157,15 @@ export default function InformesView({ procesos, clientes, facturas, ordenesComp
   // se pudo reproducir en modo demo (funciona bien acá), así que esto
   // asegura que la PRÓXIMA vez que falle contra datos reales, se vea el
   // mensaje real en pantalla en vez de nada.
+  // Pedido explícito del usuario 2026-08-31: "todos los informes solo deben
+  // aparecer procesos activos" — antes este Excel filtraba solo por Entidad
+  // (incluía también los Terminados), a diferencia del PDF de abajo que ya
+  // filtraba bien desde antes. Ahora usan el mismo esProcesoActivo (graph.js).
   async function handleGenerarExcel(entidad){
     const formato = FORMATOS_POR_ENTIDAD[entidad.toUpperCase()];
     if(!formato?.excel) return;
     setGenerando(entidad);
-    try{ await formato.excel(entidad, procesos.filter(p => p.Entidad === entidad)); }
+    try{ await formato.excel(entidad, procesos.filter(p => p.Entidad === entidad && esProcesoActivo(p))); }
     catch(err){ console.error(err); notify?.("No se pudo generar el Excel de " + entidad + ": " + err.message, 'error'); }
     finally { setGenerando(null); }
   }
@@ -174,7 +178,7 @@ export default function InformesView({ procesos, clientes, facturas, ordenesComp
     if(!formato?.pdf) return;
     setGenerandoPDF(entidad);
     try{
-      const vigentes = procesos.filter(p => p.Entidad === entidad && !(p.EstadoVT||"").toLowerCase().includes('termin'));
+      const vigentes = procesos.filter(p => p.Entidad === entidad && esProcesoActivo(p));
       await formato.pdf(entidad, vigentes);
     } catch(err){ console.error(err); notify?.("No se pudo generar el PDF de " + entidad + ": " + err.message, 'error'); }
     finally {
@@ -183,12 +187,13 @@ export default function InformesView({ procesos, clientes, facturas, ordenesComp
   }
   // Informe de Desistimientos — se une cada Desistimiento con su Proceso
   // (procesoForDesistimiento) y solo se incluyen los que pertenecen a esta
-  // Entidad, filtrando primero los procesos propios de esa Entidad.
+  // Entidad, filtrando primero los procesos propios de esa Entidad Y activos
+  // (mismo pedido de arriba — antes incluía también Terminados).
   async function handleGenerarDesistimientos(entidad){
     const formato = FORMATOS_POR_ENTIDAD[entidad.toUpperCase()];
     if(!formato?.desistimientos) return;
     setGenerandoDesistimientos(entidad);
-    try{ await formato.desistimientos(desistimientos, procesos.filter(p => p.Entidad === entidad)); }
+    try{ await formato.desistimientos(desistimientos, procesos.filter(p => p.Entidad === entidad && esProcesoActivo(p))); }
     catch(err){ console.error(err); notify?.("No se pudo generar los Desistimientos de " + entidad + ": " + err.message, 'error'); }
     finally { setGenerandoDesistimientos(null); }
   }

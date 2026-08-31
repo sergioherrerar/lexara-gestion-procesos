@@ -583,6 +583,17 @@ function fechaMasRecienteEnTexto(html){
 // estado", se busca una fecha dentro del texto de "Estado" (parámetro
 // nuevo, opcional); si tampoco hay nada ahí, se trata como el caso que más
 // atención necesita (rojo) — nunca gris.
+// "Activo" = EstadoVT NO contiene "Termin..." (mismo criterio que ya usaba
+// InformesView.jsx para armar la carta en PDF, y que estadoBadgeClass usa
+// para "gris" — antes vivía repetido en varios lugares como
+// `!(p.EstadoVT||"").toLowerCase().includes('termin')`). Centralizado
+// 2026-08-31, pedido explícito del usuario: "todos los informes solo deben
+// aparecer procesos activos" — los Excel por Entidad y Word/HTML del
+// dashboard estaban filtrando por Entidad pero NO por EstadoVT, a diferencia
+// del PDF, que sí lo hacía desde antes.
+export function esProcesoActivo(p){
+  return !((p.EstadoVT||"").toLowerCase().includes('termin'));
+}
 export function estadoBadgeClass(estadoVT, fechaUltimoEstado, estadoTexto){
   const vt = (estadoVT||"").toLowerCase();
   if(vt.includes('termin')) return 'badge-gris';
