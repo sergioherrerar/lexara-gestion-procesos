@@ -1457,6 +1457,13 @@ export function useLexaraApp(){
         setSaving(true);
         const list = listByKey(listKey);
         const fields = await Graph.graphFieldsFromUpdates(list.siteId || siteId, list, updates);
+        // DIAGNÓSTICO TEMPORAL 2026-09-01 — error genérico "Graph 400: Invalid
+        // request" al asociar Soporte Factura/Pago en Gastos, sin nombrar el
+        // campo (a diferencia del caso de Etapa Contrato en Facturas, que sí
+        // lo nombraba) — se deja el cuerpo exacto en consola para ver qué se
+        // está mandando de verdad, en vez de seguir adivinando. Quitar una vez
+        // resuelto.
+        console.log('[DIAGNÓSTICO editar]', listKey, JSON.stringify(fields));
         try{
           await Graph.graphFetch(`/sites/${list.siteId || siteId}/lists/${list.listId}/items/${item._graphId || item.id}/fields`, {
             method:"PATCH", body: JSON.stringify(fields)
