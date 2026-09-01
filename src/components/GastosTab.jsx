@@ -1,7 +1,16 @@
 import { useState } from 'react';
 import { fmtDate, fmtMonto, parseMonto, listarSoportesGastosDelMes } from '../lib/graph';
-import { TIPO_DOCUMENTO_OPTIONS, ENTIDAD_BANCARIA_OPTIONS, TIPO_CUENTA_OPTIONS, datosBancoProveedor, sumaValores } from '../lib/gastos';
+import { MESES_NOMBRES } from '../lib/horasExtras';
+import { TIPO_DOCUMENTO_OPTIONS, ENTIDAD_BANCARIA_OPTIONS, TIPO_CUENTA_OPTIONS, datosBancoProveedor, sumaValores, filtrarPorMes, generarRegistrosGastosExcel, siguienteNumeroConsecutivo } from '../lib/gastos';
 import IconButton, { IconTextButton } from './IconButton';
+
+// Años disponibles en el selector — el año en curso +/- 1, suficiente
+// margen para registros recién cerrados de diciembre o ya cargados de
+// enero, sin tener que mantener esta lista a mano.
+function aniosDisponibles(){
+  const actual = new Date().getFullYear();
+  return [actual-1, actual, actual+1];
+}
 
 // "Gastos" (Administración) — pedido explícito del usuario 2026-09-01,
 // reemplaza el Excel mensual real ("PAGOS DE {MES} {AÑO}.xlsx") por 4 listas
@@ -119,7 +128,7 @@ function RegistroForm({ inicial, conNumero, conTipo, proveedores, onGuardar, onC
             <input type="text" list="gastos-proveedores-datalist" value={form.PagadoA} onChange={e => setField('PagadoA', e.target.value)} />
           </div>
           <div className="field" style={{maxWidth:160}}><label>Fecha</label><input type="date" value={form.Fecha} onChange={e => setField('Fecha', e.target.value)} /></div>
-          <div className="field" style={{maxWidth:160}}>
+          <div className="field" style={{maxWidth:220}}>
             <label>Valor a pagar</label>
             <input type="text" className="input-money" value={form.ValorAPagar} onChange={e => setField('ValorAPagar', e.target.value)} onBlur={e => setField('ValorAPagar', fmtMonto(parseMonto(e.target.value)))} />
           </div>
@@ -188,31 +197,77 @@ function SoporteField({ label, url, fecha, shareUrl, onElegir }){
   );
 }
 
-function RegistrosSection({ registros, proveedores, conNumero, conTipo, conSoportes, shareUrl, onCrear, onEditar, onEliminar, canWrite }){
+function RegistrosSection({ nombreLista, registros, proveedores, conNumero, conTipo, conSoportes, shareUrl, siguienteNumero, onCrear, onEditar, onEliminar, canWrite }){
+  const hoyRef = new Date();
+  const [mes, setMes] = useState(hoyRef.getMonth());
+  const [anio, setAnio] = useState(hoyRef.getFullYear());
   const [abierto, setAbierto] = useState(false);
+  const [formInicialNuevo, setFormInicialNuevo] = useState(null);
   const [editandoId, setEditandoId] = useState(null);
   const [guardando, setGuardando] = useState(false);
-  const filas = [...(registros||[])].sort((a,b) => String(b.Fecha||"").localeCompare(String(a.Fecha||"")));
+  const [generandoExcel, setGenerandoExcel] = useState(false);
+
+  // Solo el mes elegido — pedido explícito del usuario 2026-09-01 ("coloca
+  // la lista del mes que solo salga ese mes"). A diferencia del Excel real
+  // (un archivo nuevo cada mes), esta lista de SharePoint sigue creciendo
+  // mes tras mes, así que hace falta un filtro para no ver todo junto.
+  const filas = filtrarPorMes(registros, anio, mes).sort((a,b) => String(b.Fecha||"").localeCompare(String(a.Fecha||"")));
   const total = sumaValores(filas);
-  async function guardar(datos){
-    setGuardando(true);
-    try{
-      if(editandoId) await onEditar(editandoId, datos);
-      else await onCrear(datos);
-      setAbierto(false); setEditandoId(null);
-    } finally { setGuardando(false); }
+
+  // Al abrir "Nuevo registro" (o "Duplicar"), si esta lista usa "Numero"
+  // (Pagos por Realizar/Gastos), se propone de una vez el próximo
+  // consecutivo de 5 dígitos — pedido explícito del usuario 2026-09-01, para
+  // nombrar el PDF de soporte con el mismo número al subirlo. Al duplicar,
+  // el número SIEMPRE se reemplaza por uno nuevo (nunca se repite el del
+  // original) — es un gasto distinto, con su propio soporte.
+  function abrirNuevo(){ setAbierto(true); setFormInicialNuevo(conNumero ? { Numero: siguienteNumero } : null); setEditandoId(null); }
+  function abrirDuplicado(r){
+    // eslint-disable-next-line no-unused-vars
+    const { id, _graphId, SoporteFactura, SoportePago, Numero, ...resto } = r;
+    setFormInicialNuevo(conNumero ? { ...resto, Numero: siguienteNumero } : resto); setAbierto(true); setEditandoId(null);
   }
+  function cerrarNuevo(){ setAbierto(false); setFormInicialNuevo(null); }
+  async function guardarNuevo(datos){
+    setGuardando(true);
+    try{ await onCrear(datos); cerrarNuevo(); } finally { setGuardando(false); }
+  }
+  async function guardarEdicion(id, datos){
+    setGuardando(true);
+    try{ await onEditar(id, datos); setEditandoId(null); } finally { setGuardando(false); }
+  }
+  async function handleDescargarExcel(){
+    setGenerandoExcel(true);
+    try{ await generarRegistrosGastosExcel(`${nombreLista} ${MESES_NOMBRES[mes]} ${anio}`, filas, proveedores, { conNumero, conTipo }); }
+    finally { setGenerandoExcel(false); }
+  }
+
   const nCols = 4 + (conNumero?1:0) + (conTipo?1:0) + (conSoportes?2:0) + (canWrite?1:0);
   return (
     <div>
       <datalist id="gastos-proveedores-datalist">
         {(proveedores||[]).map(p => <option value={p.PagadoA} key={p.id} />)}
       </datalist>
-      <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14, flexWrap:'wrap', gap:10}}>
-        {canWrite && !abierto && !editandoId && <IconTextButton icon="add" variant="primary" onClick={() => setAbierto(true)}>Nuevo registro</IconTextButton>}
-        <span className="badge badge-verde" style={{fontSize:13, padding:'6px 14px'}}>Total: $ {fmtMonto(total)}</span>
+      <div style={{display:'flex', justifyContent:'space-between', alignItems:'flex-end', marginBottom:14, flexWrap:'wrap', gap:10}}>
+        <div style={{display:'flex', alignItems:'flex-end', gap:10, flexWrap:'wrap'}}>
+          {canWrite && !abierto && <IconTextButton icon="add" variant="primary" onClick={abrirNuevo}>Nuevo registro</IconTextButton>}
+          <div className="field" style={{maxWidth:150}}>
+            <label>Mes</label>
+            <select value={mes} onChange={e => setMes(Number(e.target.value))}>
+              {MESES_NOMBRES.map((m,i) => <option key={m} value={i}>{m}</option>)}
+            </select>
+          </div>
+          <div className="field" style={{maxWidth:110}}>
+            <label>Año</label>
+            <select value={anio} onChange={e => setAnio(Number(e.target.value))}>
+              {aniosDisponibles().map(a => <option key={a} value={a}>{a}</option>)}
+            </select>
+          </div>
+          <IconTextButton icon="excel" variant="secondary" onClick={handleDescargarExcel} disabled={generandoExcel}>
+            {generandoExcel ? "Generando…" : "Descargar Excel"}
+          </IconTextButton>
+        </div>
       </div>
-      {abierto && <RegistroForm conNumero={conNumero} conTipo={conTipo} proveedores={proveedores} onGuardar={guardar} onCancelar={() => setAbierto(false)} guardando={guardando} />}
+      {abierto && <RegistroForm inicial={formInicialNuevo} conNumero={conNumero} conTipo={conTipo} proveedores={proveedores} onGuardar={guardarNuevo} onCancelar={cerrarNuevo} guardando={guardando} />}
       <div className="table-wrap">
         <table>
           <thead>
@@ -229,7 +284,7 @@ function RegistrosSection({ registros, proveedores, conNumero, conTipo, conSopor
           <tbody>
             {filas.length ? filas.map(r => (
               editandoId===r.id ? (
-                <tr key={r.id}><td colSpan={nCols}><RegistroForm inicial={r} conNumero={conNumero} conTipo={conTipo} proveedores={proveedores} onGuardar={d => guardar(d)} onCancelar={() => setEditandoId(null)} guardando={guardando} /></td></tr>
+                <tr key={r.id}><td colSpan={nCols}><RegistroForm inicial={r} conNumero={conNumero} conTipo={conTipo} proveedores={proveedores} onGuardar={d => guardarEdicion(r.id, d)} onCancelar={() => setEditandoId(null)} guardando={guardando} /></td></tr>
               ) : (
                 <tr key={r.id}>
                   {conNumero && <td>{r.Numero || "—"}</td>}
@@ -247,14 +302,30 @@ function RegistrosSection({ registros, proveedores, conNumero, conTipo, conSopor
                   )}
                   {canWrite && (
                     <td><div className="row-actions">
-                      <IconButton icon="edit" variant="edit" label={`Editar registro de ${r.PagadoA}`} onClick={() => { setEditandoId(r.id); setAbierto(false); }} />
+                      <IconButton icon="duplicate" variant="duplicate" label={`Duplicar registro de ${r.PagadoA}`} onClick={() => abrirDuplicado(r)} />
+                      <IconButton icon="edit" variant="edit" label={`Editar registro de ${r.PagadoA}`} onClick={() => { setEditandoId(r.id); cerrarNuevo(); }} />
                       <IconButton icon="delete" variant="delete" label={`Eliminar registro de ${r.PagadoA}`} onClick={() => onEliminar(r.id)} />
                     </div></td>
                   )}
                 </tr>
               )
-            )) : <tr><td colSpan={nCols}><div className="empty-state empty-state-compact">Todavía no hay registros.</div></td></tr>}
+            )) : <tr><td colSpan={nCols}><div className="empty-state empty-state-compact">No hay registros en {MESES_NOMBRES[mes]} de {anio}.</div></td></tr>}
           </tbody>
+          {filas.length > 0 && (
+            <tfoot>
+              <tr>
+                {conNumero && <td></td>}
+                <td colSpan={2}></td>
+                <td style={{textAlign:'right'}}><strong>Total</strong></td>
+                <td style={{textAlign:'right'}}><strong>$ {fmtMonto(total)}</strong></td>
+                {conTipo && <td></td>}
+                <td></td>
+                {conSoportes && <td></td>}
+                {conSoportes && <td></td>}
+                {canWrite && <td></td>}
+              </tr>
+            </tfoot>
+          )}
         </table>
       </div>
     </div>
@@ -268,6 +339,10 @@ export default function GastosTab({ config, proveedoresGastos, cuentasCobroGasto
   onCrearGasto, onEditarGasto, onEliminarGasto, canWrite }){
   const [subTab, setSubTab] = useState('proveedores');
   const shareUrl = config?.GASTOS_SOPORTES_SHARE_URL;
+  // Un solo consecutivo compartido entre Pagos por Realizar y Gastos (ver
+  // siguienteNumeroConsecutivo en lib/gastos.js) — nunca se repite el mismo
+  // número entre las dos listas.
+  const siguienteNumero = siguienteNumeroConsecutivo(pagosPorRealizar, gastos);
   return (
     <div>
       <div className="drawer-tabs" style={{padding:'0 0 14px', border:'none'}}>
@@ -279,15 +354,15 @@ export default function GastosTab({ config, proveedoresGastos, cuentasCobroGasto
         <ProveedoresSection proveedores={proveedoresGastos} onCrear={onCrearProveedorGastos} onEditar={onEditarProveedorGastos} onEliminar={onEliminarProveedorGastos} canWrite={canWrite} />
       )}
       {subTab==='cuentasCobro' && (
-        <RegistrosSection registros={cuentasCobroGastos} proveedores={proveedoresGastos} conNumero={false} conTipo={false} conSoportes={false}
+        <RegistrosSection nombreLista="Cuentas de Cobro" registros={cuentasCobroGastos} proveedores={proveedoresGastos} conNumero={false} conTipo={false} conSoportes={false}
           onCrear={onCrearCuentaCobroGastos} onEditar={onEditarCuentaCobroGastos} onEliminar={onEliminarCuentaCobroGastos} canWrite={canWrite} />
       )}
       {subTab==='pagosPorRealizar' && (
-        <RegistrosSection registros={pagosPorRealizar} proveedores={proveedoresGastos} conNumero conTipo conSoportes={false}
+        <RegistrosSection nombreLista="Pagos por Realizar" registros={pagosPorRealizar} proveedores={proveedoresGastos} conNumero conTipo conSoportes={false} siguienteNumero={siguienteNumero}
           onCrear={onCrearPagoPorRealizar} onEditar={onEditarPagoPorRealizar} onEliminar={onEliminarPagoPorRealizar} canWrite={canWrite} />
       )}
       {subTab==='gastos' && (
-        <RegistrosSection registros={gastos} proveedores={proveedoresGastos} conNumero conTipo conSoportes shareUrl={shareUrl}
+        <RegistrosSection nombreLista="Gastos" registros={gastos} proveedores={proveedoresGastos} conNumero conTipo conSoportes shareUrl={shareUrl} siguienteNumero={siguienteNumero}
           onCrear={onCrearGasto} onEditar={onEditarGasto} onEliminar={onEliminarGasto} canWrite={canWrite} />
       )}
     </div>
