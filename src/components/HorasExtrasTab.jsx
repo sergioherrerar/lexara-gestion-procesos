@@ -60,7 +60,12 @@ export default function HorasExtrasTab({ horasExtras, tutelas, onAprobarHoraExtr
   const horasDelMes = filtrarHorasExtrasPorMes(horasExtras, anio, mes, true);
   const { grupos, totalGeneral } = agruparPorColaborador(horasDelMes);
 
-  const registros = [...(horasExtras||[])].sort((a,b) => String(b.Fecha||"").localeCompare(String(a.Fecha||"")));
+  // Pedido explícito del usuario 2026-08-31 ("acá también coloca el botón de
+  // filtrar por mes") — la tabla principal (aprobadas y pendientes) ahora
+  // también se filtra por el mismo Mes de arriba (antes solo se filtraba la
+  // "Relación mensual" de abajo, esta tabla mostraba TODO sin filtrar).
+  const registros = filtrarHorasExtrasPorMes(horasExtras, anio, mes, false)
+    .sort((a,b) => String(b.Fecha||"").localeCompare(String(a.Fecha||"")));
 
   return (
     <div className="panel">
@@ -70,12 +75,20 @@ export default function HorasExtrasTab({ horasExtras, tutelas, onAprobarHoraExtr
           El registro lo hace cada colaborador desde Informes — acá se aprueba (chulo) y se ve la relación mensual. Solo cuentan para el resumen mensual las horas ya <strong>Aprobadas</strong>.
         </p>
 
+        <div className="field" style={{maxWidth:200, marginBottom:16}}>
+          <label>Mes</label>
+          <select value={mes} onChange={e => setMes(Number(e.target.value))}>
+            {MESES_NOMBRES.map((m,i) => <option key={m} value={i}>{m}</option>)}
+          </select>
+        </div>
+
         <div className="table-wrap">
           <table>
             <thead>
               <tr>
                 <th>Colaborador</th><th>Fecha</th><th>Horario</th>
                 <th>Diurnas</th><th>Nocturnas</th><th>Diurnas Fest.</th><th>Nocturnas Fest.</th>
+                <th>Total</th>
                 <th>Tutelas del día</th>
                 <th>Observaciones</th><th>Aprobado</th>
               </tr>
@@ -83,6 +96,7 @@ export default function HorasExtrasTab({ horasExtras, tutelas, onAprobarHoraExtr
             <tbody>
               {registros.length ? registros.map(h => {
                 const conteo = contarTutelasDelDia(tutelas, h.Fecha);
+                const total = (Number(h.HorasDiurnas)||0) + (Number(h.HorasNocturnas)||0) + (Number(h.HorasDiurnasFestivas)||0) + (Number(h.HorasNocturnasFestivas)||0);
                 return (
                 <tr key={h.id}>
                   <td className="cliente">{h.Colaborador || "—"}</td>
@@ -92,6 +106,7 @@ export default function HorasExtrasTab({ horasExtras, tutelas, onAprobarHoraExtr
                   <td>{h.HorasNocturnas || 0}</td>
                   <td>{h.HorasDiurnasFestivas || 0}</td>
                   <td>{h.HorasNocturnasFestivas || 0}</td>
+                  <td><strong>{total}</strong></td>
                   <td>
                     <div style={{display:'flex', gap:6}}>
                       <CajaConteo label="Tutelas" valor={conteo.TUTELA} color={colorDeTipoRespuesta('TUTELA')} />
@@ -106,7 +121,7 @@ export default function HorasExtrasTab({ horasExtras, tutelas, onAprobarHoraExtr
                 </tr>
                 );
               }) : (
-                <tr><td colSpan={10}><div className="empty-state empty-state-compact">Todavía no hay horas extras registradas.</div></td></tr>
+                <tr><td colSpan={11}><div className="empty-state empty-state-compact">Todavía no hay horas extras registradas.</div></td></tr>
               )}
             </tbody>
           </table>
@@ -114,12 +129,6 @@ export default function HorasExtrasTab({ horasExtras, tutelas, onAprobarHoraExtr
 
         <div className="panel-head" style={{marginTop:28, padding:'0 0 12px'}}><h3>Relación mensual (solo aprobadas)</h3></div>
         <div style={{display:'flex', alignItems:'center', gap:14, flexWrap:'wrap', marginBottom:16}}>
-          <div className="field" style={{maxWidth:200}}>
-            <label>Mes</label>
-            <select value={mes} onChange={e => setMes(Number(e.target.value))}>
-              {MESES_NOMBRES.map((m,i) => <option key={m} value={i}>{m}</option>)}
-            </select>
-          </div>
           <IconTextButton icon="pdf" variant="secondary" onClick={handleDescargarPDF} disabled={generandoPDF}>
             {generandoPDF ? "Generando…" : "Descargar PDF"}
           </IconTextButton>
