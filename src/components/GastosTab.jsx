@@ -206,13 +206,19 @@ function RegistrosSection({ nombreLista, registros, proveedores, conNumero, conT
   const [editandoId, setEditandoId] = useState(null);
   const [guardando, setGuardando] = useState(false);
   const [generandoExcel, setGenerandoExcel] = useState(false);
+  // "Todos" (pedido explícito del usuario 2026-09-01) — quita el filtro de
+  // Mes/Año para ver la lista completa de una vez. Cambiar el Mes o el Año
+  // después vuelve a activar el filtro solo, sin un paso aparte.
+  const [verTodos, setVerTodos] = useState(false);
 
   // Solo el mes elegido — pedido explícito del usuario 2026-09-01 ("coloca
   // la lista del mes que solo salga ese mes"). A diferencia del Excel real
   // (un archivo nuevo cada mes), esta lista de SharePoint sigue creciendo
   // mes tras mes, así que hace falta un filtro para no ver todo junto.
-  const filas = filtrarPorMes(registros, anio, mes).sort((a,b) => String(b.Fecha||"").localeCompare(String(a.Fecha||"")));
+  const filas = (verTodos ? [...(registros||[])] : filtrarPorMes(registros, anio, mes)).sort((a,b) => String(b.Fecha||"").localeCompare(String(a.Fecha||"")));
   const total = sumaValores(filas);
+  function cambiarMes(v){ setMes(v); setVerTodos(false); }
+  function cambiarAnio(v){ setAnio(v); setVerTodos(false); }
 
   // Al abrir "Nuevo registro" (o "Duplicar"), si esta lista usa "Numero"
   // (Pagos por Realizar/Gastos), se propone de una vez el próximo
@@ -237,7 +243,8 @@ function RegistrosSection({ nombreLista, registros, proveedores, conNumero, conT
   }
   async function handleDescargarExcel(){
     setGenerandoExcel(true);
-    try{ await generarRegistrosGastosExcel(`${nombreLista} ${MESES_NOMBRES[mes]} ${anio}`, filas, proveedores, { conNumero, conTipo }); }
+    const nombreArchivo = verTodos ? `${nombreLista} - Todos` : `${nombreLista} ${MESES_NOMBRES[mes]} ${anio}`;
+    try{ await generarRegistrosGastosExcel(nombreArchivo, filas, proveedores, { conNumero, conTipo }); }
     finally { setGenerandoExcel(false); }
   }
 
@@ -252,16 +259,19 @@ function RegistrosSection({ nombreLista, registros, proveedores, conNumero, conT
           {canWrite && !abierto && <IconTextButton icon="add" variant="primary" onClick={abrirNuevo}>Nuevo registro</IconTextButton>}
           <div className="field" style={{maxWidth:150}}>
             <label>Mes</label>
-            <select value={mes} onChange={e => setMes(Number(e.target.value))}>
+            <select value={mes} onChange={e => cambiarMes(Number(e.target.value))} disabled={verTodos}>
               {MESES_NOMBRES.map((m,i) => <option key={m} value={i}>{m}</option>)}
             </select>
           </div>
           <div className="field" style={{maxWidth:110}}>
             <label>Año</label>
-            <select value={anio} onChange={e => setAnio(Number(e.target.value))}>
+            <select value={anio} onChange={e => cambiarAnio(Number(e.target.value))} disabled={verTodos}>
               {aniosDisponibles().map(a => <option key={a} value={a}>{a}</option>)}
             </select>
           </div>
+          <button type="button" className={verTodos ? "btn-secondary active" : "btn-secondary"} onClick={() => setVerTodos(v => !v)}>
+            {verTodos ? "Ver solo el mes" : "Todos"}
+          </button>
           <IconTextButton icon="excel" variant="secondary" onClick={handleDescargarExcel} disabled={generandoExcel}>
             {generandoExcel ? "Generando…" : "Descargar Excel"}
           </IconTextButton>
@@ -273,7 +283,7 @@ function RegistrosSection({ nombreLista, registros, proveedores, conNumero, conT
           <thead>
             <tr>
               {conNumero && <th>Numero</th>}
-              <th>Pagado a</th><th>Entidad</th><th>Fecha</th><th>Valor a pagar</th>
+              <th>Pagado a</th><th>Entidad</th><th>Fecha</th><th style={{whiteSpace:'nowrap'}}>Valor a pagar</th>
               {conTipo && <th>Tipo Documento</th>}
               <th>Observación</th>
               {conSoportes && <th>Soporte Factura</th>}
@@ -291,7 +301,7 @@ function RegistrosSection({ nombreLista, registros, proveedores, conNumero, conT
                   <td className="cliente">{r.PagadoA}</td>
                   <td>{datosBancoProveedor(r.PagadoA, proveedores).entidad}</td>
                   <td>{fmtDate(r.Fecha)}</td>
-                  <td style={{textAlign:'right'}}>$ {fmtMonto(Number(r.ValorAPagar)||0)}</td>
+                  <td style={{textAlign:'right', whiteSpace:'nowrap'}}>$ {fmtMonto(Number(r.ValorAPagar)||0)}</td>
                   {conTipo && <td>{r.TipoDocumento || "—"}</td>}
                   <td>{r.Observacion || "—"}</td>
                   {conSoportes && (
@@ -316,8 +326,8 @@ function RegistrosSection({ nombreLista, registros, proveedores, conNumero, conT
               <tr>
                 {conNumero && <td></td>}
                 <td colSpan={2}></td>
-                <td style={{textAlign:'right'}}><strong>Total</strong></td>
-                <td style={{textAlign:'right'}}><strong>$ {fmtMonto(total)}</strong></td>
+                <td style={{textAlign:'right', whiteSpace:'nowrap'}}><strong>Total</strong></td>
+                <td style={{textAlign:'right', whiteSpace:'nowrap'}}><strong>$ {fmtMonto(total)}</strong></td>
                 {conTipo && <td></td>}
                 <td></td>
                 {conSoportes && <td></td>}

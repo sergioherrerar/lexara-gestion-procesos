@@ -762,6 +762,11 @@
   .btn-secondary:hover{border-color:var(--verde-claro); color:var(--verde-oscuro);}
   .btn-secondary:active{transform:translateY(1px);}
   .btn-secondary:disabled{color:var(--gris); cursor:default; transform:none;}
+  /* Botón "Todos" (Gastos) activo — mismo verde institucional que un tab
+     seleccionado (.drawer-tab.active), para que se note que el filtro de
+     Mes/Año está apagado. */
+  .btn-secondary.active{background:var(--verde-oscuro); color:#fff; border-color:var(--verde-oscuro);}
+  .btn-secondary.active:hover{color:#fff;}
   .btn-spinner{width:13px; height:13px; border-radius:50%; border:2px solid rgba(255,255,255,.4); border-top-color:#fff; animation:icon-spin .7s linear infinite; flex-shrink:0;}
   .save-hint{font-size:12px; color:var(--texto-suave); align-self:center; margin-left:auto;}
 

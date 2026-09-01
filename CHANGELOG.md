@@ -3,6 +3,7 @@
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
 ## 2026-09-01
+- **Gastos: botón "Todos" para quitar el filtro de Mes/Año** en Cuentas de Cobro/Pagos por Realizar/Gastos, y la columna "Valor a pagar" ya no se corta en 2 líneas.
 - **Gastos: filtro de Mes/Año, fila de Total, botón Duplicar y Descargar Excel en Cuentas de Cobro/Pagos por Realizar/Gastos** — antes se veían todos los registros de siempre mezclados sin filtrar. El campo "Valor a pagar" del formulario también quedó más ancho.
 - **"Numero" (Pagos por Realizar/Gastos) ahora propone solo un consecutivo de 5 dígitos al crear o duplicar un registro** — para nombrar el PDF de soporte con el mismo número al subirlo a la carpeta del mes; es un solo consecutivo compartido entre las dos listas, nunca se repite.
 - **Corrige el sitio de las 4 listas de Gastos** — quedaron creadas en NuevosProcesosMD (el sitio principal), no en el sitio raíz de Horas Extras como se había asumido. Ahora sí las puede encontrar en Configuración para mapearlas.
