@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { fmtDate, fmtMonto, parseMonto, listarSoportesGastosDelMes } from '../lib/graph';
 import { MESES_NOMBRES } from '../lib/horasExtras';
-import { TIPO_DOCUMENTO_OPTIONS, ENTIDAD_BANCARIA_OPTIONS, TIPO_CUENTA_OPTIONS, datosBancoProveedor, sumaValores, filtrarPorMes, generarRegistrosGastosExcel, siguienteNumeroConsecutivo } from '../lib/gastos';
+import { TIPO_DOCUMENTO_OPTIONS, ENTIDAD_BANCARIA_OPTIONS, TIPO_CUENTA_OPTIONS, datosBancoProveedor, sumaValores, filtrarPorMes, generarRegistrosGastosExcel, generarRegistrosGastosHTML, siguienteNumeroConsecutivo } from '../lib/gastos';
 import IconButton, { IconTextButton } from './IconButton';
 
 // Años disponibles en el selector — el año en curso +/- 1, suficiente
@@ -241,11 +241,20 @@ function RegistrosSection({ nombreLista, registros, proveedores, conNumero, conT
     setGuardando(true);
     try{ await onEditar(id, datos); setEditandoId(null); } finally { setGuardando(false); }
   }
+  function nombreArchivoActual(){
+    return verTodos ? `${nombreLista} - Todos` : `${nombreLista} ${MESES_NOMBRES[mes]} ${anio}`;
+  }
   async function handleDescargarExcel(){
     setGenerandoExcel(true);
-    const nombreArchivo = verTodos ? `${nombreLista} - Todos` : `${nombreLista} ${MESES_NOMBRES[mes]} ${anio}`;
-    try{ await generarRegistrosGastosExcel(nombreArchivo, filas, proveedores, { conNumero, conTipo }); }
+    try{ await generarRegistrosGastosExcel(nombreArchivoActual(), filas, proveedores, { conNumero, conTipo }); }
     finally { setGenerandoExcel(false); }
+  }
+  // Descargar HTML — pedido explícito del usuario 2026-09-01, para poder
+  // enviárselo a un tercero (ej. la contadora externa) con el link real de
+  // cada soporte como enlace en el que puede hacer clic, sin adjuntar PDF
+  // sueltos aparte.
+  function handleDescargarHTML(){
+    generarRegistrosGastosHTML(nombreArchivoActual(), filas, proveedores, { conNumero, conTipo, conSoportes });
   }
 
   const nCols = 4 + (conNumero?1:0) + (conTipo?1:0) + (conSoportes?2:0) + (canWrite?1:0);
@@ -275,6 +284,7 @@ function RegistrosSection({ nombreLista, registros, proveedores, conNumero, conT
           <IconTextButton icon="excel" variant="secondary" onClick={handleDescargarExcel} disabled={generandoExcel}>
             {generandoExcel ? "Generando…" : "Descargar Excel"}
           </IconTextButton>
+          <IconTextButton icon="html" variant="secondary" onClick={handleDescargarHTML}>Descargar HTML</IconTextButton>
         </div>
       </div>
       {abierto && <RegistroForm inicial={formInicialNuevo} conNumero={conNumero} conTipo={conTipo} proveedores={proveedores} onGuardar={guardarNuevo} onCancelar={cerrarNuevo} guardando={guardando} />}

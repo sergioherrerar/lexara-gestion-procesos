@@ -18,6 +18,7 @@
 // esa clase de error: si algo no cuadra, se corrige en la app sin tocar
 // SharePoint.
 import { COLOR_ENCABEZADO, fechaISOaExcel } from './informeSOS';
+import { fmtDate, fmtMonto } from './graph';
 
 export const TIPO_DOCUMENTO_OPTIONS = ["Factura", "Soporte de pago", "Cuenta de cobro", "Reembolso", "Transporte"];
 export const ENTIDAD_BANCARIA_OPTIONS = ["BANCO DE BOGOTA", "BANCOLOMBIA", "BANCO BBVA", "COLPATRIA", "DAVIVIENDA", "FALABELLA", "NEQUI", "NU", "NO APLICA"];
@@ -143,6 +144,100 @@ export async function generarRegistrosGastosExcel(nombreHoja, filas, proveedores
   const a = document.createElement('a');
   a.href = url;
   a.download = `${nombreHoja}.xlsx`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function escapeHtml(s){
+  return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// HTML descargable de un mes de Cuentas de cobro/Pagos por realizar/Gastos —
+// pedido explícito del usuario 2026-09-01 ("por favor incluye botón exporta
+// el HTML"), para enviarlo por correo/WhatsApp a un tercero (ej. la
+// contadora externa) — con el link real de cada Soporte Factura/Pago como
+// enlace en el que puede hacer clic, sin tener que mandarle los PDF sueltos
+// aparte. Mismo estilo institucional que generarInformeClienteHTML.js — un
+// .html autocontenido, sin depender de que siga corriendo la app.
+export function generarRegistrosGastosHTML(titulo, filas, proveedores, { conNumero, conTipo, conSoportes } = {}){
+  const total = sumaValores(filas);
+  const fechaLarga = new Date().toLocaleDateString('es-CO', { day:'2-digit', month:'long', year:'numeric' });
+
+  const filasHtml = filas.map(r => {
+    const banco = datosBancoProveedor(r.PagadoA, proveedores);
+    return `<tr>
+      ${conNumero ? `<td>${escapeHtml(r.Numero||"—")}</td>` : ''}
+      <td>${escapeHtml(r.PagadoA)}</td>
+      <td>${escapeHtml(banco.entidad)}</td>
+      <td>${escapeHtml(fmtDate(r.Fecha))}</td>
+      <td class="valor">$ ${fmtMonto(Number(r.ValorAPagar)||0)}</td>
+      ${conTipo ? `<td>${escapeHtml(r.TipoDocumento||"—")}</td>` : ''}
+      <td>${escapeHtml(r.Observacion||"—")}</td>
+      ${conSoportes ? `<td>${r.SoporteFactura ? `<a href="${escapeHtml(r.SoporteFactura)}" target="_blank" rel="noopener noreferrer">Ver factura</a>` : '—'}</td>` : ''}
+      ${conSoportes ? `<td>${r.SoportePago ? `<a href="${escapeHtml(r.SoportePago)}" target="_blank" rel="noopener noreferrer">Ver pago</a>` : '—'}</td>` : ''}
+    </tr>`;
+  }).join('');
+
+  const nCols = 4 + (conNumero?1:0) + (conTipo?1:0) + (conSoportes?2:0);
+
+  const html = `<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${escapeHtml(titulo)}</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@600&family=Inter:wght@400;500;600;700&display=swap');
+  :root{ --verde-oscuro:#004941; --gris-claro:#f4f4f2; --gris-linea:#e4e4e1; --texto:#1c2624; --texto-suave:#5c6b68; --font-display:'Fraunces',Georgia,serif; --font-body:'Inter',Arial,sans-serif; }
+  *{box-sizing:border-box;}
+  body{margin:0; font-family:var(--font-body); background:var(--gris-claro); color:var(--texto); -webkit-font-smoothing:antialiased;}
+  .header{background:var(--verde-oscuro); color:#fff; padding:22px 28px;}
+  .header h1{font-family:var(--font-display); font-size:21px; font-weight:600; margin:0 0 4px;}
+  .header p{margin:0; font-size:12.5px; color:rgba(255,255,255,.75);}
+  .contenido{max-width:1000px; margin:0 auto; padding:22px 20px 50px;}
+  .panel{background:#fff; border:1px solid var(--gris-linea); border-radius:12px; box-shadow:0 1px 3px rgba(0,20,18,.08); overflow:hidden;}
+  table{width:100%; border-collapse:collapse; font-size:13px;}
+  th,td{padding:9px 12px; border-bottom:1px solid var(--gris-linea); text-align:left;}
+  th{background:linear-gradient(135deg,#e9f5f3,#f4faf9); color:var(--verde-oscuro); font-size:11px; text-transform:uppercase; letter-spacing:.03em;}
+  td.valor, th.valor{text-align:right; white-space:nowrap;}
+  tfoot td{font-weight:700; border-bottom:none;}
+  a{color:var(--verde-oscuro);}
+  .empty-state{padding:30px 20px; text-align:center; color:var(--texto-suave); font-size:13px;}
+  footer{max-width:1000px; margin:0 auto; padding:16px 20px 30px; font-size:11px; color:var(--texto-suave); text-align:center;}
+</style>
+</head>
+<body>
+  <div class="header">
+    <h1>${escapeHtml(titulo)}</h1>
+    <p>Generado el ${escapeHtml(fechaLarga)} · Lexara Abogados</p>
+  </div>
+  <div class="contenido">
+    <div class="panel">
+      ${filas.length ? `<table>
+        <thead><tr>
+          ${conNumero ? '<th>Numero</th>' : ''}
+          <th>Pagado a</th><th>Entidad</th><th>Fecha</th><th class="valor">Valor a pagar</th>
+          ${conTipo ? '<th>Tipo Documento</th>' : ''}
+          <th>Observación</th>
+          ${conSoportes ? '<th>Soporte Factura</th>' : ''}
+          ${conSoportes ? '<th>Soporte Pago</th>' : ''}
+        </tr></thead>
+        <tbody>${filasHtml}</tbody>
+        <tfoot><tr><td colspan="${nCols-1}" style="text-align:right;">Total</td><td class="valor">$ ${fmtMonto(total)}</td></tr></tfoot>
+      </table>` : `<div class="empty-state">No hay registros para mostrar.</div>`}
+    </div>
+  </div>
+  <footer>MD Abogados SAS · Generado automáticamente desde Lexara — Gestión de Procesos.</footer>
+</body>
+</html>`;
+
+  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${titulo}.html`;
   document.body.appendChild(a);
   a.click();
   a.remove();
