@@ -115,7 +115,24 @@ function ProveedoresSection({ proveedores, onCrear, onEditar, onEliminar, canWri
 // columnas extra sin repetir todo el componente 3 veces.
 function RegistroForm({ inicial, conNumero, conTipo, proveedores, onGuardar, onCancelar, guardando }){
   const vacio = { Numero:"", PagadoA:"", Observacion:"", Fecha:"", ValorAPagar:"", TipoDocumento:"" };
-  const [form, setForm] = useState(inicial ? { ...vacio, ...inicial, ValorAPagar: inicial.ValorAPagar!=null ? fmtMonto(Number(inicial.ValorAPagar)) : "" } : vacio);
+  // Ojo: el formulario SOLO maneja las llaves de `vacio` — nunca hace
+  // `{...inicial}` completo. Un registro real trae también SoporteFactura/
+  // SoportePago (columnas de Hipervínculo), y si esas 2 se colaran acá
+  // reenviarían ese link como texto plano al guardar (aunque el usuario no
+  // haya tocado nada), y SharePoint las rechaza — bug real reportado por el
+  // usuario 2026-09-01 ("cuando le doy editar lo guardo sin hacer cambios
+  // sale igual"). Los soportes se editan aparte, solo desde SoporteField.
+  // "Fecha" se recorta a los primeros 10 caracteres por el mismo motivo que
+  // ya se corrigió en ProcesoDrawer.jsx: si SharePoint la devuelve con hora
+  // incluida, el <input type="date"> la rechaza en silencio y se ve vacía.
+  const [form, setForm] = useState(() => {
+    if(!inicial) return vacio;
+    const limitado = {};
+    Object.keys(vacio).forEach(k => { limitado[k] = inicial[k] ?? ""; });
+    limitado.Fecha = String(limitado.Fecha||"").slice(0,10);
+    limitado.ValorAPagar = inicial.ValorAPagar!=null ? fmtMonto(Number(inicial.ValorAPagar)) : "";
+    return limitado;
+  });
   function setField(key, value){ setForm(prev => ({...prev, [key]: value})); }
   const banco = datosBancoProveedor(form.PagadoA, proveedores);
   return (
