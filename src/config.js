@@ -1,3 +1,12 @@
+// Número pequeño de versión — pedido explícito del usuario 2026-08-31 ("un
+// mensaje en pantalla de versión nueva... puede ser el número pequeño para
+// saber cuál está arriba") — se ve chiquito al final del menú lateral
+// (Sidebar.jsx, .app-version). SUBIR ESTE NÚMERO EN CADA PUBLICACIÓN (mismo
+// hábito que actualizar CHANGELOG.md) — así, comparando el número que se ve
+// en GitHub Pages contra el de cPanel, el usuario puede confirmar de un
+// vistazo si ya subió la versión más reciente a cada sitio.
+export const APP_VERSION = "1";
+
 // =========================================================================
 // CONFIG — edítalo directamente aquí para dejar la conexión fija en producción.
 // =========================================================================

@@ -3,6 +3,7 @@
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
 ## 2026-08-31
+- **Ahora se ve un número de versión pequeño abajo del menú lateral (debajo de "Cerrar sesión")** — sirve para confirmar de un vistazo si GitHub Pages y cPanel ya tienen publicada la misma versión.
 - **La tabla de Horas Extras (Administración) ahora tiene columna Total por día y filtro de Mes** — antes mostraba todos los registros de siempre sin filtrar y sin un total por fila.
 - **Los encabezados de todas las tablas de datos (no solo los títulos de panel) ahora tienen el mismo verde claro que "Manual de usuario", y las tablas también tienen el mismo relieve (acento verde arriba + sombra elevada) que las secciones.**
 - **Todas las secciones del portal ahora se ven "levantadas" (sombra más marcada, efecto 3D)** en vez del borde fino plano de antes — un solo cambio de estilo, aplica a todo el portal.

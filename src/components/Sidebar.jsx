@@ -1,5 +1,6 @@
 import logoSidebar from '../assets/Logo Blanco.png';
 import { canAccessView } from '../lib/permissions';
+import { APP_VERSION } from '../config';
 
 // Un ícono propio por módulo (pedido explícito del usuario 2026-08-25) —
 // antes todos los ítems del menú usaban la misma marca de Lexara (ICON_SVG,
@@ -108,6 +109,7 @@ export default function Sidebar({ view, onGoView, account, liveMode, modulosPerm
           </div>
         </div>
         <button className="signout" onClick={onSignOut}>Cerrar sesión</button>
+        <div className="app-version">v{APP_VERSION}</div>
       </div>
     </aside>
   );

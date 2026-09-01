@@ -213,6 +213,12 @@
   .user-role{color:rgba(255,255,255,.55); font-size:11.5px;}
   .signout{background:none; border:none; color:rgba(255,255,255,.55); font-size:12px; cursor:pointer; padding:0; text-decoration:underline;}
   .signout:hover{color:#fff;}
+  /* Número de versión chiquito — pedido explícito del usuario 2026-08-31
+     ("mensaje en pantalla de versión nueva... el número pequeño para saber
+     cuál está arriba"): sirve para comparar de un vistazo si GitHub Pages y
+     cPanel ya tienen la misma versión publicada. Ver APP_VERSION en config.js
+     — se sube ese número en cada publicación. */
+  .app-version{margin-top:8px; font-size:10px; color:rgba(255,255,255,.3); letter-spacing:.03em;}
 
   .main{flex:1; min-width:0; display:flex; flex-direction:column;}
   .topbar{
