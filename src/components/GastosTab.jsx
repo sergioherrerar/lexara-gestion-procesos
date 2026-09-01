@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { fmtDate, fmtMonto, parseMonto, listarSoportesGastosDelMes } from '../lib/graph';
+import { fmtDate, fmtMonto, parseMonto, listarSoportesGastosDelMes, crearLinkCompartidoSoporte } from '../lib/graph';
 import { MESES_NOMBRES } from '../lib/horasExtras';
 import { TIPO_DOCUMENTO_OPTIONS, ENTIDAD_BANCARIA_OPTIONS, TIPO_CUENTA_OPTIONS, datosBancoProveedor, sumaValores, filtrarPorMes, generarRegistrosGastosExcel, generarRegistrosGastosHTML, siguienteNumeroConsecutivo } from '../lib/gastos';
 import IconButton, { IconTextButton } from './IconButton';
@@ -180,12 +180,29 @@ function RegistroForm({ inicial, conNumero, conTipo, proveedores, onGuardar, onC
 function SoporteField({ label, url, fecha, shareUrl, onElegir }){
   const [buscando, setBuscando] = useState(false);
   const [archivos, setArchivos] = useState(null);
+  const [resolviendo, setResolviendo] = useState(false);
+  const [error, setError] = useState("");
   async function handleBuscar(){
     if(!fecha){ return; }
     setBuscando(true);
     try{ setArchivos(await listarSoportesGastosDelMes(shareUrl, fecha)); }
     catch(err){ console.error(err); setArchivos([]); }
     finally{ setBuscando(false); }
+  }
+  // Bug real 2026-09-01: guardar el "webUrl" nativo del archivo (la ruta
+  // completa con todas las carpetas anidadas) fácilmente pasa de 255
+  // caracteres una vez codificados los espacios — el límite clásico de
+  // SharePoint para la URL de una columna de Hipervínculo — y SharePoint lo
+  // rechazaba con un Graph 400 genérico. Se pide un enlace de COMPARTIR
+  // (siempre corto) justo antes de guardarlo — ver crearLinkCompartidoSoporte
+  // en graph.js.
+  async function handleElegirArchivo(f){
+    setResolviendo(true); setError("");
+    try{
+      const linkCorto = await crearLinkCompartidoSoporte(f.driveId, f.itemId);
+      onElegir({ nombre: f.nombre, url: linkCorto });
+    }catch(err){ console.error(err); setError("No se pudo generar el enlace: " + err.message); }
+    finally{ setResolviendo(false); }
   }
   if(url){
     return (
@@ -195,16 +212,20 @@ function SoporteField({ label, url, fecha, shareUrl, onElegir }){
       </div>
     );
   }
+  if(resolviendo) return <span className="save-hint">Generando enlace…</span>;
   if(archivos){
     return (
-      <select
-        value=""
-        onChange={e => { const f = archivos.find(a => a.url===e.target.value); if(f) onElegir(f); }}
-        style={{maxWidth:180}}
-      >
-        <option value="">{archivos.length ? `— elegir (${archivos.length}) —` : "— sin PDF en esa carpeta —"}</option>
-        {archivos.map(a => <option value={a.url} key={a.url}>{a.nombre}</option>)}
-      </select>
+      <div>
+        <select
+          value=""
+          onChange={e => { const f = archivos.find(a => a.url===e.target.value); if(f) handleElegirArchivo(f); }}
+          style={{maxWidth:180}}
+        >
+          <option value="">{archivos.length ? `— elegir (${archivos.length}) —` : "— sin PDF en esa carpeta —"}</option>
+          {archivos.map(a => <option value={a.url} key={a.url}>{a.nombre}</option>)}
+        </select>
+        {error && <div style={{color:'var(--rojo, #a3281c)', fontSize:11, marginTop:4}}>{error}</div>}
+      </div>
     );
   }
   return (

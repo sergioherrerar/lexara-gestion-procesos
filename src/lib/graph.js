@@ -813,11 +813,14 @@ export async function listarSoportesGastosDelMes(shareUrl, fechaISO){
   const ruta = `${anio}/${mes}`;
   const archivos = [];
   try{
-    let url = `/drives/${carpeta.driveId}/items/${carpeta.folderId}:/${encodeURIComponent(ruta)}:/children?$select=name,webUrl,file&$top=200`;
+    let url = `/drives/${carpeta.driveId}/items/${carpeta.folderId}:/${encodeURIComponent(ruta)}:/children?$select=id,name,webUrl,file&$top=200`;
     while(url){
       const res = await graphFetch(url);
       const pagina = (res.value || []).filter(f => f.file); // solo archivos, no subcarpetas
-      archivos.push(...pagina.map(f => ({ nombre: f.name, url: f.webUrl })));
+      // driveId/itemId (no solo el webUrl) — hacen falta para pedir un
+      // enlace corto de compartir cuando el usuario elija uno, ver
+      // crearLinkCompartidoSoporte más abajo.
+      archivos.push(...pagina.map(f => ({ nombre: f.name, url: f.webUrl, driveId: carpeta.driveId, itemId: f.id })));
       url = res["@odata.nextLink"] || null;
     }
   }catch(err){
@@ -825,6 +828,25 @@ export async function listarSoportesGastosDelMes(shareUrl, fechaISO){
     if(!/^Graph 404/.test(err.message||"")) throw err;
   }
   return archivos.sort((a,b) => a.nombre.localeCompare(b.nombre));
+}
+
+// Bug real 2026-09-01: el "webUrl" nativo de un archivo (la ruta completa,
+// con todas las carpetas anidadas) fácilmente pasa de 255 caracteres una vez
+// con los espacios codificados como %20 — y el límite clásico de SharePoint
+// para la URL de una columna de Hipervínculo es justo 255. SharePoint lo
+// rechaza con un Graph 400 "Invalid request" genérico, sin nombrar el campo
+// (a diferencia de un Choice inválido, que sí lo nombra) — por eso costó
+// tanto encontrarlo. Se pide en cambio un enlace de COMPARTIR (siempre
+// corto, sin importar qué tan anidada esté la carpeta real) justo antes de
+// guardarlo en el Soporte Factura/Pago — mismo mecanismo que ya usan los
+// links fijos de la app (SIIGO_SHARE_URL, GASTOS_SOPORTES_SHARE_URL), solo
+// que este se genera al vuelo para el archivo puntual que se elige.
+export async function crearLinkCompartidoSoporte(driveId, itemId){
+  const res = await graphFetch(`/drives/${driveId}/items/${itemId}/createLink`, {
+    method: "POST",
+    body: JSON.stringify({ type: "view", scope: "organization" }),
+  });
+  return res.link.webUrl;
 }
 
 // Dia/Mes/Año son los campos que se digitan; Fecha se guarda concatenándolos
