@@ -418,7 +418,7 @@ export async function crearItemConLookups(siteId, list, updates){
 // límite de error, React desmonta todo el árbol si algo lanza durante el
 // render). Esta función normaliza cualquier forma rara a texto plano antes
 // de que llegue al resto del código.
-function coerceFieldValue(raw){
+export function coerceFieldValue(raw){
   if(raw == null) return "";
   const t = typeof raw;
   if(t === 'string' || t === 'number' || t === 'boolean') return raw;

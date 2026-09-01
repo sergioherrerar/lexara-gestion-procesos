@@ -3,6 +3,7 @@
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
 ## 2026-09-01
+- **Corrige pantalla de error real ("Algo salió mal") al asociar un Soporte Factura/Pago en Gastos** — el campo quedaba en memoria como el dato crudo que necesita SharePoint en vez de aplanarlo a texto para el resto de la pantalla, y el botón "Abrir" se rompía al intentar leerlo como texto.
 - **Gastos: botón "Descargar HTML"** (Cuentas de Cobro/Pagos por Realizar/Gastos) — para enviarlo a un tercero (ej. la contadora externa) con el link real de cada soporte como enlace, sin adjuntar los PDF sueltos.
 - **Corrige error real al asociar un soporte (Factura/Pago) en Gastos** — "Soporte Factura"/"Soporte Pago" son columnas de Hipervínculo en SharePoint, que esperan `{Url, Descripción}`, no el texto plano que se estaba enviando; SharePoint rechazaba el guardado.
 - **Gastos: botón "Todos" para quitar el filtro de Mes/Año** en Cuentas de Cobro/Pagos por Realizar/Gastos, y la columna "Valor a pagar" ya no se corta en 2 líneas.

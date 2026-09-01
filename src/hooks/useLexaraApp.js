@@ -1442,7 +1442,17 @@ export function useLexaraApp(){
     async function editar(id, updates){
       const item = itemsState.find(i => i.id===id);
       if(!item) return;
-      setItemsState(prev => prev.map(i => i.id===id ? {...i, ...updates} : i));
+      // Los campos de Hipervínculo (Soporte Factura/Pago) llegan acá como
+      // {Url, Description} — esa es la forma que SharePoint necesita para
+      // guardarlos, pero el resto de la app (IconButton, SoporteField) espera
+      // el link ya aplanado a texto plano, igual que al cargar la lista por
+      // primera vez (transformListItems -> coerceFieldValue). Sin este
+      // aplanado, el estado local optimista se queda con el objeto crudo y
+      // "(e || '').trim()" (IconButton) truena en el siguiente render — bug
+      // real reportado por el usuario 2026-09-01 justo al asociar un soporte.
+      const updatesAplanados = {};
+      Object.keys(updates).forEach(k => { updatesAplanados[k] = Graph.coerceFieldValue(updates[k]); });
+      setItemsState(prev => prev.map(i => i.id===id ? {...i, ...updatesAplanados} : i));
       if(liveMode){
         setSaving(true);
         const list = listByKey(listKey);
