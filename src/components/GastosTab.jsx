@@ -200,6 +200,7 @@ function SoporteField({ label, url, fecha, shareUrl, onElegir }){
     setResolviendo(true); setError("");
     try{
       const linkCorto = await crearLinkCompartidoSoporte(f.driveId, f.itemId);
+      console.log('[DIAGNÓSTICO createLink]', `(${linkCorto.length} chars)`, linkCorto);
       onElegir({ nombre: f.nombre, url: linkCorto });
     }catch(err){ console.error(err); setError("No se pudo generar el enlace: " + err.message); }
     finally{ setResolviendo(false); }

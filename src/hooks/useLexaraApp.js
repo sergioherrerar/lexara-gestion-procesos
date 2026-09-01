@@ -1457,6 +1457,15 @@ export function useLexaraApp(){
         setSaving(true);
         const list = listByKey(listKey);
         const fields = await Graph.graphFieldsFromUpdates(list.siteId || siteId, list, updates);
+        // DIAGNÓSTICO TEMPORAL 2026-09-01 (ronda 2) — el fix del enlace corto
+        // NO resolvió el mismo Graph 400 al asociar Soporte Factura/Pago en
+        // Gastos. Se deja el cuerpo exacto (con el largo de cada Url, para
+        // confirmar si de verdad quedó corto) en consola. Quitar una vez
+        // resuelto.
+        console.log('[DIAGNÓSTICO editar v2]', listKey, JSON.stringify(fields, (k,v) => {
+          if(k==='Url' && typeof v==='string') return `(${v.length} chars) ${v}`;
+          return v;
+        }, 2));
         try{
           await Graph.graphFetch(`/sites/${list.siteId || siteId}/lists/${list.listId}/items/${item._graphId || item.id}/fields`, {
             method:"PATCH", body: JSON.stringify(fields)
