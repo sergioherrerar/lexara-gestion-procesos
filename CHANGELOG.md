@@ -2,6 +2,10 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-01
+- **El correo del Impulso Procesal (Procesos judiciales) ahora arma el Asunto así: "PROCESO {Tipo de Proceso} No. {No Completo} de {Demandante} en contra de {Demandado} - Solicitud de citatorio."**
+- **El Word de Impulso Procesal (Procesos judiciales) ahora usa la misma firma completa (saludo + firma + nombre/CC/TP en una sola imagen) que ya usa el Word del Dashboard** — antes usaba una rúbrica sola con el nombre/CC/TP como texto aparte.
+
 ## 2026-08-31
 - **Ahora se ve un número de versión pequeño abajo del menú lateral (debajo de "Cerrar sesión")** — sirve para confirmar de un vistazo si GitHub Pages y cPanel ya tienen publicada la misma versión.
 - **La tabla de Horas Extras (Administración) ahora tiene columna Total por día y filtro de Mes** — antes mostraba todos los registros de siempre sin filtrar y sin un total por fila.

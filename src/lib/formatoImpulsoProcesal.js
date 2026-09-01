@@ -21,17 +21,18 @@
 // correo dejan esa parte como una instrucción entre corchetes para
 // completarla a mano (en Word, o directo en el borrador de Outlook).
 //
-// Firma: "Firma Monica Rubrica.png" es la rúbrica cortada del PROPIO Word
-// que el usuario adjuntó como modelo (sin el nombre/CC/TP quemados en la
-// imagen, a diferencia de "Firma Monica Completa.png" que usa el Word del
-// Dashboard) — así el nombre/CC/TP quedan como texto real, editable, igual
-// que en el modelo original. Datos confirmados tal cual el modelo real:
-// "C.C. No. 40.039.240 de Tunja, Boyacá." y "T.P. 97.956 del Consejo
-// Superior de la Judicatura.".
-import { fechaLarga } from './informesPDF';
+// Firma: pedido explícito del usuario 2026-09-01 ("la firma que se igual al
+// de la dashboard") — se cambió de "Firma Monica Rubrica.png" (rúbrica sola,
+// con nombre/CC/TP como texto aparte) a "Firma Monica Completa.png", el
+// mismo bloque de cierre en una sola imagen ("Cordial saludo," + firma +
+// nombre/CC/TP quemados) que ya usa el Word del Dashboard (ver
+// exportarDashboardWord.js) — mismo ancho (230) y misma forma de calcular el
+// alto proporcional con imagenComoDataUrl(), para que se vea igual en los
+// dos documentos.
+import { fechaLarga, imagenComoDataUrl } from './informesPDF';
 import { crearBorradorCorreo } from './graph';
 import { crearHeaderMembreteWord, MARGEN_SUPERIOR_MEMBRETE_MM, MARGEN_INFERIOR_MEMBRETE_MM } from './membreteWord';
-import firmaRubrica from '../assets/Firma Monica Rubrica.png';
+import firmaCompleta from '../assets/Firma Monica Completa.png';
 
 const APODERADA_NOMBRE = "MÓNICA PAOLA QUINTERO JIMÉNEZ";
 const APODERADA_CC = "C.C. No. 40.039.240 de Tunja, Boyacá.";
@@ -61,13 +62,22 @@ function datosEncabezado(proceso){
     correoDespacho: (proceso.CorreoDespacho || "").trim(),
     radicadoCompleto: proceso.NoCompleto || proceso.RadicadoActual || proceso.Radicado || "—",
     cliente: proceso.Cliente || "—",
+    // Usados en el Asunto del correo — ver asuntoCorreo() más abajo.
+    tipoProceso: (proceso.TipoProceso || "").trim(),
+    demandante: proceso.Demandante || "—",
+    demandado: proceso.Demandado || "—",
   };
 }
 
-async function bytesDeAsset(url){
-  const res = await fetch(url);
-  const buf = await res.arrayBuffer();
-  return new Uint8Array(buf);
+// Bytes reales de la imagen de firma, ya recortada al ancho de destino —
+// mismo helper que usa exportarDashboardWord.js (dataUrlABytes) para poder
+// pasarle el resultado de imagenComoDataUrl() directo a un ImageRun de docx.
+function dataUrlABytes(dataUrl){
+  const base64 = dataUrl.split(',')[1];
+  const binario = atob(base64);
+  const bytes = new Uint8Array(binario.length);
+  for(let i=0; i<binario.length; i++) bytes[i] = binario.charCodeAt(i);
+  return bytes;
 }
 
 function escapeHtml(v){
@@ -130,10 +140,12 @@ export async function generarImpulsoProcesalWord(proceso){
   // procesos judiciales"), mismo tratamiento que el Word del Dashboard (ver
   // membreteWord.js) — reemplaza el margen superior grande que traía el
   // modelo original (pensado para papel membretado ya impreso).
-  const [headerMembrete, firmaBytes] = await Promise.all([
+  const [headerMembrete, firma] = await Promise.all([
     crearHeaderMembreteWord({ Header, ImageRun, Paragraph, HorizontalPositionAlign, HorizontalPositionRelativeFrom, VerticalPositionAlign, VerticalPositionRelativeFrom, TextWrappingType }),
-    bytesDeAsset(firmaRubrica),
+    imagenComoDataUrl(firmaCompleta, 700),
   ]);
+  const firmaBytes = dataUrlABytes(firma.dataUrl);
+  const anchoFirma = 230; // mismo ancho que usa el Word del Dashboard
 
   function p(text, opts={}){
     return new Paragraph({
@@ -180,12 +192,11 @@ export async function generarImpulsoProcesalWord(proceso){
         vacio(300),
         p('De conformidad con los antecedentes expuestos, me permito SOLICITAR al Despacho el IMPULSO PROCESAL del presente trámite para que [complete aquí la solicitud puntual].'),
         vacio(700),
-        p('Con todo respeto,'),
-        vacio(200),
-        new Paragraph({ spacing:{after:80}, children:[ new ImageRun({ type:'png', data: firmaBytes, transformation:{ width:130, height:120 } }) ] }),
-        p(APODERADA_NOMBRE, { bold:true, after:0 }),
-        p(APODERADA_CC, { after:0 }),
-        p(APODERADA_TP),
+        // Bloque de cierre en una sola imagen ("Cordial saludo," + firma +
+        // nombre/CC/TP ya quemados) — igual que el Word del Dashboard, sin
+        // texto aparte porque ya viene incluido en la imagen.
+        new Paragraph({ spacing:{before:360, after:200}, children: [] }),
+        new Paragraph({ children: [ new ImageRun({ type:'png', data: firmaBytes, transformation: { width: anchoFirma, height: Math.round(anchoFirma * firma.alto/firma.ancho) } }) ] }),
       ],
     }],
   });
@@ -211,8 +222,13 @@ function descargarWord(blob, nombreArchivo){
 
 /* ---------------- 2) Correo ---------------- */
 
+// Formato de Asunto pedido explícito del usuario 2026-09-01: "PROCESO {Tipo
+// de Proceso} No. {No Completo} de {Demandante} en contra de {Demandado} -
+// Solicitud de citatorio." — si el proceso no tiene Tipo de Proceso
+// guardado, se omite esa palabra en vez de dejar un hueco en blanco.
 function asuntoCorreo(d){
-  return `Impulso procesal — Rad. ${d.radicadoCompleto}`;
+  const tipo = d.tipoProceso ? `${d.tipoProceso} ` : '';
+  return `PROCESO ${tipo}No. ${d.radicadoCompleto} de ${d.demandante} en contra de ${d.demandado} - Solicitud de citatorio.`;
 }
 
 // Crea el borrador DIRECTO en Outlook por Microsoft Graph — mismo mecanismo
