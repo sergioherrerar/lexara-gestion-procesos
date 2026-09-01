@@ -733,8 +733,11 @@ export const SHAREPOINT_LISTS_CONFIG = [
   // Módulo "Gastos" (Administración) — agregado 2026-09-01, reemplaza el
   // Excel mensual real ("PAGOS DE {MES} {AÑO}.xlsx", una carpeta por mes en
   // OneDrive con ese Excel + los PDF de soporte sueltos) por 4 listas reales
-  // de SharePoint, mismo sitio raíz que Horas Extras/Vacaciones
-  // ("Administracion Lexara" — useRootSite). El Excel tenía 4 hojas; acá cada
+  // de SharePoint. Viven en el sitio PRINCIPAL "NuevosProcesosMD" (igual que
+  // Vacaciones — SIN useRootSite/sitePathKey), confirmado por el usuario
+  // 2026-09-01 — NO en el sitio raíz "Administracion Lexara" donde vive
+  // Horas Extras (primer intento, corregido tras ver el error real "no se
+  // encontró la lista" en Configuración). El Excel tenía 4 hojas; acá cada
   // una es su propia lista:
   //   - "Proveedores Gastos MD" — el directorio maestro (persiste entre
   //     meses, se le van agregando nuevos proveedores/trabajadores).
@@ -756,7 +759,6 @@ export const SHAREPOINT_LISTS_CONFIG = [
     key: "proveedoresGastos",
     listName: "Proveedores Gastos MD",
     label: "Proveedores Gastos MD",
-    useRootSite: true,
     semanticFields: [
       {key:"PagadoA", label:"Pagado a", hint:["pagado a","pagadoa"], required:true},
       {key:"Identificacion", label:"Identificación", hint:["identificacion","identificación"]},
@@ -771,7 +773,6 @@ export const SHAREPOINT_LISTS_CONFIG = [
     key: "cuentasCobroGastos",
     listName: "Cuentas de Cobro MD",
     label: "Cuentas de Cobro MD",
-    useRootSite: true,
     semanticFields: [
       {key:"PagadoA", label:"Pagado a", hint:["pagado a","pagadoa"], required:true},
       {key:"Fecha", label:"Fecha", hint:["fecha"], required:true},
@@ -784,7 +785,6 @@ export const SHAREPOINT_LISTS_CONFIG = [
     key: "pagosPorRealizar",
     listName: "Pagos por Realizar MD",
     label: "Pagos por Realizar MD",
-    useRootSite: true,
     semanticFields: [
       {key:"Numero", label:"Numero", hint:["numero","número"]},
       {key:"PagadoA", label:"Pagado a", hint:["pagado a","pagadoa"], required:true},
@@ -799,7 +799,6 @@ export const SHAREPOINT_LISTS_CONFIG = [
     key: "gastos",
     listName: "Gastos MD",
     label: "Gastos MD",
-    useRootSite: true,
     semanticFields: [
       {key:"Numero", label:"Numero", hint:["numero","número"]},
       {key:"PagadoA", label:"Pagado a", hint:["pagado a","pagadoa"], required:true},
