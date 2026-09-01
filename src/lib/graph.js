@@ -858,7 +858,7 @@ export const IVA_RATE_DEFAULT = 19;
 // "Honorarios por Proceso" que también la necesita.
 export const ETAPA_CONTRATO_OPTIONS = [
   "% Antes de Sentencia","% Por Conciliacion","% Por Sentencia","% Reconocimiento Por Recurso",
-  "Administración Proceso","Admision","Asesoria","Asesorias","Aud artículo 72","Aud Artículo 77 del CPL y  SS",
+  "Administracion Proceso","Admision","Asesoria","Asesorias","Aud artículo 72","Aud Artículo 77 del CPL y  SS",
   "Audiencia de Conciliacion","Auto de Pruebas","Contestacion","Cuota Litis","Entrega Poder","Entrega poder Demanda",
   "Escrito de Oposicion","Honorarios","Pro Frente a las exepciones","Radicacion Conciliacion","Radicacion Demanda",
   "Reforma","Sentencia 1ra","Sentencia 2da","Tutelas","Acta de audiencia","Recurso de Reposicion",
