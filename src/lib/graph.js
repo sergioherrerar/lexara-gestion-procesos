@@ -393,12 +393,6 @@ export async function graphFieldsFromUpdates(siteId, list, updates){
 // compartido" que el resto de este archivo.
 export async function crearItemConLookups(siteId, list, updates){
   const { fields, lookupFields } = await separarCamposYLookups(siteId, list, updates);
-  // DIAGNÓSTICO TEMPORAL 2026-08-29 (2ª ronda) — el 500 persiste incluso SIN
-  // los campos de Búsqueda en el POST inicial, así que la causa no era esa.
-  // Deja en consola el cuerpo real de cada paso para ubicar la causa
-  // definitiva. Quitar en cuanto se confirme.
-  console.log('[Lexara][debug-crear] fields (paso 1, POST):', fields);
-  console.log('[Lexara][debug-crear] lookupFields (paso 2, PATCH si aplica):', lookupFields);
   const creado = await graphFetch(`/sites/${siteId}/lists/${list.listId}/items`, {
     method:"POST", body: JSON.stringify({ fields })
   });
