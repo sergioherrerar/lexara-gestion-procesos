@@ -68,7 +68,12 @@ function RelatedList({ emptyMsg, rows, columns, onOpen, onPrint, onBuscarSiigo, 
 
 // Fechas del proceso, agrupadas todas juntas en su propia pestaña
 // "Trazabilidad fechas" — ya no se mezclan con el resto de campos.
-const DATE_FIELDS = ["FechaAdmision","FechaContestacion","FechaInstancia","FechaUltimoEstado"];
+// "Fecha último estado" es la excepción: NO va acá — pedido explícito del
+// usuario 2026-09-01, va junto al campo "Estado" (ver FIELD_SECTIONS más
+// abajo) para que quien actualice el texto de Estado actualice esa fecha en
+// el mismo momento, sin tener que cambiar de pestaña — de esa fecha depende
+// el color del semáforo (ver estadoBadgeClass en graph.js).
+const DATE_FIELDS = ["FechaAdmision","FechaContestacion","FechaInstancia"];
 
 // Pestaña "Datos generales" — organizada igual que el formulario Access
 // original (agrupado por Identificación / Partes / Representación / Despacho /
@@ -101,7 +106,12 @@ const FIELD_SECTIONS = [
     // despachosParaAccion en graph.js).
     ["TipoAccion","text"],["TipoProceso","text"],["EtapaProcesal","text"],
     ["Despacho","text"],["NumeroDespacho","text"],
-    ["Estado","textarea"],["EstadoVT","select"],
+    // "Fecha último estado" va justo al lado de "Estado" (pedido explícito
+    // del usuario 2026-09-01) — así queda a la vista en el mismo momento en
+    // que se actualiza el texto, y el semáforo de color de la lista (que
+    // depende de esta fecha) no se desactualiza. Antes vivía en la pestaña
+    // aparte "Trazabilidad fechas", lejos de "Estado".
+    ["Estado","textarea"],["FechaUltimoEstado","date"],["EstadoVT","select"],
   ]},
   {title:"Detalles del despacho", fields:[
     ["LinkDespacho","link"],["CorreoDespacho","text"],["Instancia","select"],["Departamento","text"],["Municipio","text"],
