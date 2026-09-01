@@ -506,6 +506,10 @@
     color:var(--texto-suave); border-bottom:1px solid var(--verde-claro);
     background:linear-gradient(135deg, #e9f5f3, #f4faf9);
     font-weight:700;
+    /* Encabezado fijo al hacer scroll vertical dentro de un contenedor con
+       alto limitado (ver TableScrollWrap.jsx, usado en Tutelas) — sin
+       efecto en las tablas normales (sin alto limitado), no rompe nada ahí. */
+    position:sticky; top:0; z-index:2;
   }
   tbody td{padding:13px 16px; border-bottom:1px solid #f0f0ee; vertical-align:middle;}
   tbody tr:last-child td{border-bottom:none;}

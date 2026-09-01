@@ -3,6 +3,9 @@
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
 ## 2026-09-01
+- **Tutelas: nuevo orden de columnas (No. Tutela, Entidad, Cliente, Tipo Respuesta, Vencimiento, Fecha Notificación, Tema), quitando Juzgado de la vista.**
+- **Tutelas ahora siempre se ordena por "No. Tutela" (el número mayor arriba)** — antes era por Fecha Vencimiento.
+- **Tutelas: barra de desplazamiento lateral arriba de la tabla (además de la de abajo, sincronizadas) y scroll vertical propio con encabezado fijo** — antes había que bajar hasta el final de la tabla, y de toda la página, para verla completa.
 - **Corrige falsa alarma de error al asociar Soporte Factura/Pago en Gastos** — confirmamos que el guardado sí funcionaba (el link quedaba bien y abría el PDF correcto), pero Microsoft Graph a veces muestra un error genérico igual, por un problema conocido con este tipo de campo. La app ahora verifica el dato real antes de avisar que falló.
 - **Corrige la causa real del error al asociar Soporte Factura/Pago en Gastos** — la ruta completa del archivo (carpetas anidadas + nombre) pasaba fácil de 255 caracteres, el límite clásico de SharePoint para una columna de Hipervínculo, y lo rechazaba sin decir cuál campo. Ahora se pide un enlace corto de compartir antes de guardarlo.
 - **Corrige error real al Editar/Guardar en Cuentas de Cobro/Pagos por Realizar/Gastos** — el formulario reenviaba sin querer el Soporte Factura/Pago como texto plano (aunque no se ven ahí), y SharePoint lo rechazaba por ser una columna de Hipervínculo.

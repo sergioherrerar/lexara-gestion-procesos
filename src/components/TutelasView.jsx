@@ -2,18 +2,21 @@ import { ICON_SVG } from '../config';
 import { fmtDate } from '../lib/graph';
 import IconButton, { IconTextButton } from './IconButton';
 import ColumnHeaderMenu from './ColumnHeaderMenu';
+import TableScrollWrap from './TableScrollWrap';
 import { useColumnFilters } from '../hooks/useColumnFilters';
 import { useColumnSort } from '../hooks/useColumnSort';
 
+// Orden pedido explícito del usuario 2026-09-01 — Juzgado se quitó de la
+// tabla (no estaba en la lista que pidió); sigue existiendo como dato, solo
+// no se muestra acá.
 const COLUMNS = [
   {key:'noTutela', label:'No. Tutela', value: t => t.NoTutela || ""},
-  {key:'cliente', label:'Cliente', value: t => t.Cliente || ""},
   {key:'entidad', label:'Entidad', value: t => t.Entidad || ""},
-  {key:'tema', label:'Tema', value: t => t.Tema || ""},
-  {key:'juzgado', label:'Juzgado', value: t => t.Juzgado || ""},
+  {key:'cliente', label:'Cliente', value: t => t.Cliente || ""},
   {key:'tipoRespuesta', label:'Tipo Respuesta', value: t => t.TipoRespuesta || ""},
+  {key:'fechaVencimiento', label:'Vencimiento', value: t => t.FechaVencimiento || ""},
   {key:'fechaNotificacion', label:'Fecha Notificación', value: t => t.FechaNotificacion || ""},
-  {key:'fechaVencimiento', label:'Fecha Vencimiento', value: t => t.FechaVencimiento || ""},
+  {key:'tema', label:'Tema', value: t => t.Tema || ""},
   {key:'acciones', label:'Acciones', filterable:false},
 ];
 
@@ -35,11 +38,16 @@ export default function TutelasView({ tutelas, searchQuery, onOpenTutela, onCrea
   // "No Tutela" es una columna numérica en SharePoint (llega como number,
   // no string) — .toLowerCase()/.localeCompare no existen en números y
   // tumbaban la búsqueda/orden sin avisar. Se envuelve todo en String().
+  // Orden por defecto pedido explícito del usuario 2026-09-01: siempre por
+  // "No Tutela", el número mayor arriba — antes era por Fecha Vencimiento.
+  // Number() y no localeCompare: "No Tutela" es una columna numérica real
+  // (ver nota más abajo), comparar como texto ordenaría mal en cuanto
+  // cambiara de cantidad de dígitos (ej. "9" quedaría después de "10").
   const rows = tutelas.filter(t => (!query ||
     String(t.NoTutela||"").toLowerCase().includes(query) ||
     String(t.Cliente||"").toLowerCase().includes(query) ||
     String(t.Entidad||"").toLowerCase().includes(query)) && rowMatches(t, COLUMNS))
-    .sort((a,b) => String(b.FechaVencimiento||"").localeCompare(String(a.FechaVencimiento||"")));
+    .sort((a,b) => (Number(b.NoTutela)||0) - (Number(a.NoTutela)||0));
   const sortedRows = sortRows(rows, COLUMNS);
   // Diferencia por tipo (pedido explícito del usuario 2026-08-31, ajustado
   // 2026-09-01 a "solo las del día") — desglose del mismo badge "vencen
@@ -76,7 +84,7 @@ export default function TutelasView({ tutelas, searchQuery, onOpenTutela, onCrea
         <span className="badge badge-naranja">{conteoImpugnacion} Impugnaciones</span>
         <span className="badge badge-gris">{conteoOtras} Otras contestaciones</span>
       </div>
-      <div className="table-wrap">
+      <TableScrollWrap>
         <table>
           <thead>
             <tr>
@@ -89,13 +97,12 @@ export default function TutelasView({ tutelas, searchQuery, onOpenTutela, onCrea
             {sortedRows.length ? sortedRows.map(t => (
               <tr key={t.id}>
                 <td className="cliente">{t.NoTutela || "—"}</td>
-                <td>{t.Cliente || "—"}</td>
                 <td>{t.Entidad || "—"}</td>
-                <td>{t.Tema || "—"}</td>
-                <td><span className="juzgado-truncate">{t.Juzgado || "—"}</span></td>
+                <td>{t.Cliente || "—"}</td>
                 <td>{t.TipoRespuesta || "—"}</td>
-                <td>{fmtDate(t.FechaNotificacion)}</td>
                 <td>{fmtDate(t.FechaVencimiento)}</td>
+                <td>{fmtDate(t.FechaNotificacion)}</td>
+                <td>{t.Tema || "—"}</td>
                 <td style={{whiteSpace:'nowrap'}}>
                   <div className="row-actions">
                     <IconButton icon="edit" variant="edit" label={canWrite ? "Editar tutela" : "Ver tutela"} onClick={() => onOpenTutela(t.id)} />
@@ -105,11 +112,11 @@ export default function TutelasView({ tutelas, searchQuery, onOpenTutela, onCrea
                 </td>
               </tr>
             )) : (
-              <tr><td colSpan={9}><div className="empty-state"><div className="mark" dangerouslySetInnerHTML={{__html: ICON_SVG}} />No hay tutelas para mostrar.</div></td></tr>
+              <tr><td colSpan={8}><div className="empty-state"><div className="mark" dangerouslySetInnerHTML={{__html: ICON_SVG}} />No hay tutelas para mostrar.</div></td></tr>
             )}
           </tbody>
         </table>
-      </div>
+      </TableScrollWrap>
     </div>
   );
 }
