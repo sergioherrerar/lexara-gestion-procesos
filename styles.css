@@ -398,7 +398,12 @@
     padding:3px 9px; border-radius:20px; font-size:11.5px; font-weight:600;
     white-space:nowrap;
   }
-  .badge-verde{background:#e3efee; color:var(--verde-oscuro);}
+  /* Verde más saturado — pedido explícito del usuario 2026-09-01: el tono
+     anterior (#e3efee, casi sin saturación) se confundía a simple vista con
+     el gris de Terminado (badge-gris, #f4f4f2 — casi el mismo brillo). Este
+     verde menta queda al mismo nivel de saturación que naranja/rojo de
+     abajo, para que las 4 categorías se distingan de un vistazo. */
+  .badge-verde{background:#d7f2e4; color:var(--verde-oscuro);}
   .badge-naranja{background:#fdece0; color:#b3590a;}
   .badge-amarillo{background:#fef4de; color:#8a6410;}
   .badge-gris{background:var(--gris-claro); color:var(--texto-suave);}

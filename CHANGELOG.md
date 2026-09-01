@@ -3,6 +3,7 @@
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
 ## 2026-09-01
+- **El verde de los badges (Estado de Procesos, Pagada en Facturas, etc.) ahora es un verde menta más notorio** — antes era un tono tan pálido que se confundía a simple vista con el gris de "Terminado".
 - **Corrige un bug real: los campos de fecha del formulario de Procesos judiciales (Fecha último estado, Fecha de admisión, etc.) se veían vacíos aunque el dato ya estuviera guardado** — pasaba cuando SharePoint devuelve la fecha con hora incluida; el recuadro de fecha del navegador la rechazaba en silencio. Ahora se recorta solo al día, mes y año antes de mostrarla.
 - **Las cajas "Tutelas / Impugnaciones / Otras contestaciones" (Tutelas) ahora quedan alineadas a la derecha y solo cuentan lo que vence HOY** — antes contaban todo lo filtrado/buscado en pantalla, sin importar la fecha; ahora son el desglose por tipo del mismo badge "vencen hoy".
 - **El campo "Fecha último estado" ahora se edita justo al lado de "Estado" (Procesos judiciales)** — antes vivía aparte, en la pestaña "Trazabilidad fechas". Así, quien actualiza el texto de Estado actualiza esa fecha en el mismo momento, y el semáforo de color de la lista (que depende de esa fecha) no se desactualiza.
