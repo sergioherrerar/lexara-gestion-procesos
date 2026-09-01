@@ -177,6 +177,22 @@ export default function App(){
             onCrearPeriodoVacaciones={app.crearPeriodoVacaciones}
             onEditarPeriodoVacaciones={app.editarPeriodoVacaciones}
             onEliminarPeriodoVacaciones={app.eliminarPeriodoVacaciones}
+            proveedoresGastos={app.proveedoresGastos}
+            cuentasCobroGastos={app.cuentasCobroGastos}
+            pagosPorRealizar={app.pagosPorRealizar}
+            gastos={app.gastos}
+            onCrearProveedorGastos={app.crearProveedorGastos}
+            onEditarProveedorGastos={app.editarProveedorGastos}
+            onEliminarProveedorGastos={app.eliminarProveedorGastos}
+            onCrearCuentaCobroGastos={app.crearCuentaCobroGastos}
+            onEditarCuentaCobroGastos={app.editarCuentaCobroGastos}
+            onEliminarCuentaCobroGastos={app.eliminarCuentaCobroGastos}
+            onCrearPagoPorRealizar={app.crearPagoPorRealizar}
+            onEditarPagoPorRealizar={app.editarPagoPorRealizar}
+            onEliminarPagoPorRealizar={app.eliminarPagoPorRealizar}
+            onCrearGasto={app.crearGasto}
+            onEditarGasto={app.editarGasto}
+            onEliminarGasto={app.eliminarGasto}
           />
         )}
         {app.view === 'setup' && canAccessView(app.modulosPermitidos, 'setup') && (

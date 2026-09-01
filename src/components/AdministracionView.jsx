@@ -4,6 +4,7 @@ import VacacionesTab from './VacacionesTab';
 import OrdenesColmedicaTab from './OrdenesColmedicaTab';
 import HonorariosPorProcesoTab from './HonorariosPorProcesoTab';
 import HorasExtrasTab from './HorasExtrasTab';
+import GastosTab from './GastosTab';
 import { IconTextButton } from './IconButton';
 import { generarCertificacionColaboradorPDF } from '../lib/informeCertificacion';
 
@@ -23,6 +24,7 @@ const TABS = [
   {key:'ordenesColmedica', label:'Órdenes Colmédica'},
   {key:'honorariosPorProceso', label:'Honorarios por Proceso'},
   {key:'horasExtras', label:'Horas Extras'},
+  {key:'gastos', label:'Gastos'},
 ];
 
 function CertificacionesTab({ colaboradores, notify }){
@@ -89,7 +91,12 @@ function DocumentosTab({ config }){
   );
 }
 
-export default function AdministracionView({ colaboradores, searchQuery, onOpenColaborador, onCreateColaborador, onDeleteColaborador, canWrite = true, notify, config, tutelas, valoresEntidad, clientes, procesos, onAbrirBorradorOrdenCompra, onAbrirBorradorFactura, horasExtras, onAprobarHoraExtra, vacacionesPeriodos, onCrearPeriodoVacaciones, onEditarPeriodoVacaciones, onEliminarPeriodoVacaciones }){
+export default function AdministracionView({ colaboradores, searchQuery, onOpenColaborador, onCreateColaborador, onDeleteColaborador, canWrite = true, notify, config, tutelas, valoresEntidad, clientes, procesos, onAbrirBorradorOrdenCompra, onAbrirBorradorFactura, horasExtras, onAprobarHoraExtra, vacacionesPeriodos, onCrearPeriodoVacaciones, onEditarPeriodoVacaciones, onEliminarPeriodoVacaciones,
+  proveedoresGastos, cuentasCobroGastos, pagosPorRealizar, gastos,
+  onCrearProveedorGastos, onEditarProveedorGastos, onEliminarProveedorGastos,
+  onCrearCuentaCobroGastos, onEditarCuentaCobroGastos, onEliminarCuentaCobroGastos,
+  onCrearPagoPorRealizar, onEditarPagoPorRealizar, onEliminarPagoPorRealizar,
+  onCrearGasto, onEditarGasto, onEliminarGasto }){
   const [tab, setTab] = useState('colaboradores');
   return (
     <div className="view">
@@ -157,6 +164,28 @@ export default function AdministracionView({ colaboradores, searchQuery, onOpenC
           tutelas={tutelas}
           onAprobarHoraExtra={onAprobarHoraExtra}
           notify={notify}
+        />
+      )}
+      {tab==='gastos' && (
+        <GastosTab
+          config={config}
+          proveedoresGastos={proveedoresGastos}
+          cuentasCobroGastos={cuentasCobroGastos}
+          pagosPorRealizar={pagosPorRealizar}
+          gastos={gastos}
+          onCrearProveedorGastos={onCrearProveedorGastos}
+          onEditarProveedorGastos={onEditarProveedorGastos}
+          onEliminarProveedorGastos={onEliminarProveedorGastos}
+          onCrearCuentaCobroGastos={onCrearCuentaCobroGastos}
+          onEditarCuentaCobroGastos={onEditarCuentaCobroGastos}
+          onEliminarCuentaCobroGastos={onEliminarCuentaCobroGastos}
+          onCrearPagoPorRealizar={onCrearPagoPorRealizar}
+          onEditarPagoPorRealizar={onEditarPagoPorRealizar}
+          onEliminarPagoPorRealizar={onEliminarPagoPorRealizar}
+          onCrearGasto={onCrearGasto}
+          onEditarGasto={onEditarGasto}
+          onEliminarGasto={onEliminarGasto}
+          canWrite={canWrite}
         />
       )}
     </div>

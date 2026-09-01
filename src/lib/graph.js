@@ -693,7 +693,7 @@ export function siigoNombresPosibles(factura){
 // Codifica una URL de "compartir" de SharePoint/OneDrive al formato que
 // espera /shares/{id} de Graph — ver
 // https://learn.microsoft.com/graph/api/shares-get
-function codificarUrlCompartida(url){
+export function codificarUrlCompartida(url){
   const base64 = btoa(url).replace(/=+$/, "").replace(/\//g, "_").replace(/\+/g, "-");
   return "u!" + base64;
 }
@@ -779,6 +779,54 @@ export async function abrirFacturaSiigo(factura, shareUrl){
   }
   window.open(item.webUrl, '_blank', 'noopener');
 }
+// Carpeta de soportes de Gastos (GASTOS_SOPORTES_SHARE_URL) — a diferencia de
+// Siigo, acá los PDF NO siguen ningún esquema de nombre (los sube la persona
+// a mano, cualquier nombre) — así que la app no adivina cuál es el correcto,
+// solo lista los archivos de la subcarpeta Año/Mes que le corresponde a la
+// Fecha del gasto (misma estructura de carpetas que ya usa el usuario:
+// "1 Soportes de gastos MD/{Año}/{Mes en español}") y el usuario elige con
+// un clic — ver [[project_gastos_modulo]].
+const MESES_CARPETA_GASTOS = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+
+let carpetaGastosSoportes = null;
+async function resolverCarpetaGastosSoportes(shareUrl){
+  if(carpetaGastosSoportes) return carpetaGastosSoportes;
+  const id = codificarUrlCompartida(shareUrl);
+  const item = await graphFetch(`/shares/${id}/driveItem?$select=id,name,parentReference`);
+  carpetaGastosSoportes = { driveId: item.parentReference.driveId, folderId: item.id, nombre: item.name };
+  return carpetaGastosSoportes;
+}
+
+// Devuelve los archivos (nombre + link para abrir) de la subcarpeta del mes
+// que le corresponde a `fechaISO` ("AAAA-MM-DD..."). Si esa subcarpeta
+// todavía no existe (mes sin nada archivado todavía, o la fecha del gasto
+// aún no tiene carpeta creada), devuelve una lista vacía — no es un caso de
+// error, es normal para gastos sin ningún soporte físico (ver
+// [[project_gastos_modulo]], cuentas de cobro que se manejan aparte en Siigo).
+export async function listarSoportesGastosDelMes(shareUrl, fechaISO){
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(fechaISO||"");
+  if(!m) return [];
+  const anio = m[1];
+  const mes = MESES_CARPETA_GASTOS[Number(m[2])-1];
+  if(!mes) return [];
+  const carpeta = await resolverCarpetaGastosSoportes(shareUrl);
+  const ruta = `${anio}/${mes}`;
+  const archivos = [];
+  try{
+    let url = `/drives/${carpeta.driveId}/items/${carpeta.folderId}:/${encodeURIComponent(ruta)}:/children?$select=name,webUrl,file&$top=200`;
+    while(url){
+      const res = await graphFetch(url);
+      const pagina = (res.value || []).filter(f => f.file); // solo archivos, no subcarpetas
+      archivos.push(...pagina.map(f => ({ nombre: f.name, url: f.webUrl })));
+      url = res["@odata.nextLink"] || null;
+    }
+  }catch(err){
+    // 404 = esa subcarpeta de Año/Mes todavía no existe — no es un error real.
+    if(!/^Graph 404/.test(err.message||"")) throw err;
+  }
+  return archivos.sort((a,b) => a.nombre.localeCompare(b.nombre));
+}
+
 // Dia/Mes/Año son los campos que se digitan; Fecha se guarda concatenándolos
 // y dándoles formato de fecha (no se digita directamente).
 export function fechaFromPartes(dia, mes, anio){

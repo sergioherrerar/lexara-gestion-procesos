@@ -26,6 +26,15 @@ export const INITIAL_CONFIG = {
   // ("F0030000000008040000.pdf"). Ver siigoNombresPosibles/abrirFacturaSiigo
   // en graph.js y [[project_facturacion_data_model]].
   SIIGO_SHARE_URL: "https://mydabogados.sharepoint.com/:f:/g/IgAk0b_81snoRKb78a5dUN0iAQOpYavGi8KaHX16JhvFC90?e=vJOmB3",
+  // Carpeta raíz (OneDrive/SharePoint, compartida por link) donde quedan los
+  // PDF de soporte de Gastos — una subcarpeta por Año y, dentro, una por Mes
+  // en español (ej. "2026/Agosto") — confirmado por el usuario 2026-09-01,
+  // mismo mecanismo de carpeta compartida que SIIGO_SHARE_URL de arriba. A
+  // diferencia de Siigo, acá los nombres de archivo NO siguen ningún patrón
+  // (los puso la persona a mano) — la app no adivina cuál es el soporte
+  // correcto, solo lista los archivos de esa carpeta del mes para que el
+  // usuario elija con un clic. Ver lib/gastos.js y [[project_gastos_modulo]].
+  GASTOS_SOPORTES_SHARE_URL: "https://mydabogados.sharepoint.com/:f:/g/IgAADVSbZHufTL6YPL06oVvBAaBsQ2ucr_p9w8bP7v8W_HE?e=U3hfeM",
   // Portal de pagos del comercio "MD" en Davivienda (código 16310) —
   // entregado por el banco 2026-08-25. Es un formulario de LLENADO MANUAL
   // (concepto, valor, cliente, etc. — no acepta esos datos por parámetros de
@@ -721,6 +730,90 @@ export const SHAREPOINT_LISTS_CONFIG = [
       Observaciones: "Observaciones",
     },
   },
+  // Módulo "Gastos" (Administración) — agregado 2026-09-01, reemplaza el
+  // Excel mensual real ("PAGOS DE {MES} {AÑO}.xlsx", una carpeta por mes en
+  // OneDrive con ese Excel + los PDF de soporte sueltos) por 4 listas reales
+  // de SharePoint, mismo sitio raíz que Horas Extras/Vacaciones
+  // ("Administracion Lexara" — useRootSite). El Excel tenía 4 hojas; acá cada
+  // una es su propia lista:
+  //   - "Proveedores Gastos MD" — el directorio maestro (persiste entre
+  //     meses, se le van agregando nuevos proveedores/trabajadores).
+  //   - "Cuentas de Cobro MD" / "Pagos por Realizar MD" / "Gastos MD" — se
+  //     reinician cada mes (según el usuario), un registro por fila.
+  // Identificación/Entidad/Cuenta/Tipo Cuenta de cada Cuenta de
+  // cobro/Pago/Gasto NO se guardan repetidos en cada lista — la app los
+  // busca en vivo en Proveedores Gastos MD por el nombre de "Pagado a"
+  // (mismo criterio que ya usa el Excel con VLOOKUP) — ver lib/gastos.js.
+  // Los "Tipo"/"Entidad"/"Tipo Cuenta" NO son columnas Choice estrictas de
+  // SharePoint a propósito (pedido explícito del usuario, después del bug
+  // real de la tilde en "Etapa Contrato" de Facturas) — son listas fijas acá
+  // mismo en el código (TIPO_DOCUMENTO_OPTIONS/ENTIDAD_BANCARIA_OPTIONS/
+  // TIPO_CUENTA_OPTIONS en lib/gastos.js), la columna de SharePoint es texto
+  // simple. `mapping` queda vacío hasta que el usuario confirme cada una en
+  // Configuración (columnas con espacios en el nombre — SharePoint les
+  // agrega "_x0020_" al nombre interno real, no se puede adivinar a mano).
+  {
+    key: "proveedoresGastos",
+    listName: "Proveedores Gastos MD",
+    label: "Proveedores Gastos MD",
+    useRootSite: true,
+    semanticFields: [
+      {key:"PagadoA", label:"Pagado a", hint:["pagado a","pagadoa"], required:true},
+      {key:"Identificacion", label:"Identificación", hint:["identificacion","identificación"]},
+      {key:"Entidad", label:"Entidad", hint:["entidad"]},
+      {key:"Cuenta", label:"Cuenta", hint:["cuenta"]},
+      {key:"TipoCuenta", label:"Tipo Cuenta", hint:["tipo cuenta","tipocuenta"]},
+      {key:"Observacion", label:"Observación", hint:["observacion","observación"]},
+    ],
+    mapping: {},
+  },
+  {
+    key: "cuentasCobroGastos",
+    listName: "Cuentas de Cobro MD",
+    label: "Cuentas de Cobro MD",
+    useRootSite: true,
+    semanticFields: [
+      {key:"PagadoA", label:"Pagado a", hint:["pagado a","pagadoa"], required:true},
+      {key:"Fecha", label:"Fecha", hint:["fecha"], required:true},
+      {key:"ValorAPagar", label:"Valor a pagar", hint:["valor a pagar","valorapagar"], required:true},
+      {key:"Observacion", label:"Observación", hint:["observacion","observación"]},
+    ],
+    mapping: {},
+  },
+  {
+    key: "pagosPorRealizar",
+    listName: "Pagos por Realizar MD",
+    label: "Pagos por Realizar MD",
+    useRootSite: true,
+    semanticFields: [
+      {key:"Numero", label:"Numero", hint:["numero","número"]},
+      {key:"PagadoA", label:"Pagado a", hint:["pagado a","pagadoa"], required:true},
+      {key:"Fecha", label:"Fecha", hint:["fecha"], required:true},
+      {key:"ValorAPagar", label:"Valor a pagar", hint:["valor a pagar","valorapagar"], required:true},
+      {key:"TipoDocumento", label:"Tipo Documento", hint:["tipo documento","tipodocumento"]},
+      {key:"Observacion", label:"Observación", hint:["observacion","observación"]},
+    ],
+    mapping: {},
+  },
+  {
+    key: "gastos",
+    listName: "Gastos MD",
+    label: "Gastos MD",
+    useRootSite: true,
+    semanticFields: [
+      {key:"Numero", label:"Numero", hint:["numero","número"]},
+      {key:"PagadoA", label:"Pagado a", hint:["pagado a","pagadoa"], required:true},
+      {key:"Fecha", label:"Fecha", hint:["fecha"], required:true},
+      {key:"ValorAPagar", label:"Valor a pagar", hint:["valor a pagar","valorapagar"], required:true},
+      {key:"TipoDocumento", label:"Tipo Documento", hint:["tipo documento","tipodocumento"]},
+      // Hipervínculo — la app los llena eligiendo de la lista de PDF de la
+      // carpeta del mes (ver listarSoportesGastosDelMes en graph.js), nunca
+      // digitados a mano.
+      {key:"SoporteFactura", label:"Soporte Factura", hint:["soporte factura","soportefactura"]},
+      {key:"SoportePago", label:"Soporte Pago", hint:["soporte pago","soportepago"]},
+    ],
+    mapping: {},
+  },
 ];
 
 export const DEMO_PROCESOS = [
@@ -962,6 +1055,30 @@ export const DEMO_HORAS_EXTRAS = [
 export const DEMO_VACACIONES_PERIODOS = [
   {id:1, Colaborador:"Ariana Andrea Torres", FechaInicio:"2025-01-30", FechaFin:"2025-01-31", Dias:2, Observaciones:""},
   {id:2, Colaborador:"Daniel Santiago Flechas", FechaInicio:"2025-12-15", FechaFin:"2025-12-19", Dias:5, Observaciones:""},
+];
+
+// Gastos (2026-09-01) — reemplaza el Excel mensual real ("PAGOS DE {MES}
+// {AÑO}.xlsx"), 4 listas (ver SHAREPOINT_LISTS_CONFIG arriba y
+// [[project_gastos_modulo]]). Proveedores Gastos MD es la única que persiste
+// entre meses; las otras 3 se piensan como "del mes en curso".
+export const DEMO_PROVEEDORES_GASTOS = [
+  {id:1, PagadoA:"MAYERLY HERNANDEZ ZAPATA", Identificacion:"23.500.609", Entidad:"BANCOLOMBIA", Cuenta:"644-373352-55", TipoCuenta:"AHORROS", Observacion:"Arriendo bodega"},
+  {id:2, PagadoA:"CLARO", Identificacion:"800.153.993-7", Entidad:"NO APLICA", Cuenta:"6225120282", TipoCuenta:"NO APLICA", Observacion:"Líneas telefónicas"},
+  {id:3, PagadoA:"MONICA PAOLA QUINTERO JIMENEZ", Identificacion:"40.039.240", Entidad:"NO APLICA", Cuenta:"NO APLICA", TipoCuenta:"NO APLICA", Observacion:""},
+  {id:4, PagadoA:"RESEARCH & DEVELOPMENT IN LAW SAS", Identificacion:"900.834.898-0", Entidad:"BANCOLOMBIA", Cuenta:"053-40918772", TipoCuenta:"AHORROS", Observacion:"Vigilancia de procesos"},
+];
+export const DEMO_CUENTAS_COBRO_GASTOS = [
+  {id:1, PagadoA:"MAYERLY HERNANDEZ ZAPATA", Fecha:"2026-08-30", ValorAPagar:280000, Observacion:"Arriendo bodega"},
+  {id:2, PagadoA:"MONICA PAOLA QUINTERO JIMENEZ", Fecha:"2026-08-30", ValorAPagar:170000, Observacion:"SharePoint, licencias Teams, correos"},
+];
+export const DEMO_PAGOS_POR_REALIZAR = [
+  {id:1, Numero:"RDL1801", PagadoA:"RESEARCH & DEVELOPMENT IN LAW SAS", Fecha:"2026-08-31", ValorAPagar:689724, TipoDocumento:"Factura", Observacion:"Vigilancia de procesos"},
+  {id:2, Numero:"", PagadoA:"MAYERLY HERNANDEZ ZAPATA", Fecha:"2026-08-31", ValorAPagar:280000, TipoDocumento:"Soporte de pago", Observacion:"Arriendo bodega"},
+];
+export const DEMO_GASTOS = [
+  {id:1, Numero:"70940076", PagadoA:"MAYERLY HERNANDEZ ZAPATA", Fecha:"2026-08-10", ValorAPagar:280000, TipoDocumento:"Soporte de pago", SoporteFactura:"", SoportePago:""},
+  {id:2, Numero:"E6071426412", PagadoA:"CLARO", Fecha:"2026-08-17", ValorAPagar:270091.6, TipoDocumento:"Factura", SoporteFactura:"", SoportePago:""},
+  {id:3, Numero:"RDL1801", PagadoA:"RESEARCH & DEVELOPMENT IN LAW SAS", Fecha:"2026-08-31", ValorAPagar:689724, TipoDocumento:"Factura", SoporteFactura:"", SoportePago:""},
 ];
 
 export const ICON_SVG = `<svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 30 L50 50 L80 30" stroke="currentColor" stroke-width="14" fill="none" stroke-linecap="square"/><path d="M20 70 L50 50 L80 70" stroke="currentColor" stroke-width="14" fill="none" stroke-linecap="square"/></svg>`;

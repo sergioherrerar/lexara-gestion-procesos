@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { INITIAL_CONFIG, SHAREPOINT_LISTS_CONFIG, DEMO_PROCESOS, DEMO_CLIENTES, DEMO_FACTURAS, DEMO_ORDENES_COMPRA, DEMO_COLABORADORES, DEMO_FORMAS_PAGO, DEMO_DESISTIMIENTOS, DEMO_TIPOS_ACCION, DEMO_TUTELAS, DEMO_TEMAS, DEMO_VALORES_ENTIDAD, DEMO_HORAS_EXTRAS, DEMO_VACACIONES_PERIODOS } from '../config';
+import { INITIAL_CONFIG, SHAREPOINT_LISTS_CONFIG, DEMO_PROCESOS, DEMO_CLIENTES, DEMO_FACTURAS, DEMO_ORDENES_COMPRA, DEMO_COLABORADORES, DEMO_FORMAS_PAGO, DEMO_DESISTIMIENTOS, DEMO_TIPOS_ACCION, DEMO_TUTELAS, DEMO_TEMAS, DEMO_VALORES_ENTIDAD, DEMO_HORAS_EXTRAS, DEMO_VACACIONES_PERIODOS, DEMO_PROVEEDORES_GASTOS, DEMO_CUENTAS_COBRO_GASTOS, DEMO_PAGOS_POR_REALIZAR, DEMO_GASTOS } from '../config';
 import * as Graph from '../lib/graph';
 import { canWrite as canWriteForColaborador, modulosPermitidosDe, MODULOS_DISPONIBLES } from '../lib/permissions';
 
@@ -133,6 +133,14 @@ export function useLexaraApp(){
   // Horas Extras: una fila por período de vacaciones tomado, ver
   // crearPeriodoVacaciones/eliminarPeriodoVacaciones y lib/vacaciones.js.
   const [vacacionesPeriodos, setVacacionesPeriodos] = useState([]);
+  // Gastos (2026-09-01) — mismo criterio simple "sin panel propio" de arriba,
+  // 4 listas: Proveedores Gastos MD (persiste entre meses) + Cuentas de
+  // Cobro/Pagos por Realizar/Gastos MD (del mes en curso). Ver lib/gastos.js
+  // y [[project_gastos_modulo]].
+  const [proveedoresGastos, setProveedoresGastos] = useState([]);
+  const [cuentasCobroGastos, setCuentasCobroGastos] = useState([]);
+  const [pagosPorRealizar, setPagosPorRealizar] = useState([]);
+  const [gastos, setGastos] = useState([]);
   // Cuando se abre/crea una factura, orden de compra, forma de pago o
   // desistimiento DESDE dentro de un proceso, se guarda aquí su id — al
   // cerrar ese panel se reabre el mismo proceso en vez de dejar solo la
@@ -203,6 +211,10 @@ export function useLexaraApp(){
     setValoresEntidad(JSON.parse(JSON.stringify(DEMO_VALORES_ENTIDAD)));
     setHorasExtras(JSON.parse(JSON.stringify(DEMO_HORAS_EXTRAS)));
     setVacacionesPeriodos(JSON.parse(JSON.stringify(DEMO_VACACIONES_PERIODOS)));
+    setProveedoresGastos(JSON.parse(JSON.stringify(DEMO_PROVEEDORES_GASTOS)));
+    setCuentasCobroGastos(JSON.parse(JSON.stringify(DEMO_CUENTAS_COBRO_GASTOS)));
+    setPagosPorRealizar(JSON.parse(JSON.stringify(DEMO_PAGOS_POR_REALIZAR)));
+    setGastos(JSON.parse(JSON.stringify(DEMO_GASTOS)));
     setAccount({ name:"Usuario Demo", username:"demo@lexara.com" });
     setAppActive(true);
     if(!silent) setView('dashboard');
@@ -320,6 +332,10 @@ export function useLexaraApp(){
       setValoresEntidad(updated.find(l => l.key==='valoresEntidad')?.items || []);
       setHorasExtras(updated.find(l => l.key==='horasExtras')?.items || []);
       setVacacionesPeriodos(updated.find(l => l.key==='vacacionesPeriodos')?.items || []);
+      setProveedoresGastos(updated.find(l => l.key==='proveedoresGastos')?.items || []);
+      setCuentasCobroGastos(updated.find(l => l.key==='cuentasCobroGastos')?.items || []);
+      setPagosPorRealizar(updated.find(l => l.key==='pagosPorRealizar')?.items || []);
+      setGastos(updated.find(l => l.key==='gastos')?.items || []);
     }catch(err){
       console.error(err);
       notify("Se inició sesión, pero no se pudieron cargar los datos de SharePoint: " + err.message + " — probá el botón de Actualizar.", 'error');
@@ -390,6 +406,10 @@ export function useLexaraApp(){
       setValoresEntidad(updated.find(l => l.key==='valoresEntidad')?.items || []);
       setHorasExtras(updated.find(l => l.key==='horasExtras')?.items || []);
       setVacacionesPeriodos(updated.find(l => l.key==='vacacionesPeriodos')?.items || []);
+      setProveedoresGastos(updated.find(l => l.key==='proveedoresGastos')?.items || []);
+      setCuentasCobroGastos(updated.find(l => l.key==='cuentasCobroGastos')?.items || []);
+      setPagosPorRealizar(updated.find(l => l.key==='pagosPorRealizar')?.items || []);
+      setGastos(updated.find(l => l.key==='gastos')?.items || []);
     }catch(err){
       console.error(err);
       notify("No se pudo actualizar la información: " + err.message, 'error');
@@ -432,6 +452,10 @@ export function useLexaraApp(){
     setValoresEntidad(updated.find(l => l.key==='valoresEntidad')?.items || []);
     setHorasExtras(updated.find(l => l.key==='horasExtras')?.items || []);
     setVacacionesPeriodos(updated.find(l => l.key==='vacacionesPeriodos')?.items || []);
+    setProveedoresGastos(updated.find(l => l.key==='proveedoresGastos')?.items || []);
+    setCuentasCobroGastos(updated.find(l => l.key==='cuentasCobroGastos')?.items || []);
+    setPagosPorRealizar(updated.find(l => l.key==='pagosPorRealizar')?.items || []);
+    setGastos(updated.find(l => l.key==='gastos')?.items || []);
     setLiveMode(true);
   }
 
@@ -1391,6 +1415,82 @@ export function useLexaraApp(){
     requestConfirm("¿Eliminar este período de vacaciones? Esta acción no se puede deshacer.", () => performEliminarPeriodoVacaciones(id));
   }
 
+  // Gastos (2026-09-01) — 4 listas, mismo patrón simple "sin panel propio"
+  // que Vacaciones (create/editar/eliminar) de arriba. Las 4 son
+  // estructuralmente idénticas (mismo tipo de lista, mismo tipo de campos),
+  // así que se arma un solo helper genérico por operación en vez de repetir
+  // 12 funciones casi iguales — expuesto igual como funciones con nombre
+  // propio por lista, para que los componentes las usen igual que
+  // crearPeriodoVacaciones/etc. Ver lib/gastos.js y [[project_gastos_modulo]].
+  function crudGastos(listKey, itemsState, setItemsState){
+    async function crear(fields){
+      const nuevo = { id: 'tmp-' + Math.random().toString(36).slice(2), ...fields };
+      if(liveMode){
+        setSaving(true);
+        const list = listByKey(listKey);
+        const { id, ...nuevoSinId } = nuevo;
+        try{
+          const created = await Graph.crearItemConLookups(list.siteId || siteId, list, nuevoSinId);
+          nuevo.id = created.id; nuevo._graphId = created.id;
+        }catch(err){ console.error(err); notify(`No se pudo crear el registro en SharePoint: ` + err.message, 'error'); setSaving(false); return null; }
+        setSaving(false);
+      }
+      setItemsState(prev => [...prev, nuevo]);
+      notify("Creado con éxito en Lexara", 'success');
+      return nuevo;
+    }
+    async function editar(id, updates){
+      const item = itemsState.find(i => i.id===id);
+      if(!item) return;
+      setItemsState(prev => prev.map(i => i.id===id ? {...i, ...updates} : i));
+      if(liveMode){
+        setSaving(true);
+        const list = listByKey(listKey);
+        const fields = await Graph.graphFieldsFromUpdates(list.siteId || siteId, list, updates);
+        try{
+          await Graph.graphFetch(`/sites/${list.siteId || siteId}/lists/${list.listId}/items/${item._graphId || item.id}/fields`, {
+            method:"PATCH", body: JSON.stringify(fields)
+          });
+        }catch(err){ console.error(err); notify("No se pudo guardar los cambios en SharePoint: " + err.message, 'error'); setSaving(false); return; }
+        setSaving(false);
+      }
+      notify("Guardado con éxito en Lexara", 'success');
+    }
+    async function performEliminar(id){
+      const item = itemsState.find(i => i.id===id);
+      if(!item) return;
+      if(liveMode){
+        setSaving(true);
+        const list = listByKey(listKey);
+        try{
+          await Graph.graphFetch(`/sites/${list.siteId || siteId}/lists/${list.listId}/items/${item._graphId || item.id}`, { method:"DELETE" });
+        }catch(err){ console.error(err); notify("No se pudo eliminar en SharePoint: " + err.message, 'error'); setSaving(false); return; }
+        setSaving(false);
+      }
+      setItemsState(prev => prev.filter(i => i.id !== id));
+    }
+    function eliminar(id){
+      requestConfirm("¿Eliminar este registro? Esta acción no se puede deshacer.", () => performEliminar(id));
+    }
+    return { crear, editar, eliminar };
+  }
+  const crudProveedoresGastos = crudGastos('proveedoresGastos', proveedoresGastos, setProveedoresGastos);
+  const crudCuentasCobroGastos = crudGastos('cuentasCobroGastos', cuentasCobroGastos, setCuentasCobroGastos);
+  const crudPagosPorRealizar = crudGastos('pagosPorRealizar', pagosPorRealizar, setPagosPorRealizar);
+  const crudGastosMD = crudGastos('gastos', gastos, setGastos);
+  const crearProveedorGastos = crudProveedoresGastos.crear;
+  const editarProveedorGastos = crudProveedoresGastos.editar;
+  const eliminarProveedorGastos = crudProveedoresGastos.eliminar;
+  const crearCuentaCobroGastos = crudCuentasCobroGastos.crear;
+  const editarCuentaCobroGastos = crudCuentasCobroGastos.editar;
+  const eliminarCuentaCobroGastos = crudCuentasCobroGastos.eliminar;
+  const crearPagoPorRealizar = crudPagosPorRealizar.crear;
+  const editarPagoPorRealizar = crudPagosPorRealizar.editar;
+  const eliminarPagoPorRealizar = crudPagosPorRealizar.eliminar;
+  const crearGasto = crudGastosMD.crear;
+  const editarGasto = crudGastosMD.editar;
+  const eliminarGasto = crudGastosMD.eliminar;
+
   return {
     config, saveConfig, clearConfig,
     lists, listByKey, updateListMapping,
@@ -1402,6 +1502,7 @@ export function useLexaraApp(){
     toast, closeToast, confirmState, acceptConfirm, cancelConfirm, notify, requestConfirm,
     procesos, clientes, facturas, ordenesCompra, colaboradores, formasPago, desistimientos, tiposAccion,
     tutelas, temas, valoresEntidad, horasExtras, vacacionesPeriodos,
+    proveedoresGastos, cuentasCobroGastos, pagosPorRealizar, gastos,
     currentFilter, setFilter: setCurrentFilter, searchQuery, setSearchQuery: setSearchQuery,
     onSearch: setSearchQuery,
     activeProceso, openProceso, newProceso, closeDrawer, saveProceso, procesoViewOnly, rememberReturnToProceso,
@@ -1417,5 +1518,9 @@ export function useLexaraApp(){
     createTema, saveTema, createValorEntidad, saveValorEntidad,
     createHoraExtra, aprobarHoraExtra, editarHoraExtra, eliminarHoraExtra,
     crearPeriodoVacaciones, editarPeriodoVacaciones, eliminarPeriodoVacaciones,
+    crearProveedorGastos, editarProveedorGastos, eliminarProveedorGastos,
+    crearCuentaCobroGastos, editarCuentaCobroGastos, eliminarCuentaCobroGastos,
+    crearPagoPorRealizar, editarPagoPorRealizar, eliminarPagoPorRealizar,
+    crearGasto, editarGasto, eliminarGasto,
   };
 }
