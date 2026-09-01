@@ -3,6 +3,9 @@
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
 ## 2026-08-31
+- **Los encabezados de todas las tablas de datos (no solo los títulos de panel) ahora tienen el mismo verde claro que "Manual de usuario", y las tablas también tienen el mismo relieve (acento verde arriba + sombra elevada) que las secciones.**
+- **Todas las secciones del portal ahora se ven "levantadas" (sombra más marcada, efecto 3D)** en vez del borde fino plano de antes — un solo cambio de estilo, aplica a todo el portal.
+- **Todos los títulos de sección (panel) del portal ahora tienen el mismo ícono redondo que ya tenía "Manual de usuario"** — un solo cambio de estilo, aplica a todas las tablas/secciones del portal de una vez.
 - **"Vacaciones" (Administración) ya no depende del Excel real** — se reemplazó por una lista de SharePoint (una fila por período tomado, sin el límite de 36 columnas fijas que tenía el archivo). Los totales (Días laborados/generados/pendientes/tomados) se calculan en vivo con la misma fórmula real, y por primera vez esta pestaña funciona en modo demo. Se agregó también una tabla-resumen por trabajador (Fecha de ingreso, Días generados, Períodos, Días tomados, Días pendientes).
 - **"Registros de horas extras" (Informes) ahora tiene botón Eliminar, junto al de Editar** — con confirmación antes de borrar, y bloqueado (igual que Editar) en cuanto la hora extra queda Aprobada.
 - **La lista de Tutelas ahora muestra cuántas son Tutelas, Impugnaciones y Otras contestaciones** (sobre lo que esté filtrado/buscado en ese momento), junto al total de siempre.

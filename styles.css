@@ -16,7 +16,13 @@
     --texto-suave:#5c6b68;
     --blanco:#ffffff;
     --radius:10px;
-    --shadow:0 1px 2px rgba(0,30,26,.06), 0 8px 24px rgba(0,30,26,.05);
+    /* Sombra "elevada" — pedido explícito del usuario 2026-08-31: que el
+       borde exterior de cada sección se sienta más 3D, como si la tarjeta
+       estuviera levantada de la página, no solo un borde fino plano. 3
+       capas (contacto/media/ambiental) en vez de las 2 anteriores, más
+       marcadas — comparte variable con .panel/.table-wrap/.stat-card/etc.,
+       así que un solo cambio da el efecto en todo el portal a la vez. */
+    --shadow:0 1px 3px rgba(0,30,26,.10), 0 4px 10px rgba(0,30,26,.08), 0 18px 34px rgba(0,30,26,.11);
     --font-display:'Fraunces', serif;
     --font-body:'Inter', sans-serif;
     --font-mono:'JetBrains Mono', monospace;
@@ -345,8 +351,37 @@
      resuelve eso en TODOS los paneles del portal de una sola vez, sin
      alterar el resto del look ya establecido. */
   .panel{background:#fff; border:1px solid var(--gris-linea); border-top:3px solid var(--verde-oscuro); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden;}
-  .panel-head{display:flex; align-items:center; justify-content:space-between; padding:16px 20px; border-bottom:1px solid var(--gris-linea);}
-  .panel-head h3{font-family:var(--font-display); font-size:16px; font-weight:600; margin:0; color:var(--verde-oscuro);}
+  /* Fondo verde claro del encabezado — pedido explícito del usuario
+     2026-08-31, mismo tratamiento que ya tenía "Manual de usuario"
+     (.manuales-bar), ahora en el encabezado de TODOS los paneles del
+     portal de una sola vez. */
+  .panel-head{
+    display:flex; align-items:center; justify-content:space-between; padding:16px 20px;
+    background:linear-gradient(135deg, #e9f5f3, #f4faf9);
+    border-bottom:1px solid var(--verde-claro);
+  }
+  /* Ícono redondo antes del título de cada sección — pedido explícito del
+     usuario 2026-08-31, mismo tratamiento que ya tenía "Manual de usuario"
+     (.manuales-icon), ahora en TODOS los títulos de panel del portal de una
+     sola vez (un cambio de CSS, sin tocar cada componente). Un solo cambio
+     de estilo aplica a todas las secciones/tablas, igual criterio que el
+     acento verde de arriba de cada panel. Se arma con mask-image (en vez de
+     un <img>/<svg> real) para poder colorearlo con el mismo verde
+     institucional sin depender de un ícono nuevo por sección.*/
+  .panel-head h3{
+    font-family:var(--font-display); font-size:16px; font-weight:600; margin:0; color:var(--verde-oscuro);
+    display:inline-flex; align-items:center; gap:10px;
+  }
+  .panel-head h3::before{
+    content:"";
+    width:26px; height:26px; flex-shrink:0; border-radius:50%;
+    background:var(--verde-oscuro);
+    -webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 19.5A2.5 2.5 0 0 1 6.5 17H20'/%3E%3Cpath d='M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z'/%3E%3C/svg%3E");
+    mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 19.5A2.5 2.5 0 0 1 6.5 17H20'/%3E%3Cpath d='M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z'/%3E%3C/svg%3E");
+    -webkit-mask-size:13px 13px; mask-size:13px 13px;
+    -webkit-mask-repeat:no-repeat; mask-repeat:no-repeat;
+    -webkit-mask-position:center; mask-position:center;
+  }
   .panel-body{padding:6px 0;}
   .mini-row{display:flex; align-items:center; gap:12px; padding:11px 20px; border-bottom:1px solid #f0f0ee; font-size:13.5px;}
   .mini-row:last-child{border-bottom:none;}
@@ -447,11 +482,18 @@
   .manuales-label{font-size:14.5px; font-weight:700; color:var(--verde-oscuro);}
   .manuales-sub{font-size:12.5px; color:var(--texto-suave); margin-top:2px;}
   .manuales-bar .btn-primary{flex-shrink:0; text-decoration:none;}
-  .table-wrap{background:#fff; border:1px solid var(--gris-linea); border-radius:var(--radius); box-shadow:var(--shadow); overflow-x:auto; -webkit-overflow-scrolling:touch;}
+  /* Mismo relieve que .panel (sombra elevada + acento verde arriba) — pedido
+     explícito del usuario 2026-08-31 ("las tablas también con relieve"). */
+  .table-wrap{background:#fff; border:1px solid var(--gris-linea); border-top:3px solid var(--verde-oscuro); border-radius:var(--radius); box-shadow:var(--shadow); overflow-x:auto; -webkit-overflow-scrolling:touch;}
   table{width:100%; border-collapse:collapse; font-size:13.5px;}
+  /* Mismo verde claro que .panel-head — pedido explícito del usuario
+     2026-08-31 ("faltan las tablas"): el encabezado de TODAS las tablas de
+     datos del portal (no solo los títulos de panel) con el mismo
+     tratamiento que ya tenía "Manual de usuario". */
   thead th{
     text-align:left; padding:12px 16px; font-size:11px; text-transform:uppercase; letter-spacing:.05em;
-    color:var(--texto-suave); border-bottom:1px solid var(--gris-linea); background:var(--gris-claro);
+    color:var(--texto-suave); border-bottom:1px solid var(--verde-claro);
+    background:linear-gradient(135deg, #e9f5f3, #f4faf9);
     font-weight:700;
   }
   tbody td{padding:13px 16px; border-bottom:1px solid #f0f0ee; vertical-align:middle;}
