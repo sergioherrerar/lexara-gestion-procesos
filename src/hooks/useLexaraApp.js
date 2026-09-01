@@ -1457,20 +1457,33 @@ export function useLexaraApp(){
         setSaving(true);
         const list = listByKey(listKey);
         const fields = await Graph.graphFieldsFromUpdates(list.siteId || siteId, list, updates);
-        // DIAGNÓSTICO TEMPORAL 2026-09-01 (ronda 2) — el fix del enlace corto
-        // NO resolvió el mismo Graph 400 al asociar Soporte Factura/Pago en
-        // Gastos. Se deja el cuerpo exacto (con el largo de cada Url, para
-        // confirmar si de verdad quedó corto) en consola. Quitar una vez
-        // resuelto.
-        console.log('[DIAGNÓSTICO editar v2]', listKey, JSON.stringify(fields, (k,v) => {
-          if(k==='Url' && typeof v==='string') return `(${v.length} chars) ${v}`;
-          return v;
-        }, 2));
+        const urlDestino = `/sites/${list.siteId || siteId}/lists/${list.listId}/items/${item._graphId || item.id}/fields`;
         try{
-          await Graph.graphFetch(`/sites/${list.siteId || siteId}/lists/${list.listId}/items/${item._graphId || item.id}/fields`, {
-            method:"PATCH", body: JSON.stringify(fields)
-          });
-        }catch(err){ console.error(err); notify("No se pudo guardar los cambios en SharePoint: " + err.message, 'error'); setSaving(false); return; }
+          await Graph.graphFetch(urlDestino, { method:"PATCH", body: JSON.stringify(fields) });
+        }catch(err){
+          // Bug real confirmado por el usuario 2026-09-01: al guardar un
+          // campo de Hipervínculo (Soporte Factura/Pago en Gastos), Graph a
+          // veces SÍ aplica el cambio en SharePoint pero falla al armar la
+          // respuesta y devuelve un 400 "Invalid request" genérico de todos
+          // modos (confirmado: el link quedaba guardado y abría bien, pese
+          // al error). Antes de avisar que falló, se relee el campo real —
+          // si de verdad quedó guardado, no se muestra ningún error.
+          const tieneCampoLink = Object.values(fields).some(v => v && typeof v === 'object' && 'Url' in v);
+          let realmenteFallo = true;
+          if(tieneCampoLink){
+            try{
+              const actual = await Graph.graphFetch(`${urlDestino}?$select=${Object.keys(fields).join(',')}`);
+              realmenteFallo = Object.entries(fields).some(([campo, esperado]) => {
+                if(!(esperado && typeof esperado === 'object' && 'Url' in esperado)) return false;
+                return (actual?.[campo]?.Url || "") !== esperado.Url;
+              });
+            }catch(err2){ console.error('No se pudo releer para confirmar', err2); }
+          }
+          if(realmenteFallo){
+            console.error(err); notify("No se pudo guardar los cambios en SharePoint: " + err.message, 'error'); setSaving(false); return;
+          }
+          console.warn('Graph avisó error pero el campo sí quedó guardado (bug conocido de Hipervínculo), se ignora:', err);
+        }
         setSaving(false);
       }
       notify("Guardado con éxito en Lexara", 'success');
