@@ -182,7 +182,7 @@ function SoporteField({ label, url, fecha, shareUrl, onElegir }){
     return (
       <select
         value=""
-        onChange={e => { const f = archivos.find(a => a.url===e.target.value); if(f) onElegir(f.url); }}
+        onChange={e => { const f = archivos.find(a => a.url===e.target.value); if(f) onElegir(f); }}
         style={{maxWidth:180}}
       >
         <option value="">{archivos.length ? `— elegir (${archivos.length}) —` : "— sin PDF en esa carpeta —"}</option>
@@ -305,10 +305,10 @@ function RegistrosSection({ nombreLista, registros, proveedores, conNumero, conT
                   {conTipo && <td>{r.TipoDocumento || "—"}</td>}
                   <td>{r.Observacion || "—"}</td>
                   {conSoportes && (
-                    <td><SoporteField label="Soporte Factura" url={r.SoporteFactura} fecha={r.Fecha} shareUrl={shareUrl} onElegir={url => onEditar(r.id, { SoporteFactura: url || "" })} /></td>
+                    <td><SoporteField label="Soporte Factura" url={r.SoporteFactura} fecha={r.Fecha} shareUrl={shareUrl} onElegir={archivo => onEditar(r.id, { SoporteFactura: archivo ? { Url: archivo.url, Description: archivo.nombre } : "" })} /></td>
                   )}
                   {conSoportes && (
-                    <td><SoporteField label="Soporte Pago" url={r.SoportePago} fecha={r.Fecha} shareUrl={shareUrl} onElegir={url => onEditar(r.id, { SoportePago: url || "" })} /></td>
+                    <td><SoporteField label="Soporte Pago" url={r.SoportePago} fecha={r.Fecha} shareUrl={shareUrl} onElegir={archivo => onEditar(r.id, { SoportePago: archivo ? { Url: archivo.url, Description: archivo.nombre } : "" })} /></td>
                   )}
                   {canWrite && (
                     <td><div className="row-actions">
