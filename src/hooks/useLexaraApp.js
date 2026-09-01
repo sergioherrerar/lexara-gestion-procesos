@@ -1471,13 +1471,20 @@ export function useLexaraApp(){
           const tieneCampoLink = Object.values(fields).some(v => v && typeof v === 'object' && 'Url' in v);
           let realmenteFallo = true;
           if(tieneCampoLink){
-            try{
-              const actual = await Graph.graphFetch(`${urlDestino}?$select=${Object.keys(fields).join(',')}`);
-              realmenteFallo = Object.entries(fields).some(([campo, esperado]) => {
-                if(!(esperado && typeof esperado === 'object' && 'Url' in esperado)) return false;
-                return (actual?.[campo]?.Url || "") !== esperado.Url;
-              });
-            }catch(err2){ console.error('No se pudo releer para confirmar', err2); }
+            // Hasta 3 intentos con una pequeña espera — SharePoint a veces
+            // tarda un instante en reflejar el cambio ya aplicado, y una
+            // relectura inmediata puede ver todavía el valor viejo y hacer
+            // creer que de verdad falló cuando en realidad sí se guardó.
+            for(let intento=0; intento<3 && realmenteFallo; intento++){
+              if(intento>0) await new Promise(r => setTimeout(r, 700));
+              try{
+                const actual = await Graph.graphFetch(`${urlDestino}?$select=${Object.keys(fields).join(',')}`);
+                realmenteFallo = Object.entries(fields).some(([campo, esperado]) => {
+                  if(!(esperado && typeof esperado === 'object' && 'Url' in esperado)) return false;
+                  return (actual?.[campo]?.Url || "") !== esperado.Url;
+                });
+              }catch(err2){ console.error('No se pudo releer para confirmar (intento ' + (intento+1) + '):', err2); }
+            }
           }
           if(realmenteFallo){
             console.error(err); notify("No se pudo guardar los cambios en SharePoint: " + err.message, 'error'); setSaving(false); return;
