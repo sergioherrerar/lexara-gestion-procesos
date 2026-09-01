@@ -3,6 +3,7 @@
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
 ## 2026-09-01
+- **Las cajas "Tutelas / Impugnaciones / Otras contestaciones" (Tutelas) ahora quedan alineadas a la derecha y solo cuentan lo que vence HOY** — antes contaban todo lo filtrado/buscado en pantalla, sin importar la fecha; ahora son el desglose por tipo del mismo badge "vencen hoy".
 - **El campo "Fecha último estado" ahora se edita justo al lado de "Estado" (Procesos judiciales)** — antes vivía aparte, en la pestaña "Trazabilidad fechas". Así, quien actualiza el texto de Estado actualiza esa fecha en el mismo momento, y el semáforo de color de la lista (que depende de esa fecha) no se desactualiza.
 - **El correo del Impulso Procesal (Procesos judiciales) ahora arma el Asunto así: "PROCESO {Tipo de Proceso} No. {No Completo} de {Demandante} en contra de {Demandado} - Solicitud de citatorio."**
 - **El Word de Impulso Procesal (Procesos judiciales) ahora usa la misma firma completa (saludo + firma + nombre/CC/TP en una sola imagen) que ya usa el Word del Dashboard** — antes usaba una rúbrica sola con el nombre/CC/TP como texto aparte.

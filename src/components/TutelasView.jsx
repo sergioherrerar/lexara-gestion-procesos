@@ -41,12 +41,16 @@ export default function TutelasView({ tutelas, searchQuery, onOpenTutela, onCrea
     String(t.Entidad||"").toLowerCase().includes(query)) && rowMatches(t, COLUMNS))
     .sort((a,b) => String(b.FechaVencimiento||"").localeCompare(String(a.FechaVencimiento||"")));
   const sortedRows = sortRows(rows, COLUMNS);
-  // Diferencia por tipo (pedido explícito del usuario 2026-08-31) — sobre lo
-  // que se ve ahí mismo abajo (ya filtrado por búsqueda/columnas), no sobre
-  // el total sin filtrar.
-  const conteoTutela = rows.filter(t => (t.TipoRespuesta||"").trim().toUpperCase() === 'TUTELA').length;
-  const conteoImpugnacion = rows.filter(t => (t.TipoRespuesta||"").trim().toUpperCase() === 'IMPUGNACION').length;
-  const conteoOtras = rows.length - conteoTutela - conteoImpugnacion;
+  // Diferencia por tipo (pedido explícito del usuario 2026-08-31, ajustado
+  // 2026-09-01 a "solo las del día") — desglose del mismo badge "vencen
+  // hoy" de arriba: cuántas de las que vencen HOY son Tutela/Impugnación/
+  // Otras, sobre el total de `tutelas` (sin filtrar por búsqueda/columna,
+  // igual que vencenHoy) — antes contaba todo lo filtrado/buscado en
+  // pantalla, sin importar la fecha.
+  const tutelasHoy = tutelas.filter(t => String(t.FechaVencimiento||"").slice(0,10) === hoyISO());
+  const conteoTutela = tutelasHoy.filter(t => (t.TipoRespuesta||"").trim().toUpperCase() === 'TUTELA').length;
+  const conteoImpugnacion = tutelasHoy.filter(t => (t.TipoRespuesta||"").trim().toUpperCase() === 'IMPUGNACION').length;
+  const conteoOtras = tutelasHoy.length - conteoTutela - conteoImpugnacion;
 
   return (
     <div className="view">
@@ -62,11 +66,12 @@ export default function TutelasView({ tutelas, searchQuery, onOpenTutela, onCrea
           {canWrite && <IconTextButton icon="add" variant="primary" onClick={onCreateTutela}>Nueva tutela</IconTextButton>}
         </div>
       </div>
-      {/* Diferencia por tipo (pedido explícito del usuario 2026-08-31) — en
-          su propia fila, separada del título/botón de arriba: metida en la
-          misma fila del view-header (que no tiene flex-wrap) empujaba el
-          título hacia abajo en pantallas angostas. */}
-      <div style={{display:'flex', gap:10, flexWrap:'wrap', marginBottom:16}}>
+      {/* Diferencia por tipo, solo de lo que vence HOY (pedido explícito del
+          usuario 2026-09-01) — en su propia fila, separada del título/botón
+          de arriba: metida en la misma fila del view-header (que no tiene
+          flex-wrap) empujaba el título hacia abajo en pantallas angostas.
+          Alineada a la derecha, también pedido explícito. */}
+      <div style={{display:'flex', gap:10, flexWrap:'wrap', justifyContent:'flex-end', marginBottom:16}}>
         <span className="badge badge-verde">{conteoTutela} Tutelas</span>
         <span className="badge badge-naranja">{conteoImpugnacion} Impugnaciones</span>
         <span className="badge badge-gris">{conteoOtras} Otras contestaciones</span>
