@@ -198,6 +198,18 @@ const LABELS = {
 // mismo switch de tipos dos veces. Los casos especiales por campo (Cliente,
 // Tipo de Acción/Proceso/Despacho dependientes, "link" con botón de abrir)
 // se resuelven aparte, antes de caer aquí.
+// Bug real reportado por el usuario 2026-09-01 ("NO está tomando la fecha
+// del estado"): un <input type="date"> SOLO acepta el valor exacto
+// "AAAA-MM-DD" — si SharePoint devuelve la fecha con hora incluida (p.ej.
+// "2026-08-31T05:00:00Z", como llegan los campos de tipo Fecha reales por
+// Graph), el input la rechaza en silencio y se ve vacío, aunque el dato SÍ
+// esté guardado. Se recorta a los primeros 10 caracteres para todos los
+// campos "date" — tanto al cargar el formulario como al comparar si
+// cambiaron, para no reenviar de vuelta un campo que el usuario no tocó.
+function soloFechaISO(v){
+  return String(v||"").slice(0,10);
+}
+
 function renderGenericField(key, type, form, setField, canWrite){
   if(type==='richtext') return <RichTextEditor value={form[key]} onChange={v => setField(key, v)} readOnly={!canWrite} />;
   if(type==='textarea') return <textarea value={form[key]} onChange={e => setField(key, e.target.value)} readOnly={!canWrite} />;
@@ -247,6 +259,7 @@ export default function ProcesoDrawer({ proceso, clientes, colaboradores, factur
         const seguro = raw && typeof raw === 'object' ? (raw.Url || raw.LookupValue || raw.Title || "") : raw;
         initial[key] = key==='Estado' ? stripHtml(seguro)
           : type==='money' ? (seguro ? fmtMonto(parseMonto(seguro)) : "")
+          : type==='date' ? soloFechaISO(seguro)
           : (seguro || "");
       }));
       setForm(initial);
@@ -283,6 +296,7 @@ export default function ProcesoDrawer({ proceso, clientes, colaboradores, factur
       const actual = type==='money' ? parseMonto(form[key]) : (form[key] ?? "");
       const original = type==='money' ? parseMonto(proceso[key])
         : key==='Estado' ? stripHtml(proceso[key])
+        : type==='date' ? soloFechaISO(proceso[key])
         : (proceso[key] ?? "");
       const cambio = type==='money' ? actual !== original : String(actual) !== String(original ?? "");
       if(cambio) payload[key] = type==='link' && actual ? { Url: actual, Description: actual } : actual;
