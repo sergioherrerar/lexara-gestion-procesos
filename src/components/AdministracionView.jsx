@@ -89,7 +89,7 @@ function DocumentosTab({ config }){
   );
 }
 
-export default function AdministracionView({ colaboradores, searchQuery, onOpenColaborador, onCreateColaborador, onDeleteColaborador, canWrite = true, notify, config, tutelas, valoresEntidad, clientes, procesos, onAbrirBorradorOrdenCompra, onAbrirBorradorFactura, horasExtras, onAprobarHoraExtra, vacacionesPeriodos, onCrearPeriodoVacaciones, onEliminarPeriodoVacaciones }){
+export default function AdministracionView({ colaboradores, searchQuery, onOpenColaborador, onCreateColaborador, onDeleteColaborador, canWrite = true, notify, config, tutelas, valoresEntidad, clientes, procesos, onAbrirBorradorOrdenCompra, onAbrirBorradorFactura, horasExtras, onAprobarHoraExtra, vacacionesPeriodos, onCrearPeriodoVacaciones, onEditarPeriodoVacaciones, onEliminarPeriodoVacaciones }){
   const [tab, setTab] = useState('colaboradores');
   return (
     <div className="view">
@@ -126,6 +126,7 @@ export default function AdministracionView({ colaboradores, searchQuery, onOpenC
           colaboradores={colaboradores}
           vacacionesPeriodos={vacacionesPeriodos}
           onCrearPeriodo={onCrearPeriodoVacaciones}
+          onEditarPeriodo={onEditarPeriodoVacaciones}
           onEliminarPeriodo={onEliminarPeriodoVacaciones}
           notify={notify}
           canWrite={canWrite}

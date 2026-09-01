@@ -1354,6 +1354,26 @@ export function useLexaraApp(){
     notify("Creado con éxito en Lexara", 'success');
     return nuevo;
   }
+  // Editar un período ya guardado — pedido explícito del usuario 2026-09-01,
+  // mismo patrón que editarHoraExtra (sin bloqueo de "aprobado": acá no
+  // existe ese concepto, cualquier período se puede corregir).
+  async function editarPeriodoVacaciones(id, updates){
+    const periodo = vacacionesPeriodos.find(p => p.id===id);
+    if(!periodo) return;
+    setVacacionesPeriodos(prev => prev.map(p => p.id===id ? {...p, ...updates} : p));
+    if(liveMode){
+      setSaving(true);
+      const list = listByKey('vacacionesPeriodos');
+      const fields = await Graph.graphFieldsFromUpdates(list.siteId || siteId, list, updates);
+      try{
+        await Graph.graphFetch(`/sites/${list.siteId || siteId}/lists/${list.listId}/items/${periodo._graphId || periodo.id}/fields`, {
+          method:"PATCH", body: JSON.stringify(fields)
+        });
+      }catch(err){ console.error(err); notify("No se pudo guardar los cambios en SharePoint: " + err.message, 'error'); setSaving(false); return; }
+      setSaving(false);
+    }
+    notify("Guardado con éxito en Lexara", 'success');
+  }
   async function performEliminarPeriodoVacaciones(id){
     const periodo = vacacionesPeriodos.find(p => p.id===id);
     if(!periodo) return;
@@ -1396,6 +1416,6 @@ export function useLexaraApp(){
     activeTutela, openTutela, newTutela, duplicateTutela, closeTutelaDrawer, saveTutela, deleteTutela, corregirEntidadFaltanteTutelas,
     createTema, saveTema, createValorEntidad, saveValorEntidad,
     createHoraExtra, aprobarHoraExtra, editarHoraExtra, eliminarHoraExtra,
-    crearPeriodoVacaciones, eliminarPeriodoVacaciones,
+    crearPeriodoVacaciones, editarPeriodoVacaciones, eliminarPeriodoVacaciones,
   };
 }

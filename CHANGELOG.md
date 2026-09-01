@@ -3,6 +3,7 @@
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
 ## 2026-09-01
+- **Vacaciones (Administración): fechas con formato legible (antes se veía el dato crudo de SharePoint, ej. "2024-08-26T07:00:00Z"), botón Editar en cada período (además de Eliminar), botón Descargar Excel (2 hojas: Resumen y Períodos, mismo formato institucional de los demás Excel), "Días pendientes" en color naranja, y ahora solo se muestran trabajadores vigentes (no contratistas).**
 - **El verde de los badges (Estado de Procesos, Pagada en Facturas, etc.) ahora es un verde menta más notorio** — antes era un tono tan pálido que se confundía a simple vista con el gris de "Terminado".
 - **Corrige un bug real: los campos de fecha del formulario de Procesos judiciales (Fecha último estado, Fecha de admisión, etc.) se veían vacíos aunque el dato ya estuviera guardado** — pasaba cuando SharePoint devuelve la fecha con hora incluida; el recuadro de fecha del navegador la rechazaba en silencio. Ahora se recorta solo al día, mes y año antes de mostrarla.
 - **Las cajas "Tutelas / Impugnaciones / Otras contestaciones" (Tutelas) ahora quedan alineadas a la derecha y solo cuentan lo que vence HOY** — antes contaban todo lo filtrado/buscado en pantalla, sin importar la fecha; ahora son el desglose por tipo del mismo badge "vencen hoy".

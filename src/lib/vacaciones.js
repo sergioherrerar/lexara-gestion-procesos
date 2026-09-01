@@ -12,6 +12,7 @@
 //   - "Fecha de Ingreso" — ya existe en la lista Equipo MD (colaboradores)
 //   - la suma de "Dias" de la lista "Vacaciones" (una fila por período)
 // en vez de columnas fijas de un archivo.
+import { COLOR_ENCABEZADO, fechaISOaExcel } from './informeSOS';
 
 function soloFecha(v){
   const s = String(v||"").slice(0,10);
@@ -37,10 +38,19 @@ export function calcularResumen(fechaIngresoISO, periodosDeEsaPersona){
 // Une Equipo MD (colaboradores, para Nombre + Fecha de Ingreso) con la lista
 // "Vacaciones" (períodos, uno por fila) — un bloque por colaborador con
 // Fecha de Ingreso, ordenado alfabéticamente. Solo incluye colaboradores
-// ACTIVOS con Fecha de Ingreso cargada (sin eso no hay nada que calcular).
+// VIGENTES (Activo != "No") con Fecha de Ingreso cargada (sin eso no hay
+// nada que calcular), y EXCLUYE contratistas — pedido explícito del usuario
+// 2026-09-01 ("que solo se visualicen los datos de trabajadores no
+// contratistas y que estén vigentes"): las vacaciones son un concepto
+// laboral, no aplica a quien está vinculado por prestación de servicios.
+// Mismo campo/criterio "TipoColaborador === 'contratista'" que ya usa
+// informeCertificacion.js para decidir certificación laboral vs de
+// servicios.
 export function agruparVacacionesPorColaborador(colaboradores, periodos){
   return (colaboradores||[])
-    .filter(c => (c.Activo||"Sí") !== "No" && soloFecha(c.FechaIngreso))
+    .filter(c => (c.Activo||"Sí") !== "No"
+      && (c.TipoColaborador||"").toLowerCase() !== 'contratista'
+      && soloFecha(c.FechaIngreso))
     .map(c => {
       const propios = (periodos||[])
         .filter(p => (p.Colaborador||"").trim() === (c.Nombre||"").trim())
@@ -49,4 +59,59 @@ export function agruparVacacionesPorColaborador(colaboradores, periodos){
       return { id: c.id, nombre: c.Nombre, fechaIngreso: c.FechaIngreso, ...resumen, cantidadPeriodos: propios.length, historial: propios };
     })
     .sort((a,b) => (a.nombre||"").localeCompare(b.nombre||""));
+}
+
+// Excel de Vacaciones — pedido explícito del usuario 2026-09-01 ("un botón
+// donde se pueda exportar a excel toda la lista con el formato de todos los
+// excel"): mismo estilo institucional que el resto de los Excel de la app
+// (encabezado verde oscuro con texto blanco, ver COLOR_ENCABEZADO en
+// informeSOS.js) y las columnas numéricas/de fecha alineadas a la derecha
+// (ver [[feedback_alinear_valores_derecha]]). Dos hojas: "Resumen" (una fila
+// por colaborador, igual a la tabla de arriba) y "Períodos" (una fila por
+// período tomado, con el detalle completo de todos juntos).
+export async function generarVacacionesExcel(filas){
+  const { default: ExcelJS } = await import('exceljs');
+  const wb = new ExcelJS.Workbook();
+
+  function encabezar(ws, titulos, anchos){
+    ws.columns = titulos.map((t,i) => ({ width: anchos[i] || 16 }));
+    const headerRow = ws.addRow(titulos);
+    headerRow.eachCell(cell => {
+      cell.fill = { type:'pattern', pattern:'solid', fgColor:{argb: COLOR_ENCABEZADO} };
+      cell.font = { name:'Calibri', size:11, bold:true, color:{argb:'FFFFFFFF'} };
+      cell.alignment = { horizontal:'center', vertical:'middle', wrapText:true };
+    });
+    ws.views = [{ state:'frozen', ySplit:1 }];
+  }
+
+  const wsResumen = wb.addWorksheet("Resumen");
+  encabezar(wsResumen, ["Colaborador","Fecha de ingreso","Días generados","Períodos","Días tomados","Días pendientes"], [28,16,14,10,14,14]);
+  filas.forEach(f => {
+    const row = wsResumen.addRow([f.nombre, fechaISOaExcel(f.fechaIngreso), f.diasGenerados, f.cantidadPeriodos, f.diasTomados, f.diasPendientes]);
+    row.getCell(2).numFmt = 'dd/mm/yyyy';
+    [2,3,4,5,6].forEach(i => { row.getCell(i).alignment = { horizontal:'right' }; });
+  });
+
+  const wsPeriodos = wb.addWorksheet("Períodos");
+  encabezar(wsPeriodos, ["Colaborador","Fecha inicio","Fecha fin","Días","Observaciones"], [28,14,14,10,45]);
+  filas.forEach(f => {
+    f.historial.forEach(h => {
+      const row = wsPeriodos.addRow([f.nombre, fechaISOaExcel(h.FechaInicio), fechaISOaExcel(h.FechaFin), Number(h.Dias)||0, h.Observaciones || ""]);
+      row.getCell(2).numFmt = 'dd/mm/yyyy';
+      row.getCell(3).numFmt = 'dd/mm/yyyy';
+      [2,3,4].forEach(i => { row.getCell(i).alignment = { horizontal:'right' }; });
+    });
+  });
+
+  const buffer = await wb.xlsx.writeBuffer();
+  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const hoy = new Date().toISOString().slice(0,10);
+  a.href = url;
+  a.download = `Vacaciones ${hoy}.xlsx`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
 }

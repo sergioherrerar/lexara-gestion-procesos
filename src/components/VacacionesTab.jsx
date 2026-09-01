@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { agruparVacacionesPorColaborador } from '../lib/vacaciones';
+import { agruparVacacionesPorColaborador, generarVacacionesExcel } from '../lib/vacaciones';
+import { fmtDate } from '../lib/graph';
 import { FieldCard } from './FormFields';
 import IconButton, { IconTextButton } from './IconButton';
 
@@ -16,15 +17,41 @@ import IconButton, { IconTextButton } from './IconButton';
 // ahora es una lista de SharePoint normal — SÍ funciona en modo demo.
 const FORM_VACIO = { FechaInicio:"", FechaFin:"", Dias:"", Observaciones:"" };
 
-export default function VacacionesTab({ colaboradores, vacacionesPeriodos, onCrearPeriodo, onEliminarPeriodo, notify, canWrite }){
+export default function VacacionesTab({ colaboradores, vacacionesPeriodos, onCrearPeriodo, onEditarPeriodo, onEliminarPeriodo, notify, canWrite }){
   const [abiertoPara, setAbiertoPara] = useState("");
   const [form, setForm] = useState(FORM_VACIO);
   const [guardando, setGuardando] = useState(false);
+  // "Editar" (pedido explícito del usuario 2026-09-01) — mismo patrón que
+  // Horas Extras en Informes: al hacer clic en Editar en la tabla de abajo,
+  // se precarga el mismo formulario de "Agregar período" (editandoId !=
+  // null) y el botón pasa a decir "Guardar cambios", llamando
+  // onEditarPeriodo en vez de crear uno nuevo.
+  const [editandoId, setEditandoId] = useState(null);
+  const [generandoExcel, setGenerandoExcel] = useState(false);
 
   const filas = agruparVacacionesPorColaborador(colaboradores, vacacionesPeriodos);
 
+  async function handleDescargarExcel(){
+    setGenerandoExcel(true);
+    try{ await generarVacacionesExcel(filas); }
+    catch(err){ console.error(err); notify?.("No se pudo generar el Excel de Vacaciones: " + err.message, 'error'); }
+    finally{ setGenerandoExcel(false); }
+  }
+
   function abrirFormulario(nombre){
-    setAbiertoPara(nombre); setForm(FORM_VACIO);
+    setAbiertoPara(nombre); setEditandoId(null); setForm(FORM_VACIO);
+  }
+  function abrirEdicion(nombre, periodo){
+    setAbiertoPara(nombre); setEditandoId(periodo.id);
+    setForm({
+      FechaInicio: String(periodo.FechaInicio||"").slice(0,10),
+      FechaFin: String(periodo.FechaFin||"").slice(0,10),
+      Dias: periodo.Dias ?? "",
+      Observaciones: periodo.Observaciones || "",
+    });
+  }
+  function cerrarFormulario(){
+    setAbiertoPara(""); setEditandoId(null); setForm(FORM_VACIO);
   }
   function setField(key, value){ setForm(prev => ({...prev, [key]: value})); }
 
@@ -35,19 +62,26 @@ export default function VacacionesTab({ colaboradores, vacacionesPeriodos, onCre
     }
     setGuardando(true);
     try{
-      await onCrearPeriodo?.({
+      const datos = {
         Colaborador: nombre, FechaInicio: form.FechaInicio, FechaFin: form.FechaFin,
         Dias: Number(form.Dias), Observaciones: form.Observaciones,
-      });
-      setAbiertoPara(""); setForm(FORM_VACIO);
+      };
+      if(editandoId) await onEditarPeriodo?.(editandoId, datos);
+      else await onCrearPeriodo?.(datos);
+      cerrarFormulario();
     } finally { setGuardando(false); }
   }
 
   return (
     <div>
       <p className="save-hint" style={{marginBottom:14}}>
-        Días laborados/generados/pendientes/tomados se calculan en vivo (Fecha de Ingreso + la suma de los períodos de abajo) — no son celdas de ningún Excel.
+        Días laborados/generados/pendientes/tomados se calculan en vivo (Fecha de Ingreso + la suma de los períodos de abajo) — no son celdas de ningún Excel. Solo se muestran trabajadores (no contratistas) vigentes.
       </p>
+      <div style={{marginBottom:16}}>
+        <IconTextButton icon="excel" variant="secondary" onClick={handleDescargarExcel} disabled={generandoExcel}>
+          {generandoExcel ? "Generando…" : "Descargar Excel"}
+        </IconTextButton>
+      </div>
 
       {/* Vista resumen por trabajador — pedido explícito del usuario
           2026-08-31: busca la Fecha de Ingreso en Colaboradores MD, calcula
@@ -63,11 +97,11 @@ export default function VacacionesTab({ colaboradores, vacacionesPeriodos, onCre
               {filas.map(f => (
                 <tr key={f.id}>
                   <td className="cliente">{f.nombre}</td>
-                  <td>{f.fechaIngreso}</td>
+                  <td>{fmtDate(f.fechaIngreso)}</td>
                   <td>{f.diasGenerados ?? "—"}</td>
                   <td>{f.cantidadPeriodos}</td>
                   <td>{f.diasTomados ?? "—"}</td>
-                  <td>{f.diasPendientes ?? "—"}</td>
+                  <td><strong style={{color:'#b3590a'}}>{f.diasPendientes ?? "—"}</strong></td>
                 </tr>
               ))}
             </tbody>
@@ -80,15 +114,15 @@ export default function VacacionesTab({ colaboradores, vacacionesPeriodos, onCre
           <div className="panel-head">
             <h3>{f.nombre}</h3>
             {canWrite && (abiertoPara===f.nombre
-              ? <button type="button" className="btn-secondary" onClick={() => setAbiertoPara("")}>Cancelar</button>
+              ? <button type="button" className="btn-secondary" onClick={cerrarFormulario}>Cancelar</button>
               : <IconTextButton icon="add" variant="secondary" onClick={() => abrirFormulario(f.nombre)}>Agregar período</IconTextButton>)}
           </div>
           <div className="panel-body" style={{padding:'14px 20px'}}>
             <div className="field-card-grid">
-              <FieldCard label="Fecha de ingreso">{f.fechaIngreso}</FieldCard>
+              <FieldCard label="Fecha de ingreso">{fmtDate(f.fechaIngreso)}</FieldCard>
               <FieldCard label="Días laborados">{f.diasLaborados ?? "—"}</FieldCard>
               <FieldCard label="Días generados">{f.diasGenerados ?? "—"}</FieldCard>
-              <FieldCard label="Días pendientes">{f.diasPendientes ?? "—"}</FieldCard>
+              <FieldCard label="Días pendientes"><strong style={{color:'#b3590a'}}>{f.diasPendientes ?? "—"}</strong></FieldCard>
               <FieldCard label="Días tomados">{f.diasTomados ?? "—"}</FieldCard>
             </div>
 
@@ -111,7 +145,9 @@ export default function VacacionesTab({ colaboradores, vacacionesPeriodos, onCre
                     <label>Observaciones (opcional)</label>
                     <input type="text" value={form.Observaciones} onChange={e => setField('Observaciones', e.target.value)} placeholder="Ej: días no consecutivos, 1, 4, 5, 6 y 8" />
                   </div>
-                  <IconTextButton icon="add" variant="primary" onClick={() => handleGuardarPeriodo(f.nombre)} disabled={guardando}>{guardando ? "Guardando…" : "Guardar período"}</IconTextButton>
+                  <IconTextButton icon="add" variant="primary" onClick={() => handleGuardarPeriodo(f.nombre)} disabled={guardando}>
+                    {guardando ? "Guardando…" : (editandoId ? "Guardar cambios" : "Guardar período")}
+                  </IconTextButton>
                 </div>
               </div>
             )}
@@ -121,15 +157,22 @@ export default function VacacionesTab({ colaboradores, vacacionesPeriodos, onCre
               {f.historial.length ? (
                 <div className="table-wrap">
                   <table>
-                    <thead><tr><th>Fecha inicio</th><th>Fecha fin</th><th>Días</th><th>Observaciones</th>{canWrite && <th>Eliminar</th>}</tr></thead>
+                    <thead><tr><th>Fecha inicio</th><th>Fecha fin</th><th>Días</th><th>Observaciones</th>{canWrite && <th>Acciones</th>}</tr></thead>
                     <tbody>
                       {f.historial.map(h => (
                         <tr key={h.id}>
-                          <td>{h.FechaInicio || "—"}</td>
-                          <td>{h.FechaFin || "—"}</td>
+                          <td>{fmtDate(h.FechaInicio)}</td>
+                          <td>{fmtDate(h.FechaFin)}</td>
                           <td>{h.Dias ?? "—"}</td>
                           <td>{h.Observaciones || "—"}</td>
-                          {canWrite && <td><IconButton icon="delete" variant="delete" label={`Eliminar período de ${f.nombre}`} onClick={() => onEliminarPeriodo?.(h.id)} /></td>}
+                          {canWrite && (
+                            <td>
+                              <div className="row-actions">
+                                <IconButton icon="edit" variant="edit" label={`Editar período de ${f.nombre}`} onClick={() => abrirEdicion(f.nombre, h)} />
+                                <IconButton icon="delete" variant="delete" label={`Eliminar período de ${f.nombre}`} onClick={() => onEliminarPeriodo?.(h.id)} />
+                              </div>
+                            </td>
+                          )}
                         </tr>
                       ))}
                     </tbody>

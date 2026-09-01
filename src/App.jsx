@@ -175,6 +175,7 @@ export default function App(){
             onAprobarHoraExtra={app.aprobarHoraExtra}
             vacacionesPeriodos={app.vacacionesPeriodos}
             onCrearPeriodoVacaciones={app.crearPeriodoVacaciones}
+            onEditarPeriodoVacaciones={app.editarPeriodoVacaciones}
             onEliminarPeriodoVacaciones={app.eliminarPeriodoVacaciones}
           />
         )}
