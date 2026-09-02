@@ -3,6 +3,7 @@
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
 ## 2026-09-01
+- **Nuevo botón para ocultar/mostrar el menú lateral** (flecha en el borde del menú) — se reduce a solo íconos, dejando más espacio para tablas anchas como Tutelas o Gastos. Se recuerda entre sesiones.
 - **Tutelas: nuevo orden de columnas (No. Tutela, Entidad, Cliente, Tipo Respuesta, Vencimiento, Fecha Notificación, Tema), quitando Juzgado de la vista.**
 - **Tutelas ahora siempre se ordena por "No. Tutela" (el número mayor arriba)** — antes era por Fecha Vencimiento.
 - **Tutelas: barra de desplazamiento lateral arriba de la tabla (además de la de abajo, sincronizadas) y scroll vertical propio con encabezado fijo** — antes había que bajar hasta el final de la tabla, y de toda la página, para verla completa.

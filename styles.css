@@ -163,7 +163,27 @@
     display:flex;
     flex-direction:column;
     padding:22px 16px;
+    position:relative;
+    transition:width .18s ease;
   }
+  /* Botón para ocultar el menú lateral (pedido explícito del usuario
+     2026-09-01) — mismo ancho angosto (72px) y mismos elementos ocultos que
+     ya usaba la barra angosta de tablet (@media max-width:900px), solo que
+     ahora se puede activar a mano en cualquier tamaño de pantalla. Se
+     recuerda entre sesiones (ver localStorage en App.jsx). */
+  .sidebar-collapse-btn{
+    position:absolute; top:20px; right:-13px; width:26px; height:26px; border-radius:50%;
+    background:var(--verde-oscuro); border:2px solid rgba(255,255,255,.3); color:#fff;
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
+    box-shadow:0 2px 6px rgba(0,20,18,.35); z-index:5; padding:0;
+    transition:transform .18s ease;
+  }
+  .sidebar-collapse-btn:hover{background:var(--verde-oscuro-2);}
+  .sidebar-collapse-btn svg{width:14px; height:14px;}
+  .sidebar.collapsed{width:72px;}
+  .sidebar.collapsed .label-text, .sidebar.collapsed .nav-group-label, .sidebar.collapsed .sidebar-logo,
+  .sidebar.collapsed .user-name, .sidebar.collapsed .user-role{display:none;}
+  .sidebar.collapsed .sidebar-collapse-btn{transform:rotate(180deg);}
   .sidebar-overlay{display:none;}
   .mobile-nav-btn{display:none;}
   .sidebar-logo{margin:6px 0 28px; display:flex; justify-content:center;}
@@ -907,6 +927,10 @@
       background:none; border:none; color:var(--verde-oscuro); cursor:pointer;
     }
     .mobile-nav-btn svg{width:22px; height:22px;}
+    /* El menú deslizable de celular ya se abre/cierra con el botón de la
+       barra superior — el botón de "ocultar" (pensado para escritorio) no
+       aplica acá, y además se vería feo pegado al borde del panel deslizante. */
+    .sidebar-collapse-btn{display:none;}
     .topbar{padding:0 14px 0 10px; gap:8px;}
     .search-bar{width:auto; flex:1; min-width:0; max-width:220px;}
     .drawer-close{padding:10px;}

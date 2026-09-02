@@ -26,6 +26,20 @@ import { Toast, ConfirmDialog } from './components/Feedback';
 export default function App(){
   const app = useLexaraApp();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  // Ocultar el menú lateral (pedido explícito del usuario 2026-09-01) — se
+  // recuerda entre sesiones en localStorage, para no tener que volver a
+  // ocultarlo cada vez que se recarga la página. Solo aplica a la barra de
+  // escritorio (el menú deslizable de celular usa mobileNavOpen, aparte).
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    try{ return localStorage.getItem('lexara-sidebar-collapsed') === '1'; }catch{ return false; }
+  });
+  function toggleSidebarCollapsed(){
+    setSidebarCollapsed(prev => {
+      const next = !prev;
+      try{ localStorage.setItem('lexara-sidebar-collapsed', next ? '1' : '0'); }catch{}
+      return next;
+    });
+  }
 
   // Si los módulos permitidos cambian (o ya estaba en una sección
   // restringida) lo devuelve al Dashboard — no solo se oculta del menú, se
@@ -76,6 +90,8 @@ export default function App(){
         modulosPermitidos={app.modulosPermitidos}
         onSignOut={app.signOut}
         mobileOpen={mobileNavOpen}
+        collapsed={sidebarCollapsed}
+        onToggleCollapsed={toggleSidebarCollapsed}
       />
       <div className="main">
         <Topbar
