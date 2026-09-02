@@ -3,6 +3,7 @@
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
 ## 2026-09-01
+- **Corrige la causa real (esta vez sí) del error al asociar Soporte Factura/Pago en Gastos** — el diagnóstico anterior (línea de abajo, "Corrige falsa alarma...") estaba equivocado: el guardado nunca funcionó de verdad desde la app. La app mandaba el Soporte como un objeto (formato que SharePoint solo usa para *leer* ese dato), pero para *guardarlo* exige un texto simple "URL, Descripción". Con eso corregido, el Soporte ahora sí queda guardado en SharePoint.
 - **El texto para mostrar del Soporte Factura/Pago en Gastos ahora usa el "Tipo Documento"** (ej. "Cuenta de cobro") en vez del nombre del archivo.
 - **Nuevo botón para ocultar/mostrar el menú lateral** (flecha en el borde del menú) — se reduce a solo íconos, dejando más espacio para tablas anchas como Tutelas o Gastos. Se recuerda entre sesiones.
 - **Tutelas: nuevo orden de columnas (No. Tutela, Entidad, Cliente, Tipo Respuesta, Vencimiento, Fecha Notificación, Tema), quitando Juzgado de la vista.**

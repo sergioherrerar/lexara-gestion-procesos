@@ -354,6 +354,22 @@ async function separarCamposYLookups(siteId, list, updates){
       // error interno, no de validación como el 400 de un Choice) — mucho
       // más difícil de ubicar porque no nombra el campo ni el motivo.
       fields[internalName] = (updates[key] === "Sí" || updates[key] === true);
+    } else if(updates[key] && typeof updates[key] === 'object' && !Array.isArray(updates[key]) && 'Url' in updates[key]){
+      // Bug real 2026-09-01/02, confirmado con datos reales (Soporte
+      // Factura/Pago en Gastos): una columna de "Hipervínculo o imagen" en
+      // SharePoint la DEVUELVE Graph como objeto {Url, Description} — pero
+      // solo acepta ESE formato al LEER. Al escribir (PATCH a
+      // .../items/{id}/fields) exige un string "URL, Descripción" (así lo
+      // documenta el propio ejemplo oficial de Graph). Mandar el objeto (lo
+      // intuitivo, calcado del formato de lectura) producía un 400 "Invalid
+      // request" genérico en el 100% de los intentos — no era un bug
+      // esporádico de Graph como se pensó al principio, la fila que sí se
+      // veía guardada en la app había sido corregida a mano en SharePoint,
+      // no por la app. La coma dentro de la descripción se limpia por si
+      // acaso, porque el formato solo reconoce la primera coma como
+      // separador.
+      const url = updates[key].Url || "";
+      fields[internalName] = url ? `${url}, ${String(updates[key].Description || "").replace(/,/g, ' ')}` : "";
     } else {
       // Choice con texto libre (allowTextEntry) a veces trae espacios de
       // sobra en los valores que arman los <select> de la app (ej. "GRUPO

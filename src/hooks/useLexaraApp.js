@@ -1461,35 +1461,7 @@ export function useLexaraApp(){
         try{
           await Graph.graphFetch(urlDestino, { method:"PATCH", body: JSON.stringify(fields) });
         }catch(err){
-          // Bug real confirmado por el usuario 2026-09-01: al guardar un
-          // campo de Hipervínculo (Soporte Factura/Pago en Gastos), Graph a
-          // veces SÍ aplica el cambio en SharePoint pero falla al armar la
-          // respuesta y devuelve un 400 "Invalid request" genérico de todos
-          // modos (confirmado: el link quedaba guardado y abría bien, pese
-          // al error). Antes de avisar que falló, se relee el campo real —
-          // si de verdad quedó guardado, no se muestra ningún error.
-          const tieneCampoLink = Object.values(fields).some(v => v && typeof v === 'object' && 'Url' in v);
-          let realmenteFallo = true;
-          if(tieneCampoLink){
-            // Hasta 3 intentos con una pequeña espera — SharePoint a veces
-            // tarda un instante en reflejar el cambio ya aplicado, y una
-            // relectura inmediata puede ver todavía el valor viejo y hacer
-            // creer que de verdad falló cuando en realidad sí se guardó.
-            for(let intento=0; intento<3 && realmenteFallo; intento++){
-              if(intento>0) await new Promise(r => setTimeout(r, 700));
-              try{
-                const actual = await Graph.graphFetch(`${urlDestino}?$select=${Object.keys(fields).join(',')}`);
-                realmenteFallo = Object.entries(fields).some(([campo, esperado]) => {
-                  if(!(esperado && typeof esperado === 'object' && 'Url' in esperado)) return false;
-                  return (actual?.[campo]?.Url || "") !== esperado.Url;
-                });
-              }catch(err2){ console.error('No se pudo releer para confirmar (intento ' + (intento+1) + '):', err2); }
-            }
-          }
-          if(realmenteFallo){
-            console.error(err); notify("No se pudo guardar los cambios en SharePoint: " + err.message, 'error'); setSaving(false); return;
-          }
-          console.warn('Graph avisó error pero el campo sí quedó guardado (bug conocido de Hipervínculo), se ignora:', err);
+          console.error(err); notify("No se pudo guardar los cambios en SharePoint: " + err.message, 'error'); setSaving(false); return;
         }
         setSaving(false);
       }
