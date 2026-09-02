@@ -215,15 +215,21 @@ function SoporteField({ label, url, fecha, shareUrl, onElegir }){
   if(resolviendo) return <span className="save-hint">Generando enlace…</span>;
   if(archivos){
     return (
-      <div>
+      <div style={{display:'flex', alignItems:'center', gap:4}}>
         <select
           value=""
           onChange={e => { const f = archivos.find(a => a.url===e.target.value); if(f) handleElegirArchivo(f); }}
           style={{maxWidth:180}}
         >
-          <option value="">{archivos.length ? `— elegir (${archivos.length}) —` : "— sin PDF en esa carpeta —"}</option>
+          <option value="">{buscando ? "— actualizando… —" : archivos.length ? `— elegir (${archivos.length}) —` : "— sin PDF en esa carpeta —"}</option>
           {archivos.map(a => <option value={a.url} key={a.url}>{a.nombre}</option>)}
         </select>
+        {/* La lista solo se pide al abrir por primera vez — si el usuario
+            sube un PDF nuevo a la carpeta DESPUÉS de eso, sin este botón no
+            hay forma de verlo sin recargar toda la página. Bug real
+            reportado 2026-09-02 ("al introducir más documentos a la
+            carpeta no se actualiza"). */}
+        <IconButton icon="refresh" variant="refresh" label="Actualizar lista de archivos" spinning={buscando} onClick={handleBuscar} />
         {error && <div style={{color:'var(--rojo, #a3281c)', fontSize:11, marginTop:4}}>{error}</div>}
       </div>
     );
