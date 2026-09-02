@@ -1458,6 +1458,12 @@ export function useLexaraApp(){
         const list = listByKey(listKey);
         const fields = await Graph.graphFieldsFromUpdates(list.siteId || siteId, list, updates);
         const urlDestino = `/sites/${list.siteId || siteId}/lists/${list.listId}/items/${item._graphId || item.id}/fields`;
+        // Diagnóstico temporal 2026-09-02: el arreglo del formato de
+        // Hipervínculo (string "URL, Descripción") no bastó, sigue el mismo
+        // 400 genérico — este log deja ver el cuerpo EXACTO que se manda,
+        // para confirmar si de verdad se está armando como se espera. Quitar
+        // en cuanto quede resuelto.
+        console.log('[Lexara][diag-soporte] PATCH', urlDestino, JSON.stringify(fields));
         try{
           await Graph.graphFetch(urlDestino, { method:"PATCH", body: JSON.stringify(fields) });
         }catch(err){
