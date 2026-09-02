@@ -117,11 +117,11 @@ function RegistroForm({ inicial, conNumero, conTipo, proveedores, onGuardar, onC
   const vacio = { Numero:"", PagadoA:"", Observacion:"", Fecha:"", ValorAPagar:"", TipoDocumento:"" };
   // Ojo: el formulario SOLO maneja las llaves de `vacio` — nunca hace
   // `{...inicial}` completo. Un registro real trae también SoporteFactura/
-  // SoportePago (columnas de Hipervínculo), y si esas 2 se colaran acá
-  // reenviarían ese link como texto plano al guardar (aunque el usuario no
-  // haya tocado nada), y SharePoint las rechaza — bug real reportado por el
-  // usuario 2026-09-01 ("cuando le doy editar lo guardo sin hacer cambios
-  // sale igual"). Los soportes se editan aparte, solo desde SoporteField.
+  // SoportePago, y si esas 2 se colaran acá se reenviarían de nuevo al
+  // guardar (aunque el usuario no haya tocado nada) — bug real reportado
+  // por el usuario 2026-09-01 ("cuando le doy editar lo guardo sin hacer
+  // cambios sale igual"). Los soportes se editan aparte, solo desde
+  // SoporteField.
   // "Fecha" se recorta a los primeros 10 caracteres por el mismo motivo que
   // ya se corrigió en ProcesoDrawer.jsx: si SharePoint la devuelve con hora
   // incluida, el <input type="date"> la rechaza en silencio y se ve vacía.
@@ -353,10 +353,10 @@ function RegistrosSection({ nombreLista, registros, proveedores, conNumero, conT
                   {conTipo && <td>{r.TipoDocumento || "—"}</td>}
                   <td>{r.Observacion || "—"}</td>
                   {conSoportes && (
-                    <td><SoporteField label="Soporte Factura" url={r.SoporteFactura} fecha={r.Fecha} shareUrl={shareUrl} onElegir={archivo => onEditar(r.id, { SoporteFactura: archivo ? { Url: archivo.url, Description: r.TipoDocumento || archivo.nombre } : "" })} /></td>
+                    <td><SoporteField label="Soporte Factura" url={r.SoporteFactura} fecha={r.Fecha} shareUrl={shareUrl} onElegir={archivo => onEditar(r.id, { SoporteFactura: archivo ? archivo.url : null })} /></td>
                   )}
                   {conSoportes && (
-                    <td><SoporteField label="Soporte Pago" url={r.SoportePago} fecha={r.Fecha} shareUrl={shareUrl} onElegir={archivo => onEditar(r.id, { SoportePago: archivo ? { Url: archivo.url, Description: r.TipoDocumento || archivo.nombre } : "" })} /></td>
+                    <td><SoporteField label="Soporte Pago" url={r.SoportePago} fecha={r.Fecha} shareUrl={shareUrl} onElegir={archivo => onEditar(r.id, { SoportePago: archivo ? archivo.url : null })} /></td>
                   )}
                   {canWrite && (
                     <td><div className="row-actions">

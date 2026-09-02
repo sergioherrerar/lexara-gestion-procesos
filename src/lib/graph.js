@@ -355,19 +355,20 @@ async function separarCamposYLookups(siteId, list, updates){
       // más difícil de ubicar porque no nombra el campo ni el motivo.
       fields[internalName] = (updates[key] === "Sí" || updates[key] === true);
     } else if(updates[key] && typeof updates[key] === 'object' && !Array.isArray(updates[key]) && 'Url' in updates[key]){
-      // Bug real 2026-09-01/02, confirmado con datos reales (Soporte
-      // Factura/Pago en Gastos): una columna de "Hipervínculo o imagen" en
-      // SharePoint la DEVUELVE Graph como objeto {Url, Description} — pero
-      // solo acepta ESE formato al LEER. Al escribir (PATCH a
-      // .../items/{id}/fields) exige un string "URL, Descripción" (así lo
-      // documenta el propio ejemplo oficial de Graph). Mandar el objeto (lo
-      // intuitivo, calcado del formato de lectura) producía un 400 "Invalid
-      // request" genérico en el 100% de los intentos — no era un bug
-      // esporádico de Graph como se pensó al principio, la fila que sí se
-      // veía guardada en la app había sido corregida a mano en SharePoint,
-      // no por la app. La coma dentro de la descripción se limpia por si
-      // acaso, porque el formato solo reconoce la primera coma como
-      // separador.
+      // Nota histórica 2026-09-01/02: se intentó guardar Soporte
+      // Factura/Pago (Gastos) en una columna real de "Hipervínculo o
+      // imagen" mandando este objeto {Url, Description} (formato en el que
+      // Graph SÍ lo devuelve al leer), y luego un string "URL, Descripción"
+      // — ambos formatos fallan con el mismo 400 "Invalid request" genérico
+      // en el 100% de los intentos. Conclusión confirmada: Microsoft Graph
+      // no permite escribir columnas de Hipervínculo por
+      // .../items/{id}/fields, sin importar el formato — no es un problema
+      // de formato de nuestro lado. La solución real fue dejar de usar ese
+      // tipo de columna (Soporte Factura/Pago ahora son "Una sola línea de
+      // texto" en SharePoint, ver GastosTab.jsx). Esta rama queda solo por
+      // si algún otro campo (ej. el tipo 'link' de ProcesoDrawer) todavía
+      // arma este mismo objeto — se manda como string por si acaso, aunque
+      // no está probado que Graph lo acepte tampoco.
       const url = updates[key].Url || "";
       fields[internalName] = url ? `${url}, ${String(updates[key].Description || "").replace(/,/g, ' ')}` : "";
     } else {
