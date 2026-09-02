@@ -767,7 +767,11 @@ export const SHAREPOINT_LISTS_CONFIG = [
       {key:"TipoCuenta", label:"Tipo Cuenta", hint:["tipo cuenta","tipocuenta"]},
       {key:"Observacion", label:"Observación", hint:["observacion","observación"]},
     ],
-    mapping: {},
+    // Mapeo real confirmado por el usuario 2026-09-02 (ver
+    // lexara-mapeo-sharepoint.json) — se deja de default para que un
+    // navegador nuevo (sin este mapeo ya guardado en su localStorage) no
+    // tenga que volver a adivinarlo en Configuración.
+    mapping: { PagadoA:"Pagadoa", Identificacion:"identificaci_x00f3_n", Entidad:"Entidad", Cuenta:"Cuenta", TipoCuenta:"TipoCuenta", Observacion:"Observacion" },
   },
   {
     key: "cuentasCobroGastos",
@@ -779,7 +783,7 @@ export const SHAREPOINT_LISTS_CONFIG = [
       {key:"ValorAPagar", label:"Valor a pagar", hint:["valor a pagar","valorapagar"], required:true},
       {key:"Observacion", label:"Observación", hint:["observacion","observación"]},
     ],
-    mapping: {},
+    mapping: { PagadoA:"Pagadoa", Fecha:"Fecha", ValorAPagar:"Valorapagar", Observacion:"Observaci_x00f3_n" },
   },
   {
     key: "pagosPorRealizar",
@@ -793,7 +797,7 @@ export const SHAREPOINT_LISTS_CONFIG = [
       {key:"TipoDocumento", label:"Tipo Documento", hint:["tipo documento","tipodocumento"]},
       {key:"Observacion", label:"Observación", hint:["observacion","observación"]},
     ],
-    mapping: {},
+    mapping: { Numero:"Numero", PagadoA:"Pagadoa", Fecha:"Fecha", ValorAPagar:"Valorapagar", TipoDocumento:"TipoCuenta", Observacion:"Observacion" },
   },
   {
     key: "gastos",
@@ -805,13 +809,15 @@ export const SHAREPOINT_LISTS_CONFIG = [
       {key:"Fecha", label:"Fecha", hint:["fecha"], required:true},
       {key:"ValorAPagar", label:"Valor a pagar", hint:["valor a pagar","valorapagar"], required:true},
       {key:"TipoDocumento", label:"Tipo Documento", hint:["tipo documento","tipodocumento"]},
-      // Hipervínculo — la app los llena eligiendo de la lista de PDF de la
-      // carpeta del mes (ver listarSoportesGastosDelMes en graph.js), nunca
-      // digitados a mano.
+      // Columnas de texto plano (no Hipervínculo — ver graph.js,
+      // separarCamposYLookups, nota 2026-09-01/02: Graph nunca permite
+      // escribir un campo de Hipervínculo). El nombre interno real quedó con
+      // un "2" al final porque SharePoint no reutiliza el nombre interno de
+      // la columna vieja eliminada aunque el nombre visible sea igual.
       {key:"SoporteFactura", label:"Soporte Factura", hint:["soporte factura","soportefactura"]},
       {key:"SoportePago", label:"Soporte Pago", hint:["soporte pago","soportepago"]},
     ],
-    mapping: {},
+    mapping: { Numero:"Numero", PagadoA:"Pagadoa", Fecha:"Fecha", ValorAPagar:"Valorapagar", TipoDocumento:"TipoDocumento", SoporteFactura:"SoporteFactura2", SoportePago:"SoportePago2" },
   },
 ];
 
