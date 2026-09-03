@@ -99,19 +99,34 @@ function coincideNumeroCompleto(radicadoArchivo, proceso){
   return numerosArchivo.some(n => numerosLexara.includes(n));
 }
 
-// Bug real 2026-09-03, reportado por el usuario ("no está en el archivo de
-// vigilancia judicial" pero SÍ estaba): más de un proceso en Procesos
-// judiciales puede compartir el mismo "Consecutivo" (número corto) — ej. un
-// proceso Terminado y su reemplazo Vigente, con Radicado completo distinto
-// (una cifra cambia al final). Buscar solo por Consecutivo con `.find()`
-// se quedaba siempre con el PRIMERO que encontrara, y el otro (aunque el
-// archivo sí lo traía) nunca quedaba marcado como encontrado. Ahora, si hay
-// más de un candidato con el mismo Consecutivo, se desempata por el
-// Radicado completo (el que de verdad coincide con lo que trae esa fila del
-// archivo) antes de decidir cuál es.
+// Bug real 2026-09-03, reportado por el usuario (Consecutivo "2025-00208",
+// confirmado presente en el archivo real, pero el cruce igual lo marcaba
+// como "no está en el archivo"): la comparación exigía coincidencia EXACTA
+// letra por letra contra el "Radicado" (número corto) de Procesos
+// judiciales — cualquier diferencia invisible ahí (un espacio de más, un
+// guion "–"/"—" en vez de "-", mayúscula/minúscula) hacía fallar el cruce
+// aunque a simple vista los dos números se vieran idénticos. Se normalizan
+// ambos lados antes de comparar.
+function normalizarConsecutivo(str){
+  return String(str||"")
+    .trim()
+    .toUpperCase()
+    .replace(/[‐-―]/g, '-') // variantes de guion (en dash, em dash, etc.) -> "-"
+    .replace(/\s+/g, '');
+}
+
+// Más de un proceso en Procesos judiciales puede compartir el mismo
+// Consecutivo (número corto) — ej. un proceso Terminado y su reemplazo
+// Vigente, con Radicado completo distinto (una cifra cambia al final).
+// Buscar solo por Consecutivo con `.find()` se quedaba siempre con el
+// PRIMERO que encontrara, y el otro (aunque el archivo sí lo traía) nunca
+// quedaba marcado como encontrado. Ahora, si hay más de un candidato con
+// el mismo Consecutivo, se desempata por el Radicado completo (el que de
+// verdad coincide con lo que trae esa fila del archivo) antes de decidir
+// cuál es.
 function encontrarProceso(fila, procesos){
   let candidatos = fila.consecutivo
-    ? (procesos||[]).filter(p => (p.Radicado||"").trim() === fila.consecutivo.trim())
+    ? (procesos||[]).filter(p => normalizarConsecutivo(p.Radicado) === normalizarConsecutivo(fila.consecutivo))
     : [];
   if(candidatos.length > 1 && fila.radicado){
     const porNumeroCompleto = candidatos.filter(p => coincideNumeroCompleto(fila.radicado, p));
