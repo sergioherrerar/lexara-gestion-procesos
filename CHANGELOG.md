@@ -3,6 +3,7 @@
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
 ## 2026-09-01
+- **Corrige duplicados en Revisión de Procesos** — cuando un mismo caso tenía varios registros Terminados en el Portal (uno por cliente), aparecía repetido en el reporte, una fila por cada uno. Ahora cada caso del archivo cuenta una sola vez.
 - **Cambia "la app" por "Portal Lexara" en los textos que ve el usuario** (Configuración, Registro de Horas Extras, Revisión de Procesos).
 - **Corrige de verdad el caso de 2 procesos con el mismo Consecutivo (Revisión de Procesos)** — el usuario aclaró que NO es un error: un mismo expediente puede tener un registro de Proceso por cada cliente (facturación separada). El intento anterior (desempatar por Demandante/Demandado y quedarse con "el más parecido") estaba mal planteado — ahora se marcan TODOS los procesos que comparten Consecutivo como encontrados, no solo uno.
 - **Corrige otro falso "no está en el archivo" en Revisión de Procesos** — la comparación de Consecutivo exigía coincidencia exacta letra por letra contra Procesos judiciales; cualquier diferencia invisible ahí (espacio de más, guion largo en vez de corto, mayúscula/minúscula) hacía fallar el cruce aunque los dos números se vieran idénticos. Ahora se normaliza antes de comparar.

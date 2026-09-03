@@ -157,26 +157,26 @@ export function compararConProcesos(filasArchivo, procesos){
     if(candidatos.length){
       // Los 2 (o más) procesos que comparten Consecutivo cuentan TODOS
       // como encontrados — el archivo cubre el caso completo, sin
-      // importar cuántos registros de facturación tenga acá adentro. Se
-      // reporta cada uno que esté Terminado por separado (si uno de los
-      // clientes ya cerró y otro sigue Vigente, igual vale la pena
-      // avisar del que quedó Terminado).
-      candidatos.forEach(match => {
-        idsEncontrados.add(match.id);
-        const estado = (match.EstadoVT||"").trim().toUpperCase();
-        if(estado === 'TERMINADO'){
-          terminados.push({
-            radicado: fila.radicado || "—",
-            observacion: "En Portal Lexara aparece como Terminado",
-            consecutivo: fila.consecutivo || "—",
-            lexara: match.Radicado || "—",
-            demandante: fila.demandante || "—",
-            demandado: fila.demandado || "—",
-            apoderado: fila.apoderado || "—",
-          });
-        }
-        // Vigente/En revisión y sí se encontró: todo bien, no se reporta.
-      });
+      // importar cuántos registros de facturación tenga acá adentro. Pero
+      // esta fila del archivo (un solo caso físico) cuenta UNA sola vez en
+      // el reporte — pedido explícito del usuario 2026-09-03 ("no importa
+      // cuantas veces esté en portal pero sí debe estar una vez en
+      // revisión de procesos"): si CUALQUIERA de los duplicados está
+      // Terminado, se reporta una sola fila, no una por cada duplicado.
+      candidatos.forEach(match => idsEncontrados.add(match.id));
+      const terminado = candidatos.find(p => (p.EstadoVT||"").trim().toUpperCase() === 'TERMINADO');
+      if(terminado){
+        terminados.push({
+          radicado: fila.radicado || "—",
+          observacion: "En Portal Lexara aparece como Terminado",
+          consecutivo: fila.consecutivo || "—",
+          lexara: terminado.Radicado || "—",
+          demandante: fila.demandante || "—",
+          demandado: fila.demandado || "—",
+          apoderado: fila.apoderado || "—",
+        });
+      }
+      // Vigente/En revisión y sí se encontró: todo bien, no se reporta.
     } else {
       noEncontrados.push({
         radicado: fila.radicado || "—",
