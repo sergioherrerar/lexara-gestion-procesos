@@ -214,8 +214,6 @@ export default function InformesView({ procesos, clientes, facturas, ordenesComp
     finally { setGenerandoAbogadosExcel(false); }
   }
 
-  const procesosPorEntidad = groupCount(procesos, p => p.Entidad);
-  const clientesPorEntidad = groupCount(clientes, c => c.Entidad);
   const facturasPorEntidad = groupCount(facturas, f => entidadDeCliente(clientes, f, clienteForFactura));
   const ordenesPorEntidad = groupCount(ordenesCompra, o => entidadDeCliente(clientes, o, clienteForOrdenCompra));
 
@@ -551,18 +549,6 @@ export default function InformesView({ procesos, clientes, facturas, ordenesComp
       </div>
 
       <div className="panel-grid panel-grid-2">
-        <div className="panel">
-          <div className="panel-head"><h3>Procesos por Entidad</h3></div>
-          <div className="panel-body">
-            <BarChart data={procesosPorEntidad} color="var(--verde-oscuro)" emptyMsg="No hay datos de Entidad en Procesos." />
-          </div>
-        </div>
-        <div className="panel">
-          <div className="panel-head"><h3>Clientes por Entidad</h3></div>
-          <div className="panel-body">
-            <BarChart data={clientesPorEntidad} color="var(--naranja)" emptyMsg="No hay datos de Entidad en Clientes." />
-          </div>
-        </div>
         <div className="panel">
           <div className="panel-head">
             <h3>Facturación por Entidad</h3>
