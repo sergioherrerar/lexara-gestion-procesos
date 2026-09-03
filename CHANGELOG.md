@@ -3,6 +3,7 @@
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
 ## 2026-09-01
+- **Corrige que "Observación" nunca se guardara en Gastos** — a esa lista le faltaba declarar esa columna desde que se creó el módulo; lo que se veía al escribirla era solo el dato en memoria, al recargar la página siempre volvía a quedar vacío. De paso, la app ahora reconoce sola cualquier columna nueva sin mapeo confirmado en cada inicio de sesión (antes solo pasaba al entrar a Configuración).
 - **Vacaciones: reordena las tarjetas de cada colaborador** — "Días pendientes" pasa a una tarjeta propia a la derecha, más grande y resaltada en naranja; los otros 4 datos quedan agrupados en 2×2 a la izquierda (antes dejaba un hueco vacío en la cuadrícula de 3 columnas).
 - **Vacaciones: botón "Descargar PDF" por colaborador** — resumen de días (generados/tomados/pendientes) y el detalle de todos sus períodos tomados, con el mismo membrete institucional del resto de los informes.
 - **Horas Extras y Vacaciones ahora solo muestran trabajadores activos** (Activo=Sí y Tipo de Colaborador=Trabajador en Equipo MD) — Horas Extras no filtraba nada antes; de paso se corrigió un bug real en Vacaciones donde un colaborador inactivo (Activo=No) igual aparecía, por un error de lógica al leer esa casilla.

@@ -809,6 +809,16 @@ export const SHAREPOINT_LISTS_CONFIG = [
       {key:"Fecha", label:"Fecha", hint:["fecha"], required:true},
       {key:"ValorAPagar", label:"Valor a pagar", hint:["valor a pagar","valorapagar"], required:true},
       {key:"TipoDocumento", label:"Tipo Documento", hint:["tipo documento","tipodocumento"]},
+      // Bug real corregido 2026-09-02: a esta lista (a diferencia de las
+      // otras 3 de Gastos) le faltaba declarar "Observacion" como campo
+      // semántico desde que se creó el módulo — sin esto, `list.mapping`
+      // nunca tenía esa clave, así que se descartaba en silencio al guardar
+      // (separarCamposYLookups, graph.js: `if(!list.mapping[key]) return;`)
+      // y tampoco se leía al cargar la lista. Lo que se veía guardado
+      // después de escribirlo era solo el estado optimista en memoria — al
+      // recargar la página, siempre volvía a quedar vacío. Reportado por el
+      // usuario 2026-09-02 ("la Observación no la está llenando").
+      {key:"Observacion", label:"Observación", hint:["observacion","observación"]},
       // Columnas de texto plano (no Hipervínculo — ver graph.js,
       // separarCamposYLookups, nota 2026-09-01/02: Graph nunca permite
       // escribir un campo de Hipervínculo). El nombre interno real quedó con
@@ -817,6 +827,13 @@ export const SHAREPOINT_LISTS_CONFIG = [
       {key:"SoporteFactura", label:"Soporte Factura", hint:["soporte factura","soportefactura"]},
       {key:"SoportePago", label:"Soporte Pago", hint:["soporte pago","soportepago"]},
     ],
+    // Observacion queda SIN mapeo fijo a propósito — a diferencia de los
+    // demás campos de esta lista (ya confirmados con el usuario), el nombre
+    // interno real de esa columna todavía no se sabe. guessListMapping()
+    // (graph.js) lo adivina solo al conectar comparando el hint de arriba
+    // contra las columnas reales — si por lo que sea no acierta, se
+    // confirma a mano una sola vez en Configuración, igual que las otras 3
+    // listas de Gastos la primera vez.
     mapping: { Numero:"Numero", PagadoA:"Pagadoa", Fecha:"Fecha", ValorAPagar:"Valorapagar", TipoDocumento:"TipoDocumento", SoporteFactura:"SoporteFactura2", SoportePago:"SoportePago2" },
   },
 ];

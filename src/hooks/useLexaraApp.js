@@ -63,7 +63,18 @@ async function cargarTodasLasListas(config, lists, sid){
   return Promise.all(lists.map(async list => {
     const listSiteId = await siteIdForList(config, list, sid, siteCache);
     const connected = await Graph.connectList(listSiteId, list);
-    return {...connected, items: Graph.transformListItems(connected)};
+    // Bug real corregido 2026-09-02: esta carga (la de cada inicio de
+    // sesión normal) usaba `list.mapping` tal cual venía de config.js +
+    // localStorage, SIN adivinar los campos que todavía no tuvieran
+    // mapeo — a diferencia de la pantalla de Configuración, que sí llama
+    // guessListMapping() al conectar. Un campo semántico agregado a
+    // config.js sin mapeo fijo (ej. "Observacion" en Gastos, que faltaba
+    // desde que se creó el módulo) se guardaba/leía en silencio como vacío
+    // hasta que alguien entrara a Configuración a confirmarlo a mano.
+    // guessListMapping() no toca nada ya mapeado (solo llena huecos), así
+    // que es seguro llamarlo siempre acá también.
+    const conMapeo = {...connected, mapping: Graph.guessListMapping(connected)};
+    return {...conMapeo, items: Graph.transformListItems(conMapeo)};
   }));
 }
 
