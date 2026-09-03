@@ -157,30 +157,65 @@ export function compararConProcesos(filasArchivo, procesos){
   return { noEncontrados, terminados, faltantesEnArchivo };
 }
 
-// Un solo Excel con las 3 diferencias juntas (confirmado por el usuario),
-// la columna Observación dice a cuál de las 3 pertenece cada fila. Mismo
-// estilo institucional (encabezado verde oscuro) que el resto de los Excel
-// de la app.
-export async function generarExcelRevisionProcesos(nombreArchivo, { noEncontrados, terminados, faltantesEnArchivo }){
-  const { default: ExcelJS } = await import('exceljs');
-  const wb = new ExcelJS.Workbook();
-  const ws = wb.addWorksheet("Revisión");
-  ws.columns = [
-    { header:"Radicado", key:"radicado", width:28 },
-    { header:"Observación", key:"observacion", width:36 },
-    { header:"Consecutivo", key:"consecutivo", width:16 },
-    { header:"Lexara", key:"lexara", width:16 },
-    { header:"Demandante", key:"demandante", width:32 },
-    { header:"Demandado", key:"demandado", width:32 },
-  ];
+function encabezarHoja(ws, columnas){
+  ws.columns = columnas;
   ws.getRow(1).eachCell(cell => {
     cell.fill = { type:'pattern', pattern:'solid', fgColor:{argb: COLOR_ENCABEZADO} };
     cell.font = { name:'Calibri', size:11, bold:true, color:{argb:'FFFFFFFF'} };
     cell.alignment = { horizontal:'center', vertical:'middle', wrapText:true };
   });
   ws.views = [{ state:'frozen', ySplit:1 }];
+}
 
-  [...noEncontrados, ...terminados, ...faltantesEnArchivo].forEach(f => ws.addRow(f));
+// 3 hojas — pedido explícito del usuario 2026-09-03 ("agregar dos hojas
+// una con el archivo que se subió y otra con los datos de procesos
+// judiciales"), además de la hoja "Revisión" que ya existía (las 3
+// diferencias juntas, columna Observación dice a cuál pertenece cada
+// fila). Las 2 hojas nuevas son el respaldo crudo de ambos lados del
+// cruce, por si hace falta revisar algo puntual sin volver a subir el
+// archivo. Mismo estilo institucional (encabezado verde oscuro) que el
+// resto de los Excel de la app.
+export async function generarExcelRevisionProcesos(nombreArchivo, { noEncontrados, terminados, faltantesEnArchivo }, filasArchivo, procesos){
+  const { default: ExcelJS } = await import('exceljs');
+  const wb = new ExcelJS.Workbook();
+
+  const wsRevision = wb.addWorksheet("Revisión");
+  encabezarHoja(wsRevision, [
+    { header:"Radicado", key:"radicado", width:28 },
+    { header:"Observación", key:"observacion", width:36 },
+    { header:"Consecutivo", key:"consecutivo", width:16 },
+    { header:"Lexara", key:"lexara", width:16 },
+    { header:"Demandante", key:"demandante", width:32 },
+    { header:"Demandado", key:"demandado", width:32 },
+  ]);
+  [...noEncontrados, ...terminados, ...faltantesEnArchivo].forEach(f => wsRevision.addRow(f));
+
+  const wsArchivo = wb.addWorksheet("Archivo subido");
+  encabezarHoja(wsArchivo, [
+    { header:"Radicado", key:"radicado", width:28 },
+    { header:"Consecutivo", key:"consecutivo", width:16 },
+    { header:"Demandante", key:"demandante", width:32 },
+    { header:"Demandado", key:"demandado", width:32 },
+  ]);
+  (filasArchivo||[]).forEach(f => wsArchivo.addRow(f));
+
+  const wsProcesos = wb.addWorksheet("Procesos judiciales");
+  encabezarHoja(wsProcesos, [
+    { header:"Radicado (No. Corto)", key:"radicado", width:18 },
+    { header:"No. Completo", key:"nocompleto", width:28 },
+    { header:"Histórico números completos", key:"historico", width:36 },
+    { header:"Estado V/T", key:"estadovt", width:14 },
+    { header:"Demandante", key:"demandante", width:32 },
+    { header:"Demandado", key:"demandado", width:32 },
+  ]);
+  (procesos||[]).forEach(p => wsProcesos.addRow({
+    radicado: p.Radicado || "—",
+    nocompleto: p.NoCompleto || "—",
+    historico: p.HistoricoNumerosCompletos || "—",
+    estadovt: p.EstadoVT || "—",
+    demandante: p.Demandante || "—",
+    demandado: p.Demandado || "—",
+  }));
 
   const buffer = await wb.xlsx.writeBuffer();
   const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });

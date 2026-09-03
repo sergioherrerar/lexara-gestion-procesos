@@ -10,6 +10,7 @@ import { IconTextButton } from './IconButton';
 export default function RevisionProcesosTab({ procesos, notify }){
   const [archivo, setArchivo] = useState(null);
   const [procesando, setProcesando] = useState(false);
+  const [filasArchivo, setFilasArchivo] = useState(null);
   const [resultado, setResultado] = useState(null);
   const [generandoExcel, setGenerandoExcel] = useState(false);
 
@@ -18,10 +19,12 @@ export default function RevisionProcesosTab({ procesos, notify }){
     if(!file) return;
     setArchivo(file);
     setResultado(null);
+    setFilasArchivo(null);
     setProcesando(true);
     try{
       const filas = await leerArchivoVigilancia(file);
       const cruce = compararConProcesos(filas, procesos);
+      setFilasArchivo(filas);
       setResultado(cruce);
       notify?.(`Comparación lista: ${filas.length} procesos leídos del archivo.`, 'success');
     }catch(err){
@@ -33,12 +36,16 @@ export default function RevisionProcesosTab({ procesos, notify }){
     }
   }
 
+  // El Excel trae, además de la hoja "Revisión" (las 3 diferencias), una
+  // hoja con el archivo tal como se leyó y otra con los datos de Procesos
+  // judiciales — pedido explícito del usuario 2026-09-03, como respaldo
+  // crudo de ambos lados del cruce.
   async function handleDescargar(){
     if(!resultado) return;
     setGenerandoExcel(true);
     try{
       const hoyISO = new Date().toISOString().slice(0,10);
-      await generarExcelRevisionProcesos(`Revisión de Procesos ${hoyISO}`, resultado);
+      await generarExcelRevisionProcesos(`Revisión de Procesos ${hoyISO}`, resultado, filasArchivo, procesos);
     } finally { setGenerandoExcel(false); }
   }
 

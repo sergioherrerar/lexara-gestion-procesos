@@ -3,6 +3,7 @@
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
 ## 2026-09-01
+- **Revisión de Procesos: el Excel ahora trae 3 hojas** — "Revisión" (las 3 diferencias, igual que antes), "Archivo subido" (el archivo tal como se leyó) y "Procesos judiciales" (los datos reales del Portal usados en el cruce), como respaldo crudo de ambos lados.
 - **Nueva sección "Revisión de Procesos" en Administración** — sube el informe mensual de la empresa de vigilancia judicial (Excel) y lo cruza contra Procesos judiciales: qué procesos del archivo no están en el Portal Lexara, cuáles ya figuran Terminados acá aunque la vigilancia los sigue reportando, y cuáles procesos vigentes del Portal el archivo no reporta. Descarga el resultado en un Excel.
 - **Nuevo botón "Hacer públicos los enlaces existentes" en Gastos** — renueva de una sola vez todos los Soporte Factura/Pago que ya se habían asociado antes del cambio a acceso público, sin tener que volver a elegir cada archivo a mano.
 - **Los enlaces de Soporte Factura/Pago y de la carpeta del mes (Gastos) ahora los puede abrir cualquiera, sin iniciar sesión** — antes exigían una cuenta de Microsoft del despacho para abrirlos, y están pensados para mandárselos a alguien externo (ej. la contadora). Si el enlace no abre para alguien de afuera, hay que revisar que "Cualquiera" esté habilitado en los ajustes de uso compartido del sitio de SharePoint.
