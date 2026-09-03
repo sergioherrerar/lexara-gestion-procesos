@@ -14,6 +14,19 @@
 // Se cruza por Correo contra la cuenta de Microsoft 365 con la que se inició
 // sesión (ver useLexaraApp.js), igual que antes.
 
+// Colaborador "vigente" para secciones que solo aplican a personal de
+// planta (Vacaciones, Horas Extras) — pedido explícito del usuario
+// 2026-09-02: que ambas solo muestren datos de quien en Equipo MD esté
+// Activo=Sí y Tipo de Colaborador=Trabajador (no Contratista). "Activo" es
+// una columna real Sí/No de SharePoint — Graph la devuelve como booleano de
+// verdad (true/false), no como texto. Bug real que esto corrige de paso en
+// Vacaciones: el chequeo viejo `(c.Activo||"Sí") !== "No"` nunca detectaba
+// un Activo=false real, porque `false || "Sí"` cae en "Sí" por ser "false"
+// un valor falsy en JS — un colaborador inactivo sí aparecía igual.
+export function esColaboradorVigente(c){
+  return !!c && c.Activo !== false && c.Activo !== 'No' && (c.TipoColaborador||'').toLowerCase() !== 'contratista';
+}
+
 // Todos los módulos que se pueden restringir por casilla. Dashboard e
 // Informes quedan siempre visibles para cualquiera que haya iniciado sesión
 // — son paneles de consulta general, no hace falta una casilla para esos.

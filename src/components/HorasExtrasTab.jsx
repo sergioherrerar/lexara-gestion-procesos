@@ -6,6 +6,7 @@ import {
   agruparPorColaborador, colorDeTipoHoraExtra, generarPDFHorasExtras,
 } from '../lib/horasExtras';
 import { colorDeTipoRespuesta } from '../lib/informeAbogadosTutelas';
+import { esColaboradorVigente } from '../lib/permissions';
 
 // "Cajas visuales" del día — pedido explícito del usuario 2026-08-31, viendo
 // la tabla de aprobación en vivo: por cada hora extra, cuántas Tutelas,
@@ -44,27 +45,38 @@ function CajaConteo({ label, valor, color }){
 // Festivas (normatividad colombiana real, sin calcular pesos — el usuario
 // pidió explícitamente solo la cantidad de horas). Ver [[project_horas_extras]]
 // y lib/horasExtras.js.
-export default function HorasExtrasTab({ horasExtras, tutelas, onAprobarHoraExtra, notify }){
+export default function HorasExtrasTab({ horasExtras, tutelas, colaboradores, onAprobarHoraExtra, notify }){
   const [generandoPDF, setGenerandoPDF] = useState(false);
   const hoyRef = new Date();
   const [mes, setMes] = useState(hoyRef.getMonth());
   const [anio] = useState(hoyRef.getFullYear());
 
+  // Solo colaboradores vigentes (Activo=Sí, no Contratista) — pedido
+  // explícito del usuario 2026-09-02: "todos los datos de las horas extras
+  // ... solo estén presentes los que en Equipo MD estén Activo y sean
+  // Trabajador". El cruce es por nombre (igual que Vacaciones) porque
+  // "Colaborador" en la lista Horas Extras es texto libre, no un Lookup real
+  // a Equipo MD.
+  const nombresVigentes = new Set(
+    (colaboradores||[]).filter(esColaboradorVigente).map(c => (c.Nombre||"").trim())
+  );
+  const horasExtrasVigentes = (horasExtras||[]).filter(h => nombresVigentes.has((h.Colaborador||"").trim()));
+
   async function handleDescargarPDF(){
     setGenerandoPDF(true);
-    try{ await generarPDFHorasExtras(horasExtras, anio, mes); }
+    try{ await generarPDFHorasExtras(horasExtrasVigentes, anio, mes); }
     catch(err){ console.error(err); notify?.("No se pudo generar el PDF de Horas Extras: " + err.message, 'error'); }
     finally{ setGenerandoPDF(false); }
   }
 
-  const horasDelMes = filtrarHorasExtrasPorMes(horasExtras, anio, mes, true);
+  const horasDelMes = filtrarHorasExtrasPorMes(horasExtrasVigentes, anio, mes, true);
   const { grupos, totalGeneral } = agruparPorColaborador(horasDelMes);
 
   // Pedido explícito del usuario 2026-08-31 ("acá también coloca el botón de
   // filtrar por mes") — la tabla principal (aprobadas y pendientes) ahora
   // también se filtra por el mismo Mes de arriba (antes solo se filtraba la
   // "Relación mensual" de abajo, esta tabla mostraba TODO sin filtrar).
-  const registros = filtrarHorasExtrasPorMes(horasExtras, anio, mes, false)
+  const registros = filtrarHorasExtrasPorMes(horasExtrasVigentes, anio, mes, false)
     .sort((a,b) => String(b.Fecha||"").localeCompare(String(a.Fecha||"")));
 
   return (
@@ -72,7 +84,7 @@ export default function HorasExtrasTab({ horasExtras, tutelas, onAprobarHoraExtr
       <div className="panel-head"><h3>Horas Extras</h3></div>
       <div className="panel-body">
         <p style={{margin:'0 0 16px', color:'var(--texto-suave)', fontSize:13}}>
-          El registro lo hace cada colaborador desde Informes — acá se aprueba (chulo) y se ve la relación mensual. Solo cuentan para el resumen mensual las horas ya <strong>Aprobadas</strong>.
+          El registro lo hace cada colaborador desde Informes — acá se aprueba (chulo) y se ve la relación mensual. Solo cuentan para el resumen mensual las horas ya <strong>Aprobadas</strong>. Solo se muestran trabajadores (no contratistas) vigentes en Equipo MD.
         </p>
 
         <div className="field" style={{maxWidth:200, marginBottom:16}}>

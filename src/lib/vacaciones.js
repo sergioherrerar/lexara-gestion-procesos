@@ -13,6 +13,7 @@
 //   - la suma de "Dias" de la lista "Vacaciones" (una fila por período)
 // en vez de columnas fijas de un archivo.
 import { COLOR_ENCABEZADO, fechaISOaExcel } from './informeSOS';
+import { esColaboradorVigente } from './permissions';
 
 function soloFecha(v){
   const s = String(v||"").slice(0,10);
@@ -38,19 +39,15 @@ export function calcularResumen(fechaIngresoISO, periodosDeEsaPersona){
 // Une Equipo MD (colaboradores, para Nombre + Fecha de Ingreso) con la lista
 // "Vacaciones" (períodos, uno por fila) — un bloque por colaborador con
 // Fecha de Ingreso, ordenado alfabéticamente. Solo incluye colaboradores
-// VIGENTES (Activo != "No") con Fecha de Ingreso cargada (sin eso no hay
-// nada que calcular), y EXCLUYE contratistas — pedido explícito del usuario
-// 2026-09-01 ("que solo se visualicen los datos de trabajadores no
-// contratistas y que estén vigentes"): las vacaciones son un concepto
-// laboral, no aplica a quien está vinculado por prestación de servicios.
-// Mismo campo/criterio "TipoColaborador === 'contratista'" que ya usa
-// informeCertificacion.js para decidir certificación laboral vs de
-// servicios.
+// VIGENTES (Activo=Sí y no Contratista, ver esColaboradorVigente en
+// permissions.js) con Fecha de Ingreso cargada (sin eso no hay nada que
+// calcular) — pedido explícito del usuario 2026-09-01 ("que solo se
+// visualicen los datos de trabajadores no contratistas y que estén
+// vigentes"): las vacaciones son un concepto laboral, no aplica a quien está
+// vinculado por prestación de servicios.
 export function agruparVacacionesPorColaborador(colaboradores, periodos){
   return (colaboradores||[])
-    .filter(c => (c.Activo||"Sí") !== "No"
-      && (c.TipoColaborador||"").toLowerCase() !== 'contratista'
-      && soloFecha(c.FechaIngreso))
+    .filter(c => esColaboradorVigente(c) && soloFecha(c.FechaIngreso))
     .map(c => {
       const propios = (periodos||[])
         .filter(p => (p.Colaborador||"").trim() === (c.Nombre||"").trim())

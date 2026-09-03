@@ -162,6 +162,7 @@ export default function AdministracionView({ colaboradores, searchQuery, onOpenC
         <HorasExtrasTab
           horasExtras={horasExtras}
           tutelas={tutelas}
+          colaboradores={colaboradores}
           onAprobarHoraExtra={onAprobarHoraExtra}
           notify={notify}
         />

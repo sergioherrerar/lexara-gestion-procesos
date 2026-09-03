@@ -3,6 +3,7 @@
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
 ## 2026-09-01
+- **Horas Extras y Vacaciones ahora solo muestran trabajadores activos** (Activo=Sí y Tipo de Colaborador=Trabajador en Equipo MD) — Horas Extras no filtraba nada antes; de paso se corrigió un bug real en Vacaciones donde un colaborador inactivo (Activo=No) igual aparecía, por un error de lógica al leer esa casilla.
 - **Agrega botón para actualizar la lista de PDF al elegir Soporte Factura/Pago en Gastos** — antes, si subías un archivo nuevo a la carpeta después de abrir el desplegable, no aparecía sin recargar toda la página.
 - **Guarda de fábrica el mapeo de columnas de Gastos (Proveedores, Cuentas de Cobro, Pagos por Realizar, Gastos)** — quedan correctas desde el primer inicio de sesión en cualquier equipo/navegador, sin tener que volver a confirmarlas en Configuración.
 - **Resuelto de verdad: Soporte Factura/Pago en Gastos ya se guarda en SharePoint.** Se confirmó (probando 2 formatos distintos de escritura) que Microsoft Graph no permite guardar el tipo de columna "Hipervínculo o imagen" bajo ninguna forma — no era arreglable con código. La solución fue cambiar esas 2 columnas en SharePoint a "Una sola línea de texto"; adentro de la app se ve y se abre exactamente igual, solo que en la vista nativa de SharePoint ya no aparece como un link con nombre bonito, sino el enlace completo como texto.
