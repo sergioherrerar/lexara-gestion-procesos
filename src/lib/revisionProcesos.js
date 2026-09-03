@@ -67,6 +67,7 @@ export async function leerArchivoVigilancia(file){
   const colConsecutivo = columnas['consecutivo'];
   const colDemandante = columnas['demandante'];
   const colDemandado = columnas['demandado'];
+  const colApoderado = columnas['apoderado'];
   if(!colRadicado || !colConsecutivo){
     throw new Error('No se encontraron las columnas "Radicado" y/o "Consecutivo" en la primera fila del archivo.');
   }
@@ -82,6 +83,7 @@ export async function leerArchivoVigilancia(file){
       consecutivo,
       demandante: colDemandante ? valorCelda(row.getCell(colDemandante).value) : "",
       demandado: colDemandado ? valorCelda(row.getCell(colDemandado).value) : "",
+      apoderado: colApoderado ? valorCelda(row.getCell(colApoderado).value) : "",
     });
   }
   return filas;
@@ -196,6 +198,7 @@ export async function generarExcelRevisionProcesos(nombreArchivo, { noEncontrado
     { header:"Consecutivo", key:"consecutivo", width:16 },
     { header:"Demandante", key:"demandante", width:32 },
     { header:"Demandado", key:"demandado", width:32 },
+    { header:"Apoderado", key:"apoderado", width:32 },
   ]);
   (filasArchivo||[]).forEach(f => wsArchivo.addRow(f));
 
