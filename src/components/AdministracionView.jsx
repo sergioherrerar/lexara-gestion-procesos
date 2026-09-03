@@ -5,6 +5,7 @@ import OrdenesColmedicaTab from './OrdenesColmedicaTab';
 import HonorariosPorProcesoTab from './HonorariosPorProcesoTab';
 import HorasExtrasTab from './HorasExtrasTab';
 import GastosTab from './GastosTab';
+import RevisionProcesosTab from './RevisionProcesosTab';
 import { IconTextButton } from './IconButton';
 import { generarCertificacionColaboradorPDF } from '../lib/informeCertificacion';
 
@@ -25,6 +26,7 @@ const TABS = [
   {key:'honorariosPorProceso', label:'Honorarios por Proceso'},
   {key:'horasExtras', label:'Horas Extras'},
   {key:'gastos', label:'Egresos'},
+  {key:'revisionProcesos', label:'Revisión de Procesos'},
 ];
 
 function CertificacionesTab({ colaboradores, notify }){
@@ -181,6 +183,9 @@ export default function AdministracionView({ colaboradores, searchQuery, onOpenC
           canWrite={canWrite}
           notify={notify}
         />
+      )}
+      {tab==='revisionProcesos' && (
+        <RevisionProcesosTab procesos={procesos} notify={notify} />
       )}
     </div>
   );
