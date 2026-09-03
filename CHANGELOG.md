@@ -3,6 +3,7 @@
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
 ## 2026-09-01
+- **Egresos ya no muestra "Cuentas de Cobro" ni "Pagos por Realizar"** — pedido explícito del usuario ("todo lo puedo sacar de gastos con los filtros"), quedan solo Proveedores y Gastos. Las 2 listas de SharePoint y todo lo que ya tenían cargado se dejan intactas sin tocar, solo se dejaron de mostrar. El consecutivo de "Numero" pasa a ser solo de Gastos.
 - **Gastos: el HTML exportado ahora incluye un enlace de solo lectura a la carpeta completa de soportes del mes seleccionado** — en la esquina del encabezado, con el texto "Gastos generados por MD ABOGADOS durante {mes}". Solo aparece con un mes puntual elegido (no con "Todos").
 - **Egresos: filtro y orden por columna en las 4 tablas (Proveedores/Cuentas de Cobro/Pagos por Realizar/Gastos)** — mismo menú desplegable por encabezado (ordenar A-Z/Z-A + filtrar por texto) que ya usan Procesos/Tutelas/Clientes/etc.
 - **Separa visualmente el menú de Egresos del sub-menú de Proveedores/Cuentas de Cobro/Pagos por Realizar/Gastos** — antes se veían como un solo menú confuso (mismo estilo de píldoras); el de abajo ahora es un control segmentado en su propia caja. De paso, la pestaña "Gastos" del menú de Administración se renombra a **"Egresos"**.

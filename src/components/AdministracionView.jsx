@@ -171,18 +171,10 @@ export default function AdministracionView({ colaboradores, searchQuery, onOpenC
         <GastosTab
           config={config}
           proveedoresGastos={proveedoresGastos}
-          cuentasCobroGastos={cuentasCobroGastos}
-          pagosPorRealizar={pagosPorRealizar}
           gastos={gastos}
           onCrearProveedorGastos={onCrearProveedorGastos}
           onEditarProveedorGastos={onEditarProveedorGastos}
           onEliminarProveedorGastos={onEliminarProveedorGastos}
-          onCrearCuentaCobroGastos={onCrearCuentaCobroGastos}
-          onEditarCuentaCobroGastos={onEditarCuentaCobroGastos}
-          onEliminarCuentaCobroGastos={onEliminarCuentaCobroGastos}
-          onCrearPagoPorRealizar={onCrearPagoPorRealizar}
-          onEditarPagoPorRealizar={onEditarPagoPorRealizar}
-          onEliminarPagoPorRealizar={onEliminarPagoPorRealizar}
           onCrearGasto={onCrearGasto}
           onEditarGasto={onEditarGasto}
           onEliminarGasto={onEliminarGasto}

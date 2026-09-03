@@ -16,17 +16,23 @@ function aniosDisponibles(){
 }
 
 // "Gastos" (Administración) — pedido explícito del usuario 2026-09-01,
-// reemplaza el Excel mensual real ("PAGOS DE {MES} {AÑO}.xlsx") por 4 listas
+// reemplaza el Excel mensual real ("PAGOS DE {MES} {AÑO}.xlsx") por listas
 // reales de SharePoint (ver SHAREPOINT_LISTS_CONFIG en config.js y
-// lib/gastos.js). 4 sub-pestañas internas, una por lista — Proveedores Gastos
-// MD es la única que persiste entre meses, las otras 3 se piensan como "del
-// mes en curso". Identificación/Entidad/Cuenta/Tipo Cuenta de cada registro
+// lib/gastos.js). Identificación/Entidad/Cuenta/Tipo Cuenta de cada registro
 // se buscan en vivo contra Proveedores por el nombre de "Pagado a" (mismo
 // criterio que el VLOOKUP del Excel real) — nunca se guardan repetidos.
+//
+// "Cuentas de Cobro" y "Pagos por Realizar" quitadas 2026-09-02 (pedido
+// explícito del usuario, "todo lo puedo sacar de gastos con los filtros") —
+// con el filtro/orden por columna ya en la tabla de Gastos, esas 2
+// pestañas quedaban redundantes. Sus 2 listas de SharePoint (y todo lo que
+// ya tenían cargado) se dejan intactas sin tocar, solo se dejaron de
+// mostrar acá — `cuentasCobroGastos`/`pagosPorRealizar` y sus
+// crear/editar/eliminar siguen recibiéndose como props (useLexaraApp.js
+// las sigue cargando) mientras el usuario confirma que de verdad ya no
+// las necesita.
 const SUB_TABS = [
   {key:'proveedores', label:'Proveedores'},
-  {key:'cuentasCobro', label:'Cuentas de Cobro'},
-  {key:'pagosPorRealizar', label:'Pagos por Realizar'},
   {key:'gastos', label:'Gastos'},
 ];
 
@@ -457,17 +463,12 @@ function RegistrosSection({ nombreLista, registros, proveedores, conNumero, conT
   );
 }
 
-export default function GastosTab({ config, proveedoresGastos, cuentasCobroGastos, pagosPorRealizar, gastos,
+export default function GastosTab({ config, proveedoresGastos, gastos,
   onCrearProveedorGastos, onEditarProveedorGastos, onEliminarProveedorGastos,
-  onCrearCuentaCobroGastos, onEditarCuentaCobroGastos, onEliminarCuentaCobroGastos,
-  onCrearPagoPorRealizar, onEditarPagoPorRealizar, onEliminarPagoPorRealizar,
   onCrearGasto, onEditarGasto, onEliminarGasto, canWrite }){
   const [subTab, setSubTab] = useState('proveedores');
   const shareUrl = config?.GASTOS_SOPORTES_SHARE_URL;
-  // Un solo consecutivo compartido entre Pagos por Realizar y Gastos (ver
-  // siguienteNumeroConsecutivo en lib/gastos.js) — nunca se repite el mismo
-  // número entre las dos listas.
-  const siguienteNumero = siguienteNumeroConsecutivo(pagosPorRealizar, gastos);
+  const siguienteNumero = siguienteNumeroConsecutivo(gastos);
   return (
     <div>
       <div className="subnav-panel">
@@ -479,14 +480,6 @@ export default function GastosTab({ config, proveedoresGastos, cuentasCobroGasto
       </div>
       {subTab==='proveedores' && (
         <ProveedoresSection proveedores={proveedoresGastos} onCrear={onCrearProveedorGastos} onEditar={onEditarProveedorGastos} onEliminar={onEliminarProveedorGastos} canWrite={canWrite} />
-      )}
-      {subTab==='cuentasCobro' && (
-        <RegistrosSection nombreLista="Cuentas de Cobro" registros={cuentasCobroGastos} proveedores={proveedoresGastos} conNumero={false} conTipo={false} conSoportes={false}
-          onCrear={onCrearCuentaCobroGastos} onEditar={onEditarCuentaCobroGastos} onEliminar={onEliminarCuentaCobroGastos} canWrite={canWrite} />
-      )}
-      {subTab==='pagosPorRealizar' && (
-        <RegistrosSection nombreLista="Pagos por Realizar" registros={pagosPorRealizar} proveedores={proveedoresGastos} conNumero conTipo conSoportes={false} siguienteNumero={siguienteNumero}
-          onCrear={onCrearPagoPorRealizar} onEditar={onEditarPagoPorRealizar} onEliminar={onEliminarPagoPorRealizar} canWrite={canWrite} />
       )}
       {subTab==='gastos' && (
         <RegistrosSection nombreLista="Gastos" registros={gastos} proveedores={proveedoresGastos} conNumero conTipo conSoportes shareUrl={shareUrl} siguienteNumero={siguienteNumero}

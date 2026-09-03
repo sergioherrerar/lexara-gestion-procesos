@@ -63,9 +63,12 @@ export function sumaValores(registros){
 // de la misma carpeta del mes. Ignora los "Numero" viejos importados del
 // Excel real (alfanuméricos como "RDL1801", o de más de 5 dígitos como
 // "70940076") — son de otro esquema, no de este consecutivo nuevo.
-export function siguienteNumeroConsecutivo(pagosPorRealizar, gastos){
-  const todos = [...(pagosPorRealizar||[]), ...(gastos||[])];
-  const max = todos.reduce((m, r) => {
+// Antes se cruzaba también contra "Pagos por Realizar" (para no repetir el
+// consecutivo entre las 2 listas) — esa lista se dejó de usar 2026-09-02
+// (pedido explícito del usuario, "todo lo puedo sacar de gastos con los
+// filtros"), así que el consecutivo ahora es solo de Gastos.
+export function siguienteNumeroConsecutivo(gastos){
+  const max = (gastos||[]).reduce((m, r) => {
     const n = String(r.Numero||"").trim();
     if(!/^\d{1,5}$/.test(n)) return m;
     return Math.max(m, Number(n));
