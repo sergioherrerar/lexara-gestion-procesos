@@ -24,7 +24,7 @@ const TABS = [
   {key:'ordenesColmedica', label:'Órdenes Colmédica'},
   {key:'honorariosPorProceso', label:'Honorarios por Proceso'},
   {key:'horasExtras', label:'Horas Extras'},
-  {key:'gastos', label:'Gastos'},
+  {key:'gastos', label:'Egresos'},
 ];
 
 function CertificacionesTab({ colaboradores, notify }){

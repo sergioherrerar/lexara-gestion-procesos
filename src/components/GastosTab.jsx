@@ -409,10 +409,12 @@ export default function GastosTab({ config, proveedoresGastos, cuentasCobroGasto
   const siguienteNumero = siguienteNumeroConsecutivo(pagosPorRealizar, gastos);
   return (
     <div>
-      <div className="drawer-tabs" style={{padding:'0 0 14px', border:'none'}}>
-        {SUB_TABS.map(t => (
-          <button key={t.key} type="button" className={"drawer-tab" + (subTab===t.key ? " active" : "")} onClick={() => setSubTab(t.key)}>{t.label}</button>
-        ))}
+      <div className="subnav-panel">
+        <div className="subtabs">
+          {SUB_TABS.map(t => (
+            <button key={t.key} type="button" className={"subtab" + (subTab===t.key ? " active" : "")} onClick={() => setSubTab(t.key)}>{t.label}</button>
+          ))}
+        </div>
       </div>
       {subTab==='proveedores' && (
         <ProveedoresSection proveedores={proveedoresGastos} onCrear={onCrearProveedorGastos} onEditar={onEditarProveedorGastos} onEliminar={onEliminarProveedorGastos} canWrite={canWrite} />

@@ -638,6 +638,27 @@
   }
   .drawer-tab.active .drawer-tab-count{background:rgba(255,255,255,.25); color:#fff;}
   .drawer-body{padding:20px 26px 40px; overflow-y:auto; flex:1;}
+  /* Sub-navegación interna (ej. Proveedores/Cuentas de Cobro/Pagos por
+     Realizar/Gastos, dentro de la pestaña "Egresos" de Administración) —
+     pedido explícito del usuario 2026-09-02: antes usaba el mismo estilo de
+     píldoras sueltas que las pestañas de arriba (.drawer-tab) y las dos
+     filas se veían como un solo menú confuso. Este es un control segmentado
+     (un solo bloque con fondo, la opción activa "flota" en blanco encima)
+     — visualmente el opuesto de las píldoras sueltas de arriba, para que
+     quede clarísimo que es un nivel distinto, anidado dentro de la pestaña
+     de arriba. */
+  .subnav-panel{
+    background:var(--gris-claro); border-radius:12px; padding:16px;
+    margin:4px 0 18px; border:1px solid var(--gris-linea);
+  }
+  .subtabs{display:inline-flex; gap:2px; padding:3px; background:#fff; border-radius:10px; border:1px solid var(--gris-linea);}
+  .subtab{
+    background:transparent; border:none; cursor:pointer; padding:7px 16px;
+    font-size:12.5px; font-weight:600; color:var(--texto-suave); border-radius:8px;
+    transition:background .15s ease, color .15s ease;
+  }
+  .subtab:hover{color:var(--verde-oscuro);}
+  .subtab.active{color:#fff; background:var(--verde-oscuro);}
   .field-section{margin-bottom:26px;}
   .field-section h4{
     font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--verde-claro);
