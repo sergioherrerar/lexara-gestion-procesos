@@ -3,6 +3,7 @@
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
 ## 2026-09-01
+- **Vacaciones: reordena las tarjetas de cada colaborador** — "Días pendientes" pasa a una tarjeta propia a la derecha, más grande y resaltada en naranja; los otros 4 datos quedan agrupados en 2×2 a la izquierda (antes dejaba un hueco vacío en la cuadrícula de 3 columnas).
 - **Vacaciones: botón "Descargar PDF" por colaborador** — resumen de días (generados/tomados/pendientes) y el detalle de todos sus períodos tomados, con el mismo membrete institucional del resto de los informes.
 - **Horas Extras y Vacaciones ahora solo muestran trabajadores activos** (Activo=Sí y Tipo de Colaborador=Trabajador en Equipo MD) — Horas Extras no filtraba nada antes; de paso se corrigió un bug real en Vacaciones donde un colaborador inactivo (Activo=No) igual aparecía, por un error de lógica al leer esa casilla.
 - **Agrega botón para actualizar la lista de PDF al elegir Soporte Factura/Pago en Gastos** — antes, si subías un archivo nuevo a la carpeta después de abrir el desplegable, no aparecía sin recargar toda la página.

@@ -135,12 +135,23 @@ export default function VacacionesTab({ colaboradores, vacacionesPeriodos, onCre
             </div>
           </div>
           <div className="panel-body" style={{padding:'14px 20px'}}>
-            <div className="field-card-grid">
-              <FieldCard label="Fecha de ingreso">{fmtDate(f.fechaIngreso)}</FieldCard>
-              <FieldCard label="Días laborados">{f.diasLaborados ?? "—"}</FieldCard>
-              <FieldCard label="Días generados">{f.diasGenerados ?? "—"}</FieldCard>
-              <FieldCard label="Días pendientes"><strong style={{color:'#b3590a'}}>{f.diasPendientes ?? "—"}</strong></FieldCard>
-              <FieldCard label="Días tomados">{f.diasTomados ?? "—"}</FieldCard>
+            {/* Reordenado 2026-09-02 (pedido explícito del usuario, mirando
+                el hueco vacío que dejaba "Días pendientes" en medio de la
+                cuadrícula de 3 columnas): los 4 datos secundarios quedan en
+                un bloque 2×2 a la izquierda, y "Días pendientes" — el dato
+                que de verdad importa de un vistazo — pasa a una tarjeta
+                propia a la derecha, más grande y resaltada. */}
+            <div style={{display:'flex', gap:12, flexWrap:'wrap'}}>
+              <div className="field-card-grid field-card-grid-2col" style={{flex:'2 1 320px'}}>
+                <FieldCard label="Fecha de ingreso">{fmtDate(f.fechaIngreso)}</FieldCard>
+                <FieldCard label="Días laborados">{f.diasLaborados ?? "—"}</FieldCard>
+                <FieldCard label="Días generados">{f.diasGenerados ?? "—"}</FieldCard>
+                <FieldCard label="Días tomados">{f.diasTomados ?? "—"}</FieldCard>
+              </div>
+              <div className="field-card field-card-destacado" style={{flex:'1 1 160px'}}>
+                <div className="field-card-label">Días pendientes</div>
+                <div className="field-card-value field-card-value-destacado">{f.diasPendientes ?? "—"}</div>
+              </div>
             </div>
 
             {abiertoPara===f.nombre && (

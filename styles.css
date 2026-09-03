@@ -682,6 +682,22 @@
   .field-card-value input[readonly], .field-card-value textarea[readonly]{color:var(--texto-suave);}
   .field-card-value textarea{resize:vertical; min-height:56px;}
   .field-card-value input.input-money{text-align:right; font-family:var(--font-mono);}
+  /* Variante 2 columnas (Vacaciones, ver VacacionesTab.jsx) — puesta ANTES
+     de las reglas responsive de .field-card-grid de abajo a propósito, para
+     que esas sigan ganando en tablet/celular (misma especificidad, gana la
+     que aparece después en la hoja de estilos). */
+  .field-card-grid-2col{grid-template-columns:repeat(2,1fr);}
+  /* Tarjeta "Días pendientes" (Vacaciones) — pedido explícito del usuario
+     2026-09-02: el dato que de verdad importa de un vistazo, resaltado con
+     borde/etiqueta en naranja (en vez del verde institucional de las demás
+     tarjetas) y el número bien grande, centrado tanto vertical como
+     horizontalmente. */
+  .field-card-destacado{border-color:#b3590a; border-width:2px;}
+  .field-card-destacado .field-card-label{background:#b3590a;}
+  .field-card-value-destacado{
+    display:flex; align-items:center; justify-content:center;
+    font-size:30px; font-weight:800; color:#b3590a; font-family:var(--font-mono);
+  }
 
   /* ---------- Editor de texto enriquecido ("Histórico" y "Observaciones" —
      columnas reales de SharePoint con formato: negrita/subrayado/resaltado) ---------- */
