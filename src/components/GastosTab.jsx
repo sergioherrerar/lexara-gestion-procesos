@@ -3,6 +3,9 @@ import { fmtDate, fmtMonto, parseMonto, listarSoportesGastosDelMes, crearLinkCom
 import { MESES_NOMBRES } from '../lib/horasExtras';
 import { TIPO_DOCUMENTO_OPTIONS, ENTIDAD_BANCARIA_OPTIONS, TIPO_CUENTA_OPTIONS, datosBancoProveedor, sumaValores, filtrarPorMes, generarRegistrosGastosExcel, generarRegistrosGastosHTML, siguienteNumeroConsecutivo } from '../lib/gastos';
 import IconButton, { IconTextButton } from './IconButton';
+import ColumnHeaderMenu from './ColumnHeaderMenu';
+import { useColumnFilters } from '../hooks/useColumnFilters';
+import { useColumnSort } from '../hooks/useColumnSort';
 
 // Años disponibles en el selector — el año en curso +/- 1, suficiente
 // margen para registros recién cerrados de diciembre o ya cargados de
@@ -58,11 +61,30 @@ function ProveedorForm({ inicial, onGuardar, onCancelar, guardando }){
   );
 }
 
+// Columnas filtrables/ordenables — pedido explícito del usuario 2026-09-02
+// ("a esta tablas de gastos incluye el filtro en cada columna"), mismo
+// componente/patrón ya usado en Procesos/Tutelas/Clientes/etc.
+const COLUMNAS_PROVEEDORES = [
+  {key:'pagadoA', label:'Pagado a', value: p => p.PagadoA || ""},
+  {key:'identificacion', label:'Identificación', value: p => p.Identificacion || ""},
+  {key:'entidad', label:'Entidad', value: p => p.Entidad || ""},
+  {key:'cuenta', label:'Cuenta', value: p => p.Cuenta || ""},
+  {key:'tipoCuenta', label:'Tipo Cuenta', value: p => p.TipoCuenta || ""},
+  {key:'observacion', label:'Observación', value: p => p.Observacion || ""},
+  {key:'acciones', label:'Acciones', filterable:false},
+];
+
 function ProveedoresSection({ proveedores, onCrear, onEditar, onEliminar, canWrite }){
   const [abierto, setAbierto] = useState(false);
   const [editandoId, setEditandoId] = useState(null);
   const [guardando, setGuardando] = useState(false);
-  const filas = [...(proveedores||[])].sort((a,b) => (a.PagadoA||"").localeCompare(b.PagadoA||""));
+  const { filters, setFilter, rowMatches } = useColumnFilters();
+  const { sort, setSortKey, sortRows } = useColumnSort();
+  const columnas = canWrite ? COLUMNAS_PROVEEDORES : COLUMNAS_PROVEEDORES.filter(c => c.key !== 'acciones');
+  const filas = sortRows(
+    [...(proveedores||[])].filter(p => rowMatches(p, columnas)).sort((a,b) => (a.PagadoA||"").localeCompare(b.PagadoA||"")),
+    columnas
+  );
   async function guardar(datos){
     setGuardando(true);
     try{
@@ -79,11 +101,11 @@ function ProveedoresSection({ proveedores, onCrear, onEditar, onEliminar, canWri
       {abierto && <ProveedorForm onGuardar={guardar} onCancelar={() => setAbierto(false)} guardando={guardando} />}
       <div className="table-wrap">
         <table>
-          <thead><tr><th>Pagado a</th><th>Identificación</th><th>Entidad</th><th>Cuenta</th><th>Tipo Cuenta</th><th>Observación</th>{canWrite && <th>Acciones</th>}</tr></thead>
+          <thead><tr>{columnas.map(c => <ColumnHeaderMenu key={c.key} column={c} sort={sort} onSort={setSortKey} filterValue={filters[c.key]} onFilterChange={setFilter} />)}</tr></thead>
           <tbody>
             {filas.length ? filas.map(p => (
               editandoId===p.id ? (
-                <tr key={p.id}><td colSpan={7}><ProveedorForm inicial={p} onGuardar={d => guardar(d)} onCancelar={() => setEditandoId(null)} guardando={guardando} /></td></tr>
+                <tr key={p.id}><td colSpan={columnas.length}><ProveedorForm inicial={p} onGuardar={d => guardar(d)} onCancelar={() => setEditandoId(null)} guardando={guardando} /></td></tr>
               ) : (
                 <tr key={p.id}>
                   <td className="cliente">{p.PagadoA}</td>
@@ -100,7 +122,7 @@ function ProveedoresSection({ proveedores, onCrear, onEditar, onEliminar, canWri
                   )}
                 </tr>
               )
-            )) : <tr><td colSpan={7}><div className="empty-state empty-state-compact">Todavía no hay proveedores registrados.</div></td></tr>}
+            )) : <tr><td colSpan={columnas.length}><div className="empty-state empty-state-compact">Todavía no hay proveedores registrados.</div></td></tr>}
           </tbody>
         </table>
       </div>
@@ -254,12 +276,37 @@ function RegistrosSection({ nombreLista, registros, proveedores, conNumero, conT
   // Mes/Año para ver la lista completa de una vez. Cambiar el Mes o el Año
   // después vuelve a activar el filtro solo, sin un paso aparte.
   const [verTodos, setVerTodos] = useState(false);
+  const { filters, setFilter, rowMatches } = useColumnFilters();
+  const { sort, setSortKey, sortRows } = useColumnSort();
+
+  // Columnas filtrables/ordenables — pedido explícito del usuario 2026-09-02
+  // ("a esta tablas de gastos incluye el filtro en cada columna"). "Entidad"
+  // no es un campo propio del registro (se busca en vivo en Proveedores por
+  // "Pagado a", ver datosBancoProveedor en lib/gastos.js), así que su
+  // `value` hace la misma búsqueda para que el filtro/orden por esa columna
+  // funcione contra lo que de verdad se ve en pantalla.
+  const columnas = [
+    ...(conNumero ? [{key:'numero', label:'Numero', value: r => r.Numero || ""}] : []),
+    {key:'pagadoA', label:'Pagado a', value: r => r.PagadoA || ""},
+    {key:'entidad', label:'Entidad', value: r => datosBancoProveedor(r.PagadoA, proveedores).entidad || ""},
+    {key:'fecha', label:'Fecha', value: r => r.Fecha || ""},
+    {key:'valorAPagar', label:'Valor a pagar', value: r => r.ValorAPagar ?? ""},
+    ...(conTipo ? [{key:'tipoDocumento', label:'Tipo Documento', value: r => r.TipoDocumento || ""}] : []),
+    {key:'observacion', label:'Observación', value: r => r.Observacion || ""},
+    ...(conSoportes ? [{key:'soporteFactura', label:'Soporte Factura', filterable:false}] : []),
+    ...(conSoportes ? [{key:'soportePago', label:'Soporte Pago', filterable:false}] : []),
+    ...(canWrite ? [{key:'acciones', label:'Acciones', filterable:false}] : []),
+  ];
 
   // Solo el mes elegido — pedido explícito del usuario 2026-09-01 ("coloca
   // la lista del mes que solo salga ese mes"). A diferencia del Excel real
   // (un archivo nuevo cada mes), esta lista de SharePoint sigue creciendo
-  // mes tras mes, así que hace falta un filtro para no ver todo junto.
-  const filas = (verTodos ? [...(registros||[])] : filtrarPorMes(registros, anio, mes)).sort((a,b) => String(b.Fecha||"").localeCompare(String(a.Fecha||"")));
+  // mes tras mes, así que hace falta un filtro para no ver todo junto. Los
+  // filtros de columna se combinan (AND) con el de Mes/Año; el orden por
+  // columna (si el usuario eligió uno) reemplaza el orden por Fecha de
+  // siempre, igual criterio que en Tutelas/Procesos.
+  const filasSinOrdenar = (verTodos ? [...(registros||[])] : filtrarPorMes(registros, anio, mes)).filter(r => rowMatches(r, columnas));
+  const filas = sort ? sortRows(filasSinOrdenar, columnas) : filasSinOrdenar.sort((a,b) => String(b.Fecha||"").localeCompare(String(a.Fecha||"")));
   const total = sumaValores(filas);
   function cambiarMes(v){ setMes(v); setVerTodos(false); }
   function cambiarAnio(v){ setAnio(v); setVerTodos(false); }
@@ -301,7 +348,7 @@ function RegistrosSection({ nombreLista, registros, proveedores, conNumero, conT
     generarRegistrosGastosHTML(nombreArchivoActual(), filas, proveedores, { conNumero, conTipo, conSoportes });
   }
 
-  const nCols = 4 + (conNumero?1:0) + (conTipo?1:0) + (conSoportes?2:0) + (canWrite?1:0);
+  const nCols = columnas.length;
   return (
     <div>
       <datalist id="gastos-proveedores-datalist">
@@ -336,13 +383,7 @@ function RegistrosSection({ nombreLista, registros, proveedores, conNumero, conT
         <table>
           <thead>
             <tr>
-              {conNumero && <th>Numero</th>}
-              <th>Pagado a</th><th>Entidad</th><th>Fecha</th><th style={{whiteSpace:'nowrap'}}>Valor a pagar</th>
-              {conTipo && <th>Tipo Documento</th>}
-              <th>Observación</th>
-              {conSoportes && <th>Soporte Factura</th>}
-              {conSoportes && <th>Soporte Pago</th>}
-              {canWrite && <th>Acciones</th>}
+              {columnas.map(c => <ColumnHeaderMenu key={c.key} column={c} sort={sort} onSort={setSortKey} filterValue={filters[c.key]} onFilterChange={setFilter} />)}
             </tr>
           </thead>
           <tbody>
