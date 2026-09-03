@@ -19,8 +19,12 @@
 //     relacionado en la misma celda).
 // Demandante/Demandado del archivo se llevan tal cual al Excel de salida
 // para que el usuario los compare a simple vista contra el proceso que
-// cruzó — el usuario aclaró que NO hace falta que la app decida si se
-// parecen o no (ej. "Juan Pablo Niño" vs "Juan Niño"), es solo apoyo visual.
+// cruzó — el usuario aclaró que en general NO hace falta que la app decida
+// si se parecen o no (ej. "Juan Pablo Niño" vs "Juan Niño"), es solo apoyo
+// visual. La EXCEPCIÓN real (confirmada por el usuario 2026-09-03): dos
+// procesos con el MISMO Consecutivo pero clientes distintos — ahí si hace
+// falta usar Demandante/Demandado para desempatar cuál es cuál, porque el
+// número solo no alcanza (ver mejorPorNombres más abajo).
 import { normalize } from './graph';
 import { COLOR_ENCABEZADO } from './informeSOS';
 
@@ -115,15 +119,42 @@ function normalizarConsecutivo(str){
     .replace(/\s+/g, '');
 }
 
+// Cuenta cuántas palabras (normalizadas, sin tildes/mayúsculas) tienen en
+// común dos nombres — ej. "JESÚS ANTONIO AVENDAÑO ARBOLEDA" vs "ANTONIO
+// AVENDAÑO ARBOLEDA" comparten 3. Sirve para desempatar, no para decidir
+// si dos nombres "se parecen" en general.
+function palabrasComunes(a, b){
+  const palabrasA = new Set(normalize(String(a||"")).split(/\s+/).filter(Boolean));
+  const palabrasB = normalize(String(b||"")).split(/\s+/).filter(Boolean);
+  let comunes = 0;
+  palabrasB.forEach(p => { if(palabrasA.has(p)) comunes++; });
+  return comunes;
+}
+
+// Bug real 2026-09-03, confirmado por el usuario ("si hay dos procesos
+// judiciales pero con cliente [distinto]"): dos procesos pueden compartir
+// el mismo Consecutivo con clientes DIFERENTES — el desempate por Radicado
+// completo (de arriba) no basta si ninguno de los 2 candidatos tiene ese
+// dato cargado. Último desempate: cuál candidato se parece más en
+// Demandante/Demandado a lo que trae esa fila del archivo.
+function mejorPorNombres(fila, candidatos){
+  let mejor = candidatos[0], mejorPuntaje = -1;
+  candidatos.forEach(p => {
+    const puntaje = palabrasComunes(fila.demandante, p.Demandante) + palabrasComunes(fila.demandado, p.Demandado);
+    if(puntaje > mejorPuntaje){ mejorPuntaje = puntaje; mejor = p; }
+  });
+  return mejorPuntaje > 0 ? [mejor] : candidatos;
+}
+
 // Más de un proceso en Procesos judiciales puede compartir el mismo
 // Consecutivo (número corto) — ej. un proceso Terminado y su reemplazo
-// Vigente, con Radicado completo distinto (una cifra cambia al final).
-// Buscar solo por Consecutivo con `.find()` se quedaba siempre con el
-// PRIMERO que encontrara, y el otro (aunque el archivo sí lo traía) nunca
-// quedaba marcado como encontrado. Ahora, si hay más de un candidato con
-// el mismo Consecutivo, se desempata por el Radicado completo (el que de
-// verdad coincide con lo que trae esa fila del archivo) antes de decidir
-// cuál es.
+// Vigente, con Radicado completo distinto (una cifra cambia al final), o
+// dos procesos de clientes distintos que por error quedaron con el mismo
+// número corto. Buscar solo por Consecutivo con `.find()` se quedaba
+// siempre con el PRIMERO que encontrara, y el otro (aunque el archivo sí
+// lo traía) nunca quedaba marcado como encontrado. Ahora, si hay más de un
+// candidato con el mismo Consecutivo, se desempata primero por el Radicado
+// completo y, si con eso no alcanza, por Demandante/Demandado.
 function encontrarProceso(fila, procesos){
   let candidatos = fila.consecutivo
     ? (procesos||[]).filter(p => normalizarConsecutivo(p.Radicado) === normalizarConsecutivo(fila.consecutivo))
@@ -131,6 +162,9 @@ function encontrarProceso(fila, procesos){
   if(candidatos.length > 1 && fila.radicado){
     const porNumeroCompleto = candidatos.filter(p => coincideNumeroCompleto(fila.radicado, p));
     if(porNumeroCompleto.length) candidatos = porNumeroCompleto;
+  }
+  if(candidatos.length > 1){
+    candidatos = mejorPorNombres(fila, candidatos);
   }
   if(candidatos.length) return candidatos[0];
   if(fila.radicado){
