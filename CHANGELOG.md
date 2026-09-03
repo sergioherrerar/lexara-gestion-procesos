@@ -3,6 +3,7 @@
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
 ## 2026-09-01
+- **Corrige falsos "no está en el archivo de vigilancia judicial" en Revisión de Procesos** — cuando dos procesos del Portal comparten el mismo Consecutivo (ej. uno Terminado y su reemplazo Vigente, con Radicado completo distinto), el cruce se quedaba siempre con el primero y el otro quedaba marcado como faltante aunque el archivo sí lo traía. Ahora desempata por el Radicado completo cuando hay más de un candidato.
 - **Revisión de Procesos: agrega la columna "Apoderado" también a la hoja "Revisión"** (ya estaba en "Archivo subido") — en "vigentes sin reportar" trae el Apoderado del Portal Lexara.
 - **Revisión de Procesos: el Excel ahora trae 3 hojas** — "Revisión" (las 3 diferencias, igual que antes), "Archivo subido" (el archivo tal como se leyó) y "Procesos judiciales" (los datos reales del Portal usados en el cruce), como respaldo crudo de ambos lados.
 - **Nueva sección "Revisión de Procesos" en Administración** — sube el informe mensual de la empresa de vigilancia judicial (Excel) y lo cruza contra Procesos judiciales: qué procesos del archivo no están en el Portal Lexara, cuáles ya figuran Terminados acá aunque la vigilancia los sigue reportando, y cuáles procesos vigentes del Portal el archivo no reporta. Descarga el resultado en un Excel.

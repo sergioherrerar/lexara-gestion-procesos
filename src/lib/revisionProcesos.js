@@ -99,6 +99,31 @@ function coincideNumeroCompleto(radicadoArchivo, proceso){
   return numerosArchivo.some(n => numerosLexara.includes(n));
 }
 
+// Bug real 2026-09-03, reportado por el usuario ("no está en el archivo de
+// vigilancia judicial" pero SÍ estaba): más de un proceso en Procesos
+// judiciales puede compartir el mismo "Consecutivo" (número corto) — ej. un
+// proceso Terminado y su reemplazo Vigente, con Radicado completo distinto
+// (una cifra cambia al final). Buscar solo por Consecutivo con `.find()`
+// se quedaba siempre con el PRIMERO que encontrara, y el otro (aunque el
+// archivo sí lo traía) nunca quedaba marcado como encontrado. Ahora, si hay
+// más de un candidato con el mismo Consecutivo, se desempata por el
+// Radicado completo (el que de verdad coincide con lo que trae esa fila del
+// archivo) antes de decidir cuál es.
+function encontrarProceso(fila, procesos){
+  let candidatos = fila.consecutivo
+    ? (procesos||[]).filter(p => (p.Radicado||"").trim() === fila.consecutivo.trim())
+    : [];
+  if(candidatos.length > 1 && fila.radicado){
+    const porNumeroCompleto = candidatos.filter(p => coincideNumeroCompleto(fila.radicado, p));
+    if(porNumeroCompleto.length) candidatos = porNumeroCompleto;
+  }
+  if(candidatos.length) return candidatos[0];
+  if(fila.radicado){
+    return (procesos||[]).find(p => coincideNumeroCompleto(fila.radicado, p)) || null;
+  }
+  return null;
+}
+
 // Compara las filas ya leídas del archivo contra Procesos judiciales.
 // Devuelve las 3 listas de diferencias (nunca los que sí cruzan bien, esos
 // no hacen falta reportarlos). "faltantesEnArchivo" solo mira procesos
@@ -111,13 +136,7 @@ export function compararConProcesos(filasArchivo, procesos){
   const idsEncontrados = new Set();
 
   (filasArchivo||[]).forEach(fila => {
-    let match = null;
-    if(fila.consecutivo){
-      match = (procesos||[]).find(p => (p.Radicado||"").trim() === fila.consecutivo.trim());
-    }
-    if(!match && fila.radicado){
-      match = (procesos||[]).find(p => coincideNumeroCompleto(fila.radicado, p));
-    }
+    const match = encontrarProceso(fila, procesos);
     if(match){
       idsEncontrados.add(match.id);
       const estado = (match.EstadoVT||"").trim().toUpperCase();
