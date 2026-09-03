@@ -852,10 +852,19 @@ export async function listarSoportesGastosDelMes(shareUrl, fechaISO){
 // guardarlo en el Soporte Factura/Pago — mismo mecanismo que ya usan los
 // links fijos de la app (SIIGO_SHARE_URL, GASTOS_SOPORTES_SHARE_URL), solo
 // que este se genera al vuelo para el archivo puntual que se elige.
+// scope:"anonymous" (no "organization") — pedido explícito del usuario
+// 2026-09-02: estos enlaces (Soporte Factura/Pago y la carpeta del mes en
+// el HTML exportado) están pensados para mandárselos a alguien FUERA de la
+// organización (ej. la contadora externa), así que cualquiera que lo
+// reciba lo debe poder abrir sin iniciar sesión con una cuenta de MD
+// Abogados — "organization" exigía justo eso, y por fuera del despacho
+// nadie tiene una cuenta con la que entrar. Si en el tenant de SharePoint
+// está desactivado "Cualquiera" en los ajustes de uso compartido, Graph
+// rechaza esta llamada — hay que activarlo ahí para que esto funcione.
 export async function crearLinkCompartidoSoporte(driveId, itemId){
   const res = await graphFetch(`/drives/${driveId}/items/${itemId}/createLink`, {
     method: "POST",
-    body: JSON.stringify({ type: "view", scope: "organization" }),
+    body: JSON.stringify({ type: "view", scope: "anonymous" }),
   });
   return res.link.webUrl;
 }
