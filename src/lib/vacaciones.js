@@ -14,6 +14,10 @@
 // en vez de columnas fijas de un archivo.
 import { COLOR_ENCABEZADO, fechaISOaExcel } from './informeSOS';
 import { esColaboradorVigente } from './permissions';
+import {
+  prepararDocumentoPDF, dibujarResumenBox, fechaCorta,
+  VERDE_OSCURO, GRIS_SUAVE, TEXTO, BORDE_SUAVE, GRIS_ZEBRA, VERDE_CLARO, MARGEN, CONTENIDO_Y_INICIAL, CONTENIDO_Y_MAXIMO,
+} from './informesPDF';
 
 function soloFecha(v){
   const s = String(v||"").slice(0,10);
@@ -111,4 +115,51 @@ export async function generarVacacionesExcel(filas){
   a.click();
   a.remove();
   URL.revokeObjectURL(url);
+}
+
+// PDF individual por colaborador — pedido explícito del usuario 2026-09-02
+// ("por trabajador agrega un PDF con la información de cada uno"). Mismo
+// membrete/pie institucional que el resto de los PDF de la app (ver
+// informesPDF.js) — resumen de días arriba, tabla de períodos tomados abajo
+// (paginada sola por autoTable si el historial es largo).
+export async function generarPDFVacacionesColaborador(fila){
+  const { doc, autoTable, pageWidth, fecha, dibujarEncabezadoYPie, numerarPaginas } = await prepararDocumentoPDF(`Vacaciones — ${fila.nombre}`);
+  dibujarEncabezadoYPie();
+  let y = CONTENIDO_Y_INICIAL;
+
+  doc.setFont('helvetica','normal'); doc.setFontSize(10.5); doc.setTextColor(...TEXTO);
+  doc.text(`Bogotá D.C., ${fecha}`, MARGEN, y); y += 9;
+
+  y = dibujarResumenBox(doc, MARGEN, y, pageWidth - MARGEN*2, [
+    { label:'Fecha de ingreso', value: fechaCorta(fila.fechaIngreso) },
+    { label:'Días generados', value: fila.diasGenerados ?? "—" },
+    { label:'Días tomados', value: fila.diasTomados ?? "—" },
+    { label:'Días pendientes', value: fila.diasPendientes ?? "—" },
+  ]) + 10;
+
+  doc.setFont('helvetica','bold'); doc.setFontSize(10); doc.setTextColor(...VERDE_OSCURO);
+  doc.text('Períodos tomados', MARGEN, y); y += 5;
+
+  if(!fila.historial.length){
+    doc.setFont('helvetica','italic'); doc.setFontSize(10); doc.setTextColor(...GRIS_SUAVE);
+    doc.text('Sin períodos registrados todavía.', MARGEN, y);
+  } else {
+    autoTable(doc, {
+      startY: y,
+      margin: { left: MARGEN, right: MARGEN, top: CONTENIDO_Y_INICIAL, bottom: 297 - CONTENIDO_Y_MAXIMO },
+      head: [["Fecha inicio","Fecha fin","Días","Observaciones"]],
+      body: fila.historial.map(h => [fechaCorta(h.FechaInicio), fechaCorta(h.FechaFin), h.Dias ?? "—", h.Observaciones || "—"]),
+      foot: [[{ content: `Total: ${fila.diasTomados ?? 0} días en ${fila.historial.length} período${fila.historial.length===1?'':'s'}`, colSpan: 4, styles:{halign:'right', fontStyle:'bold', fillColor:VERDE_CLARO, textColor:VERDE_OSCURO, fontSize:8.5} }]],
+      showFoot: 'lastPage',
+      styles: { font:'helvetica', fontSize:8.5, cellPadding:2.4, valign:'top', lineColor:BORDE_SUAVE, lineWidth:0.15, textColor:TEXTO },
+      headStyles: { fillColor:VERDE_OSCURO, textColor:255, fontStyle:'bold', halign:'center', fontSize:8.5 },
+      alternateRowStyles: { fillColor:GRIS_ZEBRA },
+      columnStyles: { 0:{cellWidth:26, halign:'right'}, 1:{cellWidth:26, halign:'right'}, 2:{cellWidth:16, halign:'right'} },
+      willDrawPage: dibujarEncabezadoYPie,
+    });
+  }
+
+  numerarPaginas();
+  const hoyISO = new Date().toISOString().slice(0,10);
+  doc.save(`Vacaciones - ${fila.nombre} - ${hoyISO}.pdf`);
 }

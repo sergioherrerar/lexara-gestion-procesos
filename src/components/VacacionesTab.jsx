@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { agruparVacacionesPorColaborador, generarVacacionesExcel } from '../lib/vacaciones';
+import { agruparVacacionesPorColaborador, generarVacacionesExcel, generarPDFVacacionesColaborador } from '../lib/vacaciones';
 import { fmtDate } from '../lib/graph';
 import { FieldCard } from './FormFields';
 import IconButton, { IconTextButton } from './IconButton';
@@ -28,6 +28,11 @@ export default function VacacionesTab({ colaboradores, vacacionesPeriodos, onCre
   // onEditarPeriodo en vez de crear uno nuevo.
   const [editandoId, setEditandoId] = useState(null);
   const [generandoExcel, setGenerandoExcel] = useState(false);
+  // PDF individual por colaborador — pedido explícito del usuario
+  // 2026-09-02 ("por trabajador agrega un PDF con la información de cada
+  // uno"). Se guarda el id de quién se está generando (no un solo booleano)
+  // para poder deshabilitar solo el botón de esa tarjeta, no todos a la vez.
+  const [generandoPDFId, setGenerandoPDFId] = useState(null);
 
   const filas = agruparVacacionesPorColaborador(colaboradores, vacacionesPeriodos);
 
@@ -36,6 +41,13 @@ export default function VacacionesTab({ colaboradores, vacacionesPeriodos, onCre
     try{ await generarVacacionesExcel(filas); }
     catch(err){ console.error(err); notify?.("No se pudo generar el Excel de Vacaciones: " + err.message, 'error'); }
     finally{ setGenerandoExcel(false); }
+  }
+
+  async function handleDescargarPDF(fila){
+    setGenerandoPDFId(fila.id);
+    try{ await generarPDFVacacionesColaborador(fila); }
+    catch(err){ console.error(err); notify?.("No se pudo generar el PDF de " + fila.nombre + ": " + err.message, 'error'); }
+    finally{ setGenerandoPDFId(null); }
   }
 
   function abrirFormulario(nombre){
@@ -111,11 +123,16 @@ export default function VacacionesTab({ colaboradores, vacacionesPeriodos, onCre
 
       {filas.map(f => (
         <div className="panel" key={f.id} style={{marginBottom:16}}>
-          <div className="panel-head">
+          <div className="panel-head" style={{gap:8}}>
             <h3>{f.nombre}</h3>
-            {canWrite && (abiertoPara===f.nombre
-              ? <button type="button" className="btn-secondary" onClick={cerrarFormulario}>Cancelar</button>
-              : <IconTextButton icon="add" variant="secondary" onClick={() => abrirFormulario(f.nombre)}>Agregar período</IconTextButton>)}
+            <div style={{display:'flex', gap:8}}>
+              <IconTextButton icon="pdf" variant="secondary" onClick={() => handleDescargarPDF(f)} disabled={generandoPDFId===f.id}>
+                {generandoPDFId===f.id ? "Generando…" : "Descargar PDF"}
+              </IconTextButton>
+              {canWrite && (abiertoPara===f.nombre
+                ? <button type="button" className="btn-secondary" onClick={cerrarFormulario}>Cancelar</button>
+                : <IconTextButton icon="add" variant="secondary" onClick={() => abrirFormulario(f.nombre)}>Agregar período</IconTextButton>)}
+            </div>
           </div>
           <div className="panel-body" style={{padding:'14px 20px'}}>
             <div className="field-card-grid">
