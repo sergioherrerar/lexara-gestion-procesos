@@ -15,7 +15,7 @@ export default function SetupView({ config, saveConfig, clearConfig, lists, upda
 
       <div className="setup-card">
         <h3>1. Registra la aplicación en Azure AD (Microsoft Entra)</h3>
-        <p>Solo se hace una vez. La app usará esta identidad para leer y escribir en las listas de SharePoint con los permisos del usuario que inicia sesión (no un usuario de servicio).</p>
+        <p>Solo se hace una vez. Portal Lexara usará esta identidad para leer y escribir en las listas de SharePoint con los permisos del usuario que inicia sesión (no un usuario de servicio).</p>
         <ul className="step-list">
           <li>Entra a <code>entra.microsoft.com</code> → <strong>Registros de aplicaciones</strong> → <strong>Nuevo registro</strong>.</li>
           <li>Nombre sugerido: <code>Lexara – Gestión de Procesos</code>. Tipo de cuenta: solo este directorio.</li>
@@ -42,7 +42,7 @@ export default function SetupView({ config, saveConfig, clearConfig, lists, upda
 
       <div className="setup-card">
         <h3>3. Probar conexión y mapear columnas</h3>
-        <p>Cada lista de SharePoint puede tener nombres internos de columna distintos a lo que ves en pantalla. Este paso se conecta a todas las listas registradas (Procesos judiciales, Clientes, y las que se agreguen), lee sus columnas y te deja indicar cuál corresponde a cada campo de la app.</p>
+        <p>Cada lista de SharePoint puede tener nombres internos de columna distintos a lo que ves en pantalla. Este paso se conecta a todas las listas registradas (Procesos judiciales, Clientes, y las que se agreguen), lee sus columnas y te deja indicar cuál corresponde a cada campo de Portal Lexara.</p>
         <div style={{display:'flex', gap:10, alignItems:'center', flexWrap:'wrap'}}>
           <button className="btn-primary" onClick={onTestConnection}>Conectar y leer columnas</button>
           {testStatus && <span className="save-hint" style={{marginLeft:0, color: testStatus.isError ? '#b3590a' : 'var(--texto-suave)'}}>{testStatus.msg}</span>}
@@ -64,12 +64,12 @@ export default function SetupView({ config, saveConfig, clearConfig, lists, upda
 
       <div className="setup-card">
         <h3>4. Cómo se leen y guardan los datos</h3>
-        <p>La app llama a Microsoft Graph así, usando el mapeo que definas arriba para traducir cada campo al nombre real de tu columna:</p>
+        <p>Portal Lexara llama a Microsoft Graph así, usando el mapeo que definas arriba para traducir cada campo al nombre real de tu columna:</p>
         <pre className="code-block">{`GET https://graph.microsoft.com/v1.0/sites/{siteId}/lists/{listId}/items?expand=fields
 
 PATCH https://graph.microsoft.com/v1.0/sites/{siteId}/lists/{listId}/items/{itemId}/fields
 Body: { "<columna real de Estado>": "En trámite", "<columna real de Fecha admisión>": "2026-07-01" }`}</pre>
-        <p>Ningún dato se almacena fuera de SharePoint: esta app es solo la ventana.</p>
+        <p>Ningún dato se almacena fuera de SharePoint: Portal Lexara es solo la ventana.</p>
       </div>
     </div>
   );

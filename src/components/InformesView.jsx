@@ -414,7 +414,7 @@ export default function InformesView({ procesos, clientes, facturas, ordenesComp
         <div className="panel-head"><h3>Registrar hora extra</h3></div>
         <div className="panel-body">
           <p style={{margin:'0 0 16px', color:'var(--texto-suave)', fontSize:13}}>
-            Registra tu Fecha y horario — la app calcula sola cuántas horas son Diurnas (6:00 a.m.–7:00 p.m.), Nocturnas (7:00 p.m.–6:00 a.m.) y si el día es domingo/festivo. La aprobación y el resumen mensual los ve Administración.
+            Registra tu Fecha y horario — Portal Lexara calcula solo cuántas horas son Diurnas (6:00 a.m.–7:00 p.m.), Nocturnas (7:00 p.m.–6:00 a.m.) y si el día es domingo/festivo. La aprobación y el resumen mensual los ve Administración.
           </p>
           <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(160px,1fr))', gap:14, marginBottom:8}}>
             <div className="field">

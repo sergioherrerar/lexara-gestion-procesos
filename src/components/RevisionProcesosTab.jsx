@@ -56,7 +56,7 @@ export default function RevisionProcesosTab({ procesos, notify }){
       <div className="panel-head"><h3>Revisión de Procesos</h3></div>
       <div className="panel-body">
         <p style={{margin:'0 0 16px', color:'var(--texto-suave)', fontSize:13}}>
-          Sube el informe mensual de la empresa de vigilancia judicial (Excel) — la app lo compara contra Procesos judiciales y te dice: qué procesos del archivo no están en el Portal Lexara, cuáles ya figuran Terminados acá aunque la vigilancia los sigue reportando, y cuáles procesos vigentes del Portal el archivo no reporta.
+          Sube el informe mensual de la empresa de vigilancia judicial (Excel) — Portal Lexara lo compara contra Procesos judiciales y te dice: qué procesos del archivo no están en el Portal Lexara, cuáles ya figuran Terminados acá aunque la vigilancia los sigue reportando, y cuáles procesos vigentes del Portal el archivo no reporta.
         </p>
         <div style={{display:'flex', alignItems:'center', gap:12, flexWrap:'wrap', marginBottom:18}}>
           <label className="btn-secondary" style={{cursor: procesando ? 'default' : 'pointer'}}>
