@@ -869,6 +869,22 @@ export async function crearLinkCompartidoSoporte(driveId, itemId){
   return res.link.webUrl;
 }
 
+// Los Soporte Factura/Pago que ya se habían asociado ANTES de este cambio
+// quedaron guardados con un enlace de scope "organization" (exige cuenta de
+// MD Abogados) — pedido explícito del usuario 2026-09-02: en vez de tener
+// que volver a elegir cada archivo a mano ("Quitar" + "Elegir…" de nuevo),
+// esto renueva el enlace SIN perder de vista cuál era el archivo real: el
+// propio enlace viejo sirve para resolverlo (mismo truco de
+// resolverCarpetaGastosSoportes/resolverCarpetaSiigo: /shares/{id}/driveItem
+// devuelve a qué archivo apunta cualquier link de compartir, incluido uno
+// ya creado antes), y sobre ESE archivo se pide un enlace nuevo, esta vez
+// anonymous. Devuelve la URL nueva (o la misma si por algo ya era pública).
+export async function renovarLinkSoporteAnonimo(urlActual){
+  const id = codificarUrlCompartida(urlActual);
+  const item = await graphFetch(`/shares/${id}/driveItem?$select=id,parentReference`);
+  return crearLinkCompartidoSoporte(item.parentReference.driveId, item.id);
+}
+
 // Enlace de SOLO LECTURA a la carpeta COMPLETA de un mes (no a un archivo
 // suelto) — pedido explícito del usuario 2026-09-02, para el botón "Ver
 // carpeta de soportes" del HTML exportado de Gastos: un solo enlace a toda

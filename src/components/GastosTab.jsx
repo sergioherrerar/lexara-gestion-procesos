@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { fmtDate, fmtMonto, parseMonto, listarSoportesGastosDelMes, crearLinkCompartidoSoporte, crearLinkCarpetaMesGastos } from '../lib/graph';
+import { fmtDate, fmtMonto, parseMonto, listarSoportesGastosDelMes, crearLinkCompartidoSoporte, crearLinkCarpetaMesGastos, renovarLinkSoporteAnonimo } from '../lib/graph';
 import { MESES_NOMBRES } from '../lib/horasExtras';
 import { TIPO_DOCUMENTO_OPTIONS, ENTIDAD_BANCARIA_OPTIONS, TIPO_CUENTA_OPTIONS, datosBancoProveedor, sumaValores, filtrarPorMes, generarRegistrosGastosExcel, generarRegistrosGastosHTML, siguienteNumeroConsecutivo } from '../lib/gastos';
 import IconButton, { IconTextButton } from './IconButton';
@@ -269,7 +269,7 @@ function SoporteField({ label, url, fecha, shareUrl, onElegir }){
   );
 }
 
-function RegistrosSection({ nombreLista, registros, proveedores, conNumero, conTipo, conSoportes, shareUrl, siguienteNumero, onCrear, onEditar, onEliminar, canWrite }){
+function RegistrosSection({ nombreLista, registros, proveedores, conNumero, conTipo, conSoportes, shareUrl, siguienteNumero, onCrear, onEditar, onEliminar, canWrite, notify }){
   const hoyRef = new Date();
   const [mes, setMes] = useState(hoyRef.getMonth());
   const [anio, setAnio] = useState(hoyRef.getFullYear());
@@ -372,6 +372,40 @@ function RegistrosSection({ nombreLista, registros, proveedores, conNumero, conT
     } finally { setGenerandoHTML(false); }
   }
 
+  // Los Soporte Factura/Pago asociados ANTES del cambio a enlaces públicos
+  // (ver [[project_gastos_modulo]]) quedaron con el scope viejo
+  // ("organization") — pedido explícito del usuario 2026-09-02: los
+  // renueva TODOS de una sola vez, sin tener que volver a elegir cada
+  // archivo a mano. Recorre TODOS los registros de Gastos (no solo los del
+  // mes filtrado) para no dejar ninguno viejo por fuera.
+  const [migrandoLinks, setMigrandoLinks] = useState(false);
+  async function handleActualizarEnlacesPublicos(){
+    setMigrandoLinks(true);
+    let actualizados = 0, fallidos = 0;
+    try{
+      for(const r of (registros||[])){
+        for(const campo of ['SoporteFactura', 'SoportePago']){
+          const urlActual = r[campo];
+          if(!urlActual) continue;
+          try{
+            const urlNueva = await renovarLinkSoporteAnonimo(urlActual);
+            if(urlNueva && urlNueva !== urlActual){
+              await onEditar(r.id, { [campo]: urlNueva });
+              actualizados++;
+            }
+          }catch(err){
+            console.error(`No se pudo renovar ${campo} de ${r.PagadoA}:`, err);
+            fallidos++;
+          }
+        }
+      }
+      notify?.(
+        fallidos ? `${actualizados} enlace(s) actualizados, ${fallidos} no se pudieron renovar (revisa la consola).` : `${actualizados} enlace(s) actualizados a acceso público.`,
+        fallidos ? 'error' : 'success'
+      );
+    } finally { setMigrandoLinks(false); }
+  }
+
   const nCols = columnas.length;
   return (
     <div>
@@ -402,6 +436,11 @@ function RegistrosSection({ nombreLista, registros, proveedores, conNumero, conT
           <IconTextButton icon="html" variant="secondary" onClick={handleDescargarHTML} disabled={generandoHTML}>
             {generandoHTML ? "Generando…" : "Descargar HTML"}
           </IconTextButton>
+          {conSoportes && canWrite && (
+            <IconTextButton icon="refresh" variant="secondary" onClick={handleActualizarEnlacesPublicos} disabled={migrandoLinks}>
+              {migrandoLinks ? "Actualizando…" : "Hacer públicos los enlaces existentes"}
+            </IconTextButton>
+          )}
         </div>
       </div>
       {abierto && <RegistroForm inicial={formInicialNuevo} conNumero={conNumero} conTipo={conTipo} proveedores={proveedores} onGuardar={guardarNuevo} onCancelar={cerrarNuevo} guardando={guardando} />}
@@ -465,7 +504,7 @@ function RegistrosSection({ nombreLista, registros, proveedores, conNumero, conT
 
 export default function GastosTab({ config, proveedoresGastos, gastos,
   onCrearProveedorGastos, onEditarProveedorGastos, onEliminarProveedorGastos,
-  onCrearGasto, onEditarGasto, onEliminarGasto, canWrite }){
+  onCrearGasto, onEditarGasto, onEliminarGasto, canWrite, notify }){
   const [subTab, setSubTab] = useState('proveedores');
   const shareUrl = config?.GASTOS_SOPORTES_SHARE_URL;
   const siguienteNumero = siguienteNumeroConsecutivo(gastos);
@@ -483,7 +522,7 @@ export default function GastosTab({ config, proveedoresGastos, gastos,
       )}
       {subTab==='gastos' && (
         <RegistrosSection nombreLista="Gastos" registros={gastos} proveedores={proveedoresGastos} conNumero conTipo conSoportes shareUrl={shareUrl} siguienteNumero={siguienteNumero}
-          onCrear={onCrearGasto} onEditar={onEditarGasto} onEliminar={onEliminarGasto} canWrite={canWrite} />
+          onCrear={onCrearGasto} onEditar={onEditarGasto} onEliminar={onEliminarGasto} canWrite={canWrite} notify={notify} />
       )}
     </div>
   );

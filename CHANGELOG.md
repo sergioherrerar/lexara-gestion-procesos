@@ -3,6 +3,7 @@
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
 ## 2026-09-01
+- **Nuevo botón "Hacer públicos los enlaces existentes" en Gastos** — renueva de una sola vez todos los Soporte Factura/Pago que ya se habían asociado antes del cambio a acceso público, sin tener que volver a elegir cada archivo a mano.
 - **Los enlaces de Soporte Factura/Pago y de la carpeta del mes (Gastos) ahora los puede abrir cualquiera, sin iniciar sesión** — antes exigían una cuenta de Microsoft del despacho para abrirlos, y están pensados para mandárselos a alguien externo (ej. la contadora). Si el enlace no abre para alguien de afuera, hay que revisar que "Cualquiera" esté habilitado en los ajustes de uso compartido del sitio de SharePoint.
 - **Egresos ya no muestra "Cuentas de Cobro" ni "Pagos por Realizar"** — pedido explícito del usuario ("todo lo puedo sacar de gastos con los filtros"), quedan solo Proveedores y Gastos. Las 2 listas de SharePoint y todo lo que ya tenían cargado se dejan intactas sin tocar, solo se dejaron de mostrar. El consecutivo de "Numero" pasa a ser solo de Gastos.
 - **Gastos: el HTML exportado ahora incluye un enlace de solo lectura a la carpeta completa de soportes del mes seleccionado** — en la esquina del encabezado, con el texto "Gastos generados por MD ABOGADOS durante {mes}". Solo aparece con un mes puntual elegido (no con "Todos").

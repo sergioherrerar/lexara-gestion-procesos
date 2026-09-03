@@ -179,6 +179,7 @@ export default function AdministracionView({ colaboradores, searchQuery, onOpenC
           onEditarGasto={onEditarGasto}
           onEliminarGasto={onEliminarGasto}
           canWrite={canWrite}
+          notify={notify}
         />
       )}
     </div>
