@@ -161,7 +161,7 @@ function escapeHtml(s){
 // enlace en el que puede hacer clic, sin tener que mandarle los PDF sueltos
 // aparte. Mismo estilo institucional que generarInformeClienteHTML.js — un
 // .html autocontenido, sin depender de que siga corriendo la app.
-export function generarRegistrosGastosHTML(titulo, filas, proveedores, { conNumero, conTipo, conSoportes } = {}){
+export function generarRegistrosGastosHTML(titulo, filas, proveedores, { conNumero, conTipo, conSoportes, linkCarpetaMes, mesLabel } = {}){
   const total = sumaValores(filas);
   const fechaLarga = new Date().toLocaleDateString('es-CO', { day:'2-digit', month:'long', year:'numeric' });
 
@@ -193,9 +193,21 @@ export function generarRegistrosGastosHTML(titulo, filas, proveedores, { conNume
   :root{ --verde-oscuro:#004941; --gris-claro:#f4f4f2; --gris-linea:#e4e4e1; --texto:#1c2624; --texto-suave:#5c6b68; --font-display:'Fraunces',Georgia,serif; --font-body:'Inter',Arial,sans-serif; }
   *{box-sizing:border-box;}
   body{margin:0; font-family:var(--font-body); background:var(--gris-claro); color:var(--texto); -webkit-font-smoothing:antialiased;}
-  .header{background:var(--verde-oscuro); color:#fff; padding:22px 28px;}
+  .header{background:var(--verde-oscuro); color:#fff; padding:22px 28px; display:flex; align-items:center; justify-content:space-between; gap:18px; flex-wrap:wrap;}
   .header h1{font-family:var(--font-display); font-size:21px; font-weight:600; margin:0 0 4px;}
   .header p{margin:0; font-size:12.5px; color:rgba(255,255,255,.75);}
+  /* Enlace de solo lectura a la carpeta de soportes del mes — pedido
+     explícito del usuario 2026-09-02. Fondo claro sobre el verde oscuro del
+     encabezado para que se note que es un botón, texto centrado dentro de
+     su propia caja. */
+  .header-carpeta{
+    background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.4); border-radius:10px;
+    padding:10px 18px; text-align:center; color:#fff; text-decoration:none; max-width:230px;
+    transition:background .15s ease;
+  }
+  .header-carpeta:hover{background:rgba(255,255,255,.22);}
+  .header-carpeta .carpeta-eyebrow{display:block; font-size:10px; text-transform:uppercase; letter-spacing:.05em; color:rgba(255,255,255,.7); margin-bottom:3px;}
+  .header-carpeta strong{display:block; font-size:12.5px; font-weight:600; line-height:1.35;}
   .contenido{max-width:1000px; margin:0 auto; padding:22px 20px 50px;}
   .panel{background:#fff; border:1px solid var(--gris-linea); border-radius:12px; box-shadow:0 1px 3px rgba(0,20,18,.08); overflow:hidden;}
   table{width:100%; border-collapse:collapse; font-size:13px;}
@@ -210,8 +222,14 @@ export function generarRegistrosGastosHTML(titulo, filas, proveedores, { conNume
 </head>
 <body>
   <div class="header">
-    <h1>${escapeHtml(titulo)}</h1>
-    <p>Generado el ${escapeHtml(fechaLarga)} · Lexara Abogados</p>
+    <div>
+      <h1>${escapeHtml(titulo)}</h1>
+      <p>Generado el ${escapeHtml(fechaLarga)} · Lexara Abogados</p>
+    </div>
+    ${linkCarpetaMes ? `<a class="header-carpeta" href="${escapeHtml(linkCarpetaMes)}" target="_blank" rel="noopener noreferrer">
+      <span class="carpeta-eyebrow">📂 Carpeta de soportes (solo lectura)</span>
+      <strong>Gastos generados por MD ABOGADOS durante ${escapeHtml(mesLabel||"el mes seleccionado")}</strong>
+    </a>` : ''}
   </div>
   <div class="contenido">
     <div class="panel">

@@ -860,6 +860,30 @@ export async function crearLinkCompartidoSoporte(driveId, itemId){
   return res.link.webUrl;
 }
 
+// Enlace de SOLO LECTURA a la carpeta COMPLETA de un mes (no a un archivo
+// suelto) — pedido explícito del usuario 2026-09-02, para el botón "Ver
+// carpeta de soportes" del HTML exportado de Gastos: un solo enlace a toda
+// la subcarpeta Año/Mes ("1 Soportes de gastos MD/{Año}/{Mes}"), para que
+// quien reciba el HTML pueda ver TODOS los soportes de ese mes de una vez,
+// sin depender de que cada fila tenga su Soporte Factura/Pago ya asociado.
+// Mismo `crearLinkCompartidoSoporte` de arriba (type:"view" = solo lectura)
+// — createLink de Graph funciona igual sobre una carpeta que sobre un
+// archivo. Si la subcarpeta de ese mes todavía no existe (mes sin nada
+// archivado todavía), devuelve null en vez de lanzar error.
+export async function crearLinkCarpetaMesGastos(shareUrl, anio, mesIndex0){
+  const mes = MESES_CARPETA_GASTOS[mesIndex0];
+  if(!mes) return null;
+  const carpeta = await resolverCarpetaGastosSoportes(shareUrl);
+  const ruta = `${anio}/${mes}`;
+  try{
+    const item = await graphFetch(`/drives/${carpeta.driveId}/items/${carpeta.folderId}:/${encodeURIComponent(ruta)}`);
+    return await crearLinkCompartidoSoporte(carpeta.driveId, item.id);
+  }catch(err){
+    if(/^Graph 404/.test(err.message||"")) return null;
+    throw err;
+  }
+}
+
 // Dia/Mes/Año son los campos que se digitan; Fecha se guarda concatenándolos
 // y dándoles formato de fecha (no se digita directamente).
 export function fechaFromPartes(dia, mes, anio){

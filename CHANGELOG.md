@@ -3,6 +3,7 @@
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
 ## 2026-09-01
+- **Gastos: el HTML exportado ahora incluye un enlace de solo lectura a la carpeta completa de soportes del mes seleccionado** — en la esquina del encabezado, con el texto "Gastos generados por MD ABOGADOS durante {mes}". Solo aparece con un mes puntual elegido (no con "Todos").
 - **Egresos: filtro y orden por columna en las 4 tablas (Proveedores/Cuentas de Cobro/Pagos por Realizar/Gastos)** — mismo menú desplegable por encabezado (ordenar A-Z/Z-A + filtrar por texto) que ya usan Procesos/Tutelas/Clientes/etc.
 - **Separa visualmente el menú de Egresos del sub-menú de Proveedores/Cuentas de Cobro/Pagos por Realizar/Gastos** — antes se veían como un solo menú confuso (mismo estilo de píldoras); el de abajo ahora es un control segmentado en su propia caja. De paso, la pestaña "Gastos" del menú de Administración se renombra a **"Egresos"**.
 - **Corrige que "Observación" nunca se guardara en Gastos** — a esa lista le faltaba declarar esa columna desde que se creó el módulo; lo que se veía al escribirla era solo el dato en memoria, al recargar la página siempre volvía a quedar vacío. De paso, la app ahora reconoce sola cualquier columna nueva sin mapeo confirmado en cada inicio de sesión (antes solo pasaba al entrar a Configuración).

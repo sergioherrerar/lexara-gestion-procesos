@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { fmtDate, fmtMonto, parseMonto, listarSoportesGastosDelMes, crearLinkCompartidoSoporte } from '../lib/graph';
+import { fmtDate, fmtMonto, parseMonto, listarSoportesGastosDelMes, crearLinkCompartidoSoporte, crearLinkCarpetaMesGastos } from '../lib/graph';
 import { MESES_NOMBRES } from '../lib/horasExtras';
 import { TIPO_DOCUMENTO_OPTIONS, ENTIDAD_BANCARIA_OPTIONS, TIPO_CUENTA_OPTIONS, datosBancoProveedor, sumaValores, filtrarPorMes, generarRegistrosGastosExcel, generarRegistrosGastosHTML, siguienteNumeroConsecutivo } from '../lib/gastos';
 import IconButton, { IconTextButton } from './IconButton';
@@ -344,8 +344,26 @@ function RegistrosSection({ nombreLista, registros, proveedores, conNumero, conT
   // enviárselo a un tercero (ej. la contadora externa) con el link real de
   // cada soporte como enlace en el que puede hacer clic, sin adjuntar PDF
   // sueltos aparte.
-  function handleDescargarHTML(){
-    generarRegistrosGastosHTML(nombreArchivoActual(), filas, proveedores, { conNumero, conTipo, conSoportes });
+  const [generandoHTML, setGenerandoHTML] = useState(false);
+  async function handleDescargarHTML(){
+    setGenerandoHTML(true);
+    try{
+      // Enlace de solo lectura a TODA la carpeta de soportes del mes
+      // seleccionado (además de los enlaces por fila que ya trae la
+      // tabla) — pedido explícito del usuario 2026-09-02. Solo aplica acá
+      // en Gastos (única de las 3 con `shareUrl`/soportes reales) y solo
+      // con un mes puntual elegido (con "Todos" no hay "el mes
+      // seleccionado" al que apuntar). Si la carpeta de ese mes todavía no
+      // existe, crearLinkCarpetaMesGastos devuelve null y el botón
+      // simplemente no aparece en el HTML.
+      let linkCarpetaMes = null;
+      if(conSoportes && shareUrl && !verTodos){
+        try{ linkCarpetaMes = await crearLinkCarpetaMesGastos(shareUrl, anio, mes); }
+        catch(err){ console.error('No se pudo generar el link de la carpeta del mes:', err); }
+      }
+      const mesLabel = verTodos ? null : `${MESES_NOMBRES[mes].toLowerCase()} de ${anio}`;
+      generarRegistrosGastosHTML(nombreArchivoActual(), filas, proveedores, { conNumero, conTipo, conSoportes, linkCarpetaMes, mesLabel });
+    } finally { setGenerandoHTML(false); }
   }
 
   const nCols = columnas.length;
@@ -375,7 +393,9 @@ function RegistrosSection({ nombreLista, registros, proveedores, conNumero, conT
           <IconTextButton icon="excel" variant="secondary" onClick={handleDescargarExcel} disabled={generandoExcel}>
             {generandoExcel ? "Generando…" : "Descargar Excel"}
           </IconTextButton>
-          <IconTextButton icon="html" variant="secondary" onClick={handleDescargarHTML}>Descargar HTML</IconTextButton>
+          <IconTextButton icon="html" variant="secondary" onClick={handleDescargarHTML} disabled={generandoHTML}>
+            {generandoHTML ? "Generando…" : "Descargar HTML"}
+          </IconTextButton>
         </div>
       </div>
       {abierto && <RegistroForm inicial={formInicialNuevo} conNumero={conNumero} conTipo={conTipo} proveedores={proveedores} onGuardar={guardarNuevo} onCancelar={cerrarNuevo} guardando={guardando} />}
