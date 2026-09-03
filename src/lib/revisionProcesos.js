@@ -129,6 +129,7 @@ export function compararConProcesos(filasArchivo, procesos){
           lexara: match.Radicado || "—",
           demandante: fila.demandante || "—",
           demandado: fila.demandado || "—",
+          apoderado: fila.apoderado || "—",
         });
       }
       // Vigente/En revisión y sí se encontró: todo bien, no se reporta.
@@ -140,6 +141,7 @@ export function compararConProcesos(filasArchivo, procesos){
         lexara: "#N/D",
         demandante: fila.demandante || "—",
         demandado: fila.demandado || "—",
+        apoderado: fila.apoderado || "—",
       });
     }
   });
@@ -154,6 +156,7 @@ export function compararConProcesos(filasArchivo, procesos){
       lexara: "—",
       demandante: p.Demandante || "—",
       demandado: p.Demandado || "—",
+      apoderado: p.Apoderado || "—",
     }));
 
   return { noEncontrados, terminados, faltantesEnArchivo };
@@ -189,6 +192,7 @@ export async function generarExcelRevisionProcesos(nombreArchivo, { noEncontrado
     { header:"Lexara", key:"lexara", width:16 },
     { header:"Demandante", key:"demandante", width:32 },
     { header:"Demandado", key:"demandado", width:32 },
+    { header:"Apoderado", key:"apoderado", width:32 },
   ]);
   [...noEncontrados, ...terminados, ...faltantesEnArchivo].forEach(f => wsRevision.addRow(f));
 
