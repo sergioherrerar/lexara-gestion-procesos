@@ -18,7 +18,7 @@ import StackedBarChart from './StackedBarChart';
 import { clasificarHorasExtra, soloFecha } from '../lib/horasExtras';
 import RevisionProcesosTab from './RevisionProcesosTab';
 import CruceArchivosTab from './CruceArchivosTab';
-import { construirMensajePagoWhatsApp, normalizarTelefonoWaMe } from '../lib/whatsappPago';
+import { construirMensajePagoWhatsApp, normalizarTelefonoWaMe, normalizarTelefonoManualWaMe, PAISES_WHATSAPP } from '../lib/whatsappPago';
 
 // Entidades con formato de informe formal ya confirmado, y qué generador usa
 // cada una — cada Entidad puede tener un formato distinto (columnas/orden
@@ -113,6 +113,7 @@ export default function InformesView({ procesos, clientes, facturas, desistimien
   const [grupoWhatsApp, setGrupoWhatsApp] = useState('clientes');
   const [personaWhatsApp, setPersonaWhatsApp] = useState('');
   const [nombreManualWhatsApp, setNombreManualWhatsApp] = useState('');
+  const [paisManualWhatsApp, setPaisManualWhatsApp] = useState('57');
   const [telefonoManualWhatsApp, setTelefonoManualWhatsApp] = useState('');
   const clientesConTelefono = [...(clientes||[])]
     .filter(c => (c.Telefono||"").trim())
@@ -125,19 +126,18 @@ export default function InformesView({ procesos, clientes, facturas, desistimien
     setPersonaWhatsApp('');
   }
   function handleEnviarPagoWhatsApp(){
-    let nombre = '', telefono = '';
+    let nombre = '', telefonoWaMe = '';
     if(grupoWhatsApp === 'manual'){
       nombre = nombreManualWhatsApp;
-      telefono = telefonoManualWhatsApp;
+      telefonoWaMe = normalizarTelefonoManualWaMe(paisManualWhatsApp, telefonoManualWhatsApp);
     } else {
       const lista = grupoWhatsApp === 'clientes' ? clientesConTelefono : equipoMDConTelefono;
       const elegido = lista.find(p => String(p.id) === personaWhatsApp);
       if(!elegido){ notify?.("Selecciona a quién enviarle el mensaje.", 'error'); return; }
       nombre = grupoWhatsApp === 'clientes' ? elegido.RazonSocial : elegido.Nombre;
-      telefono = elegido.Telefono;
+      telefonoWaMe = normalizarTelefonoWaMe(elegido.Telefono);
     }
-    const telefonoWaMe = normalizarTelefonoWaMe(telefono);
-    if(!telefonoWaMe){ notify?.("Escribe un número de teléfono válido.", 'error'); return; }
+    if(!telefonoWaMe){ notify?.("Ese número no es un celular válido para WhatsApp (para Colombia: 10 dígitos, empieza en 3). Revisa que no sea un fijo.", 'error'); return; }
     const mensaje = construirMensajePagoWhatsApp(nombre, config?.DAVIVIENDA_PAGOS_URL);
     window.open(`https://wa.me/${telefonoWaMe}?text=${encodeURIComponent(mensaje)}`, '_blank');
   }
@@ -445,8 +445,11 @@ export default function InformesView({ procesos, clientes, facturas, desistimien
           </select>
         ) : (
           <>
-            <input type="text" placeholder="Nombre (opcional)" value={nombreManualWhatsApp} onChange={e => setNombreManualWhatsApp(e.target.value)} style={{maxWidth:150, minWidth:0, flex:'none'}} />
-            <input type="text" placeholder="+57 300 000 0000" value={telefonoManualWhatsApp} onChange={e => setTelefonoManualWhatsApp(e.target.value)} style={{maxWidth:150, minWidth:0, flex:'none'}} />
+            <input type="text" placeholder="Nombre (opcional)" value={nombreManualWhatsApp} onChange={e => setNombreManualWhatsApp(e.target.value)} style={{maxWidth:140, minWidth:0, flex:'none'}} />
+            <select value={paisManualWhatsApp} onChange={e => setPaisManualWhatsApp(e.target.value)} style={{minWidth:0, maxWidth:170, flex:'none'}}>
+              {PAISES_WHATSAPP.map(p => <option key={p.codigo} value={p.codigo}>{p.nombre}</option>)}
+            </select>
+            <input type="text" inputMode="numeric" placeholder="3000000000" value={telefonoManualWhatsApp} onChange={e => setTelefonoManualWhatsApp(e.target.value.replace(/\D/g, ''))} style={{maxWidth:120, minWidth:0, flex:'none'}} />
           </>
         )}
         <IconButton icon="whatsapp" variant="whatsapp" label="Enviar mensaje de pago por WhatsApp" onClick={handleEnviarPagoWhatsApp} />

@@ -40,13 +40,49 @@ export function primerNombreApellido(nombreCompleto){
   return `${palabras[0]} ${palabras[2]}`; // 3+ palabras: se salta el segundo nombre
 }
 
-// Deja el teléfono en formato "57XXXXXXXXXX" (sin "+", como lo pide wa.me),
-// agregando el indicativo de Colombia si no lo trae.
+// Deja el teléfono en formato "573XXXXXXXXX" (sin "+", como lo pide wa.me),
+// agregando el indicativo de Colombia si no lo trae. Devuelve "" si no es un
+// CELULAR colombiano válido (10 dígitos que empiezan en 3) — WhatsApp solo
+// existe en celulares, nunca en fijos, así que un fijo (ej. "601 654 3210",
+// típico en Teléfono de Clientes/empresas) no sirve aunque tenga 10 dígitos.
+// Se valida ANTES de abrir wa.me: un número inválido hace que WhatsApp abra
+// su propia pantalla de "número no disponible" y descarte el mensaje ya
+// escrito — mejor avisar acá que dejarlo abrir roto. Se usa para los
+// teléfonos que ya vienen guardados en Clientes/Equipo MD.
 export function normalizarTelefonoWaMe(telefono){
-  const soloDigitos = (telefono || '').replace(/\D/g, '');
-  if(!soloDigitos) return '';
-  if(soloDigitos.startsWith('57') && soloDigitos.length > 10) return soloDigitos;
-  return `57${soloDigitos.replace(/^0+/, '')}`;
+  let digitos = (telefono || '').replace(/\D/g, '');
+  if(!digitos) return '';
+  if(digitos.startsWith('57') && digitos.length > 10) digitos = digitos.slice(2);
+  digitos = digitos.replace(/^0+/, '');
+  if(!/^3\d{9}$/.test(digitos)) return '';
+  return `57${digitos}`;
+}
+
+// Países más comunes para "Otro número" — Colombia (+57) es el que pidió el
+// usuario como default de la lista; los demás son un complemento razonable
+// por si toca escribirle a alguien fuera del país.
+export const PAISES_WHATSAPP = [
+  { codigo: '57', nombre: 'Colombia (+57)' },
+  { codigo: '1', nombre: 'Estados Unidos / Canadá (+1)' },
+  { codigo: '34', nombre: 'España (+34)' },
+  { codigo: '52', nombre: 'México (+52)' },
+  { codigo: '58', nombre: 'Venezuela (+58)' },
+  { codigo: '593', nombre: 'Ecuador (+593)' },
+  { codigo: '507', nombre: 'Panamá (+507)' },
+];
+
+// Arma el número para wa.me a partir del código de país elegido en la lista
+// (sin "+") y el número escrito (se le quita cualquier espacio/símbolo).
+// Con Colombia se exige el formato real de celular (10 dígitos, empieza en
+// 3), porque es el único país donde de verdad sabemos cuál es el formato
+// correcto; con los demás países solo se exige un largo razonable, ya que
+// no podemos validar el formato exacto de cada uno.
+export function normalizarTelefonoManualWaMe(codigoPais, numero){
+  const digitos = (numero || '').replace(/\D/g, '');
+  if(!digitos) return '';
+  if(codigoPais === '57') return /^3\d{9}$/.test(digitos) ? `57${digitos}` : '';
+  if(digitos.length < 7 || digitos.length > 12) return '';
+  return `${codigoPais}${digitos}`;
 }
 
 // Mensaje institucional de recordatorio de pago, con el mismo texto del
