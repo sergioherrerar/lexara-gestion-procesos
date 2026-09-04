@@ -201,9 +201,31 @@ export async function generarExcelCruce(nombreArchivo, archivos, { resumen, porA
   encabezarHoja(wsRevision, columnasRevision);
   resumen.forEach(f => wsRevision.addRow(f));
 
+  // Bug real 2026-09-03, reportado por el usuario ("Worksheet name already
+  // exists"): 2 archivos con nombres largos y parecidos (ej. "CUADRO ANEXO
+  // DEMANDA 2016-00465.xlsx" y "...00466.xlsx") recortaban al mismo texto
+  // de 28 caracteres — justo lo que los distinguía quedaba fuera del
+  // recorte. Se lleva un registro de los nombres de hoja ya usados y, si
+  // el recorte se repite, se le agrega un número al final hasta que sea
+  // único (sin pasarse nunca de los 31 caracteres que permite Excel).
+  const nombresDeHojaUsados = new Set(["Revisión"]);
+  function nombreDeHojaUnico(nombre){
+    const base = nombre.replace(/[\\/*?:[\]]/g, '').slice(0, 28) || "Archivo";
+    if(!nombresDeHojaUsados.has(base)){ nombresDeHojaUsados.add(base); return base; }
+    let intento = 2;
+    let candidato;
+    do{
+      const sufijo = ` ${intento}`;
+      candidato = base.slice(0, 31 - sufijo.length) + sufijo;
+      intento++;
+    } while(nombresDeHojaUsados.has(candidato));
+    nombresDeHojaUsados.add(candidato);
+    return candidato;
+  }
+
   porArchivo.forEach(({ nombre, columnas, filas }) => {
     // Nombre de hoja de Excel: máximo 31 caracteres, sin ciertos símbolos.
-    const nombreHoja = nombre.replace(/[\\/*?:[\]]/g, '').slice(0, 28) || "Archivo";
+    const nombreHoja = nombreDeHojaUnico(nombre);
     const ws = wb.addWorksheet(nombreHoja);
     encabezarHoja(ws, [
       ...columnas.map(c => ({ header:c, key:c, width:18 })),

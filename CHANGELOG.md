@@ -3,6 +3,7 @@
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
 ## 2026-09-03
+- **Corrige "Worksheet name already exists" al descargar el Excel de Cruce de archivos** — 2 archivos con nombres largos y parecidos recortaban al mismo texto; ahora nunca se repiten.
 - **Cruce de archivos: sin límite de archivos** (antes máximo 3) — sube los que necesites.
 - **Corrige lectura de encabezados en Cruce de archivos** — algunas hojas (comunes en reportes de EPS) traen la fila 1 con títulos de agrupación combinados (ej. "DATOS FACTURA" sobre varias columnas) y el encabezado real en la fila siguiente; ahora se detecta y se usa la fila correcta.
 - **Nueva sección "Cruce de archivos" en Informes** — sube 2 o más archivos Excel y los cruza entre sí por una columna en común (eligiendo hoja y columna por cada archivo, sin adivinar nombres). Descarga un Excel con una hoja "Revisión" (resumen por llave) y una hoja por cada archivo subido con sus observaciones.
