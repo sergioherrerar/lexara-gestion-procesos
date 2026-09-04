@@ -3,6 +3,7 @@
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
 ## 2026-09-04
+- **Cambia el ícono genérico de WhatsApp por el glifo real y reconocible** (teléfono dentro del globo) en los botones de "Compartir por WhatsApp" y "Envío seguro link de pagos".
 - **"Enviar pago por WhatsApp" pasa a ser su propia sección: "Envío seguro link de pagos cuenta Davivienda"** — antes iba apretado dentro de la barra de "Informe para un cliente", ahora tiene su propia fila debajo.
 - **Corrige que "Otro número" en Enviar pago por WhatsApp abriera WhatsApp sin el mensaje** — pasaba cuando el número no era un celular válido (ej. un fijo); WhatsApp descarta el texto y muestra su propia pantalla de "número no disponible". Ahora se valida antes de abrir WhatsApp y avisa si el número está mal.
 - **"Otro número" ahora tiene selector de país** (Colombia +57 por defecto, con otros países comunes) — el campo de teléfono ya solo pide los dígitos, sin tener que escribir el "+57" ni espacios a mano.
