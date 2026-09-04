@@ -185,6 +185,8 @@ export default function App(){
             valoresEntidad={app.valoresEntidad}
             clientes={app.clientes}
             procesos={app.procesos}
+            facturas={app.facturas}
+            ordenesCompra={app.ordenesCompra}
             onAbrirBorradorOrdenCompra={app.abrirBorradorOrdenCompra}
             onAbrirBorradorFactura={app.abrirBorradorFactura}
             horasExtras={app.horasExtras}

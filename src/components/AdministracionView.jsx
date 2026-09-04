@@ -1,11 +1,9 @@
 import { useState } from 'react';
 import ColaboradoresView from './ColaboradoresView';
 import VacacionesTab from './VacacionesTab';
-import OrdenesColmedicaTab from './OrdenesColmedicaTab';
-import HonorariosPorProcesoTab from './HonorariosPorProcesoTab';
 import HorasExtrasTab from './HorasExtrasTab';
 import GastosTab from './GastosTab';
-import RevisionProcesosTab from './RevisionProcesosTab';
+import FacturacionTab from './FacturacionTab';
 import { IconTextButton } from './IconButton';
 import { generarCertificacionColaboradorPDF } from '../lib/informeCertificacion';
 
@@ -20,13 +18,10 @@ import { generarCertificacionColaboradorPDF } from '../lib/informeCertificacion'
 const TABS = [
   {key:'colaboradores', label:'Colaboradores MD'},
   {key:'vacaciones', label:'Vacaciones'},
-  {key:'certificaciones', label:'Certificaciones'},
-  {key:'documentos', label:'Documentos de la empresa'},
-  {key:'ordenesColmedica', label:'Órdenes Colmédica'},
-  {key:'honorariosPorProceso', label:'Honorarios por Proceso'},
+  {key:'documentos', label:'Documentos'},
   {key:'horasExtras', label:'Horas Extras'},
   {key:'gastos', label:'Egresos'},
-  {key:'revisionProcesos', label:'Revisión de Procesos'},
+  {key:'facturacion', label:'Facturación'},
 ];
 
 function CertificacionesTab({ colaboradores, notify }){
@@ -74,7 +69,7 @@ function CertificacionesTab({ colaboradores, notify }){
   );
 }
 
-function DocumentosTab({ config }){
+function DocumentosEmpresaTab({ config }){
   return (
     <div className="panel">
       <div className="panel-body" style={{padding:'32px 28px', display:'flex', flexDirection:'column', alignItems:'center', textAlign:'center', gap:14}}>
@@ -93,7 +88,34 @@ function DocumentosTab({ config }){
   );
 }
 
-export default function AdministracionView({ colaboradores, searchQuery, onOpenColaborador, onCreateColaborador, onDeleteColaborador, canWrite = true, notify, config, tutelas, valoresEntidad, clientes, procesos, onAbrirBorradorOrdenCompra, onAbrirBorradorFactura, horasExtras, onAprobarHoraExtra, vacacionesPeriodos, onCrearPeriodoVacaciones, onEditarPeriodoVacaciones, onEliminarPeriodoVacaciones,
+const DOCUMENTOS_SUB_TABS = [
+  {key:'certificaciones', label:'Certificaciones'},
+  {key:'documentosEmpresa', label:'Documentos de la empresa'},
+];
+
+// "Documentos" (Administración) — pedido explícito del usuario 2026-09-03:
+// junta acá 2 pestañas que antes vivían sueltas en el menú principal
+// (Certificaciones y Documentos de la empresa). Mismo sub-menú segmentado
+// que ya usan Egresos y Facturación — ver .subnav-panel/.subtabs/.subtab
+// en styles.css.
+function DocumentosTab({ colaboradores, config, notify }){
+  const [subTab, setSubTab] = useState('certificaciones');
+  return (
+    <div>
+      <div className="subnav-panel">
+        <div className="subtabs">
+          {DOCUMENTOS_SUB_TABS.map(t => (
+            <button key={t.key} type="button" className={"subtab" + (subTab===t.key ? " active" : "")} onClick={() => setSubTab(t.key)}>{t.label}</button>
+          ))}
+        </div>
+      </div>
+      {subTab==='certificaciones' && <CertificacionesTab colaboradores={colaboradores} notify={notify} />}
+      {subTab==='documentosEmpresa' && <DocumentosEmpresaTab config={config} />}
+    </div>
+  );
+}
+
+export default function AdministracionView({ colaboradores, searchQuery, onOpenColaborador, onCreateColaborador, onDeleteColaborador, canWrite = true, notify, config, tutelas, valoresEntidad, clientes, procesos, facturas, ordenesCompra, onAbrirBorradorOrdenCompra, onAbrirBorradorFactura, horasExtras, onAprobarHoraExtra, vacacionesPeriodos, onCrearPeriodoVacaciones, onEditarPeriodoVacaciones, onEliminarPeriodoVacaciones,
   proveedoresGastos, cuentasCobroGastos, pagosPorRealizar, gastos,
   onCrearProveedorGastos, onEditarProveedorGastos, onEliminarProveedorGastos,
   onCrearCuentaCobroGastos, onEditarCuentaCobroGastos, onEliminarCuentaCobroGastos,
@@ -141,25 +163,7 @@ export default function AdministracionView({ colaboradores, searchQuery, onOpenC
           canWrite={canWrite}
         />
       )}
-      {tab==='certificaciones' && <CertificacionesTab colaboradores={colaboradores} notify={notify} />}
-      {tab==='documentos' && <DocumentosTab config={config} />}
-      {tab==='ordenesColmedica' && (
-        <OrdenesColmedicaTab
-          tutelas={tutelas}
-          valoresEntidad={valoresEntidad}
-          clientes={clientes}
-          onAbrirBorradorOrdenCompra={onAbrirBorradorOrdenCompra}
-          notify={notify}
-        />
-      )}
-      {tab==='honorariosPorProceso' && (
-        <HonorariosPorProcesoTab
-          procesos={procesos}
-          clientes={clientes}
-          onAbrirBorradorFactura={onAbrirBorradorFactura}
-          onAbrirBorradorOrdenCompra={onAbrirBorradorOrdenCompra}
-        />
-      )}
+      {tab==='documentos' && <DocumentosTab colaboradores={colaboradores} config={config} notify={notify} />}
       {tab==='horasExtras' && (
         <HorasExtrasTab
           horasExtras={horasExtras}
@@ -184,8 +188,18 @@ export default function AdministracionView({ colaboradores, searchQuery, onOpenC
           notify={notify}
         />
       )}
-      {tab==='revisionProcesos' && (
-        <RevisionProcesosTab procesos={procesos} notify={notify} />
+      {tab==='facturacion' && (
+        <FacturacionTab
+          facturas={facturas}
+          ordenesCompra={ordenesCompra}
+          clientes={clientes}
+          tutelas={tutelas}
+          valoresEntidad={valoresEntidad}
+          procesos={procesos}
+          onAbrirBorradorOrdenCompra={onAbrirBorradorOrdenCompra}
+          onAbrirBorradorFactura={onAbrirBorradorFactura}
+          notify={notify}
+        />
       )}
     </div>
   );

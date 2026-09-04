@@ -2,6 +2,11 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-03
+- **Nueva sección "Cruce de archivos" en Informes** — sube de 2 a 3 archivos Excel y los cruza entre sí por una columna en común (eligiendo hoja y columna por cada archivo, sin adivinar nombres). Descarga un Excel con una hoja "Revisión" (resumen por llave) y una hoja por cada archivo subido con sus observaciones.
+- **Mueve "Revisión de Procesos" de Administración a Informes** — queda al final de esa página.
+- **Reorganiza Administración**: nueva pestaña **"Facturación"** (Por Entidad + Órdenes Colmédica + Honorarios por Proceso) y nueva pestaña **"Documentos"** (Certificaciones + Documentos de la empresa) — ambas con el mismo sub-menú segmentado de Egresos.
+
 ## 2026-09-01
 - **Quita los gráficos "Procesos por Entidad" y "Clientes por Entidad" de Informes** — quedan "Facturación por Entidad" y "Órdenes de compra por Entidad".
 - **Corrige duplicados en Revisión de Procesos** — cuando un mismo caso tenía varios registros Terminados en el Portal (uno por cliente), aparecía repetido en el reporte, una fila por cada uno. Ahora cada caso del archivo cuenta una sola vez.

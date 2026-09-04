@@ -1,9 +1,8 @@
 import { useState } from 'react';
 import {
-  groupCount, estadoBadgeClass, fmtMonto, stripHtml, parseMonto,
-  clienteForFactura, clienteForOrdenCompra, esProcesoActivo,
+  estadoBadgeClass, fmtMonto, stripHtml, parseMonto,
+  esProcesoActivo,
 } from '../lib/graph';
-import BarChart from './BarChart';
 import IconButton, { IconTextButton } from './IconButton';
 import { generarInformeClienteHTML } from '../lib/exportarInformeCliente';
 import { generarInformeSOSExcel, generarInformeSOSPDF, generarDesistimientosSOSExcel } from '../lib/informeSOS';
@@ -12,12 +11,13 @@ import { generarInformeAliansaludExcel, generarInformeAliansaludPDF } from '../l
 import { generarInformeColmedicaExcel, generarInformeColmedicaPDF } from '../lib/informeColmedica';
 import { generarInformeGrupoPDF } from '../lib/informeGrupo';
 import { generarInformeLexaraExcel, generarInformeLexaraPDF } from '../lib/informeLexara';
-import { generarInformeFacturasExcel, generarInformeOrdenesCompraExcel } from '../lib/informeFacturacion';
 import { generarInformeTutelasPDF, abrirCorreoTutelas, enviarBorradorTutelasGraph, generarInformeTutelasExcel } from '../lib/informeTutelas';
 import { generarInformeGeneralProcesosExcel } from '../lib/informeGeneral';
 import { agruparPorAbogado, filtrarTutelasPorMes, generarInformeAbogadosTutelasExcel, colorDeTipoRespuesta, MESES_NOMBRES } from '../lib/informeAbogadosTutelas';
 import StackedBarChart from './StackedBarChart';
 import { clasificarHorasExtra, soloFecha } from '../lib/horasExtras';
+import RevisionProcesosTab from './RevisionProcesosTab';
+import CruceArchivosTab from './CruceArchivosTab';
 
 // Entidades con formato de informe formal ya confirmado, y qué generador usa
 // cada una — cada Entidad puede tener un formato distinto (columnas/orden
@@ -49,16 +49,10 @@ const FORMATOS_POR_ENTIDAD = {
   "SALUD TOTAL": FORMATO_LEXARA_SOLO_EXCEL,
 };
 
-function entidadDeCliente(clientes, codigoClienteOrNombre, matchFn){
-  return matchFn(clientes, codigoClienteOrNombre)?.Entidad || "Sin dato";
-}
-
-export default function InformesView({ procesos, clientes, facturas, ordenesCompra, desistimientos, tutelas, valoresEntidad, notify, liveMode, config, requestConfirm, corregirEntidadFaltanteTutelas, colaboradores, onCreateHoraExtra, onEditarHoraExtra, onEliminarHoraExtra, horasExtras }){
+export default function InformesView({ procesos, clientes, facturas, desistimientos, tutelas, valoresEntidad, notify, liveMode, config, requestConfirm, corregirEntidadFaltanteTutelas, colaboradores, onCreateHoraExtra, onEditarHoraExtra, onEliminarHoraExtra, horasExtras }){
   const [generando, setGenerando] = useState(null); // nombre de la entidad mientras genera el Excel
   const [generandoPDF, setGenerandoPDF] = useState(null); // nombre de la entidad mientras genera el PDF
   const [generandoDesistimientos, setGenerandoDesistimientos] = useState(null);
-  const [generandoFacturas, setGenerandoFacturas] = useState(false);
-  const [generandoOrdenes, setGenerandoOrdenes] = useState(false);
   // Informe diario de Tutelas — el usuario elige UNA fecha (la de
   // Notificación); la de Vencimiento siempre es la de hoy al momento de
   // generar. Ver [[project_tutelas_modulo]] / informeTutelas.js.
@@ -214,9 +208,6 @@ export default function InformesView({ procesos, clientes, facturas, ordenesComp
     finally { setGenerandoAbogadosExcel(false); }
   }
 
-  const facturasPorEntidad = groupCount(facturas, f => entidadDeCliente(clientes, f, clienteForFactura));
-  const ordenesPorEntidad = groupCount(ordenesCompra, o => entidadDeCliente(clientes, o, clienteForOrdenCompra));
-
   // Fila por Entidad de la tabla detallada — enfocada en Procesos judiciales,
   // que es donde vive el semáforo de Estado (ver [[project_procesos_extended_fields]]).
   const entidades = Array.from(new Set(procesos.map(p => p.Entidad).filter(Boolean))).sort((a,b)=>a.localeCompare(b));
@@ -291,22 +282,6 @@ export default function InformesView({ procesos, clientes, facturas, ordenesComp
     catch(err){ console.error(err); notify?.("No se pudo generar los Desistimientos de " + entidad + ": " + err.message, 'error'); }
     finally { setGenerandoDesistimientos(null); }
   }
-  // Excel de Facturación/Órdenes de compra completas (no por Entidad, la
-  // lista tal cual está cargada) — mismo estilo institucional que los demás
-  // Excel de Informes. Pedido explícito del usuario 2026-08-16.
-  async function handleGenerarExcelFacturas(){
-    setGenerandoFacturas(true);
-    try{ await generarInformeFacturasExcel(facturas, clientes); }
-    catch(err){ console.error(err); notify?.("No se pudo generar el Excel de Facturación: " + err.message, 'error'); }
-    finally { setGenerandoFacturas(false); }
-  }
-  async function handleGenerarExcelOrdenes(){
-    setGenerandoOrdenes(true);
-    try{ await generarInformeOrdenesCompraExcel(ordenesCompra, clientes, facturas); }
-    catch(err){ console.error(err); notify?.("No se pudo generar el Excel de Órdenes de compra: " + err.message, 'error'); }
-    finally { setGenerandoOrdenes(false); }
-  }
-
   async function handleGenerarTutelasPDF(){
     setGenerandoTutelasPDF(true);
     try{ await generarInformeTutelasPDF(tutelas, fechaInformeTutelas); }
@@ -378,7 +353,7 @@ export default function InformesView({ procesos, clientes, facturas, ordenesComp
       <div className="view-header">
         <div>
           <h1>Informes</h1>
-          <p>Resumen por Entidad de Procesos, Clientes, Facturación y Órdenes de compra.</p>
+          <p>Informes formales por Entidad, Tutelas y registro de Horas Extras.</p>
         </div>
       </div>
 
@@ -548,27 +523,6 @@ export default function InformesView({ procesos, clientes, facturas, ordenesComp
         </div>
       </div>
 
-      <div className="panel-grid panel-grid-2">
-        <div className="panel">
-          <div className="panel-head">
-            <h3>Facturación por Entidad</h3>
-            <IconButton icon="excel" variant="excel" label="Descargar Excel de Facturación" spinning={generandoFacturas} onClick={handleGenerarExcelFacturas} />
-          </div>
-          <div className="panel-body">
-            <BarChart data={facturasPorEntidad} color="var(--verde-claro)" emptyMsg="No hay facturas asociadas a una Entidad." />
-          </div>
-        </div>
-        <div className="panel">
-          <div className="panel-head">
-            <h3>Órdenes de compra por Entidad</h3>
-            <IconButton icon="excel" variant="excel" label="Descargar Excel de Órdenes de compra" spinning={generandoOrdenes} onClick={handleGenerarExcelOrdenes} />
-          </div>
-          <div className="panel-body">
-            <BarChart data={ordenesPorEntidad} color="#8a6410" emptyMsg="No hay órdenes de compra asociadas a una Entidad." />
-          </div>
-        </div>
-      </div>
-
       <div className="panel" style={{marginTop:20}}>
         <div className="panel-head"><h3>Informe diario de Tutelas</h3></div>
         <div className="panel-body">
@@ -715,6 +669,12 @@ export default function InformesView({ procesos, clientes, facturas, ordenesComp
           )}
         </div>
       </div>
+
+      <div style={{marginTop:20}}>
+        <RevisionProcesosTab procesos={procesos} notify={notify} />
+      </div>
+
+      <CruceArchivosTab notify={notify} />
     </div>
   );
 }
