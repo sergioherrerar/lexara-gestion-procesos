@@ -1,6 +1,7 @@
 // "Cruce de archivos" (Informes) — pedido explícito del usuario 2026-09-03:
-// cruza 2 o 3 archivos Excel entre sí (típico en conciliaciones de cartera
-// con EPS: cada archivo es un corte/reporte distinto del mismo radicado) —
+// cruza 2 o más archivos Excel entre sí (típico en conciliaciones de
+// cartera con EPS: cada archivo es un corte/reporte distinto del mismo
+// radicado; el tope de 3 se quitó el mismo día, a pedido explícito) —
 // el usuario elige, POR ARCHIVO, qué hoja analizar y cuál es la columna que
 // sirve de llave para cruzar (ej. "Radicado"), porque cada archivo puede
 // traer nombres de columna y de hoja distintos. No se intenta adivinar
@@ -43,16 +44,53 @@ export function nombresDeHojas(workbook){
 // Lee una hoja puntual: fila 1 = encabezados (tal como los escribió quien
 // armó el archivo, sin adivinar nada), el resto = filas de datos como
 // objetos {encabezado: valor}. Filas totalmente vacías se descartan.
+
+function letrasAColumna(letras){
+  let n = 0;
+  for(const ch of letras) n = n*26 + (ch.charCodeAt(0) - 64);
+  return n;
+}
+function parsearRef(ref){
+  const m = /^([A-Z]+)(\d+)$/.exec(ref);
+  return m ? { col: letrasAColumna(m[1]), fila: Number(m[2]) } : null;
+}
+
+// Bug real 2026-09-03, reportado por el usuario: hojas como estas (comunes
+// en reportes de EPS) traen la fila 1 con títulos de AGRUPACIÓN combinados
+// ("DATOS FACTURA", "CARTERA ACTUAL", cada uno una celda combinada sobre
+// varias columnas) — el encabezado real de cada columna está en la fila
+// siguiente. Se detecta mirando las combinaciones (merges) reales de la
+// hoja: si una fila tiene una celda combinada que abarca MÁS DE UNA
+// columna (y una sola fila — una combinación vertical de una sola columna
+// sí puede ser un encabezado real repartido en 2 filas por estética), esa
+// fila es de agrupación, no el encabezado — se sigue a la próxima.
+function filaEsAgrupadora(ws, numeroFila){
+  const merges = ws.model.merges || [];
+  return merges.some(rango => {
+    const [inicioRef, finRef] = rango.split(':');
+    const inicio = parsearRef(inicioRef);
+    const fin = finRef ? parsearRef(finRef) : inicio;
+    if(!inicio || !fin) return false;
+    const colSpan = fin.col - inicio.col + 1;
+    const rowSpan = fin.fila - inicio.fila + 1;
+    return colSpan > 1 && rowSpan === 1 && inicio.fila <= numeroFila && numeroFila <= fin.fila;
+  });
+}
+
 export function leerHoja(workbook, nombreHoja){
   const ws = workbook.getWorksheet(nombreHoja);
   if(!ws) throw new Error(`No se encontró la hoja "${nombreHoja}".`);
+
+  let filaEncabezado = 1;
+  while(filaEncabezado < 10 && filaEsAgrupadora(ws, filaEncabezado)) filaEncabezado++;
+
   const columnas = [];
-  ws.getRow(1).eachCell((cell, colNumero) => { columnas[colNumero] = valorCelda(cell.value); });
+  ws.getRow(filaEncabezado).eachCell((cell, colNumero) => { columnas[colNumero] = valorCelda(cell.value); });
   const encabezados = columnas.filter(Boolean);
-  if(!encabezados.length) throw new Error(`La hoja "${nombreHoja}" no tiene encabezados en la primera fila.`);
+  if(!encabezados.length) throw new Error(`La hoja "${nombreHoja}" no tiene encabezados reconocibles en las primeras filas.`);
 
   const filas = [];
-  for(let r=2; r<=ws.rowCount; r++){
+  for(let r=filaEncabezado+1; r<=ws.rowCount; r++){
     const row = ws.getRow(r);
     const fila = {};
     let vacia = true;
@@ -147,9 +185,9 @@ function encabezarHoja(ws, columnas){
   ws.views = [{ state:'frozen', ySplit:1 }];
 }
 
-// Excel de salida con 4 hojas como máximo — pedido explícito del usuario
-// 2026-09-03: "Revisión" (resumen, una fila por llave única) + una hoja
-// por archivo subido (todas sus columnas originales + Observación).
+// Excel de salida con una hoja "Revisión" (resumen, una fila por llave
+// única) + una hoja por cada archivo subido (todas sus columnas
+// originales + Observación) — pedido explícito del usuario 2026-09-03.
 export async function generarExcelCruce(nombreArchivo, archivos, { resumen, porArchivo }){
   const { default: ExcelJS } = await import('exceljs');
   const wb = new ExcelJS.Workbook();

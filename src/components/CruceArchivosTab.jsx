@@ -5,12 +5,13 @@ import { IconTextButton } from './IconButton';
 const SLOT_VACIO = { file:null, workbook:null, hojas:[], hoja:"", columnas:[], columnaLlave:"", filas:null, leyendo:false };
 
 // "Cruce de archivos" (Informes) — pedido explícito del usuario 2026-09-03:
-// cruza 2 o 3 archivos Excel entre sí (conciliaciones de cartera con EPS,
-// cada archivo un corte/reporte distinto del mismo radicado). Por cada
-// archivo: se sube, se elige QUÉ HOJA analizar (un mismo archivo puede
-// traer varias) y luego CUÁL COLUMNA de esa hoja sirve de llave para
-// cruzar — nunca se adivina, porque los nombres de hoja/columna varían de
-// archivo a archivo. Ver lib/cruceArchivos.js para el detalle del cruce.
+// cruza 2 o más archivos Excel entre sí (conciliaciones de cartera con EPS,
+// cada archivo un corte/reporte distinto del mismo radicado; el tope de 3
+// se quitó el mismo día, a pedido explícito). Por cada archivo: se sube, se
+// elige QUÉ HOJA analizar (un mismo archivo puede traer varias) y luego
+// CUÁL COLUMNA de esa hoja sirve de llave para cruzar — nunca se adivina,
+// porque los nombres de hoja/columna varían de archivo a archivo. Ver
+// lib/cruceArchivos.js para el detalle del cruce.
 function Slot({ indice, slot, onChange, onQuitar, puedeQuitar, notify }){
   async function handleArchivo(e){
     const file = e.target.files?.[0];
@@ -85,11 +86,15 @@ export default function CruceArchivosTab({ notify }){
     setSlots(prev => prev.map((s, idx) => idx===i ? nuevo : s));
     setResultado(null);
   }
-  function agregarTercero(){
+  // Sin límite de archivos — pedido explícito del usuario 2026-09-03
+  // ("quitemos que sean máximo tres, que se puedan comparar más
+  // archivos"). El cruce/Excel de salida ya eran genéricos para cualquier
+  // cantidad (ver lib/cruceArchivos.js), solo la interfaz tenía el tope de 3.
+  function agregarArchivo(){
     setSlots(prev => [...prev, { ...SLOT_VACIO }]);
   }
-  function quitarTercero(){
-    setSlots(prev => prev.slice(0, 2));
+  function quitarSlot(i){
+    setSlots(prev => prev.filter((_, idx) => idx !== i));
     setResultado(null);
   }
 
@@ -131,7 +136,7 @@ export default function CruceArchivosTab({ notify }){
       <div className="panel-head"><h3>Cruce de archivos</h3></div>
       <div className="panel-body">
         <p style={{margin:'0 0 16px', color:'var(--texto-suave)', fontSize:13}}>
-          Sube de 2 a 3 archivos Excel para cruzarlos entre sí por una columna en común (ej. un número de radicado). Por cada archivo elige qué hoja analizar y cuál es esa columna — Portal Lexara arma un Excel con el resumen del cruce y cada archivo con sus observaciones.
+          Sube 2 o más archivos Excel para cruzarlos entre sí por una columna en común (ej. un número de radicado). Por cada archivo elige qué hoja analizar y cuál es esa columna — Portal Lexara arma un Excel con el resumen del cruce y cada archivo con sus observaciones.
         </p>
 
         {slots.map((slot, i) => (
@@ -140,16 +145,14 @@ export default function CruceArchivosTab({ notify }){
             indice={i}
             slot={slot}
             onChange={nuevo => actualizarSlot(i, nuevo)}
-            onQuitar={quitarTercero}
-            puedeQuitar={i === 2}
+            onQuitar={() => quitarSlot(i)}
+            puedeQuitar={i >= 2}
             notify={notify}
           />
         ))}
 
         <div style={{display:'flex', gap:10, flexWrap:'wrap', marginBottom:18}}>
-          {slots.length < 3 && (
-            <button type="button" className="btn-secondary" onClick={agregarTercero}>+ Agregar tercer archivo</button>
-          )}
+          <button type="button" className="btn-secondary" onClick={agregarArchivo}>+ Agregar otro archivo</button>
           <IconTextButton icon="add" variant="primary" onClick={handleComparar} disabled={!listos}>Comparar</IconTextButton>
         </div>
 
