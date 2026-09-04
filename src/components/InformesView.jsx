@@ -11,13 +11,14 @@ import { generarInformeAliansaludExcel, generarInformeAliansaludPDF } from '../l
 import { generarInformeColmedicaExcel, generarInformeColmedicaPDF } from '../lib/informeColmedica';
 import { generarInformeGrupoPDF } from '../lib/informeGrupo';
 import { generarInformeLexaraExcel, generarInformeLexaraPDF } from '../lib/informeLexara';
-import { generarInformeTutelasPDF, abrirCorreoTutelas, enviarBorradorTutelasGraph, generarInformeTutelasExcel } from '../lib/informeTutelas';
+import { generarInformeTutelasPDF, abrirCorreoTutelas, enviarBorradorTutelasGraph, generarInformeTutelasExcel, construirMensajeWhatsAppTutelas } from '../lib/informeTutelas';
 import { generarInformeGeneralProcesosExcel } from '../lib/informeGeneral';
 import { agruparPorAbogado, filtrarTutelasPorMes, generarInformeAbogadosTutelasExcel, colorDeTipoRespuesta, MESES_NOMBRES } from '../lib/informeAbogadosTutelas';
 import StackedBarChart from './StackedBarChart';
 import { clasificarHorasExtra, soloFecha } from '../lib/horasExtras';
 import RevisionProcesosTab from './RevisionProcesosTab';
 import CruceArchivosTab from './CruceArchivosTab';
+import { construirMensajePagoWhatsApp, normalizarTelefonoWaMe } from '../lib/whatsappPago';
 
 // Entidades con formato de informe formal ya confirmado, y qué generador usa
 // cada una — cada Entidad puede tener un formato distinto (columnas/orden
@@ -102,6 +103,43 @@ export default function InformesView({ procesos, clientes, facturas, desistimien
       console.error(err);
       notify?.("No se pudo generar el informe del cliente: " + err.message, 'error');
     }
+  }
+
+  // "Enviar pago por WhatsApp" — pedido explícito del usuario 2026-09-04:
+  // mandar el mismo mensaje de "Pago Seguro MD ABOGADOS" (con el link de
+  // Davivienda) por WhatsApp, a alguien de la lista de Clientes o de Equipo
+  // MD, o a un número escrito a mano si no está en ninguna lista. Ver
+  // [[project_informe_cliente_pagos]] / whatsappPago.js.
+  const [grupoWhatsApp, setGrupoWhatsApp] = useState('clientes');
+  const [personaWhatsApp, setPersonaWhatsApp] = useState('');
+  const [nombreManualWhatsApp, setNombreManualWhatsApp] = useState('');
+  const [telefonoManualWhatsApp, setTelefonoManualWhatsApp] = useState('');
+  const clientesConTelefono = [...(clientes||[])]
+    .filter(c => (c.Telefono||"").trim())
+    .sort((a,b) => (a.RazonSocial||"").localeCompare(b.RazonSocial||""));
+  const equipoMDConTelefono = [...(colaboradores||[])]
+    .filter(c => (c.Telefono||"").trim())
+    .sort((a,b) => (a.Nombre||"").localeCompare(b.Nombre||""));
+  function handleCambiarGrupoWhatsApp(valor){
+    setGrupoWhatsApp(valor);
+    setPersonaWhatsApp('');
+  }
+  function handleEnviarPagoWhatsApp(){
+    let nombre = '', telefono = '';
+    if(grupoWhatsApp === 'manual'){
+      nombre = nombreManualWhatsApp;
+      telefono = telefonoManualWhatsApp;
+    } else {
+      const lista = grupoWhatsApp === 'clientes' ? clientesConTelefono : equipoMDConTelefono;
+      const elegido = lista.find(p => String(p.id) === personaWhatsApp);
+      if(!elegido){ notify?.("Selecciona a quién enviarle el mensaje.", 'error'); return; }
+      nombre = grupoWhatsApp === 'clientes' ? elegido.RazonSocial : elegido.Nombre;
+      telefono = elegido.Telefono;
+    }
+    const telefonoWaMe = normalizarTelefonoWaMe(telefono);
+    if(!telefonoWaMe){ notify?.("Escribe un número de teléfono válido.", 'error'); return; }
+    const mensaje = construirMensajePagoWhatsApp(nombre, config?.DAVIVIENDA_PAGOS_URL);
+    window.open(`https://wa.me/${telefonoWaMe}?text=${encodeURIComponent(mensaje)}`, '_blank');
   }
 
   // Horas Extras — REGISTRO, movido a Informes 2026-08-31 (pedido explícito
@@ -338,6 +376,16 @@ export default function InformesView({ procesos, clientes, facturas, desistimien
     catch(err){ console.error(err); notify?.("No se pudo generar el Excel de Tutelas: " + err.message, 'error'); }
     finally { setGenerandoTutelasExcel(false); }
   }
+  // "Compartir por WhatsApp" — pedido explícito del usuario 2026-09-04.
+  // wa.me abre WhatsApp con el mensaje ya redactado; el usuario elige a
+  // quién (o a qué grupo) se lo manda desde su propia lista de chats, con
+  // un clic — no se puede automatizar el envío a un grupo (restricción
+  // real de la plataforma, no de esta app), pero esto deja el mensaje
+  // listo sin tener que redactarlo a mano cada vez.
+  function handleCompartirWhatsAppTutelas(){
+    const mensaje = construirMensajeWhatsAppTutelas(tutelas, fechaInformeTutelas);
+    window.open(`https://wa.me/?text=${encodeURIComponent(mensaje)}`, '_blank');
+  }
   // Excel con el mismo formato de columnas del Excel de SOS, pero de TODOS
   // los procesos (todas las Entidades, incluidos terminados) — para hacer
   // cruces. Pedido explícito del usuario 2026-08-22.
@@ -381,6 +429,27 @@ export default function InformesView({ procesos, clientes, facturas, desistimien
           {clientesDistintos.map(c => <option key={c} value={c}>{c}</option>)}
         </select>
         <IconTextButton icon="html" variant="primary" onClick={handleDescargarInformeCliente} disabled={!clienteInforme}>Descargar informe del cliente</IconTextButton>
+
+        <span className="informe-cliente-label" style={{marginLeft:'auto'}}>Enviar pago por WhatsApp:</span>
+        <select value={grupoWhatsApp} onChange={e => handleCambiarGrupoWhatsApp(e.target.value)} style={{minWidth:0, maxWidth:150, flex:'none'}}>
+          <option value="clientes">Clientes</option>
+          <option value="equipo">Equipo MD</option>
+          <option value="manual">Otro número</option>
+        </select>
+        {grupoWhatsApp !== 'manual' ? (
+          <select value={personaWhatsApp} onChange={e => setPersonaWhatsApp(e.target.value)} style={{minWidth:0, maxWidth:220, flex:'none'}}>
+            <option value="">— Selecciona —</option>
+            {(grupoWhatsApp === 'clientes' ? clientesConTelefono : equipoMDConTelefono).map(p => (
+              <option key={p.id} value={p.id}>{grupoWhatsApp === 'clientes' ? p.RazonSocial : p.Nombre}</option>
+            ))}
+          </select>
+        ) : (
+          <>
+            <input type="text" placeholder="Nombre (opcional)" value={nombreManualWhatsApp} onChange={e => setNombreManualWhatsApp(e.target.value)} style={{maxWidth:150, minWidth:0, flex:'none'}} />
+            <input type="text" placeholder="+57 300 000 0000" value={telefonoManualWhatsApp} onChange={e => setTelefonoManualWhatsApp(e.target.value)} style={{maxWidth:150, minWidth:0, flex:'none'}} />
+          </>
+        )}
+        <IconButton icon="whatsapp" variant="whatsapp" label="Enviar mensaje de pago por WhatsApp" onClick={handleEnviarPagoWhatsApp} />
       </div>
 
       <div className="panel" style={{marginTop:20}}>
@@ -538,9 +607,10 @@ export default function InformesView({ procesos, clientes, facturas, desistimien
               <IconButton icon="pdf" variant="pdf" label="Descargar PDF de Tutelas" spinning={generandoTutelasPDF} onClick={handleGenerarTutelasPDF} />
               <IconButton icon="mail" variant="mail" label="Abrir correo con este informe" spinning={generandoCorreoTutelas} onClick={handleAbrirCorreoTutelas} />
               <IconButton icon="excel" variant="excel" label="Descargar Excel con todas las Tutelas" spinning={generandoTutelasExcel} onClick={handleGenerarTutelasExcel} />
+              <IconButton icon="whatsapp" variant="whatsapp" label="Compartir por WhatsApp" onClick={handleCompartirWhatsAppTutelas} />
             </div>
           </div>
-          <p className="save-hint" style={{marginTop:10}}>El botón de correo crea el borrador directo en tu buzón de Outlook, con las tablas y el PDF ya adjunto — ábrelo desde tu carpeta de Borradores y dale Enviar. Si por algún motivo no se puede crear así, se abre un borrador con `mailto:` en su lugar (con destinatarios y asunto listos, pero hay que pegar/adjuntar el contenido a mano). El Excel descarga todas las Tutelas (no solo las de la fecha elegida arriba).</p>
+          <p className="save-hint" style={{marginTop:10}}>El botón de correo crea el borrador directo en tu buzón de Outlook, con las tablas y el PDF ya adjunto — ábrelo desde tu carpeta de Borradores y dale Enviar. Si por algún motivo no se puede crear así, se abre un borrador con `mailto:` en su lugar (con destinatarios y asunto listos, pero hay que pegar/adjuntar el contenido a mano). El Excel descarga todas las Tutelas (no solo las de la fecha elegida arriba). El botón de WhatsApp abre WhatsApp con el mensaje ya redactado (Notificadas + Vencimiento) — tú eliges a quién o a qué grupo enviárselo desde tu propio WhatsApp.</p>
         </div>
       </div>
 

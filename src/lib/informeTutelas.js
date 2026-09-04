@@ -169,12 +169,30 @@ const FIRMA_HTML = `<img src="${FIRMA_URL}" alt="" style="width:227px;height:113
 // el listado completo, sin límite). Solo aplica al cuerpo de TEXTO plano
 // (el de respaldo); la tabla HTML copiada al portapapeles no tiene tope.
 const TOPE_FILAS_CORREO = 25;
-function listadoTexto(filas){
+function listadoTexto(filas, notaTruncado = 'ver el PDF adjunto para el listado completo.'){
   const mostrar = filas.slice(0, TOPE_FILAS_CORREO);
   let texto = mostrar.map((t,i) => `${i+1}. ${t.NoTutela||"—"} — ${t.Cliente||"—"} — ${t.TipoRespuesta||"—"}`).join('\n');
   if(!filas.length) texto = '(sin registros)';
-  else if(filas.length > TOPE_FILAS_CORREO) texto += `\n… y ${filas.length - TOPE_FILAS_CORREO} más — ver el PDF adjunto para el listado completo.`;
+  else if(filas.length > TOPE_FILAS_CORREO) texto += `\n… y ${filas.length - TOPE_FILAS_CORREO} más — ${notaTruncado}`;
   return texto;
+}
+
+// Mensaje de texto plano para "Compartir por WhatsApp" — pedido explícito
+// del usuario 2026-09-04. Abre wa.me con esto ya redactado; a diferencia
+// del correo, wa.me no tiene destinatarios fijos: el usuario elige a
+// quién (o a qué grupo) se lo manda desde su propia lista de chats, con un
+// clic — no hay cuenta de WhatsApp Business ni aprobación de Meta de por
+// medio, y funciona igual para un contacto que para un grupo porque quien
+// elige el destino es la persona, no la app (WhatsApp no deja automatizar
+// el envío a un grupo). *Negrita* funciona tal cual en WhatsApp.
+export function construirMensajeWhatsAppTutelas(tutelas, fechaNotificacionISO){
+  const { fechaVencimiento, fechaNotificacion } = calcularFechasInforme(fechaNotificacionISO);
+  const notificadas = filasPorFecha(tutelas, 'FechaNotificacion', fechaNotificacion);
+  const vencimiento = filasPorFecha(tutelas, 'FechaVencimiento', fechaVencimiento);
+  const notaTruncado = 'descarga el PDF completo desde Portal Lexara para verlas todas.';
+  return `*Tutelas notificadas y con vencimiento*\n${fechaHoraLarga(new Date())}\n\n`
+    + `*Tutelas Notificadas (${fechaNotificacion})*\n${listadoTexto(notificadas, notaTruncado)}\n\n`
+    + `*Tutelas con Vencimiento (${fechaVencimiento})*\n${listadoTexto(vencimiento, notaTruncado)}`;
 }
 
 function escapeHtml(v){

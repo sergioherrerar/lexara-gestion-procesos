@@ -2,7 +2,11 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-04
+- **Nuevo "Enviar pago por WhatsApp" en Informes** (al lado de "Informe para un cliente") — elige un Cliente, alguien de Equipo MD, o escribe un número a mano, y abre WhatsApp con un mensaje institucional ya redactado (saludo según la hora, nombre corto, y el mismo link "Pago Seguro MD ABOGADOS" del informe del cliente).
+
 ## 2026-09-03
+- **Nuevo botón "Compartir por WhatsApp" en el Informe diario de Tutelas** (Informes) — abre WhatsApp con el mensaje de Tutelas Notificadas y con Vencimiento ya redactado; tú eliges a quién o a qué grupo se lo mandas desde tu propio WhatsApp.
 - **Corrige "Worksheet name already exists" al descargar el Excel de Cruce de archivos** — 2 archivos con nombres largos y parecidos recortaban al mismo texto; ahora nunca se repiten.
 - **Cruce de archivos: sin límite de archivos** (antes máximo 3) — sube los que necesites.
 - **Corrige lectura de encabezados en Cruce de archivos** — algunas hojas (comunes en reportes de EPS) traen la fila 1 con títulos de agrupación combinados (ej. "DATOS FACTURA" sobre varias columnas) y el encabezado real en la fila siguiente; ahora se detecta y se usa la fila correcta.

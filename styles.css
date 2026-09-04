@@ -894,6 +894,8 @@
   .icon-btn-word:hover{background:#1d5fa3; color:#fff;}
   .icon-btn-pay{color:#d2151b; background:#fbe4e4;}
   .icon-btn-pay:hover{background:#d2151b; color:#fff;}
+  .icon-btn-whatsapp{color:#1da851; background:#e2f5e8;}
+  .icon-btn-whatsapp:hover{background:#1da851; color:#fff;}
   .icon-btn-spinning{cursor:default;}
   .icon-btn-spinning svg, .icon-btn-spinning img{animation:icon-spin .8s linear infinite;}
   @keyframes icon-spin{to{transform:rotate(360deg);}}
