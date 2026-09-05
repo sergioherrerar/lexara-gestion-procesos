@@ -167,6 +167,7 @@ export default function CruceArchivosTab({ notify }){
                 {generandoExcel ? "Generando…" : "Descargar Excel"}
               </IconTextButton>
             </div>
+            <p className="save-hint">El Excel trae una hoja "Revisión" (resumen por llave, con la observación de cada una) y una hoja por cada archivo subido, con sus datos y observaciones propias.</p>
           </>
         )}
       </div>

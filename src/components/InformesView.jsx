@@ -429,6 +429,7 @@ export default function InformesView({ procesos, clientes, facturas, desistimien
           {clientesDistintos.map(c => <option key={c} value={c}>{c}</option>)}
         </select>
         <IconTextButton icon="html" variant="primary" onClick={handleDescargarInformeCliente} disabled={!clienteInforme}>Descargar informe del cliente</IconTextButton>
+        <p className="save-hint" style={{width:'100%', margin:'8px 0 0'}}>Genera un archivo HTML con todos los procesos de ese cliente y, si hay un portal de pagos configurado, un botón de pago seguro Davivienda — descárgalo y envíaselo directamente al cliente (por correo, WhatsApp, etc.).</p>
       </div>
 
       <div className="informe-cliente-bar">
@@ -458,6 +459,7 @@ export default function InformesView({ procesos, clientes, facturas, desistimien
           </>
         )}
         <IconButton icon="whatsapp" variant="whatsapp" label="Enviar mensaje de pago por WhatsApp" onClick={handleEnviarPagoWhatsApp} />
+        <p className="save-hint" style={{width:'100%', margin:'8px 0 0'}}>Elige un Cliente, alguien de Equipo MD, o escribe un número a mano (celular real con WhatsApp, no un fijo) — abre WhatsApp con un mensaje institucional ya redactado (saludo según la hora, señora/señor + nombre, y el link de pago seguro Davivienda); tú eliges a quién enviárselo desde tu propio WhatsApp.</p>
       </div>
 
       <div className="panel" style={{marginTop:20}}>
@@ -513,6 +515,9 @@ export default function InformesView({ procesos, clientes, facturas, desistimien
       <div className="panel" style={{marginTop:20}}>
         <div className="panel-head"><h3>Registros de horas extras</h3></div>
         <div className="panel-body">
+          <p style={{margin:'0 0 16px', color:'var(--texto-suave)', fontSize:13}}>
+            Elige el Mes para ver el detalle de horas extras registradas ese mes (aprobadas o no) y el resumen sumado por Colaborador. Mientras no estén Aprobadas puedes editarlas o eliminarlas desde acá; la aprobación se hace en Administración.
+          </p>
           {/* Resumen por Colaborador — pedido explícito del usuario, mismo
               día: "al lado un resumen de total de cada tipo de hora extra y
               todas sumadas", señalado con una captura marcando justo este
@@ -689,6 +694,7 @@ export default function InformesView({ procesos, clientes, facturas, desistimien
               </div>
             </div>
           )}
+          <p className="save-hint" style={{marginTop:14}}>El Excel trae 2 hojas (con agrupación de Excel) con el mismo corte de mes elegido arriba: el detalle fila por fila y el resumen por Abogado y Tipo Respuesta que ves en las tarjetas.</p>
         </div>
       </div>
 
@@ -697,6 +703,9 @@ export default function InformesView({ procesos, clientes, facturas, desistimien
           <h3>Detalle de Procesos judiciales por Entidad</h3>
           <IconButton icon="excel" variant="excel" label="Descargar Excel de todos los procesos (formato SOS, para cruces)" spinning={generandoGeneral} onClick={handleGenerarExcelGeneral} />
         </div>
+        <p style={{margin:'14px 20px 0', color:'var(--texto-suave)', fontSize:13}}>
+          Resumen por Entidad de los procesos activos: cantidad activos/total, valor en disputa y el semáforo de Estado. En la columna "Informe" salen los botones de Excel/PDF/Desistimientos SOLO para las Entidades que ya tienen un formato propio confirmado; el botón junto al título descarga un Excel de TODOS los procesos (todas las Entidades, incluidos Terminados) en el formato genérico de SOS, útil para hacer cruces.
+        </p>
         <div className="panel-body" style={{padding:0}}>
           {!filas.length ? (
             <div className="empty-state empty-state-compact">No hay procesos con Entidad asignada todavía.</div>

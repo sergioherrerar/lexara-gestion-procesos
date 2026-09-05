@@ -3,6 +3,7 @@
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
 ## 2026-09-04
+- **Agrega texto de "cómo usar/qué resultado da" a todas las secciones de Informes que no lo tenían** (Informe para un cliente, Envío seguro link de pagos, Registros de horas extras, Tutelas por Abogado, Detalle de Procesos por Entidad, Revisión de Procesos, Cruce de archivos), con el mismo estilo que ya tenía el Informe diario de Tutelas.
 - **Nuevo texto del mensaje de "Envío seguro link de pagos"** — saludo con "señora"/"señor" según el primer nombre (calculado, no hay campo de Género en Clientes/Equipo MD), y el texto institucional completo pedido por el usuario ("Reciba un cordial saludo...", "🔐 Pago Seguro – MD Abogados SAS", firma "Cordialmente, MD Abogados SAS").
 - **Cambia el ícono genérico de WhatsApp por el glifo real y reconocible** (teléfono dentro del globo) en los botones de "Compartir por WhatsApp" y "Envío seguro link de pagos".
 - **"Enviar pago por WhatsApp" pasa a ser su propia sección: "Envío seguro link de pagos cuenta Davivienda"** — antes iba apretado dentro de la barra de "Informe para un cliente", ahora tiene su propia fila debajo.

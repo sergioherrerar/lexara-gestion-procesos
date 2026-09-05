@@ -79,6 +79,7 @@ export default function RevisionProcesosTab({ procesos, notify }){
               </IconTextButton>
             </div>
             {!total && <div className="empty-state">Todo cruza correctamente — no hay diferencias que reportar.</div>}
+            <p className="save-hint">El Excel trae 3 hojas: "Revisión" (las 3 diferencias de arriba), "Archivo subido" (el archivo tal como se leyó) y "Procesos judiciales" (los datos del Portal usados en el cruce) — como respaldo crudo de ambos lados.</p>
           </>
         )}
       </div>
