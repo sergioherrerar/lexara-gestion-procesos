@@ -40,6 +40,48 @@ export function primerNombreApellido(nombreCompleto){
   return `${palabras[0]} ${palabras[2]}`; // 3+ palabras: se salta el segundo nombre
 }
 
+// Nombres femeninos/masculinos más comunes en Colombia — para anteponer
+// "señora"/"señor" en el saludo. No existe un campo de Género en Clientes ni
+// en Equipo MD, así que es un cálculo por el primer nombre (pedido explícito
+// del usuario); nunca va a ser 100% exacto, pero cubre la inmensa mayoría de
+// los casos reales del despacho. Con un nombre no reconocido, se usa la
+// regla de respaldo "termina en 'a' = señora" (con las excepciones conocidas
+// de nombres masculinos que también terminan en 'a').
+const NOMBRES_FEMENINOS = new Set(['maria','monica','ana','luisa','laura','sandra','claudia','diana','patricia',
+  'carolina','paola','andrea','angela','sofia','sofía','valentina','camila','daniela','natalia','juliana',
+  'alejandra','adriana','marcela','viviana','yolanda','martha','marta','gloria','beatriz','carmen','rosa',
+  'isabel','ines','inés','esperanza','constanza','ximena','ivonne','yaneth','janeth','liliana','ruth','sara',
+  'sarah','jimena','fernanda','gabriela','veronica','verónica','catalina','ines','erika','érika','tatiana',
+  'yesenia','yenny','johana','yohana','estefania','estefanía','miriam','esther','soledad','margarita',
+  'consuelo','elizabeth','elsa','elena','victoria','luz','nubia','stella','estella','amparo','ofelia',
+  'dahiana','ariana','doris','flor','pilar','remedios','cristina','sonia','olga','nancy','deisy','yuliana']);
+const NOMBRES_MASCULINOS = new Set(['jose','josé','juan','carlos','luis','jorge','sergio','andres','andrés',
+  'alejandro','daniel','felipe','david','miguel','fernando','ricardo','roberto','eduardo','francisco',
+  'oscar','óscar','javier','diego','pedro','pablo','manuel','antonio','rafael','alberto','ernesto',
+  'gustavo','hernando','german','germán','ivan','iván','camilo','santiago','nicolas','nicolás','mario',
+  'raul','raúl','victor','víctor','cesar','césar','gabriel','martin','martín','alfonso','armando',
+  'guillermo','enrique','ramiro','rodrigo','samuel','esteban','julio','arturo','hector','héctor',
+  'edgar','wilson','giovanny','giovanni','yesid','harold','jhon','john','jonathan','jhonatan','faber']);
+const EXCEPCIONES_MASCULINOS_TERMINAN_A = new Set(['luca','jonathan de jesus']);
+
+function generoDePrimerNombre(primerNombre){
+  const n = (primerNombre || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  if(NOMBRES_FEMENINOS.has(n)) return 'f';
+  if(NOMBRES_MASCULINOS.has(n)) return 'm';
+  if(EXCEPCIONES_MASCULINOS_TERMINAN_A.has(n)) return 'm';
+  if(n.endsWith('a')) return 'f';
+  return 'm';
+}
+
+// "señora "/"señor " para anteponer al nombre en el saludo — "" si es una
+// empresa (no aplica) o no hay nombre.
+function tituloPorNombre(nombreCompleto, esEmpresa){
+  if(esEmpresa) return '';
+  const primerNombre = (nombreCompleto || '').trim().split(/\s+/)[0];
+  if(!primerNombre) return '';
+  return generoDePrimerNombre(primerNombre) === 'f' ? 'señora ' : 'señor ';
+}
+
 // Deja el teléfono en formato "573XXXXXXXXX" (sin "+", como lo pide wa.me),
 // agregando el indicativo de Colombia si no lo trae. Devuelve "" si no es un
 // CELULAR colombiano válido (10 dígitos que empiezan en 3) — WhatsApp solo
@@ -85,14 +127,21 @@ export function normalizarTelefonoManualWaMe(codigoPais, numero){
   return `${codigoPais}${digitos}`;
 }
 
-// Mensaje institucional de recordatorio de pago, con el mismo texto del
-// botón "Pago Seguro MD ABOGADOS" del informe HTML del cliente.
+// Mensaje institucional de recordatorio de pago — texto exacto pedido por
+// el usuario 2026-09-04, con saludo según la hora + "señora"/"señor" según
+// el primer nombre (a una empresa no se le antepone título).
 export function construirMensajePagoWhatsApp(nombreCompleto, urlPago, fecha = new Date()){
   const saludo = saludoSegunHora(fecha);
+  const palabras = (nombreCompleto || '').trim().split(/\s+/).filter(Boolean);
+  const esEmpresa = esNombreDeEmpresa(palabras);
   const nombreCorto = primerNombreApellido(nombreCompleto);
-  return `${saludo}${nombreCorto ? ', ' + nombreCorto : ''}.\n\n`
-    + `Le escribimos de *MD Abogados SAS* para recordarle que puede realizar el pago de sus obligaciones de forma segura, a través de nuestro portal oficial con Davivienda:\n\n`
-    + `*Pago Seguro MD ABOGADOS*\n${urlPago}\n\n`
-    + `Si ya realizó su pago, por favor ignore este mensaje. Quedamos atentos ante cualquier duda.\n\n`
-    + `MD Abogados SAS`;
+  const titulo = tituloPorNombre(nombreCompleto, esEmpresa);
+  // Evita doble punto cuando el nombre corto ya termina en uno (ej. "S.A.S.").
+  const puntoFinal = nombreCorto.endsWith('.') ? '' : '.';
+  return `${saludo}${nombreCorto ? ', ' + titulo + nombreCorto : ''}${puntoFinal}\n\n`
+    + `Reciba un cordial saludo de parte de MD Abogados SAS.\n\n`
+    + `Nos permitimos recordarle que puede realizar el pago de sus obligaciones de manera segura y fácil, a través de nuestro portal oficial de pagos de Davivienda:\n\n`
+    + `🔐 Pago Seguro – MD Abogados SAS\n${urlPago}\n\n`
+    + `Si tiene alguna inquietud o requiere información adicional sobre su obligación, estaremos atentos para atenderla.\n\n`
+    + `Cordialmente,\nMD Abogados SAS`;
 }
