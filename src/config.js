@@ -1056,7 +1056,7 @@ export const DEMO_VALORES_ENTIDAD = [
   {id:2, Entidad:"Famisanar", Cliente:"Aseguradora Ejemplo S.A.", Tipo:"TUTELA", ValorEntidad:"400.000,00", ValorAbogado:"180.000,00", LinkCarpetas:"", LinkFormatos:""},
 ];
 export const DEMO_TUTELAS = [
-  {id:1, NoTutela:"T-2026-0001", Cliente:"EPS Ejemplo de Salud S.A.", Entidad:"SOS", TipoVinculacionEntidad:"Accionada", MedidaCautelar:"No",
+  {id:1, NoTutela:"T-2026-0001", createdDateTime:"2026-06-05T14:30:00Z", Cliente:"EPS Ejemplo de Salud S.A.", Entidad:"SOS", TipoVinculacionEntidad:"Accionada", MedidaCautelar:"No",
     Departamento:"Bogotá D.C.", Ciudad:"Bogotá D.C.", Proceso:"", FechaNotificacion:"2026-06-10", FechaVencimiento:"2026-06-20",
     Prestacion:"Asistencial", TipoRespuesta:"ACLARACION", AbogadoRespuesta:"Ariana Martin Mendoza", Tema:"Suministro de medicamento", AgenciaOficiosa:"No",
     Usuario:"Juan Ejemplo Pérez", NoIdentificacion:"1.000.111.222", Juzgado:"Juzgado 5 Civil Municipal de Bogotá", Correo:"ejemplo@correo.com",

@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-07
+- **Tutelas: nueva columna "Fecha de creación"** (al lado de "No. Tutela") — muestra cuándo se creó de verdad el registro en SharePoint, no un dato de negocio.
+
 ## 2026-09-04
 - **Agrega texto de "cómo usar/qué resultado da" a todas las secciones de Informes que no lo tenían** (Informe para un cliente, Envío seguro link de pagos, Registros de horas extras, Tutelas por Abogado, Detalle de Procesos por Entidad, Revisión de Procesos, Cruce de archivos), con el mismo estilo que ya tenía el Informe diario de Tutelas.
 - **Nuevo texto del mensaje de "Envío seguro link de pagos"** — saludo con "señora"/"señor" según el primer nombre (calculado, no hay campo de Género en Clientes/Equipo MD), y el texto institucional completo pedido por el usuario ("Reciba un cordial saludo...", "🔐 Pago Seguro – MD Abogados SAS", firma "Cordialmente, MD Abogados SAS").

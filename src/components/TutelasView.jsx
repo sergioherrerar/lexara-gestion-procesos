@@ -11,6 +11,7 @@ import { useColumnSort } from '../hooks/useColumnSort';
 // no se muestra acá.
 const COLUMNS = [
   {key:'noTutela', label:'No. Tutela', value: t => t.NoTutela || ""},
+  {key:'fechaCreacion', label:'Fecha de creación', value: t => t.createdDateTime || ""},
   {key:'entidad', label:'Entidad', value: t => t.Entidad || ""},
   {key:'cliente', label:'Cliente', value: t => t.Cliente || ""},
   {key:'tipoRespuesta', label:'Tipo Respuesta', value: t => t.TipoRespuesta || ""},
@@ -97,6 +98,7 @@ export default function TutelasView({ tutelas, searchQuery, onOpenTutela, onCrea
             {sortedRows.length ? sortedRows.map(t => (
               <tr key={t.id}>
                 <td className="cliente">{t.NoTutela || "—"}</td>
+                <td>{fmtDate(t.createdDateTime)}</td>
                 <td>{t.Entidad || "—"}</td>
                 <td>{t.Cliente || "—"}</td>
                 <td>{t.TipoRespuesta || "—"}</td>
@@ -112,7 +114,7 @@ export default function TutelasView({ tutelas, searchQuery, onOpenTutela, onCrea
                 </td>
               </tr>
             )) : (
-              <tr><td colSpan={8}><div className="empty-state"><div className="mark" dangerouslySetInnerHTML={{__html: ICON_SVG}} />No hay tutelas para mostrar.</div></td></tr>
+              <tr><td colSpan={9}><div className="empty-state"><div className="mark" dangerouslySetInnerHTML={{__html: ICON_SVG}} />No hay tutelas para mostrar.</div></td></tr>
             )}
           </tbody>
         </table>

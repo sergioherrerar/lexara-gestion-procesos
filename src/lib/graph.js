@@ -444,7 +444,10 @@ export function coerceFieldValue(raw){
 
 export function transformListItems(list){
   return (list.rawItems||[]).map(it => {
-    const obj = { id: it.id, _graphId: it.id };
+    // createdDateTime es metadato propio del ítem de SharePoint (cuándo se
+    // creó el registro), no un campo de negocio — viene siempre en la
+    // respuesta de Graph junto a "fields", nunca hay que mapearlo.
+    const obj = { id: it.id, _graphId: it.id, createdDateTime: it.createdDateTime };
     list.semanticFields.forEach(f => { if(list.mapping[f.key]) obj[f.key] = coerceFieldValue(it.fields[list.mapping[f.key]] ?? ""); });
     return obj;
   });
