@@ -82,7 +82,7 @@ export default function OrdenesCompraView({ ordenesCompra, clientes, procesos, f
                     <div className="row-actions">
                       <IconButton icon="edit" variant="edit" label="Ver / editar orden de compra" onClick={e => { e.stopPropagation(); onOpenOrdenCompra(oc.id); }} />
                       <IconButton icon="duplicate" variant="duplicate" label="Duplicar orden de compra" onClick={e => { e.stopPropagation(); onDuplicateOrdenCompra(oc.id); }} />
-                      <IconButton icon="print" variant="print" label="Imprimir orden de compra" onClick={e => { e.stopPropagation(); onPrintOrdenCompra(oc.id); }} />
+                      <IconButton icon="pdf" variant="pdf" label="Guardar orden de compra en PDF" onClick={e => { e.stopPropagation(); onPrintOrdenCompra(oc.id); }} />
                       <IconButton icon="invoice" variant="invoice" label="Generar factura con estos mismos datos" onClick={e => { e.stopPropagation(); onCreateFacturaFromOrdenCompra(oc.id); }} />
                     </div>
                   </td>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { clienteForOrdenCompra, procesoForOrdenCompra, ordenCompraNumero, facturaForOrdenCompra, facturaNumero, parseMonto, fmtMonto, IVA_RATE_DEFAULT, ETAPA_CONTRATO_OPTIONS } from '../lib/graph';
+import { clienteForOrdenCompra, procesoForOrdenCompra, ordenCompraNumero, facturaForOrdenCompra, facturaNumero, parseMonto, fmtMonto, IVA_RATE_DEFAULT, ETAPA_CONTRATO_OPTIONS, nombreArchivoSeguro } from '../lib/graph';
 import { useEscapeToClose } from '../hooks/useEscapeToClose';
 import membrete from '../assets/Membrete Lexara.png';
 import qrRedes from '../assets/Qr_Redes.png';
@@ -14,8 +14,29 @@ function preloadImage(src){
     img.src = src;
   });
 }
-function imprimirCuandoListo(){
-  Promise.all([preloadImage(membrete), preloadImage(qrRedes)]).then(() => window.print());
+// Pedido explícito del usuario 2026-09-07: en vez de imprimir con un nombre
+// de archivo genérico, al elegir "Guardar como PDF" en el diálogo de
+// impresión el navegador sugiere el nombre de archivo tomando el <title> de
+// la pestaña — así que se cambia el título justo antes de imprimir (formato
+// "OC (Cliente) (Proceso)") y se restaura después.
+function imprimirCuandoListo(nombreArchivo){
+  const tituloOriginal = document.title;
+  if(nombreArchivo) document.title = nombreArchivo;
+  function restaurarTitulo(){
+    document.title = tituloOriginal;
+    window.removeEventListener('afterprint', restaurarTitulo);
+  }
+  window.addEventListener('afterprint', restaurarTitulo);
+  Promise.all([preloadImage(membrete), preloadImage(qrRedes)]).then(() => {
+    window.print();
+    setTimeout(restaurarTitulo, 4000);
+  });
+}
+// "OC (Nombre Cliente) (Proceso)" — pedido explícito del usuario 2026-09-07.
+function nombreArchivoOrdenCompraPDF(oc, clientes, procesos){
+  const cliente = clienteForOrdenCompra(clientes, oc);
+  const proceso = procesoForOrdenCompra(procesos, oc);
+  return nombreArchivoSeguro(`OC ${cliente?.RazonSocial || 'Sin cliente'} ${proceso?.Radicado || oc.Proceso || 'Sin proceso'}`);
 }
 
 const LINE_NUMS = [1,2,3,4,5,6];
@@ -53,7 +74,7 @@ export default function OrdenCompraDrawer({ ordenCompra, clientes, procesos, fac
 
   useEffect(() => {
     if(autoPrint && form){
-      imprimirCuandoListo();
+      imprimirCuandoListo(nombreArchivoOrdenCompraPDF(ordenCompra, clientes, procesos));
       onAutoPrinted && onAutoPrinted();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -226,7 +247,7 @@ export default function OrdenCompraDrawer({ ordenCompra, clientes, procesos, fac
           <button className="btn-primary btn-primary-oc" onClick={handleSave} disabled={saving}>
             {saving && <span className="btn-spinner" />}{saving ? "Guardando…" : "Guardar cambios"}
           </button>
-          <button className="btn-secondary" onClick={imprimirCuandoListo} disabled={saving}>Imprimir</button>
+          <button className="btn-secondary" onClick={() => imprimirCuandoListo(nombreArchivoOrdenCompraPDF(ordenCompra, clientes, procesos))} disabled={saving}>Guardar en PDF</button>
           <button className="btn-secondary" onClick={onClose} disabled={saving}>Cancelar</button>
           <span className="save-hint">{liveMode ? "Los cambios se guardan en SharePoint." : "Modo demo — los cambios no se guardan."}</span>
         </div>

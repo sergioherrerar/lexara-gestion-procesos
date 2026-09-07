@@ -94,7 +94,7 @@ export default function FacturacionView({ facturas, clientes, procesos, searchQu
                     <div className="row-actions">
                       <IconButton icon="edit" variant="edit" label="Ver / editar factura" onClick={e => { e.stopPropagation(); onOpenFactura(f.id); }} />
                       <IconButton icon="duplicate" variant="duplicate" label="Duplicar factura" onClick={e => { e.stopPropagation(); onDuplicateFactura(f.id); }} />
-                      <IconButton icon="print" variant="print" label="Imprimir factura" onClick={e => { e.stopPropagation(); onPrintFactura(f.id); }} />
+                      <IconButton icon="pdf" variant="pdf" label="Guardar factura en PDF" onClick={e => { e.stopPropagation(); onPrintFactura(f.id); }} />
                       <IconButton icon="open" variant="open" label="Buscar y abrir factura electrónica (Siigo)" spinning={buscandoSiigo===f.id} onClick={e => { e.stopPropagation(); handleBuscarSiigo(f); }} />
                     </div>
                   </td>

@@ -55,7 +55,7 @@ function RelatedList({ emptyMsg, rows, columns, onOpen, onPrint, onBuscarSiigo, 
               <td style={{whiteSpace:'nowrap'}}>
                 <div className="row-actions">
                   <IconButton icon="edit" variant="edit" label="Ver / editar" onClick={e => { e.stopPropagation(); onOpen(row.id); }} />
-                  {onPrint && <IconButton icon="print" variant="print" label="Imprimir" onClick={e => { e.stopPropagation(); onPrint(row.id); }} />}
+                  {onPrint && <IconButton icon="pdf" variant="pdf" label="Guardar en PDF" onClick={e => { e.stopPropagation(); onPrint(row.id); }} />}
                   {onBuscarSiigo && <IconButton icon="open" variant="open" label="Buscar y abrir factura electrónica (Siigo)" spinning={buscandoSiigoId===row.id} onClick={e => { e.stopPropagation(); onBuscarSiigo(row); }} />}
                 </div>
               </td>

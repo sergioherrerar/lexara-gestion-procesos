@@ -1228,6 +1228,13 @@ export function facturaLineItems(factura){
 export function fmtMonto(n){
   return new Intl.NumberFormat('es-CO', {minimumFractionDigits:2, maximumFractionDigits:2}).format(n||0);
 }
+// Nombres de archivo no pueden tener estos caracteres en Windows — usado al
+// armar el nombre sugerido de PDF de Factura/Orden de compra (ver
+// FacturaDrawer.jsx/OrdenCompraDrawer.jsx) y de la ficha de proceso
+// (informeProceso.js, que trae su propia copia histórica de esta función).
+export function nombreArchivoSeguro(s){
+  return (s||"").toString().replace(/[\/\\?%*:|"<>]/g, "-").trim();
+}
 // Fecha/TotalN/Subtotal/IVA/Total/ValorAPagar son columnas calculadas por fórmula
 // en SharePoint — la app nunca les escribe un valor, solo las lee. El 19% de IVA
 // es una constante fija (no hay una columna de "tasa"); se usa solo para armar una

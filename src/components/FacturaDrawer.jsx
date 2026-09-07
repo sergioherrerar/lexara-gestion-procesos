@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { clienteForFactura, procesoForFactura, facturaNumero, parseMonto, fmtMonto, IVA_RATE_DEFAULT, ETAPA_CONTRATO_OPTIONS } from '../lib/graph';
+import { clienteForFactura, procesoForFactura, facturaNumero, parseMonto, fmtMonto, IVA_RATE_DEFAULT, ETAPA_CONTRATO_OPTIONS, nombreArchivoSeguro } from '../lib/graph';
 import { useEscapeToClose } from '../hooks/useEscapeToClose';
 import membrete from '../assets/Membrete Lexara.png';
 import qrRedes from '../assets/Qr_Redes.png';
@@ -16,8 +16,26 @@ function preloadImage(src){
     img.src = src;
   });
 }
-function imprimirCuandoListo(){
-  Promise.all([preloadImage(membrete), preloadImage(qrRedes)]).then(() => window.print());
+// Pedido explícito del usuario 2026-09-07: en vez de imprimir con un nombre
+// de archivo genérico, al elegir "Guardar como PDF" en el diálogo de
+// impresión el navegador sugiere el nombre de archivo tomando el <title> de
+// la pestaña — así que se cambia el título justo antes de imprimir (formato
+// "FE (No. factura) (Cliente) (Proceso)") y se restaura después, para no
+// dejar la pestaña con ese título pegado.
+function imprimirCuandoListo(nombreArchivo){
+  const tituloOriginal = document.title;
+  if(nombreArchivo) document.title = nombreArchivo;
+  function restaurarTitulo(){
+    document.title = tituloOriginal;
+    window.removeEventListener('afterprint', restaurarTitulo);
+  }
+  window.addEventListener('afterprint', restaurarTitulo);
+  Promise.all([preloadImage(membrete), preloadImage(qrRedes)]).then(() => {
+    window.print();
+    // Respaldo por si el navegador no dispara "afterprint" (pasa a veces si
+    // se cancela el diálogo) — no debe quedar el título cambiado para siempre.
+    setTimeout(restaurarTitulo, 4000);
+  });
 }
 
 const LINE_NUMS = [1,2,3,4,5,6];
@@ -51,6 +69,14 @@ function computeLive(form){
   return { subtotal, iva, total: subtotal + iva };
 }
 
+// Nombre sugerido del PDF — pedido explícito del usuario 2026-09-07:
+// "FE (Id) (Nombre Cliente) (Proceso)".
+function nombreArchivoFacturaPDF(factura, clientes, procesos){
+  const cliente = clienteForFactura(clientes, factura);
+  const proceso = procesoForFactura(procesos, factura);
+  return nombreArchivoSeguro(`FE ${facturaNumero(factura)} ${cliente?.RazonSocial || 'Sin cliente'} ${proceso?.Radicado || factura.Proceso || 'Sin proceso'}`);
+}
+
 export default function FacturaDrawer({ factura, clientes, procesos, liveMode, onClose, onSave, onUpdateCliente, autoPrint, onAutoPrinted, saving }){
   const [form, setForm] = useState(null);
 
@@ -63,7 +89,7 @@ export default function FacturaDrawer({ factura, clientes, procesos, liveMode, o
   // formulario (y su hoja de impresión) ya están montados.
   useEffect(() => {
     if(autoPrint && form){
-      imprimirCuandoListo();
+      imprimirCuandoListo(nombreArchivoFacturaPDF(factura, clientes, procesos));
       onAutoPrinted && onAutoPrinted();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -242,7 +268,7 @@ export default function FacturaDrawer({ factura, clientes, procesos, liveMode, o
           <button className="btn-primary" onClick={handleSave} disabled={saving}>
             {saving && <span className="btn-spinner" />}{saving ? "Guardando…" : "Guardar cambios"}
           </button>
-          <button className="btn-secondary" onClick={imprimirCuandoListo} disabled={saving}>Imprimir</button>
+          <button className="btn-secondary" onClick={() => imprimirCuandoListo(nombreArchivoFacturaPDF(factura, clientes, procesos))} disabled={saving}>Guardar en PDF</button>
           <button className="btn-secondary" onClick={onClose} disabled={saving}>Cancelar</button>
           <span className="save-hint">{liveMode ? "Los cambios se guardan en SharePoint." : "Modo demo — los cambios no se guardan."}</span>
         </div>
