@@ -217,14 +217,20 @@ export const SHAREPOINT_LISTS_CONFIG = [
       CalificacionContingencia: "Calificacion_de_la_contingencia",
       EstadoVT: "Estado_x0020_V_x002f_T",
       Observaciones: "Observaciones",
-      LinkCarpeta: "Link_x0020_Carpetas",
+      // LinkCarpeta/LinkContrato/LinkCliente se recrearon como columnas de
+      // texto plano el 2026-09-07 (venían como "Hipervínculo o imagen" —
+      // mismo problema real que Soporte Factura/Pago de Gastos: Graph nunca
+      // permite escribir ahí). El nombre interno nuevo quedó SIN espacio
+      // (antes era "Link_x0020_Carpetas" con "_x0020_"), confirmado con el
+      // mapeo real exportado por el usuario desde Configuración.
+      LinkCarpeta: "LinkCarpetas",
       NoCompleto: "No_x0020_Completo",
       AbogadoEncargado: "abogado_x0020_encargado",
       CCApoderada: "CC_x0020_Apoderada",
       Demandante: "Demandante",
       Demandado: "Demandado",
-      LinkContrato: "Link_x0020_Contrato",
-      LinkCliente: "Link_x0020_Cliente",
+      LinkContrato: "LinkContrato",
+      LinkCliente: "LinkCliente",
       LinkDespacho: "LinkDespacho",
       CorreoDespacho: "Correo_x0020_despacho",
       HistoricoNumerosCompletos: "Historico_x0020_numeros_x0020_co",
@@ -244,7 +250,12 @@ export const SHAREPOINT_LISTS_CONFIG = [
       Subclasificacion: "Tipo_x0020_de_x0020_Proceso",       // = TipoProceso
       Numero5Digitos: "numero_x0020_corto",                  // = Radicado
       ValorCarteraActual: "Valor_x0020_Actual_x0020_Demanda", // = ValorActualDemanda
-      EnlaceProceso: "Link_x0020_Cliente",                   // = LinkCliente
+      // OJO: el mapeo auto-detectado el 2026-09-07 sugirió "LinkCarpetas" acá
+      // en vez de "LinkCliente" (las 2 columnas se ven parecidas para el
+      // adivinador de columnas ahora que ambas son texto plano) — se dejó el
+      // alias histórico (= LinkCliente, para los informes SOS/Lexara) hasta
+      // que el usuario confirme cuál es el correcto.
+      EnlaceProceso: "LinkCliente",                          // = LinkCliente
       GlosaDemandada: "Origen_x002f_Tipo_x0020_Glosa",        // = OrigenTipoGlosa
       RadicadoActual: "No_x0020_Completo",                    // = NoCompleto
       DemandanteIdentificacion: "Cliente",                    // = Cliente
