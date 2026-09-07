@@ -912,6 +912,134 @@ export async function crearLinkCarpetaMesGastos(shareUrl, anio, mesIndex0){
   }
 }
 
+// =========================================================================
+// "Buscar y vincular carpeta del proceso" (Link Carpetas / Link Cliente) —
+// pedido explícito del usuario 2026-09-07. Ver RUTAS_CARPETAS_ENTIDAD en
+// config.js para las rutas reales y la profundidad de carpetas por Entidad.
+// =========================================================================
+
+// Del número de radicado LARGO (23 dígitos) saca el "número corto"
+// (YYYY-NNNNN), tomando los dígitos en las posiciones 13-16 (año) y 17-21
+// (consecutivo) — confirmado por el usuario con 5 ejemplos reales:
+// 25000232600020110057601 -> 2011-00576, 11001220500020230017101 -> 2023-00171,
+// 11001334106820240026200 -> 2024-00262, 11001310500220170029800 -> 2017-00298,
+// 11001333502820170045500 -> 2017-00455.
+export function numeroCortoDeRadicadoLargo(numeroLargo){
+  const digitos = String(numeroLargo||'').replace(/\D/g, '');
+  if(digitos.length < 21) return null;
+  return `${digitos.slice(12,16)}-${digitos.slice(16,21)}`;
+}
+
+// Saca todos los "números cortos" del No. completo + Histórico números
+// completos de un proceso (varios números largos separados por espacios,
+// mismo formato ya usado en revisionProcesos.js/splitNumeros) — sin duplicados.
+export function numerosCortosDelProceso(proceso){
+  const numerosLargos = [
+    ...String(proceso?.NoCompleto||'').split(/\s+/),
+    ...String(proceso?.HistoricoNumerosCompletos||'').split(/\s+/),
+  ].map(s => s.trim()).filter(Boolean);
+  const cortos = numerosLargos.map(numeroCortoDeRadicadoLargo).filter(Boolean);
+  return Array.from(new Set(cortos));
+}
+
+// driveId de la biblioteca de documentos por defecto del sitio principal
+// ("NuevosProcesosMD - Documentos" en la UI de SharePoint) — cacheado, no
+// cambia en la sesión.
+let driveIdPrincipalCache = null;
+async function resolverDriveIdPrincipal(config){
+  if(driveIdPrincipalCache) return driveIdPrincipalCache;
+  const siteId = await fetchSiteId(config);
+  const drive = await graphFetch(`/sites/${siteId}/drive?$select=id`);
+  driveIdPrincipalCache = drive.id;
+  return driveIdPrincipalCache;
+}
+
+// Lista las SUBCARPETAS (no archivos) de una carpeta, dada por su ruta
+// relativa a la raíz de la biblioteca — devuelve [] si la ruta no existe
+// todavía (ej. una Entidad sin ninguna carpeta creada, como "Umd" hoy).
+async function listarSubcarpetas(driveId, rutaRelativa){
+  try{
+    const res = await graphFetch(`/drives/${driveId}/root:/${encodeURIComponent(rutaRelativa)}:/children?$select=id,name,folder&$top=200`);
+    return (res.value||[]).filter(it => it.folder);
+  }catch(err){
+    if(/^Graph 404/.test(err.message||"")) return [];
+    throw err;
+  }
+}
+
+// Cuenta cuántos de `numerosCortos` aparecen como token exacto en el nombre
+// de una carpeta (el nombre trae uno o más números cortos separados por
+// espacio, ej. "2011-00576 2017-00298 2020-00171").
+function coincidenciasEnNombre(nombreCarpeta, numerosCortos){
+  const tokens = String(nombreCarpeta||'').split(/\s+/).filter(Boolean);
+  return numerosCortos.filter(n => tokens.includes(n)).length;
+}
+
+// Busca la carpeta real del proceso (por Entidad + números cortos del
+// Histórico), bajando 1 o 2 niveles según RUTAS_CARPETAS_ENTIDAD (2 niveles
+// para Grupo Colmédica: Entidad -> Cliente -> carpetas de proceso). Exige
+// mínimo 2 números cortos coincidentes (o 1 si el proceso solo tiene 1
+// número corto en su Histórico) — pedido explícito del usuario. Devuelve:
+//  - {status:'sin-ruta'}: la Entidad del proceso no tiene ruta configurada.
+//  - {status:'sin-numero'}: el proceso no tiene ningún número corto que buscar
+//    (No. completo/Histórico vacíos, o ningún número de 21+ dígitos).
+//  - {status:'sin-coincidencia'}: no se encontró ninguna carpeta con
+//    suficientes coincidencias.
+//  - {status:'ambiguo', candidatas:[...]}: 2 o más carpetas empatadas en el
+//    máximo de coincidencias — no se puede elegir sola, hay que decidir a mano.
+//  - {status:'ok', driveId, itemId, nombre}: única mejor coincidencia.
+export async function buscarCarpetaDelProceso(config, rutasEntidad, proceso){
+  const entidadNorm = normalize(proceso?.Entidad||'');
+  const entradaRuta = Object.entries(rutasEntidad||{}).find(([k]) => normalize(k) === entidadNorm);
+  if(!entradaRuta) return { status:'sin-ruta' };
+  const { ruta, profundidad } = entradaRuta[1];
+
+  const numerosCortos = numerosCortosDelProceso(proceso);
+  if(!numerosCortos.length) return { status:'sin-numero' };
+  const minimo = Math.min(2, numerosCortos.length);
+
+  const driveId = await resolverDriveIdPrincipal(config);
+  const nivel1 = await listarSubcarpetas(driveId, ruta);
+
+  let candidatas = [];
+  if(profundidad === 1){
+    candidatas = nivel1.map(f => ({ ...f, coincidencias: coincidenciasEnNombre(f.name, numerosCortos) }));
+  } else {
+    // profundidad 2: nivel1 son carpetas de Cliente, hay que bajar una vez más.
+    for(const carpetaCliente of nivel1){
+      const nivel2 = await listarSubcarpetas(driveId, `${ruta}/${carpetaCliente.name}`);
+      nivel2.forEach(f => candidatas.push({ ...f, coincidencias: coincidenciasEnNombre(f.name, numerosCortos) }));
+    }
+  }
+
+  const conCoincidencia = candidatas.filter(f => f.coincidencias >= minimo);
+  if(!conCoincidencia.length) return { status:'sin-coincidencia' };
+  const maxCoincidencias = Math.max(...conCoincidencia.map(f => f.coincidencias));
+  const mejores = conCoincidencia.filter(f => f.coincidencias === maxCoincidencias);
+  if(mejores.length > 1) return { status:'ambiguo', candidatas: mejores.map(f => f.name) };
+  return { status:'ok', driveId, itemId: mejores[0].id, nombre: mejores[0].name };
+}
+
+// Genera los 2 enlaces a partir del resultado de buscarCarpetaDelProceso —
+// pedido explícito del usuario 2026-09-07: "Link Carpeta solo entremos
+// nosotros de la organización" (edición, scope organization — nadie de
+// afuera puede editar la carpeta real de un cliente) / "Link lectura para
+// compartir con el cliente" (solo lectura, scope anonymous — el cliente lo
+// abre sin necesitar cuenta de MD Abogados).
+export async function generarLinksCarpetaProceso(config, rutasEntidad, proceso){
+  const encontrado = await buscarCarpetaDelProceso(config, rutasEntidad, proceso);
+  if(encontrado.status !== 'ok') return encontrado;
+  const [linkCarpeta, linkCliente] = await Promise.all([
+    graphFetch(`/drives/${encontrado.driveId}/items/${encontrado.itemId}/createLink`, {
+      method:"POST", body: JSON.stringify({ type:"edit", scope:"organization" }),
+    }).then(r => r.link.webUrl),
+    graphFetch(`/drives/${encontrado.driveId}/items/${encontrado.itemId}/createLink`, {
+      method:"POST", body: JSON.stringify({ type:"view", scope:"anonymous" }),
+    }).then(r => r.link.webUrl),
+  ]);
+  return { status:'ok', nombreCarpeta: encontrado.nombre, linkCarpeta, linkCliente };
+}
+
 // Dia/Mes/Año son los campos que se digitan; Fecha se guarda concatenándolos
 // y dándoles formato de fecha (no se digita directamente).
 export function fechaFromPartes(dia, mes, anio){

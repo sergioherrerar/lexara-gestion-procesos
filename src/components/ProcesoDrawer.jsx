@@ -5,11 +5,12 @@ import {
   computeFacturaTotals, computeOrdenCompraTotals, estadoFacturaBadgeClass,
   facturaForOrdenCompra, fmtMonto, fmtDate, fechaFromPartes, parseMonto,
   tiposAccionDistinct, tiposProcesoParaAccion, despachosParaAccion, abrirFacturaSiigo,
+  generarLinksCarpetaProceso,
 } from '../lib/graph';
 import IconButton, { IconTextButton } from './IconButton';
 import { FieldCard, RichTextEditor } from './FormFields';
 import { useEscapeToClose } from '../hooks/useEscapeToClose';
-import { ICON_SVG } from '../config';
+import { ICON_SVG, RUTAS_CARPETAS_ENTIDAD } from '../config';
 import { DEPARTAMENTOS_COLOMBIA, municipiosDe } from '../lib/colombiaGeo';
 
 const TABS = [
@@ -239,12 +240,39 @@ export default function ProcesoDrawer({ proceso, clientes, colaboradores, factur
   const [nuevoClienteError, setNuevoClienteError] = useState("");
   const [activeTab, setActiveTab] = useState('datos');
   const [buscandoSiigo, setBuscandoSiigo] = useState(null);
+  const [buscandoCarpeta, setBuscandoCarpeta] = useState(false);
 
   async function handleBuscarSiigo(f){
     setBuscandoSiigo(f.id);
     try{ await abrirFacturaSiigo(f, config.SIIGO_SHARE_URL); }
     catch(err){ console.error(err); notify(err.message, 'error'); }
     setBuscandoSiigo(null);
+  }
+
+  // "Buscar y vincular carpeta del proceso" — pedido explícito del usuario
+  // 2026-09-07: busca la carpeta real en SharePoint por Entidad + números
+  // cortos del Histórico, y si encuentra UNA sola coincidencia clara, llena
+  // Link Carpetas (edición) y Link Cliente (lectura) en el formulario — no
+  // se guarda solo, sigue habiendo que darle "Guardar cambios" después.
+  // Si no hay coincidencia clara, solo avisa (nunca adivina).
+  async function handleBuscarCarpeta(){
+    setBuscandoCarpeta(true);
+    try{
+      const r = await generarLinksCarpetaProceso(config, RUTAS_CARPETAS_ENTIDAD, form);
+      if(r.status === 'ok'){
+        setForm(f => ({ ...f, LinkCarpeta: r.linkCarpeta, LinkCliente: r.linkCliente }));
+        notify(`Carpeta encontrada: "${r.nombreCarpeta}". Revisa los enlaces y da "Guardar cambios" para dejarlos.`, 'success');
+      } else if(r.status === 'sin-ruta'){
+        notify(`No hay una ruta de carpetas configurada para la Entidad "${form.Entidad || '(sin entidad)'}".`, 'error');
+      } else if(r.status === 'sin-numero'){
+        notify('Este proceso no tiene ningún número de radicado (No. completo / Histórico) del que sacar el número corto.', 'error');
+      } else if(r.status === 'sin-coincidencia'){
+        notify('No se encontró ninguna carpeta con al menos 2 números coincidentes (o el único número, si solo hay uno).', 'error');
+      } else if(r.status === 'ambiguo'){
+        notify(`Hay ${r.candidatas.length} carpetas empatadas, no quedó claro cuál es: ${r.candidatas.join(' · ')}`, 'error');
+      }
+    }catch(err){ console.error(err); notify("No se pudo buscar la carpeta: " + err.message, 'error'); }
+    setBuscandoCarpeta(false);
   }
 
   useEffect(() => {
@@ -654,6 +682,14 @@ export default function ProcesoDrawer({ proceso, clientes, colaboradores, factur
                       <FieldCard label={LABELS[key]} key={key}>
                         <div style={{display:'flex', alignItems:'center', gap:6}}>
                           <input type="text" value={form[key]} onChange={e => setField(key, e.target.value)} readOnly={!canWrite} style={{flex:1, minWidth:0}} />
+                          {/* "Buscar y vincular carpeta" llena Link Carpetas Y Link
+                              Cliente de una sola vez (misma carpeta, distinto permiso
+                              — edición vs. solo lectura) — pedido explícito del
+                              usuario 2026-09-07, por eso el botón vive junto a
+                              Link Carpeta y no se repite en Link Cliente. */}
+                          {key==='LinkCarpeta' && canWrite && (
+                            <IconButton icon="search" variant="open" label="Buscar y vincular carpeta (llena también Link Cliente)" spinning={buscandoCarpeta} onClick={e => { e.stopPropagation(); handleBuscarCarpeta(); }} />
+                          )}
                           {url && <IconButton icon="open" variant="open" label="Abrir enlace" href={url} onClick={e => e.stopPropagation()} />}
                         </div>
                       </FieldCard>

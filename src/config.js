@@ -52,6 +52,42 @@ export const INITIAL_CONFIG = {
 };
 
 // =========================================================================
+// "Buscar y vincular carpeta del proceso" (Link Carpetas / Link Cliente) —
+// pedido explícito del usuario 2026-09-07: la carpeta real del proceso vive
+// en la biblioteca de documentos del sitio principal, bajo Procesos/{Entidad}
+// (o Procesos/Grupo Colmedica/{sub-Entidad} para ese grupo), y se identifica
+// por "número corto" (ej. "2011-00576") en el NOMBRE de la carpeta, no por
+// una relación real de SharePoint.
+//
+// La ruta se busca por el valor real de "Entidad" del proceso (normalizado
+// a mayúsculas sin tildes) — el campo Entidad NO es una lista fija, sale de
+// los valores reales que ya existen en Clientes, así que cualquier Entidad
+// que no esté aquí simplemente no tiene ruta conocida todavía (se avisa,
+// no se inventa una).
+//
+// profundidad:1 = las carpetas de proceso están directamente adentro de la
+// carpeta de la Entidad (Sos, Famisanar, Jrci, Gtm, Colpatria — confirmado
+// por el usuario con una captura real de "Procesos/Sos").
+// profundidad:2 = hay un nivel de carpeta de Cliente en medio, confirmado
+// solo para "Grupo Colmedica" (Colmédica/Umd/Aliansalud) — el usuario
+// aclaró que ahí "dentro de la Entidad están los Clientes, y ya dentro del
+// Cliente están las carpetas de proceso".
+export const RUTAS_CARPETAS_ENTIDAD = {
+  SOS: { ruta: "Procesos/Sos", profundidad: 1 },
+  FAMISANAR: { ruta: "Procesos/Famisanar", profundidad: 1 },
+  JRCI: { ruta: "Procesos/Jrci", profundidad: 1 },
+  GTM: { ruta: "Procesos/Gtm", profundidad: 1 },
+  COLPATRIA: { ruta: "Procesos/Colpatria", profundidad: 1 },
+  // "GRUPO COLMEDICA" es el valor real confirmado para la sub-Entidad
+  // "Colmédica" (ver ENTIDAD_UNIFICADA en InformesView.jsx) — Aliansalud y
+  // Umd, si son valores reales distintos de Entidad, comparten la misma
+  // carpeta raíz "Grupo Colmedica" pero cada uno su propia sub-carpeta.
+  "GRUPO COLMEDICA": { ruta: "Procesos/Grupo Colmedica/Colmédica", profundidad: 2 },
+  ALIANSALUD: { ruta: "Procesos/Grupo Colmedica/Aliansalud", profundidad: 2 },
+  UMD: { ruta: "Procesos/Grupo Colmedica/Umd", profundidad: 2 },
+};
+
+// =========================================================================
 // REGISTRO DE LISTAS DE SHAREPOINT
 // Cada lista de SharePoint que la app usa se define una sola vez aquí:
 // su nombre real, sus campos semánticos (con pistas para adivinar el
