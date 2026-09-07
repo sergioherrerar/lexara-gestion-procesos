@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { INITIAL_CONFIG, SHAREPOINT_LISTS_CONFIG, DEMO_PROCESOS, DEMO_CLIENTES, DEMO_FACTURAS, DEMO_ORDENES_COMPRA, DEMO_COLABORADORES, DEMO_FORMAS_PAGO, DEMO_DESISTIMIENTOS, DEMO_TIPOS_ACCION, DEMO_TUTELAS, DEMO_TEMAS, DEMO_VALORES_ENTIDAD, DEMO_HORAS_EXTRAS, DEMO_VACACIONES_PERIODOS, DEMO_PROVEEDORES_GASTOS, DEMO_CUENTAS_COBRO_GASTOS, DEMO_PAGOS_POR_REALIZAR, DEMO_GASTOS } from '../config';
+import { INITIAL_CONFIG, SHAREPOINT_LISTS_CONFIG, DEMO_PROCESOS, DEMO_CLIENTES, DEMO_FACTURAS, DEMO_ORDENES_COMPRA, DEMO_COLABORADORES, DEMO_FORMAS_PAGO, DEMO_DESISTIMIENTOS, DEMO_TIPOS_ACCION, DEMO_TUTELAS, DEMO_TEMAS, DEMO_VALORES_ENTIDAD, DEMO_HORAS_EXTRAS, DEMO_VACACIONES_PERIODOS, DEMO_PROVEEDORES_GASTOS, DEMO_CUENTAS_COBRO_GASTOS, DEMO_PAGOS_POR_REALIZAR, DEMO_GASTOS, RUTAS_CARPETAS_ENTIDAD } from '../config';
 import * as Graph from '../lib/graph';
 import { canWrite as canWriteForColaborador, modulosPermitidosDe, MODULOS_DISPONIBLES } from '../lib/permissions';
 
@@ -614,6 +614,55 @@ export function useLexaraApp(){
     }
     setActiveProcesoId(null);
     notify("Guardado con éxito en Lexara", 'success');
+  }
+
+  // Botón masivo "Llenar links de carpeta/cliente/contrato" — pedido
+  // explícito del usuario 2026-09-07: "me puedes crear un boton para los
+  // cree automatimente solo que tengan la coindidencia no dejarlos vaciios".
+  // Mismo patrón que corregirEntidadFaltanteTutelas: recorre SOLO los
+  // procesos a los que les falta al menos uno de los 3 campos, busca con la
+  // misma lógica del botón individual del drawer (buscarCarpetaDelProceso /
+  // buscarContratoDelProceso) y guarda en SharePoint únicamente cuando el
+  // resultado es status:'ok' — un proceso "sin-ruta"/"sin-numero"/
+  // "sin-coincidencia"/"ambiguo" se SALTA en silencio (se cuenta, no se
+  // trata como error) para no dejar campos vacíos con basura ni interrumpir
+  // el resto de la corrida.
+  async function vincularLinksProcesosMasivo(){
+    const pendientes = procesos.filter(p => !p.LinkCarpeta || !p.LinkCliente || !p.LinkContrato);
+    if(!pendientes.length){ notify?.("Todos los procesos ya tienen sus 3 links llenos.", 'info'); return { actualizados:0, sinCoincidencia:0, fallidos:0 }; }
+    setSaving(true);
+    const list = listByKey('procesos');
+    const siteIdReal = list.siteId || siteId;
+    let actualizados = 0, sinCoincidencia = 0, fallidos = 0;
+    const cambiosPorId = new Map();
+    for(const p of pendientes){
+      try{
+        const updates = {};
+        if(!p.LinkCarpeta || !p.LinkCliente){
+          const r = await Graph.generarLinksCarpetaProceso(config, RUTAS_CARPETAS_ENTIDAD, p);
+          if(r.status === 'ok'){
+            if(!p.LinkCarpeta) updates.LinkCarpeta = r.linkCarpeta;
+            if(!p.LinkCliente) updates.LinkCliente = r.linkCliente;
+          }
+        }
+        if(!p.LinkContrato){
+          const rc = await Graph.generarLinkContratoProceso(config, RUTAS_CARPETAS_ENTIDAD, p);
+          if(rc.status === 'ok') updates.LinkContrato = rc.link;
+        }
+        if(!Object.keys(updates).length){ sinCoincidencia++; continue; }
+        const graphBody = await Graph.graphFieldsFromUpdates(siteIdReal, list, updates);
+        await Graph.graphFetch(`/sites/${siteIdReal}/lists/${list.listId}/items/${p._graphId || p.id}/fields`, {
+          method:"PATCH", body: JSON.stringify(graphBody)
+        });
+        cambiosPorId.set(p.id, updates);
+        actualizados++;
+      }catch(err){ console.error('Vincular links falló para proceso', p.id, err); fallidos++; }
+      if((actualizados+sinCoincidencia+fallidos) % 10 === 0) console.log(`[Lexara] Vinculando links: ${actualizados+sinCoincidencia+fallidos}/${pendientes.length}`);
+    }
+    setProcesos(prev => prev.map(p => cambiosPorId.has(p.id) ? { ...p, ...cambiosPorId.get(p.id) } : p));
+    setSaving(false);
+    notify?.(`${actualizados} proceso(s) actualizados con sus links${sinCoincidencia ? ` — ${sinCoincidencia} sin coincidencia clara (se dejaron igual)` : ""}${fallidos ? ` — ${fallidos} fallaron (revisa la consola)` : ""}.`, fallidos ? 'error' : 'success');
+    return { actualizados, sinCoincidencia, fallidos };
   }
 
   function openCliente(id){ setActiveClienteId(id); }
@@ -1527,7 +1576,7 @@ export function useLexaraApp(){
     proveedoresGastos, cuentasCobroGastos, pagosPorRealizar, gastos,
     currentFilter, setFilter: setCurrentFilter, searchQuery, setSearchQuery: setSearchQuery,
     onSearch: setSearchQuery,
-    activeProceso, openProceso, newProceso, closeDrawer, saveProceso, procesoViewOnly, rememberReturnToProceso,
+    activeProceso, openProceso, newProceso, closeDrawer, saveProceso, procesoViewOnly, rememberReturnToProceso, vincularLinksProcesosMasivo,
     activeCliente, openCliente, closeClienteDrawer, saveCliente, deleteCliente, createCliente, updateCliente,
     activeFactura, openFactura, newFactura, duplicateFactura, abrirBorradorFactura, closeFacturaDrawer, saveFactura,
     printFactura, autoPrintFacturaId, clearAutoPrint, createFacturaFromOrdenCompra, newFacturaFromProceso,

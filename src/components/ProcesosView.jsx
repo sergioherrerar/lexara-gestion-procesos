@@ -31,11 +31,24 @@ const COLUMNS = [
   {key:'acciones', label:'Acciones', filterable:false},
 ];
 
-export default function ProcesosView({ procesos, currentFilter, setFilter, searchQuery, onOpenProceso, onCreateProceso, canWrite = true, liveMode, notify }){
+export default function ProcesosView({ procesos, currentFilter, setFilter, searchQuery, onOpenProceso, onCreateProceso, canWrite = true, liveMode, notify, config, requestConfirm, vincularLinksProcesosMasivo }){
   const [showTerminados, setShowTerminados] = useState(false);
   const [generandoPDF, setGenerandoPDF] = useState(null); // id del proceso mientras genera su ficha en PDF
   const [generandoWord, setGenerandoWord] = useState(null); // id del proceso mientras genera el Impulso Procesal en Word
   const [generandoCorreo, setGenerandoCorreo] = useState(null); // id del proceso mientras crea el borrador de correo
+  // Botón masivo "Vincular links de carpeta/cliente/contrato" — mismo
+  // estilo que "Unificar Entidad a GRUPO COLMEDICA" en Informes (banner
+  // .field-warning + botón a la derecha), pedido explícito del usuario
+  // 2026-09-07 ("me puedes crear un boton para los cree automatimente solo
+  // que tengan la coindidencia no dejarlos vaciios" / "puede ser aca / en
+  // la parte derecha"). Ver vincularLinksProcesosMasivo en useLexaraApp.js.
+  const [vinculandoLinks, setVinculandoLinks] = useState(false);
+  const procesosSinLinks = procesos.filter(p => !p.LinkCarpeta || !p.LinkCliente || !p.LinkContrato).length;
+  async function handleVincularLinksMasivo(){
+    setVinculandoLinks(true);
+    try{ await vincularLinksProcesosMasivo?.(); }
+    finally{ setVinculandoLinks(false); }
+  }
   const { filters, setFilter: setColFilter, clearFilters, rowMatches, hasActiveFilters } = useColumnFilters();
   const { sort, setSortKey, sortRows } = useColumnSort();
 
@@ -112,6 +125,23 @@ export default function ProcesosView({ procesos, currentFilter, setFilter, searc
           {showTerminados ? "← Ver vigentes" : `Ver terminados (${totalTerminados})`}
         </div>
       </div>
+      {canWrite && procesosSinLinks > 0 && (
+        <div className="field-warning" style={{display:'flex', alignItems:'center', gap:10, flexWrap:'wrap', marginBottom:16}}>
+          <span>{procesosSinLinks} proceso(s) todavía no tienen alguno de sus links (Carpeta/Cliente/Contrato) llenos.</span>
+          <button
+            type="button"
+            className="btn-secondary"
+            style={{marginLeft:'auto'}}
+            disabled={vinculandoLinks}
+            onClick={() => requestConfirm(
+              `¿Buscar y llenar automáticamente los links (Carpeta/Cliente/Contrato) de los ${procesosSinLinks} proceso(s) que aún no los tienen? Solo se llenan los que tengan una coincidencia clara — los demás se dejan igual. Esto actualiza SharePoint de una vez.`,
+              handleVincularLinksMasivo
+            )}
+          >
+            {vinculandoLinks ? "Vinculando…" : "Vincular links automáticamente"}
+          </button>
+        </div>
+      )}
       <div className="table-wrap">
         <table>
           <thead>

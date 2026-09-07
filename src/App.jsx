@@ -120,6 +120,9 @@ export default function App(){
             canWrite={app.canWrite}
             liveMode={app.liveMode}
             notify={app.notify}
+            config={app.config}
+            requestConfirm={app.requestConfirm}
+            vincularLinksProcesosMasivo={app.vincularLinksProcesosMasivo}
           />
         )}
         {app.view === 'tutelas' && canAccessView(app.modulosPermitidos, 'tutelas') && (
