@@ -5,7 +5,7 @@ import {
   computeFacturaTotals, computeOrdenCompraTotals, estadoFacturaBadgeClass,
   facturaForOrdenCompra, fmtMonto, fmtDate, fechaFromPartes, parseMonto,
   tiposAccionDistinct, tiposProcesoParaAccion, despachosParaAccion, abrirFacturaSiigo,
-  generarLinksCarpetaProceso,
+  generarLinksCarpetaProceso, generarLinkContratoProceso,
 } from '../lib/graph';
 import IconButton, { IconTextButton } from './IconButton';
 import { FieldCard, RichTextEditor } from './FormFields';
@@ -241,6 +241,18 @@ export default function ProcesoDrawer({ proceso, clientes, colaboradores, factur
   const [activeTab, setActiveTab] = useState('datos');
   const [buscandoSiigo, setBuscandoSiigo] = useState(null);
   const [buscandoCarpeta, setBuscandoCarpeta] = useState(false);
+  const [buscandoContrato, setBuscandoContrato] = useState(false);
+
+  // Mensaje de error común a "Buscar y vincular carpeta" y "Buscar
+  // contrato" — ambos devuelven el mismo vocabulario de estados (ver
+  // buscarCarpetaDelProceso en graph.js).
+  function mensajeEstadoBusqueda(r, entidad){
+    if(r.status === 'sin-ruta') return `No hay una ruta de carpetas configurada para la Entidad "${entidad || '(sin entidad)'}".`;
+    if(r.status === 'sin-numero') return 'Este proceso no tiene ningún número de radicado (No. completo / Histórico) del que sacar el número corto.';
+    if(r.status === 'sin-coincidencia') return 'No se encontró ninguna carpeta con al menos 2 números coincidentes (o el único número, si solo hay uno).';
+    if(r.status === 'ambiguo') return `Hay ${r.candidatas.length} carpetas empatadas, no quedó claro cuál es: ${r.candidatas.join(' · ')}`;
+    return null;
+  }
 
   async function handleBuscarSiigo(f){
     setBuscandoSiigo(f.id);
@@ -262,17 +274,29 @@ export default function ProcesoDrawer({ proceso, clientes, colaboradores, factur
       if(r.status === 'ok'){
         setForm(f => ({ ...f, LinkCarpeta: r.linkCarpeta, LinkCliente: r.linkCliente }));
         notify(`Carpeta encontrada: "${r.nombreCarpeta}". Revisa los enlaces y da "Guardar cambios" para dejarlos.`, 'success');
-      } else if(r.status === 'sin-ruta'){
-        notify(`No hay una ruta de carpetas configurada para la Entidad "${form.Entidad || '(sin entidad)'}".`, 'error');
-      } else if(r.status === 'sin-numero'){
-        notify('Este proceso no tiene ningún número de radicado (No. completo / Histórico) del que sacar el número corto.', 'error');
-      } else if(r.status === 'sin-coincidencia'){
-        notify('No se encontró ninguna carpeta con al menos 2 números coincidentes (o el único número, si solo hay uno).', 'error');
-      } else if(r.status === 'ambiguo'){
-        notify(`Hay ${r.candidatas.length} carpetas empatadas, no quedó claro cuál es: ${r.candidatas.join(' · ')}`, 'error');
+      } else {
+        notify(mensajeEstadoBusqueda(r, form.Entidad), 'error');
       }
     }catch(err){ console.error(err); notify("No se pudo buscar la carpeta: " + err.message, 'error'); }
     setBuscandoCarpeta(false);
+  }
+
+  // "Buscar contrato" — pedido explícito del usuario 2026-09-07: busca
+  // DENTRO de la misma carpeta del proceso (la que ya encuentra "Buscar y
+  // vincular carpeta") un archivo o carpeta llamada "Contrato"/"Propuesta",
+  // y si no hay, por el número de Contrato del proceso. Solo lectura.
+  async function handleBuscarContrato(){
+    setBuscandoContrato(true);
+    try{
+      const r = await generarLinkContratoProceso(config, RUTAS_CARPETAS_ENTIDAD, form);
+      if(r.status === 'ok'){
+        setForm(f => ({ ...f, LinkContrato: r.link }));
+        notify(`Contrato encontrado: "${r.nombre}". Revisa el enlace y da "Guardar cambios" para dejarlo.`, 'success');
+      } else {
+        notify(mensajeEstadoBusqueda(r, form.Entidad) || 'No se encontró ningún "Contrato"/"Propuesta" en la carpeta del proceso.', 'error');
+      }
+    }catch(err){ console.error(err); notify("No se pudo buscar el contrato: " + err.message, 'error'); }
+    setBuscandoContrato(false);
   }
 
   useEffect(() => {
@@ -689,6 +713,9 @@ export default function ProcesoDrawer({ proceso, clientes, colaboradores, factur
                               Link Carpeta y no se repite en Link Cliente. */}
                           {key==='LinkCarpeta' && canWrite && (
                             <IconButton icon="search" variant="open" label="Buscar y vincular carpeta (llena también Link Cliente)" spinning={buscandoCarpeta} onClick={e => { e.stopPropagation(); handleBuscarCarpeta(); }} />
+                          )}
+                          {key==='LinkContrato' && canWrite && (
+                            <IconButton icon="search" variant="open" label="Buscar contrato/propuesta en la carpeta del proceso" spinning={buscandoContrato} onClick={e => { e.stopPropagation(); handleBuscarContrato(); }} />
                           )}
                           {url && <IconButton icon="open" variant="open" label="Abrir enlace" href={url} onClick={e => e.stopPropagation()} />}
                         </div>

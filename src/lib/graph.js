@@ -1040,6 +1040,48 @@ export async function generarLinksCarpetaProceso(config, rutasEntidad, proceso){
   return { status:'ok', nombreCarpeta: encontrado.nombre, linkCarpeta, linkCliente };
 }
 
+// Lista TODOS los hijos (archivos y carpetas) de un ítem ya resuelto por id
+// — a diferencia de listarSubcarpetas (que filtra solo carpetas y busca por
+// ruta), esto busca por id y no descarta archivos, porque "Contrato" o
+// "Propuesta" adentro de la carpeta del proceso puede ser cualquiera de los 2.
+async function listarHijos(driveId, itemId){
+  const res = await graphFetch(`/drives/${driveId}/items/${itemId}/children?$select=id,name,file,folder&$top=200`);
+  return res.value || [];
+}
+
+// Busca "Link de Contrato" DENTRO de la misma carpeta que ya resuelve
+// buscarCarpetaDelProceso (por número corto) — pedido explícito del usuario
+// 2026-09-07: la carpeta centralizada "CONTRATOS/{Entidad}" que se probó
+// primero resultó no tener ningún dato en común con el proceso (ni número
+// corto ni el campo Contrato), así que se descartó; en su lugar se busca un
+// archivo o carpeta llamado "Contrato"/"Propuesta" adentro de la carpeta
+// del proceso, y si no hay, por el número de Contrato del proceso.
+export async function buscarContratoDelProceso(config, rutasEntidad, proceso){
+  const carpeta = await buscarCarpetaDelProceso(config, rutasEntidad, proceso);
+  if(carpeta.status !== 'ok') return carpeta;
+  const hijos = await listarHijos(carpeta.driveId, carpeta.itemId);
+  let candidatos = hijos.filter(h => /contrato|propuesta/i.test(h.name));
+  if(!candidatos.length && proceso?.NumeroContrato){
+    const num = normalize(proceso.NumeroContrato);
+    candidatos = hijos.filter(h => normalize(h.name).includes(num));
+  }
+  if(!candidatos.length) return { status:'sin-coincidencia' };
+  if(candidatos.length > 1) return { status:'ambiguo', candidatas: candidatos.map(h => h.name) };
+  return { status:'ok', driveId: carpeta.driveId, itemId: candidatos[0].id, nombre: candidatos[0].name };
+}
+
+// Enlace de solo lectura para Link de Contrato — mismo criterio que Link
+// Cliente (view/anonymous), pedido explícito del usuario ("Link contrato es
+// de solo lectura").
+export async function generarLinkContratoProceso(config, rutasEntidad, proceso){
+  const encontrado = await buscarContratoDelProceso(config, rutasEntidad, proceso);
+  if(encontrado.status !== 'ok') return encontrado;
+  const res = await graphFetch(`/drives/${encontrado.driveId}/items/${encontrado.itemId}/createLink`, {
+    method:"POST", body: JSON.stringify({ type:"view", scope:"anonymous" }),
+  });
+  return { status:'ok', nombre: encontrado.nombre, link: res.link.webUrl };
+}
+
 // Dia/Mes/Año son los campos que se digitan; Fecha se guarda concatenándolos
 // y dándoles formato de fecha (no se digita directamente).
 export function fechaFromPartes(dia, mes, anio){
