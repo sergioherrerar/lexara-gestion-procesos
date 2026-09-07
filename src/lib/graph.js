@@ -1047,13 +1047,24 @@ export function computeOrdenCompraTotals(oc){
   return { subtotal, iva, total };
 }
 // La orden de compra guarda automáticamente, en su propio campo "Factura", el
-// número de la factura de "base facturas" que comparte el mismo Contrato (si
-// hay varias coincidencias se toma la de número más alto/reciente) — así
-// queda la referencia cruzada sin que el usuario tenga que buscarla a mano.
+// número de la factura de "base facturas" que comparte el MISMO Contrato +
+// Proceso (Número Corto) + Etapa Contrato — las 3 iguales a la vez, no solo
+// el Contrato (si hay varias coincidencias se toma la de número más alto/
+// reciente) — así queda la referencia cruzada sin que el usuario tenga que
+// buscarla a mano. Corregido 2026-09-07: antes solo comparaba Contrato, así
+// que 2 órdenes con el mismo Contrato pero Proceso/Etapa distintos quedaban
+// mal cruzadas con la misma factura — confirmado por el usuario con un caso
+// real (Órdenes 244/232, mismo Contrato, ambas apuntando a la Factura 790).
 export function facturaForOrdenCompra(facturas, oc){
   if(!oc || !oc.Contrato) return null;
-  const target = normalize(oc.Contrato);
-  const matches = (facturas||[]).filter(f => normalize(f.Contrato) === target);
+  const targetContrato = normalize(oc.Contrato);
+  const targetProceso = normalize(oc.Proceso);
+  const targetEtapa = normalize(oc.EtapaContrato);
+  const matches = (facturas||[]).filter(f =>
+    normalize(f.Contrato) === targetContrato &&
+    normalize(f.Proceso) === targetProceso &&
+    normalize(f.EtapaContrato) === targetEtapa
+  );
   if(!matches.length) return null;
   return matches.reduce((best,f) => Number(facturaNumero(f)) > Number(facturaNumero(best)) ? f : best);
 }

@@ -3,6 +3,7 @@
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
 ## 2026-09-07
+- **Corrige el cruce de Factura en Órdenes de compra** — antes buscaba la factura relacionada solo por Contrato, así que 2 órdenes con el mismo Contrato pero distinta Etapa Contrato/Proceso quedaban mal cruzadas con la misma factura (caso real reportado: órdenes 244/232, ambas apuntando a la Factura 790). Ahora exige Contrato + Proceso (Número Corto) + Etapa Contrato, los 3 iguales. Este campo nunca se guarda en SharePoint (se calcula en pantalla cada vez), así que no hace falta corregir ningún registro existente — el arreglo aplica solo con publicar.
 - **Cambia toda la tipografía del proyecto a Aptos** (la fuente nueva de Microsoft 365/Windows 11, reemplaza a Fraunces/Inter/JetBrains Mono en la app, el manual de usuario y los informes exportados en HTML). Aptos no existe como fuente web (no está en Google Fonts) — se usa como fuente del equipo: se ve exacta en cualquier computador con Microsoft 365/Office instalado (todo el equipo del despacho la tiene), y cae a Segoe UI/Georgia/Arial en cualquier otro caso.
 - **Tutelas: nueva columna "Fecha de creación"** (al lado de "No. Tutela") — muestra cuándo se creó de verdad el registro en SharePoint, no un dato de negocio.
 
