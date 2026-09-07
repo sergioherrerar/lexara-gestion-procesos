@@ -975,43 +975,96 @@ function coincidenciasEnNombre(nombreCarpeta, numerosCortos){
   return numerosCortos.filter(n => tokens.includes(n)).length;
 }
 
-// Busca la carpeta real del proceso (por Entidad + números cortos del
-// Histórico), bajando 1 o 2 niveles según RUTAS_CARPETAS_ENTIDAD (2 niveles
-// para Grupo Colmédica: Entidad -> Cliente -> carpetas de proceso). Exige
-// mínimo 2 números cortos coincidentes (o 1 si el proceso solo tiene 1
-// número corto en su Histórico) — pedido explícito del usuario. Devuelve:
-//  - {status:'sin-ruta'}: la Entidad del proceso no tiene ruta configurada.
+// El campo "Radicado" (Numero_Corto) del proceso YA viene escrito en
+// SharePoint en formato corto "YYYY-NNNNN" — a diferencia de los números
+// cortos que se DERIVAN del Histórico (que pueden traer radicados de casos
+// relacionados pero distintos, ej. una tutela o un recurso, cuya carpeta NO
+// es la de este proceso), este es el número corto propio y confiable del
+// proceso. Se valida el formato antes de usarlo como criterio "fuerte" de
+// coincidencia (si el campo no está en ese formato, se ignora).
+function radicadoCortoPropio(proceso){
+  const v = String(proceso?.Radicado||'').trim();
+  return /^\d{4}-\d{2,6}$/.test(v) ? v : null;
+}
+
+// Busca la carpeta real del proceso (por Entidad + número(s) corto(s)),
+// bajando 1 o 2 niveles según RUTAS_CARPETAS_ENTIDAD (2 niveles para Grupo
+// Colmédica: Entidad -> Cliente -> carpetas de proceso).
+// Si la Entidad no está en esa tabla, se prueba la ruta genérica
+// "Procesos/{Entidad}" (profundidad 1) antes de rendirse — pedido explícito
+// del usuario 2026-09-07 ("entidad es el campo de la lista proceso
+// judiciales... así mismo estas organizadas las carpetas con el mismo
+// nombre de la entidad"), confirmado con una captura real de la carpeta
+// "Procesos" mostrando ~20 carpetas, una por cada Entidad real usada en
+// Procesos Judiciales (Particulares, CAXDAC, Coomeva, Sion, ... además de
+// las 8 ya confirmadas a mano). Algunas de esas carpetas son de clientes
+// que NO tienen procesos judiciales (son asesoría u otro tipo de labor) —
+// no importa, simplemente no habrá ninguna carpeta de proceso adentro que
+// coincida por número corto, y esta función responde 'sin-coincidencia'
+// igual que para cualquier otro proceso sin carpeta real.
+// Caso real reportado 2026-09-07 (proceso 2015-00150, SOS): el Histórico
+// traía DOS números completos — uno de este mismo proceso y otro de un caso
+// relacionado distinto (2015-00396) — y la carpeta real solo tiene el
+// número de ESTE proceso en su nombre. Exigir "mínimo 2 coincidencias"
+// siempre que el Histórico trajera 2+ números (regla anterior) descartaba
+// la carpeta correcta por no traer también el número del caso relacionado.
+// Ahora se prueba PRIMERO el Radicado propio del proceso (ver
+// radicadoCortoPropio arriba) — si una sola carpeta lo trae en el nombre,
+// esa es la respuesta, sin exigir ninguna coincidencia adicional. Solo si
+// el Radicado no sirve (vacío/formato raro, o no aparece en ninguna
+// carpeta) se cae al criterio anterior por números del Histórico (mínimo 2
+// si hay 2+, para no adivinar con un solo número suelto y ambiguo). Devuelve:
+//  - {status:'sin-ruta'}: el proceso no tiene Entidad (campo vacío) — no hay
+//    ni siquiera un nombre de carpeta genérico que probar.
 //  - {status:'sin-numero'}: el proceso no tiene ningún número corto que buscar
-//    (No. completo/Histórico vacíos, o ningún número de 21+ dígitos).
+//    (Radicado/No. completo/Histórico vacíos, o ningún número de 21+ dígitos).
 //  - {status:'sin-coincidencia'}: no se encontró ninguna carpeta con
-//    suficientes coincidencias.
+//    suficientes coincidencias (o la carpeta de esa Entidad no existe).
 //  - {status:'ambiguo', candidatas:[...]}: 2 o más carpetas empatadas en el
 //    máximo de coincidencias — no se puede elegir sola, hay que decidir a mano.
 //  - {status:'ok', driveId, itemId, nombre}: única mejor coincidencia.
 export async function buscarCarpetaDelProceso(config, rutasEntidad, proceso){
-  const entidadNorm = normalize(proceso?.Entidad||'');
+  const entidadTexto = String(proceso?.Entidad||'').trim();
+  if(!entidadTexto) return { status:'sin-ruta' };
+  const entidadNorm = normalize(entidadTexto);
   const entradaRuta = Object.entries(rutasEntidad||{}).find(([k]) => normalize(k) === entidadNorm);
-  if(!entradaRuta) return { status:'sin-ruta' };
-  const { ruta, profundidad } = entradaRuta[1];
+  const { ruta, profundidad } = entradaRuta ? entradaRuta[1] : { ruta: `Procesos/${entidadTexto}`, profundidad: 1 };
 
+  const radicadoPropio = radicadoCortoPropio(proceso);
   const numerosCortos = numerosCortosDelProceso(proceso);
-  if(!numerosCortos.length) return { status:'sin-numero' };
-  const minimo = Math.min(2, numerosCortos.length);
+  if(!radicadoPropio && !numerosCortos.length) return { status:'sin-numero' };
 
   const driveId = await resolverDriveIdPrincipal(config);
   const nivel1 = await listarSubcarpetas(driveId, ruta);
 
-  let candidatas = [];
-  if(profundidad === 1){
-    candidatas = nivel1.map(f => ({ ...f, coincidencias: coincidenciasEnNombre(f.name, numerosCortos) }));
-  } else {
-    // profundidad 2: nivel1 son carpetas de Cliente, hay que bajar una vez más.
-    for(const carpetaCliente of nivel1){
-      const nivel2 = await listarSubcarpetas(driveId, `${ruta}/${carpetaCliente.name}`);
-      nivel2.forEach(f => candidatas.push({ ...f, coincidencias: coincidenciasEnNombre(f.name, numerosCortos) }));
+  async function candidatasConCoincidencias(numeros){
+    let candidatas = [];
+    if(profundidad === 1){
+      candidatas = nivel1.map(f => ({ ...f, coincidencias: coincidenciasEnNombre(f.name, numeros) }));
+    } else {
+      // profundidad 2: nivel1 son carpetas de Cliente, hay que bajar una vez más.
+      for(const carpetaCliente of nivel1){
+        const nivel2 = await listarSubcarpetas(driveId, `${ruta}/${carpetaCliente.name}`);
+        nivel2.forEach(f => candidatas.push({ ...f, coincidencias: coincidenciasEnNombre(f.name, numeros) }));
+      }
+    }
+    return candidatas;
+  }
+
+  if(radicadoPropio){
+    const candidatasRadicado = await candidatasConCoincidencias([radicadoPropio]);
+    const conCoincidenciaRadicado = candidatasRadicado.filter(f => f.coincidencias > 0);
+    if(conCoincidenciaRadicado.length === 1){
+      return { status:'ok', driveId, itemId: conCoincidenciaRadicado[0].id, nombre: conCoincidenciaRadicado[0].name };
+    }
+    if(conCoincidenciaRadicado.length > 1){
+      return { status:'ambiguo', candidatas: conCoincidenciaRadicado.map(f => f.name) };
     }
   }
 
+  if(!numerosCortos.length) return { status:'sin-numero' };
+  const minimo = Math.min(2, numerosCortos.length);
+  const candidatas = await candidatasConCoincidencias(numerosCortos);
   const conCoincidencia = candidatas.filter(f => f.coincidencias >= minimo);
   if(!conCoincidencia.length) return { status:'sin-coincidencia' };
   const maxCoincidencias = Math.max(...conCoincidencia.map(f => f.coincidencias));

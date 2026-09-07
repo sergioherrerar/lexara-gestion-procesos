@@ -247,9 +247,9 @@ export default function ProcesoDrawer({ proceso, clientes, colaboradores, factur
   // contrato" — ambos devuelven el mismo vocabulario de estados (ver
   // buscarCarpetaDelProceso en graph.js).
   function mensajeEstadoBusqueda(r, entidad){
-    if(r.status === 'sin-ruta') return `No hay una ruta de carpetas configurada para la Entidad "${entidad || '(sin entidad)'}".`;
+    if(r.status === 'sin-ruta') return 'Este proceso no tiene "Entidad" — no hay ni siquiera un nombre de carpeta que probar.';
     if(r.status === 'sin-numero') return 'Este proceso no tiene ningún número de radicado (No. completo / Histórico) del que sacar el número corto.';
-    if(r.status === 'sin-coincidencia') return 'No se encontró ninguna carpeta con al menos 2 números coincidentes (o el único número, si solo hay uno).';
+    if(r.status === 'sin-coincidencia') return 'No se encontró ninguna carpeta de esa Entidad que coincida con el Radicado o los números del Histórico de este proceso.';
     if(r.status === 'ambiguo') return `Hay ${r.candidatas.length} carpetas empatadas, no quedó claro cuál es: ${r.candidatas.join(' · ')}`;
     return null;
   }
