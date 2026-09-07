@@ -18,6 +18,7 @@ import StackedBarChart from './StackedBarChart';
 import { clasificarHorasExtra, soloFecha } from '../lib/horasExtras';
 import RevisionProcesosTab from './RevisionProcesosTab';
 import CruceArchivosTab from './CruceArchivosTab';
+import CrearLinkCompartirTab from './CrearLinkCompartirTab';
 import { construirMensajePagoWhatsApp, normalizarTelefonoWaMe, normalizarTelefonoManualWaMe, PAISES_WHATSAPP } from '../lib/whatsappPago';
 
 // Entidades con formato de informe formal ya confirmado, y qué generador usa
@@ -762,6 +763,8 @@ export default function InformesView({ procesos, clientes, facturas, desistimien
       </div>
 
       <CruceArchivosTab notify={notify} />
+
+      <CrearLinkCompartirTab config={config} notify={notify} />
     </div>
   );
 }

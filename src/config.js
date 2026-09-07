@@ -88,6 +88,21 @@ export const RUTAS_CARPETAS_ENTIDAD = {
 };
 
 // =========================================================================
+// "Crear link para compartir" (Informes) — pedido explícito del usuario
+// 2026-09-07: explorador genérico de SharePoint (Sitio → biblioteca de
+// Documentos → subcarpetas/archivos) para generar un enlace de SOLO
+// LECTURA que no caduca (sin expirationDateTime) de cualquier archivo o
+// carpeta, sin depender de la lógica específica de Procesos judiciales de
+// arriba. Los 3 primeros ya los usa la app en otros módulos; "Personal
+// Mónica" es nuevo, solo para este explorador.
+export const SITIOS_EXPLORADOR = [
+  { key: "principal", nombre: "NuevosProcesosMD (sitio principal)", sitePath: null }, // null = config.SP_SITE_PATH
+  { key: "tutelas", nombre: "TutelasMDABOGADOS", sitePathKey: "SP_SITE_PATH_TUTELAS" },
+  { key: "raiz", nombre: "Administración (sitio raíz del tenant)", useRootSite: true },
+  { key: "personalMonica", nombre: "Personal Mónica", sitePath: "/sites/PersonalMonica" },
+];
+
+// =========================================================================
 // REGISTRO DE LISTAS DE SHAREPOINT
 // Cada lista de SharePoint que la app usa se define una sola vez aquí:
 // su nombre real, sus campos semánticos (con pistas para adivinar el

@@ -1044,8 +1044,37 @@ export async function generarLinksCarpetaProceso(config, rutasEntidad, proceso){
 // — a diferencia de listarSubcarpetas (que filtra solo carpetas y busca por
 // ruta), esto busca por id y no descarta archivos, porque "Contrato" o
 // "Propuesta" adentro de la carpeta del proceso puede ser cualquiera de los 2.
-async function listarHijos(driveId, itemId){
+export async function listarHijos(driveId, itemId){
   const res = await graphFetch(`/drives/${driveId}/items/${itemId}/children?$select=id,name,file,folder&$top=200`);
+  return res.value || [];
+}
+
+// =========================================================================
+// "Crear link para compartir" (Informes) — explorador genérico de
+// SharePoint. Ver SITIOS_EXPLORADOR en config.js.
+// =========================================================================
+
+// Resuelve el siteId de una entrada de SITIOS_EXPLORADOR (mismo criterio
+// que siteIdForList en useLexaraApp.js, pero acá vive en graph.js porque
+// no depende de ninguna lista configurada).
+export async function resolverSiteIdExplorador(config, sitio){
+  if(sitio.useRootSite) return fetchRootSiteId(config);
+  if(sitio.sitePathKey) return fetchSiteId(config, config[sitio.sitePathKey]);
+  return fetchSiteId(config, sitio.sitePath || undefined);
+}
+
+// Lista las bibliotecas de documentos (drives) de un sitio — normalmente
+// una sola ("Documentos"), pero un sitio puede tener más de una.
+export async function listarDrivesDeSitio(config, sitio){
+  const siteId = await resolverSiteIdExplorador(config, sitio);
+  const res = await graphFetch(`/sites/${siteId}/drives?$select=id,name`);
+  return res.value || [];
+}
+
+// Hijos de la RAÍZ de una biblioteca (no hay itemId todavía en ese punto,
+// a diferencia de listarHijos que ya resuelve un ítem puntual).
+export async function listarHijosRaizDrive(driveId){
+  const res = await graphFetch(`/drives/${driveId}/root/children?$select=id,name,file,folder&$top=200`);
   return res.value || [];
 }
 
