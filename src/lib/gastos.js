@@ -192,8 +192,10 @@ export function generarRegistrosGastosHTML(titulo, filas, proveedores, { conNume
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${escapeHtml(titulo)}</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@600&family=Inter:wght@400;500;600;700&display=swap');
-  :root{ --verde-oscuro:#004941; --gris-claro:#f4f4f2; --gris-linea:#e4e4e1; --texto:#1c2624; --texto-suave:#5c6b68; --font-display:'Fraunces',Georgia,serif; --font-body:'Inter',Arial,sans-serif; }
+  /* Aptos (pedido explícito 2026-09-07): fuente local de Microsoft 365/
+     Windows 11, no existe como fuente web — cae a Georgia/Arial si el
+     equipo no la tiene. */
+  :root{ --verde-oscuro:#004941; --gris-claro:#f4f4f2; --gris-linea:#e4e4e1; --texto:#1c2624; --texto-suave:#5c6b68; --font-display:'Aptos Display','Aptos',Georgia,serif; --font-body:'Aptos',Arial,sans-serif; }
   *{box-sizing:border-box;}
   body{margin:0; font-family:var(--font-body); background:var(--gris-claro); color:var(--texto); -webkit-font-smoothing:antialiased;}
   .header{background:var(--verde-oscuro); color:#fff; padding:22px 28px; display:flex; align-items:center; justify-content:space-between; gap:18px; flex-wrap:wrap;}

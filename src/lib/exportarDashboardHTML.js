@@ -78,12 +78,14 @@ function construirHTML(filas, titulo, fechaLarga){
   const paletaJson = JSON.stringify(PALETA);
 
   const css = `
-    @import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@600&family=Inter:wght@400;500;600;700&display=swap');
+    /* Aptos (pedido explícito 2026-09-07) no existe como fuente web (no está
+       en Google Fonts) — se usa como fuente local: se ve exacta en un equipo
+       con Microsoft 365/Office, y cae a Georgia/Arial en cualquier otro. */
     :root{
       --verde-oscuro:#004941; --verde-oscuro-2:#003630; --verde-claro:#52bbb5;
       --naranja:#ef7d00; --gris:#d0d0d0; --gris-claro:#f4f4f2; --gris-linea:#e4e4e1;
       --texto:#1c2624; --texto-suave:#5c6b68;
-      --font-display:'Fraunces', Georgia, serif; --font-body:'Inter', Arial, sans-serif; --font-mono:'Inter', monospace;
+      --font-display:'Aptos Display', 'Aptos', Georgia, serif; --font-body:'Aptos', Arial, sans-serif; --font-mono:'Aptos Mono', 'Consolas', monospace;
       --radius:12px; --shadow:0 1px 3px rgba(0,20,18,.08);
     }
     *{box-sizing:border-box;}

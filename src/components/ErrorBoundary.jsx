@@ -21,7 +21,7 @@ export default class ErrorBoundary extends Component {
     if(this.state.error){
       const detalle = this.state.error && (this.state.error.stack || this.state.error.message || String(this.state.error));
       return (
-        <div style={{padding:'40px 24px', fontFamily:'Inter, sans-serif', maxWidth:680, margin:'40px auto', color:'#1c2624'}}>
+        <div style={{padding:'40px 24px', fontFamily:"'Aptos', 'Segoe UI', system-ui, sans-serif", maxWidth:680, margin:'40px auto', color:'#1c2624'}}>
           <h1 style={{color:'#004941', fontSize:22, marginBottom:8}}>Algo salió mal</h1>
           <p style={{color:'#5c6b68', lineHeight:1.6}}>
             La aplicación encontró un error inesperado y no pudo continuar. Recarga la página —

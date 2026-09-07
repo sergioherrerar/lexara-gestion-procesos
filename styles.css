@@ -23,9 +23,19 @@
        marcadas — comparte variable con .panel/.table-wrap/.stat-card/etc.,
        así que un solo cambio da el efecto en todo el portal a la vez. */
     --shadow:0 1px 3px rgba(0,30,26,.10), 0 4px 10px rgba(0,30,26,.08), 0 18px 34px rgba(0,30,26,.11);
-    --font-display:'Fraunces', serif;
-    --font-body:'Inter', sans-serif;
-    --font-mono:'JetBrains Mono', monospace;
+    /* Aptos — pedido explícito del usuario 2026-09-07 ("toda la fuente del
+       proyecto a Aptos"). Es la tipografía nueva de Microsoft 365/Windows 11
+       (reemplazó a Calibri), NO está disponible como fuente web (no existe
+       en Google Fonts — se confirmó: pide la familia y responde 400). Se usa
+       como fuente LOCAL del sistema: se ve exacta en cualquier equipo con
+       Microsoft 365/Office instalado (todo el equipo del despacho la tiene),
+       y cae a Segoe UI/system-ui en cualquier otro caso, sin romperse.
+       Aptos Display/Aptos Mono son variantes reales de la misma familia que
+       Office instala junto con Aptos — se usan igual que antes usaba
+       Fraunces (títulos) y JetBrains Mono (cifras). */
+    --font-display:'Aptos Display', 'Aptos', 'Segoe UI', system-ui, sans-serif;
+    --font-body:'Aptos', 'Segoe UI', system-ui, sans-serif;
+    --font-mono:'Aptos Mono', 'Consolas', monospace;
   }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}

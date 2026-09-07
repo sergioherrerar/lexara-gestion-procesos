@@ -3,6 +3,7 @@
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
 ## 2026-09-07
+- **Cambia toda la tipografía del proyecto a Aptos** (la fuente nueva de Microsoft 365/Windows 11, reemplaza a Fraunces/Inter/JetBrains Mono en la app, el manual de usuario y los informes exportados en HTML). Aptos no existe como fuente web (no está en Google Fonts) — se usa como fuente del equipo: se ve exacta en cualquier computador con Microsoft 365/Office instalado (todo el equipo del despacho la tiene), y cae a Segoe UI/Georgia/Arial en cualquier otro caso.
 - **Tutelas: nueva columna "Fecha de creación"** (al lado de "No. Tutela") — muestra cuándo se creó de verdad el registro en SharePoint, no un dato de negocio.
 
 ## 2026-09-04
