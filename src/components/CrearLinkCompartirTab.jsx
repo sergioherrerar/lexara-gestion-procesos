@@ -90,6 +90,19 @@ export default function CrearLinkCompartirTab({ config, notify }){
     setGenerando(false);
   }
 
+  // Copiar al portapapeles — pedido explícito del usuario 2026-09-08
+  // ("cree el link para copiar"): antes solo quedaba el link como texto/
+  // enlace clicable, había que seleccionarlo y copiarlo a mano.
+  async function handleCopiarLink(){
+    try{
+      await navigator.clipboard.writeText(linkGenerado);
+      notify?.('Enlace copiado al portapapeles.', 'success');
+    }catch(err){
+      console.error(err);
+      notify?.('No se pudo copiar automáticamente — selecciona el enlace y cópialo a mano.', 'error');
+    }
+  }
+
   return (
     <div className="panel" style={{marginTop:20}}>
       <div className="panel-head"><h3>Crear link para compartir</h3></div>
@@ -141,9 +154,12 @@ export default function CrearLinkCompartirTab({ config, notify }){
           </div>
         )}
         {linkGenerado && (
-          <p className="save-hint" style={{wordBreak:'break-all'}}>
-            <a href={linkGenerado} target="_blank" rel="noopener noreferrer">{linkGenerado}</a>
-          </p>
+          <div style={{marginTop:4}}>
+            <p className="save-hint" style={{wordBreak:'break-all', marginBottom:8}}>
+              <a href={linkGenerado} target="_blank" rel="noopener noreferrer">{linkGenerado}</a>
+            </p>
+            <IconTextButton icon="duplicate" variant="secondary" onClick={handleCopiarLink}>Copiar enlace</IconTextButton>
+          </div>
         )}
       </div>
     </div>

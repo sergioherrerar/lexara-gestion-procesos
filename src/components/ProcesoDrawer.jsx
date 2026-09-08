@@ -6,6 +6,8 @@ import {
   facturaForOrdenCompra, fmtMonto, fmtDate, fechaFromPartes, parseMonto,
   tiposAccionDistinct, tiposProcesoParaAccion, despachosParaAccion, abrirFacturaSiigo,
   generarLinksCarpetaProceso, generarLinkContratoProceso,
+  rutaEntidadDeProceso, resolverDriveIdPrincipal, listarContenidoRuta, listarHijos,
+  crearLinkCompartidoSoporte, crearLinkEdicionOrganizacion,
 } from '../lib/graph';
 import IconButton, { IconTextButton } from './IconButton';
 import { FieldCard, RichTextEditor } from './FormFields';
@@ -242,6 +244,19 @@ export default function ProcesoDrawer({ proceso, clientes, colaboradores, factur
   const [buscandoSiigo, setBuscandoSiigo] = useState(null);
   const [buscandoCarpeta, setBuscandoCarpeta] = useState(false);
   const [buscandoContrato, setBuscandoContrato] = useState(false);
+  // Explorador manual — pedido explícito del usuario 2026-09-08: "ayúdame a
+  // los que no se puedan hacerlo manual... que abra la entidad, lea las
+  // carpetas y ahí sí el link ya sea archivo o carpeta" — para cuando
+  // "Buscar y vincular carpeta"/"Buscar contrato" no encuentran nada (o
+  // encuentran ambiguo), se puede entrar a mano a la carpeta de la Entidad
+  // del proceso y elegir cuál es. Mismo patrón de niveles en cascada que
+  // CrearLinkCompartirTab.jsx (Informes), pero arrancando ya adentro de la
+  // carpeta de la Entidad en vez de tener que elegir sitio/biblioteca.
+  const [explorando, setExplorando] = useState(false); // true = panel abierto
+  const [cargandoExplorador, setCargandoExplorador] = useState(false);
+  const [driveIdExplorador, setDriveIdExplorador] = useState('');
+  const [nivelesExplorador, setNivelesExplorador] = useState([]); // [{items, seleccionadoId}]
+  const [generandoManual, setGenerandoManual] = useState(''); // '' | 'carpeta' | 'contrato'
 
   // Mensaje de error común a "Buscar y vincular carpeta" y "Buscar
   // contrato" — ambos devuelven el mismo vocabulario de estados (ver
@@ -249,7 +264,15 @@ export default function ProcesoDrawer({ proceso, clientes, colaboradores, factur
   function mensajeEstadoBusqueda(r, entidad){
     if(r.status === 'sin-ruta') return 'Este proceso no tiene "Entidad" — no hay ni siquiera un nombre de carpeta que probar.';
     if(r.status === 'sin-numero') return 'Este proceso no tiene ningún número de radicado (No. completo / Histórico) del que sacar el número corto.';
-    if(r.status === 'sin-coincidencia') return 'No se encontró ninguna carpeta de esa Entidad que coincida con el Radicado o los números del Histórico de este proceso.';
+    if(r.status === 'sin-coincidencia'){
+      // Diagnóstico completo (ruta probada + números buscados + carpetas que
+      // SÍ hay ahí) — pedido implícito del usuario tras varias rondas de "no
+      // encontró la carpeta y sí existe": en vez de un mensaje genérico, esto
+      // se puede copiar/pegar directo para revisar sin adivinar.
+      const buscados = (r.buscados||[]).join(', ') || '(ninguno)';
+      const encontradas = (r.encontradas||[]).length ? r.encontradas.join(' · ') : '(esa carpeta de Entidad está vacía o no existe)';
+      return `No se encontró ninguna carpeta en "${r.ruta}" que coincida. Se buscó: ${buscados}. Carpetas que hay ahí: ${encontradas}`;
+    }
     if(r.status === 'ambiguo') return `Hay ${r.candidatas.length} carpetas empatadas, no quedó claro cuál es: ${r.candidatas.join(' · ')}`;
     return null;
   }
@@ -297,6 +320,83 @@ export default function ProcesoDrawer({ proceso, clientes, colaboradores, factur
       }
     }catch(err){ console.error(err); notify("No se pudo buscar el contrato: " + err.message, 'error'); }
     setBuscandoContrato(false);
+  }
+
+  // Explorador manual — arranca ya adentro de la carpeta de la Entidad del
+  // proceso (misma ruta que usa la búsqueda automática, ver
+  // rutaEntidadDeProceso en graph.js) y deja entrar a cualquier subcarpeta
+  // en cascada, para cuando la búsqueda automática no encontró nada claro.
+  async function handleAbrirExplorador(){
+    const ruta = rutaEntidadDeProceso(RUTAS_CARPETAS_ENTIDAD, form);
+    if(!ruta){ notify('Este proceso no tiene "Entidad" — no hay carpeta que explorar.', 'error'); return; }
+    setExplorando(true);
+    setNivelesExplorador([]);
+    setCargandoExplorador(true);
+    try{
+      const driveId = await resolverDriveIdPrincipal(config);
+      setDriveIdExplorador(driveId);
+      const items = await listarContenidoRuta(driveId, ruta);
+      setNivelesExplorador([{ items, seleccionadoId: '' }]);
+      if(!items.length) notify(`La carpeta "${ruta}" está vacía o todavía no existe.`, 'error');
+    }catch(err){ console.error(err); notify("No se pudo abrir la carpeta de la Entidad: " + err.message, 'error'); }
+    setCargandoExplorador(false);
+  }
+  function handleCerrarExplorador(){ setExplorando(false); setNivelesExplorador([]); }
+  async function handleElegirEnExplorador(indiceNivel, itemId){
+    const nivelActual = nivelesExplorador[indiceNivel];
+    const item = nivelActual.items.find(it => it.id === itemId);
+    const nuevosNiveles = nivelesExplorador.slice(0, indiceNivel + 1);
+    nuevosNiveles[indiceNivel] = { ...nivelActual, seleccionadoId: itemId };
+    if(!item){ setNivelesExplorador(nuevosNiveles); return; }
+    if(item.folder){
+      setNivelesExplorador(nuevosNiveles);
+      setCargandoExplorador(true);
+      try{
+        const hijos = await listarHijos(driveIdExplorador, item.id);
+        setNivelesExplorador([...nuevosNiveles, { items: hijos, seleccionadoId: '' }]);
+      }catch(err){ console.error(err); notify("No se pudo abrir esa carpeta: " + err.message, 'error'); }
+      setCargandoExplorador(false);
+    } else {
+      setNivelesExplorador(nuevosNiveles);
+    }
+  }
+  // El "objetivo" es lo último elegido, en cualquier nivel — mismo criterio
+  // que CrearLinkCompartirTab.jsx.
+  let objetivoExplorador = null;
+  for(let i = nivelesExplorador.length - 1; i >= 0 && !objetivoExplorador; i--){
+    const n = nivelesExplorador[i];
+    if(n.seleccionadoId) objetivoExplorador = n.items.find(it => it.id === n.seleccionadoId);
+  }
+  // "Usar como Carpeta del proceso" — solo tiene sentido para una carpeta
+  // (Link Carpeta necesita edición sobre una carpeta real, no un archivo
+  // suelto) — llena Link Carpeta Y Link Cliente juntos, igual que la
+  // búsqueda automática.
+  async function handleUsarComoCarpeta(){
+    if(!objetivoExplorador?.folder) return;
+    setGenerandoManual('carpeta');
+    try{
+      const [linkCarpeta, linkCliente] = await Promise.all([
+        crearLinkEdicionOrganizacion(driveIdExplorador, objetivoExplorador.id),
+        crearLinkCompartidoSoporte(driveIdExplorador, objetivoExplorador.id),
+      ]);
+      setForm(f => ({ ...f, LinkCarpeta: linkCarpeta, LinkCliente: linkCliente }));
+      notify(`"${objetivoExplorador.name}" vinculada como carpeta del proceso. Revisa los enlaces y da "Guardar cambios" para dejarlos.`, 'success');
+      handleCerrarExplorador();
+    }catch(err){ console.error(err); notify("No se pudo generar el enlace: " + err.message, 'error'); }
+    setGenerandoManual('');
+  }
+  // "Usar como Contrato" — sirve tanto para un archivo (lo normal) como
+  // para una carpeta completa, siempre de solo lectura.
+  async function handleUsarComoContrato(){
+    if(!objetivoExplorador) return;
+    setGenerandoManual('contrato');
+    try{
+      const link = await crearLinkCompartidoSoporte(driveIdExplorador, objetivoExplorador.id);
+      setForm(f => ({ ...f, LinkContrato: link }));
+      notify(`"${objetivoExplorador.name}" vinculado como Link Contrato. Revisa el enlace y da "Guardar cambios" para dejarlo.`, 'success');
+      handleCerrarExplorador();
+    }catch(err){ console.error(err); notify("No se pudo generar el enlace: " + err.message, 'error'); }
+    setGenerandoManual('');
   }
 
   useEffect(() => {
@@ -764,6 +864,52 @@ export default function ProcesoDrawer({ proceso, clientes, colaboradores, factur
                   );
                 })}
               </div>
+              {sec.title === "Enlaces y observaciones" && canWrite && (
+                <div style={{marginTop:14}}>
+                  {!explorando ? (
+                    <IconTextButton icon="search" variant="secondary" onClick={handleAbrirExplorador}>
+                      Buscar manualmente en la carpeta de la Entidad
+                    </IconTextButton>
+                  ) : (
+                    <div style={{border:'1px solid var(--gris-linea)', borderRadius:10, padding:14, background:'#fff'}}>
+                      <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:10}}>
+                        <strong style={{fontSize:13}}>Explorar carpeta de la Entidad "{form.Entidad || "—"}"</strong>
+                        <button type="button" className="clear-filters-link" onClick={handleCerrarExplorador}>Cerrar</button>
+                      </div>
+                      <p style={{margin:'0 0 12px', color:'var(--texto-suave)', fontSize:12.5}}>
+                        Entra a la carpeta correcta y elige el archivo o carpeta — no hace falta que coincida ningún número, la eliges vos.
+                      </p>
+                      {nivelesExplorador.map((nivel, i) => {
+                        const previo = i > 0 ? nivelesExplorador[i-1].items.find(it => it.id === nivelesExplorador[i-1].seleccionadoId) : null;
+                        return (
+                          <div className="field" style={{marginBottom:10}} key={i}>
+                            <label>{previo ? `Dentro de "${previo.name}"` : 'Carpetas y archivos'}</label>
+                            <select value={nivel.seleccionadoId} onChange={e => handleElegirEnExplorador(i, e.target.value)}>
+                              <option value="">— Selecciona —</option>
+                              {nivel.items.map(it => (
+                                <option key={it.id} value={it.id}>{it.folder ? '📁 ' : '📄 '}{it.name}</option>
+                              ))}
+                            </select>
+                          </div>
+                        );
+                      })}
+                      {cargandoExplorador && <p className="save-hint">Cargando…</p>}
+                      {objetivoExplorador && (
+                        <div style={{display:'flex', gap:10, flexWrap:'wrap', marginTop:6}}>
+                          {objetivoExplorador.folder && (
+                            <IconTextButton icon="open" variant="primary" onClick={handleUsarComoCarpeta} disabled={!!generandoManual}>
+                              {generandoManual==='carpeta' ? "Vinculando…" : `Usar "${objetivoExplorador.name}" como Carpeta del proceso`}
+                            </IconTextButton>
+                          )}
+                          <IconTextButton icon="open" variant="secondary" onClick={handleUsarComoContrato} disabled={!!generandoManual}>
+                            {generandoManual==='contrato' ? "Vinculando…" : `Usar "${objetivoExplorador.name}" como Contrato`}
+                          </IconTextButton>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           ))}
           {activeTab === 'trazabilidad' && (

@@ -871,6 +871,17 @@ export async function crearLinkCompartidoSoporte(driveId, itemId){
   });
   return res.link.webUrl;
 }
+// Enlace de EDICIÓN, solo para cuentas de la organización (nadie de afuera
+// puede editar) — usado para "Link Carpeta" cuando se elige a mano una
+// carpeta en el explorador manual (ver ProcesoDrawer.jsx), mismo criterio
+// que ya usa generarLinksCarpetaProceso para la búsqueda automática.
+export async function crearLinkEdicionOrganizacion(driveId, itemId){
+  const res = await graphFetch(`/drives/${driveId}/items/${itemId}/createLink`, {
+    method: "POST",
+    body: JSON.stringify({ type: "edit", scope: "organization" }),
+  });
+  return res.link.webUrl;
+}
 
 // Los Soporte Factura/Pago que ya se habían asociado ANTES de este cambio
 // quedaron guardados con un enlace de scope "organization" (exige cuenta de
@@ -946,7 +957,7 @@ export function numerosCortosDelProceso(proceso){
 // ("NuevosProcesosMD - Documentos" en la UI de SharePoint) — cacheado, no
 // cambia en la sesión.
 let driveIdPrincipalCache = null;
-async function resolverDriveIdPrincipal(config){
+export async function resolverDriveIdPrincipal(config){
   if(driveIdPrincipalCache) return driveIdPrincipalCache;
   const siteId = await fetchSiteId(config);
   const drive = await graphFetch(`/sites/${siteId}/drive?$select=id`);
@@ -966,12 +977,49 @@ async function listarSubcarpetas(driveId, rutaRelativa){
     throw err;
   }
 }
+// Igual que listarSubcarpetas pero trae TAMBIÉN archivos — usado por el
+// explorador manual (ver "Buscar manualmente" en ProcesoDrawer.jsx): a
+// diferencia de la búsqueda automática (que solo le interesan carpetas de
+// proceso por número corto), acá la persona puede terminar eligiendo un
+// archivo suelto (ej. el contrato) igual que en la carpeta de un proceso.
+export async function listarContenidoRuta(driveId, rutaRelativa){
+  try{
+    const res = await graphFetch(`/drives/${driveId}/root:/${encodeURIComponent(rutaRelativa)}:/children?$select=id,name,file,folder&$top=200`);
+    return res.value || [];
+  }catch(err){
+    if(/^Graph 404/.test(err.message||"")) return [];
+    throw err;
+  }
+}
+
+// Resuelve solo la RUTA de carpetas de la Entidad de un proceso (sin listar
+// nada todavía) — misma regla que usa buscarCarpetaDelProceso: si la
+// Entidad está en la tabla RUTAS_CARPETAS_ENTIDAD usa esa ruta fija, si no
+// prueba "Procesos/{Entidad}". Se separó en su propia función para
+// reutilizarla también en el explorador manual (que no hace ninguna
+// búsqueda por número corto, solo necesita saber POR DÓNDE empezar a
+// mostrar carpetas). Devuelve null si el proceso no tiene Entidad.
+export function rutaEntidadDeProceso(rutasEntidad, proceso){
+  const entidadTexto = String(proceso?.Entidad||'').trim();
+  if(!entidadTexto) return null;
+  const entidadNorm = normalize(entidadTexto);
+  const entradaRuta = Object.entries(rutasEntidad||{}).find(([k]) => normalize(k) === entidadNorm);
+  return entradaRuta ? entradaRuta[1].ruta : `Procesos/${entidadTexto}`;
+}
+
+// Distintos guiones "parecidos" que pueden colarse en el Radicado o en el
+// nombre de la carpeta (guion medio Unicode, guion largo, signo menos) en
+// vez del guion normal del teclado — normaliza los dos lados de la
+// comparación para no fallar por una diferencia invisible a simple vista.
+function normalizarGuion(s){
+  return String(s||'').replace(/[‐-―−]/g, '-');
+}
 
 // Cuenta cuántos de `numerosCortos` aparecen como token exacto en el nombre
 // de una carpeta (el nombre trae uno o más números cortos separados por
 // espacio, ej. "2011-00576 2017-00298 2020-00171").
 function coincidenciasEnNombre(nombreCarpeta, numerosCortos){
-  const tokens = String(nombreCarpeta||'').split(/\s+/).filter(Boolean);
+  const tokens = normalizarGuion(nombreCarpeta).split(/\s+/).filter(Boolean);
   return numerosCortos.filter(n => tokens.includes(n)).length;
 }
 
@@ -983,7 +1031,7 @@ function coincidenciasEnNombre(nombreCarpeta, numerosCortos){
 // proceso. Se valida el formato antes de usarlo como criterio "fuerte" de
 // coincidencia (si el campo no está en ese formato, se ignora).
 function radicadoCortoPropio(proceso){
-  const v = String(proceso?.Radicado||'').trim();
+  const v = normalizarGuion(String(proceso?.Radicado||'').trim());
   return /^\d{4}-\d{2,6}$/.test(v) ? v : null;
 }
 
@@ -1008,27 +1056,33 @@ function radicadoCortoPropio(proceso){
 // número de ESTE proceso en su nombre. Exigir "mínimo 2 coincidencias"
 // siempre que el Histórico trajera 2+ números (regla anterior) descartaba
 // la carpeta correcta por no traer también el número del caso relacionado.
-// Ahora se prueba PRIMERO el Radicado propio del proceso (ver
-// radicadoCortoPropio arriba) — si una sola carpeta lo trae en el nombre,
-// esa es la respuesta, sin exigir ninguna coincidencia adicional. Solo si
-// el Radicado no sirve (vacío/formato raro, o no aparece en ninguna
-// carpeta) se cae al criterio anterior por números del Histórico (mínimo 2
-// si hay 2+, para no adivinar con un solo número suelto y ambiguo). Devuelve:
+// Se prueba PRIMERO el Radicado propio del proceso (ver radicadoCortoPropio
+// arriba) — si una sola carpeta lo trae en el nombre, esa es la respuesta.
+// Solo si el Radicado no sirve (vacío/formato raro, o no aparece en ninguna
+// carpeta) se cae al criterio por números del Histórico — 2026-09-08: ya NO
+// exige mínimo 2 coincidencias (casos reales Famisanar 2019-00856 / SOS
+// 2019-00559 seguían fallando con esa regla: la carpeta real solo trae UNO
+// de los números del Histórico), basta con 1 sola coincidencia; si 2+
+// carpetas distintas empatan en el máximo, se avisa 'ambiguo' en vez de
+// adivinar. Devuelve:
 //  - {status:'sin-ruta'}: el proceso no tiene Entidad (campo vacío) — no hay
 //    ni siquiera un nombre de carpeta genérico que probar.
 //  - {status:'sin-numero'}: el proceso no tiene ningún número corto que buscar
 //    (Radicado/No. completo/Histórico vacíos, o ningún número de 21+ dígitos).
-//  - {status:'sin-coincidencia'}: no se encontró ninguna carpeta con
-//    suficientes coincidencias (o la carpeta de esa Entidad no existe).
+//  - {status:'sin-coincidencia', ruta, buscados, encontradas}: no se
+//    encontró ninguna carpeta que coincida — trae la ruta probada, los
+//    números buscados y los nombres de carpeta que SÍ hay ahí, para
+//    diagnosticar sin adivinar (¿ruta equivocada? ¿Radicado mal escrito?
+//    ¿la carpeta de verdad no existe?).
 //  - {status:'ambiguo', candidatas:[...]}: 2 o más carpetas empatadas en el
 //    máximo de coincidencias — no se puede elegir sola, hay que decidir a mano.
 //  - {status:'ok', driveId, itemId, nombre}: única mejor coincidencia.
 export async function buscarCarpetaDelProceso(config, rutasEntidad, proceso){
-  const entidadTexto = String(proceso?.Entidad||'').trim();
-  if(!entidadTexto) return { status:'sin-ruta' };
-  const entidadNorm = normalize(entidadTexto);
+  const ruta = rutaEntidadDeProceso(rutasEntidad, proceso);
+  if(!ruta) return { status:'sin-ruta' };
+  const entidadNorm = normalize(String(proceso?.Entidad||'').trim());
   const entradaRuta = Object.entries(rutasEntidad||{}).find(([k]) => normalize(k) === entidadNorm);
-  const { ruta, profundidad } = entradaRuta ? entradaRuta[1] : { ruta: `Procesos/${entidadTexto}`, profundidad: 1 };
+  const profundidad = entradaRuta ? entradaRuta[1].profundidad : 1;
 
   const radicadoPropio = radicadoCortoPropio(proceso);
   const numerosCortos = numerosCortosDelProceso(proceso);
@@ -1063,10 +1117,26 @@ export async function buscarCarpetaDelProceso(config, rutasEntidad, proceso){
   }
 
   if(!numerosCortos.length) return { status:'sin-numero' };
-  const minimo = Math.min(2, numerosCortos.length);
+  // Caso real reportado 2026-09-08 (Famisanar 2019-00856, SOS 2019-00559):
+  // el Radicado propio no encontró nada (por el motivo que sea — no se
+  // pudo confirmar cuál sin ver el dato real en SharePoint) y la regla
+  // vieja de "mínimo 2 coincidencias del Histórico" seguía descartando la
+  // carpeta correcta, que solo trae UNO de los números del Histórico. Ya
+  // no se exige mínimo 2 — una sola coincidencia basta para ser candidata;
+  // si 2+ carpetas distintas empatan en el máximo, sigue devolviendo
+  // 'ambiguo' en vez de adivinar cuál es.
   const candidatas = await candidatasConCoincidencias(numerosCortos);
-  const conCoincidencia = candidatas.filter(f => f.coincidencias >= minimo);
-  if(!conCoincidencia.length) return { status:'sin-coincidencia' };
+  const conCoincidencia = candidatas.filter(f => f.coincidencias > 0);
+  if(!conCoincidencia.length){
+    // Diagnóstico para el mensaje de error — qué se buscó y qué SÍ hay en
+    // esa carpeta de Entidad, para no tener que adivinar a ciegas si el
+    // problema es la ruta, el formato del Radicado, o que la carpeta no existe.
+    return {
+      status:'sin-coincidencia', ruta,
+      buscados: Array.from(new Set([radicadoPropio, ...numerosCortos].filter(Boolean))),
+      encontradas: candidatas.map(f => f.name),
+    };
+  }
   const maxCoincidencias = Math.max(...conCoincidencia.map(f => f.coincidencias));
   const mejores = conCoincidencia.filter(f => f.coincidencias === maxCoincidencias);
   if(mejores.length > 1) return { status:'ambiguo', candidatas: mejores.map(f => f.name) };

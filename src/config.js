@@ -98,7 +98,7 @@ export const RUTAS_CARPETAS_ENTIDAD = {
 export const SITIOS_EXPLORADOR = [
   { key: "principal", nombre: "NuevosProcesosMD (sitio principal)", sitePath: null }, // null = config.SP_SITE_PATH
   { key: "tutelas", nombre: "TutelasMDABOGADOS", sitePathKey: "SP_SITE_PATH_TUTELAS" },
-  { key: "raiz", nombre: "Administración (sitio raíz del tenant)", useRootSite: true },
+  { key: "raiz", nombre: "Administración Lexara (sitio raíz del tenant)", useRootSite: true },
   { key: "personalMonica", nombre: "Personal Mónica", sitePath: "/sites/PersonalMonica" },
 ];
 
