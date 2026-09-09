@@ -232,15 +232,16 @@ export async function generarPlantillaLiquidacion(){
   const ws = wb.addWorksheet("Plantilla");
   encabezarHojaLocal(ws, [
     { header: "No.", key: "no", width: 8 },
-    { header: "Referencia (opcional)", key: "referencia", width: 24 },
     { header: "Valor Deuda", key: "valorDeuda", width: 16 },
     { header: "Fecha Vencimiento (AAAA-MM-DD)", key: "fechaVencimiento", width: 26 },
     { header: "Fecha Cálculo (AAAA-MM-DD)", key: "fechaCalculo", width: 24 },
-    { header: "¿Liquidar IPC? (Sí/No)", key: "liquidarIpc", width: 20 },
   ]);
   // Fila de ejemplo, en un color distinto, para que quede claro el formato
   // esperado — se descarta sola al procesar (no es una fila de datos real).
-  const ejemplo = ws.addRow({ no: "Ej.", referencia: "Cliente ejemplo S.A.S.", valorDeuda: 14000000, fechaVencimiento: "2021-01-01", fechaCalculo: "2026-09-09", liquidarIpc: "Sí" });
+  // "¿Liquidar IPC?" ya NO es una columna de la plantilla — pedido explícito
+  // del usuario 2026-09-11: es un solo check arriba en pantalla (igual que
+  // el Modo 1) que aplica a TODAS las filas del lote de una vez.
+  const ejemplo = ws.addRow({ no: "Ej.", valorDeuda: 14000000, fechaVencimiento: "2021-01-01", fechaCalculo: "2026-09-09" });
   ejemplo.eachCell(cell => { cell.font = { name: 'Calibri', size: 10, italic: true, color: { argb: 'FF7A7A7A' } }; });
   for(let i = 1; i <= 40; i++) ws.addRow({ no: i });
   const buffer = await wb.xlsx.writeBuffer();
@@ -273,16 +274,13 @@ export async function leerPlantillaLiquidacion(file){
     const row = ws.getRow(r);
     const no = valorCelda(row.getCell(1).value);
     if(String(no).trim() === "Ej.") continue; // fila de ejemplo de la plantilla
-    const referencia = valorCelda(row.getCell(2).value);
-    const valorDeuda = valorCelda(row.getCell(3).value);
-    const fechaVencimiento = valorCelda(row.getCell(4).value);
-    const fechaCalculo = valorCelda(row.getCell(5).value);
-    const liquidarIpc = valorCelda(row.getCell(6).value);
+    const valorDeuda = valorCelda(row.getCell(2).value);
+    const fechaVencimiento = valorCelda(row.getCell(3).value);
+    const fechaCalculo = valorCelda(row.getCell(4).value);
     if(!valorDeuda && !fechaVencimiento && !fechaCalculo) continue; // fila vacía
     filas.push({
-      fila: r, no, referencia,
+      fila: r, no,
       valorDeuda, fechaVencimiento: String(fechaVencimiento).slice(0, 10), fechaCalculo: String(fechaCalculo).slice(0, 10),
-      incluirIPC: /^s/i.test(String(liquidarIpc).trim()),
     });
   }
   return filas;
@@ -290,11 +288,12 @@ export async function leerPlantillaLiquidacion(file){
 
 // Liquida cada fila leída de la plantilla (mismo núcleo `liquidar()` que el
 // Modo 1) — las filas con error (fecha inválida, falta tasa/IPC) quedan con
-// su propio mensaje en vez de tumbar el lote completo.
-export function liquidarFilas(filas, tasasInteres, ipcMensual){
+// su propio mensaje en vez de tumbar el lote completo. `incluirIPC` es un
+// solo valor para TODO el lote (el check de arriba en pantalla), no por fila.
+export function liquidarFilas(filas, tasasInteres, ipcMensual, incluirIPC){
   return filas.map(f => {
     try{
-      const r = liquidar({ valorDeuda: f.valorDeuda, fechaVencimiento: f.fechaVencimiento, fechaCalculo: f.fechaCalculo, incluirIPC: f.incluirIPC, tasasInteres, ipcMensual });
+      const r = liquidar({ valorDeuda: f.valorDeuda, fechaVencimiento: f.fechaVencimiento, fechaCalculo: f.fechaCalculo, incluirIPC, tasasInteres, ipcMensual });
       return { ...f, resultado: r, error: null };
     }catch(err){
       return { ...f, resultado: null, error: err.message || String(err) };
@@ -302,44 +301,41 @@ export function liquidarFilas(filas, tasasInteres, ipcMensual){
   });
 }
 
-export async function generarExcelLiquidado(filasLiquidadas){
+// `incluirIPC`: si el lote completo se liquidó con IPC, la columna
+// "Incremento IPC" aparece en el Excel de salida; si no, ni se incluye
+// (pedido explícito del usuario 2026-09-11 — "depende si se dio el check").
+export async function generarExcelLiquidado(filasLiquidadas, incluirIPC){
   const { default: ExcelJS } = await import('exceljs');
   const wb = new ExcelJS.Workbook();
   const ws = wb.addWorksheet("Liquidación");
   encabezarHojaLocal(ws, [
     { header: "No.", key: "no", width: 8 },
-    { header: "Referencia", key: "referencia", width: 24 },
     { header: "Valor Deuda", key: "valorDeuda", width: 16 },
     { header: "Fecha Vencimiento", key: "fechaVencimiento", width: 16 },
     { header: "Fecha Cálculo", key: "fechaCalculo", width: 16 },
     { header: "Días en Mora", key: "diasMora", width: 12 },
-    { header: "¿Liquidó IPC?", key: "incluyeIpc", width: 12 },
     { header: "Interés Moratorio", key: "interesMoratorio", width: 18 },
-    { header: "Incremento IPC", key: "incrementoIpc", width: 16 },
-    { header: "Aplicó", key: "aplico", width: 14 },
+    ...(incluirIPC ? [{ header: "Incremento IPC", key: "incrementoIpc", width: 16 }] : []),
     { header: "Total a Pagar", key: "totalAPagar", width: 18 },
     { header: "Observación", key: "observacion", width: 40 },
   ]);
   filasLiquidadas.forEach(f => {
     if(f.error){
-      ws.addRow({ no: f.no, referencia: f.referencia, valorDeuda: parseMonto(f.valorDeuda), fechaVencimiento: f.fechaVencimiento, fechaCalculo: f.fechaCalculo, observacion: "ERROR: " + f.error });
+      ws.addRow({ no: f.no, valorDeuda: parseMonto(f.valorDeuda), fechaVencimiento: f.fechaVencimiento, fechaCalculo: f.fechaCalculo, observacion: "ERROR: " + f.error });
       return;
     }
     const r = f.resultado;
     ws.addRow({
-      no: f.no, referencia: f.referencia, valorDeuda: r.valorDeuda,
+      no: f.no, valorDeuda: r.valorDeuda,
       fechaVencimiento: r.fechaVencimiento, fechaCalculo: r.fechaCalculo, diasMora: r.diasMora,
-      incluyeIpc: r.incluirIPC ? "Sí" : "No",
       interesMoratorio: r.interesMoratorio,
-      incrementoIpc: r.incrementoIPC != null ? r.incrementoIPC : "",
-      aplico: r.incluirIPC ? (r.aplicaIPC ? "IPC" : "Interés moratorio") : "Interés moratorio",
+      ...(incluirIPC ? { incrementoIpc: r.incrementoIPC != null ? r.incrementoIPC : "" } : {}),
       totalAPagar: r.totalAPagar,
       observacion: avisosLiquidacion(r).filter(a => a.tipo !== 'ok').map(a => a.texto).join(' — '),
     });
   });
-  ["valorDeuda", "interesMoratorio", "incrementoIpc", "totalAPagar"].forEach(key => {
-    ws.getColumn(key).numFmt = '#,##0.00';
-  });
+  const columnasMonto = ["valorDeuda", "interesMoratorio", "totalAPagar", ...(incluirIPC ? ["incrementoIpc"] : [])];
+  columnasMonto.forEach(key => { ws.getColumn(key).numFmt = '#,##0.00'; });
   const buffer = await wb.xlsx.writeBuffer();
   const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
   const url = URL.createObjectURL(blob);

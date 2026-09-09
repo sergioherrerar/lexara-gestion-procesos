@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { mensajeError, fmtMonto, parseMonto } from '../lib/graph';
 import { liquidar, generarPlantillaLiquidacion, leerPlantillaLiquidacion, liquidarFilas, generarExcelLiquidado, ultimaActualizacionTasas, ultimaActualizacionIPC, avisosLiquidacion, MESES_NOMBRES } from '../lib/liquidacionIntereses';
 import { generarLiquidacionInteresesPDF } from '../lib/liquidacionInteresesPDF';
@@ -17,6 +17,20 @@ const MODOS = [
   { key: 'tablaTasas', label: 'Tabla Tasas de Interés' },
   { key: 'tablaIpc', label: 'Tabla IPC' },
 ];
+
+// Explicación de la fórmula — pedido explícito del usuario 2026-09-11,
+// igual en Modo 1 y Modo 2 (comparten el mismo cálculo, ver
+// lib/liquidacionIntereses.js).
+function ExplicacionFormula(){
+  return (
+    <div style={{background:'var(--gris-claro)', borderRadius:8, padding:'12px 16px', marginBottom:16, fontSize:12.5, color:'var(--texto-suave)', lineHeight:1.6}}>
+      <strong style={{color:'var(--verde-oscuro)'}}>¿Cómo se calcula?</strong>
+      <div style={{marginTop:5}}><strong>Interés moratorio:</strong> se recorre la tabla de Tasas de Interés tramo por tramo — Valor de la deuda × Tasa anual del tramo × Días del tramo ÷ 366 — y se suman todos los tramos que toca el periodo de mora.</div>
+      <div style={{marginTop:5}}><strong>Indexación por IPC:</strong> Valor de la deuda × (IPC del mes de la Fecha de Cálculo ÷ IPC del mes de la Fecha de Vencimiento) − Valor de la deuda.</div>
+      <div style={{marginTop:5}}><strong>Total a pagar:</strong> Valor de la deuda + el <em>mayor</em> entre el interés moratorio y el incremento por IPC (nunca los dos sumados).</div>
+    </div>
+  );
+}
 
 function ModoUnaLinea({ notify, tasasInteres, ipcMensual }){
   const [valorDeuda, setValorDeuda] = useState('');
@@ -50,6 +64,7 @@ function ModoUnaLinea({ notify, tasasInteres, ipcMensual }){
 
   return (
     <div>
+      <ExplicacionFormula />
       <form onSubmit={handleLiquidar} className="panel-body" style={{display:'flex', gap:14, flexWrap:'wrap', alignItems:'flex-end', padding:0, marginBottom:18}}>
         <div className="field" style={{minWidth:180}}>
           <label>Valor deuda (COP)</label>
@@ -123,9 +138,15 @@ function ModoUnaLinea({ notify, tasasInteres, ipcMensual }){
 function ModoVariasLineas({ notify, tasasInteres, ipcMensual }){
   const [descargandoPlantilla, setDescargandoPlantilla] = useState(false);
   const [archivo, setArchivo] = useState(null);
-  const [filas, setFilas] = useState(null);
+  const [filasLeidas, setFilasLeidas] = useState(null);
   const [leyendo, setLeyendo] = useState(false);
   const [generandoExcel, setGenerandoExcel] = useState(false);
+  // Un solo check para TODO el lote (igual que el Modo 1) — pedido explícito
+  // del usuario 2026-09-11: ya no es una columna por fila en la plantilla.
+  // Si se cambia después de subir el archivo, se vuelve a liquidar solo
+  // (useMemo), sin tener que subir el Excel otra vez.
+  const [incluirIPC, setIncluirIPC] = useState(true);
+  const filas = useMemo(() => filasLeidas ? liquidarFilas(filasLeidas, tasasInteres, ipcMensual, incluirIPC) : null, [filasLeidas, tasasInteres, ipcMensual, incluirIPC]);
 
   async function handleDescargarPlantilla(){
     setDescargandoPlantilla(true);
@@ -137,13 +158,13 @@ function ModoVariasLineas({ notify, tasasInteres, ipcMensual }){
   async function handleArchivo(e){
     const file = e.target.files?.[0];
     if(!file) return;
-    setArchivo(file); setFilas(null); setLeyendo(true);
+    setArchivo(file); setFilasLeidas(null); setLeyendo(true);
     try{
       const leidas = await leerPlantillaLiquidacion(file);
       if(!leidas.length){
         notify?.("El archivo no tiene ninguna fila con datos.", 'error');
       } else {
-        setFilas(liquidarFilas(leidas, tasasInteres, ipcMensual));
+        setFilasLeidas(leidas);
       }
     }catch(err){
       console.error(err);
@@ -155,7 +176,7 @@ function ModoVariasLineas({ notify, tasasInteres, ipcMensual }){
   async function handleDescargarResultado(){
     if(!filas) return;
     setGenerandoExcel(true);
-    try{ await generarExcelLiquidado(filas); }
+    try{ await generarExcelLiquidado(filas, incluirIPC); }
     catch(err){ console.error(err); notify?.("No se pudo generar el Excel: " + mensajeError(err), 'error'); }
     finally{ setGenerandoExcel(false); }
   }
@@ -165,8 +186,13 @@ function ModoVariasLineas({ notify, tasasInteres, ipcMensual }){
   return (
     <div>
       <p style={{margin:'0 0 16px', color:'var(--texto-suave)', fontSize:13}}>
-        Descarga la plantilla, llénala con una fila por deuda (Valor, Fecha Vencimiento, Fecha Cálculo y si esa fila liquida IPC o no) y súbela — Portal Lexara la devuelve ya liquidada en un Excel nuevo.
+        Descarga la plantilla, llénala con una fila por deuda (Valor, Fecha Vencimiento, Fecha Cálculo) y súbela — Portal Lexara la devuelve ya liquidada en un Excel nuevo.
       </p>
+      <ExplicacionFormula />
+      <label className="checkbox-field" style={{marginBottom:14}}>
+        <input type="checkbox" checked={incluirIPC} onChange={e => setIncluirIPC(e.target.checked)} />
+        ¿Liquidar también IPC? (aplica a todas las filas)
+      </label>
       <div style={{display:'flex', gap:10, flexWrap:'wrap', marginBottom:18, alignItems:'center'}}>
         <IconTextButton icon="excel" variant="secondary" onClick={handleDescargarPlantilla} disabled={descargandoPlantilla}>
           {descargandoPlantilla ? "Generando…" : "Descargar plantilla"}
