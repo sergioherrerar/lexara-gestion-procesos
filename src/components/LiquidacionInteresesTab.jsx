@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { mensajeError, fmtMonto, parseMonto } from '../lib/graph';
-import { liquidar, generarPlantillaLiquidacion, leerPlantillaLiquidacion, liquidarFilas, generarExcelLiquidado, ultimaActualizacionTasas, ultimaActualizacionIPC, MESES_NOMBRES } from '../lib/liquidacionIntereses';
+import { liquidar, generarPlantillaLiquidacion, leerPlantillaLiquidacion, liquidarFilas, generarExcelLiquidado, ultimaActualizacionTasas, ultimaActualizacionIPC, avisosLiquidacion, MESES_NOMBRES } from '../lib/liquidacionIntereses';
 import { generarLiquidacionInteresesPDF } from '../lib/liquidacionInteresesPDF';
 import IconButton, { IconTextButton } from './IconButton';
 
@@ -82,18 +82,11 @@ function ModoUnaLinea({ notify, tasasInteres, ipcMensual }){
               )}
               <span className="badge badge-verde" style={{fontWeight:700}}>Total a pagar: ${fmtMonto(resultado.totalAPagar)}</span>
             </div>
-            {resultado.incluirIPC && (
-              <p className="save-hint" style={{marginBottom:12}}>
-                {resultado.ipc.disponible
-                  ? (resultado.aplicaIPC ? "Se aplicó la indexación por IPC (mayor valor que el interés moratorio)." : "Se aplicó el interés moratorio (mayor valor que la indexación por IPC).")
-                  : "No se pudo calcular el IPC — falta el índice de algún mes en la tabla IPC. Se aplicó el interés moratorio."}
+            {avisosLiquidacion(resultado).map((a, i) => (
+              <p key={i} className="save-hint" style={{marginBottom:12, color: a.tipo==='error' ? 'var(--rojo, #b23b3b)' : undefined, fontWeight: a.tipo==='error' ? 600 : undefined}}>
+                {a.tipo==='error' ? 'Atención: ' : ''}{a.texto}
               </p>
-            )}
-            {resultado.diasSinTasa > 0 && (
-              <p className="save-hint" style={{color:'var(--rojo, #b23b3b)', marginBottom:12}}>
-                Atención: no hay tasa de interés cargada para {resultado.diasSinTasa} día(s) del periodo — revisa la tabla TasasInteres.
-              </p>
-            )}
+            ))}
 
             <div className="table-wrap" style={{marginBottom:14}}>
               <table className="table-compact">

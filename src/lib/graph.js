@@ -192,6 +192,15 @@ export function mensajeError(err){
   if(err?.errorCode === 'consent_required' || /consent_required/i.test(msg)){
     return "Falta aprobar un permiso nuevo en Azure AD para poder hacer esto — avísale al administrador.";
   }
+  // Bug real 2026-09-11: este chequeo atrapaba TAMBIÉN el error del navegador
+  // al no poder cargar un chunk de JS ("Failed to fetch dynamically imported
+  // module..." — pasa cuando se publica una versión nueva y la pestaña ya
+  // abierta sigue apuntando a un archivo viejo que ya no existe) — y decía
+  // "no hay conexión a internet" aunque sí hubiera. Se revisa este caso
+  // ANTES (es más específico) para dar el mensaje correcto.
+  if(/Failed to fetch dynamically imported module|error loading dynamically imported module|importing a module script failed/i.test(msg)){
+    return "La aplicación se actualizó hace poco y esta pestaña se quedó con una versión vieja — recarga la página completa (Ctrl+F5) e intenta de nuevo.";
+  }
   if(/Failed to fetch|NetworkError|network error/i.test(msg)){
     return "No hay conexión a internet — revisa tu red e intenta de nuevo.";
   }

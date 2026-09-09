@@ -5,6 +5,7 @@
 // Valor Intereses"). No lleva firma — es una hoja de cálculo interna, no una
 // carta dirigida a un tercero.
 import { fmtMonto } from './graph';
+import { avisosLiquidacion } from './liquidacionIntereses';
 import {
   prepararDocumentoPDF, dibujarResumenBox, fechaCorta,
   MARGEN, CONTENIDO_Y_MAXIMO, VERDE_OSCURO, GRIS_SUAVE, TEXTO, GRIS_ZEBRA, BORDE_SUAVE, VERDE_CLARO,
@@ -38,19 +39,18 @@ export async function generarLiquidacionInteresesPDF(resultado, opts = {}){
   itemsResultado.push({ label: 'Total a pagar', value: `$${fmtMonto(resultado.totalAPagar)}` });
   y = dibujarResumenBox(doc, MARGEN, y, pageWidth - MARGEN * 2, itemsResultado) + 8;
 
-  if(resultado.incluirIPC){
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(...VERDE_OSCURO);
-    const aplico = resultado.ipc.disponible
-      ? (resultado.aplicaIPC ? 'Se aplicó la indexación por IPC (mayor valor que el interés moratorio).' : 'Se aplicó el interés moratorio (mayor valor que la indexación por IPC).')
-      : 'No se pudo calcular el IPC (falta el índice de algún mes en la tabla IPC) — se aplicó el interés moratorio.';
-    doc.text(aplico, MARGEN, y);
-    y += 8;
-  }
-  if(resultado.diasSinTasa > 0){
-    doc.setFont('helvetica', 'italic'); doc.setFontSize(8.5); doc.setTextColor(...GRIS_SUAVE);
-    doc.text(`Atención: no hay tasa de interés cargada para ${resultado.diasSinTasa} día(s) del periodo — el total puede estar incompleto.`, MARGEN, y);
-    y += 7;
-  }
+  // Mismos avisos EXACTOS que ve el usuario en pantalla (Modo 1) — una sola
+  // función compartida (avisosLiquidacion) para que nunca digan algo distinto.
+  avisosLiquidacion(resultado).forEach(aviso => {
+    doc.setFont('helvetica', aviso.tipo === 'error' ? 'bold' : 'italic');
+    doc.setFontSize(aviso.tipo === 'error' ? 9.5 : 8.5);
+    doc.setTextColor(...(aviso.tipo === 'error' ? [178, 59, 59] : (aviso.tipo === 'ok' ? VERDE_OSCURO : GRIS_SUAVE)));
+    const texto = aviso.tipo === 'error' ? `Atención: ${aviso.texto}` : aviso.texto;
+    const lineas = doc.splitTextToSize(texto, pageWidth - MARGEN * 2);
+    doc.text(lineas, MARGEN, y);
+    y += lineas.length * 5 + 3;
+  });
+  y += 4;
 
   doc.setFont('helvetica', 'bold'); doc.setFontSize(10.5); doc.setTextColor(...VERDE_OSCURO);
   doc.text('Desglose del interés moratorio por año', MARGEN, y); y += 4;

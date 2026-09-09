@@ -67,6 +67,31 @@ export function segmentosInteres(fechaVencimiento, fechaCalculo, tasasInteres){
   return segmentos;
 }
 
+// Nombra EXACTAMENTE qué mes(es) del periodo no tienen ningún tramo de tasa
+// que los cubra — pedido explícito del usuario 2026-09-11: "en la parte de
+// intereses... colocar mensaje error que el mes que se está calculando no
+// hay tasa actualizada" (a diferencia del IPC, acá NO se debe usar un mes
+// anterior como reemplazo — el interés de un día se cobra con LA tasa
+// vigente ese día, no con la de otro mes). Revisa el punto medio de cada
+// mes calendario dentro del periodo contra los tramos reales.
+function mesesSinTasa(fechaVencimiento, fechaCalculo, tasasInteres){
+  const tramos = tramosOrdenados(tasasInteres);
+  const meses = [];
+  let cursor = new Date(fechaVencimiento.getFullYear(), fechaVencimiento.getMonth(), 1);
+  while(cursor < fechaCalculo){
+    const siguienteMes = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1);
+    const inicioMes = cursor > fechaVencimiento ? cursor : fechaVencimiento;
+    const finMes = siguienteMes < fechaCalculo ? siguienteMes : fechaCalculo;
+    if(finMes > inicioMes){
+      const medioMs = inicioMes.getTime() + (finMes.getTime() - inicioMes.getTime()) / 2;
+      const cubierto = tramos.some(t => medioMs > t.desde.getTime() && medioMs <= t.hasta.getTime());
+      if(!cubierto) meses.push({ anio: cursor.getFullYear(), mes: cursor.getMonth() + 1 });
+    }
+    cursor = siguienteMes;
+  }
+  return meses;
+}
+
 export function calcularInteresMoratorio(valorDeuda, fechaVencimiento, fechaCalculo, tasasInteres){
   const segmentos = segmentosInteres(fechaVencimiento, fechaCalculo, tasasInteres);
   let total = 0, diasSinTasa = 0;
@@ -82,7 +107,8 @@ export function calcularInteresMoratorio(valorDeuda, fechaVencimiento, fechaCalc
   const desglosePorAnio = Array.from(porAnio.entries())
     .sort((a, b) => a[0] - b[0])
     .map(([anio, v]) => ({ anio, dias: v.dias, valor: v.valor }));
-  return { total, desglosePorAnio, diasSinTasa };
+  const mesesFaltantes = diasSinTasa > 0 ? mesesSinTasa(fechaVencimiento, fechaCalculo, tasasInteres) : [];
+  return { total, desglosePorAnio, diasSinTasa, mesesSinTasa: mesesFaltantes };
 }
 
 function ipcDeMes(ipcMensual, anio, mes){
@@ -90,14 +116,29 @@ function ipcDeMes(ipcMensual, anio, mes){
   return item ? Number(item.Indice) : null;
 }
 
+// DANE siempre publica el IPC de un mes ya bien entrado el mes siguiente —
+// pedido explícito del usuario 2026-09-11: si el mes exacto todavía no está
+// cargado (típico cuando la Fecha de Cálculo es muy reciente, ej. el mes en
+// curso), se usa el IPC del mes ANTERIOR como aproximación, dejando
+// registrado que se usó un mes distinto al pedido para poder avisarlo.
+function ipcDeMesConFallback(ipcMensual, anio, mes){
+  const directo = ipcDeMes(ipcMensual, anio, mes);
+  if(directo != null) return { valor: directo, anio, mes, fallback: false };
+  let anioAnterior = anio, mesAnterior = mes - 1;
+  if(mesAnterior < 1){ mesAnterior = 12; anioAnterior -= 1; }
+  const anterior = ipcDeMes(ipcMensual, anioAnterior, mesAnterior);
+  if(anterior != null) return { valor: anterior, anio: anioAnterior, mes: mesAnterior, fallback: true, anioPedido: anio, mesPedido: mes };
+  return { valor: null, anio, mes, fallback: false };
+}
+
 export function calcularIndexacionIPC(valorDeuda, fechaVencimiento, fechaCalculo, ipcMensual){
-  const ipcInicial = ipcDeMes(ipcMensual, fechaVencimiento.getFullYear(), fechaVencimiento.getMonth() + 1);
-  const ipcFinal = ipcDeMes(ipcMensual, fechaCalculo.getFullYear(), fechaCalculo.getMonth() + 1);
-  if(ipcInicial == null || ipcFinal == null){
-    return { disponible: false, ipcInicial, ipcFinal, valorActualizado: null, incremento: null };
+  const inicial = ipcDeMesConFallback(ipcMensual, fechaVencimiento.getFullYear(), fechaVencimiento.getMonth() + 1);
+  const final = ipcDeMesConFallback(ipcMensual, fechaCalculo.getFullYear(), fechaCalculo.getMonth() + 1);
+  if(inicial.valor == null || final.valor == null){
+    return { disponible: false, ipcInicial: inicial.valor, ipcFinal: final.valor, valorActualizado: null, incremento: null, inicial, final };
   }
-  const valorActualizado = valorDeuda * (ipcFinal / ipcInicial);
-  return { disponible: true, ipcInicial, ipcFinal, valorActualizado, incremento: valorActualizado - valorDeuda };
+  const valorActualizado = valorDeuda * (final.valor / inicial.valor);
+  return { disponible: true, ipcInicial: inicial.valor, ipcFinal: final.valor, valorActualizado, incremento: valorActualizado - valorDeuda, inicial, final };
 }
 
 // Núcleo único de la liquidación — lo usan el Modo 1 (una línea, con salida
@@ -110,20 +151,44 @@ export function liquidar({ valorDeuda, fechaVencimiento, fechaCalculo, incluirIP
   if(hasta <= desde) throw new Error("La fecha de cálculo debe ser posterior a la fecha de vencimiento.");
   const valor = parseMonto(valorDeuda);
   const diasMora = Math.round((hasta - desde) / 86400000);
-  const { total: interesMoratorio, desglosePorAnio, diasSinTasa } = calcularInteresMoratorio(valor, desde, hasta, tasasInteres);
+  const { total: interesMoratorio, desglosePorAnio, diasSinTasa, mesesSinTasa } = calcularInteresMoratorio(valor, desde, hasta, tasasInteres);
   const ipc = incluirIPC ? calcularIndexacionIPC(valor, desde, hasta, ipcMensual) : null;
   const incrementoIPC = ipc && ipc.disponible ? ipc.incremento : null;
   const aplicaIPC = incrementoIPC != null && incrementoIPC > interesMoratorio;
   const mayorValor = aplicaIPC ? incrementoIPC : interesMoratorio;
   return {
     valorDeuda: valor, fechaVencimiento: fechaAISO(desde), fechaCalculo: fechaAISO(hasta),
-    diasMora, interesMoratorio, desglosePorAnio, diasSinTasa,
+    diasMora, interesMoratorio, desglosePorAnio, diasSinTasa, mesesSinTasa,
     incluirIPC: !!incluirIPC, ipc, incrementoIPC, aplicaIPC,
     totalAPagar: valor + mayorValor,
   };
 }
 
 export const MESES_NOMBRES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+export function nombreMes(anio, mes){ return `${MESES_NOMBRES[mes - 1] || mes} ${anio}`; }
+
+// Arma los avisos legibles de "faltó dato" — usados igual en pantalla (Modo 1)
+// y en el PDF, para que digan exactamente lo mismo en los 2 lados.
+export function avisosLiquidacion(resultado){
+  const avisos = [];
+  if(resultado.mesesSinTasa?.length){
+    avisos.push({ tipo: 'error', texto: `No hay tasa de interés actualizada para ${resultado.mesesSinTasa.map(m => nombreMes(m.anio, m.mes)).join(', ')} — actualiza la tabla TasasInteres.` });
+  }
+  if(resultado.incluirIPC){
+    if(!resultado.ipc.disponible){
+      avisos.push({ tipo: 'info', texto: "No se pudo calcular el IPC — falta el índice de algún mes en la tabla IPC (ni siquiera el del mes anterior). Se aplicó el interés moratorio." });
+    } else {
+      const notasFallback = [resultado.ipc.inicial, resultado.ipc.final]
+        .filter(p => p?.fallback)
+        .map(p => `se usó el de ${nombreMes(p.anio, p.mes)} en vez del de ${nombreMes(p.anioPedido, p.mesPedido)} (todavía no estaba publicado)`);
+      if(notasFallback.length){
+        avisos.push({ tipo: 'info', texto: `IPC: ${notasFallback.join('; ')}.` });
+      }
+      avisos.push({ tipo: 'ok', texto: resultado.aplicaIPC ? "Se aplicó la indexación por IPC (mayor valor que el interés moratorio)." : "Se aplicó el interés moratorio (mayor valor que la indexación por IPC)." });
+    }
+  }
+  return avisos;
+}
 
 // Para el seguimiento visual de "hasta cuándo están actualizadas las
 // tablas" (pedido explícito del usuario 2026-09-09) — no calcula nada, solo
@@ -269,7 +334,7 @@ export async function generarExcelLiquidado(filasLiquidadas){
       incrementoIpc: r.incrementoIPC != null ? r.incrementoIPC : "",
       aplico: r.incluirIPC ? (r.aplicaIPC ? "IPC" : "Interés moratorio") : "Interés moratorio",
       totalAPagar: r.totalAPagar,
-      observacion: r.diasSinTasa > 0 ? `Sin tasa cargada para ${r.diasSinTasa} día(s) del periodo — revisar tabla TasasInteres.` : (r.incluirIPC && !r.ipc.disponible ? "No hay IPC cargado para el mes de vencimiento o de cálculo." : ""),
+      observacion: avisosLiquidacion(r).filter(a => a.tipo !== 'ok').map(a => a.texto).join(' — '),
     });
   });
   ["valorDeuda", "interesMoratorio", "incrementoIpc", "totalAPagar"].forEach(key => {
