@@ -66,12 +66,18 @@ export const INITIAL_CONFIG = {
 // no se inventa una).
 //
 // profundidad:1 = las carpetas de proceso están directamente adentro de la
-// carpeta de la Entidad (Sos, Famisanar, Jrci, Gtm, Colpatria — confirmado
-// por el usuario con una captura real de "Procesos/Sos").
-// profundidad:2 = hay un nivel de carpeta de Cliente en medio, confirmado
-// solo para "Grupo Colmedica" (Colmédica/Umd/Aliansalud) — el usuario
-// aclaró que ahí "dentro de la Entidad están los Clientes, y ya dentro del
-// Cliente están las carpetas de proceso".
+// ruta de arriba (Sos, Famisanar, Jrci, Gtm, Colpatria — confirmado por el
+// usuario con una captura real de "Procesos/Sos").
+// Bug real corregido 2026-09-10: Grupo Colmédica (Colmédica/Aliansalud/Umd)
+// tenía profundidad:2 con una ruta que YA apunta directo a la sub-carpeta
+// de Cliente (ej. "Procesos/Grupo Colmedica/Aliansalud") — profundidad:2
+// hacía que bajara UN nivel de más buscando una carpeta de Cliente que ya
+// no existe ahí (las carpetas de proceso están directas adentro), así que
+// nunca encontraba nada. Confirmado con captura real: "Procesos/Grupo
+// Colmedica" trae las 3 carpetas de Cliente (Aliansalud/Colmédica/Umd), y
+// DENTRO de cada una ya están las carpetas de proceso por número corto —
+// o sea, la carpeta de Cliente ya está incluida en la ruta de abajo, así
+// que de ahí para abajo es profundidad:1 igual que las demás Entidades.
 export const RUTAS_CARPETAS_ENTIDAD = {
   SOS: { ruta: "Procesos/Sos", profundidad: 1 },
   FAMISANAR: { ruta: "Procesos/Famisanar", profundidad: 1 },
@@ -82,9 +88,9 @@ export const RUTAS_CARPETAS_ENTIDAD = {
   // "Colmédica" (ver ENTIDAD_UNIFICADA en InformesView.jsx) — Aliansalud y
   // Umd, si son valores reales distintos de Entidad, comparten la misma
   // carpeta raíz "Grupo Colmedica" pero cada uno su propia sub-carpeta.
-  "GRUPO COLMEDICA": { ruta: "Procesos/Grupo Colmedica/Colmédica", profundidad: 2 },
-  ALIANSALUD: { ruta: "Procesos/Grupo Colmedica/Aliansalud", profundidad: 2 },
-  UMD: { ruta: "Procesos/Grupo Colmedica/Umd", profundidad: 2 },
+  "GRUPO COLMEDICA": { ruta: "Procesos/Grupo Colmedica/Colmédica", profundidad: 1 },
+  ALIANSALUD: { ruta: "Procesos/Grupo Colmedica/Aliansalud", profundidad: 1 },
+  UMD: { ruta: "Procesos/Grupo Colmedica/Umd", profundidad: 1 },
 };
 
 // =========================================================================
