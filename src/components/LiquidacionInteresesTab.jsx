@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { mensajeError, fmtMonto } from '../lib/graph';
+import { mensajeError, fmtMonto, parseMonto } from '../lib/graph';
 import { liquidar, generarPlantillaLiquidacion, leerPlantillaLiquidacion, liquidarFilas, generarExcelLiquidado, ultimaActualizacionTasas, ultimaActualizacionIPC, MESES_NOMBRES } from '../lib/liquidacionIntereses';
 import { generarLiquidacionInteresesPDF } from '../lib/liquidacionInteresesPDF';
 import IconButton, { IconTextButton } from './IconButton';
@@ -52,8 +52,8 @@ function ModoUnaLinea({ notify, tasasInteres, ipcMensual }){
     <div>
       <form onSubmit={handleLiquidar} className="panel-body" style={{display:'flex', gap:14, flexWrap:'wrap', alignItems:'flex-end', padding:0, marginBottom:18}}>
         <div className="field" style={{minWidth:180}}>
-          <label>Valor deuda</label>
-          <input type="text" inputMode="decimal" value={valorDeuda} onChange={e => setValorDeuda(e.target.value)} placeholder="Ej: 14.000.000" required />
+          <label>Valor deuda (COP)</label>
+          <input type="text" inputMode="decimal" className="input-money" value={valorDeuda} onChange={e => setValorDeuda(e.target.value)} onBlur={e => { if(e.target.value) setValorDeuda(fmtMonto(parseMonto(e.target.value))); }} placeholder="Ej: 14.000.000" required />
         </div>
         <div className="field" style={{minWidth:170}}>
           <label>Fecha vencimiento</label>
@@ -205,6 +205,10 @@ function ModoVariasLineas({ notify, tasasInteres, ipcMensual }){
 // simple de formulario + tabla con Editar/Eliminar por fila que ya usa
 // "Registros de horas extras" (InformesView.jsx).
 const TASA_VACIA = { FechaDesde: "", FechaHasta: "", TasaAnualPct: "" };
+// Las columnas Fecha de SharePoint vuelven con fecha Y hora ("2026-07-31T07:00:00Z"),
+// no solo "2026-07-31" — hay que recortarlas antes de mostrarlas o de meterlas
+// en un <input type="date"> (que solo acepta "aaaa-mm-dd", si no queda en blanco).
+function soloFechaISO(v){ return String(v || "").slice(0, 10); }
 
 function TablaTasasInteres({ tasasInteres, notify, onCrear, onEditar, onEliminar }){
   const [nuevo, setNuevo] = useState(TASA_VACIA);
@@ -227,7 +231,7 @@ function TablaTasasInteres({ tasasInteres, notify, onCrear, onEditar, onEliminar
   }
   function empezarEdicion(t){
     setEditandoId(t.id);
-    setEditDraft({ FechaDesde: t.FechaDesde, FechaHasta: t.FechaHasta, TasaAnualPct: (Number(t.TasaAnual) * 100).toFixed(4).replace(/\.?0+$/, '') });
+    setEditDraft({ FechaDesde: soloFechaISO(t.FechaDesde), FechaHasta: soloFechaISO(t.FechaHasta), TasaAnualPct: (Number(t.TasaAnual) * 100).toFixed(4).replace(/\.?0+$/, '') });
   }
   async function handleGuardarEdicion(id){
     if(!editDraft.FechaDesde || !editDraft.FechaHasta || editDraft.TasaAnualPct === ""){
@@ -277,8 +281,8 @@ function TablaTasasInteres({ tasasInteres, notify, onCrear, onEditar, onEliminar
                 </tr>
               ) : (
                 <tr key={t.id}>
-                  <td>{t.FechaDesde}</td>
-                  <td>{t.FechaHasta}</td>
+                  <td>{soloFechaISO(t.FechaDesde)}</td>
+                  <td>{soloFechaISO(t.FechaHasta)}</td>
                   <td style={{textAlign:'right'}}>{(Number(t.TasaAnual) * 100).toFixed(2)}%</td>
                   <td style={{display:'flex', gap:6}}>
                     <IconButton icon="edit" variant="edit" label="Editar" onClick={() => empezarEdicion(t)} />
