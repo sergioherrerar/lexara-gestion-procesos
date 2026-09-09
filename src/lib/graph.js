@@ -992,17 +992,35 @@ export async function listarContenidoRuta(driveId, rutaRelativa){
   }
 }
 
+// "GRUPO COLMEDICA" es un solo valor de Entidad que en realidad cubre 3
+// compañías/carpetas distintas (Aliansalud/Colmédica/Umd) — el campo
+// Entidad NO alcanza para elegir cuál, hay que fijarse en el Cliente real
+// del proceso. Bug real reportado 2026-09-10: proceso 2017-00455
+// (Cliente "ALIANSALUD ENTIDAD PROMOTORA DE SALUD S.A.", Entidad "GRUPO
+// COLMEDICA") nunca se encontraba porque siempre buscaba en la subcarpeta
+// de Colmédica, sin importar cuál fuera el Cliente real. Por defecto (si
+// el Cliente no menciona ninguna de las 3) sigue cayendo en Colmédica,
+// igual que antes.
+function rutaGrupoColmedicaPorCliente(rutasEntidad, proceso){
+  const clienteNorm = normalize(proceso?.Cliente||'');
+  if(clienteNorm.includes(normalize('Aliansalud'))) return rutasEntidad.ALIANSALUD?.ruta;
+  if(clienteNorm.includes(normalize('Umd')) || clienteNorm.includes(normalize('Unidad Medica'))) return rutasEntidad.UMD?.ruta;
+  return rutasEntidad['GRUPO COLMEDICA']?.ruta;
+}
+
 // Resuelve solo la RUTA de carpetas de la Entidad de un proceso (sin listar
 // nada todavía) — misma regla que usa buscarCarpetaDelProceso: si la
-// Entidad está en la tabla RUTAS_CARPETAS_ENTIDAD usa esa ruta fija, si no
-// prueba "Procesos/{Entidad}". Se separó en su propia función para
-// reutilizarla también en el explorador manual (que no hace ninguna
-// búsqueda por número corto, solo necesita saber POR DÓNDE empezar a
-// mostrar carpetas). Devuelve null si el proceso no tiene Entidad.
+// Entidad está en la tabla RUTAS_CARPETAS_ENTIDAD usa esa ruta fija (con el
+// caso especial de Grupo Colmédica de arriba), si no prueba
+// "Procesos/{Entidad}". Se separó en su propia función para reutilizarla
+// también en el explorador manual (que no hace ninguna búsqueda por número
+// corto, solo necesita saber POR DÓNDE empezar a mostrar carpetas).
+// Devuelve null si el proceso no tiene Entidad.
 export function rutaEntidadDeProceso(rutasEntidad, proceso){
   const entidadTexto = String(proceso?.Entidad||'').trim();
   if(!entidadTexto) return null;
   const entidadNorm = normalize(entidadTexto);
+  if(entidadNorm === normalize('GRUPO COLMEDICA')) return rutaGrupoColmedicaPorCliente(rutasEntidad, proceso);
   const entradaRuta = Object.entries(rutasEntidad||{}).find(([k]) => normalize(k) === entidadNorm);
   return entradaRuta ? entradaRuta[1].ruta : `Procesos/${entidadTexto}`;
 }
