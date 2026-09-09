@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-10
+- **Nuevo botón "Buscar último Word" en Procesos judiciales** — busca dentro de la carpeta de "Link a la carpeta" (ya vinculada) el archivo Word modificado/creado más reciente y lo abre directo en una pestaña nueva. Los íconos de Acciones pasaron a 2 filas de 3 (ya no cabían cómodos en una sola).
+
 ## 2026-09-09
 - **Resuelto (2do arreglo el mismo día): Grupo Colmédica seguía sin encontrar carpeta para Aliansalud/Umd** — el campo "Entidad" de estos procesos es SIEMPRE "GRUPO COLMEDICA" (no distingue Aliansalud/Colmédica/Umd), así que la búsqueda siempre revisaba la subcarpeta de Colmédica sin importar cuál fuera el Cliente real (caso real: proceso 2017-00455, Cliente "ALIANSALUD ENTIDAD PROMOTORA DE SALUD S.A.", nunca se encontraba). Ahora, cuando la Entidad es "GRUPO COLMEDICA", se fija en el nombre del Cliente para elegir la subcarpeta correcta (Aliansalud/Umd/Colmédica por defecto).
 - **Resuelto: "Buscar y vincular carpeta" nunca encontraba nada para Grupo Colmédica (Aliansalud/Colmédica/Umd)** — la ruta de esas 3 Entidades ya apuntaba directo a la carpeta del Cliente (ej. "Procesos/Grupo Colmedica/Aliansalud"), pero seguía configurada para bajar UN nivel de más buscando una carpeta de Cliente que ya no está ahí — las carpetas de proceso están directas adentro. Confirmado con captura real (las 3 carpetas de Cliente, y dentro de cada una ya las carpetas por número corto).

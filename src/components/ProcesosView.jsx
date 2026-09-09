@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ICON_SVG } from '../config';
-import { stripHtml, estadoBadgeClass } from '../lib/graph';
+import { stripHtml, estadoBadgeClass, ultimoWordEnCarpeta } from '../lib/graph';
 import IconButton, { IconTextButton } from './IconButton';
 import ColumnHeaderMenu from './ColumnHeaderMenu';
 import { useColumnFilters } from '../hooks/useColumnFilters';
@@ -36,6 +36,7 @@ export default function ProcesosView({ procesos, currentFilter, setFilter, searc
   const [generandoPDF, setGenerandoPDF] = useState(null); // id del proceso mientras genera su ficha en PDF
   const [generandoWord, setGenerandoWord] = useState(null); // id del proceso mientras genera el Impulso Procesal en Word
   const [generandoCorreo, setGenerandoCorreo] = useState(null); // id del proceso mientras crea el borrador de correo
+  const [buscandoWord, setBuscandoWord] = useState(null); // id del proceso mientras busca el último Word de su carpeta
   // Botón masivo "Vincular links de carpeta/cliente/contrato" — mismo
   // estilo que "Unificar Entidad a GRUPO COLMEDICA" en Informes (banner
   // .field-warning + botón a la derecha), pedido explícito del usuario
@@ -83,6 +84,20 @@ export default function ProcesosView({ procesos, currentFilter, setFilter, searc
       abrirCorreoImpulsoProcesal(proceso);
     }catch(err){ console.error(err); notify?.("No se pudo abrir el correo del Impulso Procesal: " + err.message, 'error'); }
     finally { setGenerandoCorreo(null); }
+  }
+  // "Buscar último Word" — pedido explícito del usuario 2026-09-10: busca
+  // en la carpeta de "Link Carpeta" (ya vinculada) el archivo Word
+  // modificado/creado más reciente y lo abre directo — sin tener que entrar
+  // a la carpeta a buscarlo a mano.
+  async function handleBuscarUltimoWord(proceso){
+    if(!proceso.LinkCarpeta){ notify?.("Este proceso todavía no tiene Link a la carpeta.", 'error'); return; }
+    setBuscandoWord(proceso.id);
+    try{
+      const doc = await ultimoWordEnCarpeta(proceso.LinkCarpeta);
+      if(doc) window.open(doc.webUrl, '_blank');
+      else notify?.("No se encontró ningún archivo Word en esa carpeta.", 'error');
+    }catch(err){ console.error(err); notify?.("No se pudo buscar el último Word: " + err.message, 'error'); }
+    finally { setBuscandoWord(null); }
   }
   const entidades = Array.from(new Set(procesos.map(p => stripHtml(p.Entidad) || "Sin entidad"))).sort((a,b)=>a.localeCompare(b));
   const filterChips = [{key:'todos', label:'Todos'}, ...entidades.map(e => ({key:e, label:e}))];
@@ -167,12 +182,16 @@ export default function ProcesosView({ procesos, currentFilter, setFilter, searc
                 <td><span className="obs-truncate">{stripHtml(p.Observaciones) || "—"}</span></td>
                 <td>{p.LinkCarpeta ? <IconButton icon="open" variant="open" label="Abrir carpeta" href={p.LinkCarpeta} onClick={e => e.stopPropagation()} /> : "—"}</td>
                 <td style={{whiteSpace:'nowrap'}}>
-                  <div className="row-actions">
+                  {/* En 2 filas de 3 (grid, no flex) — pedido explícito del
+                      usuario 2026-09-10 al sumar el 6to ícono ("Buscar
+                      último Word"), ya no cabían cómodos en una sola fila. */}
+                  <div className="row-actions" style={{display:'grid', gridTemplateColumns:'repeat(3, auto)', gap:6}}>
                     <IconButton icon="view" variant="view" label="Ver proceso (solo consulta)" onClick={e => { e.stopPropagation(); onOpenProceso(p.id, {viewOnly:true}); }} />
                     {canWrite && <IconButton icon="edit" variant="edit" label="Editar proceso" onClick={e => { e.stopPropagation(); onOpenProceso(p.id, {viewOnly:false}); }} />}
                     <IconButton icon="pdf" variant="pdf" label="Descargar ficha en PDF" spinning={generandoPDF===p.id} onClick={e => { e.stopPropagation(); handleGenerarFicha(p); }} />
                     <IconButton icon="word" variant="word" label="Descargar Impulso Procesal en Word" spinning={generandoWord===p.id} onClick={e => { e.stopPropagation(); handleGenerarImpulsoWord(p); }} />
                     <IconButton icon="mail" variant="mail" label="Crear borrador de correo — Impulso Procesal al Despacho" spinning={generandoCorreo===p.id} onClick={e => { e.stopPropagation(); handleAbrirCorreoImpulso(p); }} />
+                    <IconButton icon="search" variant="word" label="Buscar y abrir el último Word de la carpeta del proceso" spinning={buscandoWord===p.id} onClick={e => { e.stopPropagation(); handleBuscarUltimoWord(p); }} />
                   </div>
                 </td>
               </tr>

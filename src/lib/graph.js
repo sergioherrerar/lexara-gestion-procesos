@@ -1190,6 +1190,26 @@ export async function listarHijos(driveId, itemId){
   return res.value || [];
 }
 
+// "Buscar último Word" en Procesos judiciales — pedido explícito del
+// usuario 2026-09-10: busca DENTRO de la carpeta de "Link Carpeta" (mismo
+// enlace ya guardado, resuelto de vuelta a su driveId/itemId real igual que
+// resolverCarpetaSiigo/resolverCarpetaGastosSoportes) el archivo Word
+// (.doc/.docx) modificado o creado MÁS RECIENTE, y devuelve su enlace para
+// abrirlo directo. Solo mira el primer nivel de esa carpeta (no entra a
+// subcarpetas) — si no hay ningún Word ahí, devuelve null.
+export async function ultimoWordEnCarpeta(linkCarpeta){
+  const url = String(linkCarpeta||'').trim();
+  if(!url) return null;
+  const id = codificarUrlCompartida(url);
+  const item = await graphFetch(`/shares/${id}/driveItem?$select=id,parentReference`);
+  const driveId = item.parentReference.driveId;
+  const res = await graphFetch(`/drives/${driveId}/items/${item.id}/children?$select=id,name,file,webUrl,lastModifiedDateTime&$top=200`);
+  const wordDocs = (res.value||[]).filter(it => it.file && /\.docx?$/i.test(it.name||''));
+  if(!wordDocs.length) return null;
+  wordDocs.sort((a,b) => new Date(b.lastModifiedDateTime) - new Date(a.lastModifiedDateTime));
+  return wordDocs[0];
+}
+
 // =========================================================================
 // "Crear link para compartir" (Informes) — explorador genérico de
 // SharePoint. Ver SITIOS_EXPLORADOR en config.js.
