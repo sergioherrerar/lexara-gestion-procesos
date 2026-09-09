@@ -1234,16 +1234,38 @@ export async function listarHijos(driveId, itemId){
 // enlace ya guardado, resuelto de vuelta a su driveId/itemId real igual que
 // resolverCarpetaSiigo/resolverCarpetaGastosSoportes) el archivo Word
 // (.doc/.docx) modificado o creado MÁS RECIENTE, y devuelve su enlace para
-// abrirlo directo. Solo mira el primer nivel de esa carpeta (no entra a
-// subcarpetas) — si no hay ningún Word ahí, devuelve null.
+// abrirlo directo.
+// Corregido 2026-09-11 (bug real reportado): antes solo miraba el primer
+// nivel de la carpeta del proceso, pero los Word reales suelen estar
+// adentro de una subcarpeta (ej. ".../2025-01001/Escritos/...") — ahora
+// entra recursivamente a TODAS las subcarpetas, sin importar cuán adentro
+// estén, y compara la fecha de TODOS los Word encontrados en cualquier
+// nivel. Tope de seguridad de 500 archivos/carpetas revisados, contra una
+// carpeta de proceso descontrolada con miles de items.
+// Nota sobre "modificado o creado": lastModifiedDateTime YA cubre los dos
+// casos — un archivo recién creado nace con lastModifiedDateTime igual a
+// su creación, y cualquier edición posterior lo actualiza; no hace falta
+// comparar aparte contra createdDateTime.
+const TOPE_ITEMS_BUSQUEDA_WORD = 500;
 export async function ultimoWordEnCarpeta(linkCarpeta){
   const url = String(linkCarpeta||'').trim();
   if(!url) return null;
   const id = codificarUrlCompartida(url);
   const item = await graphFetch(`/shares/${id}/driveItem?$select=id,parentReference`);
   const driveId = item.parentReference.driveId;
-  const res = await graphFetch(`/drives/${driveId}/items/${item.id}/children?$select=id,name,file,webUrl,lastModifiedDateTime&$top=200`);
-  const wordDocs = (res.value||[]).filter(it => it.file && /\.docx?$/i.test(it.name||''));
+  const wordDocs = [];
+  let itemsRevisados = 0;
+  async function recorrer(itemId){
+    if(itemsRevisados >= TOPE_ITEMS_BUSQUEDA_WORD) return;
+    const res = await graphFetch(`/drives/${driveId}/items/${itemId}/children?$select=id,name,file,folder,webUrl,lastModifiedDateTime&$top=200`);
+    for(const it of res.value||[]){
+      if(itemsRevisados >= TOPE_ITEMS_BUSQUEDA_WORD) return;
+      itemsRevisados++;
+      if(it.folder) await recorrer(it.id);
+      else if(it.file && /\.docx?$/i.test(it.name||'')) wordDocs.push(it);
+    }
+  }
+  await recorrer(item.id);
   if(!wordDocs.length) return null;
   wordDocs.sort((a,b) => new Date(b.lastModifiedDateTime) - new Date(a.lastModifiedDateTime));
   return wordDocs[0];
