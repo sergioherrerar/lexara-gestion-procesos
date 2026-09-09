@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { mensajeError } from '../lib/graph';
 import { cargarWorkbook, nombresDeHojas, leerHoja, compararArchivos, generarExcelCruce } from '../lib/cruceArchivos';
 import { IconTextButton } from './IconButton';
 
@@ -24,7 +25,7 @@ function Slot({ indice, slot, onChange, onQuitar, puedeQuitar, notify }){
     }catch(err){
       console.error(err);
       onChange({ ...SLOT_VACIO, leyendo:false });
-      notify?.("No se pudo leer el archivo: " + err.message, 'error');
+      notify?.("No se pudo leer el archivo: " + mensajeError(err), 'error');
     }
     e.target.value = "";
   }
@@ -36,7 +37,7 @@ function Slot({ indice, slot, onChange, onQuitar, puedeQuitar, notify }){
     }catch(err){
       console.error(err);
       onChange({ ...slot, hoja:"", columnas:[], columnaLlave:"", filas:null });
-      notify?.("No se pudo leer la hoja: " + err.message, 'error');
+      notify?.("No se pudo leer la hoja: " + mensajeError(err), 'error');
     }
   }
   return (
@@ -125,7 +126,7 @@ export default function CruceArchivosTab({ notify }){
       await generarExcelCruce(`Cruce de archivos ${hoyISO}`, archivos, resultado);
     }catch(err){
       console.error(err);
-      notify?.("No se pudo generar el Excel del cruce: " + err.message, 'error');
+      notify?.("No se pudo generar el Excel del cruce: " + mensajeError(err), 'error');
     } finally { setGenerandoExcel(false); }
   }
 

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { groupCount, clienteForFactura, clienteForOrdenCompra } from '../lib/graph';
+import { groupCount, clienteForFactura, clienteForOrdenCompra, mensajeError } from '../lib/graph';
 import { generarInformeFacturasExcel, generarInformeOrdenesCompraExcel } from '../lib/informeFacturacion';
 import BarChart from './BarChart';
 import IconButton from './IconButton';
@@ -24,13 +24,13 @@ export default function FacturacionEntidadTab({ facturas, ordenesCompra, cliente
   async function handleGenerarExcelFacturas(){
     setGenerandoFacturas(true);
     try{ await generarInformeFacturasExcel(facturas, clientes); }
-    catch(err){ console.error(err); notify?.("No se pudo generar el Excel de Facturación: " + err.message, 'error'); }
+    catch(err){ console.error(err); notify?.("No se pudo generar el Excel de Facturación: " + mensajeError(err), 'error'); }
     finally { setGenerandoFacturas(false); }
   }
   async function handleGenerarExcelOrdenes(){
     setGenerandoOrdenes(true);
     try{ await generarInformeOrdenesCompraExcel(ordenesCompra, clientes, facturas); }
-    catch(err){ console.error(err); notify?.("No se pudo generar el Excel de Órdenes de compra: " + err.message, 'error'); }
+    catch(err){ console.error(err); notify?.("No se pudo generar el Excel de Órdenes de compra: " + mensajeError(err), 'error'); }
     finally { setGenerandoOrdenes(false); }
   }
 

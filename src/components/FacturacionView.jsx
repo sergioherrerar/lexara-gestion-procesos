@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ICON_SVG } from '../config';
-import { clienteForFactura, procesoForFactura, facturaNumero, computeFacturaTotals, fmtMonto, fmtDate, fechaFromPartes, estadoFacturaBadgeClass, compareFacturaNumero, abrirFacturaSiigo } from '../lib/graph';
+import { clienteForFactura, procesoForFactura, facturaNumero, computeFacturaTotals, fmtMonto, fmtDate, fechaFromPartes, estadoFacturaBadgeClass, compareFacturaNumero, abrirFacturaSiigo, mensajeError } from '../lib/graph';
 import IconButton, { IconTextButton } from './IconButton';
 import ColumnHeaderMenu from './ColumnHeaderMenu';
 import { useColumnFilters } from '../hooks/useColumnFilters';
@@ -21,7 +21,7 @@ export default function FacturacionView({ facturas, clientes, procesos, searchQu
       await abrirFacturaSiigo(f, config.SIIGO_SHARE_URL);
     }catch(err){
       console.error(err);
-      notify(err.message, 'error');
+      notify(mensajeError(err), 'error');
     }
     setBuscandoSiigo(null);
   }

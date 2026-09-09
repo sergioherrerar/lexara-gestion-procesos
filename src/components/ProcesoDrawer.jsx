@@ -7,7 +7,7 @@ import {
   tiposAccionDistinct, tiposProcesoParaAccion, despachosParaAccion, abrirFacturaSiigo,
   generarLinksCarpetaProceso, generarLinkContratoProceso,
   rutaEntidadDeProceso, resolverDriveIdPrincipal, listarContenidoRuta, listarHijos,
-  crearLinkCompartidoSoporte, crearLinkEdicionOrganizacion,
+  crearLinkCompartidoSoporte, crearLinkEdicionOrganizacion, mensajeError,
 } from '../lib/graph';
 import IconButton, { IconTextButton } from './IconButton';
 import { FieldCard, RichTextEditor } from './FormFields';
@@ -280,7 +280,7 @@ export default function ProcesoDrawer({ proceso, clientes, colaboradores, factur
   async function handleBuscarSiigo(f){
     setBuscandoSiigo(f.id);
     try{ await abrirFacturaSiigo(f, config.SIIGO_SHARE_URL); }
-    catch(err){ console.error(err); notify(err.message, 'error'); }
+    catch(err){ console.error(err); notify(mensajeError(err), 'error'); }
     setBuscandoSiigo(null);
   }
 
@@ -300,7 +300,7 @@ export default function ProcesoDrawer({ proceso, clientes, colaboradores, factur
       } else {
         notify(mensajeEstadoBusqueda(r, form.Entidad), 'error');
       }
-    }catch(err){ console.error(err); notify("No se pudo buscar la carpeta: " + err.message, 'error'); }
+    }catch(err){ console.error(err); notify("No se pudo buscar la carpeta: " + mensajeError(err), 'error'); }
     setBuscandoCarpeta(false);
   }
 
@@ -318,7 +318,7 @@ export default function ProcesoDrawer({ proceso, clientes, colaboradores, factur
       } else {
         notify(mensajeEstadoBusqueda(r, form.Entidad) || 'No se encontró ningún "Contrato"/"Propuesta" en la carpeta del proceso.', 'error');
       }
-    }catch(err){ console.error(err); notify("No se pudo buscar el contrato: " + err.message, 'error'); }
+    }catch(err){ console.error(err); notify("No se pudo buscar el contrato: " + mensajeError(err), 'error'); }
     setBuscandoContrato(false);
   }
 
@@ -338,7 +338,7 @@ export default function ProcesoDrawer({ proceso, clientes, colaboradores, factur
       const items = await listarContenidoRuta(driveId, ruta);
       setNivelesExplorador([{ items, seleccionadoId: '' }]);
       if(!items.length) notify(`La carpeta "${ruta}" está vacía o todavía no existe.`, 'error');
-    }catch(err){ console.error(err); notify("No se pudo abrir la carpeta de la Entidad: " + err.message, 'error'); }
+    }catch(err){ console.error(err); notify("No se pudo abrir la carpeta de la Entidad: " + mensajeError(err), 'error'); }
     setCargandoExplorador(false);
   }
   function handleCerrarExplorador(){ setExplorando(false); setNivelesExplorador([]); }
@@ -354,7 +354,7 @@ export default function ProcesoDrawer({ proceso, clientes, colaboradores, factur
       try{
         const hijos = await listarHijos(driveIdExplorador, item.id);
         setNivelesExplorador([...nuevosNiveles, { items: hijos, seleccionadoId: '' }]);
-      }catch(err){ console.error(err); notify("No se pudo abrir esa carpeta: " + err.message, 'error'); }
+      }catch(err){ console.error(err); notify("No se pudo abrir esa carpeta: " + mensajeError(err), 'error'); }
       setCargandoExplorador(false);
     } else {
       setNivelesExplorador(nuevosNiveles);
@@ -382,7 +382,7 @@ export default function ProcesoDrawer({ proceso, clientes, colaboradores, factur
       setForm(f => ({ ...f, LinkCarpeta: linkCarpeta, LinkCliente: linkCliente }));
       notify(`"${objetivoExplorador.name}" vinculada como carpeta del proceso. Revisa los enlaces y da "Guardar cambios" para dejarlos.`, 'success');
       handleCerrarExplorador();
-    }catch(err){ console.error(err); notify("No se pudo generar el enlace: " + err.message, 'error'); }
+    }catch(err){ console.error(err); notify("No se pudo generar el enlace: " + mensajeError(err), 'error'); }
     setGenerandoManual('');
   }
   // "Usar como Contrato" — sirve tanto para un archivo (lo normal) como
@@ -395,7 +395,7 @@ export default function ProcesoDrawer({ proceso, clientes, colaboradores, factur
       setForm(f => ({ ...f, LinkContrato: link }));
       notify(`"${objetivoExplorador.name}" vinculado como Link Contrato. Revisa el enlace y da "Guardar cambios" para dejarlo.`, 'success');
       handleCerrarExplorador();
-    }catch(err){ console.error(err); notify("No se pudo generar el enlace: " + err.message, 'error'); }
+    }catch(err){ console.error(err); notify("No se pudo generar el enlace: " + mensajeError(err), 'error'); }
     setGenerandoManual('');
   }
 

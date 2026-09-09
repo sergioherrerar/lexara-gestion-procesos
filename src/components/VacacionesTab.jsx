@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { agruparVacacionesPorColaborador, generarVacacionesExcel, generarPDFVacacionesColaborador } from '../lib/vacaciones';
-import { fmtDate } from '../lib/graph';
+import { fmtDate, mensajeError } from '../lib/graph';
 import { FieldCard } from './FormFields';
 import IconButton, { IconTextButton } from './IconButton';
 
@@ -39,14 +39,14 @@ export default function VacacionesTab({ colaboradores, vacacionesPeriodos, onCre
   async function handleDescargarExcel(){
     setGenerandoExcel(true);
     try{ await generarVacacionesExcel(filas); }
-    catch(err){ console.error(err); notify?.("No se pudo generar el Excel de Vacaciones: " + err.message, 'error'); }
+    catch(err){ console.error(err); notify?.("No se pudo generar el Excel de Vacaciones: " + mensajeError(err), 'error'); }
     finally{ setGenerandoExcel(false); }
   }
 
   async function handleDescargarPDF(fila){
     setGenerandoPDFId(fila.id);
     try{ await generarPDFVacacionesColaborador(fila); }
-    catch(err){ console.error(err); notify?.("No se pudo generar el PDF de " + fila.nombre + ": " + err.message, 'error'); }
+    catch(err){ console.error(err); notify?.("No se pudo generar el PDF de " + fila.nombre + ": " + mensajeError(err), 'error'); }
     finally{ setGenerandoPDFId(null); }
   }
 

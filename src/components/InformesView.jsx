@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   estadoBadgeClass, fmtMonto, stripHtml, parseMonto,
-  esProcesoActivo,
+  esProcesoActivo, mensajeError,
 } from '../lib/graph';
 import IconButton, { IconTextButton } from './IconButton';
 import { generarInformeClienteHTML } from '../lib/exportarInformeCliente';
@@ -108,7 +108,7 @@ export default function InformesView({ procesos, clientes, facturas, desistimien
       await generarInformeClienteHTML(procesos, clienteInforme, config?.DAVIVIENDA_PAGOS_URL);
     } catch(err){
       console.error(err);
-      notify?.("No se pudo generar el informe del cliente: " + err.message, 'error');
+      notify?.("No se pudo generar el informe del cliente: " + mensajeError(err), 'error');
     }
   }
 
@@ -252,7 +252,7 @@ export default function InformesView({ procesos, clientes, facturas, desistimien
   async function handleGenerarAbogadosExcel(){
     setGenerandoAbogadosExcel(true);
     try{ await generarInformeAbogadosTutelasExcel(tutelas, valoresEntidad, anioAbogados, mesAbogados); }
-    catch(err){ console.error(err); notify?.("No se pudo generar el Excel de Tutelas por Abogado: " + err.message, 'error'); }
+    catch(err){ console.error(err); notify?.("No se pudo generar el Excel de Tutelas por Abogado: " + mensajeError(err), 'error'); }
     finally { setGenerandoAbogadosExcel(false); }
   }
 
@@ -299,7 +299,7 @@ export default function InformesView({ procesos, clientes, facturas, desistimien
     if(!formato?.excel) return;
     setGenerando(entidad);
     try{ await formato.excel(entidad, procesos.filter(p => p.Entidad === entidad && esProcesoActivo(p))); }
-    catch(err){ console.error(err); notify?.("No se pudo generar el Excel de " + entidad + ": " + err.message, 'error'); }
+    catch(err){ console.error(err); notify?.("No se pudo generar el Excel de " + entidad + ": " + mensajeError(err), 'error'); }
     finally { setGenerando(null); }
   }
   // "la cantidad de procesos son todos los vigentes de SOS" — la carta en
@@ -313,7 +313,7 @@ export default function InformesView({ procesos, clientes, facturas, desistimien
     try{
       const vigentes = procesos.filter(p => p.Entidad === entidad && esProcesoActivo(p));
       await formato.pdf(entidad, vigentes);
-    } catch(err){ console.error(err); notify?.("No se pudo generar el PDF de " + entidad + ": " + err.message, 'error'); }
+    } catch(err){ console.error(err); notify?.("No se pudo generar el PDF de " + entidad + ": " + mensajeError(err), 'error'); }
     finally {
       setGenerandoPDF(null);
     }
@@ -327,13 +327,13 @@ export default function InformesView({ procesos, clientes, facturas, desistimien
     if(!formato?.desistimientos) return;
     setGenerandoDesistimientos(entidad);
     try{ await formato.desistimientos(desistimientos, procesos.filter(p => p.Entidad === entidad && esProcesoActivo(p))); }
-    catch(err){ console.error(err); notify?.("No se pudo generar los Desistimientos de " + entidad + ": " + err.message, 'error'); }
+    catch(err){ console.error(err); notify?.("No se pudo generar los Desistimientos de " + entidad + ": " + mensajeError(err), 'error'); }
     finally { setGenerandoDesistimientos(null); }
   }
   async function handleGenerarTutelasPDF(){
     setGenerandoTutelasPDF(true);
     try{ await generarInformeTutelasPDF(tutelas, fechaInformeTutelas, fechaVencimientoInforme); }
-    catch(err){ console.error(err); notify?.("No se pudo generar el PDF de Tutelas: " + err.message, 'error'); }
+    catch(err){ console.error(err); notify?.("No se pudo generar el PDF de Tutelas: " + mensajeError(err), 'error'); }
     finally { setGenerandoTutelasPDF(false); }
   }
   async function handleAbrirCorreoTutelas(){
@@ -375,7 +375,7 @@ export default function InformesView({ procesos, clientes, facturas, desistimien
         const copiadoHtml = await abrirCorreoTutelas(tutelas, fechaInformeTutelas, fechaVencimientoInforme);
         if(copiadoHtml) notify?.('No se pudo crear el borrador automático todavía (puede que falte aprobar el permiso nuevo en Azure AD) — se abrió el correo por el método anterior; las tablas ya están copiadas, pégalas con Ctrl+V.', 'info');
       }
-      catch(err){ console.error(err); notify?.("No se pudo abrir el correo de Tutelas: " + err.message, 'error'); }
+      catch(err){ console.error(err); notify?.("No se pudo abrir el correo de Tutelas: " + mensajeError(err), 'error'); }
     } finally {
       setGenerandoCorreoTutelas(false);
     }
@@ -383,7 +383,7 @@ export default function InformesView({ procesos, clientes, facturas, desistimien
   async function handleGenerarTutelasExcel(){
     setGenerandoTutelasExcel(true);
     try{ await generarInformeTutelasExcel(tutelas, valoresEntidad); }
-    catch(err){ console.error(err); notify?.("No se pudo generar el Excel de Tutelas: " + err.message, 'error'); }
+    catch(err){ console.error(err); notify?.("No se pudo generar el Excel de Tutelas: " + mensajeError(err), 'error'); }
     finally { setGenerandoTutelasExcel(false); }
   }
   // "Compartir por WhatsApp" — pedido explícito del usuario 2026-09-04.
@@ -402,7 +402,7 @@ export default function InformesView({ procesos, clientes, facturas, desistimien
   async function handleGenerarExcelGeneral(){
     setGenerandoGeneral(true);
     try{ await generarInformeGeneralProcesosExcel(procesos); }
-    catch(err){ console.error(err); notify?.("No se pudo generar el Excel general de procesos: " + err.message, 'error'); }
+    catch(err){ console.error(err); notify?.("No se pudo generar el Excel general de procesos: " + mensajeError(err), 'error'); }
     finally { setGenerandoGeneral(false); }
   }
 

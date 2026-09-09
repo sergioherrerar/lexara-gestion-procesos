@@ -171,6 +171,45 @@ export async function crearBorradorCorreo({ to, cc, subject, htmlBody, adjuntoNo
   return { ...mensaje, carpetaBorradores, carpetaReal };
 }
 
+// Traduce errores técnicos (de MSAL o de la respuesta cruda de Graph, casi
+// siempre en inglés) a un mensaje en español entendible — pedido explícito
+// del usuario 2026-09-10 ("trata de que todos los errores sean español").
+// Un error ya escrito a mano en español (el 99% de los que lanza esta misma
+// app) pasa tal cual, sin tocarlo — esto solo intercepta los casos técnicos
+// conocidos que se cuelan de MSAL/Graph directamente al usuario.
+export function mensajeError(err){
+  const msg = String(err?.message || err || '').trim();
+  if(!msg) return "Ocurrió un error inesperado.";
+  // MSAL: no hay sesión real de Microsoft — pasa seguido en modo demo, o si
+  // la sesión expiró/nunca se inició. Siempre llega como "no_account_error:
+  // ..." en inglés.
+  if(err?.errorCode === 'no_account_error' || /no_account_error/i.test(msg)){
+    return "No hay una sesión de Microsoft activa — inicia sesión de nuevo con tu cuenta de Microsoft 365.";
+  }
+  if(err?.errorCode === 'interaction_required' || /interaction_required/i.test(msg)){
+    return "Microsoft necesita que vuelvas a iniciar sesión — la sesión actual ya no alcanza para esta acción.";
+  }
+  if(err?.errorCode === 'consent_required' || /consent_required/i.test(msg)){
+    return "Falta aprobar un permiso nuevo en Azure AD para poder hacer esto — avísale al administrador.";
+  }
+  if(/Failed to fetch|NetworkError|network error/i.test(msg)){
+    return "No hay conexión a internet — revisa tu red e intenta de nuevo.";
+  }
+  // graphFetch (ver abajo) arma el error como "Graph 400: {"error":{...}}" —
+  // se saca solo el mensaje real, sin el JSON crudo (a veces recortado, si
+  // la respuesta era larga, así que el parseo puede fallar — ahí se cae al
+  // mensaje genérico de abajo en vez de reventar).
+  const graphMatch = msg.match(/^Graph (\d+): (\{[\s\S]*)$/);
+  if(graphMatch){
+    try{
+      const detalle = JSON.parse(graphMatch[2])?.error?.message;
+      if(detalle) return `Error de SharePoint (${graphMatch[1]}): ${detalle}`;
+    }catch{ /* JSON incompleto/recortado — se cae al genérico */ }
+    return `Error de SharePoint (código ${graphMatch[1]}).`;
+  }
+  return msg;
+}
+
 export async function graphFetch(path, opts){
   const token = await getGraphToken();
   const res = await fetch(path.startsWith('http') ? path : `https://graph.microsoft.com/v1.0${path}`, {

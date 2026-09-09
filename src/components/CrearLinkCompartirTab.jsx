@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { SITIOS_EXPLORADOR } from '../config';
-import { listarDrivesDeSitio, listarHijosRaizDrive, listarHijos, crearLinkCompartidoSoporte } from '../lib/graph';
+import { listarDrivesDeSitio, listarHijosRaizDrive, listarHijos, crearLinkCompartidoSoporte, mensajeError } from '../lib/graph';
 import { IconTextButton } from './IconButton';
 
 // "Crear link para compartir" (Informes) — pedido explícito del usuario
@@ -32,7 +32,7 @@ export default function CrearLinkCompartirTab({ config, notify }){
     try{
       const items = await listarHijosRaizDrive(id);
       setNiveles([{ items, seleccionadoId: '' }]);
-    }catch(err){ console.error(err); notify?.("No se pudo listar la carpeta raíz: " + err.message, 'error'); }
+    }catch(err){ console.error(err); notify?.("No se pudo listar la carpeta raíz: " + mensajeError(err), 'error'); }
     setCargandoNivel(false);
   }
 
@@ -46,7 +46,7 @@ export default function CrearLinkCompartirTab({ config, notify }){
       const lista = await listarDrivesDeSitio(config, sitio);
       setDrives(lista);
       if(lista.length === 1) await handleElegirDrive(lista[0].id);
-    }catch(err){ console.error(err); notify?.("No se pudo listar las bibliotecas de ese sitio: " + err.message, 'error'); }
+    }catch(err){ console.error(err); notify?.("No se pudo listar las bibliotecas de ese sitio: " + mensajeError(err), 'error'); }
     setCargandoDrives(false);
   }
 
@@ -63,7 +63,7 @@ export default function CrearLinkCompartirTab({ config, notify }){
       try{
         const hijos = await listarHijos(driveId, item.id);
         setNiveles([...nuevosNiveles, { items: hijos, seleccionadoId: '' }]);
-      }catch(err){ console.error(err); notify?.("No se pudo listar esa carpeta: " + err.message, 'error'); }
+      }catch(err){ console.error(err); notify?.("No se pudo listar esa carpeta: " + mensajeError(err), 'error'); }
       setCargandoNivel(false);
     } else {
       setNiveles(nuevosNiveles);
@@ -86,7 +86,7 @@ export default function CrearLinkCompartirTab({ config, notify }){
       const url = await crearLinkCompartidoSoporte(driveId, objetivo.id);
       setLinkGenerado(url);
       notify?.('Enlace generado.', 'success');
-    }catch(err){ console.error(err); notify?.("No se pudo generar el enlace: " + err.message, 'error'); }
+    }catch(err){ console.error(err); notify?.("No se pudo generar el enlace: " + mensajeError(err), 'error'); }
     setGenerando(false);
   }
 

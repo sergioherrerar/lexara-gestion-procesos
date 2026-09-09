@@ -3,6 +3,7 @@
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
 ## 2026-09-10
+- **Todos los errores técnicos ahora salen en español** — antes, si por ejemplo no había sesión de Microsoft activa (modo demo, o la sesión expiró), el aviso salía tal cual lo manda Microsoft, en inglés ("no_account_error: No account object provided..."). Nueva función `mensajeError()` en graph.js que traduce los casos técnicos más comunes (sesión de Microsoft no activa, falta aprobar un permiso nuevo, sin internet, error crudo de SharePoint) a un mensaje entendible en español — aplicado en los ~85 avisos de error de toda la aplicación.
 - **Nuevo botón "Buscar último Word" en Procesos judiciales** — busca dentro de la carpeta de "Link a la carpeta" (ya vinculada) el archivo Word modificado/creado más reciente y lo abre directo en una pestaña nueva. Los íconos de Acciones pasaron a 2 filas de 3 (ya no cabían cómodos en una sola).
 
 ## 2026-09-09

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { fmtDate, fmtMonto, parseMonto, listarSoportesGastosDelMes, crearLinkCompartidoSoporte, crearLinkCarpetaMesGastos, renovarLinkSoporteAnonimo } from '../lib/graph';
+import { fmtDate, fmtMonto, parseMonto, listarSoportesGastosDelMes, crearLinkCompartidoSoporte, crearLinkCarpetaMesGastos, renovarLinkSoporteAnonimo, mensajeError } from '../lib/graph';
 import { MESES_NOMBRES } from '../lib/horasExtras';
 import { TIPO_DOCUMENTO_OPTIONS, ENTIDAD_BANCARIA_OPTIONS, TIPO_CUENTA_OPTIONS, datosBancoProveedor, sumaValores, filtrarPorMes, generarRegistrosGastosExcel, generarRegistrosGastosHTML, siguienteNumeroConsecutivo } from '../lib/gastos';
 import IconButton, { IconTextButton } from './IconButton';
@@ -229,7 +229,7 @@ function SoporteField({ label, url, fecha, shareUrl, onElegir }){
     try{
       const linkCorto = await crearLinkCompartidoSoporte(f.driveId, f.itemId);
       onElegir({ nombre: f.nombre, url: linkCorto });
-    }catch(err){ console.error(err); setError("No se pudo generar el enlace: " + err.message); }
+    }catch(err){ console.error(err); setError("No se pudo generar el enlace: " + mensajeError(err)); }
     finally{ setResolviendo(false); }
   }
   if(url){

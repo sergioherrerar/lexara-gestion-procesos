@@ -2,7 +2,7 @@ import { useState } from 'react';
 import BarChart from './BarChart';
 import PieChart, { StatRing } from './PieChart';
 import ChecklistFilter from './ChecklistFilter';
-import { stripHtml, groupCount, parseMonto, fmtMonto, desistimientosForProceso } from '../lib/graph';
+import { stripHtml, groupCount, parseMonto, fmtMonto, desistimientosForProceso, mensajeError } from '../lib/graph';
 import { generarDashboardEntidadHTML } from '../lib/exportarDashboardHTML';
 import { generarDashboardEntidadWord } from '../lib/exportarDashboardWord';
 import IconButton from './IconButton';
@@ -134,7 +134,7 @@ export default function DashboardView({ procesos, clientes = [], facturas = [], 
       generarDashboardEntidadHTML(procesos, desistimientos, entidadSel);
     } catch(err){
       console.error(err);
-      notify?.("No se pudo exportar el análisis: " + err.message, 'error');
+      notify?.("No se pudo exportar el análisis: " + mensajeError(err), 'error');
     }
   }
 
@@ -149,7 +149,7 @@ export default function DashboardView({ procesos, clientes = [], facturas = [], 
       await generarDashboardEntidadWord(procesos, desistimientos, entidadSel);
     } catch(err){
       console.error(err);
-      notify?.("No se pudo exportar el Word: " + err.message, 'error');
+      notify?.("No se pudo exportar el Word: " + mensajeError(err), 'error');
     } finally {
       setGenerandoWord(false);
     }

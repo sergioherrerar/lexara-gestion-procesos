@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { mensajeError } from '../lib/graph';
 import ColaboradoresView from './ColaboradoresView';
 import VacacionesTab from './VacacionesTab';
 import HorasExtrasTab from './HorasExtrasTab';
@@ -33,7 +34,7 @@ function CertificacionesTab({ colaboradores, notify }){
     }
     setGenerando(c.id);
     try{ await generarCertificacionColaboradorPDF(c); }
-    catch(err){ console.error(err); notify?.("No se pudo generar la certificación: " + err.message, 'error'); }
+    catch(err){ console.error(err); notify?.("No se pudo generar la certificación: " + mensajeError(err), 'error'); }
     finally{ setGenerando(null); }
   }
   const activos = [...colaboradores].sort((a,b) => (a.Nombre||"").localeCompare(b.Nombre||""));

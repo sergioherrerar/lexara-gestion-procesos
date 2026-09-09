@@ -5,7 +5,7 @@ import {
   construirBorradorOrdenCompra, generarExcelOrdenesColmedica, calcularDetalleValoresPorCliente,
 } from '../lib/ordenesComprasColmedica';
 import { colorDeTipoRespuesta } from '../lib/informeAbogadosTutelas';
-import { fmtMonto } from '../lib/graph';
+import { fmtMonto, mensajeError } from '../lib/graph';
 import StackedBarChart from './StackedBarChart';
 
 // "Órdenes Colmédica" (Administración) — pedido explícito del usuario
@@ -42,7 +42,7 @@ export default function OrdenesColmedicaTab({ tutelas, valoresEntidad, clientes,
   async function handleDescargarExcel(){
     setGenerandoExcel(true);
     try{ await generarExcelOrdenesColmedica(tutelasDelMes, valoresEntidad, mes, anio); }
-    catch(err){ console.error(err); notify?.("No se pudo generar el Excel de Órdenes Colmédica: " + err.message, 'error'); }
+    catch(err){ console.error(err); notify?.("No se pudo generar el Excel de Órdenes Colmédica: " + mensajeError(err), 'error'); }
     finally{ setGenerandoExcel(false); }
   }
 
@@ -52,7 +52,7 @@ export default function OrdenesColmedicaTab({ tutelas, valoresEntidad, clientes,
       const tutelasDelCliente = tutelasDelMes.filter(t => (t.Cliente||"").trim() === cliente);
       await generarExcelOrdenesColmedica(tutelasDelCliente, valoresEntidad, mes, anio, cliente);
     }
-    catch(err){ console.error(err); notify?.(`No se pudo generar el Excel de ${cliente}: ` + err.message, 'error'); }
+    catch(err){ console.error(err); notify?.(`No se pudo generar el Excel de ${cliente}: ` + mensajeError(err), 'error'); }
     finally{ setGenerandoExcelCliente(null); }
   }
 

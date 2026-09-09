@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ICON_SVG } from '../config';
-import { stripHtml, estadoBadgeClass, ultimoWordEnCarpeta } from '../lib/graph';
+import { stripHtml, estadoBadgeClass, ultimoWordEnCarpeta, mensajeError } from '../lib/graph';
 import IconButton, { IconTextButton } from './IconButton';
 import ColumnHeaderMenu from './ColumnHeaderMenu';
 import { useColumnFilters } from '../hooks/useColumnFilters';
@@ -61,7 +61,7 @@ export default function ProcesosView({ procesos, currentFilter, setFilter, searc
   async function handleGenerarImpulsoWord(proceso){
     setGenerandoWord(proceso.id);
     try{ await generarImpulsoProcesalWord(proceso); }
-    catch(err){ console.error(err); notify?.("No se pudo generar el Impulso Procesal en Word: " + err.message, 'error'); }
+    catch(err){ console.error(err); notify?.("No se pudo generar el Impulso Procesal en Word: " + mensajeError(err), 'error'); }
     finally { setGenerandoWord(null); }
   }
   // Mismo criterio que el correo de Tutelas (ver InformesView.jsx): primero
@@ -82,7 +82,7 @@ export default function ProcesosView({ procesos, currentFilter, setFilter, searc
         }catch(err){ console.error('No se pudo crear el borrador por Graph, se usa mailto:', err); }
       }
       abrirCorreoImpulsoProcesal(proceso);
-    }catch(err){ console.error(err); notify?.("No se pudo abrir el correo del Impulso Procesal: " + err.message, 'error'); }
+    }catch(err){ console.error(err); notify?.("No se pudo abrir el correo del Impulso Procesal: " + mensajeError(err), 'error'); }
     finally { setGenerandoCorreo(null); }
   }
   // "Buscar último Word" — pedido explícito del usuario 2026-09-10: busca
@@ -96,7 +96,7 @@ export default function ProcesosView({ procesos, currentFilter, setFilter, searc
       const doc = await ultimoWordEnCarpeta(proceso.LinkCarpeta);
       if(doc) window.open(doc.webUrl, '_blank');
       else notify?.("No se encontró ningún archivo Word en esa carpeta.", 'error');
-    }catch(err){ console.error(err); notify?.("No se pudo buscar el último Word: " + err.message, 'error'); }
+    }catch(err){ console.error(err); notify?.("No se pudo buscar el último Word: " + mensajeError(err), 'error'); }
     finally { setBuscandoWord(null); }
   }
   const entidades = Array.from(new Set(procesos.map(p => stripHtml(p.Entidad) || "Sin entidad"))).sort((a,b)=>a.localeCompare(b));

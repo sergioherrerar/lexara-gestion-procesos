@@ -284,7 +284,7 @@ export function useLexaraApp(){
           // que "Aplicar mapeo" funcione aunque el usuario no toque un select.
           updated.push({...connected, mapping: Graph.guessListMapping(connected)});
         }catch(err){
-          updated.push({...list, connectError: err.message});
+          updated.push({...list, connectError: Graph.mensajeError(err)});
         }
       }
       setLists(updated);
@@ -292,7 +292,7 @@ export function useLexaraApp(){
       setTestStatus({msg:`Conectado. ${ok.length} de ${updated.length} listas leídas correctamente.`, isError: ok.length < updated.length});
     }catch(err){
       console.error(err);
-      setTestStatus({msg:"No se pudo conectar: " + err.message, isError:true});
+      setTestStatus({msg:"No se pudo conectar: " + Graph.mensajeError(err), isError:true});
     }
   }
 
@@ -370,7 +370,7 @@ export function useLexaraApp(){
       setGastos(updated.find(l => l.key==='gastos')?.items || []);
     }catch(err){
       console.error(err);
-      notify("Se inició sesión, pero no se pudieron cargar los datos de SharePoint: " + err.message + " — probá el botón de Actualizar.", 'error');
+      notify("Se inició sesión, pero no se pudieron cargar los datos de SharePoint: " + Graph.mensajeError(err) + " — probá el botón de Actualizar.", 'error');
     }
   }
 
@@ -444,7 +444,7 @@ export function useLexaraApp(){
       setGastos(updated.find(l => l.key==='gastos')?.items || []);
     }catch(err){
       console.error(err);
-      notify("No se pudo actualizar la información: " + err.message, 'error');
+      notify("No se pudo actualizar la información: " + Graph.mensajeError(err), 'error');
     }
     setRefreshing(false);
   }
@@ -599,7 +599,7 @@ export function useLexaraApp(){
         try{
           const created = await Graph.crearItemConLookups(list.siteId || siteId, list, updates);
           nuevo.id = created.id; nuevo._graphId = created.id;
-        }catch(err){ console.error(err); notify("No se pudo crear el proceso en SharePoint: " + err.message, 'error'); setSaving(false); return; }
+        }catch(err){ console.error(err); notify("No se pudo crear el proceso en SharePoint: " + Graph.mensajeError(err), 'error'); setSaving(false); return; }
         setSaving(false);
       } else {
         const maxId = procesos.reduce((max,p) => Math.max(max, Number(p.id)||0), 0);
@@ -628,7 +628,7 @@ export function useLexaraApp(){
         // para su columna real (p.ej. un Tipo de Proceso/Despacho que no
         // coincide con las opciones fijas de esa columna en SharePoint).
         console.error(err, 'Campos enviados:', graphBody);
-        notify(`No se pudo guardar en SharePoint: ${err.message} — campos enviados: ${Object.keys(graphBody).join(', ')}`, 'error');
+        notify(`No se pudo guardar en SharePoint: ${Graph.mensajeError(err)} — campos enviados: ${Object.keys(graphBody).join(', ')}`, 'error');
         setSaving(false); return;
       }
       setSaving(false);
@@ -699,7 +699,7 @@ export function useLexaraApp(){
         await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items/${activeCliente._graphId || activeCliente.id}/fields`, {
           method:"PATCH", body: JSON.stringify(fields)
         });
-      }catch(err){ console.error(err); notify("No se pudo guardar en SharePoint: " + err.message, 'error'); setSaving(false); return; }
+      }catch(err){ console.error(err); notify("No se pudo guardar en SharePoint: " + Graph.mensajeError(err), 'error'); setSaving(false); return; }
       setSaving(false);
     }
     setActiveClienteId(null);
@@ -719,7 +719,7 @@ export function useLexaraApp(){
         await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items/${cliente._graphId || cliente.id}/fields`, {
           method:"PATCH", body: JSON.stringify(fields)
         });
-      }catch(err){ console.error(err); notify("No se pudo actualizar el cliente en SharePoint: " + err.message, 'error'); }
+      }catch(err){ console.error(err); notify("No se pudo actualizar el cliente en SharePoint: " + Graph.mensajeError(err), 'error'); }
     }
   }
   // El borrado en sí solo corre si el usuario acepta el modal de confirmación
@@ -732,7 +732,7 @@ export function useLexaraApp(){
       const list = listByKey('clientes');
       try{
         await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items/${cliente._graphId || cliente.id}`, { method:"DELETE" });
-      }catch(err){ console.error(err); notify("No se pudo eliminar en SharePoint: " + err.message, 'error'); setSaving(false); return; }
+      }catch(err){ console.error(err); notify("No se pudo eliminar en SharePoint: " + Graph.mensajeError(err), 'error'); setSaving(false); return; }
       setSaving(false);
     }
     setClientes(prev => prev.filter(c => c.id !== id));
@@ -752,7 +752,7 @@ export function useLexaraApp(){
       try{
         const created = await Graph.crearItemConLookups(list.siteId || siteId, list, nuevoSinId);
         nuevo.id = created.id; nuevo._graphId = created.id;
-      }catch(err){ console.error(err); notify("No se pudo crear el cliente en SharePoint: " + err.message, 'error'); setSaving(false); return null; }
+      }catch(err){ console.error(err); notify("No se pudo crear el cliente en SharePoint: " + Graph.mensajeError(err), 'error'); setSaving(false); return null; }
       setSaving(false);
     }
     setClientes(prev => [...prev, nuevo]);
@@ -842,7 +842,7 @@ export function useLexaraApp(){
               method:"PATCH", body: JSON.stringify({ [list.mapping.Factura]: numero })
             });
           }
-        }catch(err){ console.error(err); notify("No se pudo crear la factura en SharePoint: " + err.message, 'error'); setSaving(false); return; }
+        }catch(err){ console.error(err); notify("No se pudo crear la factura en SharePoint: " + Graph.mensajeError(err), 'error'); setSaving(false); return; }
         setSaving(false);
       } else {
         const maxId = facturas.reduce((max,f) => Math.max(max, Number(f.id)||0), 0);
@@ -866,7 +866,7 @@ export function useLexaraApp(){
         await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items/${activeFactura._graphId}/fields`, {
           method:"PATCH", body: JSON.stringify(graphBody)
         });
-      }catch(err){ console.error(err); notify("No se pudo guardar en SharePoint: " + err.message, 'error'); setSaving(false); return; }
+      }catch(err){ console.error(err); notify("No se pudo guardar en SharePoint: " + Graph.mensajeError(err), 'error'); setSaving(false); return; }
       setSaving(false);
     }
     setActiveFacturaId(null);
@@ -919,7 +919,7 @@ export function useLexaraApp(){
         try{
           const created = await Graph.crearItemConLookups(list.siteId || siteId, list, updates);
           nuevo.id = created.id; nuevo._graphId = created.id;
-        }catch(err){ console.error(err); notify("No se pudo crear la orden de compra en SharePoint: " + err.message, 'error'); setSaving(false); return; }
+        }catch(err){ console.error(err); notify("No se pudo crear la orden de compra en SharePoint: " + Graph.mensajeError(err), 'error'); setSaving(false); return; }
         setSaving(false);
       } else {
         const maxId = ordenesCompra.reduce((max,o) => Math.max(max, Number(o.id)||0), 0);
@@ -942,7 +942,7 @@ export function useLexaraApp(){
         await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items/${activeOrdenCompra._graphId}/fields`, {
           method:"PATCH", body: JSON.stringify(graphBody)
         });
-      }catch(err){ console.error(err); notify("No se pudo guardar en SharePoint: " + err.message, 'error'); setSaving(false); return; }
+      }catch(err){ console.error(err); notify("No se pudo guardar en SharePoint: " + Graph.mensajeError(err), 'error'); setSaving(false); return; }
       setSaving(false);
     }
     setActiveOrdenCompraId(null);
@@ -967,7 +967,7 @@ export function useLexaraApp(){
         try{
           const created = await Graph.crearItemConLookups(list.siteId || siteId, list, updates);
           nuevo.id = created.id; nuevo._graphId = created.id;
-        }catch(err){ console.error(err); notify("No se pudo crear el colaborador en SharePoint: " + err.message, 'error'); setSaving(false); return; }
+        }catch(err){ console.error(err); notify("No se pudo crear el colaborador en SharePoint: " + Graph.mensajeError(err), 'error'); setSaving(false); return; }
         setSaving(false);
       } else {
         const maxId = colaboradores.reduce((max,c) => Math.max(max, Number(c.id)||0), 0);
@@ -989,7 +989,7 @@ export function useLexaraApp(){
         await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items/${activeColaborador._graphId}/fields`, {
           method:"PATCH", body: JSON.stringify(fields)
         });
-      }catch(err){ console.error(err); notify("No se pudo guardar en SharePoint: " + err.message, 'error'); setSaving(false); return; }
+      }catch(err){ console.error(err); notify("No se pudo guardar en SharePoint: " + Graph.mensajeError(err), 'error'); setSaving(false); return; }
       setSaving(false);
     }
     setActiveColaboradorId(null);
@@ -1003,7 +1003,7 @@ export function useLexaraApp(){
       const list = listByKey('colaboradores');
       try{
         await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items/${colaborador._graphId || colaborador.id}`, { method:"DELETE" });
-      }catch(err){ console.error(err); notify("No se pudo eliminar en SharePoint: " + err.message, 'error'); setSaving(false); return; }
+      }catch(err){ console.error(err); notify("No se pudo eliminar en SharePoint: " + Graph.mensajeError(err), 'error'); setSaving(false); return; }
       setSaving(false);
     }
     setColaboradores(prev => prev.filter(c => c.id !== id));
@@ -1035,7 +1035,7 @@ export function useLexaraApp(){
         try{
           const created = await Graph.crearItemConLookups(list.siteId || siteId, list, updates);
           nuevo.id = created.id; nuevo._graphId = created.id;
-        }catch(err){ console.error(err); notify("No se pudo crear la forma de pago en SharePoint: " + err.message, 'error'); setSaving(false); return; }
+        }catch(err){ console.error(err); notify("No se pudo crear la forma de pago en SharePoint: " + Graph.mensajeError(err), 'error'); setSaving(false); return; }
         setSaving(false);
       } else {
         const maxId = formasPago.reduce((max,f) => Math.max(max, Number(f.id)||0), 0);
@@ -1058,7 +1058,7 @@ export function useLexaraApp(){
         await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items/${activeFormaPago._graphId}/fields`, {
           method:"PATCH", body: JSON.stringify(graphBody)
         });
-      }catch(err){ console.error(err); notify("No se pudo guardar en SharePoint: " + err.message, 'error'); setSaving(false); return; }
+      }catch(err){ console.error(err); notify("No se pudo guardar en SharePoint: " + Graph.mensajeError(err), 'error'); setSaving(false); return; }
       setSaving(false);
     }
     setActiveFormaPagoId(null);
@@ -1073,7 +1073,7 @@ export function useLexaraApp(){
       const list = listByKey('formasPago');
       try{
         await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items/${formaPago._graphId || formaPago.id}`, { method:"DELETE" });
-      }catch(err){ console.error(err); notify("No se pudo eliminar en SharePoint: " + err.message, 'error'); setSaving(false); return; }
+      }catch(err){ console.error(err); notify("No se pudo eliminar en SharePoint: " + Graph.mensajeError(err), 'error'); setSaving(false); return; }
       setSaving(false);
     }
     setFormasPago(prev => prev.filter(f => f.id !== id));
@@ -1103,7 +1103,7 @@ export function useLexaraApp(){
         try{
           const created = await Graph.crearItemConLookups(list.siteId || siteId, list, updates);
           nuevo.id = created.id; nuevo._graphId = created.id;
-        }catch(err){ console.error(err); notify("No se pudo crear el desistimiento en SharePoint: " + err.message, 'error'); setSaving(false); return; }
+        }catch(err){ console.error(err); notify("No se pudo crear el desistimiento en SharePoint: " + Graph.mensajeError(err), 'error'); setSaving(false); return; }
         setSaving(false);
       } else {
         const maxId = desistimientos.reduce((max,d) => Math.max(max, Number(d.id)||0), 0);
@@ -1126,7 +1126,7 @@ export function useLexaraApp(){
         await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items/${activeDesistimiento._graphId}/fields`, {
           method:"PATCH", body: JSON.stringify(graphBody)
         });
-      }catch(err){ console.error(err); notify("No se pudo guardar en SharePoint: " + err.message, 'error'); setSaving(false); return; }
+      }catch(err){ console.error(err); notify("No se pudo guardar en SharePoint: " + Graph.mensajeError(err), 'error'); setSaving(false); return; }
       setSaving(false);
     }
     setActiveDesistimientoId(null);
@@ -1141,7 +1141,7 @@ export function useLexaraApp(){
       const list = listByKey('desistimientos');
       try{
         await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items/${desistimiento._graphId || desistimiento.id}`, { method:"DELETE" });
-      }catch(err){ console.error(err); notify("No se pudo eliminar en SharePoint: " + err.message, 'error'); setSaving(false); return; }
+      }catch(err){ console.error(err); notify("No se pudo eliminar en SharePoint: " + Graph.mensajeError(err), 'error'); setSaving(false); return; }
       setSaving(false);
     }
     setDesistimientos(prev => prev.filter(d => d.id !== id));
@@ -1182,7 +1182,7 @@ export function useLexaraApp(){
         try{
           const created = await Graph.crearItemConLookups(list.siteId || siteId, list, updates);
           nuevo.id = created.id; nuevo._graphId = created.id;
-        }catch(err){ console.error(err); notify("No se pudo crear la tutela en SharePoint: " + err.message, 'error'); setSaving(false); return; }
+        }catch(err){ console.error(err); notify("No se pudo crear la tutela en SharePoint: " + Graph.mensajeError(err), 'error'); setSaving(false); return; }
         setSaving(false);
       } else {
         const maxId = tutelas.reduce((max,t) => Math.max(max, Number(t.id)||0), 0);
@@ -1204,7 +1204,7 @@ export function useLexaraApp(){
         await Graph.graphFetch(`/sites/${list.siteId || siteId}/lists/${list.listId}/items/${activeTutela._graphId}/fields`, {
           method:"PATCH", body: JSON.stringify(graphBody)
         });
-      }catch(err){ console.error(err); notify("No se pudo guardar en SharePoint: " + err.message, 'error'); setSaving(false); return; }
+      }catch(err){ console.error(err); notify("No se pudo guardar en SharePoint: " + Graph.mensajeError(err), 'error'); setSaving(false); return; }
       setSaving(false);
     }
     setActiveTutelaId(null);
@@ -1241,7 +1241,7 @@ export function useLexaraApp(){
     try{
       graphBody = await Graph.graphFieldsFromUpdates(siteIdReal, list, { Entidad: "GRUPO COLMEDICA" });
     }catch(err){
-      console.error(err); notify?.("No se pudo resolver la Entidad: " + err.message, 'error'); setSaving(false); return { ok:0, fallidas: pendientes.length };
+      console.error(err); notify?.("No se pudo resolver la Entidad: " + Graph.mensajeError(err), 'error'); setSaving(false); return { ok:0, fallidas: pendientes.length };
     }
     let ok = 0, fallidas = 0;
     const idsOk = new Set();
@@ -1270,7 +1270,7 @@ export function useLexaraApp(){
       const list = listByKey('tutelas');
       try{
         await Graph.graphFetch(`/sites/${list.siteId || siteId}/lists/${list.listId}/items/${tutela._graphId || tutela.id}`, { method:"DELETE" });
-      }catch(err){ console.error(err); notify("No se pudo eliminar en SharePoint: " + err.message, 'error'); setSaving(false); return; }
+      }catch(err){ console.error(err); notify("No se pudo eliminar en SharePoint: " + Graph.mensajeError(err), 'error'); setSaving(false); return; }
       setSaving(false);
     }
     setTutelas(prev => prev.filter(t => t.id !== id));
@@ -1293,7 +1293,7 @@ export function useLexaraApp(){
       try{
         const created = await Graph.crearItemConLookups(list.siteId || siteId, list, nuevoSinId);
         nuevo.id = created.id; nuevo._graphId = created.id;
-      }catch(err){ console.error(err); notify("No se pudo crear el tema en SharePoint: " + err.message, 'error'); setSaving(false); return null; }
+      }catch(err){ console.error(err); notify("No se pudo crear el tema en SharePoint: " + Graph.mensajeError(err), 'error'); setSaving(false); return null; }
       setSaving(false);
     }
     setTemas(prev => [...prev, nuevo]);
@@ -1312,7 +1312,7 @@ export function useLexaraApp(){
         await Graph.graphFetch(`/sites/${list.siteId || siteId}/lists/${list.listId}/items/${tema._graphId || tema.id}/fields`, {
           method:"PATCH", body: JSON.stringify(fields)
         });
-      }catch(err){ console.error(err); notify("No se pudo guardar el tema en SharePoint: " + err.message, 'error'); setSaving(false); return; }
+      }catch(err){ console.error(err); notify("No se pudo guardar el tema en SharePoint: " + Graph.mensajeError(err), 'error'); setSaving(false); return; }
       setSaving(false);
     }
     notify("Guardado con éxito en Lexara", 'success');
@@ -1326,7 +1326,7 @@ export function useLexaraApp(){
       try{
         const created = await Graph.crearItemConLookups(list.siteId || siteId, list, nuevoSinId);
         nuevo.id = created.id; nuevo._graphId = created.id;
-      }catch(err){ console.error(err); notify("No se pudo crear el valor de entidad en SharePoint: " + err.message, 'error'); setSaving(false); return null; }
+      }catch(err){ console.error(err); notify("No se pudo crear el valor de entidad en SharePoint: " + Graph.mensajeError(err), 'error'); setSaving(false); return null; }
       setSaving(false);
     }
     setValoresEntidad(prev => [...prev, nuevo]);
@@ -1345,7 +1345,7 @@ export function useLexaraApp(){
         await Graph.graphFetch(`/sites/${list.siteId || siteId}/lists/${list.listId}/items/${valor._graphId || valor.id}/fields`, {
           method:"PATCH", body: JSON.stringify(fields)
         });
-      }catch(err){ console.error(err); notify("No se pudo guardar el valor de entidad en SharePoint: " + err.message, 'error'); setSaving(false); return; }
+      }catch(err){ console.error(err); notify("No se pudo guardar el valor de entidad en SharePoint: " + Graph.mensajeError(err), 'error'); setSaving(false); return; }
       setSaving(false);
     }
     notify("Guardado con éxito en Lexara", 'success');
@@ -1365,7 +1365,7 @@ export function useLexaraApp(){
       try{
         const created = await Graph.crearItemConLookups(list.siteId || siteId, list, nuevoSinId);
         nuevo.id = created.id; nuevo._graphId = created.id;
-      }catch(err){ console.error(err); notify("No se pudo crear la hora extra en SharePoint: " + err.message, 'error'); setSaving(false); return null; }
+      }catch(err){ console.error(err); notify("No se pudo crear la hora extra en SharePoint: " + Graph.mensajeError(err), 'error'); setSaving(false); return null; }
       setSaving(false);
     }
     setHorasExtras(prev => [...prev, nuevo]);
@@ -1387,7 +1387,7 @@ export function useLexaraApp(){
         await Graph.graphFetch(`/sites/${list.siteId || siteId}/lists/${list.listId}/items/${hora._graphId || hora.id}/fields`, {
           method:"PATCH", body: JSON.stringify(fields)
         });
-      }catch(err){ console.error(err); notify("No se pudo guardar la aprobación en SharePoint: " + err.message, 'error'); setSaving(false); return; }
+      }catch(err){ console.error(err); notify("No se pudo guardar la aprobación en SharePoint: " + Graph.mensajeError(err), 'error'); setSaving(false); return; }
       setSaving(false);
     }
     notify("Guardado con éxito en Lexara", 'success');
@@ -1411,7 +1411,7 @@ export function useLexaraApp(){
         await Graph.graphFetch(`/sites/${list.siteId || siteId}/lists/${list.listId}/items/${hora._graphId || hora.id}/fields`, {
           method:"PATCH", body: JSON.stringify(fields)
         });
-      }catch(err){ console.error(err); notify("No se pudo guardar los cambios en SharePoint: " + err.message, 'error'); setSaving(false); return; }
+      }catch(err){ console.error(err); notify("No se pudo guardar los cambios en SharePoint: " + Graph.mensajeError(err), 'error'); setSaving(false); return; }
       setSaving(false);
     }
     notify("Guardado con éxito en Lexara", 'success');
@@ -1429,7 +1429,7 @@ export function useLexaraApp(){
       const list = listByKey('horasExtras');
       try{
         await Graph.graphFetch(`/sites/${list.siteId || siteId}/lists/${list.listId}/items/${hora._graphId || hora.id}`, { method:"DELETE" });
-      }catch(err){ console.error(err); notify("No se pudo eliminar en SharePoint: " + err.message, 'error'); setSaving(false); return; }
+      }catch(err){ console.error(err); notify("No se pudo eliminar en SharePoint: " + Graph.mensajeError(err), 'error'); setSaving(false); return; }
       setSaving(false);
     }
     setHorasExtras(prev => prev.filter(h => h.id !== id));
@@ -1452,7 +1452,7 @@ export function useLexaraApp(){
       try{
         const created = await Graph.crearItemConLookups(list.siteId || siteId, list, nuevoSinId);
         nuevo.id = created.id; nuevo._graphId = created.id;
-      }catch(err){ console.error(err); notify("No se pudo crear el período de vacaciones en SharePoint: " + err.message, 'error'); setSaving(false); return null; }
+      }catch(err){ console.error(err); notify("No se pudo crear el período de vacaciones en SharePoint: " + Graph.mensajeError(err), 'error'); setSaving(false); return null; }
       setSaving(false);
     }
     setVacacionesPeriodos(prev => [...prev, nuevo]);
@@ -1474,7 +1474,7 @@ export function useLexaraApp(){
         await Graph.graphFetch(`/sites/${list.siteId || siteId}/lists/${list.listId}/items/${periodo._graphId || periodo.id}/fields`, {
           method:"PATCH", body: JSON.stringify(fields)
         });
-      }catch(err){ console.error(err); notify("No se pudo guardar los cambios en SharePoint: " + err.message, 'error'); setSaving(false); return; }
+      }catch(err){ console.error(err); notify("No se pudo guardar los cambios en SharePoint: " + Graph.mensajeError(err), 'error'); setSaving(false); return; }
       setSaving(false);
     }
     notify("Guardado con éxito en Lexara", 'success');
@@ -1487,7 +1487,7 @@ export function useLexaraApp(){
       const list = listByKey('vacacionesPeriodos');
       try{
         await Graph.graphFetch(`/sites/${list.siteId || siteId}/lists/${list.listId}/items/${periodo._graphId || periodo.id}`, { method:"DELETE" });
-      }catch(err){ console.error(err); notify("No se pudo eliminar en SharePoint: " + err.message, 'error'); setSaving(false); return; }
+      }catch(err){ console.error(err); notify("No se pudo eliminar en SharePoint: " + Graph.mensajeError(err), 'error'); setSaving(false); return; }
       setSaving(false);
     }
     setVacacionesPeriodos(prev => prev.filter(p => p.id !== id));
@@ -1513,7 +1513,7 @@ export function useLexaraApp(){
         try{
           const created = await Graph.crearItemConLookups(list.siteId || siteId, list, nuevoSinId);
           nuevo.id = created.id; nuevo._graphId = created.id;
-        }catch(err){ console.error(err); notify(`No se pudo crear el registro en SharePoint: ` + err.message, 'error'); setSaving(false); return null; }
+        }catch(err){ console.error(err); notify(`No se pudo crear el registro en SharePoint: ` + Graph.mensajeError(err), 'error'); setSaving(false); return null; }
         setSaving(false);
       }
       setItemsState(prev => [...prev, nuevo]);
@@ -1542,7 +1542,7 @@ export function useLexaraApp(){
         try{
           await Graph.graphFetch(urlDestino, { method:"PATCH", body: JSON.stringify(fields) });
         }catch(err){
-          console.error(err); notify("No se pudo guardar los cambios en SharePoint: " + err.message, 'error'); setSaving(false); return;
+          console.error(err); notify("No se pudo guardar los cambios en SharePoint: " + Graph.mensajeError(err), 'error'); setSaving(false); return;
         }
         setSaving(false);
       }
@@ -1556,7 +1556,7 @@ export function useLexaraApp(){
         const list = listByKey(listKey);
         try{
           await Graph.graphFetch(`/sites/${list.siteId || siteId}/lists/${list.listId}/items/${item._graphId || item.id}`, { method:"DELETE" });
-        }catch(err){ console.error(err); notify("No se pudo eliminar en SharePoint: " + err.message, 'error'); setSaving(false); return; }
+        }catch(err){ console.error(err); notify("No se pudo eliminar en SharePoint: " + Graph.mensajeError(err), 'error'); setSaving(false); return; }
         setSaving(false);
       }
       setItemsState(prev => prev.filter(i => i.id !== id));

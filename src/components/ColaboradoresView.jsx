@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { mensajeError } from '../lib/graph';
 import { ICON_SVG } from '../config';
 import IconButton, { IconTextButton } from './IconButton';
 import ColumnHeaderMenu from './ColumnHeaderMenu';
@@ -39,7 +40,7 @@ export default function ColaboradoresView({ colaboradores, searchQuery, onOpenCo
     }
     setGenerandoCertificacion(colaborador.id);
     try{ await generarCertificacionColaboradorPDF(colaborador); }
-    catch(err){ console.error(err); notify?.("No se pudo generar la certificación: " + err.message, 'error'); }
+    catch(err){ console.error(err); notify?.("No se pudo generar la certificación: " + mensajeError(err), 'error'); }
     finally { setGenerandoCertificacion(null); }
   }
   const query = (searchQuery||"").trim().toLowerCase();

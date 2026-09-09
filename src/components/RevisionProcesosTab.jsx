@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { mensajeError } from '../lib/graph';
 import { leerArchivoVigilancia, compararConProcesos, generarExcelRevisionProcesos } from '../lib/revisionProcesos';
 import { IconTextButton } from './IconButton';
 
@@ -29,7 +30,7 @@ export default function RevisionProcesosTab({ procesos, notify }){
       notify?.(`Comparación lista: ${filas.length} procesos leídos del archivo.`, 'success');
     }catch(err){
       console.error(err);
-      notify?.("No se pudo leer/comparar el archivo: " + err.message, 'error');
+      notify?.("No se pudo leer/comparar el archivo: " + mensajeError(err), 'error');
     } finally {
       setProcesando(false);
       e.target.value = "";

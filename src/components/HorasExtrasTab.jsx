@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { mensajeError } from '../lib/graph';
 import { IconTextButton } from './IconButton';
 import StackedBarChart from './StackedBarChart';
 import {
@@ -65,7 +66,7 @@ export default function HorasExtrasTab({ horasExtras, tutelas, colaboradores, on
   async function handleDescargarPDF(){
     setGenerandoPDF(true);
     try{ await generarPDFHorasExtras(horasExtrasVigentes, anio, mes); }
-    catch(err){ console.error(err); notify?.("No se pudo generar el PDF de Horas Extras: " + err.message, 'error'); }
+    catch(err){ console.error(err); notify?.("No se pudo generar el PDF de Horas Extras: " + mensajeError(err), 'error'); }
     finally{ setGenerandoPDF(false); }
   }
 
