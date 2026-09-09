@@ -32,6 +32,7 @@
 import { fechaLarga, imagenComoDataUrl } from './informesPDF';
 import { crearBorradorCorreo } from './graph';
 import { crearHeaderMembreteWord, MARGEN_SUPERIOR_MEMBRETE_MM, MARGEN_INFERIOR_MEMBRETE_MM } from './membreteWord';
+import { generoDePrimerNombre } from './whatsappPago';
 import firmaCompleta from '../assets/Firma Monica Completa.png';
 
 const APODERADA_NOMBRE = "MÓNICA PAOLA QUINTERO JIMÉNEZ";
@@ -50,6 +51,30 @@ function despachoConNumero(p){
   return numero ? `${despacho} (${numero})` : despacho;
 }
 
+// Extrae el nombre del Juez/Magistrado de "No. de despacho" (texto libre,
+// ej. "SEC 3 M.P JOSÉ ELVER MUÑOZ BARRERA") — busca la marca "M.P"
+// (Magistrado Ponente) y toma todo lo que sigue. La mayoría de los
+// despachos NO traen nombre de persona (ej. "Juzgado 12 Civil del Circuito
+// de Medellín") — ahí devuelve "" y el saludo se queda en el genérico de
+// siempre, nunca se adivina un nombre que no está.
+function nombreJuezDelDespacho(proceso){
+  const texto = `${proceso.Despacho||''} ${proceso.NumeroDespacho||''}`;
+  const m = texto.match(/M\.?\s*P\.?\s+(.+)$/i);
+  return m ? m[1].trim() : '';
+}
+
+// "Respetado Doctor:" / "Respetada Doctora:" según el género detectado del
+// primer nombre del Juez (misma lógica de generoDePrimerNombre ya usada en
+// el mensaje de WhatsApp de pagos) — pedido explícito del usuario
+// 2026-09-10 ("genero la misma de whatsApp"). Sin nombre detectable en el
+// despacho, se deja el genérico "Respetado(a) Doctor(a):" de siempre.
+function saludoDoctor(proceso){
+  const nombreJuez = nombreJuezDelDespacho(proceso);
+  const primerNombre = nombreJuez.split(/\s+/)[0];
+  if(!primerNombre) return 'Respetado(a) Doctor(a):';
+  return generoDePrimerNombre(primerNombre) === 'f' ? 'Respetada Doctora:' : 'Respetado Doctor:';
+}
+
 // Datos compartidos entre el Word y el correo — mismos campos del proceso,
 // un solo lugar si el modelo cambia. El radicado completo puede venir en
 // NoCompleto o en su alias RadicadoActual (misma columna real, ver
@@ -62,6 +87,7 @@ function datosEncabezado(proceso){
     correoDespacho: (proceso.CorreoDespacho || "").trim(),
     radicadoCompleto: proceso.NoCompleto || proceso.RadicadoActual || proceso.Radicado || "—",
     cliente: proceso.Cliente || "—",
+    saludoDoctor: saludoDoctor(proceso),
     // Usados en el Asunto del correo — ver asuntoCorreo() más abajo.
     tipoProceso: (proceso.TipoProceso || "").trim(),
     demandante: proceso.Demandante || "—",
@@ -101,13 +127,13 @@ function lineasDocumento(proceso){
       '',
       'E.          S.          D.',
       '',
-      'REF: ',
+      'REF: IMPULSO PROCESAL',
       '',
       `RAD:              ${d.radicadoCompleto}`,
       `DEMANDANTE:        ${proceso.Demandante || "—"}`,
       `DEMANDADO:         ${proceso.Demandado || "—"}`,
       '',
-      'Respetado(a) Doctor(a):',
+      d.saludoDoctor,
       '',
       `${APODERADA_NOMBRE}, identificada como aparece al pie de mi correspondiente firma, en mi calidad de apoderada judicial de ${d.cliente}, me permito solicitar el IMPULSO PROCESAL del presente proceso, de conformidad con los siguientes`,
       '',
@@ -155,9 +181,29 @@ export async function generarImpulsoProcesalWord(proceso){
       children: [ new TextRun({ text, bold: opts.bold, italics: opts.italics, size: 22 }) ],
     });
   }
+  // Igual que p(), pero con VARIOS tramos de texto en la misma línea, cada
+  // uno con su propia negrita/cursiva — pedido explícito del usuario
+  // 2026-09-10 (muestra real editada a mano: nombre de la apoderada,
+  // Cliente e "IMPULSO PROCESAL" en negrita DENTRO de una frase que sigue
+  // igual de plana alrededor).
+  function pRuns(segmentos, opts={}){
+    return new Paragraph({
+      alignment: opts.align,
+      spacing: { after: opts.after ?? 160 },
+      tabStops: opts.tabs,
+      children: segmentos.map(s => new TextRun({ text: s.text, bold: s.bold, italics: s.italics, size: 22 })),
+    });
+  }
   const vacio = (after=160) => new Paragraph({ spacing:{after}, children:[] });
-  const tabsESD = [ { type: TabStopType.LEFT, position: 4200 }, { type: TabStopType.LEFT, position: 7800 } ];
-  const tabsDatos = [ { type: TabStopType.LEFT, position: 1600 } ];
+  // 2 tabs en vez de 1 entre cada tramo (E./S./D. y las 3 líneas de
+  // RAD/DEMANDANTE/DEMANDADO) — pedido explícito del usuario 2026-09-10,
+  // con paradas de tabulación intermedias para que el segundo tab de cada
+  // tramo no empuje el texto fuera de la página.
+  const tabsESD = [
+    { type: TabStopType.LEFT, position: 2800 }, { type: TabStopType.LEFT, position: 4200 },
+    { type: TabStopType.LEFT, position: 6000 }, { type: TabStopType.LEFT, position: 7800 },
+  ];
+  const tabsDatos = [ { type: TabStopType.LEFT, position: 1600 }, { type: TabStopType.LEFT, position: 2400 } ];
 
   const doc = new Document({
     sections: [{
@@ -168,21 +214,28 @@ export async function generarImpulsoProcesalWord(proceso){
         vacio(400),
         p(d.fecha),
         vacio(),
-        p('Señores:', { after:0 }),
+        p('Señores:', { after:0, bold:true }),
         p(d.despacho, { after:0 }),
         p(d.correoDespacho || '—'),
         vacio(),
-        p('E.\tS.\tD.', { tabs: tabsESD }),
+        p('E.\t\tS.\t\tD.', { tabs: tabsESD }),
         vacio(),
-        p('REF: '),
+        pRuns([ { text: 'REF: ' }, { text: 'IMPULSO PROCESAL', bold:true } ]),
         vacio(),
-        p(`RAD:\t${d.radicadoCompleto}`, { after:0, tabs: tabsDatos }),
-        p(`DEMANDANTE:\t${proceso.Demandante || "—"}`, { after:0, tabs: tabsDatos }),
-        p(`DEMANDADO:\t${proceso.Demandado || "—"}`, { tabs: tabsDatos }),
+        pRuns([ { text: 'RAD:', bold:true }, { text: `\t\t${d.radicadoCompleto}` } ], { after:0, tabs: tabsDatos }),
+        pRuns([ { text: 'DEMANDANTE:', bold:true }, { text: `\t\t${proceso.Demandante || "—"}` } ], { after:0, tabs: tabsDatos }),
+        pRuns([ { text: 'DEMANDADO:', bold:true }, { text: `\t\t${proceso.Demandado || "—"}` } ], { tabs: tabsDatos }),
         vacio(),
-        p('Respetado(a) Doctor(a):'),
+        p(d.saludoDoctor),
         vacio(),
-        p(`${APODERADA_NOMBRE}, identificada como aparece al pie de mi correspondiente firma, en mi calidad de apoderada judicial de ${d.cliente}, me permito solicitar el IMPULSO PROCESAL del presente proceso, de conformidad con los siguientes`),
+        pRuns([
+          { text: APODERADA_NOMBRE, bold:true },
+          { text: ', identificada como aparece al pie de mi correspondiente firma, en mi calidad de apoderada judicial de ' },
+          { text: d.cliente, bold:true },
+          { text: ', me permito solicitar el ' },
+          { text: 'IMPULSO PROCESAL', bold:true },
+          { text: ' del presente proceso, de conformidad con los siguientes' },
+        ]),
         vacio(300),
         p('ANTECEDENTES', { bold:true, align: AlignmentType.CENTER }),
         vacio(300),

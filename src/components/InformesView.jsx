@@ -51,7 +51,46 @@ const FORMATOS_POR_ENTIDAD = {
   "SALUD TOTAL": FORMATO_LEXARA_SOLO_EXCEL,
 };
 
+// Reorganización en pestañas — pedido explícito del usuario 2026-09-10
+// ("informes ya está muy larga y necesito agregar más"): antes eran 11
+// secciones apiladas en una sola página larga. Mismo patrón de 2 niveles
+// que ya usa Administración (pestañas arriba + sub-pestañas adentro, ver
+// AdministracionView.jsx → "Documentos") — elegido explícitamente porque
+// el usuario va a seguir agregando informes nuevos: cada uno entra como
+// una sub-pestaña más dentro de la categoría que le toque, sin que la
+// barra de arriba crezca. El Manual de usuario se queda FUERA de las
+// pestañas (no es un informe, es una descarga fija) — ver manuales-bar.
+const TABS = [
+  {key:'clientesPagos', label:'Clientes y Pagos'},
+  {key:'tutelas', label:'Tutelas'},
+  {key:'procesos', label:'Procesos Judiciales'},
+  {key:'horasExtras', label:'Horas Extras'},
+  {key:'herramientas', label:'Herramientas'},
+];
+const SUBTABS_CLIENTES_PAGOS = [
+  {key:'informeCliente', label:'Informe para un cliente'},
+  {key:'envioPagos', label:'Envío de pagos'},
+];
+const SUBTABS_TUTELAS = [
+  {key:'informeDiario', label:'Informe diario'},
+  {key:'porAbogado', label:'Tutelas por Abogado'},
+];
+const SUBTABS_HORAS_EXTRAS = [
+  {key:'registrar', label:'Registrar'},
+  {key:'registros', label:'Registros'},
+];
+const SUBTABS_HERRAMIENTAS = [
+  {key:'crearLink', label:'Crear link para compartir'},
+  {key:'revisionProcesos', label:'Revisión de Procesos'},
+  {key:'cruceArchivos', label:'Cruce de Archivos'},
+];
+
 export default function InformesView({ procesos, clientes, facturas, desistimientos, tutelas, valoresEntidad, notify, liveMode, config, requestConfirm, corregirEntidadFaltanteTutelas, colaboradores, onCreateHoraExtra, onEditarHoraExtra, onEliminarHoraExtra, horasExtras }){
+  const [tab, setTab] = useState('clientesPagos');
+  const [subTabClientesPagos, setSubTabClientesPagos] = useState('informeCliente');
+  const [subTabTutelas, setSubTabTutelas] = useState('informeDiario');
+  const [subTabHorasExtras, setSubTabHorasExtras] = useState('registrar');
+  const [subTabHerramientas, setSubTabHerramientas] = useState('crearLink');
   const [generando, setGenerando] = useState(null); // nombre de la entidad mientras genera el Excel
   const [generandoPDF, setGenerandoPDF] = useState(null); // nombre de la entidad mientras genera el PDF
   const [generandoDesistimientos, setGenerandoDesistimientos] = useState(null);
@@ -429,6 +468,22 @@ export default function InformesView({ procesos, clientes, facturas, desistimien
         </a>
       </div>
 
+      <div className="drawer-tabs" style={{padding:'0 0 14px', border:'none'}}>
+        {TABS.map(t => (
+          <button key={t.key} type="button" className={"drawer-tab" + (tab===t.key ? " active" : "")} onClick={() => setTab(t.key)}>{t.label}</button>
+        ))}
+      </div>
+
+      {tab==='clientesPagos' && (
+      <div>
+        <div className="subnav-panel">
+          <div className="subtabs">
+            {SUBTABS_CLIENTES_PAGOS.map(t => (
+              <button key={t.key} type="button" className={"subtab" + (subTabClientesPagos===t.key ? " active" : "")} onClick={() => setSubTabClientesPagos(t.key)}>{t.label}</button>
+            ))}
+          </div>
+        </div>
+      {subTabClientesPagos==='informeCliente' && (
       <div className="informe-cliente-bar">
         <span className="informe-cliente-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 15h6M9 11h6"/></svg>
@@ -441,7 +496,9 @@ export default function InformesView({ procesos, clientes, facturas, desistimien
         <IconTextButton icon="html" variant="primary" onClick={handleDescargarInformeCliente} disabled={!clienteInforme}>Descargar informe del cliente</IconTextButton>
         <p className="save-hint" style={{width:'100%', margin:'8px 0 0'}}>Genera un archivo HTML con todos los procesos de ese cliente y, si hay un portal de pagos configurado, un botón de pago seguro Davivienda — descárgalo y envíaselo directamente al cliente (por correo, WhatsApp, etc.).</p>
       </div>
+      )}
 
+      {subTabClientesPagos==='envioPagos' && (
       <div className="informe-cliente-bar">
         <span className="informe-cliente-icon">
           <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0 0 12.04 2zm5.71 14.26c-.24.68-1.4 1.3-1.93 1.38-.5.08-1.14.11-1.84-.12-.42-.13-.97-.32-1.66-.63-2.93-1.27-4.84-4.24-4.99-4.44-.15-.2-1.2-1.59-1.2-3.04 0-1.44.75-2.15 1.02-2.44.27-.29.58-.36.78-.36l.56.01c.18.01.42-.07.66.5.24.58.83 2.01.9 2.16.07.15.12.32.02.52-.1.19-.15.31-.29.48-.15.17-.31.38-.44.51-.15.15-.3.31-.13.6.17.29.75 1.24 1.61 2 1.11.99 2.04 1.29 2.34 1.44.3.15.47.13.65-.08.18-.2.75-.87.95-1.17.2-.29.4-.24.68-.14.28.1 1.77.83 2.07.99.3.15.5.23.57.36.08.13.08.75-.16 1.43z"/></svg>
@@ -471,7 +528,20 @@ export default function InformesView({ procesos, clientes, facturas, desistimien
         <IconButton icon="whatsapp" variant="whatsapp" label="Enviar mensaje de pago por WhatsApp" onClick={handleEnviarPagoWhatsApp} />
         <p className="save-hint" style={{width:'100%', margin:'8px 0 0'}}>Elige un Cliente, alguien de Equipo MD, o escribe un número a mano (celular real con WhatsApp, no un fijo) — abre WhatsApp con un mensaje institucional ya redactado (saludo según la hora, señora/señor + nombre, y el link de pago seguro Davivienda); tú eliges a quién enviárselo desde tu propio WhatsApp.</p>
       </div>
+      )}
+      </div>
+      )}
 
+      {tab==='horasExtras' && (
+      <div>
+        <div className="subnav-panel">
+          <div className="subtabs">
+            {SUBTABS_HORAS_EXTRAS.map(t => (
+              <button key={t.key} type="button" className={"subtab" + (subTabHorasExtras===t.key ? " active" : "")} onClick={() => setSubTabHorasExtras(t.key)}>{t.label}</button>
+            ))}
+          </div>
+        </div>
+      {subTabHorasExtras==='registrar' && (
       <div className="panel" style={{marginTop:20}}>
         <div className="panel-head"><h3>Registrar hora extra</h3></div>
         <div className="panel-body">
@@ -521,7 +591,9 @@ export default function InformesView({ procesos, clientes, facturas, desistimien
           </div>
         </div>
       </div>
+      )}
 
+      {subTabHorasExtras==='registros' && (
       <div className="panel" style={{marginTop:20}}>
         <div className="panel-head"><h3>Registros de horas extras</h3></div>
         <div className="panel-body">
@@ -614,7 +686,20 @@ export default function InformesView({ procesos, clientes, facturas, desistimien
           )}
         </div>
       </div>
+      )}
+      </div>
+      )}
 
+      {tab==='tutelas' && (
+      <div>
+        <div className="subnav-panel">
+          <div className="subtabs">
+            {SUBTABS_TUTELAS.map(t => (
+              <button key={t.key} type="button" className={"subtab" + (subTabTutelas===t.key ? " active" : "")} onClick={() => setSubTabTutelas(t.key)}>{t.label}</button>
+            ))}
+          </div>
+        </div>
+      {subTabTutelas==='informeDiario' && (
       <div className="panel" style={{marginTop:20}}>
         <div className="panel-head"><h3>Informe diario de Tutelas</h3></div>
         <div className="panel-body">
@@ -640,7 +725,9 @@ export default function InformesView({ procesos, clientes, facturas, desistimien
           <p className="save-hint" style={{marginTop:10}}>El botón de correo crea el borrador directo en tu buzón de Outlook, con las tablas y el PDF ya adjunto — ábrelo desde tu carpeta de Borradores y dale Enviar. Si por algún motivo no se puede crear así, se abre un borrador con `mailto:` en su lugar (con destinatarios y asunto listos, pero hay que pegar/adjuntar el contenido a mano). El Excel descarga todas las Tutelas (no solo las de la fecha elegida arriba). El botón de WhatsApp abre WhatsApp con el mensaje ya redactado (Notificadas + Vencimiento) — tú eliges a quién o a qué grupo enviárselo desde tu propio WhatsApp.</p>
         </div>
       </div>
+      )}
 
+      {subTabTutelas==='porAbogado' && (
       <div className="panel" style={{marginTop:20}}>
         <div className="panel-head"><h3>Tutelas por Abogado</h3></div>
         <div className="panel-body">
@@ -711,7 +798,11 @@ export default function InformesView({ procesos, clientes, facturas, desistimien
           <p className="save-hint" style={{marginTop:14}}>El Excel trae 2 hojas (con agrupación de Excel) con el mismo corte de mes elegido arriba: el detalle fila por fila y el resumen por Abogado y Tipo Respuesta que ves en las tarjetas.</p>
         </div>
       </div>
+      )}
+      </div>
+      )}
 
+      {tab==='procesos' && (
       <div className="panel" style={{marginTop:20}}>
         <div className="panel-head">
           <h3>Detalle de Procesos judiciales por Entidad</h3>
@@ -770,14 +861,26 @@ export default function InformesView({ procesos, clientes, facturas, desistimien
           )}
         </div>
       </div>
+      )}
 
-      <div style={{marginTop:20}}>
-        <RevisionProcesosTab procesos={procesos} notify={notify} />
+      {tab==='herramientas' && (
+      <div>
+        <div className="subnav-panel">
+          <div className="subtabs">
+            {SUBTABS_HERRAMIENTAS.map(t => (
+              <button key={t.key} type="button" className={"subtab" + (subTabHerramientas===t.key ? " active" : "")} onClick={() => setSubTabHerramientas(t.key)}>{t.label}</button>
+            ))}
+          </div>
+        </div>
+        {subTabHerramientas==='crearLink' && <CrearLinkCompartirTab config={config} notify={notify} />}
+        {subTabHerramientas==='revisionProcesos' && (
+          <div style={{marginTop:20}}>
+            <RevisionProcesosTab procesos={procesos} notify={notify} />
+          </div>
+        )}
+        {subTabHerramientas==='cruceArchivos' && <CruceArchivosTab notify={notify} />}
       </div>
-
-      <CruceArchivosTab notify={notify} />
-
-      <CrearLinkCompartirTab config={config} notify={notify} />
+      )}
     </div>
   );
 }

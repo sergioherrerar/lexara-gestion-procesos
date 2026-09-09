@@ -64,7 +64,11 @@ const NOMBRES_MASCULINOS = new Set(['jose','josé','juan','carlos','luis','jorge
   'edgar','wilson','giovanny','giovanni','yesid','harold','jhon','john','jonathan','jhonatan','faber']);
 const EXCEPCIONES_MASCULINOS_TERMINAN_A = new Set(['luca','jonathan de jesus']);
 
-function generoDePrimerNombre(primerNombre){
+// Exportada — además de usarse acá para el saludo de WhatsApp, se reutiliza
+// en formatoImpulsoProcesal.js para el saludo "Respetado Doctor:"/"Respetada
+// Doctora:" según el nombre del Juez/Magistrado (pedido explícito del
+// usuario 2026-09-10: "genero la misma de whatsApp").
+export function generoDePrimerNombre(primerNombre){
   const n = (primerNombre || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
   if(NOMBRES_FEMENINOS.has(n)) return 'f';
   if(NOMBRES_MASCULINOS.has(n)) return 'm';
