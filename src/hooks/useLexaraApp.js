@@ -78,11 +78,32 @@ async function cargarTodasLasListas(config, lists, sid){
   }));
 }
 
+// Bug real 2026-09-09: "Vincular links automáticamente" (y "Buscar y
+// vincular carpeta") daban 400 en TODOS los procesos — "Field
+// 'Link_x0020_Carpetas' is not recognized" — ese es el nombre INTERNO de la
+// columna vieja tipo "Hipervínculo o imagen" (antes de que el usuario la
+// recreara como texto plano, ver commit "Corrige numero invalido..."). El
+// navegador de cada usuario tenía guardado en localStorage el mapeo VIEJO
+// (de cuando se confirmó en Configuración antes de la recreación), y ese
+// valor guardado SIEMPRE pisa el mapeo nuevo ya corregido en config.js (ver
+// el spread de abajo) — así que el arreglo en config.js nunca llegaba a
+// aplicarse en ningún navegador que ya hubiera mapeado antes. Estas 3
+// columnas de Procesos judiciales ya NO deben tomarse nunca de localStorage
+// — el valor correcto vive fijo en config.js desde que se recrearon.
+const CAMPOS_LINK_SIEMPRE_DESDE_CONFIG = { procesos: ['LinkCarpeta','LinkContrato','LinkCliente'] };
+function mapeoSinCamposObsoletos(listKey, mapeoGuardado){
+  const excluir = CAMPOS_LINK_SIEMPRE_DESDE_CONFIG[listKey];
+  if(!excluir || !mapeoGuardado) return mapeoGuardado;
+  const limpio = {...mapeoGuardado};
+  excluir.forEach(k => delete limpio[k]);
+  return limpio;
+}
+
 export function useLexaraApp(){
   const [config, setConfigState] = useState(INITIAL_CONFIG);
   const [lists, setLists] = useState(() => {
     const saved = loadSavedMappings();
-    return SHAREPOINT_LISTS_CONFIG.map(l => ({...l, mapping:{...l.mapping, ...(saved[l.key]||{})}}));
+    return SHAREPOINT_LISTS_CONFIG.map(l => ({...l, mapping:{...l.mapping, ...mapeoSinCamposObsoletos(l.key, saved[l.key])}}));
   });
   const [liveMode, setLiveMode] = useState(false);
   // Corregido 2026-08-19: desde que "ya inició sesión" dejó de esperar a que

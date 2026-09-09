@@ -59,6 +59,12 @@ export default function InformesView({ procesos, clientes, facturas, desistimien
   // Notificación); la de Vencimiento siempre es la de hoy al momento de
   // generar. Ver [[project_tutelas_modulo]] / informeTutelas.js.
   const [fechaInformeTutelas, setFechaInformeTutelas] = useState(() => new Date().toISOString().slice(0,10));
+  // Fecha de Vencimiento elegible — pedido explícito del usuario 2026-09-09:
+  // antes SIEMPRE era la fecha de hoy a la fuerza (ver calcularFechasInforme
+  // en informeTutelas.js); ahora se puede elegir otra, y esa elección aplica
+  // a los 3 botones que arman el informe (PDF, Correo, WhatsApp) — el Excel
+  // sigue trayendo TODAS las Tutelas sin filtrar por fecha, no le aplica.
+  const [fechaVencimientoInforme, setFechaVencimientoInforme] = useState(() => new Date().toISOString().slice(0,10));
   const [generandoTutelasPDF, setGenerandoTutelasPDF] = useState(false);
   const [generandoCorreoTutelas, setGenerandoCorreoTutelas] = useState(false);
   const [generandoTutelasExcel, setGenerandoTutelasExcel] = useState(false);
@@ -323,7 +329,7 @@ export default function InformesView({ procesos, clientes, facturas, desistimien
   }
   async function handleGenerarTutelasPDF(){
     setGenerandoTutelasPDF(true);
-    try{ await generarInformeTutelasPDF(tutelas, fechaInformeTutelas); }
+    try{ await generarInformeTutelasPDF(tutelas, fechaInformeTutelas, fechaVencimientoInforme); }
     catch(err){ console.error(err); notify?.("No se pudo generar el PDF de Tutelas: " + err.message, 'error'); }
     finally { setGenerandoTutelasPDF(false); }
   }
@@ -347,7 +353,7 @@ export default function InformesView({ procesos, clientes, facturas, desistimien
       // (mailto + copiar tabla al portapapeles) — nunca se queda sin abrir nada.
       if(liveMode){
         try{
-          const mensaje = await enviarBorradorTutelasGraph(tutelas, fechaInformeTutelas);
+          const mensaje = await enviarBorradorTutelasGraph(tutelas, fechaInformeTutelas, fechaVencimientoInforme);
           // El enlace directo al correo (webLink) resultó no ser confiable
           // para esta cuenta, y tampoco bastaba con abrir la carpeta de
           // Borradores (el usuario confirmó que ni con F5 aparecía ahí) —
@@ -363,7 +369,7 @@ export default function InformesView({ procesos, clientes, facturas, desistimien
       }
 
       try{
-        const copiadoHtml = await abrirCorreoTutelas(tutelas, fechaInformeTutelas);
+        const copiadoHtml = await abrirCorreoTutelas(tutelas, fechaInformeTutelas, fechaVencimientoInforme);
         if(copiadoHtml) notify?.('No se pudo crear el borrador automático todavía (puede que falte aprobar el permiso nuevo en Azure AD) — se abrió el correo por el método anterior; las tablas ya están copiadas, pégalas con Ctrl+V.', 'info');
       }
       catch(err){ console.error(err); notify?.("No se pudo abrir el correo de Tutelas: " + err.message, 'error'); }
@@ -384,7 +390,7 @@ export default function InformesView({ procesos, clientes, facturas, desistimien
   // real de la plataforma, no de esta app), pero esto deja el mensaje
   // listo sin tener que redactarlo a mano cada vez.
   function handleCompartirWhatsAppTutelas(){
-    const mensaje = construirMensajeWhatsAppTutelas(tutelas, fechaInformeTutelas);
+    const mensaje = construirMensajeWhatsAppTutelas(tutelas, fechaInformeTutelas, fechaVencimientoInforme);
     window.open(`https://wa.me/?text=${encodeURIComponent(mensaje)}`, '_blank');
   }
   // Excel con el mismo formato de columnas del Excel de SOS, pero de TODOS
@@ -610,12 +616,16 @@ export default function InformesView({ procesos, clientes, facturas, desistimien
         <div className="panel-head"><h3>Informe diario de Tutelas</h3></div>
         <div className="panel-body">
           <p style={{margin:'0 0 14px', color:'var(--texto-suave)', fontSize:13}}>
-            Elige la fecha de <strong>Notificación</strong> a reportar (junta todas las Tutelas con esa fecha, sin filtrar por Entidad) — las de <strong>Vencimiento</strong> siempre son las de la fecha de hoy, al momento de generar el PDF o el correo.
+            Elige la fecha de <strong>Notificación</strong> y la de <strong>Vencimiento</strong> a reportar (junta todas las Tutelas con esa fecha, sin filtrar por Entidad) — las dos se usan al generar el PDF, el correo o el mensaje de WhatsApp. Por defecto Vencimiento trae la fecha de hoy.
           </p>
           <div style={{display:'flex', alignItems:'center', gap:14, flexWrap:'wrap'}}>
             <div className="field" style={{maxWidth:220}}>
               <label>Fecha Notificación</label>
               <input type="date" value={fechaInformeTutelas} onChange={e => setFechaInformeTutelas(e.target.value)} />
+            </div>
+            <div className="field" style={{maxWidth:220}}>
+              <label>Fecha Vencimiento</label>
+              <input type="date" value={fechaVencimientoInforme} onChange={e => setFechaVencimientoInforme(e.target.value)} />
             </div>
             <div style={{display:'flex', gap:8}}>
               <IconButton icon="pdf" variant="pdf" label="Descargar PDF de Tutelas" spinning={generandoTutelasPDF} onClick={handleGenerarTutelasPDF} />

@@ -40,15 +40,18 @@ function hoyISO(){
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 
-// El usuario elige UNA sola fecha — la de Notificación (cualquier día, la
-// que sea) — y la de Vencimiento siempre es la fecha real de HOY, al
-// momento exacto de darle clic al botón de PDF o Correo (igual criterio que
-// la macro de Access original: TXtDiaNoti para Notificación, Date() del
-// sistema para Vencimiento). Corregido 2026-08-18 — antes era al revés.
-export function calcularFechasInforme(fechaNotificacionISO){
+// El usuario elige la fecha de Notificación (cualquier día, la que sea); la
+// de Vencimiento por defecto era siempre la fecha real de HOY, al momento
+// exacto de darle clic al botón de PDF/Correo (igual criterio que la macro
+// de Access original: TXtDiaNoti para Notificación, Date() del sistema para
+// Vencimiento — corregido 2026-08-18, antes era al revés). Pedido explícito
+// del usuario 2026-09-09: agregar también un selector para Vencimiento, en
+// vez de que sea siempre "hoy" a la fuerza — si no se pasa nada (o se pasa
+// vacío), sigue cayendo en HOY, para no romper ningún llamado viejo.
+export function calcularFechasInforme(fechaNotificacionISO, fechaVencimientoISO){
   return {
     fechaNotificacion: fechaNotificacionISO,
-    fechaVencimiento: hoyISO(),
+    fechaVencimiento: fechaVencimientoISO || hoyISO(),
   };
 }
 
@@ -110,8 +113,8 @@ function dibujarSeccion(doc, autoTable, titulo, filas, y, pageWidth, dibujarEnca
 // reusarlo también al crear el borrador de correo por Graph (adjunta el
 // mismo PDF en bytes, sin descargarlo aparte). `generarInformeTutelasPDF` de
 // abajo es el único que lo guarda como archivo.
-async function construirPDFTutelas(tutelas, fechaNotificacionISO){
-  const { fechaVencimiento, fechaNotificacion } = calcularFechasInforme(fechaNotificacionISO);
+async function construirPDFTutelas(tutelas, fechaNotificacionISO, fechaVencimientoISO){
+  const { fechaVencimiento, fechaNotificacion } = calcularFechasInforme(fechaNotificacionISO, fechaVencimientoISO);
   const { doc, autoTable, pageWidth, dibujarEncabezadoYPie, numerarPaginas } = await prepararDocumentoPDF('Tutelas notificadas y vencimiento');
 
   dibujarEncabezadoYPie();
@@ -135,8 +138,8 @@ async function construirPDFTutelas(tutelas, fechaNotificacionISO){
   return { doc, nombreArchivo: `Tutelas Notificadas y con vencimiento ${fechaNotificacion}.pdf` };
 }
 
-export async function generarInformeTutelasPDF(tutelas, fechaNotificacionISO){
-  const { doc, nombreArchivo } = await construirPDFTutelas(tutelas, fechaNotificacionISO);
+export async function generarInformeTutelasPDF(tutelas, fechaNotificacionISO, fechaVencimientoISO){
+  const { doc, nombreArchivo } = await construirPDFTutelas(tutelas, fechaNotificacionISO, fechaVencimientoISO);
   doc.save(nombreArchivo);
 }
 
@@ -185,8 +188,8 @@ function listadoTexto(filas, notaTruncado = 'ver el PDF adjunto para el listado 
 // medio, y funciona igual para un contacto que para un grupo porque quien
 // elige el destino es la persona, no la app (WhatsApp no deja automatizar
 // el envío a un grupo). *Negrita* funciona tal cual en WhatsApp.
-export function construirMensajeWhatsAppTutelas(tutelas, fechaNotificacionISO){
-  const { fechaVencimiento, fechaNotificacion } = calcularFechasInforme(fechaNotificacionISO);
+export function construirMensajeWhatsAppTutelas(tutelas, fechaNotificacionISO, fechaVencimientoISO){
+  const { fechaVencimiento, fechaNotificacion } = calcularFechasInforme(fechaNotificacionISO, fechaVencimientoISO);
   const notificadas = filasPorFecha(tutelas, 'FechaNotificacion', fechaNotificacion);
   const vencimiento = filasPorFecha(tutelas, 'FechaVencimiento', fechaVencimiento);
   const notaTruncado = 'descarga el PDF completo desde Portal Lexara para verlas todas.';
@@ -261,16 +264,19 @@ async function copiarTablaAlPortapapeles(html, texto){
 // real: primero Vencimiento (hoy), después Notificación.
 // Devuelve true si logró copiar las tablas en HTML al portapapeles (para
 // que quien llama pueda avisarle al usuario que las pegue con Ctrl+V).
-export async function abrirCorreoTutelas(tutelas, fechaNotificacionISO){
-  const { fechaVencimiento, fechaNotificacion } = calcularFechasInforme(fechaNotificacionISO);
+export async function abrirCorreoTutelas(tutelas, fechaNotificacionISO, fechaVencimientoISO){
+  const { fechaVencimiento, fechaNotificacion } = calcularFechasInforme(fechaNotificacionISO, fechaVencimientoISO);
   const notificadas = filasPorFecha(tutelas, 'FechaNotificacion', fechaNotificacion);
   const vencimiento = filasPorFecha(tutelas, 'FechaVencimiento', fechaVencimiento);
 
   const asunto = `Notificación de Tutelas del (${fechaCorta(fechaNotificacion)}) y Vencimiento de las respuestas del (${fechaCorta(fechaVencimiento)})`;
-  const introTexto = `Buenos días,\n\nEn el documento adjunto se encuentran las tutelas asignadas el día ${fechaLargaSinHora(fechaNotificacion)}, así como aquellas que se encuentran en término de vencimiento para el día de hoy, ${fechaLargaSinHora(fechaVencimiento)}.`;
+  // "el día de hoy" se cambió por la fecha elegida — pedido explícito del
+  // usuario 2026-09-09 (antes de este cambio Vencimiento SIEMPRE era hoy, así
+  // que decir "hoy" era correcto; ahora se puede elegir otra fecha).
+  const introTexto = `Buenos días,\n\nEn el documento adjunto se encuentran las tutelas asignadas el día ${fechaLargaSinHora(fechaNotificacion)}, así como aquellas que se encuentran en término de vencimiento el día ${fechaLargaSinHora(fechaVencimiento)}.`;
   const cuerpoConListado = [
     introTexto, '',
-    'Contestaciones con Vencimiento el día de hoy',
+    `Contestaciones con Vencimiento (${fechaCorta(fechaVencimiento)})`,
     listadoTexto(vencimiento),
     `Total de registros: ${vencimiento.length}`,
     '',
@@ -281,7 +287,7 @@ export async function abrirCorreoTutelas(tutelas, fechaNotificacionISO){
     'Saludos,',
   ].join('\n');
 
-  const htmlTablas = tablaHtml('Contestaciones con Vencimiento el día de hoy', vencimiento) + tablaHtml('Tutelas Asignadas el Día Anterior', notificadas) + FIRMA_HTML;
+  const htmlTablas = tablaHtml(`Contestaciones con Vencimiento (${fechaCorta(fechaVencimiento)})`, vencimiento) + tablaHtml('Tutelas Asignadas el Día Anterior', notificadas) + FIRMA_HTML;
   const copiadoHtml = await copiarTablaAlPortapapeles(htmlTablas, cuerpoConListado);
 
   // Si sí se copió el HTML, el cuerpo del mailto se deja simple (sin el
@@ -315,21 +321,21 @@ function arrayBufferABase64(buffer){
 // todavía, sin conexión, lo que sea), lanza para que quien llama (ver
 // InformesView.jsx) caiga de vuelta a abrirCorreoTutelas().
 // Devuelve el mensaje creado por Graph (usar su `webLink` para abrirlo).
-export async function enviarBorradorTutelasGraph(tutelas, fechaNotificacionISO){
-  const { fechaVencimiento, fechaNotificacion } = calcularFechasInforme(fechaNotificacionISO);
+export async function enviarBorradorTutelasGraph(tutelas, fechaNotificacionISO, fechaVencimientoISO){
+  const { fechaVencimiento, fechaNotificacion } = calcularFechasInforme(fechaNotificacionISO, fechaVencimientoISO);
   const notificadas = filasPorFecha(tutelas, 'FechaNotificacion', fechaNotificacion);
   const vencimiento = filasPorFecha(tutelas, 'FechaVencimiento', fechaVencimiento);
 
   const asunto = `Notificación de Tutelas del (${fechaCorta(fechaNotificacion)}) y Vencimiento de las respuestas del (${fechaCorta(fechaVencimiento)})`;
   const htmlBody = `<html><body style="font-family:Calibri,Arial,sans-serif;font-size:14px;color:#1c2624;">` +
     `<p>Buenos días,</p>` +
-    `<p>En el documento adjunto se encuentran las tutelas asignadas el día <strong>${fechaLargaSinHora(fechaNotificacion)}</strong>, así como aquellas que se encuentran en término de vencimiento para el día de hoy, <strong>${fechaLargaSinHora(fechaVencimiento)}</strong>.</p>` +
-    tablaHtml('Contestaciones con Vencimiento el día de hoy', vencimiento) +
+    `<p>En el documento adjunto se encuentran las tutelas asignadas el día <strong>${fechaLargaSinHora(fechaNotificacion)}</strong>, así como aquellas que se encuentran en término de vencimiento el día <strong>${fechaLargaSinHora(fechaVencimiento)}</strong>.</p>` +
+    tablaHtml(`Contestaciones con Vencimiento (${fechaCorta(fechaVencimiento)})`, vencimiento) +
     tablaHtml('Tutelas Asignadas el Día Anterior', notificadas) +
     FIRMA_HTML +
     `</body></html>`;
 
-  const { doc, nombreArchivo } = await construirPDFTutelas(tutelas, fechaNotificacionISO);
+  const { doc, nombreArchivo } = await construirPDFTutelas(tutelas, fechaNotificacionISO, fechaVencimientoISO);
   const adjuntoBase64 = arrayBufferABase64(doc.output('arraybuffer'));
 
   return crearBorradorCorreo({
