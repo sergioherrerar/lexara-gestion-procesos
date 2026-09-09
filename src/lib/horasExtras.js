@@ -96,7 +96,13 @@ function diurnasNocturnas(inicio, fin){
   if(n2Fin > n2Ini) nocturnas += n2Fin - n2Ini;
   return { diurnas, nocturnas };
 }
-function redondear(n){ return Math.round(n * 100) / 100; }
+// Exportada — además de usarse acá para clasificar un solo turno, hace
+// falta de nuevo afuera (InformesView.jsx) al SUMAR varios turnos ya
+// redondeados: sumar números de punto flotante (ej. 2.14 + 2.14) puede dar
+// "4.2799999999999999" en vez de "4.28" aunque cada uno ya viniera
+// redondeado — bug real reportado 2026-09-09 en el resumen por Colaborador
+// de Registros de horas extras.
+export function redondear(n){ return Math.round(n * 100) / 100; }
 
 // Clasifica un turno de hora extra en las 4 categorías reales. Si el turno
 // cruza la medianoche (HoraFin menor que HoraInicio), el pedazo que cae en

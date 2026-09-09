@@ -15,7 +15,7 @@ import { generarInformeTutelasPDF, abrirCorreoTutelas, enviarBorradorTutelasGrap
 import { generarInformeGeneralProcesosExcel } from '../lib/informeGeneral';
 import { agruparPorAbogado, filtrarTutelasPorMes, generarInformeAbogadosTutelasExcel, colorDeTipoRespuesta, MESES_NOMBRES } from '../lib/informeAbogadosTutelas';
 import StackedBarChart from './StackedBarChart';
-import { clasificarHorasExtra, soloFecha } from '../lib/horasExtras';
+import { clasificarHorasExtra, soloFecha, redondear } from '../lib/horasExtras';
 import RevisionProcesosTab from './RevisionProcesosTab';
 import CruceArchivosTab from './CruceArchivosTab';
 import CrearLinkCompartirTab from './CrearLinkCompartirTab';
@@ -239,9 +239,12 @@ export default function InformesView({ procesos, clientes, facturas, desistimien
       const g = porColaborador.get(nombre);
       const total = g.diurnas + g.nocturnas + g.diurnasFestivas + g.nocturnasFestivas;
       totalGeneral += total;
-      return { colaborador: nombre, ...g, total };
+      // redondear() al final, no en cada suma parcial — sumar números de
+      // punto flotante ya redondeados individualmente (ver clasificarHorasExtra)
+      // puede dar "4.2799999999999999" en vez de "4.28".
+      return { colaborador: nombre, diurnas: redondear(g.diurnas), nocturnas: redondear(g.nocturnas), diurnasFestivas: redondear(g.diurnasFestivas), nocturnasFestivas: redondear(g.nocturnasFestivas), total: redondear(total) };
     });
-    return { grupos, totalGeneral };
+    return { grupos, totalGeneral: redondear(totalGeneral) };
   })();
 
   const tutelasDelMesAbogados = filtrarTutelasPorMes(tutelas, anioAbogados, mesAbogados);
@@ -581,7 +584,7 @@ export default function InformesView({ procesos, clientes, facturas, desistimien
                       </thead>
                       <tbody>
                         {columna.map(h => {
-                          const total = (Number(h.HorasDiurnas)||0) + (Number(h.HorasNocturnas)||0) + (Number(h.HorasDiurnasFestivas)||0) + (Number(h.HorasNocturnasFestivas)||0);
+                          const total = redondear((Number(h.HorasDiurnas)||0) + (Number(h.HorasNocturnas)||0) + (Number(h.HorasDiurnasFestivas)||0) + (Number(h.HorasNocturnasFestivas)||0));
                           return (
                             <tr key={h.id}>
                               <td className="cliente">{h.Colaborador || "—"}</td>
