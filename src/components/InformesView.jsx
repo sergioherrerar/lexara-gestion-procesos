@@ -19,6 +19,7 @@ import { clasificarHorasExtra, soloFecha, redondear } from '../lib/horasExtras';
 import RevisionProcesosTab from './RevisionProcesosTab';
 import CruceArchivosTab from './CruceArchivosTab';
 import CrearLinkCompartirTab from './CrearLinkCompartirTab';
+import LiquidacionInteresesTab from './LiquidacionInteresesTab';
 import { construirMensajePagoWhatsApp, normalizarTelefonoWaMe, normalizarTelefonoManualWaMe, PAISES_WHATSAPP } from '../lib/whatsappPago';
 
 // Entidades con formato de informe formal ya confirmado, y qué generador usa
@@ -83,9 +84,10 @@ const SUBTABS_HERRAMIENTAS = [
   {key:'crearLink', label:'Crear link para compartir'},
   {key:'revisionProcesos', label:'Revisión de Procesos'},
   {key:'cruceArchivos', label:'Cruce de Archivos'},
+  {key:'liquidacionIntereses', label:'Liquidación Intereses'},
 ];
 
-export default function InformesView({ procesos, clientes, facturas, desistimientos, tutelas, valoresEntidad, notify, liveMode, config, requestConfirm, corregirEntidadFaltanteTutelas, colaboradores, onCreateHoraExtra, onEditarHoraExtra, onEliminarHoraExtra, horasExtras }){
+export default function InformesView({ procesos, clientes, facturas, desistimientos, tutelas, valoresEntidad, notify, liveMode, config, requestConfirm, corregirEntidadFaltanteTutelas, colaboradores, onCreateHoraExtra, onEditarHoraExtra, onEliminarHoraExtra, horasExtras, tasasInteres, ipcMensual }){
   const [tab, setTab] = useState('clientesPagos');
   const [subTabClientesPagos, setSubTabClientesPagos] = useState('informeCliente');
   const [subTabTutelas, setSubTabTutelas] = useState('informeDiario');
@@ -879,6 +881,7 @@ export default function InformesView({ procesos, clientes, facturas, desistimien
           </div>
         )}
         {subTabHerramientas==='cruceArchivos' && <CruceArchivosTab notify={notify} />}
+        {subTabHerramientas==='liquidacionIntereses' && <LiquidacionInteresesTab notify={notify} tasasInteres={tasasInteres} ipcMensual={ipcMensual} config={config} />}
       </div>
       )}
     </div>

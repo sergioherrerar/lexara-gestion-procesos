@@ -49,6 +49,15 @@ export const INITIAL_CONFIG = {
   // del usuario: "es un link para todos los documentos", sin lista/biblioteca
   // propia dentro de la app).
   DOCUMENTOS_EMPRESA_URL: "https://mydabogados.sharepoint.com/:f:/g/IgChHEoNJ81RTIM29zEZo0goASpa5NnRSXh6TeLdvLJ-QNA?e=uMeU0f",
+  // Fuentes oficiales para actualizar las tablas de "Liquidación Intereses"
+  // (Informes > Herramientas) — pedido explícito del usuario 2026-09-09:
+  // botones que abren la página real donde se publica el dato nuevo cada
+  // mes, para que sea rápido ir a mirar y cargar la fila que falte. No hay
+  // forma de traer el dato en vivo (ambos publican como archivo Excel/PDF
+  // nuevo cada mes, sin una dirección fija) — se sigue cargando a mano en
+  // las listas SharePoint "TasasInteres"/"IPC", igual que antes con el Excel.
+  IPC_FUENTE_URL: "https://www.dane.gov.co/index.php/estadisticas-por-tema/precios-y-costos/indice-de-precios-al-consumidor-ipc",
+  TASAS_INTERES_FUENTE_URL: "https://www.superfinanciera.gov.co/publicaciones/10829/sala-de-prensacomunicados-de-prensa-interes-bancario-corriente-10829/",
 };
 
 // =========================================================================
@@ -904,6 +913,38 @@ export const SHAREPOINT_LISTS_CONFIG = [
     // listas de Gastos la primera vez.
     mapping: { Numero:"Numero", PagadoA:"Pagadoa", Fecha:"Fecha", ValorAPagar:"Valorapagar", TipoDocumento:"TipoDocumento", SoporteFactura:"SoporteFactura2", SoportePago:"SoportePago2" },
   },
+  // Herramienta "Liquidación Intereses" (Informes > Herramientas) — agregada
+  // 2026-09-09, pedido explícito del usuario: reemplaza el cálculo manual en
+  // Excel ("INTERESES UNO A UNO.xlsm" / "Liquidador Intereses e IPC.xlsx").
+  // Estas 2 listas son las tablas de referencia (sin panel propio, mismo
+  // criterio que Tipos de Acción/Valores Entidad) que la app cruza en vivo
+  // para calcular interés moratorio e indexación por IPC — ver
+  // lib/liquidacionIntereses.js. Se cargan completas al iniciar sesión
+  // (no son muchas filas) y se mantienen así: cuando DANE/Superfinanciera
+  // publiquen el dato nuevo del mes/período, se agrega una fila más acá
+  // (mismo hábito que ya tenía el usuario con su Excel).
+  {
+    key: "tasasInteres",
+    listName: "TasasInteres",
+    label: "Tasas de interés (Liquidación Intereses)",
+    semanticFields: [
+      {key:"FechaDesde", label:"Fecha Desde", hint:["fechadesde","fecha desde"], required:true},
+      {key:"FechaHasta", label:"Fecha Hasta", hint:["fechahasta","fecha hasta"], required:true},
+      {key:"TasaAnual", label:"Tasa Anual", hint:["tasaanual","tasa anual"], required:true},
+    ],
+    mapping: { FechaDesde:"FechaDesde", FechaHasta:"FechaHasta", TasaAnual:"TasaAnual" },
+  },
+  {
+    key: "ipc",
+    listName: "IPC",
+    label: "IPC mensual (Liquidación Intereses)",
+    semanticFields: [
+      {key:"Anio", label:"Año", hint:["anio","año"], required:true},
+      {key:"Mes", label:"Mes", hint:["mes"], required:true},
+      {key:"Indice", label:"Índice", hint:["indice","índice"], required:true},
+    ],
+    mapping: { Anio:"Anio", Mes:"Mes", Indice:"Indice" },
+  },
 ];
 
 export const DEMO_PROCESOS = [
@@ -1169,6 +1210,36 @@ export const DEMO_GASTOS = [
   {id:1, Numero:"70940076", PagadoA:"MAYERLY HERNANDEZ ZAPATA", Fecha:"2026-08-10", ValorAPagar:280000, TipoDocumento:"Soporte de pago", SoporteFactura:"", SoportePago:""},
   {id:2, Numero:"E6071426412", PagadoA:"CLARO", Fecha:"2026-08-17", ValorAPagar:270091.6, TipoDocumento:"Factura", SoporteFactura:"", SoportePago:""},
   {id:3, Numero:"RDL1801", PagadoA:"RESEARCH & DEVELOPMENT IN LAW SAS", Fecha:"2026-08-31", ValorAPagar:689724, TipoDocumento:"Factura", SoporteFactura:"", SoportePago:""},
+];
+// Muestra chica (no las ~250/280 filas reales) SOLO para poder probar la
+// herramienta "Liquidación Intereses" en modo demo — son valores REALES
+// (tomados de las tablas históricas reales del usuario), recortados a la
+// ventana Sep-2025/Jun-2026 para que quepan acá y alcance para un cálculo
+// de ejemplo. Al conectar en vivo, la app usa la lista completa real.
+export const DEMO_TASAS_INTERES = [
+  {id:1, FechaDesde:"2025-09-30", FechaHasta:"2025-10-31", TasaAnual:0.2436},
+  {id:2, FechaDesde:"2025-10-31", FechaHasta:"2025-11-30", TasaAnual:0.2499},
+  {id:3, FechaDesde:"2025-11-30", FechaHasta:"2025-12-31", TasaAnual:0.2502},
+  {id:4, FechaDesde:"2025-12-31", FechaHasta:"2026-01-31", TasaAnual:0.2436},
+  {id:5, FechaDesde:"2026-01-31", FechaHasta:"2026-02-28", TasaAnual:0.2523},
+  {id:6, FechaDesde:"2026-02-28", FechaHasta:"2026-03-31", TasaAnual:0.2523},
+  {id:7, FechaDesde:"2026-03-31", FechaHasta:"2026-04-30", TasaAnual:0.2676},
+  {id:8, FechaDesde:"2026-04-30", FechaHasta:"2026-05-31", TasaAnual:0.2817},
+  {id:9, FechaDesde:"2026-05-31", FechaHasta:"2026-06-30", TasaAnual:0.2879},
+  {id:10, FechaDesde:"2026-06-30", FechaHasta:"2026-07-31", TasaAnual:0.2879},
+  {id:11, FechaDesde:"2026-07-31", FechaHasta:"2026-08-31", TasaAnual:0.2966},
+];
+export const DEMO_IPC = [
+  {id:1, Anio:2025, Mes:9, Indice:151.48},
+  {id:2, Anio:2025, Mes:10, Indice:151.76},
+  {id:3, Anio:2025, Mes:11, Indice:151.87},
+  {id:4, Anio:2025, Mes:12, Indice:152.27},
+  {id:5, Anio:2026, Mes:1, Indice:154.07},
+  {id:6, Anio:2026, Mes:2, Indice:155.73},
+  {id:7, Anio:2026, Mes:3, Indice:156.94},
+  {id:8, Anio:2026, Mes:4, Indice:158.17},
+  {id:9, Anio:2026, Mes:5, Indice:158.91},
+  {id:10, Anio:2026, Mes:6, Indice:159.53},
 ];
 
 export const ICON_SVG = `<svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 30 L50 50 L80 30" stroke="currentColor" stroke-width="14" fill="none" stroke-linecap="square"/><path d="M20 70 L50 50 L80 70" stroke="currentColor" stroke-width="14" fill="none" stroke-linecap="square"/></svg>`;

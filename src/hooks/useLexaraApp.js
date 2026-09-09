@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { INITIAL_CONFIG, SHAREPOINT_LISTS_CONFIG, DEMO_PROCESOS, DEMO_CLIENTES, DEMO_FACTURAS, DEMO_ORDENES_COMPRA, DEMO_COLABORADORES, DEMO_FORMAS_PAGO, DEMO_DESISTIMIENTOS, DEMO_TIPOS_ACCION, DEMO_TUTELAS, DEMO_TEMAS, DEMO_VALORES_ENTIDAD, DEMO_HORAS_EXTRAS, DEMO_VACACIONES_PERIODOS, DEMO_PROVEEDORES_GASTOS, DEMO_CUENTAS_COBRO_GASTOS, DEMO_PAGOS_POR_REALIZAR, DEMO_GASTOS, RUTAS_CARPETAS_ENTIDAD } from '../config';
+import { INITIAL_CONFIG, SHAREPOINT_LISTS_CONFIG, DEMO_PROCESOS, DEMO_CLIENTES, DEMO_FACTURAS, DEMO_ORDENES_COMPRA, DEMO_COLABORADORES, DEMO_FORMAS_PAGO, DEMO_DESISTIMIENTOS, DEMO_TIPOS_ACCION, DEMO_TUTELAS, DEMO_TEMAS, DEMO_VALORES_ENTIDAD, DEMO_HORAS_EXTRAS, DEMO_VACACIONES_PERIODOS, DEMO_PROVEEDORES_GASTOS, DEMO_CUENTAS_COBRO_GASTOS, DEMO_PAGOS_POR_REALIZAR, DEMO_GASTOS, DEMO_TASAS_INTERES, DEMO_IPC, RUTAS_CARPETAS_ENTIDAD } from '../config';
 import * as Graph from '../lib/graph';
 import { canWrite as canWriteForColaborador, modulosPermitidosDe, MODULOS_DISPONIBLES } from '../lib/permissions';
 
@@ -173,6 +173,12 @@ export function useLexaraApp(){
   const [cuentasCobroGastos, setCuentasCobroGastos] = useState([]);
   const [pagosPorRealizar, setPagosPorRealizar] = useState([]);
   const [gastos, setGastos] = useState([]);
+  // Liquidación Intereses (Informes > Herramientas, 2026-09-09) — mismo
+  // criterio "lista de referencia sin panel propio" que Tema/Valores
+  // Entidad: se cargan completas y se cruzan en vivo desde
+  // lib/liquidacionIntereses.js, nunca se editan desde acá.
+  const [tasasInteres, setTasasInteres] = useState([]);
+  const [ipcMensual, setIpcMensual] = useState([]);
   // Cuando se abre/crea una factura, orden de compra, forma de pago o
   // desistimiento DESDE dentro de un proceso, se guarda aquí su id — al
   // cerrar ese panel se reabre el mismo proceso en vez de dejar solo la
@@ -247,6 +253,8 @@ export function useLexaraApp(){
     setCuentasCobroGastos(JSON.parse(JSON.stringify(DEMO_CUENTAS_COBRO_GASTOS)));
     setPagosPorRealizar(JSON.parse(JSON.stringify(DEMO_PAGOS_POR_REALIZAR)));
     setGastos(JSON.parse(JSON.stringify(DEMO_GASTOS)));
+    setTasasInteres(JSON.parse(JSON.stringify(DEMO_TASAS_INTERES)));
+    setIpcMensual(JSON.parse(JSON.stringify(DEMO_IPC)));
     setAccount({ name:"Usuario Demo", username:"demo@lexara.com" });
     setAppActive(true);
     if(!silent) setView('dashboard');
@@ -368,6 +376,8 @@ export function useLexaraApp(){
       setCuentasCobroGastos(updated.find(l => l.key==='cuentasCobroGastos')?.items || []);
       setPagosPorRealizar(updated.find(l => l.key==='pagosPorRealizar')?.items || []);
       setGastos(updated.find(l => l.key==='gastos')?.items || []);
+      setTasasInteres(updated.find(l => l.key==='tasasInteres')?.items || []);
+      setIpcMensual(updated.find(l => l.key==='ipc')?.items || []);
     }catch(err){
       console.error(err);
       notify("Se inició sesión, pero no se pudieron cargar los datos de SharePoint: " + Graph.mensajeError(err) + " — probá el botón de Actualizar.", 'error');
@@ -442,6 +452,8 @@ export function useLexaraApp(){
       setCuentasCobroGastos(updated.find(l => l.key==='cuentasCobroGastos')?.items || []);
       setPagosPorRealizar(updated.find(l => l.key==='pagosPorRealizar')?.items || []);
       setGastos(updated.find(l => l.key==='gastos')?.items || []);
+      setTasasInteres(updated.find(l => l.key==='tasasInteres')?.items || []);
+      setIpcMensual(updated.find(l => l.key==='ipc')?.items || []);
     }catch(err){
       console.error(err);
       notify("No se pudo actualizar la información: " + Graph.mensajeError(err), 'error');
@@ -1595,6 +1607,7 @@ export function useLexaraApp(){
     procesos, clientes, facturas, ordenesCompra, colaboradores, formasPago, desistimientos, tiposAccion,
     tutelas, temas, valoresEntidad, horasExtras, vacacionesPeriodos,
     proveedoresGastos, cuentasCobroGastos, pagosPorRealizar, gastos,
+    tasasInteres, ipcMensual,
     currentFilter, setFilter: setCurrentFilter, searchQuery, setSearchQuery: setSearchQuery,
     onSearch: setSearchQuery,
     activeProceso, openProceso, newProceso, closeDrawer, saveProceso, procesoViewOnly, rememberReturnToProceso, vincularLinksProcesosMasivo,
