@@ -123,7 +123,7 @@ export function liquidar({ valorDeuda, fechaVencimiento, fechaCalculo, incluirIP
   };
 }
 
-const MESES_NOMBRES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+export const MESES_NOMBRES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 
 // Para el seguimiento visual de "hasta cuándo están actualizadas las
 // tablas" (pedido explícito del usuario 2026-09-09) — no calcula nada, solo

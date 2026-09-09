@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { mensajeError, fmtMonto } from '../lib/graph';
-import { liquidar, generarPlantillaLiquidacion, leerPlantillaLiquidacion, liquidarFilas, generarExcelLiquidado, ultimaActualizacionTasas, ultimaActualizacionIPC } from '../lib/liquidacionIntereses';
+import { liquidar, generarPlantillaLiquidacion, leerPlantillaLiquidacion, liquidarFilas, generarExcelLiquidado, ultimaActualizacionTasas, ultimaActualizacionIPC, MESES_NOMBRES } from '../lib/liquidacionIntereses';
 import { generarLiquidacionInteresesPDF } from '../lib/liquidacionInteresesPDF';
-import { IconTextButton } from './IconButton';
+import IconButton, { IconTextButton } from './IconButton';
 
 // "Liquidación Intereses" (Informes > Herramientas) — agregada 2026-09-09,
 // pedido explícito del usuario, reemplaza el cálculo manual en 2 archivos
@@ -14,6 +14,8 @@ import { IconTextButton } from './IconButton';
 const MODOS = [
   { key: 'unaLinea', label: 'Una línea (detalle)' },
   { key: 'variasLineas', label: 'Varias líneas (Excel)' },
+  { key: 'tablaTasas', label: 'Tabla Tasas de Interés' },
+  { key: 'tablaIpc', label: 'Tabla IPC' },
 ];
 
 function ModoUnaLinea({ notify, tasasInteres, ipcMensual }){
@@ -197,6 +199,202 @@ function ModoVariasLineas({ notify, tasasInteres, ipcMensual }){
   );
 }
 
+// Pestañas "Tabla Tasas de Interés" / "Tabla IPC" — pedido explícito del
+// usuario 2026-09-09: agregar/modificar/eliminar las filas de referencia
+// directo desde la app, sin tener que entrar a SharePoint. Mismo patrón
+// simple de formulario + tabla con Editar/Eliminar por fila que ya usa
+// "Registros de horas extras" (InformesView.jsx).
+const TASA_VACIA = { FechaDesde: "", FechaHasta: "", TasaAnualPct: "" };
+
+function TablaTasasInteres({ tasasInteres, notify, onCrear, onEditar, onEliminar }){
+  const [nuevo, setNuevo] = useState(TASA_VACIA);
+  const [guardando, setGuardando] = useState(false);
+  const [editandoId, setEditandoId] = useState(null);
+  const [editDraft, setEditDraft] = useState(TASA_VACIA);
+
+  const filas = [...(tasasInteres || [])].sort((a, b) => String(b.FechaDesde || "").localeCompare(String(a.FechaDesde || "")));
+
+  async function handleAgregar(){
+    if(!nuevo.FechaDesde || !nuevo.FechaHasta || nuevo.TasaAnualPct === ""){
+      notify?.("Completa Fecha Desde, Fecha Hasta y Tasa Anual.", 'error'); return;
+    }
+    setGuardando(true);
+    try{
+      await onCrear?.({ FechaDesde: nuevo.FechaDesde, FechaHasta: nuevo.FechaHasta, TasaAnual: Number(nuevo.TasaAnualPct) / 100 });
+      setNuevo(TASA_VACIA);
+    }catch(err){ console.error(err); notify?.(mensajeError(err), 'error'); }
+    finally{ setGuardando(false); }
+  }
+  function empezarEdicion(t){
+    setEditandoId(t.id);
+    setEditDraft({ FechaDesde: t.FechaDesde, FechaHasta: t.FechaHasta, TasaAnualPct: (Number(t.TasaAnual) * 100).toFixed(4).replace(/\.?0+$/, '') });
+  }
+  async function handleGuardarEdicion(id){
+    if(!editDraft.FechaDesde || !editDraft.FechaHasta || editDraft.TasaAnualPct === ""){
+      notify?.("Completa Fecha Desde, Fecha Hasta y Tasa Anual.", 'error'); return;
+    }
+    try{
+      await onEditar?.(id, { FechaDesde: editDraft.FechaDesde, FechaHasta: editDraft.FechaHasta, TasaAnual: Number(editDraft.TasaAnualPct) / 100 });
+      setEditandoId(null);
+    }catch(err){ console.error(err); notify?.(mensajeError(err), 'error'); }
+  }
+
+  return (
+    <div>
+      <p style={{margin:'0 0 16px', color:'var(--texto-suave)', fontSize:13}}>
+        Un tramo por cada vez que cambió la tasa (Fecha Desde exclusiva / Fecha Hasta inclusiva). La tasa se escribe en porcentaje anual (ej: 29.66).
+      </p>
+      <div style={{display:'flex', gap:14, flexWrap:'wrap', alignItems:'flex-end', marginBottom:18}}>
+        <div className="field" style={{minWidth:160}}>
+          <label>Fecha Desde</label>
+          <input type="date" value={nuevo.FechaDesde} onChange={e => setNuevo({...nuevo, FechaDesde: e.target.value})} />
+        </div>
+        <div className="field" style={{minWidth:160}}>
+          <label>Fecha Hasta</label>
+          <input type="date" value={nuevo.FechaHasta} onChange={e => setNuevo({...nuevo, FechaHasta: e.target.value})} />
+        </div>
+        <div className="field" style={{minWidth:140}}>
+          <label>Tasa Anual (%)</label>
+          <input type="text" inputMode="decimal" value={nuevo.TasaAnualPct} onChange={e => setNuevo({...nuevo, TasaAnualPct: e.target.value})} placeholder="Ej: 29.66" />
+        </div>
+        <IconTextButton icon="add" variant="primary" onClick={handleAgregar} disabled={guardando}>{guardando ? "Guardando…" : "Agregar tramo"}</IconTextButton>
+      </div>
+
+      <div className="table-wrap">
+        <table className="table-compact">
+          <thead><tr><th>Fecha Desde</th><th>Fecha Hasta</th><th style={{textAlign:'right'}}>Tasa Anual</th><th>Acciones</th></tr></thead>
+          <tbody>
+            {filas.length ? filas.map(t => (
+              editandoId === t.id ? (
+                <tr key={t.id}>
+                  <td><input type="date" value={editDraft.FechaDesde} onChange={e => setEditDraft({...editDraft, FechaDesde: e.target.value})} /></td>
+                  <td><input type="date" value={editDraft.FechaHasta} onChange={e => setEditDraft({...editDraft, FechaHasta: e.target.value})} /></td>
+                  <td><input type="text" inputMode="decimal" style={{width:80, textAlign:'right'}} value={editDraft.TasaAnualPct} onChange={e => setEditDraft({...editDraft, TasaAnualPct: e.target.value})} /></td>
+                  <td style={{display:'flex', gap:6}}>
+                    <IconButton icon="checklist" variant="edit" label="Guardar" onClick={() => handleGuardarEdicion(t.id)} />
+                    <button type="button" className="btn-secondary" onClick={() => setEditandoId(null)}>Cancelar</button>
+                  </td>
+                </tr>
+              ) : (
+                <tr key={t.id}>
+                  <td>{t.FechaDesde}</td>
+                  <td>{t.FechaHasta}</td>
+                  <td style={{textAlign:'right'}}>{(Number(t.TasaAnual) * 100).toFixed(2)}%</td>
+                  <td style={{display:'flex', gap:6}}>
+                    <IconButton icon="edit" variant="edit" label="Editar" onClick={() => empezarEdicion(t)} />
+                    <IconButton icon="delete" variant="delete" label="Eliminar" onClick={() => onEliminar?.(t.id)} />
+                  </td>
+                </tr>
+              )
+            )) : (
+              <tr><td colSpan={4}><div className="empty-state empty-state-compact">Todavía no hay tramos de tasa cargados.</div></td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+const IPC_VACIO = { Anio: "", Mes: "", Indice: "" };
+
+function TablaIPC({ ipcMensual, notify, onCrear, onEditar, onEliminar }){
+  const [nuevo, setNuevo] = useState(IPC_VACIO);
+  const [guardando, setGuardando] = useState(false);
+  const [editandoId, setEditandoId] = useState(null);
+  const [editDraft, setEditDraft] = useState(IPC_VACIO);
+
+  const filas = [...(ipcMensual || [])].sort((a, b) => (Number(b.Anio) * 12 + Number(b.Mes)) - (Number(a.Anio) * 12 + Number(a.Mes)));
+
+  async function handleAgregar(){
+    if(!nuevo.Anio || !nuevo.Mes || nuevo.Indice === ""){
+      notify?.("Completa Año, Mes e Índice.", 'error'); return;
+    }
+    setGuardando(true);
+    try{
+      await onCrear?.({ Anio: Number(nuevo.Anio), Mes: Number(nuevo.Mes), Indice: Number(nuevo.Indice) });
+      setNuevo(IPC_VACIO);
+    }catch(err){ console.error(err); notify?.(mensajeError(err), 'error'); }
+    finally{ setGuardando(false); }
+  }
+  function empezarEdicion(i){
+    setEditandoId(i.id);
+    setEditDraft({ Anio: i.Anio, Mes: i.Mes, Indice: i.Indice });
+  }
+  async function handleGuardarEdicion(id){
+    if(!editDraft.Anio || !editDraft.Mes || editDraft.Indice === ""){
+      notify?.("Completa Año, Mes e Índice.", 'error'); return;
+    }
+    try{
+      await onEditar?.(id, { Anio: Number(editDraft.Anio), Mes: Number(editDraft.Mes), Indice: Number(editDraft.Indice) });
+      setEditandoId(null);
+    }catch(err){ console.error(err); notify?.(mensajeError(err), 'error'); }
+  }
+
+  return (
+    <div>
+      <p style={{margin:'0 0 16px', color:'var(--texto-suave)', fontSize:13}}>
+        Un registro por mes (Índice de Precios al Consumidor de DANE, no la variación porcentual).
+      </p>
+      <div style={{display:'flex', gap:14, flexWrap:'wrap', alignItems:'flex-end', marginBottom:18}}>
+        <div className="field" style={{minWidth:110}}>
+          <label>Año</label>
+          <input type="number" value={nuevo.Anio} onChange={e => setNuevo({...nuevo, Anio: e.target.value})} placeholder="Ej: 2026" />
+        </div>
+        <div className="field" style={{minWidth:150}}>
+          <label>Mes</label>
+          <select value={nuevo.Mes} onChange={e => setNuevo({...nuevo, Mes: e.target.value})}>
+            <option value="">— Selecciona —</option>
+            {MESES_NOMBRES.map((m, i) => <option key={m} value={i + 1}>{m}</option>)}
+          </select>
+        </div>
+        <div className="field" style={{minWidth:140}}>
+          <label>Índice</label>
+          <input type="text" inputMode="decimal" value={nuevo.Indice} onChange={e => setNuevo({...nuevo, Indice: e.target.value})} placeholder="Ej: 159.53" />
+        </div>
+        <IconTextButton icon="add" variant="primary" onClick={handleAgregar} disabled={guardando}>{guardando ? "Guardando…" : "Agregar mes"}</IconTextButton>
+      </div>
+
+      <div className="table-wrap">
+        <table className="table-compact">
+          <thead><tr><th>Año</th><th>Mes</th><th style={{textAlign:'right'}}>Índice</th><th>Acciones</th></tr></thead>
+          <tbody>
+            {filas.length ? filas.map(i => (
+              editandoId === i.id ? (
+                <tr key={i.id}>
+                  <td><input type="number" style={{width:80}} value={editDraft.Anio} onChange={e => setEditDraft({...editDraft, Anio: e.target.value})} /></td>
+                  <td>
+                    <select value={editDraft.Mes} onChange={e => setEditDraft({...editDraft, Mes: e.target.value})}>
+                      {MESES_NOMBRES.map((m, idx) => <option key={m} value={idx + 1}>{m}</option>)}
+                    </select>
+                  </td>
+                  <td><input type="text" inputMode="decimal" style={{width:80, textAlign:'right'}} value={editDraft.Indice} onChange={e => setEditDraft({...editDraft, Indice: e.target.value})} /></td>
+                  <td style={{display:'flex', gap:6}}>
+                    <IconButton icon="checklist" variant="edit" label="Guardar" onClick={() => handleGuardarEdicion(i.id)} />
+                    <button type="button" className="btn-secondary" onClick={() => setEditandoId(null)}>Cancelar</button>
+                  </td>
+                </tr>
+              ) : (
+                <tr key={i.id}>
+                  <td>{i.Anio}</td>
+                  <td>{MESES_NOMBRES[Number(i.Mes) - 1] || i.Mes}</td>
+                  <td style={{textAlign:'right'}}>{i.Indice}</td>
+                  <td style={{display:'flex', gap:6}}>
+                    <IconButton icon="edit" variant="edit" label="Editar" onClick={() => empezarEdicion(i)} />
+                    <IconButton icon="delete" variant="delete" label="Eliminar" onClick={() => onEliminar?.(i.id)} />
+                  </td>
+                </tr>
+              )
+            )) : (
+              <tr><td colSpan={4}><div className="empty-state empty-state-compact">Todavía no hay meses de IPC cargados.</div></td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 // Seguimiento visual de "hasta cuándo están cargadas las tablas" — pedido
 // explícito del usuario 2026-09-09 ("una muestra visual del ultimo dato...
 // para darle seguimiento hasta cuando esta actualizado"). Se marca en
@@ -233,7 +431,7 @@ function EstadoActualizacion({ tasasInteres, ipcMensual, config }){
   );
 }
 
-export default function LiquidacionInteresesTab({ notify, tasasInteres, ipcMensual, config }){
+export default function LiquidacionInteresesTab({ notify, tasasInteres, ipcMensual, config, onCrearTasaInteres, onEditarTasaInteres, onEliminarTasaInteres, onCrearIPC, onEditarIPC, onEliminarIPC }){
   const [modo, setModo] = useState('unaLinea');
 
   const sinDatos = !tasasInteres?.length || !ipcMensual?.length;
@@ -255,6 +453,8 @@ export default function LiquidacionInteresesTab({ notify, tasasInteres, ipcMensu
         </div>
         {modo === 'unaLinea' && <ModoUnaLinea notify={notify} tasasInteres={tasasInteres} ipcMensual={ipcMensual} />}
         {modo === 'variasLineas' && <ModoVariasLineas notify={notify} tasasInteres={tasasInteres} ipcMensual={ipcMensual} />}
+        {modo === 'tablaTasas' && <TablaTasasInteres tasasInteres={tasasInteres} notify={notify} onCrear={onCrearTasaInteres} onEditar={onEditarTasaInteres} onEliminar={onEliminarTasaInteres} />}
+        {modo === 'tablaIpc' && <TablaIPC ipcMensual={ipcMensual} notify={notify} onCrear={onCrearIPC} onEditar={onEditarIPC} onEliminar={onEliminarIPC} />}
       </div>
     </div>
   );

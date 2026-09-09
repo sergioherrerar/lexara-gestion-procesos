@@ -1595,6 +1595,20 @@ export function useLexaraApp(){
   const editarGasto = crudGastosMD.editar;
   const eliminarGasto = crudGastosMD.eliminar;
 
+  // Liquidación Intereses (2026-09-09) — pedido explícito del usuario:
+  // pestañas para agregar/modificar/eliminar las filas de las tablas
+  // TasasInteres/IPC directo desde la app (antes solo se podían editar
+  // entrando a SharePoint). Reusa crudGastos de arriba — es el mismo patrón
+  // simple "sin panel propio" (crear/editar/eliminar con confirmación).
+  const crudTasasInteresList = crudGastos('tasasInteres', tasasInteres, setTasasInteres);
+  const crudIPC = crudGastos('ipc', ipcMensual, setIpcMensual);
+  const crearTasaInteres = crudTasasInteresList.crear;
+  const editarTasaInteres = crudTasasInteresList.editar;
+  const eliminarTasaInteres = crudTasasInteresList.eliminar;
+  const crearIPC = crudIPC.crear;
+  const editarIPC = crudIPC.editar;
+  const eliminarIPC = crudIPC.eliminar;
+
   return {
     config, saveConfig, clearConfig,
     lists, listByKey, updateListMapping,
@@ -1627,5 +1641,7 @@ export function useLexaraApp(){
     crearCuentaCobroGastos, editarCuentaCobroGastos, eliminarCuentaCobroGastos,
     crearPagoPorRealizar, editarPagoPorRealizar, eliminarPagoPorRealizar,
     crearGasto, editarGasto, eliminarGasto,
+    crearTasaInteres, editarTasaInteres, eliminarTasaInteres,
+    crearIPC, editarIPC, eliminarIPC,
   };
 }
