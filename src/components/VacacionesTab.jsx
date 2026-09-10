@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { agruparVacacionesPorColaborador, generarVacacionesExcel, generarPDFVacacionesColaborador } from '../lib/vacaciones';
 import { fmtDate, mensajeError } from '../lib/graph';
 import { FieldCard } from './FormFields';
@@ -33,6 +33,17 @@ export default function VacacionesTab({ colaboradores, vacacionesPeriodos, onCre
   // uno"). Se guarda el id de quién se está generando (no un solo booleano)
   // para poder deshabilitar solo el botón de esa tarjeta, no todos a la vez.
   const [generandoPDFId, setGenerandoPDFId] = useState(null);
+  // Bug real reportado por el usuario 2026-09-11 ("al tocar editar no da
+  // ninguna acción"): con varios colaboradores/períodos apilados en la
+  // página, el formulario SÍ se abre justo donde corresponde, pero si el
+  // clic quedó cerca del borde de la pantalla, el formulario puede
+  // insertarse fuera de la vista actual (arriba de la tabla) sin que nada
+  // haga scroll hasta ahí — se ve exactamente como si el botón no hubiera
+  // hecho nada. Se lleva la vista al formulario automáticamente al abrirlo.
+  const formRef = useRef(null);
+  useEffect(() => {
+    if(abiertoPara && formRef.current) formRef.current.scrollIntoView({ behavior:'smooth', block:'center' });
+  }, [abiertoPara, editandoId]);
 
   const filas = agruparVacacionesPorColaborador(colaboradores, vacacionesPeriodos);
 
@@ -155,7 +166,7 @@ export default function VacacionesTab({ colaboradores, vacacionesPeriodos, onCre
             </div>
 
             {abiertoPara===f.nombre && (
-              <div className="panel" style={{marginTop:14}}>
+              <div className="panel" style={{marginTop:14}} ref={formRef}>
                 <div className="panel-body" style={{padding:'14px 20px', display:'flex', gap:12, flexWrap:'wrap', alignItems:'flex-end'}}>
                   <div className="field" style={{maxWidth:160}}>
                     <label>Fecha inicio</label>

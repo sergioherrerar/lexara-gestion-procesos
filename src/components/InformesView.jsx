@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   estadoBadgeClass, fmtMonto, stripHtml, parseMonto,
   esProcesoActivo, mensajeError,
@@ -216,6 +216,7 @@ export default function InformesView({ procesos, clientes, facturas, desistimien
     ? clasificarHorasExtra(horaExtraForm.Fecha, horaExtraForm.HoraInicio, horaExtraForm.HoraFin)
     : null;
   function setHoraExtraField(key, value){ setHoraExtraForm(prev => ({...prev, [key]: value})); }
+  const formHoraExtraRef = useRef(null);
   function handleEditarHoraExtraClick(h){
     setEditandoHoraExtraId(h.id);
     setHoraExtraForm({ Colaborador: h.Colaborador||"", Fecha: h.Fecha||"", HoraInicio: h.HoraInicio||"", HoraFin: h.HoraFin||"", Observaciones: h.Observaciones||"" });
@@ -226,6 +227,14 @@ export default function InformesView({ procesos, clientes, facturas, desistimien
     // ningún cambio en pantalla. Ahora salta solo a "Registrar".
     setSubTabHorasExtras('registrar');
   }
+  // Además del cambio de sub-pestaña de arriba, se lleva la vista al
+  // formulario (mismo refuerzo que Vacaciones) — cambiar de pestaña no
+  // siempre deja el formulario dentro de lo visible sin scroll.
+  useEffect(() => {
+    if(subTabHorasExtras==='registrar' && editandoHoraExtraId && formHoraExtraRef.current){
+      formHoraExtraRef.current.scrollIntoView({ behavior:'smooth', block:'center' });
+    }
+  }, [subTabHorasExtras, editandoHoraExtraId]);
   function handleCancelarEdicionHoraExtra(){
     setEditandoHoraExtraId(null);
     setHoraExtraForm(HORA_EXTRA_VACIA);
@@ -556,7 +565,7 @@ export default function InformesView({ procesos, clientes, facturas, desistimien
           </div>
         </div>
       {subTabHorasExtras==='registrar' && (
-      <div className="panel" style={{marginTop:20}}>
+      <div className="panel" style={{marginTop:20}} ref={formHoraExtraRef}>
         <div className="panel-head"><h3>Registrar hora extra</h3></div>
         <div className="panel-body">
           <p style={{margin:'0 0 16px', color:'var(--texto-suave)', fontSize:13}}>
