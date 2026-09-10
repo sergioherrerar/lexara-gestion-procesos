@@ -219,10 +219,17 @@ export default function InformesView({ procesos, clientes, facturas, desistimien
   function handleEditarHoraExtraClick(h){
     setEditandoHoraExtraId(h.id);
     setHoraExtraForm({ Colaborador: h.Colaborador||"", Fecha: h.Fecha||"", HoraInicio: h.HoraInicio||"", HoraFin: h.HoraFin||"", Observaciones: h.Observaciones||"" });
+    // Bug real reportado por el usuario 2026-09-11 ("el botón editar de horas
+    // no hace nada"): este click SÍ preparaba la edición, pero el formulario
+    // para editar vive en la sub-pestaña "Registrar", no en "Registros"
+    // (donde está este botón) — como no cambiaba de sub-pestaña, no se veía
+    // ningún cambio en pantalla. Ahora salta solo a "Registrar".
+    setSubTabHorasExtras('registrar');
   }
   function handleCancelarEdicionHoraExtra(){
     setEditandoHoraExtraId(null);
     setHoraExtraForm(HORA_EXTRA_VACIA);
+    setSubTabHorasExtras('registros');
   }
   async function handleRegistrarHoraExtra(){
     if(!horaExtraForm.Colaborador || !horaExtraForm.Fecha || !horaExtraForm.HoraInicio || !horaExtraForm.HoraFin){
@@ -240,10 +247,15 @@ export default function InformesView({ procesos, clientes, facturas, desistimien
         Colaborador: horaExtraForm.Colaborador, Fecha: horaExtraForm.Fecha, HoraInicio: horaExtraForm.HoraInicio, HoraFin: horaExtraForm.HoraFin,
         Observaciones: horaExtraForm.Observaciones, ...clasificado,
       };
+      const estabaEditando = !!editandoHoraExtraId;
       if(editandoHoraExtraId) await onEditarHoraExtra?.(editandoHoraExtraId, datos);
       else await onCreateHoraExtra?.(datos);
       setEditandoHoraExtraId(null);
       setHoraExtraForm(HORA_EXTRA_VACIA);
+      // Al EDITAR, vuelve solo a "Registros" para ver el cambio reflejado en
+      // la lista (al REGISTRAR una nueva, se queda en "Registrar" — puede
+      // que el usuario quiera cargar varias seguidas).
+      if(estabaEditando) setSubTabHorasExtras('registros');
     } finally { setRegistrandoHoraExtra(false); }
   }
   // Lista de registros (pedido explícito del usuario, mismo día: "para saber
