@@ -15,11 +15,11 @@ import { descargarContenidoArchivo } from './graph';
 // sueltos del computador solo para ESE ZIP, sin necesidad de subirlos antes
 // a la carpeta de SharePoint. Son objetos File normales (del <input
 // type="file">), se leen directo en el navegador.
-export async function generarZipDocumentosCorporativos(documentos, extras, nombreZip){
+export async function generarZipDocumentosCorporativos(config, documentos, extras, nombreZip){
   const { default: JSZip } = await import('jszip');
   const zip = new JSZip();
   for(const doc of documentos){
-    const buffer = await descargarContenidoArchivo(doc.archivo);
+    const buffer = await descargarContenidoArchivo(config, doc.archivo);
     zip.file(doc.archivo.name, buffer);
   }
   for(const file of (extras||[])){

@@ -22,6 +22,7 @@ import FormaPagoDrawer from './components/FormaPagoDrawer';
 import DesistimientoDrawer from './components/DesistimientoDrawer';
 import TutelaDrawer from './components/TutelaDrawer';
 import { Toast, ConfirmDialog } from './components/Feedback';
+import CargaInicialOverlay from './components/CargaInicialOverlay';
 
 export default function App(){
   const app = useLexaraApp();
@@ -104,6 +105,7 @@ export default function App(){
           refreshing={app.refreshing}
           cargandoInicial={app.signingIn && app.liveMode}
         />
+        {app.signingIn && app.liveMode && <CargaInicialOverlay />}
 
         {app.view === 'dashboard' && <DashboardView procesos={app.procesos} clientes={app.clientes} facturas={app.facturas} ordenesCompra={app.ordenesCompra} desistimientos={app.desistimientos} notify={app.notify} />}
         {app.view === 'informes' && canAccessView(app.modulosPermitidos, 'informes') && (

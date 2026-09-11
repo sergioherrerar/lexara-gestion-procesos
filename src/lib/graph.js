@@ -948,11 +948,18 @@ export async function subirDocumentoCorporativo(config, rutaRelativa, nombreArch
   });
 }
 
-// Contenido binario real de uno de estos archivos (para armar el ZIP) — vía
-// la URL de descarga temporal que ya trae cada driveItem listado arriba, sin
-// pedirle nada aparte a Graph.
-export async function descargarContenidoArchivo(driveItem){
-  const url = driveItem?.["@microsoft.graph.downloadUrl"];
+// Contenido binario real de uno de estos archivos (para armar el ZIP o
+// leerlo con extraerTextoPDF). Bug real 2026-09-11: la URL de descarga que
+// ya trae el driveItem listado (@microsoft.graph.downloadUrl) es de corta
+// duración — funcionaba bien al leer la Cámara de Comercio apenas se
+// cargaba la lista, pero fallaba ("No se pudo obtener el contenido...") al
+// descargar el ZIP un rato después, porque para entonces esa URL ya había
+// vencido. Ahora se vuelve a pedir una URL de descarga FRESCA justo antes
+// de cada descarga, en vez de confiar en la que quedó guardada del listado.
+export async function descargarContenidoArchivo(config, driveItem){
+  const driveId = await resolverDriveIdRaiz(config);
+  const item = await graphFetch(`/drives/${driveId}/items/${driveItem.id}?$select=@microsoft.graph.downloadUrl`);
+  const url = item?.["@microsoft.graph.downloadUrl"];
   if(!url) throw new Error(`No se pudo obtener el contenido de "${driveItem?.name || 'archivo'}".`);
   const res = await fetch(url);
   if(!res.ok) throw new Error(`No se pudo descargar "${driveItem.name}" (código ${res.status}).`);

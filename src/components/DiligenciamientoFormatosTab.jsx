@@ -109,12 +109,12 @@ export default function DiligenciamientoFormatosTab({ config, notify, liveMode }
     if(!docCamara?.archivo) return;
     setLeyendoCamara(true);
     try{
-      const buffer = await descargarContenidoArchivo(docCamara.archivo);
+      const buffer = await descargarContenidoArchivo(config, docCamara.archivo);
       const texto = await extraerTextoPDF(buffer);
       setDatosCamara(extraerDatosCamaraComercio(texto));
     }catch(err){
       console.error(err);
-      notify?.("No se pudo leer el certificado de Cámara de Comercio automáticamente — se usan los datos guardados.", 'error');
+      notify?.("No se pudo leer el certificado de Cámara de Comercio automáticamente (se usan los datos guardados): " + mensajeError(err), 'error');
     } finally { setLeyendoCamara(false); }
   }
 
@@ -144,7 +144,7 @@ export default function DiligenciamientoFormatosTab({ config, notify, liveMode }
     if(!elegidos.length && !extras.length){ notify?.("Selecciona o agrega al menos un documento.", 'error'); return; }
     setGenerandoZip(true);
     try{
-      await generarZipDocumentosCorporativos(elegidos, extras, `Documentos MD Abogados ${new Date().toISOString().slice(0,10)}`);
+      await generarZipDocumentosCorporativos(config, elegidos, extras, `Documentos MD Abogados ${new Date().toISOString().slice(0,10)}`);
     }catch(err){
       console.error(err);
       notify?.("No se pudo generar el ZIP: " + mensajeError(err), 'error');
