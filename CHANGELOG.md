@@ -3,6 +3,7 @@
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
 ## 2026-09-11
+- **"Diligenciamiento Formatos Empresas": se quitan "Certificaciones comerciales" y "Firma representante legal"** de la lista de documentos — pedido explícito del usuario.
 - **"Diligenciamiento Formatos Empresas": agregar otros documentos al ZIP** — pedido explícito del usuario: además de los 7 documentos fijos, ahora se pueden agregar archivos sueltos del computador (botón "+ Agregar otro documento…") para cuando el banco/cliente pida algo puntual que no está en la lista — solo entran a ese ZIP puntual, no se guardan en SharePoint.
 - **Nueva herramienta "Diligenciamiento Formatos Empresas"** (Informes > Herramientas) — pedido explícito del usuario: cuando un banco/cliente/EPS pide llenar su propio formato de vinculación de proveedores, esta pantalla junta lo que casi siempre hay que mandar.
   - **Ficha de datos MD Abogados** (Razón Social, NIT, Representante Legal, Dirección, Teléfono, Correo, Actividad económica, Valor Activos/Pasivos/Patrimonio — clic en cualquiera para copiarlo).

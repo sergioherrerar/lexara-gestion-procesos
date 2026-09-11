@@ -86,8 +86,6 @@ export const DOCUMENTOS_CORPORATIVOS_TIPOS = [
   { key: "estadosFinancieros", label: "Estados financieros", hints: ["estados financieros", "estado financiero"] },
   { key: "composicionAccionaria", label: "Composición accionaria", hints: ["composicion accionaria"] },
   { key: "cedulaRepresentante", label: "Cédula representante legal", hints: ["cedula representante", "cc representante", "cedula rep legal"] },
-  { key: "certificacionesComerciales", label: "Certificaciones comerciales", hints: ["certificaciones comerciales", "certificacion comercial"] },
-  { key: "firmaRepresentante", label: "Firma representante legal", hints: ["firma"], esImagen: true },
 ];
 
 // Ficha de datos de MD Abogados SAS — texto fijo para copiar/pegar al
