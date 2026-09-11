@@ -60,6 +60,72 @@ export const INITIAL_CONFIG = {
   TASAS_INTERES_FUENTE_URL: "https://www.superfinanciera.gov.co/publicaciones/10829/sala-de-prensacomunicados-de-prensa-interes-bancario-corriente-10829/",
 };
 
+// "Diligenciamiento Formatos Empresas" (Informes > Herramientas) — agregada
+// 2026-09-11, pedido explícito del usuario ("Opción 1 + A"): carpeta real
+// con los documentos corporativos fijos de MD Abogados (Cámara de
+// Comercio, RUT, certificación bancaria, etc. — ver
+// DOCUMENTOS_CORPORATIVOS_TIPOS más abajo) que casi siempre hay que
+// adjuntar cuando un banco/cliente/EPS pide su propio "formato de
+// vinculación de proveedores". Ruta real dada por el usuario 2026-09-11,
+// dentro del sitio RAÍZ del tenant ("Administración Lexara" en la UI de
+// SharePoint — mismo sitio que ya usan Horas Extras/Vacaciones, ver
+// useRootSite en graph.js) — sin necesidad de ningún link compartido, la
+// app se conecta directo por ruta.
+export const DOCUMENTOS_CORPORATIVOS_RUTA = "ADMINISTRACION/Documentos Actuales MD ABOGADOS";
+
+// Cada "tipo" de documento del kit + pistas (hints) de nombre de archivo
+// para encontrarlo dentro de DOCUMENTOS_CORPORATIVOS_URL — mismo criterio
+// que siigoNombresPosibles/RUTAS_CARPETAS_ENTIDAD: nunca inventa, si ningún
+// archivo real calza con las pistas de un tipo, ese tipo queda "no
+// encontrado" en vez de adivinar cuál es. Los `hints` se comparan
+// normalizados (sin tildes, minúsculas) contra el nombre real del archivo.
+export const DOCUMENTOS_CORPORATIVOS_TIPOS = [
+  { key: "camaraComercio", label: "Cámara de Comercio", hints: ["camara de comercio", "camara comercio", "camaracomercio"] },
+  { key: "rut", label: "RUT", hints: ["rut"] },
+  { key: "certificacionBancaria", label: "Certificación bancaria", hints: ["certificacion bancaria", "cert bancaria", "certificacion cuenta bancaria"] },
+  { key: "estadosFinancieros", label: "Estados financieros", hints: ["estados financieros", "estado financiero"] },
+  { key: "composicionAccionaria", label: "Composición accionaria", hints: ["composicion accionaria"] },
+  { key: "cedulaRepresentante", label: "Cédula representante legal", hints: ["cedula representante", "cc representante", "cedula rep legal"] },
+  { key: "certificacionesComerciales", label: "Certificaciones comerciales", hints: ["certificaciones comerciales", "certificacion comercial"] },
+  { key: "firmaRepresentante", label: "Firma representante legal", hints: ["firma"], esImagen: true },
+];
+
+// Ficha de datos de MD Abogados SAS — texto fijo para copiar/pegar al
+// llenar el formato de la empresa externa. Representante Legal/C.C./T.P.
+// reusan EXACTAMENTE los mismos datos que ya usa FIRMA_DEFECTO en
+// informesPDF.js (misma persona, un solo lugar de verdad).
+// Dirección/Teléfono/Correo/Actividad económica: valores REALES sacados del
+// certificado de Cámara de Comercio (25 de julio de 2026) — quedan acá como
+// respaldo, pero la herramienta los vuelve a leer en vivo del documento real
+// cada vez que lo carga (ver extraerDatosCamaraComercio en
+// lib/documentosCorporativos.js), así que si el dato cambia (nueva dirección,
+// nuevo teléfono) con solo subir el certificado actualizado ya queda al día
+// sin tocar código. El correo real registrado en Cámara de Comercio es
+// "gerencia@lexaraabogados.com" (DISTINTO del correo de soporte de esta app,
+// Soporte@lexaraabogados.com) — se usa el de Cámara de Comercio acá porque es
+// el que de verdad hay que reportarle a bancos/clientes.
+export const FICHA_EMPRESA_MD = {
+  razonSocial: "MD ABOGADOS SAS",
+  nit: "900.495.788-3",
+  representanteLegal: "MÓNICA PAOLA QUINTERO JIMÉNEZ",
+  ccRepresentante: "C.C. No. 40.039.240 de Tunja",
+  tarjetaProfesional: "T. P. No. 97.956 del C. S. de la J.",
+  direccion: "Avenida Carrera 14 No. 47 - 39, Torre A Oficina 5, Bogotá D.C.",
+  ciudad: "Bogotá D.C.",
+  telefono: "3124420026",
+  correo: "gerencia@lexaraabogados.com",
+  actividadEconomica: "6910 (Actividades jurídicas)",
+  // Estados Financieros 2025 (corte 31 de diciembre) — sacados del documento
+  // real, PENDIENTE que el usuario los confirme (ver nota en CHANGELOG: a
+  // diferencia de RUT/Cámara de Comercio, este documento no se lee en vivo
+  // porque su tabla queda muy revuelta al extraer el texto — el riesgo de
+  // tomar un número equivocado es real, así que se prefirió dejarlo fijo acá
+  // y que el usuario lo actualice a mano una vez al año).
+  valorActivos: "$397.185.912",
+  valorPasivos: "$44.851.588",
+  valorPatrimonio: "$352.334.324",
+};
+
 // =========================================================================
 // "Buscar y vincular carpeta del proceso" (Link Carpetas / Link Cliente) —
 // pedido explícito del usuario 2026-09-07: la carpeta real del proceso vive

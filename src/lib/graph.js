@@ -892,6 +892,73 @@ export async function listarSoportesGastosDelMes(shareUrl, fechaISO){
   return archivos.sort((a,b) => a.nombre.localeCompare(b.nombre));
 }
 
+// Documentos corporativos MD (Diligenciamiento Formatos Empresas) — viven
+// en una carpeta real dentro del sitio RAÍZ del tenant ("Administración
+// Lexara" en la UI de SharePoint, mismo sitio que ya usan Horas
+// Extras/Vacaciones) — el usuario dio la ruta real 2026-09-11:
+// "ADMINISTRACION/Documentos Actuales MD ABOGADOS". A diferencia de
+// Siigo/Gastos (carpeta compartida por link), acá se resuelve por RUTA
+// dentro del sitio raíz — ver DOCUMENTOS_CORPORATIVOS_RUTA/_TIPOS en
+// config.js.
+let driveIdRaizCache = null;
+async function resolverDriveIdRaiz(config){
+  if(driveIdRaizCache) return driveIdRaizCache;
+  const siteId = await fetchRootSiteId(config);
+  const drive = await graphFetch(`/sites/${siteId}/drive?$select=id`);
+  driveIdRaizCache = drive.id;
+  return driveIdRaizCache;
+}
+
+// Por cada tipo definido en config.js, busca en la carpeta el archivo cuyo
+// nombre contenga alguna de sus pistas (normalizado: sin tildes, minúsculas)
+// — nunca adivina: si ninguno calza, ese tipo queda con `archivo: null`
+// ("no encontrado"), nunca se inventa un archivo al azar.
+export async function listarDocumentosCorporativos(config, rutaRelativa, tipos){
+  const driveId = await resolverDriveIdRaiz(config);
+  const archivos = [];
+  let url = `/drives/${driveId}/root:/${encodeURIComponent(rutaRelativa)}:/children?$select=id,name,webUrl,lastModifiedDateTime,file,@microsoft.graph.downloadUrl&$top=200`;
+  while(url){
+    const res = await graphFetch(url);
+    archivos.push(...(res.value || []).filter(f => f.file));
+    url = res["@odata.nextLink"] || null;
+  }
+  return tipos.map(tipo => {
+    const hints = (tipo.hints||[]).map(h => normalize(h));
+    const archivo = archivos.find(a => hints.some(h => normalize(a.name).includes(h))) || null;
+    return { ...tipo, archivo };
+  });
+}
+
+// Sube (o reemplaza, si ya existe un archivo con ese mismo nombre) un
+// documento corporativo — pedido explícito del usuario 2026-09-11 ("sería
+// más fácil subir al portal el documento y que se actualice solo", en vez
+// de tener que ir a SharePoint a mano cada vez que un documento vence).
+// `nombreArchivo` es el nombre real con el que queda guardado: si el tipo
+// YA tenía un archivo encontrado, se sube con ESE MISMO nombre (reemplazo
+// limpio, sin duplicar); si no existía ninguno todavía, se arma un nombre
+// nuevo a partir de la etiqueta del tipo + la extensión real del archivo.
+export async function subirDocumentoCorporativo(config, rutaRelativa, nombreArchivo, file){
+  const driveId = await resolverDriveIdRaiz(config);
+  const rutaCompleta = `${rutaRelativa}/${nombreArchivo}`;
+  const buffer = await file.arrayBuffer();
+  return graphFetch(`/drives/${driveId}/root:/${encodeURIComponent(rutaCompleta)}:/content`, {
+    method: "PUT",
+    headers: { "Content-Type": file.type || "application/octet-stream" },
+    body: buffer,
+  });
+}
+
+// Contenido binario real de uno de estos archivos (para armar el ZIP) — vía
+// la URL de descarga temporal que ya trae cada driveItem listado arriba, sin
+// pedirle nada aparte a Graph.
+export async function descargarContenidoArchivo(driveItem){
+  const url = driveItem?.["@microsoft.graph.downloadUrl"];
+  if(!url) throw new Error(`No se pudo obtener el contenido de "${driveItem?.name || 'archivo'}".`);
+  const res = await fetch(url);
+  if(!res.ok) throw new Error(`No se pudo descargar "${driveItem.name}" (código ${res.status}).`);
+  return res.arrayBuffer();
+}
+
 // Bug real 2026-09-01: el "webUrl" nativo de un archivo (la ruta completa,
 // con todas las carpetas anidadas) fácilmente pasa de 255 caracteres una vez
 // con los espacios codificados como %20 — y el límite clásico de SharePoint

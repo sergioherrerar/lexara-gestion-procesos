@@ -1,0 +1,1 @@
+var e=`/lexara-gestion-procesos/assets/pdf.worker.min-Dswkl-cV.mjs`;export{e as default};

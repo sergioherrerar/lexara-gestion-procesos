@@ -110,6 +110,13 @@ export const ICONS = {
       <circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>
     </svg>
   ),
+  // Caja con cinta — descargar un ZIP con varios documentos juntos
+  // ("Diligenciamiento Formatos Empresas").
+  zip: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="8" width="18" height="13" rx="2"/><path d="M3 8V6a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v0"/><path d="M12 8v13"/>
+    </svg>
+  ),
 };
 
 // Muchos links vienen de SharePoint sin "https://" delante (o con espacios

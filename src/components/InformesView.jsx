@@ -20,6 +20,7 @@ import RevisionProcesosTab from './RevisionProcesosTab';
 import CruceArchivosTab from './CruceArchivosTab';
 import CrearLinkCompartirTab from './CrearLinkCompartirTab';
 import LiquidacionInteresesTab from './LiquidacionInteresesTab';
+import DiligenciamientoFormatosTab from './DiligenciamientoFormatosTab';
 import { construirMensajePagoWhatsApp, normalizarTelefonoWaMe, normalizarTelefonoManualWaMe, PAISES_WHATSAPP } from '../lib/whatsappPago';
 
 // Entidades con formato de informe formal ya confirmado, y qué generador usa
@@ -85,6 +86,7 @@ const SUBTABS_HERRAMIENTAS = [
   {key:'revisionProcesos', label:'Revisión de Procesos'},
   {key:'cruceArchivos', label:'Cruce de Archivos'},
   {key:'liquidacionIntereses', label:'Liquidación Intereses'},
+  {key:'diligenciamientoFormatos', label:'Diligenciamiento Formatos Empresas'},
 ];
 
 export default function InformesView({ procesos, clientes, facturas, desistimientos, tutelas, valoresEntidad, notify, liveMode, config, requestConfirm, corregirEntidadFaltanteTutelas, colaboradores, onCreateHoraExtra, onEditarHoraExtra, onEliminarHoraExtra, horasExtras, tasasInteres, ipcMensual, onCrearTasaInteres, onEditarTasaInteres, onEliminarTasaInteres, onCrearIPC, onEditarIPC, onEliminarIPC }){
@@ -908,6 +910,9 @@ export default function InformesView({ procesos, clientes, facturas, desistimien
             onCrearTasaInteres={onCrearTasaInteres} onEditarTasaInteres={onEditarTasaInteres} onEliminarTasaInteres={onEliminarTasaInteres}
             onCrearIPC={onCrearIPC} onEditarIPC={onEditarIPC} onEliminarIPC={onEliminarIPC}
           />
+        )}
+        {subTabHerramientas==='diligenciamientoFormatos' && (
+          <DiligenciamientoFormatosTab config={config} notify={notify} liveMode={liveMode} />
         )}
       </div>
       )}
