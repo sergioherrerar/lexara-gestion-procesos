@@ -875,20 +875,30 @@
     background:#fff; border-radius:var(--radius); box-shadow:0 8px 28px rgba(0,20,18,.18);
     padding:14px 16px; font-size:13.5px; line-height:1.5;
     border-left:4px solid var(--verde-oscuro);
-    animation:toast-in .45s cubic-bezier(.16,1,.3,1);
+    animation:toast-in-top .45s cubic-bezier(.16,1,.3,1);
   }
-  .toast-error{border-left-color:#b3271e;}
+  /* Pedido explícito del usuario 2026-09-11: fondo de color según el tipo
+     (no solo el borde de antes) — verde para éxito, naranja para error —
+     y cada uno con su propia animación de entrada: los de éxito/info caen
+     de arriba hacia abajo (igual que antes), los de error entran de
+     izquierda a derecha, para que se distingan incluso sin leer el texto. */
+  .toast-success{background:#d7f2e4; border-left-color:var(--verde-oscuro);}
+  .toast-success .toast-msg{color:var(--verde-oscuro);}
+  .toast-error{
+    background:#fdece0; border-left-color:var(--naranja);
+    animation:toast-in-left .45s cubic-bezier(.16,1,.3,1);
+  }
+  .toast-error .toast-msg{color:#8a4b1f;}
   .toast-icon{flex-shrink:0; width:20px; height:20px; margin-top:1px; color:var(--verde-oscuro);}
-  .toast-error .toast-icon{color:#b3271e;}
+  .toast-error .toast-icon{color:var(--naranja);}
   .toast-icon svg{width:100%; height:100%;}
   .toast-msg{flex:1; color:var(--texto); word-break:break-word;}
   .toast-close{background:none; border:none; cursor:pointer; color:var(--texto-suave); padding:2px; flex-shrink:0;}
   .toast-close svg{width:14px; height:14px;}
-  /* Pedido explícito del usuario 2026-09-11: el aviso termina en el mismo
-     lugar de siempre (abajo a la derecha), pero ahora "cae" desde arriba de
-     la pantalla hasta ahí, en vez de aparecer con un deslizamiento chiquito
-     de 8px que casi no se notaba. */
-  @keyframes toast-in{from{opacity:0; transform:translateY(-100vh);} to{opacity:1; transform:translateY(0);}}
+  /* El aviso siempre termina en el mismo lugar (abajo a la derecha) — solo
+     cambia POR DÓNDE entra según el tipo (ver .toast-error arriba). */
+  @keyframes toast-in-top{from{opacity:0; transform:translateY(-100vh);} to{opacity:1; transform:translateY(0);}}
+  @keyframes toast-in-left{from{opacity:0; transform:translateX(-100vw);} to{opacity:1; transform:translateX(0);}}
 
   .confirm-overlay{position:fixed; inset:0; background:rgba(0,20,18,.4); z-index:81; display:flex; align-items:center; justify-content:center; padding:20px;}
   .confirm-box{background:#fff; border-radius:var(--radius); box-shadow:0 12px 36px rgba(0,20,18,.25); padding:24px; max-width:380px; width:100%;}
