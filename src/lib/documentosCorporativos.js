@@ -8,12 +8,23 @@
 // y las funciones de carpeta compartida en graph.js.
 import { descargarContenidoArchivo } from './graph';
 
-export async function generarZipDocumentosCorporativos(documentos, nombreZip){
+// `extras` — pedido explícito del usuario 2026-09-11 ("que me deje ingresar
+// más documentos para empaquetar"): a veces el banco/cliente pide, además
+// de los 7 documentos fijos, algo puntual que no está en esa lista (un
+// contrato, un certificado especial, etc.) — se pueden agregar archivos
+// sueltos del computador solo para ESE ZIP, sin necesidad de subirlos antes
+// a la carpeta de SharePoint. Son objetos File normales (del <input
+// type="file">), se leen directo en el navegador.
+export async function generarZipDocumentosCorporativos(documentos, extras, nombreZip){
   const { default: JSZip } = await import('jszip');
   const zip = new JSZip();
   for(const doc of documentos){
     const buffer = await descargarContenidoArchivo(doc.archivo);
     zip.file(doc.archivo.name, buffer);
+  }
+  for(const file of (extras||[])){
+    const buffer = await file.arrayBuffer();
+    zip.file(file.name, buffer);
   }
   const blob = await zip.generateAsync({ type: 'blob' });
   const url = URL.createObjectURL(blob);

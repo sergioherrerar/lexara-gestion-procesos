@@ -92,6 +92,12 @@ export default function DiligenciamientoFormatosTab({ config, notify, liveMode }
   const [subiendoKey, setSubiendoKey] = useState(null);
   const [datosCamara, setDatosCamara] = useState(null);
   const [leyendoCamara, setLeyendoCamara] = useState(false);
+  // Documentos sueltos agregados a mano — pedido explícito del usuario
+  // 2026-09-11 ("que me deje ingresar más documentos para empaquetar"): a
+  // veces el banco/cliente pide algo puntual que no está en la lista fija
+  // de 7 — se agregan desde el computador solo para ESE ZIP, sin subirlos
+  // antes a SharePoint.
+  const [extras, setExtras] = useState([]);
 
   const carpetaConfigurada = !!DOCUMENTOS_CORPORATIVOS_RUTA;
 
@@ -135,14 +141,22 @@ export default function DiligenciamientoFormatosTab({ config, notify, liveMode }
 
   async function handleDescargarZip(){
     const elegidos = (documentos||[]).filter(d => seleccionados.has(d.key) && d.archivo);
-    if(!elegidos.length){ notify?.("Selecciona al menos un documento.", 'error'); return; }
+    if(!elegidos.length && !extras.length){ notify?.("Selecciona o agrega al menos un documento.", 'error'); return; }
     setGenerandoZip(true);
     try{
-      await generarZipDocumentosCorporativos(elegidos, `Documentos MD Abogados ${new Date().toISOString().slice(0,10)}`);
+      await generarZipDocumentosCorporativos(elegidos, extras, `Documentos MD Abogados ${new Date().toISOString().slice(0,10)}`);
     }catch(err){
       console.error(err);
       notify?.("No se pudo generar el ZIP: " + mensajeError(err), 'error');
     } finally { setGenerandoZip(false); }
+  }
+
+  function agregarExtras(files){
+    if(!files?.length) return;
+    setExtras(prev => [...prev, ...Array.from(files)]);
+  }
+  function quitarExtra(i){
+    setExtras(prev => prev.filter((_, idx) => idx !== i));
   }
 
   // Sube/reemplaza el documento de un tipo — si ya había un archivo
@@ -216,6 +230,24 @@ export default function DiligenciamientoFormatosTab({ config, notify, liveMode }
                     ))}
                   </tbody>
                 </table>
+              </div>
+              <div style={{marginBottom:16}}>
+                <div className="field-card-label" style={{marginBottom:6}}>OTROS DOCUMENTOS (opcional)</div>
+                <p className="save-hint" style={{marginBottom:8}}>Si el banco/cliente pide algo puntual que no está en la lista de arriba, agrégalo acá — solo entra a este ZIP, no se guarda en SharePoint.</p>
+                {extras.length > 0 && (
+                  <ul style={{listStyle:'none', padding:0, margin:'0 0 10px'}}>
+                    {extras.map((file, i) => (
+                      <li key={i} style={{display:'flex', alignItems:'center', gap:10, padding:'4px 0'}}>
+                        <span style={{flex:1, fontSize:13}}>{file.name}</span>
+                        <button type="button" className="btn-secondary" style={{fontSize:12, padding:'3px 9px'}} onClick={() => quitarExtra(i)}>Quitar</button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <label className="btn-secondary" style={{cursor:'pointer', display:'inline-block'}}>
+                  + Agregar otro documento…
+                  <input type="file" multiple style={{display:'none'}} onChange={e => { agregarExtras(e.target.files); e.target.value=""; }} />
+                </label>
               </div>
               <div style={{display:'flex', gap:10, flexWrap:'wrap'}}>
                 <IconTextButton icon="zip" variant="primary" onClick={handleDescargarZip} disabled={generandoZip}>
