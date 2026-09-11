@@ -686,15 +686,21 @@
     display:inline-flex; gap:3px; padding:4px; background:#fff; border-radius:10px;
     border:1px solid var(--gris-linea); box-shadow:inset 0 1px 3px rgba(15,40,35,.1);
   }
+  /* Pedido explícito del usuario 2026-09-11: "bajo relieve" en reposo —
+     antes la .subtab sin seleccionar era transparente, sin ningún relieve
+     — y "alto relieve" al seleccionarla (más marcado que antes, para que
+     el salto de bajo a alto se note bien). */
   .subtab{
-    background:transparent; border:none; cursor:pointer; padding:7px 16px;
+    background:#fff; border:none; cursor:pointer; padding:7px 16px;
     font-size:12.5px; font-weight:600; color:var(--texto-suave); border-radius:7px;
-    transition:background .15s ease, color .15s ease, box-shadow .15s ease;
+    box-shadow:0 1px 2px rgba(15,40,35,.1);
+    transition:background .15s ease, color .15s ease, box-shadow .15s ease, transform .15s ease;
   }
-  .subtab:hover{color:var(--verde-oscuro);}
+  .subtab:hover{color:var(--verde-oscuro); box-shadow:0 2px 4px rgba(15,40,35,.14);}
   .subtab.active{
     color:#fff; background:linear-gradient(180deg, #0a6459, var(--verde-oscuro));
-    box-shadow:0 2px 4px rgba(0,73,65,.3);
+    box-shadow:0 3px 8px rgba(0,73,65,.4), inset 0 1px 0 rgba(255,255,255,.2);
+    transform:translateY(-1px);
   }
   .field-section{margin-bottom:26px;}
   .field-section h4{

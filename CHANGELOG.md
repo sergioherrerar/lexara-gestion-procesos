@@ -3,6 +3,7 @@
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
 ## 2026-09-11
+- **Bajo/alto relieve en sub-pestañas** — pedido explícito del usuario: las sub-pestañas sin seleccionar ahora tienen un relieve bajo (antes eran transparentes, sin ningún relieve); la seleccionada tiene el relieve alto más marcado, para que el salto entre las dos se note bien.
 - **Avisos (toast) con color de fondo y animación por tipo** — pedido explícito del usuario: los avisos de error ahora tienen fondo naranja y entran de izquierda a derecha; los de éxito tienen fondo verde y siguen cayendo de arriba hacia abajo. Antes todos eran fondo blanco con solo un borde de color.
 - **Ajustes al logo de carga inicial** — reportado por el usuario: quedaba centrado en todo el alto del contenido del Dashboard (más alto que la pantalla), así que se veía metido bien abajo, no en el centro de lo que de verdad se ve. Ahora queda fijo al centro de la pantalla sin importar el scroll ni cuánto contenido haya debajo; también más grande (340px) y el giro más rápido.
 - **Corrige "No se pudo generar el ZIP" en Diligenciamiento Formatos Empresas** — la URL de descarga de SharePoint que traía cada documento listado dura poco tiempo: funcionaba al leer la Cámara de Comercio apenas se cargaba la lista, pero fallaba al descargar el ZIP un rato después porque para entonces ya había vencido. Ahora se pide una URL fresca justo antes de cada descarga.
