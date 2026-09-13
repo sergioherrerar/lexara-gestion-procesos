@@ -73,6 +73,24 @@ export const INITIAL_CONFIG = {
 // app se conecta directo por ruta.
 export const DOCUMENTOS_CORPORATIVOS_RUTA = "ADMINISTRACION/Documentos Actuales MD ABOGADOS";
 
+// "Audiencias Términos" (Informes > Procesos Judiciales) — agregado
+// 2026-09-13: al crear/editar/eliminar una Audiencia o Término, la app
+// crea/mueve/borra automáticamente el evento correspondiente en un
+// calendario de Outlook (pedido explícito del usuario). El permiso
+// Calendars.ReadWrite YA está aprobado en Azure AD (confirmado 2026-09-13).
+// El usuario decidió (2026-09-13) crear un calendario NUEVO y adicional (no
+// el calendario principal) dentro del propio buzón de
+// Soporte@lexaraabogados.com, y compartirlo desde ahí con el resto de
+// cuentas — por eso 'secundario', buscado por NOMBRE (no hace falta ID
+// técnico) entre los calendarios de quien inicia sesión (ver
+// pathCalendario en graph.js). Nombre real confirmado por el usuario
+// 2026-09-13 (captura de Outlook): "LexaraAbogados". Otras formas
+// disponibles si el enfoque cambia:
+//   { tipo:'personal' }                                     — el calendario principal de quien inicia sesión
+//   { tipo:'buzon', correo:'correo@dominio' }                — el calendario principal de OTRO buzón con acceso delegado
+//   { tipo:'grupo', id:'<id del grupo Microsoft 365>' }      — el calendario de un grupo
+export const CALENDARIO_AUDIENCIAS_TERMINOS = { tipo:'secundario', nombreCalendario:'LexaraAbogados' };
+
 // Cada "tipo" de documento del kit + pistas (hints) de nombre de archivo
 // para encontrarlo dentro de DOCUMENTOS_CORPORATIVOS_URL — mismo criterio
 // que siigoNombresPosibles/RUTAS_CARPETAS_ENTIDAD: nunca inventa, si ningún
@@ -1009,6 +1027,52 @@ export const SHAREPOINT_LISTS_CONFIG = [
     ],
     mapping: { Anio:"Anio", Mes:"Mes", Indice:"Indice" },
   },
+  // Módulo "Audiencias Términos" (Informes > Procesos Judiciales) — agregado
+  // 2026-09-12 a pedido explícito del usuario, con base en 2 listas reales
+  // de SharePoint ("Audiencia" y "Terminos") que reemplazan el seguimiento
+  // manual que antes se llevaba en un formulario de Access. Igual que
+  // Desistimientos, ambas se asocian a Procesos Judiciales por ID (no por
+  // texto) — el campo real en las 2 listas se llama "Procesos MD". El
+  // mapeo queda vacío a propósito (igual que otras listas nuevas): se
+  // adivina solo al conectar comparando los hints de abajo contra las
+  // columnas reales, y se confirma a mano en Configuración si hiciera falta.
+  {
+    key: "audiencias",
+    listName: "Audiencia",
+    label: "Audiencias",
+    semanticFields: [
+      {key:"Proceso", label:"Proceso (ID)", hint:["procesos md","proceso"], required:true},
+      {key:"Descripcion", label:"Tipo de audiencia", hint:["descripcion","tipo de audiencia","audiencia"]},
+      {key:"FechaAudiencia", label:"Fecha de la audiencia", hint:["fecha audiencia","fecha de audiencia","fecha"], required:true},
+      {key:"HoraAudiencia", label:"Hora de la audiencia", hint:["hora audiencia","hora de audiencia","hora"]},
+      {key:"Abogado", label:"Abogado responsable", hint:["abogado audiencia","abogado","responsable"]},
+      {key:"Link", label:"Link", hint:["link"]},
+      {key:"Observaciones", label:"Observaciones", hint:["observaciones"]},
+    ],
+    mapping: {},
+  },
+  {
+    key: "terminos",
+    listName: "Terminos",
+    label: "Términos",
+    // VencimientoTermino se guarda en SharePoint por trazabilidad/compatibilidad
+    // con el sistema anterior, pero la app NUNCA confía en ese valor guardado
+    // para pintar el contador — siempre lo recalcula en vivo con
+    // sumarDiasHabilesJudiciales(FechaNotificacion, DiasHabiles) desde
+    // src/lib/audienciasTerminos.js, para que el contador de días hábiles
+    // restantes siempre sea respecto a la fecha de hoy real.
+    semanticFields: [
+      {key:"Proceso", label:"Proceso (ID)", hint:["procesos md","proceso"], required:true},
+      {key:"Descripcion", label:"Tipo de término", hint:["descripcion","tipo de termino","tipo de término"]},
+      {key:"FechaNotificacion", label:"Fecha de notificación", hint:["fecha notificacion","fecha de notificacion","fecha de notificación","fecha"], required:true},
+      {key:"DiasHabiles", label:"Días hábiles", hint:["dias habiles","días hábiles","dias"]},
+      {key:"VencimientoTermino", label:"Vencimiento", hint:["vencimiento termino","vencimiento del termino","fecha de vencimiento","vencimiento"]},
+      {key:"Abogado", label:"Abogado responsable", hint:["abogado termino","abogado","responsable"]},
+      {key:"Link", label:"Link", hint:["link"]},
+      {key:"Observaciones", label:"Observaciones", hint:["observaciones"]},
+    ],
+    mapping: {},
+  },
 ];
 
 export const DEMO_PROCESOS = [
@@ -1209,6 +1273,22 @@ export const DEMO_TIPOS_ACCION = [
   {id:32, NombreIdTipoProceso:"Laboral", Descripcion:"Recurso Reposicion Auto Art. 63 CPL Y SS", TipoAlerta:"Termino", Dias:"2,00", Despacho:"", TipoProceso:"", Link:"http://www.secretariasenado.gov.co/senado/basedoc/codigo_procedimental_laboral_pr001.html"},
   {id:33, NombreIdTipoProceso:"Laboral", Descripcion:"Subsanacion Art. 28 CPL Y SS", TipoAlerta:"Termino", Dias:"5,00", Despacho:"", TipoProceso:"", Link:"http://www.secretariasenado.gov.co/senado/basedoc/codigo_procedimental_laboral.html"},
   {id:34, NombreIdTipoProceso:"Laboral", Descripcion:"Termino Para La Reforma", TipoAlerta:"Termino", Dias:"15,00", Despacho:"", TipoProceso:"", Link:"http://www.secretariasenado.gov.co/senado/basedoc/codigo_procedimental_laboral.html"},
+];
+
+// Datos ficticios del módulo "Audiencias Términos" (2026-09-12), solo para
+// probar la pantalla nueva en modo demo — no son información real de ningún
+// proceso. Proceso:1 y Proceso:6 corresponden a los mismos procesos de
+// ejemplo de DEMO_PROCESOS (Grupo Andino / EPS Ejemplo de Salud SOS).
+export const DEMO_AUDIENCIAS = [
+  {id:1, Proceso:1, Descripcion:"Audiencia Inicial Art. 180 Cpaca", FechaAudiencia:"2026-09-25", HoraAudiencia:"09:00", Abogado:"María Fernanda Ruiz", Link:"", Observaciones:""},
+  {id:2, Proceso:6, Descripcion:"Audiencia De Alegaciones Y Juzgamiento Art. 182 Cpaca", FechaAudiencia:"2026-09-14", HoraAudiencia:"14:30", Abogado:"Dahiana Camila Pedraza", Link:"", Observaciones:"Confirmar asistencia del perito."},
+  {id:3, Proceso:2, Descripcion:"Audiencia Art. 372 Y 373 Cg", FechaAudiencia:"2026-08-30", HoraAudiencia:"08:00", Abogado:"Carlos Andrés Peña", Link:"", Observaciones:"Ya se realizó."},
+];
+
+export const DEMO_TERMINOS = [
+  {id:1, Proceso:1, Descripcion:"Apelacion De Sentencias Art. 292 CPACA", FechaNotificacion:"2026-09-08", DiasHabiles:"5,00", VencimientoTermino:"2026-09-15", Abogado:"María Fernanda Ruiz", Link:"", Observaciones:""},
+  {id:2, Proceso:6, Descripcion:"Contestacion Art. 369 CGP", FechaNotificacion:"2026-09-01", DiasHabiles:"20,00", VencimientoTermino:"2026-09-29", Abogado:"Dahiana Camila Pedraza", Link:"", Observaciones:""},
+  {id:3, Proceso:2, Descripcion:"Casacion Art. 88 CPL Y SS", FechaNotificacion:"2026-07-01", DiasHabiles:"15,00", VencimientoTermino:"2026-07-23", Abogado:"Carlos Andrés Peña", Link:"", Observaciones:"Vencido, revisar si se presentó."},
 ];
 
 // Datos ficticios del módulo Tutelas (2026-08-16) — inventados solo para

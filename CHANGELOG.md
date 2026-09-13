@@ -2,6 +2,13 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-13
+- **Nuevo módulo "Audiencias Términos"** (Informes > Procesos Judiciales) — pedido explícito del usuario, reemplaza el seguimiento manual que antes se llevaba en un formulario de Access. Trae las 2 listas reales de SharePoint "Audiencia" y "Terminos", asociadas a Procesos Judiciales por ID (igual que Desistimientos).
+  - Al crear un registro, se busca el proceso por su **Número Corto (Radicado)**; la app lee el **Tipo de Acción** de ese proceso y filtra la lista **Tipos de Acción** para mostrar solo las opciones válidas (por Tipo de Acción + "Audiencia"/"Término") en un desplegable — en Términos, además autocompleta los **Días hábiles** desde esa fila.
+  - **Contador de días hábiles judiciales** (lunes a viernes, festivos de Colombia excluidos, sábados NUNCA cuentan — confirmado por el usuario) hasta la fecha de la audiencia o el vencimiento del término: verde con más de 5 días hábiles restantes, naranja de 2 a 5, rojo de 0 a 2, y gris cuando ya venció.
+  - En Términos, el **Vencimiento** siempre se recalcula en vivo (Fecha de notificación + Días hábiles) — nunca se confía en un valor guardado desde hace tiempo, para que el contador sea siempre respecto a hoy.
+- **Audiencias Términos: sincronización automática con el calendario de Outlook** — pedido explícito del usuario: al crear/editar/eliminar una Audiencia o Término, la app crea/mueve/borra el evento correspondiente en el calendario, sin duplicarlo si ya existía. Se agregó el permiso `Calendars.ReadWrite` (aprobado en Azure AD por el usuario 2026-09-13). El calendario apuntado es uno NUEVO y adicional (no el principal) dentro del propio buzón de Soporte@lexaraabogados.com, llamado "LexaraAbogados" — compartido desde ahí con el resto de cuentas del equipo, encontrado por la app por su nombre (sin necesitar ningún ID técnico).
+
 ## 2026-09-11
 - **Bajo/alto relieve en sub-pestañas** — pedido explícito del usuario: las sub-pestañas sin seleccionar ahora tienen un relieve bajo (antes eran transparentes, sin ningún relieve); la seleccionada tiene el relieve alto más marcado, para que el salto entre las dos se note bien.
 - **Avisos (toast) con color de fondo y animación por tipo** — pedido explícito del usuario: los avisos de error ahora tienen fondo naranja y entran de izquierda a derecha; los de éxito tienen fondo verde y siguen cayendo de arriba hacia abajo. Antes todos eran fondo blanco con solo un borde de color.

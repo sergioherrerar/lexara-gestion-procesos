@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { INITIAL_CONFIG, SHAREPOINT_LISTS_CONFIG, DEMO_PROCESOS, DEMO_CLIENTES, DEMO_FACTURAS, DEMO_ORDENES_COMPRA, DEMO_COLABORADORES, DEMO_FORMAS_PAGO, DEMO_DESISTIMIENTOS, DEMO_TIPOS_ACCION, DEMO_TUTELAS, DEMO_TEMAS, DEMO_VALORES_ENTIDAD, DEMO_HORAS_EXTRAS, DEMO_VACACIONES_PERIODOS, DEMO_PROVEEDORES_GASTOS, DEMO_CUENTAS_COBRO_GASTOS, DEMO_PAGOS_POR_REALIZAR, DEMO_GASTOS, DEMO_TASAS_INTERES, DEMO_IPC, RUTAS_CARPETAS_ENTIDAD } from '../config';
+import { INITIAL_CONFIG, SHAREPOINT_LISTS_CONFIG, DEMO_PROCESOS, DEMO_CLIENTES, DEMO_FACTURAS, DEMO_ORDENES_COMPRA, DEMO_COLABORADORES, DEMO_FORMAS_PAGO, DEMO_DESISTIMIENTOS, DEMO_TIPOS_ACCION, DEMO_TUTELAS, DEMO_TEMAS, DEMO_VALORES_ENTIDAD, DEMO_HORAS_EXTRAS, DEMO_VACACIONES_PERIODOS, DEMO_PROVEEDORES_GASTOS, DEMO_CUENTAS_COBRO_GASTOS, DEMO_PAGOS_POR_REALIZAR, DEMO_GASTOS, DEMO_TASAS_INTERES, DEMO_IPC, DEMO_AUDIENCIAS, DEMO_TERMINOS, CALENDARIO_AUDIENCIAS_TERMINOS, RUTAS_CARPETAS_ENTIDAD } from '../config';
 import * as Graph from '../lib/graph';
 import { canWrite as canWriteForColaborador, modulosPermitidosDe, MODULOS_DISPONIBLES } from '../lib/permissions';
 
@@ -179,6 +179,12 @@ export function useLexaraApp(){
   // lib/liquidacionIntereses.js, nunca se editan desde acá.
   const [tasasInteres, setTasasInteres] = useState([]);
   const [ipcMensual, setIpcMensual] = useState([]);
+  // Audiencias Términos (Informes > Procesos Judiciales, 2026-09-12) — mismo
+  // criterio simple "sin panel propio" (crear/editar/eliminar vía crudGastos)
+  // que Liquidación Intereses arriba; se asocian a Procesos por ID igual que
+  // Desistimientos. Ver lib/audienciasTerminos.js.
+  const [audiencias, setAudiencias] = useState([]);
+  const [terminos, setTerminos] = useState([]);
   // Cuando se abre/crea una factura, orden de compra, forma de pago o
   // desistimiento DESDE dentro de un proceso, se guarda aquí su id — al
   // cerrar ese panel se reabre el mismo proceso en vez de dejar solo la
@@ -255,6 +261,8 @@ export function useLexaraApp(){
     setGastos(JSON.parse(JSON.stringify(DEMO_GASTOS)));
     setTasasInteres(JSON.parse(JSON.stringify(DEMO_TASAS_INTERES)));
     setIpcMensual(JSON.parse(JSON.stringify(DEMO_IPC)));
+    setAudiencias(JSON.parse(JSON.stringify(DEMO_AUDIENCIAS)));
+    setTerminos(JSON.parse(JSON.stringify(DEMO_TERMINOS)));
     setAccount({ name:"Usuario Demo", username:"demo@lexara.com" });
     setAppActive(true);
     if(!silent) setView('dashboard');
@@ -378,6 +386,8 @@ export function useLexaraApp(){
       setGastos(updated.find(l => l.key==='gastos')?.items || []);
       setTasasInteres(updated.find(l => l.key==='tasasInteres')?.items || []);
       setIpcMensual(updated.find(l => l.key==='ipc')?.items || []);
+      setAudiencias(updated.find(l => l.key==='audiencias')?.items || []);
+      setTerminos(updated.find(l => l.key==='terminos')?.items || []);
     }catch(err){
       console.error(err);
       notify("Se inició sesión, pero no se pudieron cargar los datos de SharePoint: " + Graph.mensajeError(err) + " — probá el botón de Actualizar.", 'error');
@@ -454,6 +464,8 @@ export function useLexaraApp(){
       setGastos(updated.find(l => l.key==='gastos')?.items || []);
       setTasasInteres(updated.find(l => l.key==='tasasInteres')?.items || []);
       setIpcMensual(updated.find(l => l.key==='ipc')?.items || []);
+      setAudiencias(updated.find(l => l.key==='audiencias')?.items || []);
+      setTerminos(updated.find(l => l.key==='terminos')?.items || []);
     }catch(err){
       console.error(err);
       notify("No se pudo actualizar la información: " + Graph.mensajeError(err), 'error');
@@ -500,6 +512,8 @@ export function useLexaraApp(){
     setCuentasCobroGastos(updated.find(l => l.key==='cuentasCobroGastos')?.items || []);
     setPagosPorRealizar(updated.find(l => l.key==='pagosPorRealizar')?.items || []);
     setGastos(updated.find(l => l.key==='gastos')?.items || []);
+    setAudiencias(updated.find(l => l.key==='audiencias')?.items || []);
+    setTerminos(updated.find(l => l.key==='terminos')?.items || []);
     setLiveMode(true);
   }
 
@@ -1515,7 +1529,14 @@ export function useLexaraApp(){
   // 12 funciones casi iguales — expuesto igual como funciones con nombre
   // propio por lista, para que los componentes las usen igual que
   // crearPeriodoVacaciones/etc. Ver lib/gastos.js y [[project_gastos_modulo]].
-  function crudGastos(listKey, itemsState, setItemsState){
+  // `hooks` opcional (agregado 2026-09-13 para Audiencias/Términos): efectos
+  // secundarios que corren DESPUÉS de que la operación ya se guardó bien (en
+  // SharePoint si liveMode, y siempre en el estado local) — hoy se usa para
+  // sincronizar el evento de calendario, ver crudAudiencias/crudTerminos más
+  // abajo. Nunca bloquean ni revierten la operación principal si fallan (solo
+  // se registran en consola) — sincronizar el calendario es un plus, no debe
+  // impedir guardar el registro en sí.
+  function crudGastos(listKey, itemsState, setItemsState, hooks={}){
     async function crear(fields){
       const nuevo = { id: 'tmp-' + Math.random().toString(36).slice(2), ...fields };
       if(liveMode){
@@ -1530,6 +1551,7 @@ export function useLexaraApp(){
       }
       setItemsState(prev => [...prev, nuevo]);
       notify("Creado con éxito en Lexara", 'success');
+      if(hooks.afterCrear){ Promise.resolve(hooks.afterCrear(nuevo)).catch(err => console.error(err)); }
       return nuevo;
     }
     async function editar(id, updates){
@@ -1559,6 +1581,7 @@ export function useLexaraApp(){
         setSaving(false);
       }
       notify("Guardado con éxito en Lexara", 'success');
+      if(hooks.afterEditar){ Promise.resolve(hooks.afterEditar(id, {...item, ...updatesAplanados}, updates)).catch(err => console.error(err)); }
     }
     async function performEliminar(id){
       const item = itemsState.find(i => i.id===id);
@@ -1572,6 +1595,7 @@ export function useLexaraApp(){
         setSaving(false);
       }
       setItemsState(prev => prev.filter(i => i.id !== id));
+      if(hooks.afterEliminar){ Promise.resolve(hooks.afterEliminar(id, item)).catch(err => console.error(err)); }
     }
     function eliminar(id){
       requestConfirm("¿Eliminar este registro? Esta acción no se puede deshacer.", () => performEliminar(id));
@@ -1609,6 +1633,39 @@ export function useLexaraApp(){
   const editarIPC = crudIPC.editar;
   const eliminarIPC = crudIPC.eliminar;
 
+  // Audiencias Términos (Informes > Procesos Judiciales, 2026-09-12) — reusa
+  // crudGastos de arriba, igual que Tasas de Interés/IPC. Además (2026-09-13,
+  // pedido explícito del usuario: "que se modifica la fecha en la app se
+  // modifique en el calendario") cada crear/editar/eliminar sincroniza el
+  // evento correspondiente en el calendario de Outlook configurado en
+  // config.CALENDARIO_AUDIENCIAS_TERMINOS — mientras esa configuración siga
+  // en null (falta confirmar qué ES exactamente el calendario "MD ABOGADOS
+  // SAS"), sincronizarEventoCalendario/eliminarEventoCalendario (graph.js) no
+  // hacen nada, así que esto no rompe nada mientras tanto. Solo corre en modo
+  // en vivo (en demo no hay ninguna cuenta de Microsoft real detrás).
+  function asuntoEventoCalendario(tipo, item){
+    const proceso = procesos.find(p => p.id === item.Proceso);
+    const radicado = proceso?.Radicado || "";
+    const etiqueta = tipo === 'audiencia' ? 'Audiencia' : 'Término';
+    return [etiqueta, item.Descripcion, radicado].filter(Boolean).join(" — ");
+  }
+  const crudAudiencias = crudGastos('audiencias', audiencias, setAudiencias, {
+    afterCrear: (item) => !liveMode ? null : Graph.sincronizarEventoCalendario(config, { tipo:'audiencia', id:item.id, asunto: asuntoEventoCalendario('audiencia', item), fechaISO: item.FechaAudiencia, horaHHMM: item.HoraAudiencia, notas: item.Observaciones }),
+    afterEditar: (id, item) => !liveMode ? null : Graph.sincronizarEventoCalendario(config, { tipo:'audiencia', id, asunto: asuntoEventoCalendario('audiencia', item), fechaISO: item.FechaAudiencia, horaHHMM: item.HoraAudiencia, notas: item.Observaciones }),
+    afterEliminar: (id) => !liveMode ? null : Graph.eliminarEventoCalendario(config, { tipo:'audiencia', id }),
+  });
+  const crudTerminos = crudGastos('terminos', terminos, setTerminos, {
+    afterCrear: (item) => !liveMode ? null : Graph.sincronizarEventoCalendario(config, { tipo:'termino', id:item.id, asunto: asuntoEventoCalendario('termino', item), fechaISO: item.VencimientoTermino, notas: item.Observaciones }),
+    afterEditar: (id, item) => !liveMode ? null : Graph.sincronizarEventoCalendario(config, { tipo:'termino', id, asunto: asuntoEventoCalendario('termino', item), fechaISO: item.VencimientoTermino, notas: item.Observaciones }),
+    afterEliminar: (id) => !liveMode ? null : Graph.eliminarEventoCalendario(config, { tipo:'termino', id }),
+  });
+  const crearAudiencia = crudAudiencias.crear;
+  const editarAudiencia = crudAudiencias.editar;
+  const eliminarAudiencia = crudAudiencias.eliminar;
+  const crearTermino = crudTerminos.crear;
+  const editarTermino = crudTerminos.editar;
+  const eliminarTermino = crudTerminos.eliminar;
+
   return {
     config, saveConfig, clearConfig,
     lists, listByKey, updateListMapping,
@@ -1622,6 +1679,9 @@ export function useLexaraApp(){
     tutelas, temas, valoresEntidad, horasExtras, vacacionesPeriodos,
     proveedoresGastos, cuentasCobroGastos, pagosPorRealizar, gastos,
     tasasInteres, ipcMensual,
+    audiencias, terminos,
+    crearAudiencia, editarAudiencia, eliminarAudiencia,
+    crearTermino, editarTermino, eliminarTermino,
     currentFilter, setFilter: setCurrentFilter, searchQuery, setSearchQuery: setSearchQuery,
     onSearch: setSearchQuery,
     activeProceso, openProceso, newProceso, closeDrawer, saveProceso, procesoViewOnly, rememberReturnToProceso, vincularLinksProcesosMasivo,

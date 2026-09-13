@@ -97,6 +97,131 @@ async function getMailToken(){
   }
 }
 
+// Token para crear/mover/borrar eventos de calendario (Calendars.ReadWrite) —
+// agregado 2026-09-13 para "Audiencias Términos" (Informes > Procesos
+// Judiciales): mismo criterio aislado que getMailToken de arriba, nunca junto
+// a Sites.ReadWrite.All en beginSignIn()/getGraphToken().
+async function getCalendarToken(){
+  const scopes = ["Calendars.ReadWrite"];
+  try{
+    const res = await msalInstance.acquireTokenSilent({ scopes, account });
+    return res.accessToken;
+  }catch(err){
+    const res = await msalInstance.acquireTokenPopup({ scopes });
+    return res.accessToken;
+  }
+}
+
+async function graphFetchCalendar(path, opts){
+  const token = await getCalendarToken();
+  const res = await fetch(path.startsWith('http') ? path : `https://graph.microsoft.com/v1.0${path}`, {
+    ...opts,
+    headers:{ Authorization:`Bearer ${token}`, "Content-Type":"application/json", ...(opts&&opts.headers||{}) }
+  });
+  if(!res.ok){
+    const body = await res.text();
+    throw new Error(`Graph ${res.status}: ${body.substring(0,300)}`);
+  }
+  return res.status===204 ? null : res.json();
+}
+
+// Cada evento creado desde acá se marca con una propiedad extendida (no una
+// columna nueva en las listas de SharePoint) con el valor "tipo:idDelRegistro"
+// (ej: "audiencia:14") — así se puede encontrar el evento ya creado la
+// próxima vez (para moverlo o borrarlo) sin depender de guardar su ID en
+// ningún lado. El GUID es inventado, solo sirve de espacio de nombres propio
+// para que Graph no lo confunda con una propiedad de otra app.
+const PROPIEDAD_LEXARA = "String {2f6a8d3e-2f0a-4e7a-9b0c-1a6b7c4e9d21} Name lexara_registro";
+
+// A dónde se crean los eventos — depende de qué es exactamente el calendario
+// "MD ABOGADOS SAS": el usuario decidió 2026-09-13 crear uno NUEVO, adicional
+// (no el calendario principal) dentro del propio buzón de
+// Soporte@lexaraabogados.com (la misma cuenta que usa la app), y compartirlo
+// desde ahí con el resto de cuentas del equipo — 'secundario' es ese caso:
+// se busca por NOMBRE (no hace falta ningún ID técnico que copiar de
+// Outlook) entre los calendarios de "/me" (quien inició sesión), con caché
+// para no repetir la búsqueda en cada evento. 'personal'/'buzon'/'grupo`
+// quedan disponibles por si el enfoque cambia más adelante. Mientras
+// config.CALENDARIO_AUDIENCIAS_TERMINOS siga en null,
+// sincronizarEventoCalendario/eliminarEventoCalendario no hacen nada (no
+// truena, solo no sincroniza).
+const calendarioSecundarioCache = new Map();
+async function pathCalendario(config){
+  const cal = config.CALENDARIO_AUDIENCIAS_TERMINOS;
+  if(!cal || !cal.tipo) return null;
+  if(cal.tipo === 'personal') return '/me/calendar';
+  if(cal.tipo === 'buzon' && cal.correo) return `/users/${encodeURIComponent(cal.correo)}/calendar`;
+  if(cal.tipo === 'grupo' && cal.id) return `/groups/${cal.id}/calendar`;
+  if(cal.tipo === 'secundario' && cal.nombreCalendario){
+    const clave = cal.nombreCalendario.trim().toLowerCase();
+    if(calendarioSecundarioCache.has(clave)) return `/me/calendars/${calendarioSecundarioCache.get(clave)}`;
+    const res = await graphFetchCalendar(`/me/calendars?$select=id,name`);
+    const encontrado = (res?.value || []).find(c => (c.name||'').trim().toLowerCase() === clave);
+    if(!encontrado) throw new Error(`No se encontró ningún calendario llamado "${cal.nombreCalendario}" en la cuenta que inició sesión.`);
+    calendarioSecundarioCache.set(clave, encontrado.id);
+    return `/me/calendars/${encontrado.id}`;
+  }
+  return null;
+}
+
+async function buscarEventoAudienciaTermino(config, marca){
+  const base = await pathCalendario(config);
+  if(!base) return null;
+  const filtro = `singleValueExtendedProperties/Any(ep: ep/id eq '${PROPIEDAD_LEXARA}' and ep/value eq '${marca}')`;
+  const res = await graphFetchCalendar(`${base}/events?$filter=${encodeURIComponent(filtro)}&$select=id`);
+  return res?.value?.[0] || null;
+}
+
+function sumarDiasISO(fechaISO, dias){
+  const [y,m,d] = String(fechaISO).slice(0,10).split('-').map(Number);
+  const date = new Date(y, m-1, d + dias);
+  return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+}
+
+// Crea el evento de calendario de una Audiencia o Término, o lo actualiza en
+// el mismo lugar si ya existía (nunca lo duplica) — pedido explícito del
+// usuario 2026-09-13: "que se modifica la fecha en la app se modifique en el
+// calendario". Una Audiencia trae hora puntual (evento de 1 hora); un
+// Término es un vencimiento, se agenda como evento de día completo.
+export async function sincronizarEventoCalendario(config, { tipo, id, asunto, fechaISO, horaHHMM, notas }){
+  if(!config.CALENDARIO_AUDIENCIAS_TERMINOS || !fechaISO) return null; // calendario todavía no configurado, o sin fecha — no hace nada
+  const base = await pathCalendario(config);
+  if(!base) return null;
+  const marca = `${tipo}:${id}`;
+  const zonaHoraria = "SA Pacific Standard Time"; // Bogotá, nombre de zona horaria de Windows que usa Graph
+  let body;
+  if(horaHHMM){
+    const [h,m] = horaHHMM.split(':').map(Number);
+    const finHora = String(((h||0)+1) % 24).padStart(2,'0');
+    body = {
+      subject: asunto, isAllDay:false,
+      start:{ dateTime:`${fechaISO}T${horaHHMM}:00`, timeZone: zonaHoraria },
+      end:{ dateTime:`${fechaISO}T${finHora}:${String(m||0).padStart(2,'0')}:00`, timeZone: zonaHoraria },
+    };
+  } else {
+    body = {
+      subject: asunto, isAllDay:true,
+      start:{ dateTime:`${fechaISO}T00:00:00`, timeZone: zonaHoraria },
+      end:{ dateTime:`${sumarDiasISO(fechaISO,1)}T00:00:00`, timeZone: zonaHoraria },
+    };
+  }
+  if(notas) body.body = { contentType:"Text", content: notas };
+  body.singleValueExtendedProperties = [{ id: PROPIEDAD_LEXARA, value: marca }];
+
+  const existente = await buscarEventoAudienciaTermino(config, marca);
+  if(existente) return graphFetchCalendar(`${base}/events/${existente.id}`, { method:"PATCH", body: JSON.stringify(body) });
+  return graphFetchCalendar(`${base}/events`, { method:"POST", body: JSON.stringify(body) });
+}
+
+export async function eliminarEventoCalendario(config, { tipo, id }){
+  if(!config.CALENDARIO_AUDIENCIAS_TERMINOS) return null;
+  const base = await pathCalendario(config);
+  if(!base) return null;
+  const existente = await buscarEventoAudienciaTermino(config, `${tipo}:${id}`);
+  if(!existente) return null;
+  return graphFetchCalendar(`${base}/events/${existente.id}`, { method:"DELETE" });
+}
+
 // Crea un borrador de correo DIRECTO en el buzón de Outlook del usuario que
 // inició sesión (vía Microsoft Graph, POST /me/messages) — con el cuerpo en
 // HTML real (tablas con color) y el PDF ya adjunto, sin que el usuario tenga
@@ -680,6 +805,20 @@ export function despachosParaAccion(tiposAccion, tipoAccion){
   const set = new Set();
   (tiposAccion||[]).forEach(t => { if(t.Despacho && normalize(t.NombreIdTipoProceso||"")===target) set.add(t.Despacho); });
   return Array.from(set).sort((a,b)=>a.localeCompare(b));
+}
+// Audiencias Términos (2026-09-12): dropdown en cascada pedido por el
+// usuario — primero se filtra "tipos de Accion" por el Tipo de Acción del
+// proceso elegido (NombreIdTipoProceso), y dentro de eso por TipoAlerta
+// ("Audiencia" o "Termino" según el modo), y el resultado son las filas
+// completas (no solo el texto) porque Términos necesita también leer "Dias"
+// de la fila elegida para autocompletar Días hábiles.
+export function opcionesTiposAccionParaAlerta(tiposAccion, tipoAccion, tipoAlerta){
+  if(!tipoAccion || !tipoAlerta) return [];
+  const targetAccion = normalize(tipoAccion);
+  const targetAlerta = normalize(tipoAlerta);
+  return (tiposAccion||[])
+    .filter(t => normalize(t.NombreIdTipoProceso||"")===targetAccion && normalize(t.TipoAlerta||"")===targetAlerta && t.Descripcion)
+    .sort((a,b) => String(a.Descripcion).localeCompare(String(b.Descripcion)));
 }
 // Tutelas: "Tema" es un select dependiente de "Prestación" (corregido
 // 2026-08-18 — antes dependía de Tipo Vinculación Entidad, que en realidad

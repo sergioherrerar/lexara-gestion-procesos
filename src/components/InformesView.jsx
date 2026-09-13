@@ -21,6 +21,7 @@ import CruceArchivosTab from './CruceArchivosTab';
 import CrearLinkCompartirTab from './CrearLinkCompartirTab';
 import LiquidacionInteresesTab from './LiquidacionInteresesTab';
 import DiligenciamientoFormatosTab from './DiligenciamientoFormatosTab';
+import AudienciasTerminosTab from './AudienciasTerminosTab';
 import { construirMensajePagoWhatsApp, normalizarTelefonoWaMe, normalizarTelefonoManualWaMe, PAISES_WHATSAPP } from '../lib/whatsappPago';
 
 // Entidades con formato de informe formal ya confirmado, y qué generador usa
@@ -81,6 +82,14 @@ const SUBTABS_HORAS_EXTRAS = [
   {key:'registrar', label:'Registrar'},
   {key:'registros', label:'Registros'},
 ];
+// Sub-pestaña "Audiencias Términos" agregada 2026-09-12 (pedido explícito
+// del usuario, reemplaza el seguimiento manual en Access) — confirmado por
+// el usuario que va dentro de "Procesos Judiciales", junto al ya existente
+// "Detalle por Entidad".
+const SUBTABS_PROCESOS_JUDICIALES = [
+  {key:'detalleEntidad', label:'Detalle por Entidad'},
+  {key:'audienciasTerminos', label:'Audiencias Términos'},
+];
 const SUBTABS_HERRAMIENTAS = [
   {key:'crearLink', label:'Crear link para compartir'},
   {key:'revisionProcesos', label:'Revisión de Procesos'},
@@ -89,10 +98,11 @@ const SUBTABS_HERRAMIENTAS = [
   {key:'diligenciamientoFormatos', label:'Diligenciamiento Formatos Empresas'},
 ];
 
-export default function InformesView({ procesos, clientes, facturas, desistimientos, tutelas, valoresEntidad, notify, liveMode, config, requestConfirm, corregirEntidadFaltanteTutelas, colaboradores, onCreateHoraExtra, onEditarHoraExtra, onEliminarHoraExtra, horasExtras, tasasInteres, ipcMensual, onCrearTasaInteres, onEditarTasaInteres, onEliminarTasaInteres, onCrearIPC, onEditarIPC, onEliminarIPC }){
+export default function InformesView({ procesos, clientes, facturas, desistimientos, tutelas, valoresEntidad, notify, liveMode, config, requestConfirm, corregirEntidadFaltanteTutelas, colaboradores, onCreateHoraExtra, onEditarHoraExtra, onEliminarHoraExtra, horasExtras, tasasInteres, ipcMensual, onCrearTasaInteres, onEditarTasaInteres, onEliminarTasaInteres, onCrearIPC, onEditarIPC, onEliminarIPC, tiposAccion, audiencias, terminos, onCrearAudiencia, onEditarAudiencia, onEliminarAudiencia, onCrearTermino, onEditarTermino, onEliminarTermino }){
   const [tab, setTab] = useState('clientesPagos');
   const [subTabClientesPagos, setSubTabClientesPagos] = useState('informeCliente');
   const [subTabTutelas, setSubTabTutelas] = useState('informeDiario');
+  const [subTabProcesos, setSubTabProcesos] = useState('detalleEntidad');
   const [subTabHorasExtras, setSubTabHorasExtras] = useState('registrar');
   const [subTabHerramientas, setSubTabHerramientas] = useState('crearLink');
   const [generando, setGenerando] = useState(null); // nombre de la entidad mientras genera el Excel
@@ -828,6 +838,15 @@ export default function InformesView({ procesos, clientes, facturas, desistimien
       )}
 
       {tab==='procesos' && (
+      <div>
+        <div className="subnav-panel">
+          <div className="subtabs">
+            {SUBTABS_PROCESOS_JUDICIALES.map(t => (
+              <button key={t.key} type="button" className={"subtab" + (subTabProcesos===t.key ? " active" : "")} onClick={() => setSubTabProcesos(t.key)}>{t.label}</button>
+            ))}
+          </div>
+        </div>
+      {subTabProcesos==='detalleEntidad' && (
       <div className="panel" style={{marginTop:20}}>
         <div className="panel-head">
           <h3>Detalle de Procesos judiciales por Entidad</h3>
@@ -885,6 +904,16 @@ export default function InformesView({ procesos, clientes, facturas, desistimien
             </div>
           )}
         </div>
+      </div>
+      )}
+      {subTabProcesos==='audienciasTerminos' && (
+        <AudienciasTerminosTab
+          procesos={procesos} tiposAccion={tiposAccion} colaboradores={colaboradores}
+          audiencias={audiencias} terminos={terminos} notify={notify}
+          onCrearAudiencia={onCrearAudiencia} onEditarAudiencia={onEditarAudiencia} onEliminarAudiencia={onEliminarAudiencia}
+          onCrearTermino={onCrearTermino} onEditarTermino={onEditarTermino} onEliminarTermino={onEliminarTermino}
+        />
+      )}
       </div>
       )}
 
