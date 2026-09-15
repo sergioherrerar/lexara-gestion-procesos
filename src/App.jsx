@@ -104,6 +104,11 @@ export default function App(){
           onRefresh={app.refreshData}
           refreshing={app.refreshing}
           cargandoInicial={app.signingIn && app.liveMode}
+          audiencias={app.audiencias}
+          terminos={app.terminos}
+          procesos={app.procesos}
+          onCrearEventoPersonalizado={app.crearEventoCalendarioPersonalizado}
+          notify={app.notify}
         />
         {app.signingIn && app.liveMode && <CargaInicialOverlay />}
 

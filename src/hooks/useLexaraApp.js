@@ -1697,6 +1697,21 @@ export function useLexaraApp(){
   const editarTermino = crudTerminos.editar;
   const eliminarTermino = crudTerminos.eliminar;
 
+  // "Programar un evento diferente a las audiencias y términos" desde el
+  // mini calendario de la cabecera (2026-09-15, pedido explícito del
+  // usuario: "le doy clic al día y programo mi nuevo evento / lo mismo
+  // nombre del evento fecha hora"). Va directo al mismo calendario
+  // compartido de Outlook (sin pasar por ninguna lista de SharePoint — no
+  // existe ninguna para esto), así que es de una sola vía: queda en Outlook,
+  // pero el mini calendario no lo vuelve a mostrar como punto (no hay de
+  // dónde volver a leerlo sin abrir otra vez Microsoft Graph). tipo:'personalizado'
+  // con un id nuevo cada vez (Date.now()) para que nunca choque con el de un
+  // evento ya existente.
+  async function crearEventoCalendarioPersonalizado({ nombre, fechaISO, horaHHMM }){
+    if(!liveMode) throw new Error("Programar un evento nuevo solo funciona conectado a SharePoint (modo en vivo), no en modo demo.");
+    return Graph.sincronizarEventoCalendario({ ...config, CALENDARIO_AUDIENCIAS_TERMINOS }, { tipo:'personalizado', id: Date.now(), asunto: nombre, fechaISO, horaHHMM });
+  }
+
   return {
     config, saveConfig, clearConfig,
     lists, listByKey, updateListMapping,
@@ -1713,6 +1728,7 @@ export function useLexaraApp(){
     audiencias, terminos,
     crearAudiencia, editarAudiencia, eliminarAudiencia,
     crearTermino, editarTermino, eliminarTermino,
+    crearEventoCalendarioPersonalizado,
     currentFilter, setFilter: setCurrentFilter, searchQuery, setSearchQuery: setSearchQuery,
     onSearch: setSearchQuery,
     activeProceso, openProceso, newProceso, closeDrawer, saveProceso, procesoViewOnly, rememberReturnToProceso, vincularLinksProcesosMasivo,
