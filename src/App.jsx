@@ -125,6 +125,8 @@ export default function App(){
             config={app.config}
             requestConfirm={app.requestConfirm}
             vincularLinksProcesosMasivo={app.vincularLinksProcesosMasivo}
+            audiencias={app.audiencias}
+            terminos={app.terminos}
           />
         )}
         {app.view === 'tutelas' && canAccessView(app.modulosPermitidos, 'tutelas') && (

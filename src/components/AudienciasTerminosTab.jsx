@@ -286,23 +286,32 @@ function proximosAVencer(audiencias, terminos, procesos){
     .slice(0, 3);
 }
 
+// Exportado (2026-09-15, pedido explícito del usuario: "este mensaje también
+// déjalo viviendo acá / dentro de procesos judiciales y en informes") para
+// reusarlo tal cual en ProcesosView.jsx, sin duplicar la lógica.
+export function ResumenAudienciasTerminos({ audiencias, terminos, procesos, style }){
+  const masUrgentes = useMemo(() => proximosAVencer(audiencias, terminos, procesos), [audiencias, terminos, procesos]);
+  return (
+    <div style={{display:'flex', gap:10, flexWrap:'wrap', marginBottom:16, ...style}}>
+      {masUrgentes.length ? masUrgentes.map(r => (
+        <span key={r.tipoRegistro + '-' + r.id} className={"badge badge-" + colorCuentaRegresiva(r.restantes)} style={{fontSize:13, padding:'8px 14px'}}>
+          {r.tipoRegistro === 'audiencias' ? 'Audiencia' : 'Término'} · {r.proceso?.Radicado || "—"}{r.proceso?.Cliente ? (" · " + r.proceso.Cliente) : ""} · {etiquetaCuentaRegresiva(r.restantes)}
+        </span>
+      )) : (
+        <span className="badge badge-gris" style={{fontSize:13, padding:'8px 14px'}}>No hay audiencias ni términos pendientes por vencer.</span>
+      )}
+    </div>
+  );
+}
+
 export default function AudienciasTerminosTab({ procesos, tiposAccion, colaboradores, audiencias, terminos, notify, onCrearAudiencia, onEditarAudiencia, onEliminarAudiencia, onCrearTermino, onEditarTermino, onEliminarTermino }){
   const [modo, setModo] = useState('audiencias');
-  const masUrgentes = useMemo(() => proximosAVencer(audiencias, terminos, procesos), [audiencias, terminos, procesos]);
 
   return (
     <div className="panel" style={{marginTop:20}}>
       <div className="panel-head"><h3>Audiencias Términos</h3></div>
       <div className="panel-body">
-        <div style={{display:'flex', gap:10, flexWrap:'wrap', marginBottom:16}}>
-          {masUrgentes.length ? masUrgentes.map(r => (
-            <span key={r.tipoRegistro + '-' + r.id} className={"badge badge-" + colorCuentaRegresiva(r.restantes)} style={{fontSize:13, padding:'8px 14px'}}>
-              {r.tipoRegistro === 'audiencias' ? 'Audiencia' : 'Término'} · {r.proceso?.Radicado || "—"}{r.proceso?.Cliente ? (" · " + r.proceso.Cliente) : ""} · {etiquetaCuentaRegresiva(r.restantes)}
-            </span>
-          )) : (
-            <span className="badge badge-gris" style={{fontSize:13, padding:'8px 14px'}}>No hay audiencias ni términos pendientes por vencer.</span>
-          )}
-        </div>
+        <ResumenAudienciasTerminos audiencias={audiencias} terminos={terminos} procesos={procesos} />
         <div style={{display:'flex', gap:8, marginBottom:20}}>
           {MODOS.map(m => (
             <button key={m.key} type="button" className={"subtab" + (modo === m.key ? " active" : "")} onClick={() => setModo(m.key)}>{m.label}</button>

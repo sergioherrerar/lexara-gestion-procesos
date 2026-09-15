@@ -7,6 +7,7 @@ import { useColumnFilters } from '../hooks/useColumnFilters';
 import { useColumnSort } from '../hooks/useColumnSort';
 import { generarFichaProcesoPDF } from '../lib/informeProceso';
 import { generarImpulsoProcesalWord, enviarBorradorImpulsoProcesalGraph, abrirCorreoImpulsoProcesal } from '../lib/formatoImpulsoProcesal';
+import { ResumenAudienciasTerminos } from './AudienciasTerminosTab';
 
 function matchesFilter(p, currentFilter){
   if(currentFilter==='todos') return true;
@@ -31,7 +32,7 @@ const COLUMNS = [
   {key:'acciones', label:'Acciones', filterable:false},
 ];
 
-export default function ProcesosView({ procesos, currentFilter, setFilter, searchQuery, onOpenProceso, onCreateProceso, canWrite = true, liveMode, notify, config, requestConfirm, vincularLinksProcesosMasivo }){
+export default function ProcesosView({ procesos, currentFilter, setFilter, searchQuery, onOpenProceso, onCreateProceso, canWrite = true, liveMode, notify, config, requestConfirm, vincularLinksProcesosMasivo, audiencias, terminos }){
   const [showTerminados, setShowTerminados] = useState(false);
   const [generandoPDF, setGenerandoPDF] = useState(null); // id del proceso mientras genera su ficha en PDF
   const [generandoWord, setGenerandoWord] = useState(null); // id del proceso mientras genera el Impulso Procesal en Word
@@ -140,22 +141,33 @@ export default function ProcesosView({ procesos, currentFilter, setFilter, searc
           {showTerminados ? "← Ver vigentes" : `Ver terminados (${totalTerminados})`}
         </div>
       </div>
-      {canWrite && procesosSinLinks > 0 && (
-        <div className="field-warning" style={{display:'flex', alignItems:'center', gap:10, flexWrap:'wrap', marginBottom:16}}>
-          <span>{procesosSinLinks} proceso(s) todavía no tienen alguno de sus links (Carpeta/Cliente/Contrato) llenos.</span>
-          <button
-            type="button"
-            className="btn-secondary"
-            style={{marginLeft:'auto'}}
-            disabled={vinculandoLinks}
-            onClick={() => requestConfirm(
-              `¿Buscar y llenar automáticamente los links (Carpeta/Cliente/Contrato) de los ${procesosSinLinks} proceso(s) que aún no los tienen? Solo se llenan los que tengan una coincidencia clara — los demás se dejan igual. Esto actualiza SharePoint de una vez.`,
-              handleVincularLinksMasivo
-            )}
-          >
-            {vinculandoLinks ? "Vinculando…" : "Vincular links automáticamente"}
-          </button>
+      {/* Fila dividida en mitades (pedido explícito del usuario 2026-09-15:
+          "la ideal Vincular Carpeta a la derecha y términos y audiencias a
+          la izquierda / solo dividir el espacio en mitad") — el resumen de
+          Audiencias/Términos a la izquierda, el aviso de "Vincular links
+          automáticamente" (sin cambios, el botón único de siempre) a la
+          derecha. En mobile se apilan igual que el resto de la app. */}
+      {canWrite && procesosSinLinks > 0 ? (
+        <div className="panel-grid panel-grid-70-30" style={{marginBottom:16}}>
+          <ResumenAudienciasTerminos audiencias={audiencias} terminos={terminos} procesos={procesos} style={{marginBottom:0, minWidth:0}} />
+          <div className="field-warning" style={{minWidth:0, display:'flex', alignItems:'center', gap:10, flexWrap:'wrap', marginBottom:0}}>
+            <span>{procesosSinLinks} proceso(s) todavía no tienen alguno de sus links (Carpeta/Cliente/Contrato) llenos.</span>
+            <button
+              type="button"
+              className="btn-secondary"
+              style={{marginLeft:'auto'}}
+              disabled={vinculandoLinks}
+              onClick={() => requestConfirm(
+                `¿Buscar y llenar automáticamente los links (Carpeta/Cliente/Contrato) de los ${procesosSinLinks} proceso(s) que aún no los tienen? Solo se llenan los que tengan una coincidencia clara — los demás se dejan igual. Esto actualiza SharePoint de una vez.`,
+                handleVincularLinksMasivo
+              )}
+            >
+              {vinculandoLinks ? "Vinculando…" : "Vincular links automáticamente"}
+            </button>
+          </div>
         </div>
+      ) : (
+        <ResumenAudienciasTerminos audiencias={audiencias} terminos={terminos} procesos={procesos} />
       )}
       <div className="table-wrap">
         <table>
