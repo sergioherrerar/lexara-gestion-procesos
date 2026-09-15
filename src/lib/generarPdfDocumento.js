@@ -24,7 +24,19 @@ export async function generarPdfDesdeNodo(nodoId, nombreArchivo){
   if(!nodo) throw new Error(`No se encontró el contenido a convertir en PDF ("${nodoId}").`);
   const canvas = await html2canvas(nodo, { scale:2, useCORS:false, backgroundColor:'#ffffff' });
   const imgData = canvas.toDataURL('image/jpeg', 0.92);
-  const doc = new jsPDF({ unit:'mm', format:'a4' });
+  // Protegido contra modificaciones — mismo criterio que el resto de PDF del
+  // portal (ver prepararDocumentoPDF en informesPDF.js, pedido explícito del
+  // usuario 2026-08-22, recordado 2026-09-15 para que aplique también acá):
+  // se puede abrir e imprimir sin contraseña, pero editarlo requiere la
+  // contraseña de propietario, que no se entrega a nadie.
+  const doc = new jsPDF({
+    unit:'mm', format:'a4',
+    encryption: {
+      userPassword: '',
+      ownerPassword: 'LexaraMD-2026-NoEditar',
+      userPermissions: ['print', 'copy'],
+    },
+  });
   doc.addImage(imgData, 'JPEG', 0, 0, 210, 297);
   doc.save(nombreArchivo.toLowerCase().endsWith('.pdf') ? nombreArchivo : `${nombreArchivo}.pdf`);
 }

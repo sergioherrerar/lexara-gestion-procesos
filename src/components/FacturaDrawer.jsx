@@ -132,6 +132,13 @@ export default function FacturaDrawer({ factura, clientes, procesos, liveMode, o
 
   return (
     <>
+      {/* Pedido explícito del usuario 2026-09-15: el botón de PDF de la tabla
+          ("Guardar factura en PDF") NUNCA debe mostrar el formulario — con
+          autoPrint=true solo se monta el nodo imprimible de abajo (fuera de
+          pantalla) para que se pueda generar el PDF, sin que el usuario vea
+          nada abrirse. */}
+      {!autoPrint && (
+      <>
       <div id="factura-overlay" className="active" onClick={onClose}></div>
       <div id="factura-drawer" className="active">
         <div className="drawer-head">
@@ -257,6 +264,8 @@ export default function FacturaDrawer({ factura, clientes, procesos, liveMode, o
           <span className="save-hint">{liveMode ? "Los cambios se guardan en SharePoint." : "Modo demo — los cambios no se guardan."}</span>
         </div>
       </div>
+      </>
+      )}
 
       <div className="print-sheet" id="factura-print-sheet">
         {/* <img> real en vez de CSS background-image: los navegadores no

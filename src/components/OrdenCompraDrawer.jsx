@@ -117,6 +117,10 @@ export default function OrdenCompraDrawer({ ordenCompra, clientes, procesos, fac
 
   return (
     <>
+      {/* Pedido explícito del usuario 2026-09-15: el botón de PDF de la tabla
+          nunca debe mostrar el formulario — mismo criterio que FacturaDrawer. */}
+      {!autoPrint && (
+      <>
       <div id="oc-overlay" className="active" onClick={onClose}></div>
       <div id="oc-drawer" className="active">
         <div className="drawer-head">
@@ -243,6 +247,8 @@ export default function OrdenCompraDrawer({ ordenCompra, clientes, procesos, fac
           <span className="save-hint">{liveMode ? "Los cambios se guardan en SharePoint." : "Modo demo — los cambios no se guardan."}</span>
         </div>
       </div>
+      </>
+      )}
 
       <div className="print-sheet print-sheet-oc" id="oc-print-sheet">
         <img src={membrete} alt="" className="print-membrete-bg" />

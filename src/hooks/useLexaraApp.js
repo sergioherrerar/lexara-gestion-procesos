@@ -787,9 +787,15 @@ export function useLexaraApp(){
   }
 
   function openFactura(id){ setDraftFactura(null); setActiveFacturaId(id); }
-  // Abre la factura e imprime automáticamente, para el botón de imprimir de la tabla.
+  // Botón de PDF de la tabla: NUNCA se ve el formulario — FacturaDrawer solo
+  // monta el nodo imprimible (fuera de pantalla) mientras autoPrint es true,
+  // ver el "if(autoPrint)" en su JSX. Pedido explícito del usuario
+  // 2026-09-15: "que solo exporte el pdf no se vea la ventana editar".
   function printFactura(id){ setDraftFactura(null); setActiveFacturaId(id); setAutoPrintFacturaId(id); }
-  function clearAutoPrint(){ setAutoPrintFacturaId(null); }
+  // Al terminar de generar el PDF se cierra TODO (no solo la marca de
+  // autoPrint) — si se abrió desde dentro de un Proceso, closeFacturaDrawer
+  // ya se encarga de reabrirlo (reabrirProcesoSiCorresponde).
+  function clearAutoPrint(){ setAutoPrintFacturaId(null); closeFacturaDrawer(); }
   // "+ Nueva factura" solo abre un borrador local — no toca SharePoint hasta
   // que el usuario le da "Guardar cambios" (evita registros vacíos huérfanos).
   function newFactura(){ setActiveFacturaId(null); setDraftFactura({}); }
@@ -901,9 +907,10 @@ export function useLexaraApp(){
   }
 
   function openOrdenCompra(id){ setDraftOrdenCompra(null); setActiveOrdenCompraId(id); }
-  // Abre la orden de compra e imprime automáticamente, para el botón de imprimir de la tabla.
+  // Botón de PDF de la tabla: NUNCA se ve el formulario — mismo criterio que
+  // printFactura de arriba.
   function printOrdenCompra(id){ setDraftOrdenCompra(null); setActiveOrdenCompraId(id); setAutoPrintOrdenCompraId(id); }
-  function clearAutoPrintOrdenCompra(){ setAutoPrintOrdenCompraId(null); }
+  function clearAutoPrintOrdenCompra(){ setAutoPrintOrdenCompraId(null); closeOrdenCompraDrawer(); }
   // "+ Nueva orden de compra" solo abre un borrador local — no toca SharePoint
   // hasta que el usuario le da "Guardar cambios" (mismo criterio que Facturación).
   function newOrdenCompra(){ setActiveOrdenCompraId(null); setDraftOrdenCompra({}); }
