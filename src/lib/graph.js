@@ -165,23 +165,25 @@ async function pathCalendario(config){
 }
 
 // Bug real reportado por el usuario 2026-09-15 ("al modificar crea el nuevo
-// evento pero no borra el anterior"): el `$filter=singleValueExtendedProperties/Any(...)`
-// de arriba casi nunca encuentra el evento ya creado en /events (a diferencia
-// de /messages, donde Microsoft SÍ soporta bien ese filtro) — así que cada
-// edición terminaba creando un evento nuevo en vez de actualizar el mismo,
-// dejando duplicados. Se reemplaza por el patrón recomendado por Microsoft
-// para este caso: pedir TODOS los eventos con `$expand` de esa propiedad
-// puntual (Graph filtra cuál propiedad devuelve, pero no por su valor) y
-// comparar el valor a mano acá, paginando con @odata.nextLink si hace falta.
+// evento pero no borra el anterior") — segundo intento: el primer arreglo
+// (más abajo en el historial de git) usaba `$expand=singleValueExtendedProperties($filter=id eq '...')`,
+// o sea le pedía a Graph que YA viniera filtrada por adentro cuál propiedad
+// trae cada evento — y el usuario reportó que el duplicado seguía pasando
+// incluso con eso ya publicado. En vez de seguir confiando en que Graph
+// resuelva bien ese `$filter` anidado (una función más avanzada y con menos
+// garantías), ahora se piden TODAS las propiedades extendidas de TODOS los
+// eventos (`$expand=singleValueExtendedProperties` sin ningún filtro
+// anidado) y la comparación (id de la propiedad Y su valor) se hace 100% acá
+// en el código — más pesado, pero no depende de que Graph interprete bien
+// una sintaxis de filtro más rebuscada.
 async function buscarEventoAudienciaTermino(config, marca){
   const base = await pathCalendario(config);
   if(!base) return null;
-  const expand = `singleValueExtendedProperties($filter=id eq '${PROPIEDAD_LEXARA}')`;
-  let url = `${base}/events?$expand=${encodeURIComponent(expand)}&$select=id,subject&$top=250`;
+  let url = `${base}/events?$expand=singleValueExtendedProperties&$select=id,subject,singleValueExtendedProperties&$top=250`;
   for(let pagina = 0; pagina < 20 && url; pagina++){
     const res = await graphFetchCalendar(url);
     const encontrado = (res?.value || []).find(ev =>
-      (ev.singleValueExtendedProperties || []).some(ep => ep.value === marca)
+      (ev.singleValueExtendedProperties || []).some(ep => ep.id === PROPIEDAD_LEXARA && ep.value === marca)
     );
     if(encontrado) return encontrado;
     url = res?.["@odata.nextLink"] || null;
