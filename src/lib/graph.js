@@ -125,13 +125,27 @@ async function graphFetchCalendar(path, opts){
   return res.status===204 ? null : res.json();
 }
 
-// Cada evento creado desde acá se marca con una propiedad extendida (no una
-// columna nueva en las listas de SharePoint) con el valor "tipo:idDelRegistro"
-// (ej: "audiencia:14") — así se puede encontrar el evento ya creado la
-// próxima vez (para moverlo o borrarlo) sin depender de guardar su ID en
-// ningún lado. El GUID es inventado, solo sirve de espacio de nombres propio
-// para que Graph no lo confunda con una propiedad de otra app.
-const PROPIEDAD_LEXARA = "String {2f6a8d3e-2f0a-4e7a-9b0c-1a6b7c4e9d21} Name lexara_registro";
+// Cada evento creado desde acá se marca con un texto escondido al final de
+// sus notas (ej: "LEXARA-MARCA:audiencia:14") — así se puede encontrar el
+// evento ya creado la próxima vez (para moverlo o borrarlo) sin depender de
+// guardar su ID en ningún lado.
+//
+// ANTES (2026-09-13 a 2026-09-15) esto se hacía con una "propiedad extendida"
+// de Microsoft Graph (singleValueExtendedProperties) — la forma que
+// Microsoft documenta para este caso. Se abandonó tras 2 intentos fallidos en
+// producción: el usuario confirmó con la consola real del navegador que esa
+// propiedad JAMÁS quedaba guardada en su cuenta/calendario — ni mandándola
+// junto con el resto de campos del evento, ni con un PATCH aparte dedicado
+// solo a ella (probablemente una restricción del permiso/calendario
+// compartido que tiene esa cuenta, no algo que se pueda arreglar desde acá).
+// Las notas del evento SÍ se guardan y se leen bien (confirmado: el asunto y
+// la fecha de cada evento sí llegan correctos), así que ahí es donde ahora
+// vive la marca.
+function marcaTextoOculto(marca){ return `LEXARA-MARCA:${marca}`; }
+function extraerMarcaDeNotas(contenido){
+  const m = /LEXARA-MARCA:([a-zA-Z0-9_-]+:[a-zA-Z0-9_-]+)/.exec(String(contenido || ""));
+  return m ? m[1] : null;
+}
 
 // A dónde se crean los eventos — depende de qué es exactamente el calendario
 // "MD ABOGADOS SAS": el usuario decidió 2026-09-13 crear uno NUEVO, adicional
@@ -173,46 +187,23 @@ async function pathCalendario(config){
   return null;
 }
 
-// Bug real reportado por el usuario 2026-09-15 ("al modificar crea el nuevo
-// evento pero no borra el anterior") — segundo intento: el primer arreglo
-// (más abajo en el historial de git) usaba `$expand=singleValueExtendedProperties($filter=id eq '...')`,
-// o sea le pedía a Graph que YA viniera filtrada por adentro cuál propiedad
-// trae cada evento — y el usuario reportó que el duplicado seguía pasando
-// incluso con eso ya publicado. En vez de seguir confiando en que Graph
-// resuelva bien ese `$filter` anidado (una función más avanzada y con menos
-// garantías), ahora se piden TODAS las propiedades extendidas de TODOS los
-// eventos (`$expand=singleValueExtendedProperties` sin ningún filtro
-// anidado) y la comparación (id de la propiedad Y su valor) se hace 100% acá
-// en el código — más pesado, pero no depende de que Graph interprete bien
-// una sintaxis de filtro más rebuscada.
 async function buscarEventoAudienciaTermino(config, marca){
   const base = await pathCalendario(config);
   if(!base) return null;
-  // Sin $select (2026-09-15): dos intentos previos de esta búsqueda fallaron
-  // igual en producción (reportado por el usuario con capturas reales), así
-  // que ya no se arriesga nada que pueda interactuar mal con $expand — se
-  // pide todo. También se deja un log de diagnóstico (console.info) con
-  // cuántos eventos se revisaron y cuántos SÍ traían alguna propiedad
-  // extendida propia, para poder ver en la consola del navegador en qué
-  // paso exacto está fallando la próxima vez que esto no encuentre nada.
-  let url = `${base}/events?$expand=singleValueExtendedProperties&$top=250`;
-  let totalEventos = 0, conPropiedad = 0;
+  let url = `${base}/events?$select=id,subject,body&$top=250`;
+  let totalEventos = 0;
   for(let pagina = 0; pagina < 20 && url; pagina++){
     const res = await graphFetchCalendar(url);
     const eventos = res?.value || [];
     totalEventos += eventos.length;
-    for(const ev of eventos){
-      const props = ev.singleValueExtendedProperties || [];
-      if(props.length) conPropiedad++;
-      const coincide = props.some(ep => ep.id === PROPIEDAD_LEXARA && ep.value === marca);
-      if(coincide){
-        console.info(`[Lexara][calendario] Buscando "${marca}": encontrado en el evento "${ev.subject}" (revisados ${totalEventos} eventos).`);
-        return ev;
-      }
+    const encontrado = eventos.find(ev => extraerMarcaDeNotas(ev.body?.content) === marca);
+    if(encontrado){
+      console.info(`[Lexara][calendario] Buscando "${marca}": encontrado en el evento "${encontrado.subject}" (revisados ${totalEventos} eventos).`);
+      return encontrado;
     }
     url = res?.["@odata.nextLink"] || null;
   }
-  console.info(`[Lexara][calendario] Buscando "${marca}": NO encontrado — se revisaron ${totalEventos} evento(s), ${conPropiedad} con alguna propiedad extendida propia.`);
+  console.info(`[Lexara][calendario] Buscando "${marca}": NO encontrado — se revisaron ${totalEventos} evento(s).`);
   return null;
 }
 
@@ -249,40 +240,16 @@ export async function sincronizarEventoCalendario(config, { tipo, id, asunto, fe
       end:{ dateTime:`${sumarDiasISO(fechaISO,1)}T00:00:00`, timeZone: zonaHoraria },
     };
   }
-  if(notas) body.body = { contentType:"Text", content: notas };
-  body.singleValueExtendedProperties = [{ id: PROPIEDAD_LEXARA, value: marca }];
+  // La marca queda escondida al final de las notas del evento (ver comentario
+  // grande arriba de marcaTextoOculto) — si el usuario ya había escrito algo
+  // en "notas", se conserva antes de la marca.
+  body.body = { contentType:"Text", content: (notas ? notas + "\n\n" : "") + marcaTextoOculto(marca) };
 
   const existente = await buscarEventoAudienciaTermino(config, marca);
   const resultado = existente
     ? await graphFetchCalendar(`${base}/events/${existente.id}`, { method:"PATCH", body: JSON.stringify(body) })
     : await graphFetchCalendar(`${base}/events`, { method:"POST", body: JSON.stringify(body) });
-
-  // Verificación (2026-09-15) — el diagnóstico anterior mostró que el evento
-  // ya creado NO tenía ninguna propiedad extendida guardada, aunque se envió
-  // en el mismo body del POST. Se confirma acá mismo si de verdad quedó
-  // grabada; si no, se reintenta con un PATCH aparte dedicado SOLO a esa
-  // propiedad (por si Graph la está ignorando cuando viene junto con
-  // subject/start/end/body en la misma solicitud).
-  try{
-    const eventoId = resultado?.id || existente?.id;
-    if(eventoId){
-      const verificacion = await graphFetchCalendar(`${base}/events/${eventoId}?$expand=singleValueExtendedProperties`);
-      const yaQuedo = (verificacion?.singleValueExtendedProperties || []).some(ep => ep.id === PROPIEDAD_LEXARA && ep.value === marca);
-      if(!yaQuedo){
-        console.info(`[Lexara][calendario] La marca "${marca}" NO quedó guardada en el evento tras crear/editar — reintentando con un PATCH aparte.`);
-        await graphFetchCalendar(`${base}/events/${eventoId}`, {
-          method:"PATCH",
-          body: JSON.stringify({ singleValueExtendedProperties: [{ id: PROPIEDAD_LEXARA, value: marca }] }),
-        });
-        const reverificacion = await graphFetchCalendar(`${base}/events/${eventoId}?$expand=singleValueExtendedProperties`);
-        const quedoAhora = (reverificacion?.singleValueExtendedProperties || []).some(ep => ep.id === PROPIEDAD_LEXARA && ep.value === marca);
-        console.info(`[Lexara][calendario] Después del PATCH aparte, ¿quedó guardada la marca "${marca}"?: ${quedoAhora ? 'SÍ' : 'NO'}.`);
-      } else {
-        console.info(`[Lexara][calendario] La marca "${marca}" sí quedó guardada correctamente en el evento.`);
-      }
-    }
-  }catch(err){ console.error('[Lexara][calendario] Error verificando la propiedad extendida:', err); }
-
+  console.info(`[Lexara][calendario] ${existente ? 'Actualizado' : 'Creado'} el evento de "${marca}" (id ${resultado?.id || existente?.id}).`);
   return resultado;
 }
 
