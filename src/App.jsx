@@ -241,6 +241,8 @@ export default function App(){
         ordenesCompra={app.ordenesCompra}
         formasPago={app.formasPago}
         desistimientos={app.desistimientos}
+        audiencias={app.audiencias}
+        terminos={app.terminos}
         tiposAccion={app.tiposAccion}
         liveMode={app.liveMode}
         onClose={app.closeDrawer}
@@ -257,6 +259,12 @@ export default function App(){
         onCreateFormaPago={app.newFormaPagoFromProceso}
         onOpenDesistimiento={app.openDesistimiento}
         onCreateDesistimiento={app.newDesistimientoFromProceso}
+        onCrearAudiencia={app.crearAudiencia}
+        onEditarAudiencia={app.editarAudiencia}
+        onEliminarAudiencia={app.eliminarAudiencia}
+        onCrearTermino={app.crearTermino}
+        onEditarTermino={app.editarTermino}
+        onEliminarTermino={app.eliminarTermino}
         saving={app.saving}
         canWrite={app.canWrite && !app.procesoViewOnly}
         config={app.config}
@@ -282,6 +290,7 @@ export default function App(){
         autoPrint={!!app.activeFactura && app.autoPrintFacturaId === app.activeFactura.id}
         onAutoPrinted={app.clearAutoPrint}
         saving={app.saving}
+        notify={app.notify}
       />
       <OrdenCompraDrawer
         ordenCompra={app.activeOrdenCompra}
@@ -294,6 +303,7 @@ export default function App(){
         onUpdateCliente={app.updateCliente}
         autoPrint={!!app.activeOrdenCompra && app.autoPrintOrdenCompraId === app.activeOrdenCompra.id}
         onAutoPrinted={app.clearAutoPrintOrdenCompra}
+        notify={app.notify}
         saving={app.saving}
       />
       <ColaboradorDrawer

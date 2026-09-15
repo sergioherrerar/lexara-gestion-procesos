@@ -1081,14 +1081,104 @@
     thead th, tbody td{white-space:nowrap;}
   }
 
-  /* ---------- Hoja imprimible de factura ---------- */
-  .print-sheet{display:none;}
+  /* ---------- Hoja imprimible de factura/orden de compra ---------- */
+  /* 2026-09-15, pedido explícito del usuario: el botón "Guardar en PDF" ya NO
+     abre el cuadro de impresión del navegador — genera el PDF directo (ver
+     lib/generarPdfDocumento.js, usa el propio .html() de jsPDF, que rasteriza
+     este nodo). Para que jsPDF pueda "fotografiarlo" hace falta que esté REAL
+     y COMPLETAMENTE renderizado con su estilo final en todo momento — ya no
+     alcanza con que solo aparezca bonito dentro de @media print (jsPDF no
+     imprime de verdad, así que esas reglas nunca se activarían). Por eso todo
+     el diseño de abajo quedó SIN el @media print que lo encerraba — para que
+     el usuario nunca lo vea, en vez de "display:none" se saca de la pantalla
+     con position:fixed y una coordenada bien negativa (display:none evitaría
+     que jsPDF pueda medir/rasterizarlo). Ctrl+P (imprimir de verdad) se dejó
+     funcionando por si acaso: el bloque @media print, mucho más chico ahora,
+     solo se encarga de esconder el resto de la app y devolver la hoja a su
+     posición normal en ese momento. */
+  .print-sheet{
+    position:fixed; top:0; left:-99999px; z-index:-1;
+    width:210mm; min-height:297mm;
+    font-family:var(--font-body); color:var(--texto); font-size:12.5px;
+    box-sizing:border-box; overflow:hidden; background:#fff;
+  }
+  /* <img> real en vez de background-image — ver comentario en el JSX. */
+  .print-membrete-bg{
+    position:absolute; top:0; left:0; width:210mm; height:297mm; object-fit:cover; z-index:0;
+  }
+  /* Tapa la barra amarilla del membrete con un pie propio: contacto + redes + fecha/hora. */
+  .print-page-footer{
+    position:absolute; left:0; right:0; bottom:0; height:65mm; z-index:2;
+    background:#fff; border-top:1px solid var(--gris-linea);
+    display:flex; align-items:center; justify-content:space-between; gap:16px;
+    padding:0 20mm; box-sizing:border-box;
+  }
+  .print-page-footer-contact{display:flex; gap:18px; flex-wrap:wrap; align-items:center;}
+  .print-page-footer-contact span{display:inline-flex; align-items:center; gap:5px; font-size:9.5px; color:var(--texto-suave);}
+  .print-page-footer-contact svg{width:13px; height:13px; color:var(--verde-oscuro); flex-shrink:0;}
+  .print-page-footer-meta{display:flex; align-items:center; gap:10px; font-size:9px; color:var(--texto-suave); text-align:right; white-space:nowrap;}
+  .print-page-footer-meta .print-qr{width:32mm; height:32mm; object-fit:contain;}
+  .print-body{
+    position:relative; z-index:1; padding:60mm 20mm 35mm 20mm; box-sizing:border-box;
+  }
+  .print-head{display:flex; align-items:flex-start; justify-content:space-between; gap:18px; border-bottom:3px solid var(--verde-oscuro); padding-bottom:14px; margin-bottom:16px;}
+  .print-title h1{font-family:var(--font-display); font-size:16px; color:var(--verde-oscuro); margin:0;}
+  .print-title h2{font-size:12px; color:var(--texto-suave); margin:4px 0 0; font-weight:600;}
+  .print-numero{font-family:var(--font-display); font-size:30px; font-weight:700; color:#c0392b;}
+
+  .print-cliente{display:grid; grid-template-columns:1fr 1fr; gap:6px 24px; margin-bottom:16px;}
+  .print-cliente > div{display:flex; gap:8px; border-bottom:1px solid var(--gris-linea); padding-bottom:3px;}
+  .print-cliente label{font-weight:700; color:var(--verde-oscuro); min-width:70px;}
+
+  table.print-lineas{width:100%; border-collapse:collapse; margin-bottom:16px;}
+  table.print-lineas th{background:var(--verde-oscuro); color:#fff; text-align:left; padding:6px 8px; font-size:11px; text-transform:uppercase;}
+  table.print-lineas td{padding:6px 8px; border-bottom:1px solid var(--gris-linea); vertical-align:top; min-height:20px;}
+  table.print-lineas td:nth-child(1){width:50%;}
+
+  .print-foot{display:flex; justify-content:space-between; gap:24px;}
+  .print-foot-left, .print-foot-right{display:flex; flex-direction:column; gap:6px;}
+  .print-foot-right{min-width:220px;}
+  .print-foot > div > div{display:flex; justify-content:space-between; gap:12px; border-bottom:1px solid var(--gris-linea); padding-bottom:3px;}
+  .print-foot label{font-weight:700; color:var(--verde-oscuro);}
+  .print-total{font-size:15px;}
+  .print-total label, .print-total span{font-weight:700; color:var(--verde-oscuro);}
+
+  /* Orden de compra: mismo documento base que la factura, pero con acento
+     verde claro en vez de verde oscuro, número en naranja institucional
+     (en vez de rojo) y un sello rotado, para que a simple vista (impreso
+     o en PDF) no se confunda con una factura — solo colores Lexara. */
+  .print-sheet-oc .print-head{border-bottom-color:var(--verde-claro);}
+  .print-sheet-oc .print-title h1{color:var(--verde-claro);}
+  .print-sheet-oc .print-numero{color:var(--naranja);}
+  .print-sheet-oc .print-cliente label{color:var(--verde-claro);}
+  .print-sheet-oc table.print-lineas th{background:var(--verde-claro);}
+  .print-sheet-oc .print-foot label{color:var(--verde-claro);}
+  .print-sheet-oc .print-total label, .print-sheet-oc .print-total span{color:var(--verde-claro);}
+  /* Cantidad/Valor unitario/Total alineados a la derecha, como corresponde a valores numéricos. */
+  .print-sheet-oc table.print-lineas th:nth-child(2),
+  .print-sheet-oc table.print-lineas th:nth-child(3),
+  .print-sheet-oc table.print-lineas th:nth-child(4),
+  .print-sheet-oc table.print-lineas td:nth-child(2),
+  .print-sheet-oc table.print-lineas td:nth-child(3),
+  .print-sheet-oc table.print-lineas td:nth-child(4){text-align:right;}
+  /* Más aire entre etiqueta y valor en Subtotal/IVA/Total — con montos grandes
+     (7+ dígitos) quedaban casi pegados. */
+  .print-sheet-oc .print-foot-right{min-width:260px;}
+  .print-sheet-oc .print-foot-right > div{gap:20px;}
+  .print-oc-stamp{
+    border:1.5px solid var(--naranja); color:var(--naranja); font-weight:700; font-size:9px;
+    letter-spacing:.08em; text-transform:uppercase; padding:4px 10px; border-radius:4px;
+    transform:rotate(-6deg); white-space:nowrap;
+  }
 
   /* @page + margin:0 evita que el navegador agregue su propio encabezado/pie de
      página (URL, fecha, número de página) al imprimir, que se vería encima del
      membrete. El tamaño A4 coincide con el diseño del membrete (2563×3625 ≈ 210×297mm). */
   @page{ size: A4; margin: 0; }
 
+  /* Ctrl+P / imprimir de verdad (ya no es el flujo principal, pero se deja
+     funcionando): esconde el resto de la app y devuelve la hoja a su lugar
+     normal en el documento (arriba solo queda fuera de pantalla). */
   @media print{
     /* display:none saca estos elementos del flujo del documento — visibility:hidden
        NO lo hace, y con una tabla de 714 facturas de por medio eso generaba decenas
@@ -1104,77 +1194,5 @@
        marque "Gráficos de fondo" en el diálogo de impresión — estas dos líneas
        lo fuerzan para que el membrete siempre se imprima. */
     *{ -webkit-print-color-adjust:exact; print-color-adjust:exact; color-adjust:exact; }
-    .print-sheet{
-      display:block; position:relative; width:210mm; min-height:297mm;
-      font-family:var(--font-body); color:var(--texto); font-size:12.5px;
-      box-sizing:border-box; overflow:hidden;
-    }
-    /* <img> real en vez de background-image — ver comentario en el JSX. */
-    .print-membrete-bg{
-      position:absolute; top:0; left:0; width:210mm; height:297mm; object-fit:cover; z-index:0;
-    }
-    /* Tapa la barra amarilla del membrete con un pie propio: contacto + redes + fecha/hora. */
-    .print-page-footer{
-      position:absolute; left:0; right:0; bottom:0; height:65mm; z-index:2;
-      background:#fff; border-top:1px solid var(--gris-linea);
-      display:flex; align-items:center; justify-content:space-between; gap:16px;
-      padding:0 20mm; box-sizing:border-box;
-    }
-    .print-page-footer-contact{display:flex; gap:18px; flex-wrap:wrap; align-items:center;}
-    .print-page-footer-contact span{display:inline-flex; align-items:center; gap:5px; font-size:9.5px; color:var(--texto-suave);}
-    .print-page-footer-contact svg{width:13px; height:13px; color:var(--verde-oscuro); flex-shrink:0;}
-    .print-page-footer-meta{display:flex; align-items:center; gap:10px; font-size:9px; color:var(--texto-suave); text-align:right; white-space:nowrap;}
-    .print-page-footer-meta .print-qr{width:32mm; height:32mm; object-fit:contain;}
-    .print-body{
-      position:relative; z-index:1; padding:60mm 20mm 35mm 20mm; box-sizing:border-box;
-    }
-    .print-head{display:flex; align-items:flex-start; justify-content:space-between; gap:18px; border-bottom:3px solid var(--verde-oscuro); padding-bottom:14px; margin-bottom:16px;}
-    .print-title h1{font-family:var(--font-display); font-size:16px; color:var(--verde-oscuro); margin:0;}
-    .print-title h2{font-size:12px; color:var(--texto-suave); margin:4px 0 0; font-weight:600;}
-    .print-numero{font-family:var(--font-display); font-size:30px; font-weight:700; color:#c0392b;}
-
-    .print-cliente{display:grid; grid-template-columns:1fr 1fr; gap:6px 24px; margin-bottom:16px;}
-    .print-cliente > div{display:flex; gap:8px; border-bottom:1px solid var(--gris-linea); padding-bottom:3px;}
-    .print-cliente label{font-weight:700; color:var(--verde-oscuro); min-width:70px;}
-
-    table.print-lineas{width:100%; border-collapse:collapse; margin-bottom:16px;}
-    table.print-lineas th{background:var(--verde-oscuro); color:#fff; text-align:left; padding:6px 8px; font-size:11px; text-transform:uppercase;}
-    table.print-lineas td{padding:6px 8px; border-bottom:1px solid var(--gris-linea); vertical-align:top; min-height:20px;}
-    table.print-lineas td:nth-child(1){width:50%;}
-
-    .print-foot{display:flex; justify-content:space-between; gap:24px;}
-    .print-foot-left, .print-foot-right{display:flex; flex-direction:column; gap:6px;}
-    .print-foot-right{min-width:220px;}
-    .print-foot > div > div{display:flex; justify-content:space-between; gap:12px; border-bottom:1px solid var(--gris-linea); padding-bottom:3px;}
-    .print-foot label{font-weight:700; color:var(--verde-oscuro);}
-    .print-total{font-size:15px;}
-    .print-total label, .print-total span{font-weight:700; color:var(--verde-oscuro);}
-
-    /* Orden de compra: mismo documento base que la factura, pero con acento
-       verde claro en vez de verde oscuro, número en naranja institucional
-       (en vez de rojo) y un sello rotado, para que a simple vista (impreso
-       o en PDF) no se confunda con una factura — solo colores Lexara. */
-    .print-sheet-oc .print-head{border-bottom-color:var(--verde-claro);}
-    .print-sheet-oc .print-title h1{color:var(--verde-claro);}
-    .print-sheet-oc .print-numero{color:var(--naranja);}
-    .print-sheet-oc .print-cliente label{color:var(--verde-claro);}
-    .print-sheet-oc table.print-lineas th{background:var(--verde-claro);}
-    .print-sheet-oc .print-foot label{color:var(--verde-claro);}
-    .print-sheet-oc .print-total label, .print-sheet-oc .print-total span{color:var(--verde-claro);}
-    /* Cantidad/Valor unitario/Total alineados a la derecha, como corresponde a valores numéricos. */
-    .print-sheet-oc table.print-lineas th:nth-child(2),
-    .print-sheet-oc table.print-lineas th:nth-child(3),
-    .print-sheet-oc table.print-lineas th:nth-child(4),
-    .print-sheet-oc table.print-lineas td:nth-child(2),
-    .print-sheet-oc table.print-lineas td:nth-child(3),
-    .print-sheet-oc table.print-lineas td:nth-child(4){text-align:right;}
-    /* Más aire entre etiqueta y valor en Subtotal/IVA/Total — con montos grandes
-       (7+ dígitos) quedaban casi pegados. */
-    .print-sheet-oc .print-foot-right{min-width:260px;}
-    .print-sheet-oc .print-foot-right > div{gap:20px;}
-    .print-oc-stamp{
-      border:1.5px solid var(--naranja); color:var(--naranja); font-weight:700; font-size:9px;
-      letter-spacing:.08em; text-transform:uppercase; padding:4px 10px; border-radius:4px;
-      transform:rotate(-6deg); white-space:nowrap;
-    }
+    .print-sheet{ position:relative !important; top:auto !important; left:auto !important; z-index:auto !important; }
   }

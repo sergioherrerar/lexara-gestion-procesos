@@ -1,42 +1,16 @@
 import { useState, useEffect } from 'react';
-import { clienteForOrdenCompra, procesoForOrdenCompra, ordenCompraNumero, facturaForOrdenCompra, facturaNumero, parseMonto, fmtMonto, IVA_RATE_DEFAULT, ETAPA_CONTRATO_OPTIONS, nombreArchivoSeguro } from '../lib/graph';
+import { clienteForOrdenCompra, procesoForOrdenCompra, ordenCompraNumero, facturaForOrdenCompra, facturaNumero, parseMonto, fmtMonto, IVA_RATE_DEFAULT, ETAPA_CONTRATO_OPTIONS, nombreArchivoSeguro, mensajeError } from '../lib/graph';
+import { generarPdfDesdeNodo, precargarImagen } from '../lib/generarPdfDocumento';
 import { useEscapeToClose } from '../hooks/useEscapeToClose';
 import membrete from '../assets/Membrete Lexara.png';
 import qrRedes from '../assets/Qr_Redes.png';
 
-// Mismo problema que en Facturación: si se llama a window.print() antes de que
-// el membrete/QR terminen de cargar, salen en blanco en el PDF impreso.
-function preloadImage(src){
-  return new Promise(resolve => {
-    const img = new Image();
-    img.onload = () => resolve(true);
-    img.onerror = () => resolve(false);
-    img.src = src;
-  });
-}
-// Pedido explícito del usuario 2026-09-07: en vez de imprimir con un nombre
-// de archivo genérico, al elegir "Guardar como PDF" en el diálogo de
-// impresión el navegador sugiere el nombre de archivo tomando el <title> de
-// la pestaña — así que se cambia el título justo antes de imprimir (formato
-// "OC (Cliente) (Proceso)") y se restaura después.
-function imprimirCuandoListo(nombreArchivo){
-  const tituloOriginal = document.title;
-  if(nombreArchivo) document.title = nombreArchivo;
-  function restaurarTitulo(){
-    document.title = tituloOriginal;
-    window.removeEventListener('afterprint', restaurarTitulo);
-  }
-  window.addEventListener('afterprint', restaurarTitulo);
-  Promise.all([preloadImage(membrete), preloadImage(qrRedes)]).then(() => {
-    window.print();
-    setTimeout(restaurarTitulo, 4000);
-  });
-}
-// "OC (Nombre Cliente) (Proceso)" — pedido explícito del usuario 2026-09-07.
+// Nombre del PDF — pedido explícito del usuario 2026-09-15 (reemplaza el
+// formato anterior "OC (Cliente) (Proceso)" de 2026-09-07): "OC" + Entidad +
+// Número Corto + Etapa contrato — mismo patrón que Facturas.
 function nombreArchivoOrdenCompraPDF(oc, clientes, procesos){
-  const cliente = clienteForOrdenCompra(clientes, oc);
   const proceso = procesoForOrdenCompra(procesos, oc);
-  return nombreArchivoSeguro(`OC ${cliente?.RazonSocial || 'Sin cliente'} ${proceso?.Radicado || oc.Proceso || 'Sin proceso'}`);
+  return nombreArchivoSeguro(`OC ${proceso?.Entidad || 'Sin entidad'} ${proceso?.Radicado || oc.Proceso || 'Sin proceso'} ${oc.EtapaContrato || ''}`.trim());
 }
 
 const LINE_NUMS = [1,2,3,4,5,6];
@@ -64,18 +38,35 @@ function computeLive(form){
   return { subtotal, iva, total: subtotal + iva };
 }
 
-export default function OrdenCompraDrawer({ ordenCompra, clientes, procesos, facturas, liveMode, onClose, onSave, onUpdateCliente, autoPrint, onAutoPrinted, saving }){
+export default function OrdenCompraDrawer({ ordenCompra, clientes, procesos, facturas, liveMode, onClose, onSave, onUpdateCliente, autoPrint, onAutoPrinted, saving, notify }){
   const [form, setForm] = useState(null);
+  const [generandoPdf, setGenerandoPdf] = useState(false);
 
   useEffect(() => {
     setForm(ordenCompra ? emptyForm(ordenCompra, clientes) : null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ordenCompra]);
 
+  // Pedido explícito del usuario 2026-09-15: el botón "Guardar en PDF" ya NO
+  // abre el cuadro de impresión del navegador — genera el archivo directo y
+  // lo manda a Descargas, mismo mecanismo que Facturas (ver
+  // lib/generarPdfDocumento.js).
+  async function guardarComoPdf(){
+    setGenerandoPdf(true);
+    try{
+      await Promise.all([precargarImagen(membrete), precargarImagen(qrRedes)]);
+      await generarPdfDesdeNodo('oc-print-sheet', nombreArchivoOrdenCompraPDF(ordenCompra, clientes, procesos));
+    }catch(err){
+      console.error(err);
+      notify?.("No se pudo generar el PDF: " + mensajeError(err), 'error');
+    }finally{
+      setGenerandoPdf(false);
+    }
+  }
+
   useEffect(() => {
     if(autoPrint && form){
-      imprimirCuandoListo(nombreArchivoOrdenCompraPDF(ordenCompra, clientes, procesos));
-      onAutoPrinted && onAutoPrinted();
+      guardarComoPdf().then(() => { onAutoPrinted && onAutoPrinted(); });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoPrint, form]);
@@ -247,13 +238,13 @@ export default function OrdenCompraDrawer({ ordenCompra, clientes, procesos, fac
           <button className="btn-primary btn-primary-oc" onClick={handleSave} disabled={saving}>
             {saving && <span className="btn-spinner" />}{saving ? "Guardando…" : "Guardar cambios"}
           </button>
-          <button className="btn-secondary" onClick={() => imprimirCuandoListo(nombreArchivoOrdenCompraPDF(ordenCompra, clientes, procesos))} disabled={saving}>Guardar en PDF</button>
+          <button className="btn-secondary" onClick={guardarComoPdf} disabled={saving || generandoPdf}>{generandoPdf ? "Generando PDF…" : "Guardar en PDF"}</button>
           <button className="btn-secondary" onClick={onClose} disabled={saving}>Cancelar</button>
           <span className="save-hint">{liveMode ? "Los cambios se guardan en SharePoint." : "Modo demo — los cambios no se guardan."}</span>
         </div>
       </div>
 
-      <div className="print-sheet print-sheet-oc">
+      <div className="print-sheet print-sheet-oc" id="oc-print-sheet">
         <img src={membrete} alt="" className="print-membrete-bg" />
         <div className="print-body">
         <div className="print-head">

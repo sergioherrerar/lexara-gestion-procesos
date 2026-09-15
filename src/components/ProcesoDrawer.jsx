@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   stripHtml, estadoBadgeClass, findClienteByNombre,
-  facturasForProceso, ordenesCompraForProceso, formasPagoForProceso, desistimientosForProceso, facturaNumero, ordenCompraNumero,
+  facturasForProceso, ordenesCompraForProceso, formasPagoForProceso, desistimientosForProceso, audienciasForProceso, terminosForProceso, facturaNumero, ordenCompraNumero,
   computeFacturaTotals, computeOrdenCompraTotals, estadoFacturaBadgeClass,
   facturaForOrdenCompra, fmtMonto, fmtDate, fechaFromPartes, parseMonto,
   tiposAccionDistinct, tiposProcesoParaAccion, despachosParaAccion, abrirFacturaSiigo,
@@ -14,6 +14,7 @@ import { FieldCard, RichTextEditor } from './FormFields';
 import { useEscapeToClose } from '../hooks/useEscapeToClose';
 import { ICON_SVG, RUTAS_CARPETAS_ENTIDAD } from '../config';
 import { DEPARTAMENTOS_COLOMBIA, municipiosDe } from '../lib/colombiaGeo';
+import { AudienciasTerminosDelProceso } from './AudienciasTerminosTab';
 
 const TABS = [
   {key:'datos', label:'Datos generales'},
@@ -22,6 +23,10 @@ const TABS = [
   {key:'ordenes', label:'Órdenes de compra'},
   {key:'formaspago', label:'Formas de pago'},
   {key:'desistimientos', label:'Desistimientos'},
+  // Agregada 2026-09-13, pedido explícito del usuario: "dentro de procesos
+  // judiciales en cada proceso debe quedar las audiencias y los términos,
+  // por eso las relaciones" — misma relación por ID que Desistimientos.
+  {key:'audienciasTerminos', label:'Audiencias/Términos'},
 ];
 
 function fechaOrdenable(row){
@@ -235,7 +240,7 @@ function renderGenericField(key, type, form, setField, canWrite){
 }
 const EMPTY_NEW_CLIENTE = {RazonSocial:"", Nit:"", Direccion:"", Telefono:"", Correo:""};
 
-export default function ProcesoDrawer({ proceso, clientes, colaboradores, facturas, ordenesCompra, formasPago, desistimientos, tiposAccion, liveMode, onClose, onSave, onNavigateAway, onCreateCliente, onOpenFactura, onPrintFactura, onCreateFactura, onOpenOrdenCompra, onPrintOrdenCompra, onCreateOrdenCompra, onOpenFormaPago, onCreateFormaPago, onOpenDesistimiento, onCreateDesistimiento, saving, canWrite = true, config, notify }){
+export default function ProcesoDrawer({ proceso, clientes, colaboradores, facturas, ordenesCompra, formasPago, desistimientos, audiencias, terminos, tiposAccion, liveMode, onClose, onSave, onNavigateAway, onCreateCliente, onOpenFactura, onPrintFactura, onCreateFactura, onOpenOrdenCompra, onPrintOrdenCompra, onCreateOrdenCompra, onOpenFormaPago, onCreateFormaPago, onOpenDesistimiento, onCreateDesistimiento, onCrearAudiencia, onEditarAudiencia, onEliminarAudiencia, onCrearTermino, onEditarTermino, onEliminarTermino, saving, canWrite = true, config, notify }){
   const [form, setForm] = useState(null);
   const [showNewCliente, setShowNewCliente] = useState(false);
   const [newCliente, setNewCliente] = useState(EMPTY_NEW_CLIENTE);
@@ -552,6 +557,8 @@ export default function ProcesoDrawer({ proceso, clientes, colaboradores, factur
     .sort((a,b) => Number(ordenCompraNumero(b)) - Number(ordenCompraNumero(a)));
   const formasPagoRelacionadas = formasPagoForProceso(formasPago, proceso);
   const desistimientosRelacionados = desistimientosForProceso(desistimientos, proceso);
+  const audienciasRelacionadas = audienciasForProceso(audiencias, proceso);
+  const terminosRelacionados = terminosForProceso(terminos, proceso);
 
   // Al abrir/imprimir una factura u orden de compra relacionada, se cierra
   // este panel primero — dos paneles superpuestos a la vez se ven mal — pero
@@ -628,6 +635,7 @@ export default function ProcesoDrawer({ proceso, clientes, colaboradores, factur
               {t.key==='ordenes' && ordenesRelacionadas.length > 0 && <span className="drawer-tab-count">{ordenesRelacionadas.length}</span>}
               {t.key==='formaspago' && formasPagoRelacionadas.length > 0 && <span className="drawer-tab-count">{formasPagoRelacionadas.length}</span>}
               {t.key==='desistimientos' && desistimientosRelacionados.length > 0 && <span className="drawer-tab-count">{desistimientosRelacionados.length}</span>}
+              {t.key==='audienciasTerminos' && (audienciasRelacionadas.length + terminosRelacionados.length) > 0 && <span className="drawer-tab-count">{audienciasRelacionadas.length + terminosRelacionados.length}</span>}
             </button>
           ))}
         </div>
@@ -693,6 +701,16 @@ export default function ProcesoDrawer({ proceso, clientes, colaboradores, factur
                 rows={desistimientosRelacionados}
                 columns={DESISTIMIENTO_COLUMNS}
                 onOpen={goToDesistimiento}
+              />
+            </div>
+          )}
+          {activeTab === 'audienciasTerminos' && (
+            <div className="field-section">
+              <AudienciasTerminosDelProceso
+                proceso={proceso} procesos={[proceso]} tiposAccion={tiposAccion} colaboradores={colaboradores}
+                audiencias={audienciasRelacionadas} terminos={terminosRelacionados} notify={notify}
+                onCrearAudiencia={onCrearAudiencia} onEditarAudiencia={onEditarAudiencia} onEliminarAudiencia={onEliminarAudiencia}
+                onCrearTermino={onCrearTermino} onEditarTermino={onEditarTermino} onEliminarTermino={onEliminarTermino}
               />
             </div>
           )}

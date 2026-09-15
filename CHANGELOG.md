@@ -2,6 +2,11 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-15
+- **"Guardar en PDF" (Facturas y Órdenes de compra) ya no abre el cuadro de impresión del navegador** — pedido explícito del usuario: antes había que elegir "Guardar como PDF" a mano en el diálogo de impresión; ahora el botón genera el archivo directo y lo manda a Descargas, con el editar (lápiz) intacto — sigue abriendo el formulario igual que siempre.
+  - Nombre de archivo nuevo: **"FE {Entidad} {Número Corto} {Etapa contrato}.pdf"** para Facturas y **"OC {Entidad} {Número Corto} {Etapa contrato}.pdf"** para Órdenes de compra (antes era "FE (No. factura) (Cliente) (Proceso)"/"OC (Cliente) (Proceso)").
+  - Nota técnica: se prueba primero el método integrado de jsPDF, que generaba archivos rotos de más de 30MB por un mal cálculo de escala — se reemplazó por una captura manual con html2canvas del mismo diseño de siempre (membrete, tabla, totales), pegada en una sola hoja A4. Queda un detalle menor: los 3 iconitos de contacto (web/correo/teléfono) del pie de página a veces no se ven en el PDF nuevo (limitación conocida de esa librería con iconos SVG) — el texto de contacto y el QR sí se ven bien.
+
 ## 2026-09-13
 - **Nuevo módulo "Audiencias Términos"** (Informes > Procesos Judiciales) — pedido explícito del usuario, reemplaza el seguimiento manual que antes se llevaba en un formulario de Access. Trae las 2 listas reales de SharePoint "Audiencia" y "Terminos", asociadas a Procesos Judiciales por ID (igual que Desistimientos).
   - Al crear un registro, se busca el proceso por su **Número Corto (Radicado)**; la app lee el **Tipo de Acción** de ese proceso y filtra la lista **Tipos de Acción** para mostrar solo las opciones válidas (por Tipo de Acción + "Audiencia"/"Término") en un desplegable — en Términos, además autocompleta los **Días hábiles** desde esa fila.

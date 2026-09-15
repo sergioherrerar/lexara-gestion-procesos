@@ -21,12 +21,17 @@ const MODOS = [
   {key:'terminos', label:'Términos'},
 ];
 
-function FormularioNuevo({ tipo, procesos, tiposAccion, colaboradores, notify, onCrear }){
-  const vacio = { numeroCorto:'', proceso:null, descripcion:'', fecha:'', hora:'', diasHabiles:'', abogado:'', link:'', observaciones:'' };
+// `procesoFijo` (agregado 2026-09-13, pedido explícito del usuario: "dentro
+// de cada proceso debe quedar las audiencias y los términos") — cuando este
+// formulario se usa DESDE el panel de un Proceso judicial en concreto (ver
+// AudienciasTerminosDelProceso más abajo), ya se sabe cuál es el proceso, así
+// que se salta el paso de buscarlo por Número Corto.
+export function FormularioNuevo({ tipo, procesos, tiposAccion, colaboradores, notify, onCrear, procesoFijo }){
+  const vacio = { numeroCorto:'', proceso: procesoFijo ? procesoFijo.id : null, descripcion:'', fecha:'', hora:'', diasHabiles:'', abogado:'', link:'', observaciones:'' };
   const [form, setForm] = useState(vacio);
   const [guardando, setGuardando] = useState(false);
 
-  const procesoEncontrado = form.proceso ? (procesos||[]).find(p => p.id === form.proceso) : null;
+  const procesoEncontrado = procesoFijo || (form.proceso ? (procesos||[]).find(p => p.id === form.proceso) : null);
   const tipoAccionProceso = procesoEncontrado?.TipoAccion || '';
   const opciones = useMemo(
     () => opcionesTiposAccionParaAlerta(tiposAccion, tipoAccionProceso, tipo === 'audiencias' ? 'Audiencia' : 'Termino'),
@@ -63,19 +68,24 @@ function FormularioNuevo({ tipo, procesos, tiposAccion, colaboradores, notify, o
 
   return (
     <div style={{display:'flex', gap:14, flexWrap:'wrap', alignItems:'flex-end', marginBottom:14}}>
-      <div className="field" style={{minWidth:230}}>
-        <label>Número Corto (Radicado)</label>
-        <input type="text" list="datalist-audiencias-terminos" value={form.numeroCorto} onChange={e => buscarProceso(e.target.value)} placeholder="Escribe para buscar…" />
-        <datalist id="datalist-audiencias-terminos">
-          {(procesos||[]).filter(p => p.Radicado).map(p => <option value={p.Radicado} key={p.id} />)}
-        </datalist>
-        {form.numeroCorto && !procesoEncontrado && (
-          <div className="field-warning">Este número corto no coincide con ningún proceso registrado.</div>
-        )}
-        {procesoEncontrado && (
-          <div className="field-info">Cliente: {procesoEncontrado.Cliente || "—"} · Tipo de Acción: {tipoAccionProceso || "sin definir"}</div>
-        )}
-      </div>
+      {!procesoFijo && (
+        <div className="field" style={{minWidth:230}}>
+          <label>Número Corto (Radicado)</label>
+          <input type="text" list="datalist-audiencias-terminos" value={form.numeroCorto} onChange={e => buscarProceso(e.target.value)} placeholder="Escribe para buscar…" />
+          <datalist id="datalist-audiencias-terminos">
+            {(procesos||[]).filter(p => p.Radicado).map(p => <option value={p.Radicado} key={p.id} />)}
+          </datalist>
+          {form.numeroCorto && !procesoEncontrado && (
+            <div className="field-warning">Este número corto no coincide con ningún proceso registrado.</div>
+          )}
+          {procesoEncontrado && (
+            <div className="field-info">Cliente: {procesoEncontrado.Cliente || "—"} · Tipo de Acción: {tipoAccionProceso || "sin definir"}</div>
+          )}
+        </div>
+      )}
+      {procesoFijo && (
+        <div className="field-info" style={{minWidth:220, alignSelf:'center'}}>Tipo de Acción: {tipoAccionProceso || "sin definir"}</div>
+      )}
       <div className="field" style={{minWidth:260}}>
         <label>{tipo === 'audiencias' ? 'Tipo de audiencia' : 'Tipo de término'}</label>
         <select value={form.descripcion} onChange={e => elegirDescripcion(e.target.value)} disabled={!procesoEncontrado}>
@@ -118,7 +128,10 @@ function FormularioNuevo({ tipo, procesos, tiposAccion, colaboradores, notify, o
   );
 }
 
-function TablaRegistros({ tipo, registros, procesos, notify, onEditar, onEliminar }){
+// `ocultarProceso` (2026-09-13) — la columna "Proceso" sobra cuando esta
+// tabla se muestra DENTRO del panel de ese mismo proceso (ver
+// AudienciasTerminosDelProceso más abajo).
+export function TablaRegistros({ tipo, registros, procesos, notify, onEditar, onEliminar, ocultarProceso }){
   const [editandoId, setEditandoId] = useState(null);
   const [editDraft, setEditDraft] = useState(null);
 
@@ -148,14 +161,14 @@ function TablaRegistros({ tipo, registros, procesos, notify, onEditar, onElimina
     }catch(err){ console.error(err); notify?.(mensajeError(err), 'error'); }
   }
 
-  const colSpanVacio = tipo === 'audiencias' ? 6 : 7;
+  const colSpanVacio = (tipo === 'audiencias' ? 6 : 7) - (ocultarProceso ? 1 : 0);
 
   return (
     <div className="table-wrap">
       <table className="table-compact">
         <thead>
           <tr>
-            <th>Proceso</th>
+            {!ocultarProceso && <th>Proceso</th>}
             <th>{tipo === 'audiencias' ? 'Tipo de audiencia' : 'Tipo de término'}</th>
             <th>{tipo === 'audiencias' ? 'Fecha' : 'Notificación'}</th>
             {tipo === 'audiencias' ? <th>Hora</th> : <th>Días hábiles</th>}
@@ -169,7 +182,7 @@ function TablaRegistros({ tipo, registros, procesos, notify, onEditar, onElimina
           {filasConDatos.length ? filasConDatos.map(r => (
             editandoId === r.id ? (
               <tr key={r.id}>
-                <td>{r.proceso?.Radicado || "—"}</td>
+                {!ocultarProceso && <td>{r.proceso?.Radicado || "—"}</td>}
                 <td><input type="text" value={editDraft.Descripcion} onChange={e => setEditDraft({...editDraft, Descripcion: e.target.value})} /></td>
                 {tipo === 'audiencias' ? (
                   <>
@@ -192,7 +205,7 @@ function TablaRegistros({ tipo, registros, procesos, notify, onEditar, onElimina
               </tr>
             ) : (
               <tr key={r.id}>
-                <td>{r.proceso?.Radicado || "—"}{r.proceso?.Cliente ? <div className="save-hint">{r.proceso.Cliente}</div> : null}</td>
+                {!ocultarProceso && <td>{r.proceso?.Radicado || "—"}{r.proceso?.Cliente ? <div className="save-hint">{r.proceso.Cliente}</div> : null}</td>}
                 <td>{r.Descripcion || "—"}</td>
                 {tipo === 'audiencias' ? (
                   <>
@@ -248,6 +261,37 @@ export default function AudienciasTerminosTab({ procesos, tiposAccion, colaborad
           onEliminar={modo === 'audiencias' ? onEliminarAudiencia : onEliminarTermino}
         />
       </div>
+    </div>
+  );
+}
+
+// Vista embebida dentro del panel de un Proceso judicial en concreto (pestaña
+// "Audiencias/Términos" de ProcesoDrawer.jsx) — pedido explícito del usuario
+// 2026-09-13: "dentro de procesos judiciales en cada proceso debe quedar las
+// audiencias y los términos, por eso las relaciones". Muestra SOLO las
+// audiencias/términos de ESE proceso (ya filtradas por el llamador con
+// audienciasForProceso/terminosForProceso, ver graph.js) y, al crear una
+// nueva, ya no hay que buscar el proceso — se usa directo el que está abierto.
+export function AudienciasTerminosDelProceso({ proceso, procesos, tiposAccion, colaboradores, audiencias, terminos, notify, onCrearAudiencia, onEditarAudiencia, onEliminarAudiencia, onCrearTermino, onEditarTermino, onEliminarTermino }){
+  const [modo, setModo] = useState('audiencias');
+  return (
+    <div>
+      <div style={{display:'flex', gap:8, marginBottom:16}}>
+        {MODOS.map(m => (
+          <button key={m.key} type="button" className={"subtab" + (modo === m.key ? " active" : "")} onClick={() => setModo(m.key)}>{m.label}</button>
+        ))}
+      </div>
+      <FormularioNuevo
+        tipo={modo} procesos={procesos} tiposAccion={tiposAccion} colaboradores={colaboradores} notify={notify}
+        procesoFijo={proceso}
+        onCrear={modo === 'audiencias' ? onCrearAudiencia : onCrearTermino}
+      />
+      <TablaRegistros
+        tipo={modo} registros={modo === 'audiencias' ? audiencias : terminos} procesos={procesos} notify={notify}
+        ocultarProceso
+        onEditar={modo === 'audiencias' ? onEditarAudiencia : onEditarTermino}
+        onEliminar={modo === 'audiencias' ? onEliminarAudiencia : onEliminarTermino}
+      />
     </div>
   );
 }

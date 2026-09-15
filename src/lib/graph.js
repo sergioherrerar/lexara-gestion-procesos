@@ -785,6 +785,18 @@ export function procesoForDesistimiento(procesos, desistimiento){
   if(!desistimiento || desistimiento.Proceso == null) return null;
   return (procesos||[]).find(p => String(p.id) === String(desistimiento.Proceso)) || null;
 }
+// Audiencias/Términos (2026-09-13) — misma relación por ID que Desistimientos
+// (campo "Proceso" guarda el id del elemento en Procesos Judiciales), pedido
+// explícito del usuario para que cada Proceso muestre sus propias
+// audiencias/términos, no solo la vista general de Informes.
+export function audienciasForProceso(audiencias, proceso){
+  if(!proceso || proceso.id == null) return [];
+  return (audiencias||[]).filter(a => a.Proceso != null && String(a.Proceso) === String(proceso.id));
+}
+export function terminosForProceso(terminos, proceso){
+  if(!proceso || proceso.id == null) return [];
+  return (terminos||[]).filter(t => t.Proceso != null && String(t.Proceso) === String(proceso.id));
+}
 // La lista "tipos de Accion" guía qué Tipo de Proceso y qué Despacho son
 // válidos para cada Tipo de Acción (Administrativo/Civil/Laboral) en
 // Procesos Judiciales — son selects dependientes: elegir el Tipo de Acción
