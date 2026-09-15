@@ -155,8 +155,17 @@ async function pathCalendario(config){
   if(cal.tipo === 'secundario' && cal.nombreCalendario){
     const clave = cal.nombreCalendario.trim().toLowerCase();
     if(calendarioSecundarioCache.has(clave)) return `/me/calendars/${calendarioSecundarioCache.get(clave)}`;
-    const res = await graphFetchCalendar(`/me/calendars?$select=id,name`);
-    const encontrado = (res?.value || []).find(c => (c.name||'').trim().toLowerCase() === clave);
+    const res = await graphFetchCalendar(`/me/calendars?$select=id,name,owner`);
+    const todos = res?.value || [];
+    const coincidencias = todos.filter(c => (c.name||'').trim().toLowerCase() === clave);
+    // Diagnóstico (2026-09-15) — el usuario reportó que la búsqueda de
+    // eventos revisa 0 eventos aunque hay varios visibles en Outlook; esto
+    // deja ver en la consola (F12) exactamente qué calendario(s) tiene la
+    // cuenta que inició sesión y cuál se está usando, para descartar que
+    // haya 2 calendarios con el mismo nombre (uno vacío) o que la cuenta
+    // conectada no sea la esperada.
+    console.info(`[Lexara][calendario] Cuenta conectada: "${account?.username || '(desconocida)'}" — tiene ${todos.length} calendario(s): ${todos.map(c => `"${c.name}"`).join(', ')}. Coincidencia(s) con "${cal.nombreCalendario}": ${coincidencias.length} → ${coincidencias.map(c => c.id).join(', ') || '(ninguna)'}.`);
+    const encontrado = coincidencias[0];
     if(!encontrado) throw new Error(`No se encontró ningún calendario llamado "${cal.nombreCalendario}" en la cuenta que inició sesión.`);
     calendarioSecundarioCache.set(clave, encontrado.id);
     return `/me/calendars/${encontrado.id}`;
@@ -244,8 +253,37 @@ export async function sincronizarEventoCalendario(config, { tipo, id, asunto, fe
   body.singleValueExtendedProperties = [{ id: PROPIEDAD_LEXARA, value: marca }];
 
   const existente = await buscarEventoAudienciaTermino(config, marca);
-  if(existente) return graphFetchCalendar(`${base}/events/${existente.id}`, { method:"PATCH", body: JSON.stringify(body) });
-  return graphFetchCalendar(`${base}/events`, { method:"POST", body: JSON.stringify(body) });
+  const resultado = existente
+    ? await graphFetchCalendar(`${base}/events/${existente.id}`, { method:"PATCH", body: JSON.stringify(body) })
+    : await graphFetchCalendar(`${base}/events`, { method:"POST", body: JSON.stringify(body) });
+
+  // Verificación (2026-09-15) — el diagnóstico anterior mostró que el evento
+  // ya creado NO tenía ninguna propiedad extendida guardada, aunque se envió
+  // en el mismo body del POST. Se confirma acá mismo si de verdad quedó
+  // grabada; si no, se reintenta con un PATCH aparte dedicado SOLO a esa
+  // propiedad (por si Graph la está ignorando cuando viene junto con
+  // subject/start/end/body en la misma solicitud).
+  try{
+    const eventoId = resultado?.id || existente?.id;
+    if(eventoId){
+      const verificacion = await graphFetchCalendar(`${base}/events/${eventoId}?$expand=singleValueExtendedProperties`);
+      const yaQuedo = (verificacion?.singleValueExtendedProperties || []).some(ep => ep.id === PROPIEDAD_LEXARA && ep.value === marca);
+      if(!yaQuedo){
+        console.info(`[Lexara][calendario] La marca "${marca}" NO quedó guardada en el evento tras crear/editar — reintentando con un PATCH aparte.`);
+        await graphFetchCalendar(`${base}/events/${eventoId}`, {
+          method:"PATCH",
+          body: JSON.stringify({ singleValueExtendedProperties: [{ id: PROPIEDAD_LEXARA, value: marca }] }),
+        });
+        const reverificacion = await graphFetchCalendar(`${base}/events/${eventoId}?$expand=singleValueExtendedProperties`);
+        const quedoAhora = (reverificacion?.singleValueExtendedProperties || []).some(ep => ep.id === PROPIEDAD_LEXARA && ep.value === marca);
+        console.info(`[Lexara][calendario] Después del PATCH aparte, ¿quedó guardada la marca "${marca}"?: ${quedoAhora ? 'SÍ' : 'NO'}.`);
+      } else {
+        console.info(`[Lexara][calendario] La marca "${marca}" sí quedó guardada correctamente en el evento.`);
+      }
+    }
+  }catch(err){ console.error('[Lexara][calendario] Error verificando la propiedad extendida:', err); }
+
+  return resultado;
 }
 
 export async function eliminarEventoCalendario(config, { tipo, id }){
