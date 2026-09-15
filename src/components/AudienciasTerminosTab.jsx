@@ -1,6 +1,8 @@
 import { useState, useMemo } from 'react';
 import { mensajeError, opcionesTiposAccionParaAlerta } from '../lib/graph';
 import { diasHabilesRestantes, colorCuentaRegresiva, etiquetaCuentaRegresiva, sumarDiasHabilesJudiciales } from '../lib/audienciasTerminos';
+import { construirMensajeWhatsAppAudienciasTerminos } from '../lib/whatsappAudienciasTerminos';
+import { generarAudienciasTerminosExcel } from '../lib/informeAudienciasTerminosExcel';
 import IconButton, { IconTextButton } from './IconButton';
 
 // Módulo "Audiencias Términos" (Informes > Procesos Judiciales, 2026-09-12) —
@@ -15,6 +17,14 @@ import IconButton, { IconTextButton } from './IconButton';
 // lib/audienciasTerminos.js) se pinta con los mismos colores de badge que ya
 // usa el resto de la app (verde/naranja/rojo/gris).
 function soloFechaISO(v){ return String(v || "").slice(0, 10); }
+
+// Solo colaboradores activos cuyo Cargo contiene "abogado" (pedido explícito
+// del usuario 2026-09-15) — compartido entre el selector de "Abogado
+// responsable" del formulario y el de la fila en edición de la tabla, para
+// que ambos muestren siempre la misma lista.
+function abogadosDisponibles(colaboradores){
+  return (colaboradores||[]).filter(c => c.Activo !== false && /abogad/i.test(c.Cargo || ""));
+}
 
 // Orden de la tabla — pedido explícito del usuario 2026-09-15: "que en la
 // parte superior esté el próximo a vencer". Antes se ordenaba por la fecha
@@ -137,10 +147,7 @@ export function FormularioNuevo({ tipo, procesos, tiposAccion, colaboradores, no
           <label>Abogado responsable</label>
           <select value={form.abogado} onChange={e => setForm({...form, abogado: e.target.value})}>
             <option value="">Selecciona…</option>
-            {/* Solo colaboradores cuyo Cargo contiene "abogado" (pedido explícito
-                del usuario 2026-09-15: el selector traía a TODOS los colaboradores
-                activos, incluyendo cargos que no son de abogado). */}
-            {(colaboradores||[]).filter(c => c.Activo !== false && /abogad/i.test(c.Cargo || "")).map(c => <option value={c.Nombre} key={c.id}>{c.Nombre}</option>)}
+            {abogadosDisponibles(colaboradores).map(c => <option value={c.Nombre} key={c.id}>{c.Nombre}</option>)}
           </select>
         </div>
       )}
@@ -154,7 +161,7 @@ export function FormularioNuevo({ tipo, procesos, tiposAccion, colaboradores, no
 // `ocultarProceso` (2026-09-13) — la columna "Proceso" sobra cuando esta
 // tabla se muestra DENTRO del panel de ese mismo proceso (ver
 // AudienciasTerminosDelProceso más abajo).
-export function TablaRegistros({ tipo, registros, procesos, notify, onEditar, onEliminar, ocultarProceso }){
+export function TablaRegistros({ tipo, registros, procesos, colaboradores, notify, onEditar, onEliminar, ocultarProceso }){
   const [editandoId, setEditandoId] = useState(null);
   const [editDraft, setEditDraft] = useState(null);
 
@@ -226,7 +233,20 @@ export function TablaRegistros({ tipo, registros, procesos, notify, onEditar, on
                   </>
                 )}
                 <td>—</td>
-                {tipo === 'audiencias' && <td><input type="text" value={editDraft.Abogado} onChange={e => setEditDraft({...editDraft, Abogado: e.target.value})} /></td>}
+                {tipo === 'audiencias' && (
+                  <td>
+                    <select value={editDraft.Abogado} onChange={e => setEditDraft({...editDraft, Abogado: e.target.value})}>
+                      <option value="">Selecciona…</option>
+                      {/* Si el valor ya guardado no está en la lista filtrada (registro
+                          viejo, o el colaborador ya no tiene "abogado" en su Cargo), se
+                          agrega igual como opción para no perderlo de vista al editar. */}
+                      {editDraft.Abogado && !abogadosDisponibles(colaboradores).some(c => c.Nombre === editDraft.Abogado) && (
+                        <option value={editDraft.Abogado}>{editDraft.Abogado}</option>
+                      )}
+                      {abogadosDisponibles(colaboradores).map(c => <option value={c.Nombre} key={c.id}>{c.Nombre}</option>)}
+                    </select>
+                  </td>
+                )}
                 <td style={{display:'flex', gap:6}}>
                   <IconButton icon="checklist" variant="edit" label="Guardar" onClick={() => handleGuardarEdicion(r.id)} />
                   <button type="button" className="btn-secondary" onClick={() => setEditandoId(null)}>Cancelar</button>
@@ -315,10 +335,34 @@ export function ResumenAudienciasTerminos({ audiencias, terminos, procesos, styl
 
 export default function AudienciasTerminosTab({ procesos, tiposAccion, colaboradores, audiencias, terminos, notify, onCrearAudiencia, onEditarAudiencia, onEliminarAudiencia, onCrearTermino, onEditarTermino, onEliminarTermino }){
   const [modo, setModo] = useState('audiencias');
+  const [generandoExcel, setGenerandoExcel] = useState(false);
+
+  // "Compartir por WhatsApp" (pedido explícito del usuario 2026-09-15) — abre
+  // WhatsApp con el listado de lo que vence en los próximos 5 días hábiles
+  // (contados desde ahora mismo) ya redactado; el usuario elige a quién
+  // mandárselo desde su propio WhatsApp (ver whatsappAudienciasTerminos.js).
+  function handleCompartirWhatsApp(){
+    const mensaje = construirMensajeWhatsAppAudienciasTerminos(audiencias, terminos, procesos);
+    window.open(`https://wa.me/?text=${encodeURIComponent(mensaje)}`, '_blank');
+  }
+  // Excel de Audiencias/Términos agrupado por Número Corto (pedido explícito
+  // del usuario 2026-09-15) — ver informeAudienciasTerminosExcel.js.
+  async function handleGenerarExcel(){
+    setGenerandoExcel(true);
+    try{ await generarAudienciasTerminosExcel(audiencias, terminos, procesos); }
+    catch(err){ console.error(err); notify?.("No se pudo generar el Excel: " + mensajeError(err), 'error'); }
+    finally { setGenerandoExcel(false); }
+  }
 
   return (
     <div className="panel" style={{marginTop:20}}>
-      <div className="panel-head"><h3>Audiencias Términos</h3></div>
+      <div className="panel-head" style={{display:'flex', alignItems:'center', justifyContent:'space-between'}}>
+        <h3>Audiencias Términos</h3>
+        <div style={{display:'flex', gap:6}}>
+          <IconButton icon="excel" variant="excel" label="Descargar Excel agrupado por Número Corto" spinning={generandoExcel} onClick={handleGenerarExcel} />
+          <IconButton icon="whatsapp" variant="whatsapp" label="Compartir por WhatsApp (próximos 5 días hábiles)" onClick={handleCompartirWhatsApp} />
+        </div>
+      </div>
       <div className="panel-body">
         <ResumenAudienciasTerminos audiencias={audiencias} terminos={terminos} procesos={procesos} />
         <div style={{display:'flex', gap:8, marginBottom:20}}>
@@ -331,7 +375,7 @@ export default function AudienciasTerminosTab({ procesos, tiposAccion, colaborad
           onCrear={modo === 'audiencias' ? onCrearAudiencia : onCrearTermino}
         />
         <TablaRegistros
-          tipo={modo} registros={modo === 'audiencias' ? audiencias : terminos} procesos={procesos} notify={notify}
+          tipo={modo} registros={modo === 'audiencias' ? audiencias : terminos} procesos={procesos} colaboradores={colaboradores} notify={notify}
           onEditar={modo === 'audiencias' ? onEditarAudiencia : onEditarTermino}
           onEliminar={modo === 'audiencias' ? onEliminarAudiencia : onEliminarTermino}
         />
@@ -362,7 +406,7 @@ export function AudienciasTerminosDelProceso({ proceso, procesos, tiposAccion, c
         onCrear={modo === 'audiencias' ? onCrearAudiencia : onCrearTermino}
       />
       <TablaRegistros
-        tipo={modo} registros={modo === 'audiencias' ? audiencias : terminos} procesos={procesos} notify={notify}
+        tipo={modo} registros={modo === 'audiencias' ? audiencias : terminos} procesos={procesos} colaboradores={colaboradores} notify={notify}
         ocultarProceso
         onEditar={modo === 'audiencias' ? onEditarAudiencia : onEditarTermino}
         onEliminar={modo === 'audiencias' ? onEliminarAudiencia : onEliminarTermino}
