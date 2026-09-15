@@ -1558,7 +1558,11 @@ export function useLexaraApp(){
       }
       setItemsState(prev => [...prev, nuevo]);
       notify("Creado con éxito en Lexara", 'success');
-      if(hooks.afterCrear){ Promise.resolve(hooks.afterCrear(nuevo)).catch(err => console.error(err)); }
+      // Bug real reportado por el usuario 2026-09-15: el evento de calendario
+      // no se creaba y no había NINGÚN aviso — el error quedaba solo en la
+      // consola del navegador. Ahora también avisa en el portal (advertencia,
+      // no error — el registro en sí ya se guardó bien).
+      if(hooks.afterCrear){ Promise.resolve(hooks.afterCrear(nuevo)).catch(err => { console.error(err); notify("Se guardó, pero no se pudo sincronizar el calendario: " + Graph.mensajeError(err), 'error'); }); }
       return nuevo;
     }
     async function editar(id, updates){
@@ -1588,7 +1592,7 @@ export function useLexaraApp(){
         setSaving(false);
       }
       notify("Guardado con éxito en Lexara", 'success');
-      if(hooks.afterEditar){ Promise.resolve(hooks.afterEditar(id, {...item, ...updatesAplanados}, updates)).catch(err => console.error(err)); }
+      if(hooks.afterEditar){ Promise.resolve(hooks.afterEditar(id, {...item, ...updatesAplanados}, updates)).catch(err => { console.error(err); notify("Se guardó, pero no se pudo sincronizar el calendario: " + Graph.mensajeError(err), 'error'); }); }
     }
     async function performEliminar(id){
       const item = itemsState.find(i => i.id===id);
@@ -1602,7 +1606,7 @@ export function useLexaraApp(){
         setSaving(false);
       }
       setItemsState(prev => prev.filter(i => i.id !== id));
-      if(hooks.afterEliminar){ Promise.resolve(hooks.afterEliminar(id, item)).catch(err => console.error(err)); }
+      if(hooks.afterEliminar){ Promise.resolve(hooks.afterEliminar(id, item)).catch(err => { console.error(err); notify("Se eliminó, pero no se pudo quitar del calendario: " + Graph.mensajeError(err), 'error'); }); }
     }
     function eliminar(id){
       requestConfirm("¿Eliminar este registro? Esta acción no se puede deshacer.", () => performEliminar(id));
@@ -1656,15 +1660,26 @@ export function useLexaraApp(){
     const etiqueta = tipo === 'audiencia' ? 'Audiencia' : 'Término';
     return [etiqueta, item.Descripcion, radicado].filter(Boolean).join(" — ");
   }
+  // BUG REAL encontrado y corregido 2026-09-15 (reportado por el usuario: "no
+  // creó el evento"): `config` (el estado de la app, inicializado desde
+  // INITIAL_CONFIG) nunca tuvo `CALENDARIO_AUDIENCIAS_TERMINOS` — es un
+  // export APARTE de config.js (mismo patrón que DOCUMENTOS_CORPORATIVOS_RUTA,
+  // que sí se pasa siempre por separado a quien lo necesita). Como
+  // sincronizarEventoCalendario/eliminarEventoCalendario (graph.js) leen
+  // `config.CALENDARIO_AUDIENCIAS_TERMINOS`, siempre venía `undefined` y la
+  // sincronización se salía en silencio sin hacer nada — nunca se llegó ni
+  // siquiera a intentar. Se arma un config "completo" acá mismo, una sola vez,
+  // para los 6 llamados de abajo.
+  const configConCalendario = { ...config, CALENDARIO_AUDIENCIAS_TERMINOS };
   const crudAudiencias = crudGastos('audiencias', audiencias, setAudiencias, {
-    afterCrear: (item) => !liveMode ? null : Graph.sincronizarEventoCalendario(config, { tipo:'audiencia', id:item.id, asunto: asuntoEventoCalendario('audiencia', item), fechaISO: item.FechaAudiencia, horaHHMM: item.HoraAudiencia }),
-    afterEditar: (id, item) => !liveMode ? null : Graph.sincronizarEventoCalendario(config, { tipo:'audiencia', id, asunto: asuntoEventoCalendario('audiencia', item), fechaISO: item.FechaAudiencia, horaHHMM: item.HoraAudiencia }),
-    afterEliminar: (id) => !liveMode ? null : Graph.eliminarEventoCalendario(config, { tipo:'audiencia', id }),
+    afterCrear: (item) => !liveMode ? null : Graph.sincronizarEventoCalendario(configConCalendario, { tipo:'audiencia', id:item.id, asunto: asuntoEventoCalendario('audiencia', item), fechaISO: item.FechaAudiencia, horaHHMM: item.HoraAudiencia }),
+    afterEditar: (id, item) => !liveMode ? null : Graph.sincronizarEventoCalendario(configConCalendario, { tipo:'audiencia', id, asunto: asuntoEventoCalendario('audiencia', item), fechaISO: item.FechaAudiencia, horaHHMM: item.HoraAudiencia }),
+    afterEliminar: (id) => !liveMode ? null : Graph.eliminarEventoCalendario(configConCalendario, { tipo:'audiencia', id }),
   });
   const crudTerminos = crudGastos('terminos', terminos, setTerminos, {
-    afterCrear: (item) => !liveMode ? null : Graph.sincronizarEventoCalendario(config, { tipo:'termino', id:item.id, asunto: asuntoEventoCalendario('termino', item), fechaISO: item.VencimientoTermino }),
-    afterEditar: (id, item) => !liveMode ? null : Graph.sincronizarEventoCalendario(config, { tipo:'termino', id, asunto: asuntoEventoCalendario('termino', item), fechaISO: item.VencimientoTermino }),
-    afterEliminar: (id) => !liveMode ? null : Graph.eliminarEventoCalendario(config, { tipo:'termino', id }),
+    afterCrear: (item) => !liveMode ? null : Graph.sincronizarEventoCalendario(configConCalendario, { tipo:'termino', id:item.id, asunto: asuntoEventoCalendario('termino', item), fechaISO: item.VencimientoTermino }),
+    afterEditar: (id, item) => !liveMode ? null : Graph.sincronizarEventoCalendario(configConCalendario, { tipo:'termino', id, asunto: asuntoEventoCalendario('termino', item), fechaISO: item.VencimientoTermino }),
+    afterEliminar: (id) => !liveMode ? null : Graph.eliminarEventoCalendario(configConCalendario, { tipo:'termino', id }),
   });
   const crearAudiencia = crudAudiencias.crear;
   const editarAudiencia = crudAudiencias.editar;

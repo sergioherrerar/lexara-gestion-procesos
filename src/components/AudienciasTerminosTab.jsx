@@ -16,6 +16,20 @@ import IconButton, { IconTextButton } from './IconButton';
 // usa el resto de la app (verde/naranja/rojo/gris).
 function soloFechaISO(v){ return String(v || "").slice(0, 10); }
 
+// Orden de la tabla — pedido explícito del usuario 2026-09-15: "que en la
+// parte superior esté el próximo a vencer". Antes se ordenaba por la fecha
+// tal cual (texto), así que un registro sin fecha (fila incompleta, "—")
+// quedaba primero y uno vencido hace tiempo quedaba ARRIBA de uno que
+// realmente falta poco por vencer — con días hábiles restantes como
+// prioridad: lo pendiente más próximo va primero, lo vencido va después
+// (lo vencido hace menos tiempo antes que lo vencido hace más tiempo), y las
+// filas sin fecha (dato incompleto en SharePoint) van al final de todas.
+function ordenPrioridad(restantes){
+  if(restantes == null) return Infinity;
+  if(restantes < 0) return 100000 + Math.abs(restantes);
+  return restantes;
+}
+
 const MODOS = [
   {key:'audiencias', label:'Audiencias'},
   {key:'terminos', label:'Términos'},
@@ -148,7 +162,7 @@ export function TablaRegistros({ tipo, registros, procesos, notify, onEditar, on
       : (soloFechaISO(r.VencimientoTermino) || sumarDiasHabilesJudiciales(soloFechaISO(r.FechaNotificacion), r.DiasHabiles));
     const restantes = fechaObjetivo ? diasHabilesRestantes(fechaObjetivo) : null;
     return { ...r, proceso, fechaObjetivo, restantes };
-  }).sort((a,b) => String(a.fechaObjetivo||'').localeCompare(String(b.fechaObjetivo||'')));
+  }).sort((a,b) => ordenPrioridad(a.restantes) - ordenPrioridad(b.restantes));
 
   function empezarEdicion(r){
     setEditandoId(r.id);
