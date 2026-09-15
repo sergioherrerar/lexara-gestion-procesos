@@ -164,12 +164,29 @@ async function pathCalendario(config){
   return null;
 }
 
+// Bug real reportado por el usuario 2026-09-15 ("al modificar crea el nuevo
+// evento pero no borra el anterior"): el `$filter=singleValueExtendedProperties/Any(...)`
+// de arriba casi nunca encuentra el evento ya creado en /events (a diferencia
+// de /messages, donde Microsoft SÍ soporta bien ese filtro) — así que cada
+// edición terminaba creando un evento nuevo en vez de actualizar el mismo,
+// dejando duplicados. Se reemplaza por el patrón recomendado por Microsoft
+// para este caso: pedir TODOS los eventos con `$expand` de esa propiedad
+// puntual (Graph filtra cuál propiedad devuelve, pero no por su valor) y
+// comparar el valor a mano acá, paginando con @odata.nextLink si hace falta.
 async function buscarEventoAudienciaTermino(config, marca){
   const base = await pathCalendario(config);
   if(!base) return null;
-  const filtro = `singleValueExtendedProperties/Any(ep: ep/id eq '${PROPIEDAD_LEXARA}' and ep/value eq '${marca}')`;
-  const res = await graphFetchCalendar(`${base}/events?$filter=${encodeURIComponent(filtro)}&$select=id`);
-  return res?.value?.[0] || null;
+  const expand = `singleValueExtendedProperties($filter=id eq '${PROPIEDAD_LEXARA}')`;
+  let url = `${base}/events?$expand=${encodeURIComponent(expand)}&$select=id,subject&$top=250`;
+  for(let pagina = 0; pagina < 20 && url; pagina++){
+    const res = await graphFetchCalendar(url);
+    const encontrado = (res?.value || []).find(ev =>
+      (ev.singleValueExtendedProperties || []).some(ep => ep.value === marca)
+    );
+    if(encontrado) return encontrado;
+    url = res?.["@odata.nextLink"] || null;
+  }
+  return null;
 }
 
 function sumarDiasISO(fechaISO, dias){

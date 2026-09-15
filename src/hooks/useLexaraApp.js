@@ -1655,7 +1655,12 @@ export function useLexaraApp(){
   // hacen nada, así que esto no rompe nada mientras tanto. Solo corre en modo
   // en vivo (en demo no hay ninguna cuenta de Microsoft real detrás).
   function asuntoEventoCalendario(tipo, item){
-    const proceso = procesos.find(p => p.id === item.Proceso);
+    // String(...) en la comparación (2026-09-15): en datos reales de
+    // SharePoint, item.Proceso puede llegar como número mientras que p.id
+    // siempre es texto (id de Graph) — con "===" a secas la búsqueda fallaba
+    // en silencio y el radicado quedaba vacío. Mismo patrón ya usado en
+    // audienciasForProceso/terminosForProceso (graph.js).
+    const proceso = procesos.find(p => String(p.id) === String(item.Proceso));
     const radicado = proceso?.Radicado || "";
     const etiqueta = tipo === 'audiencia' ? 'Audiencia' : 'Término';
     return [etiqueta, item.Descripcion, radicado].filter(Boolean).join(" — ");

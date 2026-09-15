@@ -156,7 +156,10 @@ export function TablaRegistros({ tipo, registros, procesos, notify, onEditar, on
   const [editDraft, setEditDraft] = useState(null);
 
   const filasConDatos = (registros||[]).map(r => {
-    const proceso = (procesos||[]).find(p => p.id === r.Proceso) || null;
+    // String(...) (2026-09-15, mismo bug real que en el asunto del evento de
+    // calendario): en vivo r.Proceso puede llegar como número y p.id siempre
+    // es texto — sin esto la búsqueda fallaba en silencio.
+    const proceso = (procesos||[]).find(p => String(p.id) === String(r.Proceso)) || null;
     const fechaObjetivo = tipo === 'audiencias'
       ? soloFechaISO(r.FechaAudiencia)
       : (soloFechaISO(r.VencimientoTermino) || sumarDiasHabilesJudiciales(soloFechaISO(r.FechaNotificacion), r.DiasHabiles));
@@ -271,7 +274,7 @@ function proximosAVencer(audiencias, terminos, procesos){
   const terminosConTipo = (terminos||[]).map(r => ({ ...r, tipoRegistro:'terminos' }));
   return [...audienciasConTipo, ...terminosConTipo]
     .map(r => {
-      const proceso = (procesos||[]).find(p => p.id === r.Proceso) || null;
+      const proceso = (procesos||[]).find(p => String(p.id) === String(r.Proceso)) || null;
       const fechaObjetivo = r.tipoRegistro === 'audiencias'
         ? soloFechaISO(r.FechaAudiencia)
         : (soloFechaISO(r.VencimientoTermino) || sumarDiasHabilesJudiciales(soloFechaISO(r.FechaNotificacion), r.DiasHabiles));
