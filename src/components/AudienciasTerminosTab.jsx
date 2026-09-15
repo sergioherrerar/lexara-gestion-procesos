@@ -269,7 +269,10 @@ export function TablaRegistros({ tipo, registros, procesos, notify, onEditar, on
 // Audiencias y Términos en una sola lista, calcula la misma fecha objetivo y
 // días hábiles restantes que ya usa TablaRegistros, descarta lo vencido y lo
 // sin fecha, y deja solo los 3 más urgentes.
-function proximosAVencer(audiencias, terminos, procesos){
+// Exportado también (además del componente) para que ProcesosView.jsx pueda
+// decidir su layout (grid 70/30 vs. una sola columna) según si en verdad hay
+// algo que mostrar, sin duplicar este cálculo.
+export function proximosAVencer(audiencias, terminos, procesos){
   const audienciasConTipo = (audiencias||[]).map(r => ({ ...r, tipoRegistro:'audiencias' }));
   const terminosConTipo = (terminos||[]).map(r => ({ ...r, tipoRegistro:'terminos' }));
   return [...audienciasConTipo, ...terminosConTipo]
@@ -291,15 +294,18 @@ function proximosAVencer(audiencias, terminos, procesos){
 // reusarlo tal cual en ProcesosView.jsx, sin duplicar la lógica.
 export function ResumenAudienciasTerminos({ audiencias, terminos, procesos, style }){
   const masUrgentes = useMemo(() => proximosAVencer(audiencias, terminos, procesos), [audiencias, terminos, procesos]);
+  // Si no hay nada pendiente por vencer (todo vencido o no hay registros), no
+  // se muestra ningún mensaje — pedido explícito del usuario 2026-09-15: "si
+  // todo esta vencido no muestre nada" (antes salía un badge gris avisando
+  // que no había nada pendiente).
+  if(!masUrgentes.length) return null;
   return (
     <div style={{display:'flex', gap:10, flexWrap:'wrap', marginBottom:16, ...style}}>
-      {masUrgentes.length ? masUrgentes.map(r => (
+      {masUrgentes.map(r => (
         <span key={r.tipoRegistro + '-' + r.id} className={"badge badge-" + colorCuentaRegresiva(r.restantes)} style={{fontSize:13, padding:'8px 14px'}}>
           {r.tipoRegistro === 'audiencias' ? 'Audiencia' : 'Término'} · {r.proceso?.Radicado || "—"}{r.proceso?.Cliente ? (" · " + r.proceso.Cliente) : ""} · {etiquetaCuentaRegresiva(r.restantes)}
         </span>
-      )) : (
-        <span className="badge badge-gris" style={{fontSize:13, padding:'8px 14px'}}>No hay audiencias ni términos pendientes por vencer.</span>
-      )}
+      ))}
     </div>
   );
 }

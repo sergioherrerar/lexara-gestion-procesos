@@ -7,7 +7,7 @@ import { useColumnFilters } from '../hooks/useColumnFilters';
 import { useColumnSort } from '../hooks/useColumnSort';
 import { generarFichaProcesoPDF } from '../lib/informeProceso';
 import { generarImpulsoProcesalWord, enviarBorradorImpulsoProcesalGraph, abrirCorreoImpulsoProcesal } from '../lib/formatoImpulsoProcesal';
-import { ResumenAudienciasTerminos } from './AudienciasTerminosTab';
+import { ResumenAudienciasTerminos, proximosAVencer } from './AudienciasTerminosTab';
 
 function matchesFilter(p, currentFilter){
   if(currentFilter==='todos') return true;
@@ -46,6 +46,10 @@ export default function ProcesosView({ procesos, currentFilter, setFilter, searc
   // la parte derecha"). Ver vincularLinksProcesosMasivo en useLexaraApp.js.
   const [vinculandoLinks, setVinculandoLinks] = useState(false);
   const procesosSinLinks = procesos.filter(p => !p.LinkCarpeta || !p.LinkCliente || !p.LinkContrato).length;
+  // Si no hay nada pendiente por vencer, ResumenAudienciasTerminos no
+  // muestra nada (ver AudienciasTerminosTab.jsx) — acá hace falta saberlo de
+  // antemano para no dejar la mitad izquierda del 70/30 vacía cuando eso pasa.
+  const hayAudienciasTerminosUrgentes = proximosAVencer(audiencias, terminos, procesos).length > 0;
   async function handleVincularLinksMasivo(){
     setVinculandoLinks(true);
     try{ await vincularLinksProcesosMasivo?.(); }
@@ -147,10 +151,9 @@ export default function ProcesosView({ procesos, currentFilter, setFilter, searc
           Audiencias/Términos a la izquierda, el aviso de "Vincular links
           automáticamente" (sin cambios, el botón único de siempre) a la
           derecha. En mobile se apilan igual que el resto de la app. */}
-      {canWrite && procesosSinLinks > 0 ? (
-        <div className="panel-grid panel-grid-70-30" style={{marginBottom:16}}>
-          <ResumenAudienciasTerminos audiencias={audiencias} terminos={terminos} procesos={procesos} style={{marginBottom:0, minWidth:0}} />
-          <div className="field-warning" style={{minWidth:0, display:'flex', alignItems:'center', gap:10, flexWrap:'wrap', marginBottom:0}}>
+      {(() => {
+        const banner = canWrite && procesosSinLinks > 0 && (
+          <div className="field-warning" style={{minWidth:0, display:'flex', alignItems:'center', gap:10, flexWrap:'wrap', marginBottom: hayAudienciasTerminosUrgentes ? 0 : 16}}>
             <span>{procesosSinLinks} proceso(s) todavía no tienen alguno de sus links (Carpeta/Cliente/Contrato) llenos.</span>
             <button
               type="button"
@@ -165,10 +168,22 @@ export default function ProcesosView({ procesos, currentFilter, setFilter, searc
               {vinculandoLinks ? "Vinculando…" : "Vincular links automáticamente"}
             </button>
           </div>
-        </div>
-      ) : (
-        <ResumenAudienciasTerminos audiencias={audiencias} terminos={terminos} procesos={procesos} />
-      )}
+        );
+        if(hayAudienciasTerminosUrgentes && banner){
+          return (
+            <div className="panel-grid panel-grid-70-30" style={{marginBottom:16}}>
+              <ResumenAudienciasTerminos audiencias={audiencias} terminos={terminos} procesos={procesos} style={{marginBottom:0, minWidth:0}} />
+              {banner}
+            </div>
+          );
+        }
+        return (
+          <>
+            <ResumenAudienciasTerminos audiencias={audiencias} terminos={terminos} procesos={procesos} />
+            {banner}
+          </>
+        );
+      })()}
       <div className="table-wrap">
         <table>
           <thead>
