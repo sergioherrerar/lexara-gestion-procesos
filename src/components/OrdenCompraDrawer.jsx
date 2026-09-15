@@ -9,8 +9,10 @@ import qrRedes from '../assets/Qr_Redes.png';
 // formato anterior "OC (Cliente) (Proceso)" de 2026-09-07): "OC" + Entidad +
 // Número Corto + Etapa contrato — mismo patrón que Facturas.
 function nombreArchivoOrdenCompraPDF(oc, clientes, procesos){
+  // ordenCompraNumero ya trae el prefijo "OC-" (ej. "OC-2026-0002") — no se
+  // repite acá para no leer "OC OC-2026-0002".
   const proceso = procesoForOrdenCompra(procesos, oc);
-  return nombreArchivoSeguro(`OC ${proceso?.Entidad || 'Sin entidad'} ${proceso?.Radicado || oc.Proceso || 'Sin proceso'} ${oc.EtapaContrato || ''}`.trim());
+  return nombreArchivoSeguro(`${ordenCompraNumero(oc)} ${proceso?.Entidad || 'Sin entidad'} ${proceso?.Radicado || oc.Proceso || 'Sin proceso'} ${oc.EtapaContrato || ''}`.trim());
 }
 
 const LINE_NUMS = [1,2,3,4,5,6];

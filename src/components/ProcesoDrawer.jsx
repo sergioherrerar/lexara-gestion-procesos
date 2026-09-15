@@ -554,7 +554,7 @@ export default function ProcesoDrawer({ proceso, clientes, colaboradores, factur
   const facturasRelacionadas = facturasForProceso(facturas, proceso)
     .sort((a,b) => Number(facturaNumero(b)) - Number(facturaNumero(a)) || 0);
   const ordenesRelacionadas = ordenesCompraForProceso(ordenesCompra, proceso)
-    .sort((a,b) => Number(ordenCompraNumero(b)) - Number(ordenCompraNumero(a)));
+    .sort((a,b) => Number(b.id) - Number(a.id)); // ordenCompraNumero ya no es un número puro (formato "OC-año-####")
   const formasPagoRelacionadas = formasPagoForProceso(formasPago, proceso);
   const desistimientosRelacionados = desistimientosForProceso(desistimientos, proceso);
   const audienciasRelacionadas = audienciasForProceso(audiencias, proceso);

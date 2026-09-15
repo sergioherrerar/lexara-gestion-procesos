@@ -35,7 +35,7 @@ export default function OrdenesCompraView({ ordenesCompra, clientes, procesos, f
       (oc.Contrato||"").toLowerCase().includes(query) ||
       (oc.Proceso||"").toLowerCase().includes(query) ||
       (cliente?.RazonSocial||"").toLowerCase().includes(query);
-  }).sort((a,b) => Number(ordenCompraNumero(b)) - Number(ordenCompraNumero(a)));
+  }).sort((a,b) => Number(b.id) - Number(a.id)); // ordenCompraNumero ya no es un número puro (formato "OC-año-####")
   const sortedRows = sortRows(rows, COLUMNS);
 
   return (

@@ -41,7 +41,7 @@ function computeLive(form){
 // "FE" + Entidad + Número Corto + Etapa contrato.
 function nombreArchivoFacturaPDF(factura, clientes, procesos){
   const proceso = procesoForFactura(procesos, factura);
-  return nombreArchivoSeguro(`FE ${proceso?.Entidad || 'Sin entidad'} ${proceso?.Radicado || factura.Proceso || 'Sin proceso'} ${factura.EtapaContrato || ''}`.trim());
+  return nombreArchivoSeguro(`FE ${facturaNumero(factura)} ${proceso?.Entidad || 'Sin entidad'} ${proceso?.Radicado || factura.Proceso || 'Sin proceso'} ${factura.EtapaContrato || ''}`.trim());
 }
 
 export default function FacturaDrawer({ factura, clientes, procesos, liveMode, onClose, onSave, onUpdateCliente, autoPrint, onAutoPrinted, saving, notify }){

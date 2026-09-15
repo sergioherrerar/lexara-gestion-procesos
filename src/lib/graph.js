@@ -1686,8 +1686,14 @@ export function procesoForOrdenCompra(procesos, oc){
 // El número de orden de compra es directamente el ID del elemento en
 // SharePoint (a diferencia de Factura, que suma 91 por numeración heredada
 // de Access) — no hace falta guardar un número aparte en ninguna columna.
+// Formato de numeración pedido explícito del usuario 2026-09-15: distinto y
+// más corporativo/serio que el de Facturas (que es un número simple) — para
+// que a simple vista nunca se confunda un No. de Orden de compra con un No.
+// de Factura. "OC-{año}-{consecutivo de 4 dígitos}", ej: "OC-2026-0002".
 export function ordenCompraNumero(oc){
-  return oc && oc.id!=null ? String(oc.id) : "";
+  if(!oc || oc.id==null) return "";
+  const anio = oc.Anio || new Date().getFullYear();
+  return `OC-${anio}-${String(oc.id).padStart(4,'0')}`;
 }
 export function ordenCompraLineItems(oc){
   return Array.from({length:6}, (_,i) => i+1).map(n => {
