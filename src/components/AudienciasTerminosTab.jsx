@@ -27,7 +27,7 @@ const MODOS = [
 // AudienciasTerminosDelProceso más abajo), ya se sabe cuál es el proceso, así
 // que se salta el paso de buscarlo por Número Corto.
 export function FormularioNuevo({ tipo, procesos, tiposAccion, colaboradores, notify, onCrear, procesoFijo }){
-  const vacio = { numeroCorto:'', proceso: procesoFijo ? procesoFijo.id : null, descripcion:'', fecha:'', hora:'', diasHabiles:'', abogado:'', link:'', observaciones:'' };
+  const vacio = { numeroCorto:'', proceso: procesoFijo ? procesoFijo.id : null, descripcion:'', fecha:'', hora:'', diasHabiles:'', abogado:'' };
   const [form, setForm] = useState(vacio);
   const [guardando, setGuardando] = useState(false);
 
@@ -57,9 +57,13 @@ export function FormularioNuevo({ tipo, procesos, tiposAccion, colaboradores, no
     if(!form.fecha){ notify?.("Completa la fecha.", 'error'); return; }
     setGuardando(true);
     try{
+      // "Terminos" no tiene columnas reales de Abogado/Link/Observaciones
+      // (confirmado por el usuario 2026-09-15 contra la lista real de
+      // SharePoint) — solo "Audiencia" tiene Abogado (y Link, sin UI propia
+      // todavía).
       const payload = tipo === 'audiencias'
-        ? { Proceso: form.proceso, Descripcion: form.descripcion, FechaAudiencia: form.fecha, HoraAudiencia: form.hora, Abogado: form.abogado, Link: form.link, Observaciones: form.observaciones }
-        : { Proceso: form.proceso, Descripcion: form.descripcion, FechaNotificacion: form.fecha, DiasHabiles: form.diasHabiles, VencimientoTermino: vencimientoCalculado, Abogado: form.abogado, Link: form.link, Observaciones: form.observaciones };
+        ? { Proceso: form.proceso, Descripcion: form.descripcion, FechaAudiencia: form.fecha, HoraAudiencia: form.hora, Abogado: form.abogado }
+        : { Proceso: form.proceso, Descripcion: form.descripcion, FechaNotificacion: form.fecha, DiasHabiles: form.diasHabiles, VencimientoTermino: vencimientoCalculado };
       await onCrear?.(payload);
       setForm(vacio);
     }catch(err){ console.error(err); notify?.(mensajeError(err), 'error'); }
@@ -114,13 +118,15 @@ export function FormularioNuevo({ tipo, procesos, tiposAccion, colaboradores, no
           </div>
         </>
       )}
-      <div className="field" style={{minWidth:200}}>
-        <label>Abogado responsable</label>
-        <select value={form.abogado} onChange={e => setForm({...form, abogado: e.target.value})}>
-          <option value="">Selecciona…</option>
-          {(colaboradores||[]).filter(c => c.Activo !== false).map(c => <option value={c.Nombre} key={c.id}>{c.Nombre}</option>)}
-        </select>
-      </div>
+      {tipo === 'audiencias' && (
+        <div className="field" style={{minWidth:200}}>
+          <label>Abogado responsable</label>
+          <select value={form.abogado} onChange={e => setForm({...form, abogado: e.target.value})}>
+            <option value="">Selecciona…</option>
+            {(colaboradores||[]).filter(c => c.Activo !== false).map(c => <option value={c.Nombre} key={c.id}>{c.Nombre}</option>)}
+          </select>
+        </div>
+      )}
       <IconTextButton icon="add" variant="primary" onClick={handleAgregar} disabled={guardando}>
         {guardando ? "Guardando…" : (tipo === 'audiencias' ? "Agregar audiencia" : "Agregar término")}
       </IconTextButton>
@@ -148,7 +154,8 @@ export function TablaRegistros({ tipo, registros, procesos, notify, onEditar, on
     setEditandoId(r.id);
     setEditDraft(tipo === 'audiencias'
       ? { Descripcion: r.Descripcion||'', FechaAudiencia: soloFechaISO(r.FechaAudiencia), HoraAudiencia: r.HoraAudiencia||'', Abogado: r.Abogado||'' }
-      : { Descripcion: r.Descripcion||'', FechaNotificacion: soloFechaISO(r.FechaNotificacion), DiasHabiles: r.DiasHabiles||'', Abogado: r.Abogado||'' }
+      // "Terminos" no tiene columna real de Abogado (confirmado 2026-09-15).
+      : { Descripcion: r.Descripcion||'', FechaNotificacion: soloFechaISO(r.FechaNotificacion), DiasHabiles: r.DiasHabiles||'' }
     );
   }
   async function handleGuardarEdicion(id){
@@ -161,7 +168,9 @@ export function TablaRegistros({ tipo, registros, procesos, notify, onEditar, on
     }catch(err){ console.error(err); notify?.(mensajeError(err), 'error'); }
   }
 
-  const colSpanVacio = (tipo === 'audiencias' ? 6 : 7) - (ocultarProceso ? 1 : 0);
+  // "Terminos" no tiene columna real de Abogado (confirmado 2026-09-15) — la
+  // columna/celda solo aparece para Audiencias.
+  const colSpanVacio = (ocultarProceso ? 0 : 1) + 6;
 
   return (
     <div className="table-wrap">
@@ -174,7 +183,7 @@ export function TablaRegistros({ tipo, registros, procesos, notify, onEditar, on
             {tipo === 'audiencias' ? <th>Hora</th> : <th>Días hábiles</th>}
             {tipo === 'terminos' && <th>Vencimiento</th>}
             <th>Cuenta regresiva</th>
-            <th>Abogado</th>
+            {tipo === 'audiencias' && <th>Abogado</th>}
             <th>Acciones</th>
           </tr>
         </thead>
@@ -197,7 +206,7 @@ export function TablaRegistros({ tipo, registros, procesos, notify, onEditar, on
                   </>
                 )}
                 <td>—</td>
-                <td><input type="text" value={editDraft.Abogado} onChange={e => setEditDraft({...editDraft, Abogado: e.target.value})} /></td>
+                {tipo === 'audiencias' && <td><input type="text" value={editDraft.Abogado} onChange={e => setEditDraft({...editDraft, Abogado: e.target.value})} /></td>}
                 <td style={{display:'flex', gap:6}}>
                   <IconButton icon="checklist" variant="edit" label="Guardar" onClick={() => handleGuardarEdicion(r.id)} />
                   <button type="button" className="btn-secondary" onClick={() => setEditandoId(null)}>Cancelar</button>
@@ -220,7 +229,7 @@ export function TablaRegistros({ tipo, registros, procesos, notify, onEditar, on
                   </>
                 )}
                 <td><span className={"badge badge-" + colorCuentaRegresiva(r.restantes)}>{etiquetaCuentaRegresiva(r.restantes)}</span></td>
-                <td>{r.Abogado || "—"}</td>
+                {tipo === 'audiencias' && <td>{r.Abogado || "—"}</td>}
                 <td style={{display:'flex', gap:6}}>
                   <IconButton icon="edit" variant="edit" label="Editar" onClick={() => empezarEdicion(r)} />
                   <IconButton icon="delete" variant="delete" label="Eliminar" onClick={() => onEliminar?.(r.id)} />

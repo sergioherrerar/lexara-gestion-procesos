@@ -1657,13 +1657,13 @@ export function useLexaraApp(){
     return [etiqueta, item.Descripcion, radicado].filter(Boolean).join(" — ");
   }
   const crudAudiencias = crudGastos('audiencias', audiencias, setAudiencias, {
-    afterCrear: (item) => !liveMode ? null : Graph.sincronizarEventoCalendario(config, { tipo:'audiencia', id:item.id, asunto: asuntoEventoCalendario('audiencia', item), fechaISO: item.FechaAudiencia, horaHHMM: item.HoraAudiencia, notas: item.Observaciones }),
-    afterEditar: (id, item) => !liveMode ? null : Graph.sincronizarEventoCalendario(config, { tipo:'audiencia', id, asunto: asuntoEventoCalendario('audiencia', item), fechaISO: item.FechaAudiencia, horaHHMM: item.HoraAudiencia, notas: item.Observaciones }),
+    afterCrear: (item) => !liveMode ? null : Graph.sincronizarEventoCalendario(config, { tipo:'audiencia', id:item.id, asunto: asuntoEventoCalendario('audiencia', item), fechaISO: item.FechaAudiencia, horaHHMM: item.HoraAudiencia }),
+    afterEditar: (id, item) => !liveMode ? null : Graph.sincronizarEventoCalendario(config, { tipo:'audiencia', id, asunto: asuntoEventoCalendario('audiencia', item), fechaISO: item.FechaAudiencia, horaHHMM: item.HoraAudiencia }),
     afterEliminar: (id) => !liveMode ? null : Graph.eliminarEventoCalendario(config, { tipo:'audiencia', id }),
   });
   const crudTerminos = crudGastos('terminos', terminos, setTerminos, {
-    afterCrear: (item) => !liveMode ? null : Graph.sincronizarEventoCalendario(config, { tipo:'termino', id:item.id, asunto: asuntoEventoCalendario('termino', item), fechaISO: item.VencimientoTermino, notas: item.Observaciones }),
-    afterEditar: (id, item) => !liveMode ? null : Graph.sincronizarEventoCalendario(config, { tipo:'termino', id, asunto: asuntoEventoCalendario('termino', item), fechaISO: item.VencimientoTermino, notas: item.Observaciones }),
+    afterCrear: (item) => !liveMode ? null : Graph.sincronizarEventoCalendario(config, { tipo:'termino', id:item.id, asunto: asuntoEventoCalendario('termino', item), fechaISO: item.VencimientoTermino }),
+    afterEditar: (id, item) => !liveMode ? null : Graph.sincronizarEventoCalendario(config, { tipo:'termino', id, asunto: asuntoEventoCalendario('termino', item), fechaISO: item.VencimientoTermino }),
     afterEliminar: (id) => !liveMode ? null : Graph.eliminarEventoCalendario(config, { tipo:'termino', id }),
   });
   const crearAudiencia = crudAudiencias.crear;

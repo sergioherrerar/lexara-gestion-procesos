@@ -1641,11 +1641,19 @@ export function nombreArchivoSeguro(s){
 // "Cifrado" visual del ID real de un colaborador — pedido explícito del
 // usuario 2026-09-15: que se vea en caracteres especiales en vez del número
 // desnudo (delante del nombre en Colaboradores MD, y dentro del QR de
-// seguridad de la Certificación laboral). Es solo un disfraz visual (una
-// sustitución fija dígito-por-símbolo, siempre reversible por quien conozca
-// la tabla) — no es cifrado real ni pretende serlo, solo evita mostrar el ID
-// tal cual.
-const CIFRA_DIGITOS = ['!','¡','?','¿','#','$','%','=',')','('];
+// seguridad de la Certificación laboral). Ajustado el mismo día a pedido del
+// usuario: un solo símbolo por dígito se veía muy corto/reconocible (varios
+// colaboradores de un solo dígito terminaban con un único carácter) — ahora
+// cada dígito se reemplaza por una cadena fija de 5 caracteres mezclados
+// (letras, números y un símbolo), así que un ID de un solo dígito ya sale
+// como un código de 5 caracteres, no de 1. Sigue siendo solo un disfraz
+// visual (una sustitución fija, siempre reversible por quien conozca la
+// tabla) — no es cifrado real ni pretende serlo, solo evita mostrar el ID
+// desnudo.
+const CIFRA_DIGITOS = [
+  'Xk4#L', 'q7$Zm', 'P3j¡T', 'h9?Nc', 'R2w#Y',
+  'b8$Jf', 'T4s¿G', 'm6!Qx', 'V1d%H', 'z5=Wp',
+];
 export function idCifrado(id){
   if(id==null) return '';
   return String(id).split('').map(ch => /[0-9]/.test(ch) ? CIFRA_DIGITOS[Number(ch)] : ch).join('');

@@ -186,14 +186,21 @@ export async function generarCertificacionColaboradorPDF(colaborador){
     `Certificación generada: ${fechaCortaVisible(hoy.toISOString())}`,
   ].join('\n');
   try{
+    // Centrados horizontalmente (pedido explícito del usuario 2026-09-15:
+    // "colócalos en el centro de la hoja para que no pisen los contadores de
+    // página") — antes quedaban pegados a la derecha, justo donde
+    // numerarPaginas() (informesPDF.js) imprime "Página X de Y", y se
+    // encimaban.
     const qrLado = 20;
+    const gapQR = 8;
+    const anchoBloque = qrLado*2 + gapQR;
     const qrY = y + 3;
+    const xSeguridad = pageWidth/2 - anchoBloque/2;
+    const xRedes = xSeguridad + qrLado + gapQR;
     const [qrSeguridadUrl, qrRedesUrl] = await Promise.all([
       generarQRDataUrl(textoQRSeguridad),
       generarQRDataUrl(LINK_REDES_SOCIALES),
     ]);
-    const xRedes = pageWidth - MARGEN - qrLado;
-    const xSeguridad = xRedes - qrLado - 6;
     doc.addImage(qrSeguridadUrl, 'PNG', xSeguridad, qrY, qrLado, qrLado);
     doc.addImage(qrRedesUrl, 'PNG', xRedes, qrY, qrLado, qrLado);
     doc.setFont('helvetica','normal'); doc.setFontSize(6.5); doc.setTextColor(...GRIS_SUAVE);

@@ -1047,7 +1047,8 @@ export const SHAREPOINT_LISTS_CONFIG = [
       {key:"HoraAudiencia", label:"Hora de la audiencia", hint:["hora audiencia","hora de audiencia","hora"]},
       {key:"Abogado", label:"Abogado responsable", hint:["abogado audiencia","abogado","responsable"]},
       {key:"Link", label:"Link", hint:["link"]},
-      {key:"Observaciones", label:"Observaciones", hint:["observaciones"]},
+      // "Observaciones" quitado 2026-09-15: confirmado por el usuario contra
+      // la lista real (Configuración) que esa columna no existe en "Audiencia".
     ],
     mapping: {},
   },
@@ -1061,15 +1062,18 @@ export const SHAREPOINT_LISTS_CONFIG = [
     // sumarDiasHabilesJudiciales(FechaNotificacion, DiasHabiles) desde
     // src/lib/audienciasTerminos.js, para que el contador de días hábiles
     // restantes siempre sea respecto a la fecha de hoy real.
+    // "Abogado"/"Link"/"Observaciones" quitados 2026-09-15: confirmado por el
+    // usuario contra la lista real (Configuración) que esas 3 columnas no
+    // existen en "Terminos" — "Abogado" se había adivinado mal contra
+    // "Aplicación modificada por" (AppEditor, una columna de sistema de
+    // SharePoint, no un campo real de la lista), un mapeo peligroso de dejar
+    // (escribirle ahí ensuciaría el registro de auditoría de SharePoint).
     semanticFields: [
       {key:"Proceso", label:"Proceso (ID)", hint:["procesos md","proceso"], required:true},
       {key:"Descripcion", label:"Tipo de término", hint:["descripcion","tipo de termino","tipo de término"]},
       {key:"FechaNotificacion", label:"Fecha de notificación", hint:["fecha notificacion","fecha de notificacion","fecha de notificación","fecha"], required:true},
       {key:"DiasHabiles", label:"Días hábiles", hint:["dias habiles","días hábiles","dias"]},
       {key:"VencimientoTermino", label:"Vencimiento", hint:["vencimiento termino","vencimiento del termino","fecha de vencimiento","vencimiento"]},
-      {key:"Abogado", label:"Abogado responsable", hint:["abogado termino","abogado","responsable"]},
-      {key:"Link", label:"Link", hint:["link"]},
-      {key:"Observaciones", label:"Observaciones", hint:["observaciones"]},
     ],
     mapping: {},
   },
@@ -1280,15 +1284,15 @@ export const DEMO_TIPOS_ACCION = [
 // proceso. Proceso:1 y Proceso:6 corresponden a los mismos procesos de
 // ejemplo de DEMO_PROCESOS (Grupo Andino / EPS Ejemplo de Salud SOS).
 export const DEMO_AUDIENCIAS = [
-  {id:1, Proceso:1, Descripcion:"Audiencia Inicial Art. 180 Cpaca", FechaAudiencia:"2026-09-25", HoraAudiencia:"09:00", Abogado:"María Fernanda Ruiz", Link:"", Observaciones:""},
-  {id:2, Proceso:6, Descripcion:"Audiencia De Alegaciones Y Juzgamiento Art. 182 Cpaca", FechaAudiencia:"2026-09-14", HoraAudiencia:"14:30", Abogado:"Dahiana Camila Pedraza", Link:"", Observaciones:"Confirmar asistencia del perito."},
-  {id:3, Proceso:2, Descripcion:"Audiencia Art. 372 Y 373 Cg", FechaAudiencia:"2026-08-30", HoraAudiencia:"08:00", Abogado:"Carlos Andrés Peña", Link:"", Observaciones:"Ya se realizó."},
+  {id:1, Proceso:1, Descripcion:"Audiencia Inicial Art. 180 Cpaca", FechaAudiencia:"2026-09-25", HoraAudiencia:"09:00", Abogado:"María Fernanda Ruiz", Link:""},
+  {id:2, Proceso:6, Descripcion:"Audiencia De Alegaciones Y Juzgamiento Art. 182 Cpaca", FechaAudiencia:"2026-09-14", HoraAudiencia:"14:30", Abogado:"Dahiana Camila Pedraza", Link:""},
+  {id:3, Proceso:2, Descripcion:"Audiencia Art. 372 Y 373 Cg", FechaAudiencia:"2026-08-30", HoraAudiencia:"08:00", Abogado:"Carlos Andrés Peña", Link:""},
 ];
 
 export const DEMO_TERMINOS = [
-  {id:1, Proceso:1, Descripcion:"Apelacion De Sentencias Art. 292 CPACA", FechaNotificacion:"2026-09-08", DiasHabiles:"5,00", VencimientoTermino:"2026-09-15", Abogado:"María Fernanda Ruiz", Link:"", Observaciones:""},
-  {id:2, Proceso:6, Descripcion:"Contestacion Art. 369 CGP", FechaNotificacion:"2026-09-01", DiasHabiles:"20,00", VencimientoTermino:"2026-09-29", Abogado:"Dahiana Camila Pedraza", Link:"", Observaciones:""},
-  {id:3, Proceso:2, Descripcion:"Casacion Art. 88 CPL Y SS", FechaNotificacion:"2026-07-01", DiasHabiles:"15,00", VencimientoTermino:"2026-07-23", Abogado:"Carlos Andrés Peña", Link:"", Observaciones:"Vencido, revisar si se presentó."},
+  {id:1, Proceso:1, Descripcion:"Apelacion De Sentencias Art. 292 CPACA", FechaNotificacion:"2026-09-08", DiasHabiles:"5,00", VencimientoTermino:"2026-09-15"},
+  {id:2, Proceso:6, Descripcion:"Contestacion Art. 369 CGP", FechaNotificacion:"2026-09-01", DiasHabiles:"20,00", VencimientoTermino:"2026-09-29"},
+  {id:3, Proceso:2, Descripcion:"Casacion Art. 88 CPL Y SS", FechaNotificacion:"2026-07-01", DiasHabiles:"15,00", VencimientoTermino:"2026-07-23"},
 ];
 
 // Datos ficticios del módulo Tutelas (2026-08-16) — inventados solo para
