@@ -3,6 +3,7 @@
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
 ## 2026-09-15
+- **Mapeo real de Audiencias/Términos queda fijo en el código** — a partir del archivo de mapeo que exportó el usuario desde Configuración, confirmando las columnas reales de SharePoint. Ya no depende de que la app adivine el mapeo en cada conexión nueva.
 - **Certificación laboral: los 2 QR ya no chocan con el número de página** — pedido explícito del usuario: quedaban pegados a la derecha, justo donde se imprime "Página X de Y", y se encimaban; ahora van centrados en el ancho de la hoja.
 - **ID "cifrado" más largo** — pedido explícito del usuario: un solo símbolo por dígito se veía muy corto (y algunos colaboradores de un solo dígito quedaban con un único carácter); ahora cada dígito se reemplaza por un código fijo de 5 caracteres mezclados (letras, números y un símbolo) — se ve, por ejemplo, "b8$Jf" en vez de solo "$".
 - **Audiencias Términos: se corrigen los campos según las columnas reales** — confirmado por el usuario contra la lista real de SharePoint (pantalla de Configuración): "Terminos" NO tiene columnas de Abogado, Link ni Observaciones (el mapeo automático había adivinado mal "Abogado" contra una columna de sistema de SharePoint — ya corregido); "Audiencia" NO tiene Observaciones (sí tiene Abogado y Link, reales). Se quitan esos campos del formulario/tabla para que coincidan exactamente con lo que existe de verdad.

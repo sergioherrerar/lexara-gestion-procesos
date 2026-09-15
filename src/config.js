@@ -1050,7 +1050,17 @@ export const SHAREPOINT_LISTS_CONFIG = [
       // "Observaciones" quitado 2026-09-15: confirmado por el usuario contra
       // la lista real (Configuración) que esa columna no existe en "Audiencia".
     ],
-    mapping: {},
+    // Mapeo real confirmado por el usuario 2026-09-15 (exportado desde
+    // Configuración) — se deja fijo para no depender de que se vuelva a
+    // adivinar en cada conexión nueva.
+    mapping: {
+      Proceso: "Procesos_x0020_MD",
+      Descripcion: "Tipo_x0020_Audiencia",
+      FechaAudiencia: "Fecha_x0020_Audiencia",
+      HoraAudiencia: "Hora_x0020_Audiencia",
+      Abogado: "Abogado_x0020_Audiencia",
+      Link: "Link_x0020_Audiencias",
+    },
   },
   {
     key: "terminos",
@@ -1075,7 +1085,16 @@ export const SHAREPOINT_LISTS_CONFIG = [
       {key:"DiasHabiles", label:"Días hábiles", hint:["dias habiles","días hábiles","dias"]},
       {key:"VencimientoTermino", label:"Vencimiento", hint:["vencimiento termino","vencimiento del termino","fecha de vencimiento","vencimiento"]},
     ],
-    mapping: {},
+    // Mapeo real confirmado por el usuario 2026-09-15 (exportado desde
+    // Configuración) — a propósito SIN "Abogado" (esa columna no existe de
+    // verdad en "Terminos", ver nota arriba).
+    mapping: {
+      Proceso: "Procesos_x0020_MD",
+      Descripcion: "Tipo_x0020_de_x0020_Terminos",
+      FechaNotificacion: "Fecha_x0020_Notificacion",
+      DiasHabiles: "Dias_x0020_Habiles",
+      VencimientoTermino: "Vencimiento_x0020_Termino1",
+    },
   },
 ];
 
