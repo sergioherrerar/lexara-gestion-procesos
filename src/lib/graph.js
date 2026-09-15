@@ -1638,6 +1638,18 @@ export function fmtMonto(n){
 export function nombreArchivoSeguro(s){
   return (s||"").toString().replace(/[\/\\?%*:|"<>]/g, "-").trim();
 }
+// "Cifrado" visual del ID real de un colaborador — pedido explícito del
+// usuario 2026-09-15: que se vea en caracteres especiales en vez del número
+// desnudo (delante del nombre en Colaboradores MD, y dentro del QR de
+// seguridad de la Certificación laboral). Es solo un disfraz visual (una
+// sustitución fija dígito-por-símbolo, siempre reversible por quien conozca
+// la tabla) — no es cifrado real ni pretende serlo, solo evita mostrar el ID
+// tal cual.
+const CIFRA_DIGITOS = ['!','¡','?','¿','#','$','%','=',')','('];
+export function idCifrado(id){
+  if(id==null) return '';
+  return String(id).split('').map(ch => /[0-9]/.test(ch) ? CIFRA_DIGITOS[Number(ch)] : ch).join('');
+}
 // Fecha/TotalN/Subtotal/IVA/Total/ValorAPagar son columnas calculadas por fórmula
 // en SharePoint — la app nunca les escribe un valor, solo las lee. El 19% de IVA
 // es una constante fija (no hay una columna de "tasa"); se usa solo para armar una

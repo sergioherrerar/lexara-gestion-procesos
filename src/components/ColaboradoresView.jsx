@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { mensajeError } from '../lib/graph';
+import { mensajeError, idCifrado } from '../lib/graph';
 import { ICON_SVG } from '../config';
 import IconButton, { IconTextButton } from './IconButton';
 import ColumnHeaderMenu from './ColumnHeaderMenu';
@@ -66,7 +66,12 @@ export default function ColaboradoresView({ colaboradores, searchQuery, onOpenCo
           <tbody>
             {sortedRows.length ? sortedRows.map(c => (
               <tr key={c.id}>
-                <td className="cliente">{c.Nombre || "—"}</td>
+                <td className="cliente">
+                  {/* ID "cifrado" (pedido explícito del usuario 2026-09-15) delante del
+                      nombre — el mismo código que trae el QR de seguridad de su certificación. */}
+                  <span className="save-hint" style={{marginRight:6, fontFamily:'monospace'}} title={`ID interno: ${c.id}`}>{idCifrado(c.id)}</span>
+                  {c.Nombre || "—"}
+                </td>
                 <td>{c.Correo || "—"}</td>
                 <td>{c.Telefono || "—"}</td>
                 <td>{c.Direccion || "—"}</td>

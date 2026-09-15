@@ -14,6 +14,8 @@
 // Colmédica/genérico) usaran el mismo bloque de cierre, no solo esta
 // certificación (que fue donde se armó primero).
 import { prepararDocumentoPDF, fechaLarga, VERDE_OSCURO, TEXTO, GRIS_SUAVE, BORDE_SUAVE, MARGEN, CONTENIDO_Y_INICIAL, CONTENIDO_Y_MAXIMO, dibujarResumenBox, FIRMA_DEFECTO, imagenComoDataUrl, ANCHO_FIRMA_COMPLETA_MM } from './informesPDF';
+import { idCifrado } from './graph';
+import { generarQRDataUrl, LINK_REDES_SOCIALES } from './qr';
 import firmaCompleta from '../assets/Firma Monica Completa.png';
 
 const MESES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
@@ -75,11 +77,14 @@ function segmentosCertificacion(colaborador, esContratista){
       { parrafo:true }, cierre,
     ];
   }
+  // Pedido explícito del usuario 2026-09-15: todo colaborador cuyo "Tipo de
+  // Colaborador" sea Trabajador (no Contratista) tiene modalidad de contrato
+  // a término indefinido — se agrega esa frase a la certificación laboral.
   const verbo = vigente ? 'labora' : 'laboró';
   return [
     encabezado, { parrafo:true },
     nombreBold, conectorId, idBold,
-    { text: `${verbo} en esta firma ${rangoFechas}, desempeñando el cargo de ${cargo}.` },
+    { text: `${verbo} en esta firma, mediante contrato de trabajo a término indefinido, ${rangoFechas}, desempeñando el cargo de ${cargo}.` },
     { parrafo:true }, cierre,
   ];
 }
@@ -131,7 +136,7 @@ export async function generarCertificacionColaboradorPDF(colaborador){
   doc.setFontSize(10.5); doc.setTextColor(...TEXTO);
   y = dibujarParrafoConNegritas(doc, segmentosCertificacion(colaborador, esContratista), MARGEN, y, pageWidth - MARGEN*2, 5.4) + 11;
 
-  if(y > CONTENIDO_Y_MAXIMO - 45){
+  if(y > CONTENIDO_Y_MAXIMO - 68){
     doc.addPage();
     dibujarEncabezadoYPie();
     y = CONTENIDO_Y_INICIAL;
@@ -160,6 +165,45 @@ export async function generarCertificacionColaboradorPDF(colaborador){
   doc.line(MARGEN, y, pageWidth - MARGEN, y); y += 5;
   doc.setFont('helvetica','italic'); doc.setFontSize(7.5); doc.setTextColor(...GRIS_SUAVE);
   doc.text('Este documento fue generado automáticamente por el sistema de gestión de procesos de MD Abogados SAS.', MARGEN, y);
+
+  // 2 QR pedidos explícitamente por el usuario 2026-09-15:
+  // - "Seguridad": el ID del colaborador (mismo "cifrado" visual que aparece
+  //   delante de su nombre en Colaboradores MD) + sus datos de la
+  //   certificación en texto plano — como el portal no tiene una página web
+  //   de verificación, el QR trae los datos directo adentro (opción 1 que
+  //   confirmó el usuario): quien lo escanea puede comparar a simple vista
+  //   los datos del papel contra los del código, sin necesitar internet.
+  // - "Redes sociales": el link real de Linktree de la firma.
+  const idCod = idCifrado(colaborador.id);
+  const textoQRSeguridad = [
+    'MD ABOGADOS SAS - Verificación de certificación',
+    `ID: ${idCod}`,
+    (colaborador.Nombre || '').toUpperCase(),
+    `${colaborador.TipoIdentificacion || 'C.C.'} ${colaborador.Identificacion || '—'}`,
+    `Cargo: ${colaborador.Cargo || '—'}`,
+    `Vinculado desde: ${fechaCortaVisible(colaborador.FechaIngreso)}`,
+    colaborador.FechaRetiro ? `Hasta: ${fechaCortaVisible(colaborador.FechaRetiro)}` : 'Vigente',
+    `Certificación generada: ${fechaCortaVisible(hoy.toISOString())}`,
+  ].join('\n');
+  try{
+    const qrLado = 20;
+    const qrY = y + 3;
+    const [qrSeguridadUrl, qrRedesUrl] = await Promise.all([
+      generarQRDataUrl(textoQRSeguridad),
+      generarQRDataUrl(LINK_REDES_SOCIALES),
+    ]);
+    const xRedes = pageWidth - MARGEN - qrLado;
+    const xSeguridad = xRedes - qrLado - 6;
+    doc.addImage(qrSeguridadUrl, 'PNG', xSeguridad, qrY, qrLado, qrLado);
+    doc.addImage(qrRedesUrl, 'PNG', xRedes, qrY, qrLado, qrLado);
+    doc.setFont('helvetica','normal'); doc.setFontSize(6.5); doc.setTextColor(...GRIS_SUAVE);
+    doc.text('Verificación', xSeguridad + qrLado/2, qrY + qrLado + 4, {align:'center'});
+    doc.text('Síguenos', xRedes + qrLado/2, qrY + qrLado + 4, {align:'center'});
+  }catch(err){
+    // Si por lo que sea no se pudo generar algún QR, la certificación se
+    // guarda igual sin ellos — no debe impedir entregar el documento.
+    console.error('No se pudieron generar los QR de la certificación:', err);
+  }
 
   numerarPaginas();
   const hoyISO = hoy.toISOString().slice(0,10);

@@ -1,9 +1,17 @@
 import { useState, useEffect } from 'react';
 import { clienteForFactura, procesoForFactura, facturaNumero, parseMonto, fmtMonto, IVA_RATE_DEFAULT, ETAPA_CONTRATO_OPTIONS, nombreArchivoSeguro, mensajeError } from '../lib/graph';
 import { generarPdfDesdeNodo, precargarImagen } from '../lib/generarPdfDocumento';
+import { generarQRDataUrl, LINK_REDES_SOCIALES } from '../lib/qr';
 import { useEscapeToClose } from '../hooks/useEscapeToClose';
 import membrete from '../assets/Membrete Lexara.png';
-import qrRedes from '../assets/Qr_Redes.png';
+
+// El QR de redes sociales se genera una sola vez (siempre el mismo link) y
+// se reutiliza — no hace falta rehacerlo en cada factura.
+let qrRedesDataUrlCache = null;
+function obtenerQrRedesDataUrl(){
+  if(!qrRedesDataUrlCache) qrRedesDataUrlCache = generarQRDataUrl(LINK_REDES_SOCIALES);
+  return qrRedesDataUrlCache;
+}
 
 const LINE_NUMS = [1,2,3,4,5,6];
 const OTHER_FIELDS = ["Proceso","Dia","Mes","Anio","EtapaContrato","EstadoFactura","Observacion"];
@@ -60,7 +68,13 @@ export default function FacturaDrawer({ factura, clientes, procesos, liveMode, o
   async function guardarComoPdf(){
     setGenerandoPdf(true);
     try{
-      await Promise.all([precargarImagen(membrete), precargarImagen(qrRedes)]);
+      // El QR se genera una sola vez (misma URL siempre) y se aplica al
+      // <img> del nodo imprimible justo antes de capturarlo — más simple y
+      // sin depender del tiempo de un re-render de React.
+      const qrDataUrl = await obtenerQrRedesDataUrl();
+      const qrImgEl = document.getElementById('factura-print-qr');
+      if(qrImgEl) qrImgEl.src = qrDataUrl;
+      await Promise.all([precargarImagen(membrete), precargarImagen(qrDataUrl)]);
       await generarPdfDesdeNodo('factura-print-sheet', nombreArchivoFacturaPDF(factura, clientes, procesos));
     }catch(err){
       console.error(err);
@@ -324,7 +338,7 @@ export default function FacturaDrawer({ factura, clientes, procesos, liveMode, o
             <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.7A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .3 2 .7 3a2 2 0 0 1-.5 2.1L8 10a16 16 0 0 0 6 6l1.2-1.3a2 2 0 0 1 2.1-.5c1 .4 2 .6 3 .7a2 2 0 0 1 1.7 2z"/></svg> +57 312 442 0026</span>
           </div>
           <div className="print-page-footer-meta">
-            <img src={qrRedes} alt="Redes sociales" className="print-qr" />
+            <img id="factura-print-qr" alt="Redes sociales" className="print-qr" />
             <span>Generado el {fechaImpresion}</span>
           </div>
         </div>
