@@ -259,16 +259,47 @@ export function TablaRegistros({ tipo, registros, procesos, notify, onEditar, on
   );
 }
 
+// Resumen "3 más próximos a vencer" (pedido explícito del usuario 2026-09-15,
+// mirando una captura de las badges estáticas de Tutelas: "coloca un mensaje
+// asi como el tutelas que discrimine los tres mas cercanos por vencerse de
+// terminos y audiencias colocando el numero corto y cliente") — junta
+// Audiencias y Términos en una sola lista, calcula la misma fecha objetivo y
+// días hábiles restantes que ya usa TablaRegistros, descarta lo vencido y lo
+// sin fecha, y deja solo los 3 más urgentes.
+function proximosAVencer(audiencias, terminos, procesos){
+  const audienciasConTipo = (audiencias||[]).map(r => ({ ...r, tipoRegistro:'audiencias' }));
+  const terminosConTipo = (terminos||[]).map(r => ({ ...r, tipoRegistro:'terminos' }));
+  return [...audienciasConTipo, ...terminosConTipo]
+    .map(r => {
+      const proceso = (procesos||[]).find(p => p.id === r.Proceso) || null;
+      const fechaObjetivo = r.tipoRegistro === 'audiencias'
+        ? soloFechaISO(r.FechaAudiencia)
+        : (soloFechaISO(r.VencimientoTermino) || sumarDiasHabilesJudiciales(soloFechaISO(r.FechaNotificacion), r.DiasHabiles));
+      const restantes = fechaObjetivo ? diasHabilesRestantes(fechaObjetivo) : null;
+      return { ...r, proceso, restantes };
+    })
+    .filter(r => r.restantes != null && r.restantes >= 0)
+    .sort((a,b) => a.restantes - b.restantes)
+    .slice(0, 3);
+}
+
 export default function AudienciasTerminosTab({ procesos, tiposAccion, colaboradores, audiencias, terminos, notify, onCrearAudiencia, onEditarAudiencia, onEliminarAudiencia, onCrearTermino, onEditarTermino, onEliminarTermino }){
   const [modo, setModo] = useState('audiencias');
+  const masUrgentes = useMemo(() => proximosAVencer(audiencias, terminos, procesos), [audiencias, terminos, procesos]);
 
   return (
     <div className="panel" style={{marginTop:20}}>
       <div className="panel-head"><h3>Audiencias Términos</h3></div>
       <div className="panel-body">
-        <p style={{margin:'0 0 16px', color:'var(--texto-suave)', fontSize:13}}>
-          Busca el proceso por su Número Corto (Radicado); la app trae su Tipo de Acción y filtra las opciones válidas de la lista Tipos de Acción. El contador (lunes a viernes, sin festivos de Colombia — los sábados nunca cuentan) se pinta verde con más de 5 días hábiles restantes, naranja de 2 a 5, rojo de 0 a 2, y gris cuando ya venció.
-        </p>
+        <div style={{display:'flex', gap:10, flexWrap:'wrap', marginBottom:16}}>
+          {masUrgentes.length ? masUrgentes.map(r => (
+            <span key={r.tipoRegistro + '-' + r.id} className={"badge badge-" + colorCuentaRegresiva(r.restantes)} style={{fontSize:13, padding:'8px 14px'}}>
+              {r.tipoRegistro === 'audiencias' ? 'Audiencia' : 'Término'} · {r.proceso?.Radicado || "—"}{r.proceso?.Cliente ? (" · " + r.proceso.Cliente) : ""} · {etiquetaCuentaRegresiva(r.restantes)}
+            </span>
+          )) : (
+            <span className="badge badge-gris" style={{fontSize:13, padding:'8px 14px'}}>No hay audiencias ni términos pendientes por vencer.</span>
+          )}
+        </div>
         <div style={{display:'flex', gap:8, marginBottom:20}}>
           {MODOS.map(m => (
             <button key={m.key} type="button" className={"subtab" + (modo === m.key ? " active" : "")} onClick={() => setModo(m.key)}>{m.label}</button>
