@@ -137,7 +137,10 @@ export function FormularioNuevo({ tipo, procesos, tiposAccion, colaboradores, no
           <label>Abogado responsable</label>
           <select value={form.abogado} onChange={e => setForm({...form, abogado: e.target.value})}>
             <option value="">Selecciona…</option>
-            {(colaboradores||[]).filter(c => c.Activo !== false).map(c => <option value={c.Nombre} key={c.id}>{c.Nombre}</option>)}
+            {/* Solo colaboradores cuyo Cargo contiene "abogado" (pedido explícito
+                del usuario 2026-09-15: el selector traía a TODOS los colaboradores
+                activos, incluyendo cargos que no son de abogado). */}
+            {(colaboradores||[]).filter(c => c.Activo !== false && /abogad/i.test(c.Cargo || "")).map(c => <option value={c.Nombre} key={c.id}>{c.Nombre}</option>)}
           </select>
         </div>
       )}
