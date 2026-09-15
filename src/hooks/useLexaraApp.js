@@ -1661,13 +1661,13 @@ export function useLexaraApp(){
     // en silencio y el radicado quedaba vacío. Mismo patrón ya usado en
     // audienciasForProceso/terminosForProceso (graph.js).
     const proceso = procesos.find(p => String(p.id) === String(item.Proceso));
-    const entidad = Graph.stripHtml(proceso?.Entidad) || "";
+    // Cliente, no Entidad (2026-09-15, corregido por el usuario justo
+    // después del primer intento con Entidad — el formato pedido es
+    // "Término — {Cliente} — {Número Corto} — {Descripción}").
+    const cliente = proceso?.Cliente || "";
     const radicado = proceso?.Radicado || "";
     const etiqueta = tipo === 'audiencia' ? 'Audiencia' : 'Término';
-    // Pedido explícito del usuario 2026-09-15 ("agrega la entidad al
-    // evento"): se agrega la Entidad del proceso al asunto, entre el tipo y
-    // el Número Corto.
-    return [etiqueta, entidad, radicado, item.Descripcion].filter(Boolean).join(" — ");
+    return [etiqueta, cliente, radicado, item.Descripcion].filter(Boolean).join(" — ");
   }
   // BUG REAL encontrado y corregido 2026-09-15 (reportado por el usuario: "no
   // creó el evento"): `config` (el estado de la app, inicializado desde

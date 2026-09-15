@@ -179,15 +179,31 @@ async function pathCalendario(config){
 async function buscarEventoAudienciaTermino(config, marca){
   const base = await pathCalendario(config);
   if(!base) return null;
-  let url = `${base}/events?$expand=singleValueExtendedProperties&$select=id,subject,singleValueExtendedProperties&$top=250`;
+  // Sin $select (2026-09-15): dos intentos previos de esta búsqueda fallaron
+  // igual en producción (reportado por el usuario con capturas reales), así
+  // que ya no se arriesga nada que pueda interactuar mal con $expand — se
+  // pide todo. También se deja un log de diagnóstico (console.info) con
+  // cuántos eventos se revisaron y cuántos SÍ traían alguna propiedad
+  // extendida propia, para poder ver en la consola del navegador en qué
+  // paso exacto está fallando la próxima vez que esto no encuentre nada.
+  let url = `${base}/events?$expand=singleValueExtendedProperties&$top=250`;
+  let totalEventos = 0, conPropiedad = 0;
   for(let pagina = 0; pagina < 20 && url; pagina++){
     const res = await graphFetchCalendar(url);
-    const encontrado = (res?.value || []).find(ev =>
-      (ev.singleValueExtendedProperties || []).some(ep => ep.id === PROPIEDAD_LEXARA && ep.value === marca)
-    );
-    if(encontrado) return encontrado;
+    const eventos = res?.value || [];
+    totalEventos += eventos.length;
+    for(const ev of eventos){
+      const props = ev.singleValueExtendedProperties || [];
+      if(props.length) conPropiedad++;
+      const coincide = props.some(ep => ep.id === PROPIEDAD_LEXARA && ep.value === marca);
+      if(coincide){
+        console.info(`[Lexara][calendario] Buscando "${marca}": encontrado en el evento "${ev.subject}" (revisados ${totalEventos} eventos).`);
+        return ev;
+      }
+    }
     url = res?.["@odata.nextLink"] || null;
   }
+  console.info(`[Lexara][calendario] Buscando "${marca}": NO encontrado — se revisaron ${totalEventos} evento(s), ${conPropiedad} con alguna propiedad extendida propia.`);
   return null;
 }
 
