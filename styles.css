@@ -644,6 +644,11 @@
     box-shadow:0 8px 24px rgba(0,20,18,.16); padding:6px; margin-top:4px;
     display:flex; flex-direction:column; gap:2px;
   }
+  /* El menú se dibuja con un portal a document.body (ver ColumnHeaderMenu.jsx)
+     para que no lo recorte el overflow-x:auto de .table-wrap — acá se
+     posiciona con "fixed" y coordenadas calculadas en JS en vez de
+     "absolute" relativo al botón. */
+  .col-header-menu-portal{position:fixed; top:auto; left:auto; margin-top:0;}
   .col-header-menu-item{
     text-align:left; background:none; border:none; cursor:pointer; padding:8px 10px;
     border-radius:6px; font-size:13px; font-weight:600; color:var(--texto);
@@ -658,6 +663,18 @@
     padding:7px 10px; font-size:13px; font-family:var(--font-body); color:var(--texto); text-transform:none;
   }
   .col-header-menu-input:focus{border-color:var(--verde-claro); outline:none;}
+  /* Checklist de valores exactos (2026-09-16, bug real en Tutelas: filtrar
+     por texto "Colmedica" también traía "GRUPO COLMEDICA" por contenerlo) —
+     mismo patrón visual que .col-header-menu-item, con casilla a la
+     izquierda. */
+  .col-header-menu-checklist{max-height:160px; overflow-y:auto; display:flex; flex-direction:column; gap:1px; margin:0 2px 2px;}
+  .col-header-menu-check{
+    display:flex; align-items:center; gap:8px; padding:6px 8px; border-radius:6px;
+    font-size:13px; color:var(--texto); cursor:pointer;
+  }
+  .col-header-menu-check:hover{background:var(--gris-claro);}
+  .col-header-menu-check input[type="checkbox"]{flex-shrink:0; accent-color:var(--verde-oscuro); cursor:pointer;}
+  .col-header-menu-check span{overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   .clear-filters-link{
     font-size:12px; color:var(--verde-oscuro); cursor:pointer; text-decoration:underline;
     background:none; border:none; padding:0; font-weight:600;

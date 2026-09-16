@@ -65,7 +65,7 @@ export default function FacturacionView({ facturas, clientes, procesos, searchQu
           <thead>
             <tr>
               {COLUMNS.map(c => (
-                <ColumnHeaderMenu key={c.key} column={c} sort={sort} onSort={setSortKey} filterValue={filters[c.key]} onFilterChange={setFilter} />
+                <ColumnHeaderMenu key={c.key} column={c} sort={sort} onSort={setSortKey} filterValue={filters[c.key]} onFilterChange={setFilter} rows={facturas} />
               ))}
             </tr>
           </thead>

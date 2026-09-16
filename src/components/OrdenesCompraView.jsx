@@ -52,7 +52,7 @@ export default function OrdenesCompraView({ ordenesCompra, clientes, procesos, f
           <thead>
             <tr>
               {COLUMNS.map(c => (
-                <ColumnHeaderMenu key={c.key} column={c} sort={sort} onSort={setSortKey} filterValue={filters[c.key]} onFilterChange={setFilter} />
+                <ColumnHeaderMenu key={c.key} column={c} sort={sort} onSort={setSortKey} filterValue={filters[c.key]} onFilterChange={setFilter} rows={ordenesCompra} />
               ))}
             </tr>
           </thead>

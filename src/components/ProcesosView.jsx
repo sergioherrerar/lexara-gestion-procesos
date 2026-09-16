@@ -189,7 +189,7 @@ export default function ProcesosView({ procesos, currentFilter, setFilter, searc
           <thead>
             <tr>
               {COLUMNS.map(c => (
-                <ColumnHeaderMenu key={c.key} column={c} sort={sort} onSort={setSortKey} filterValue={filters[c.key]} onFilterChange={setColFilter} />
+                <ColumnHeaderMenu key={c.key} column={c} sort={sort} onSort={setSortKey} filterValue={filters[c.key]} onFilterChange={setColFilter} rows={procesos} />
               ))}
             </tr>
           </thead>

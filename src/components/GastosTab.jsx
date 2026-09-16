@@ -107,7 +107,7 @@ function ProveedoresSection({ proveedores, onCrear, onEditar, onEliminar, canWri
       {abierto && <ProveedorForm onGuardar={guardar} onCancelar={() => setAbierto(false)} guardando={guardando} />}
       <div className="table-wrap">
         <table>
-          <thead><tr>{columnas.map(c => <ColumnHeaderMenu key={c.key} column={c} sort={sort} onSort={setSortKey} filterValue={filters[c.key]} onFilterChange={setFilter} />)}</tr></thead>
+          <thead><tr>{columnas.map(c => <ColumnHeaderMenu key={c.key} column={c} sort={sort} onSort={setSortKey} filterValue={filters[c.key]} onFilterChange={setFilter} rows={proveedores} />)}</tr></thead>
           <tbody>
             {filas.length ? filas.map(p => (
               editandoId===p.id ? (
@@ -448,7 +448,7 @@ function RegistrosSection({ nombreLista, registros, proveedores, conNumero, conT
         <table>
           <thead>
             <tr>
-              {columnas.map(c => <ColumnHeaderMenu key={c.key} column={c} sort={sort} onSort={setSortKey} filterValue={filters[c.key]} onFilterChange={setFilter} />)}
+              {columnas.map(c => <ColumnHeaderMenu key={c.key} column={c} sort={sort} onSort={setSortKey} filterValue={filters[c.key]} onFilterChange={setFilter} rows={registros} />)}
             </tr>
           </thead>
           <tbody>
