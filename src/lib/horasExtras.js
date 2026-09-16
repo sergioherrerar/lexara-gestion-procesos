@@ -70,6 +70,31 @@ export function festivosColombia(anio){
   _festivosCache.set(anio, set);
   return set;
 }
+
+// Nombre de cada festivo — agregado 2026-09-16, pedido explícito del usuario
+// para el mini calendario de la cabecera ("si hay festivo que esté marcado
+// qué se celebra"). Misma construcción de fechas EXACTA que festivosColombia
+// de arriba (fijos + trasladables al lunes + basados en Pascua), para que
+// nunca queden desincronizados — solo que acá cada fecha se guarda junto a
+// su nombre en vez de en un Set.
+const _nombresFestivosCache = new Map();
+export function nombresFestivosColombia(anio){
+  if(_nombresFestivosCache.has(anio)) return _nombresFestivosCache.get(anio);
+  const mapa = new Map();
+  [[0,1,"Año Nuevo"],[4,1,"Día del Trabajo"],[6,20,"Día de la Independencia"],[7,7,"Batalla de Boyacá"],[11,8,"Día de la Inmaculada Concepción"],[11,25,"Navidad"]]
+    .forEach(([m,d,nombre]) => mapa.set(fmtISO(new Date(anio,m,d)), nombre));
+  [[0,6,"Día de los Reyes Magos"],[2,19,"Día de San José"],[5,29,"San Pedro y San Pablo"],[7,15,"Asunción de la Virgen"],[9,12,"Día de la Raza"],[10,1,"Día de Todos los Santos"],[10,11,"Independencia de Cartagena"]]
+    .forEach(([m,d,nombre]) => mapa.set(fmtISO(alLunesSiguiente(new Date(anio,m,d))), nombre));
+  const pascua = domingoDePascua(anio);
+  mapa.set(fmtISO(sumarDias(pascua, -3)), "Jueves Santo");
+  mapa.set(fmtISO(sumarDias(pascua, -2)), "Viernes Santo");
+  mapa.set(fmtISO(alLunesSiguiente(sumarDias(pascua, 39))), "Ascensión del Señor");
+  mapa.set(fmtISO(alLunesSiguiente(sumarDias(pascua, 60))), "Corpus Christi");
+  mapa.set(fmtISO(alLunesSiguiente(sumarDias(pascua, 68))), "Sagrado Corazón de Jesús");
+  _nombresFestivosCache.set(anio, mapa);
+  return mapa;
+}
+
 export function esFestivoODomingo(fechaISO){
   const [y,m,d] = String(fechaISO).split('-').map(Number);
   if(!y || !m || !d) return false;

@@ -449,17 +449,20 @@
      una visual con los festivos en Colombia marcados") — ver
      MiniCalendarioAudienciasTerminos.jsx. Los festivos salen del mismo
      festivosColombia() que ya usa el contador de días hábiles judiciales. */
-  .mini-calendario{max-width:320px; margin:0 0 20px; border:1px solid var(--gris-linea); border-radius:var(--radius); overflow:hidden; background:var(--blanco);}
-  .mini-calendario-header{display:flex; align-items:center; gap:8px; padding:10px 12px; background:var(--verde-oscuro); color:#fff;}
-  .mini-calendario-logo{width:20px; height:20px; object-fit:contain; flex-shrink:0;}
-  .mini-calendario-header span{flex:1; text-align:center; font-weight:600; font-size:13px;}
-  .mini-calendario-header button{background:none; border:none; color:#fff; cursor:pointer; font-size:17px; line-height:1; padding:2px 8px; border-radius:4px;}
+  /* Agrandado (2026-09-16, pedido explícito del usuario: "al calendario
+     agranda un poco por favor") — de 320px a 380px, con tipografía y celdas
+     proporcionalmente más grandes. */
+  .mini-calendario{max-width:380px; margin:0 0 20px; border:1px solid var(--gris-linea); border-radius:var(--radius); overflow:hidden; background:var(--blanco);}
+  .mini-calendario-header{display:flex; align-items:center; gap:8px; padding:12px 14px; background:var(--verde-oscuro); color:#fff;}
+  .mini-calendario-logo{width:26px; height:26px; object-fit:contain; flex-shrink:0;}
+  .mini-calendario-header span{flex:1; text-align:center; font-weight:600; font-size:15px;}
+  .mini-calendario-header button{background:none; border:none; color:#fff; cursor:pointer; font-size:20px; line-height:1; padding:3px 9px; border-radius:4px;}
   .mini-calendario-header button:hover{background:rgba(255,255,255,.15);}
-  .mini-calendario-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:2px; padding:8px;}
-  .mini-calendario-diasemana{text-align:center; font-size:11px; color:var(--texto-suave); font-weight:600; padding-bottom:4px;}
+  .mini-calendario-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:3px; padding:10px;}
+  .mini-calendario-diasemana{text-align:center; font-size:12px; color:var(--texto-suave); font-weight:600; padding-bottom:5px;}
   .mini-calendario-celda{
     position:relative; aspect-ratio:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
-    border-radius:6px; font-size:12px; gap:2px; border:none; background:none; cursor:pointer; font-family:inherit; color:var(--texto);
+    border-radius:6px; font-size:13.5px; gap:3px; border:none; background:none; cursor:pointer; font-family:inherit; color:var(--texto);
   }
   .mini-calendario-celda:hover:not(.vacia){background:var(--gris-claro);}
   .mini-calendario-celda.vacia{visibility:hidden; cursor:default;}
@@ -471,24 +474,24 @@
   .mini-calendario-celda.hoy .numero{font-weight:700;}
   .mini-calendario-celda.seleccionado{background:var(--verde-oscuro);}
   .mini-calendario-celda.seleccionado .numero{color:#fff; font-weight:700;}
-  .mini-calendario-celda .puntos{display:flex; gap:2px;}
-  .mini-calendario-celda .punto{width:5px; height:5px; border-radius:50%; flex-shrink:0;}
+  .mini-calendario-celda .puntos{display:flex; gap:3px;}
+  .mini-calendario-celda .punto{width:6px; height:6px; border-radius:50%; flex-shrink:0;}
   .mini-calendario-celda .punto-audiencia{background:var(--verde-claro);}
   .mini-calendario-celda .punto-termino{background:var(--naranja);}
 
   /* Panel del día elegido (2026-09-15, pedido explícito del usuario: lista
      resumida de Audiencias/Términos de ese día + formulario rápido para
      programar un evento nuevo directo en Outlook). */
-  .mini-calendario-dia-panel{border-top:1px solid var(--gris-linea); padding:10px 12px 12px;}
-  .mini-calendario-dia-titulo{margin:0 0 6px; font-size:12.5px; font-weight:600; color:var(--verde-oscuro); text-transform:capitalize;}
-  .mini-calendario-dia-lista{list-style:none; margin:0 0 8px; padding:0; display:flex; flex-direction:column; gap:3px; font-size:12.5px; max-height:110px; overflow-y:auto;}
+  .mini-calendario-dia-panel{border-top:1px solid var(--gris-linea); padding:12px 14px 14px;}
+  .mini-calendario-dia-titulo{margin:0 0 7px; font-size:13.5px; font-weight:600; color:var(--verde-oscuro); text-transform:capitalize;}
+  .mini-calendario-dia-lista{list-style:none; margin:0 0 9px; padding:0; display:flex; flex-direction:column; gap:4px; font-size:13.5px; max-height:130px; overflow-y:auto;}
   .mini-calendario-dia-lista strong{color:var(--texto-suave); font-weight:600; margin-right:4px;}
-  .mini-calendario-dia-vacio{margin:0 0 8px; font-size:12px; color:var(--texto-suave);}
+  .mini-calendario-dia-vacio{margin:0 0 9px; font-size:13px; color:var(--texto-suave);}
   .mini-calendario-nuevo-evento{display:flex; flex-wrap:wrap; gap:6px;}
   .mini-calendario-nuevo-evento input[type="text"]{flex:1 1 140px; min-width:0;}
   .mini-calendario-nuevo-evento input[type="time"]{flex:0 0 90px;}
-  .mini-calendario-nuevo-evento input{padding:6px 8px; border:1px solid var(--gris-linea); border-radius:6px; font-size:12.5px; font-family:inherit;}
-  .mini-calendario-nuevo-evento button{font-size:12.5px; padding:6px 10px; white-space:nowrap;}
+  .mini-calendario-nuevo-evento input{padding:7px 9px; border:1px solid var(--gris-linea); border-radius:6px; font-size:13.5px; font-family:inherit;}
+  .mini-calendario-nuevo-evento button{font-size:13.5px; padding:7px 11px; white-space:nowrap;}
 
   /* Botón + desplegable del mini calendario en la cabecera del portal
      (2026-09-15, pedido explícito del usuario: "que viva en la cabecera del

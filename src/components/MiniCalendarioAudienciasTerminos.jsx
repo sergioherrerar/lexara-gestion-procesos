@@ -1,8 +1,13 @@
 import { useState, useMemo } from 'react';
-import { festivosColombia } from '../lib/horasExtras';
+import { festivosColombia, nombresFestivosColombia } from '../lib/horasExtras';
 import { sumarDiasHabilesJudiciales } from '../lib/audienciasTerminos';
 import { mensajeError } from '../lib/graph';
-import miniVerdeOscuro from '../assets/Mini verde oscuro.png';
+// Verde claro (no "verde oscuro", pedido explícito del usuario 2026-09-16)
+// — el logo se ve sobre el encabezado verde oscuro del calendario; con la
+// versión verde oscura quedaba invisible (bug real reportado por el usuario:
+// "al mes puede incluirle el logo" — no es que faltara en el código, es que
+// no se veía sobre ese fondo).
+import miniVerdeClaro from '../assets/Mini verde claro.png';
 
 // Mini calendario del mes con festivos de Colombia marcados y un punto por
 // cada Audiencia (verde) / Término (naranja) que vence ese día — pedido
@@ -48,6 +53,10 @@ function eventosPorDia(audiencias, terminos, procesos){
   return mapa;
 }
 
+function tituloDia(items){
+  return items.map(it => `${it.proceso?.Radicado || '—'}${it.Descripcion ? ' — ' + it.Descripcion : ''}`).join('\n');
+}
+
 function fechaLarga(iso){
   const [y,m,d] = iso.split('-').map(Number);
   const dt = new Date(y, m-1, d);
@@ -63,6 +72,7 @@ export default function MiniCalendarioAudienciasTerminos({ audiencias, terminos,
   const [guardando, setGuardando] = useState(false);
   const eventos = useMemo(() => eventosPorDia(audiencias, terminos, procesos), [audiencias, terminos, procesos]);
   const festivos = festivosColombia(cursor.anio);
+  const nombresFestivos = nombresFestivosColombia(cursor.anio);
 
   const primerDiaSemana = new Date(cursor.anio, cursor.mes, 1).getDay();
   const diasEnMes = new Date(cursor.anio, cursor.mes + 1, 0).getDate();
@@ -105,12 +115,12 @@ export default function MiniCalendarioAudienciasTerminos({ audiencias, terminos,
   }
 
   const eventosDelDia = diaSeleccionado ? eventos.get(diaSeleccionado) : null;
-  const esFestivoDiaSeleccionado = diaSeleccionado && festivos.has(diaSeleccionado);
+  const nombreFestivoDiaSeleccionado = diaSeleccionado ? nombresFestivos.get(diaSeleccionado) : null;
 
   return (
     <div className="mini-calendario">
       <div className="mini-calendario-header">
-        <img src={miniVerdeOscuro} alt="" className="mini-calendario-logo" />
+        <img src={miniVerdeClaro} alt="" className="mini-calendario-logo" />
         <button type="button" onClick={() => cambiarMes(-1)} aria-label="Mes anterior">‹</button>
         <span>{MESES[cursor.mes]} {cursor.anio}</span>
         <button type="button" onClick={() => cambiarMes(1)} aria-label="Mes siguiente">›</button>
@@ -125,12 +135,23 @@ export default function MiniCalendarioAudienciasTerminos({ audiencias, terminos,
           const ev = eventos.get(iso);
           const esHoy = iso === hoyISO;
           const esSeleccionado = iso === diaSeleccionado;
+          // Tooltip al pasar el mouse (pedido explícito del usuario
+          // 2026-09-16: "muestre... color del punto y evento; si hay
+          // festivo, que esté marcado qué se celebra") — el nombre real del
+          // festivo (no solo "Festivo") más el resumen de Audiencias/Términos
+          // de ese día, sin tener que hacer clic.
+          const titulo = [
+            esFestivo ? `Festivo: ${nombresFestivos.get(iso) || ''}` : null,
+            ev?.audiencias?.length ? `Audiencias:\n${tituloDia(ev.audiencias)}` : null,
+            ev?.terminos?.length ? `Términos:\n${tituloDia(ev.terminos)}` : null,
+          ].filter(Boolean).join('\n\n');
           return (
             <button
               type="button"
               key={i}
               className={"mini-calendario-celda" + (esFestivo ? ' festivo' : '') + (esDomingo ? ' domingo' : '') + (esHoy ? ' hoy' : '') + (esSeleccionado ? ' seleccionado' : '')}
               onClick={() => elegirDia(iso)}
+              title={titulo || undefined}
             >
               <span className="numero">{d}</span>
               {ev && (
@@ -146,7 +167,7 @@ export default function MiniCalendarioAudienciasTerminos({ audiencias, terminos,
       {diaSeleccionado && (
         <div className="mini-calendario-dia-panel">
           <p className="mini-calendario-dia-titulo">
-            {fechaLarga(diaSeleccionado)}{esFestivoDiaSeleccionado ? ' · Festivo' : ''}
+            {fechaLarga(diaSeleccionado)}{nombreFestivoDiaSeleccionado ? ` · ${nombreFestivoDiaSeleccionado}` : ''}
           </p>
           {(eventosDelDia?.terminos?.length || eventosDelDia?.audiencias?.length) ? (
             <ul className="mini-calendario-dia-lista">
