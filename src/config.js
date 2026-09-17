@@ -1113,6 +1113,34 @@ export const SHAREPOINT_LISTS_CONFIG = [
       VencimientoTermino: "Vencimiento_x0020_Termino1",
     },
   },
+  // Módulo "Pendientes" (2026-09-17, pedido explícito del usuario: "ayúdame
+  // a mirar si puedo hacer con mismo TO DO visualizar las tareas y
+  // asignarlas") — lista real "Pendientes" ya existente en SharePoint,
+  // reusada como el TO DO del equipo (Microsoft To Do es personal, no se
+  // puede asignar a otra persona; Planner necesitaría un Microsoft 365 Group
+  // aparte). "Procesos MD" es la misma relación por ID que ya usan Audiencias
+  // y Términos (columna real confirmada "Procesos_x0020_MD" en esas 2
+  // listas) — se deja igual acá, a confirmar en Configuración si el nombre
+  // real llegara a ser distinto en esta lista. El resto del mapeo queda
+  // vacío a propósito: se adivina solo al conectar comparando los hints de
+  // abajo contra las columnas reales.
+  {
+    key: "pendientes",
+    listName: "Pendientes",
+    label: "Pendientes",
+    semanticFields: [
+      {key:"Pendiente", label:"Pendiente", hint:["pendiente"], required:true},
+      {key:"PendienteDe", label:"Pendiente de", hint:["pendiente de"]},
+      {key:"PendientePara", label:"Pendiente para", hint:["pendiente para"]},
+      {key:"FechaPendiente", label:"Fecha pendiente", hint:["fecha pendiente"]},
+      {key:"Observacion", label:"Observación", hint:["observacion","observación"]},
+      {key:"Estado", label:"Estado", hint:["estado"]},
+      {key:"ProcesoMD", label:"Proceso (ID)", hint:["procesos md","proceso"]},
+    ],
+    mapping: {
+      ProcesoMD: "Procesos_x0020_MD",
+    },
+  },
 ];
 
 export const DEMO_PROCESOS = [
@@ -1330,6 +1358,14 @@ export const DEMO_TERMINOS = [
   {id:1, Proceso:1, Descripcion:"Apelacion De Sentencias Art. 292 CPACA", FechaNotificacion:"2026-09-08", DiasHabiles:"5,00", VencimientoTermino:"2026-09-15"},
   {id:2, Proceso:6, Descripcion:"Contestacion Art. 369 CGP", FechaNotificacion:"2026-09-01", DiasHabiles:"20,00", VencimientoTermino:"2026-09-29"},
   {id:3, Proceso:2, Descripcion:"Casacion Art. 88 CPL Y SS", FechaNotificacion:"2026-07-01", DiasHabiles:"15,00", VencimientoTermino:"2026-07-23"},
+];
+
+// Datos ficticios del módulo "Pendientes" (2026-09-17), solo para probar la
+// pantalla nueva en modo demo — no son información real de ningún caso.
+export const DEMO_PENDIENTES = [
+  {id:1, Pendiente:"No dejar pasar las fechas de pagos", PendienteDe:"Dahiana Camila Pedraza", PendientePara:"Sergio Alexander Herrera Ramírez", FechaPendiente:"", Observacion:"Semanalmente", Estado:"Vigente", ProcesoMD:""},
+  {id:2, Pendiente:"Estar pendiente de acceso", PendienteDe:"Mónica Paola Quintero", PendientePara:"Sergio Herrera Ramírez", FechaPendiente:"2026-09-24", Observacion:"Semanalmente", Estado:"Vigente", ProcesoMD:1},
+  {id:3, Pendiente:"Revisar traslado de la demanda", PendienteDe:"Carlos Andrés Peña", PendientePara:"María Fernanda Ruiz", FechaPendiente:"2026-09-20", Observacion:"", Estado:"Terminado", ProcesoMD:2},
 ];
 
 // Datos ficticios del módulo Tutelas (2026-08-16) — inventados solo para

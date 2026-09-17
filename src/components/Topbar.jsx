@@ -6,7 +6,7 @@ import miniVerdeOscuro from '../assets/Mini verde oscuro.png';
 // "informes"/"tutelas" faltaban acá desde que se agregaron esos módulos (el
 // <h2> caía al fallback TITLES[view]||view y mostraba el string crudo en
 // minúsculas) — corregido de paso al agregar "administracion".
-const TITLES = {dashboard:"Dashboard", informes:"Informes", procesos:"Procesos judiciales", tutelas:"Tutelas", clientes:"Clientes", facturacion:"Solicitud De Factura E.", ordenesCompra:"Órdenes de compra", administracion:"Administración", setup:"Configuración"};
+const TITLES = {dashboard:"Dashboard", informes:"Informes", procesos:"Procesos judiciales", tutelas:"Tutelas", clientes:"Clientes", facturacion:"Solicitud De Factura E.", ordenesCompra:"Órdenes de compra", vencimientos:"Vencimientos", administracion:"Administración", setup:"Configuración"};
 
 // Botón del mini calendario en la cabecera del portal — pedido explícito del
 // usuario 2026-09-15: "que viva en la cabecera del portal al lado donde dice
@@ -15,7 +15,7 @@ const TITLES = {dashboard:"Dashboard", informes:"Informes", procesos:"Procesos j
 // es demasiado alto para ir siempre visible en una barra angosta, así que
 // vive en un desplegable — mismo patrón de clic-afuera-para-cerrar que ya usa
 // ColumnHeaderMenu.jsx.
-function BotonCalendarioTopbar({ audiencias, terminos, procesos, liveMode, onCrearEventoPersonalizado, notify }){
+function BotonCalendarioTopbar({ audiencias, terminos, pendientes, procesos, liveMode, onCrearEventoPersonalizado, notify }){
   const [abierto, setAbierto] = useState(false);
   const ref = useRef(null);
 
@@ -39,7 +39,7 @@ function BotonCalendarioTopbar({ audiencias, terminos, procesos, liveMode, onCre
       {abierto && (
         <div className="topbar-calendario-popover">
           <MiniCalendarioAudienciasTerminos
-            audiencias={audiencias} terminos={terminos} procesos={procesos}
+            audiencias={audiencias} terminos={terminos} pendientes={pendientes} procesos={procesos}
             liveMode={liveMode} onCrearEventoPersonalizado={onCrearEventoPersonalizado} notify={notify}
           />
         </div>
@@ -48,7 +48,7 @@ function BotonCalendarioTopbar({ audiencias, terminos, procesos, liveMode, onCre
   );
 }
 
-export default function Topbar({ view, liveMode, searchQuery, onSearch, onOpenMobileNav, onRefresh, refreshing, cargandoInicial, audiencias, terminos, procesos, onCrearEventoPersonalizado, notify }){
+export default function Topbar({ view, liveMode, searchQuery, onSearch, onOpenMobileNav, onRefresh, refreshing, cargandoInicial, audiencias, terminos, pendientes, procesos, onCrearEventoPersonalizado, notify }){
   const cargando = refreshing || cargandoInicial;
   return (
     <div className="topbar">
@@ -74,7 +74,7 @@ export default function Topbar({ view, liveMode, searchQuery, onSearch, onOpenMo
         <h2>{TITLES[view] || view}</h2>
       </div>
       <BotonCalendarioTopbar
-        audiencias={audiencias} terminos={terminos} procesos={procesos}
+        audiencias={audiencias} terminos={terminos} pendientes={pendientes} procesos={procesos}
         liveMode={liveMode} onCrearEventoPersonalizado={onCrearEventoPersonalizado} notify={notify}
       />
       <div className="search-bar">

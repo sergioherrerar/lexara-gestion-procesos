@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { INITIAL_CONFIG, SHAREPOINT_LISTS_CONFIG, DEMO_PROCESOS, DEMO_CLIENTES, DEMO_FACTURAS, DEMO_ORDENES_COMPRA, DEMO_COLABORADORES, DEMO_FORMAS_PAGO, DEMO_DESISTIMIENTOS, DEMO_TIPOS_ACCION, DEMO_TUTELAS, DEMO_TEMAS, DEMO_VALORES_ENTIDAD, DEMO_HORAS_EXTRAS, DEMO_VACACIONES_PERIODOS, DEMO_PROVEEDORES_GASTOS, DEMO_CUENTAS_COBRO_GASTOS, DEMO_PAGOS_POR_REALIZAR, DEMO_GASTOS, DEMO_TASAS_INTERES, DEMO_IPC, DEMO_AUDIENCIAS, DEMO_TERMINOS, CALENDARIO_AUDIENCIAS_TERMINOS, RUTAS_CARPETAS_ENTIDAD } from '../config';
+import { INITIAL_CONFIG, SHAREPOINT_LISTS_CONFIG, DEMO_PROCESOS, DEMO_CLIENTES, DEMO_FACTURAS, DEMO_ORDENES_COMPRA, DEMO_COLABORADORES, DEMO_FORMAS_PAGO, DEMO_DESISTIMIENTOS, DEMO_TIPOS_ACCION, DEMO_TUTELAS, DEMO_TEMAS, DEMO_VALORES_ENTIDAD, DEMO_HORAS_EXTRAS, DEMO_VACACIONES_PERIODOS, DEMO_PROVEEDORES_GASTOS, DEMO_CUENTAS_COBRO_GASTOS, DEMO_PAGOS_POR_REALIZAR, DEMO_GASTOS, DEMO_TASAS_INTERES, DEMO_IPC, DEMO_AUDIENCIAS, DEMO_TERMINOS, DEMO_PENDIENTES, CALENDARIO_AUDIENCIAS_TERMINOS, RUTAS_CARPETAS_ENTIDAD } from '../config';
 import * as Graph from '../lib/graph';
 import { canWrite as canWriteForColaborador, modulosPermitidosDe, MODULOS_DISPONIBLES } from '../lib/permissions';
 
@@ -185,6 +185,14 @@ export function useLexaraApp(){
   // Desistimientos. Ver lib/audienciasTerminos.js.
   const [audiencias, setAudiencias] = useState([]);
   const [terminos, setTerminos] = useState([]);
+  // Pendientes (2026-09-17, pedido explícito del usuario: "visualizar tareas
+  // y asignarlas") — lista real "Pendientes" ya existente en SharePoint,
+  // reusada como el "TO DO" del equipo en vez de Microsoft To Do (personal,
+  // no se puede asignar a otra persona) o Planner (necesitaría un Microsoft
+  // 365 Group aparte). Mismo criterio simple que Audiencias/Términos arriba:
+  // sin panel propio, se puede vincular opcionalmente a un Proceso por ID, y
+  // si tiene fecha también se agenda en el mismo calendario de Outlook.
+  const [pendientes, setPendientes] = useState([]);
   // Cuando se abre/crea una factura, orden de compra, forma de pago o
   // desistimiento DESDE dentro de un proceso, se guarda aquí su id — al
   // cerrar ese panel se reabre el mismo proceso en vez de dejar solo la
@@ -263,6 +271,7 @@ export function useLexaraApp(){
     setIpcMensual(JSON.parse(JSON.stringify(DEMO_IPC)));
     setAudiencias(JSON.parse(JSON.stringify(DEMO_AUDIENCIAS)));
     setTerminos(JSON.parse(JSON.stringify(DEMO_TERMINOS)));
+    setPendientes(JSON.parse(JSON.stringify(DEMO_PENDIENTES)));
     setAccount({ name:"Usuario Demo", username:"demo@lexara.com" });
     setAppActive(true);
     if(!silent) setView('dashboard');
@@ -388,6 +397,7 @@ export function useLexaraApp(){
       setIpcMensual(updated.find(l => l.key==='ipc')?.items || []);
       setAudiencias(updated.find(l => l.key==='audiencias')?.items || []);
       setTerminos(updated.find(l => l.key==='terminos')?.items || []);
+      setPendientes(updated.find(l => l.key==='pendientes')?.items || []);
     }catch(err){
       console.error(err);
       notify("Se inició sesión, pero no se pudieron cargar los datos de SharePoint: " + Graph.mensajeError(err) + " — probá el botón de Actualizar.", 'error');
@@ -466,6 +476,7 @@ export function useLexaraApp(){
       setIpcMensual(updated.find(l => l.key==='ipc')?.items || []);
       setAudiencias(updated.find(l => l.key==='audiencias')?.items || []);
       setTerminos(updated.find(l => l.key==='terminos')?.items || []);
+      setPendientes(updated.find(l => l.key==='pendientes')?.items || []);
     }catch(err){
       console.error(err);
       notify("No se pudo actualizar la información: " + Graph.mensajeError(err), 'error');
@@ -514,6 +525,7 @@ export function useLexaraApp(){
     setGastos(updated.find(l => l.key==='gastos')?.items || []);
     setAudiencias(updated.find(l => l.key==='audiencias')?.items || []);
     setTerminos(updated.find(l => l.key==='terminos')?.items || []);
+    setPendientes(updated.find(l => l.key==='pendientes')?.items || []);
     setLiveMode(true);
   }
 
@@ -1669,6 +1681,14 @@ export function useLexaraApp(){
     const etiqueta = tipo === 'audiencia' ? 'Audiencia' : 'Término';
     return [etiqueta, cliente, radicado, item.Descripcion].filter(Boolean).join(" — ");
   }
+  // Pendientes (2026-09-17) — mismo criterio que audiencias/términos arriba,
+  // pero el vínculo a un Proceso es OPCIONAL (puede ser una tarea suelta, no
+  // todo pendiente tiene por qué estar ligado a un proceso judicial).
+  function asuntoEventoPendiente(item){
+    const proceso = item.ProcesoMD ? procesos.find(p => String(p.id) === String(item.ProcesoMD)) : null;
+    const radicado = proceso?.Radicado || "";
+    return ["Pendiente", item.PendientePara, item.Pendiente, radicado].filter(Boolean).join(" — ");
+  }
   // BUG REAL encontrado y corregido 2026-09-15 (reportado por el usuario: "no
   // creó el evento"): `config` (el estado de la app, inicializado desde
   // INITIAL_CONFIG) nunca tuvo `CALENDARIO_AUDIENCIAS_TERMINOS` — es un
@@ -1696,6 +1716,14 @@ export function useLexaraApp(){
   const crearTermino = crudTerminos.crear;
   const editarTermino = crudTerminos.editar;
   const eliminarTermino = crudTerminos.eliminar;
+  const crudPendientes = crudGastos('pendientes', pendientes, setPendientes, {
+    afterCrear: (item) => !liveMode ? null : Graph.sincronizarEventoCalendario(configConCalendario, { tipo:'pendiente', id:item.id, asunto: asuntoEventoPendiente(item), fechaISO: item.FechaPendiente }),
+    afterEditar: (id, item) => !liveMode ? null : Graph.sincronizarEventoCalendario(configConCalendario, { tipo:'pendiente', id, asunto: asuntoEventoPendiente(item), fechaISO: item.FechaPendiente }),
+    afterEliminar: (id) => !liveMode ? null : Graph.eliminarEventoCalendario(configConCalendario, { tipo:'pendiente', id }),
+  });
+  const crearPendiente = crudPendientes.crear;
+  const editarPendiente = crudPendientes.editar;
+  const eliminarPendiente = crudPendientes.eliminar;
 
   // "Programar un evento diferente a las audiencias y términos" desde el
   // mini calendario de la cabecera (2026-09-15, pedido explícito del
@@ -1725,9 +1753,10 @@ export function useLexaraApp(){
     tutelas, temas, valoresEntidad, horasExtras, vacacionesPeriodos,
     proveedoresGastos, cuentasCobroGastos, pagosPorRealizar, gastos,
     tasasInteres, ipcMensual,
-    audiencias, terminos,
+    audiencias, terminos, pendientes,
     crearAudiencia, editarAudiencia, eliminarAudiencia,
     crearTermino, editarTermino, eliminarTermino,
+    crearPendiente, editarPendiente, eliminarPendiente,
     crearEventoCalendarioPersonalizado,
     currentFilter, setFilter: setCurrentFilter, searchQuery, setSearchQuery: setSearchQuery,
     onSearch: setSearchQuery,

@@ -36,6 +36,7 @@ export const MODULOS_DISPONIBLES = [
   {key:'clientes', label:'Clientes'},
   {key:'facturacion', label:'Solicitud De Factura E.'},
   {key:'ordenesCompra', label:'Órdenes de compra'},
+  {key:'vencimientos', label:'Vencimientos'},
   {key:'administracion', label:'Administración'},
   {key:'setup', label:'Configuración'},
 ];
@@ -58,9 +59,9 @@ const VISTAS_SIEMPRE_VISIBLES = ['dashboard', 'informes'];
 // "colaboradores" guardado explícitamente sigue viéndolo igual gracias al
 // alias conAliasAdministracion() de abajo — no perdió nada con el rename.)
 const MODULOS_POR_ROL_LEGADO = {
-  Administrador: ['procesos','tutelas','clientes','facturacion','ordenesCompra','administracion','setup'],
-  Jefe: ['procesos','tutelas','clientes','facturacion','ordenesCompra'],
-  Colaborador: ['procesos','tutelas','clientes'],
+  Administrador: ['procesos','tutelas','clientes','facturacion','ordenesCompra','vencimientos','administracion','setup'],
+  Jefe: ['procesos','tutelas','clientes','facturacion','ordenesCompra','vencimientos'],
+  Colaborador: ['procesos','tutelas','clientes','vencimientos'],
 };
 // Correo que no aparece en Equipo MD: mismo bloqueo de menú que Colaborador
 // (el más restringido de los 3 roles reales) — nunca acceso total a ciegas.

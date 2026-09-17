@@ -21,7 +21,6 @@ import CruceArchivosTab from './CruceArchivosTab';
 import CrearLinkCompartirTab from './CrearLinkCompartirTab';
 import LiquidacionInteresesTab from './LiquidacionInteresesTab';
 import DiligenciamientoFormatosTab from './DiligenciamientoFormatosTab';
-import AudienciasTerminosTab from './AudienciasTerminosTab';
 import { construirMensajePagoWhatsApp, normalizarTelefonoWaMe, normalizarTelefonoManualWaMe, PAISES_WHATSAPP } from '../lib/whatsappPago';
 
 // Entidades con formato de informe formal ya confirmado, y qué generador usa
@@ -82,13 +81,12 @@ const SUBTABS_HORAS_EXTRAS = [
   {key:'registrar', label:'Registrar'},
   {key:'registros', label:'Registros'},
 ];
-// Sub-pestaña "Audiencias Términos" agregada 2026-09-12 (pedido explícito
-// del usuario, reemplaza el seguimiento manual en Access) — confirmado por
-// el usuario que va dentro de "Procesos Judiciales", junto al ya existente
-// "Detalle por Entidad".
+// "Audiencias Términos" vivió acá desde 2026-09-12 hasta 2026-09-17, cuando
+// el usuario pidió juntarlo con Pendientes en un módulo propio "Vencimientos"
+// (ver VencimientosView.jsx) — se saca de acá para no duplicar el mismo
+// listado en 2 lugares distintos del portal.
 const SUBTABS_PROCESOS_JUDICIALES = [
   {key:'detalleEntidad', label:'Detalle por Entidad'},
-  {key:'audienciasTerminos', label:'Audiencias Términos'},
 ];
 const SUBTABS_HERRAMIENTAS = [
   {key:'crearLink', label:'Crear link para compartir'},
@@ -98,7 +96,7 @@ const SUBTABS_HERRAMIENTAS = [
   {key:'diligenciamientoFormatos', label:'Diligenciamiento Formatos Empresas'},
 ];
 
-export default function InformesView({ procesos, clientes, facturas, desistimientos, tutelas, valoresEntidad, notify, liveMode, config, requestConfirm, corregirEntidadFaltanteTutelas, colaboradores, onCreateHoraExtra, onEditarHoraExtra, onEliminarHoraExtra, horasExtras, tasasInteres, ipcMensual, onCrearTasaInteres, onEditarTasaInteres, onEliminarTasaInteres, onCrearIPC, onEditarIPC, onEliminarIPC, tiposAccion, audiencias, terminos, onCrearAudiencia, onEditarAudiencia, onEliminarAudiencia, onCrearTermino, onEditarTermino, onEliminarTermino }){
+export default function InformesView({ procesos, clientes, facturas, desistimientos, tutelas, valoresEntidad, notify, liveMode, config, requestConfirm, corregirEntidadFaltanteTutelas, colaboradores, onCreateHoraExtra, onEditarHoraExtra, onEliminarHoraExtra, horasExtras, tasasInteres, ipcMensual, onCrearTasaInteres, onEditarTasaInteres, onEliminarTasaInteres, onCrearIPC, onEditarIPC, onEliminarIPC }){
   const [tab, setTab] = useState('clientesPagos');
   const [subTabClientesPagos, setSubTabClientesPagos] = useState('informeCliente');
   const [subTabTutelas, setSubTabTutelas] = useState('informeDiario');
@@ -905,14 +903,6 @@ export default function InformesView({ procesos, clientes, facturas, desistimien
           )}
         </div>
       </div>
-      )}
-      {subTabProcesos==='audienciasTerminos' && (
-        <AudienciasTerminosTab
-          procesos={procesos} tiposAccion={tiposAccion} colaboradores={colaboradores}
-          audiencias={audiencias} terminos={terminos} notify={notify}
-          onCrearAudiencia={onCrearAudiencia} onEditarAudiencia={onEditarAudiencia} onEliminarAudiencia={onEliminarAudiencia}
-          onCrearTermino={onCrearTermino} onEditarTermino={onEditarTermino} onEliminarTermino={onEliminarTermino}
-        />
       )}
       </div>
       )}

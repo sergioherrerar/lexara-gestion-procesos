@@ -11,6 +11,7 @@ import TutelasView from './components/TutelasView';
 import ClientesView from './components/ClientesView';
 import FacturacionView from './components/FacturacionView';
 import OrdenesCompraView from './components/OrdenesCompraView';
+import VencimientosView from './components/VencimientosView';
 import SetupView from './components/SetupView';
 import ProcesoDrawer from './components/ProcesoDrawer';
 import ClienteDrawer from './components/ClienteDrawer';
@@ -106,6 +107,7 @@ export default function App(){
           cargandoInicial={app.signingIn && app.liveMode}
           audiencias={app.audiencias}
           terminos={app.terminos}
+          pendientes={app.pendientes}
           procesos={app.procesos}
           onCrearEventoPersonalizado={app.crearEventoCalendarioPersonalizado}
           notify={app.notify}
@@ -114,7 +116,7 @@ export default function App(){
 
         {app.view === 'dashboard' && <DashboardView procesos={app.procesos} clientes={app.clientes} facturas={app.facturas} ordenesCompra={app.ordenesCompra} desistimientos={app.desistimientos} notify={app.notify} />}
         {app.view === 'informes' && canAccessView(app.modulosPermitidos, 'informes') && (
-          <InformesView procesos={app.procesos} clientes={app.clientes} facturas={app.facturas} ordenesCompra={app.ordenesCompra} desistimientos={app.desistimientos} tutelas={app.tutelas} valoresEntidad={app.valoresEntidad} notify={app.notify} liveMode={app.liveMode} config={app.config} requestConfirm={app.requestConfirm} corregirEntidadFaltanteTutelas={app.corregirEntidadFaltanteTutelas} colaboradores={app.colaboradores} onCreateHoraExtra={app.createHoraExtra} onEditarHoraExtra={app.editarHoraExtra} onEliminarHoraExtra={app.eliminarHoraExtra} horasExtras={app.horasExtras} tasasInteres={app.tasasInteres} ipcMensual={app.ipcMensual} onCrearTasaInteres={app.crearTasaInteres} onEditarTasaInteres={app.editarTasaInteres} onEliminarTasaInteres={app.eliminarTasaInteres} onCrearIPC={app.crearIPC} onEditarIPC={app.editarIPC} onEliminarIPC={app.eliminarIPC} tiposAccion={app.tiposAccion} audiencias={app.audiencias} terminos={app.terminos} onCrearAudiencia={app.crearAudiencia} onEditarAudiencia={app.editarAudiencia} onEliminarAudiencia={app.eliminarAudiencia} onCrearTermino={app.crearTermino} onEditarTermino={app.editarTermino} onEliminarTermino={app.eliminarTermino} />
+          <InformesView procesos={app.procesos} clientes={app.clientes} facturas={app.facturas} ordenesCompra={app.ordenesCompra} desistimientos={app.desistimientos} tutelas={app.tutelas} valoresEntidad={app.valoresEntidad} notify={app.notify} liveMode={app.liveMode} config={app.config} requestConfirm={app.requestConfirm} corregirEntidadFaltanteTutelas={app.corregirEntidadFaltanteTutelas} colaboradores={app.colaboradores} onCreateHoraExtra={app.createHoraExtra} onEditarHoraExtra={app.editarHoraExtra} onEliminarHoraExtra={app.eliminarHoraExtra} horasExtras={app.horasExtras} tasasInteres={app.tasasInteres} ipcMensual={app.ipcMensual} onCrearTasaInteres={app.crearTasaInteres} onEditarTasaInteres={app.editarTasaInteres} onEliminarTasaInteres={app.eliminarTasaInteres} onCrearIPC={app.crearIPC} onEditarIPC={app.editarIPC} onEliminarIPC={app.eliminarIPC} />
         )}
         {app.view === 'procesos' && canAccessView(app.modulosPermitidos, 'procesos') && (
           <ProcesosView
@@ -181,6 +183,27 @@ export default function App(){
             onDuplicateOrdenCompra={app.duplicateOrdenCompra}
             onPrintOrdenCompra={app.printOrdenCompra}
             onCreateFacturaFromOrdenCompra={app.createFacturaFromOrdenCompra}
+          />
+        )}
+        {app.view === 'vencimientos' && canAccessView(app.modulosPermitidos, 'vencimientos') && (
+          <VencimientosView
+            procesos={app.procesos}
+            tiposAccion={app.tiposAccion}
+            colaboradores={app.colaboradores}
+            audiencias={app.audiencias}
+            terminos={app.terminos}
+            pendientes={app.pendientes}
+            notify={app.notify}
+            onCrearAudiencia={app.crearAudiencia}
+            onEditarAudiencia={app.editarAudiencia}
+            onEliminarAudiencia={app.eliminarAudiencia}
+            onCrearTermino={app.crearTermino}
+            onEditarTermino={app.editarTermino}
+            onEliminarTermino={app.eliminarTermino}
+            onCrearPendiente={app.crearPendiente}
+            onEditarPendiente={app.editarPendiente}
+            onEliminarPendiente={app.eliminarPendiente}
+            canWrite={app.canWrite}
           />
         )}
         {app.view === 'administracion' && canAccessView(app.modulosPermitidos, 'administracion') && (

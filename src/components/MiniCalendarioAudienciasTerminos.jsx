@@ -32,29 +32,33 @@ const DIAS_LARGO = ["domingo","lunes","martes","miércoles","jueves","viernes","
 
 function soloFechaISO(v){ return String(v || "").slice(0, 10); }
 
-// Junta Audiencias/Términos por fecha objetivo (ISO) -> {audiencias:[], terminos:[]}.
-function eventosPorDia(audiencias, terminos, procesos){
+// Junta Audiencias/Términos/Pendientes por fecha objetivo (ISO) ->
+// {audiencias:[], terminos:[], pendientes:[]}. "Pendientes" agregado
+// 2026-09-17 (pedido explícito del usuario) — a diferencia de las otras 2,
+// se asocia por "Proceso" (r.Proceso, real ProcesoMD) que puede venir vacío
+// (tarea suelta, sin proceso vinculado), así que ese cruce es opcional.
+function eventosPorDia(audiencias, terminos, pendientes, procesos){
   const mapa = new Map();
-  function agregar(registros, tipo){
+  function agregar(registros, tipo, fechaDe, procesoDe){
     (registros||[]).forEach(r => {
-      const fecha = tipo === 'audiencias'
-        ? soloFechaISO(r.FechaAudiencia)
-        : (soloFechaISO(r.VencimientoTermino) || sumarDiasHabilesJudiciales(soloFechaISO(r.FechaNotificacion), r.DiasHabiles));
+      const fecha = fechaDe(r);
       if(!fecha) return;
-      if(!mapa.has(fecha)) mapa.set(fecha, { audiencias:[], terminos:[] });
+      if(!mapa.has(fecha)) mapa.set(fecha, { audiencias:[], terminos:[], pendientes:[] });
       // String(...) (mismo bug real ya corregido en AudienciasTerminosTab.jsx):
       // en vivo r.Proceso puede llegar como número y p.id siempre es texto.
-      const proceso = (procesos||[]).find(p => String(p.id) === String(r.Proceso)) || null;
+      const procesoId = procesoDe(r);
+      const proceso = procesoId ? (procesos||[]).find(p => String(p.id) === String(procesoId)) || null : null;
       mapa.get(fecha)[tipo].push({ ...r, proceso });
     });
   }
-  agregar(audiencias, 'audiencias');
-  agregar(terminos, 'terminos');
+  agregar(audiencias, 'audiencias', r => soloFechaISO(r.FechaAudiencia), r => r.Proceso);
+  agregar(terminos, 'terminos', r => soloFechaISO(r.VencimientoTermino) || sumarDiasHabilesJudiciales(soloFechaISO(r.FechaNotificacion), r.DiasHabiles), r => r.Proceso);
+  agregar(pendientes, 'pendientes', r => soloFechaISO(r.FechaPendiente), r => r.ProcesoMD);
   return mapa;
 }
 
-function tituloDia(items){
-  return items.map(it => `${it.proceso?.Radicado || '—'}${it.Descripcion ? ' — ' + it.Descripcion : ''}`).join('\n');
+function tituloDia(items, textoDe = it => it.Descripcion){
+  return items.map(it => `${it.proceso?.Radicado || '—'}${textoDe(it) ? ' — ' + textoDe(it) : ''}`).join('\n');
 }
 
 function fechaLarga(iso){
@@ -63,14 +67,14 @@ function fechaLarga(iso){
   return `${DIAS_LARGO[dt.getDay()]} ${d} de ${MESES[m-1].toLowerCase()}`;
 }
 
-export default function MiniCalendarioAudienciasTerminos({ audiencias, terminos, procesos, liveMode, onCrearEventoPersonalizado, notify }){
+export default function MiniCalendarioAudienciasTerminos({ audiencias, terminos, pendientes, procesos, liveMode, onCrearEventoPersonalizado, notify }){
   const hoy = new Date();
   const [cursor, setCursor] = useState({ anio: hoy.getFullYear(), mes: hoy.getMonth() });
   const [diaSeleccionado, setDiaSeleccionado] = useState(null);
   const [nombreEvento, setNombreEvento] = useState('');
   const [horaEvento, setHoraEvento] = useState('');
   const [guardando, setGuardando] = useState(false);
-  const eventos = useMemo(() => eventosPorDia(audiencias, terminos, procesos), [audiencias, terminos, procesos]);
+  const eventos = useMemo(() => eventosPorDia(audiencias, terminos, pendientes, procesos), [audiencias, terminos, pendientes, procesos]);
   const festivos = festivosColombia(cursor.anio);
   const nombresFestivos = nombresFestivosColombia(cursor.anio);
 
@@ -128,6 +132,7 @@ export default function MiniCalendarioAudienciasTerminos({ audiencias, terminos,
       <div className="mini-calendario-leyenda">
         <span><span className="punto punto-audiencia" /> Audiencias</span>
         <span><span className="punto punto-termino" /> Términos</span>
+        <span><span className="punto punto-pendiente" /> Pendientes</span>
       </div>
       <div className="mini-calendario-grid">
         {DIAS_SEMANA.map((d,i) => <div key={i} className="mini-calendario-diasemana">{d}</div>)}
@@ -148,6 +153,7 @@ export default function MiniCalendarioAudienciasTerminos({ audiencias, terminos,
             esFestivo ? `Festivo: ${nombresFestivos.get(iso) || ''}` : null,
             ev?.audiencias?.length ? `Audiencias:\n${tituloDia(ev.audiencias)}` : null,
             ev?.terminos?.length ? `Términos:\n${tituloDia(ev.terminos)}` : null,
+            ev?.pendientes?.length ? `Pendientes:\n${tituloDia(ev.pendientes, it => it.Pendiente)}` : null,
           ].filter(Boolean).join('\n\n');
           return (
             <button
@@ -162,6 +168,7 @@ export default function MiniCalendarioAudienciasTerminos({ audiencias, terminos,
                 <span className="puntos">
                   {ev.audiencias.length > 0 && <span className="punto punto-audiencia" />}
                   {ev.terminos.length > 0 && <span className="punto punto-termino" />}
+                  {ev.pendientes.length > 0 && <span className="punto punto-pendiente" />}
                 </span>
               )}
             </button>
@@ -173,7 +180,7 @@ export default function MiniCalendarioAudienciasTerminos({ audiencias, terminos,
           <p className="mini-calendario-dia-titulo">
             {fechaLarga(diaSeleccionado)}{nombreFestivoDiaSeleccionado ? ` · ${nombreFestivoDiaSeleccionado}` : ''}
           </p>
-          {(eventosDelDia?.terminos?.length || eventosDelDia?.audiencias?.length) ? (
+          {(eventosDelDia?.terminos?.length || eventosDelDia?.audiencias?.length || eventosDelDia?.pendientes?.length) ? (
             <ul className="mini-calendario-dia-lista">
               {eventosDelDia.terminos.map(t => (
                 <li key={'t'+t.id}><strong>Término</strong> {t.proceso?.Radicado || '—'}</li>
@@ -181,9 +188,12 @@ export default function MiniCalendarioAudienciasTerminos({ audiencias, terminos,
               {eventosDelDia.audiencias.map(a => (
                 <li key={'a'+a.id}><strong>Audiencia</strong> {a.proceso?.Radicado || '—'}</li>
               ))}
+              {eventosDelDia.pendientes.map(p => (
+                <li key={'p'+p.id}><strong>Pendiente</strong> {p.Pendiente || '—'}{p.proceso?.Radicado ? ` (${p.proceso.Radicado})` : ''}</li>
+              ))}
             </ul>
           ) : (
-            <p className="mini-calendario-dia-vacio">Sin audiencias ni términos este día.</p>
+            <p className="mini-calendario-dia-vacio">Sin audiencias, términos ni pendientes este día.</p>
           )}
           <form onSubmit={handleAgregarEvento} className="mini-calendario-nuevo-evento">
             <input

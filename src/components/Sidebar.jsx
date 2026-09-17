@@ -34,6 +34,9 @@ function IconOrdenesCompra(){
 function IconColaboradores(){
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/><path d="M2 13h20"/></svg>;
 }
+function IconVencimientos(){
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>;
+}
 // Botón para ocultar/mostrar el menú lateral — pedido explícito del usuario
 // 2026-09-01. La misma flecha se rota 180° cuando está colapsado (ver
 // .sidebar.collapsed .sidebar-collapse-btn en styles.css).
@@ -52,6 +55,7 @@ const NAV_ITEMS = [
   {view:'clientes', label:'Clientes', icon:<IconClientes/>},
   {view:'facturacion', label:'Solicitud De Factura E.', icon:<IconFacturacion/>},
   {view:'ordenesCompra', label:'Órdenes de compra', icon:<IconOrdenesCompra/>},
+  {view:'vencimientos', label:'Vencimientos', icon:<IconVencimientos/>},
   {view:'administracion', label:'Administración', icon:<IconColaboradores/>},
 ];
 
