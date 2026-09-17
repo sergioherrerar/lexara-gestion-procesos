@@ -678,6 +678,18 @@ export function fmtDate(dateStr){
   if(!m) return dateStr;
   return `${m[3]} ${MESES_CORTOS[Number(m[2])-1]}. ${m[1]}`;
 }
+// Trunca una fecha-hora ISO ("2026-01-05T14:06:51Z") a solo su fecha
+// ("2026-01-05") — agregado 2026-09-17 para el checklist de valores exactos
+// de ColumnHeaderMenu.jsx (bug real reportado por el usuario con captura:
+// "Fecha de Creación", un campo datetime, mostraba una fila por cada
+// instante exacto en vez de agrupar por día, y en formato ISO crudo con la
+// "T"/"Z"). Una fecha simple ("2026-01-05") o cualquier otro texto quedan
+// igual — solo actúa sobre timestamps con hora.
+export function clavePorDia(valor){
+  const s = String(valor ?? '').trim();
+  const m = /^(\d{4}-\d{2}-\d{2})T/.exec(s);
+  return m ? m[1] : s;
+}
 // Color del badge de Estado del proceso — antes se adivinaba por palabras
 // clave dentro del propio texto de "Estado" (fallaba: p.ej. "vencimiento de
 // términos" se confundía con "Terminado"). Criterio confirmado por el

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { normalize } from '../lib/graph';
+import { normalize, clavePorDia } from '../lib/graph';
 
 // Filtro por columna: cada tabla define sus columnas ({key, value(row)}) y
 // este hook guarda, por columna, un filtro de texto ("contiene", sin
@@ -34,7 +34,11 @@ export function useColumnFilters(){
       const f = filters[col.key];
       if(!f) return true;
       const valorCrudo = String(col.value(row) ?? "").trim();
-      if(f.valores && f.valores.length) return f.valores.includes(valorCrudo);
+      // clavePorDia (2026-09-17): el checklist agrupa datetimes por día, así
+      // que la comparación acá tiene que usar la misma clave truncada — si no,
+      // marcar un día en la lista nunca encontraría ninguna fila (los
+      // datetimes reales casi nunca coinciden segundo a segundo).
+      if(f.valores && f.valores.length) return f.valores.includes(clavePorDia(valorCrudo));
       const texto = (f.texto || "").trim();
       if(!texto) return true;
       return normalize(valorCrudo).includes(normalize(texto));

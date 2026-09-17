@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useLayoutEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
+import { fmtDate, clavePorDia } from '../lib/graph';
 
 // Encabezado de columna con menú desplegable (ordenar A-Z/Z-A + filtrar por
 // texto + checklist de valores exactos), parecido al AutoFiltro de columna
@@ -72,7 +73,10 @@ export default function ColumnHeaderMenu({ column, sort, onSort, filterValue, on
     if(!rows || !rows.length || column.filterable === false || typeof column.value !== 'function') return [];
     const set = new Set();
     rows.forEach(r => {
-      const v = String(column.value(r) ?? "").trim();
+      // clavePorDia (2026-09-17) — agrupa un datetime ("...T14:06:51Z") por
+      // su día en vez de por el instante exacto, si no cada fila con hora
+      // distinta salía como una fila aparte en la lista.
+      const v = clavePorDia(column.value(r));
       if(v) set.add(v);
     });
     return Array.from(set).sort((a,b) => a.localeCompare(b));
@@ -133,7 +137,7 @@ export default function ColumnHeaderMenu({ column, sort, onSort, filterValue, on
                   {valoresDisponibles.map(v => (
                     <label key={v} className="col-header-menu-check">
                       <input type="checkbox" checked={valoresElegidos.includes(v)} onChange={() => alternarValor(v)} />
-                      <span>{v}</span>
+                      <span>{fmtDate(v)}</span>
                     </label>
                   ))}
                 </div>
