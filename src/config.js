@@ -1118,12 +1118,9 @@ export const SHAREPOINT_LISTS_CONFIG = [
   // asignarlas") — lista real "Pendientes" ya existente en SharePoint,
   // reusada como el TO DO del equipo (Microsoft To Do es personal, no se
   // puede asignar a otra persona; Planner necesitaría un Microsoft 365 Group
-  // aparte). "Procesos MD" es la misma relación por ID que ya usan Audiencias
-  // y Términos (columna real confirmada "Procesos_x0020_MD" en esas 2
-  // listas) — se deja igual acá, a confirmar en Configuración si el nombre
-  // real llegara a ser distinto en esta lista. El resto del mapeo queda
-  // vacío a propósito: se adivina solo al conectar comparando los hints de
-  // abajo contra las columnas reales.
+  // aparte). Mapeo real confirmado por el usuario (exportado desde
+  // Configuración) — se deja fijo para no depender de que se vuelva a
+  // adivinar en cada conexión nueva, mismo criterio que Audiencias/Términos.
   {
     key: "pendientes",
     listName: "Pendientes",
@@ -1139,6 +1136,12 @@ export const SHAREPOINT_LISTS_CONFIG = [
     ],
     mapping: {
       ProcesoMD: "Procesos_x0020_MD",
+      Pendiente: "Pendiente",
+      PendienteDe: "Pendiente_x0020_De",
+      PendientePara: "Pendiente_x0020_Para",
+      FechaPendiente: "Fecha_x0020_Pendiente",
+      Observacion: "Observacion",
+      Estado: "Estado",
     },
   },
 ];
