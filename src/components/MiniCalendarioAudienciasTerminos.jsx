@@ -155,11 +155,22 @@ export default function MiniCalendarioAudienciasTerminos({ audiencias, terminos,
             ev?.terminos?.length ? `Términos:\n${tituloDia(ev.terminos)}` : null,
             ev?.pendientes?.length ? `Pendientes:\n${tituloDia(ev.pendientes, it => it.Pendiente)}` : null,
           ].filter(Boolean).join('\n\n');
+          // Sombreado de la celda por tipo de evento (pedido explícito del
+          // usuario 2026-09-17: "sombrea del color asi como los fectivos
+          // audiencias terminos pendientes") — mismo tratamiento visual que
+          // ya tenían los festivos (fondo suave + número en negrita de su
+          // color), no solo el punto pequeño de abajo. Un festivo se ve
+          // igual que siempre (su color es el festivo, no se mezcla); si un
+          // día no es festivo pero tiene más de un tipo de evento, se
+          // muestra el de mayor prioridad (Audiencia > Término > Pendiente).
+          const tipoEvento = !esFestivo
+            ? (ev?.audiencias?.length ? 'audiencia' : ev?.terminos?.length ? 'termino' : ev?.pendientes?.length ? 'pendiente' : null)
+            : null;
           return (
             <button
               type="button"
               key={i}
-              className={"mini-calendario-celda" + (esFestivo ? ' festivo' : '') + (esDomingo ? ' domingo' : '') + (esHoy ? ' hoy' : '') + (esSeleccionado ? ' seleccionado' : '')}
+              className={"mini-calendario-celda" + (esFestivo ? ' festivo' : '') + (tipoEvento ? ' con-' + tipoEvento : '') + (esDomingo ? ' domingo' : '') + (esHoy ? ' hoy' : '') + (esSeleccionado ? ' seleccionado' : '')}
               onClick={() => elegirDia(iso)}
               title={titulo || undefined}
             >

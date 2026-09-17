@@ -487,6 +487,17 @@
   .mini-calendario-celda.domingo .numero{color:var(--texto-suave);}
   .mini-calendario-celda.festivo{background:#fbe4e2;}
   .mini-calendario-celda.festivo .numero{color:#a3281c; font-weight:700;}
+  /* Sombreado por tipo de evento (2026-09-17, pedido explícito del usuario:
+     "sombrea del color asi como los festivos audiencias terminos
+     pendientes") — mismos pares fondo/texto que ya usan los badges
+     verde/naranja y el azul de "Cargando datos…" (.status-loading), para no
+     inventar una paleta nueva. */
+  .mini-calendario-celda.con-audiencia{background:#d7f2e4;}
+  .mini-calendario-celda.con-audiencia .numero{color:var(--verde-oscuro); font-weight:700;}
+  .mini-calendario-celda.con-termino{background:#fdece0;}
+  .mini-calendario-celda.con-termino .numero{color:#b3590a; font-weight:700;}
+  .mini-calendario-celda.con-pendiente{background:#eaf1fb;}
+  .mini-calendario-celda.con-pendiente .numero{color:#2f5fa8; font-weight:700;}
   .mini-calendario-celda.hoy{box-shadow:inset 0 0 0 2px var(--verde-oscuro);}
   .mini-calendario-celda.hoy .numero{font-weight:700;}
   .mini-calendario-celda.seleccionado{background:var(--verde-oscuro);}
