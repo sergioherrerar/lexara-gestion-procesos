@@ -288,9 +288,11 @@ export const SHAREPOINT_LISTS_CONFIG = [
       {key:"FechaTerminacion", label:"Fecha terminación", hint:["fecha terminacion","fecha terminación"]},
       // Agregado 2026-09-17, pedido explícito del usuario para el informe SOS
       // ("entre columnas K-L introduce la columna 'Radicación del Proceso'").
-      // Misma columna real que Radicado (Numero_Corto) — mismo patrón ya
-      // usado para Numero5Digitos/NaturalezaProceso/etc. arriba.
-      {key:"RadicacionProceso", label:"Radicación del proceso", hint:["radicacion del proceso","radicación del proceso"]},
+      // Al principio se asumió que era la misma columna que Radicado
+      // (Numero_Corto) — CORREGIDO al ver el mapeo real exportado por el
+      // usuario: es una columna PROPIA de fecha ("Fecha Radicación del
+      // Proceso"), distinta de la fecha de Admisión.
+      {key:"RadicacionProceso", label:"Fecha radicación del proceso", hint:["radicacion del proceso","radicación del proceso","fecha radicacion del proceso"]},
     ],
     // Mapeo real completo, confirmado por el usuario desde Configuración y
     // exportado el 2026-08-16 ("actualiza el proceso de mapeo") — se deja
@@ -351,7 +353,6 @@ export const SHAREPOINT_LISTS_CONFIG = [
       NaturalezaProceso: "Tipo_x0020_de_x0020_Accion",       // = TipoAccion
       Subclasificacion: "Tipo_x0020_de_x0020_Proceso",       // = TipoProceso
       Numero5Digitos: "numero_x0020_corto",                  // = Radicado
-      RadicacionProceso: "numero_x0020_corto",               // = Radicado (agregado 2026-09-17, informe SOS)
       ValorCarteraActual: "Valor_x0020_Actual_x0020_Demanda", // = ValorActualDemanda
       // OJO: el mapeo auto-detectado el 2026-09-07 sugirió "LinkCarpetas" acá
       // en vez de "LinkCliente" (las 2 columnas se ven parecidas para el
@@ -374,6 +375,11 @@ export const SHAREPOINT_LISTS_CONFIG = [
       MontoMedidaCautelar: "Monto_x0020_Medida_x0020_Cautela",
       PorcentajeCalificacion: "Porcentaje_de_la_Calificacion",
       FechaTerminacion: "Fecha_x0020_Posible_x0020_Termin", // ojo: es "Fecha POSIBLE de terminación", no una fecha real ya ocurrida
+      // Corregido 2026-09-17 al ver el mapeo real exportado por el usuario:
+      // NO es la misma columna que Radicado (numero_x0020_corto, como se
+      // había asumido al agregar este campo) — es su propia columna de
+      // fecha, "Fecha Radicación del Proceso".
+      RadicacionProceso: "Fecha_x0020_Radicacion_x0020_del",
     },
   },
   {

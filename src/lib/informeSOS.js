@@ -33,9 +33,11 @@ export const COLUMNAS_SOS = [
   ["Demandado", "Demandado", "text"],
   ["Valor radicacion", "ValorRadicacion", "money"],
   // Agregada 2026-09-17, pedido explícito del usuario ("entre columnas K-L
-  // introduce la columna 'Radicación del Proceso'") — misma columna real que
-  // Radicado/Numero_Corto (ver RadicacionProceso en config.js).
-  ["Radicacion del Proceso", "RadicacionProceso", "text"],
+  // introduce la columna 'Radicación del Proceso'"). Es un campo de FECHA
+  // propio (no el mismo Radicado/Numero_Corto como se asumió al principio —
+  // corregido al ver el mapeo real exportado por el usuario, ver
+  // RadicacionProceso en config.js).
+  ["Radicacion del Proceso", "RadicacionProceso", "date"],
   ["Fecha Admision del Proceso", "FechaAdmision", "date"],
   ["Fecha reforma de demanda", "FechaReformaDemanda", "date"],
   ["Valor Reforma", "ValorReforma", "money"],
@@ -175,7 +177,7 @@ export async function generarInformeSOSExcel(entidad, procesos, clientes, colabo
     if(idx > 0) ws.getColumn(idx).numFmt = '"$"#,##0.00';
   });
   // Fechas en formato dd/mm/aaaa.
-  ["Fecha Admision del Proceso","Fecha reforma de demanda","fecha ultimo estado"].forEach(header => {
+  ["Radicacion del Proceso","Fecha Admision del Proceso","Fecha reforma de demanda","fecha ultimo estado"].forEach(header => {
     const idx = COLUMNAS_SOS.findIndex(c => c[0] === header) + 1;
     if(idx > 0) ws.getColumn(idx).numFmt = 'dd/mm/yyyy';
   });

@@ -149,6 +149,13 @@ const TRAZABILIDAD_SECTION = {title:"Fechas del proceso", fields: [
   ...DATE_FIELDS.map(k => [k,"date"]),
   ["FechaReformaDemanda","date"],
   ["FechaTerminacion","date"],
+  // Agregado 2026-09-17, pedido explícito del usuario ("coloca este campo en
+  // trazabilidad") — es su propia columna real de fecha en SharePoint (NO la
+  // misma que Radicado, como se asumió al principio; corregido al ver el
+  // mapeo real exportado por el usuario), así que sí se puede editar acá
+  // igual que el resto de fechas, sin el riesgo de escritura duplicada que
+  // tienen los alias de arriba (Numero5Digitos, GlosaDemandada, etc.).
+  ["RadicacionProceso","date"],
   ["Admitida","select"],
   ["PruebaPericial","select"],
   // GlosaDemandada no se muestra acá — es la misma columna real que
@@ -199,6 +206,9 @@ const LABELS = {
   PorcentajeCalificacion:"Porcentaje de la calificación",
   // Agregados 2026-08-16 para el módulo "Informes" (formato Entidad Famisanar).
   RadicadoActual:"Radicado actual", FechaTerminacion:"Fecha terminación",
+  // Agregado 2026-09-17 para el informe SOS — su propia columna de fecha,
+  // NO la misma que Radicado (ver nota en config.js).
+  RadicacionProceso:"Fecha radicación del proceso",
 };
 
 // Campo genérico (texto/select/money/textarea/richtext), compartido entre
@@ -934,15 +944,6 @@ export default function ProcesoDrawer({ proceso, clientes, colaboradores, factur
             <div className="field-section">
               <h4>{TRAZABILIDAD_SECTION.title}</h4>
               <div className="field-card-grid">
-                {/* Solo lectura (pedido explícito del usuario 2026-09-17:
-                    "coloca este campo en trazabilidad") — misma columna real
-                    que "Radicado" (Numero_Corto), ya visible arriba del todo
-                    del drawer; se muestra de nuevo acá por conveniencia, sin
-                    pasar por el formulario editable para no arriesgar una
-                    escritura duplicada/en conflicto sobre la misma columna
-                    (mismo criterio que el resto de alias de esta pantalla,
-                    ver comentarios en FIELD_SECTIONS más arriba). */}
-                <FieldCard label="Radicación del proceso">{proceso.Radicado || "—"}</FieldCard>
                 {TRAZABILIDAD_SECTION.fields.map(([key,type]) => (
                   <FieldCard label={LABELS[key]} full={type==='richtext'} key={key}>
                     {renderGenericField(key, type, form, setField, canWrite)}
