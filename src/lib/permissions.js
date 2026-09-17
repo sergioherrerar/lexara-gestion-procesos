@@ -36,11 +36,19 @@ export const MODULOS_DISPONIBLES = [
   {key:'clientes', label:'Clientes'},
   {key:'facturacion', label:'Solicitud De Factura E.'},
   {key:'ordenesCompra', label:'Órdenes de compra'},
-  {key:'vencimientos', label:'Vencimientos'},
   {key:'administracion', label:'Administración'},
   {key:'setup', label:'Configuración'},
 ];
-const VISTAS_SIEMPRE_VISIBLES = ['dashboard', 'informes'];
+// "vencimientos" (2026-09-17, pedido explícito del usuario: "vencimientos se
+// debe ver por todos") — Audiencias/Términos vivían antes dentro de
+// "Informes" (siempre visible para cualquiera), así que moverlas a su propio
+// módulo sin este ajuste les habría QUITADO el acceso a cualquiera que ya
+// tuviera "Módulos permitidos" guardado de forma explícita (un valor
+// explícito ignora por completo el respaldo de MODULOS_POR_ROL_LEGADO de
+// abajo, así que agregar la clave nueva ahí no le llegaba a nadie que ya
+// tuviera algo guardado — bug real reportado por el usuario, Administrador
+// incluido). Se deja sin casilla propia, igual que Dashboard/Informes.
+const VISTAS_SIEMPRE_VISIBLES = ['dashboard', 'informes', 'vencimientos'];
 
 // Valor de respaldo SOLO para colaboradores que todavía no tienen nada
 // marcado en "Módulos permitidos" (todos los que ya existían antes de este
@@ -59,9 +67,9 @@ const VISTAS_SIEMPRE_VISIBLES = ['dashboard', 'informes'];
 // "colaboradores" guardado explícitamente sigue viéndolo igual gracias al
 // alias conAliasAdministracion() de abajo — no perdió nada con el rename.)
 const MODULOS_POR_ROL_LEGADO = {
-  Administrador: ['procesos','tutelas','clientes','facturacion','ordenesCompra','vencimientos','administracion','setup'],
-  Jefe: ['procesos','tutelas','clientes','facturacion','ordenesCompra','vencimientos'],
-  Colaborador: ['procesos','tutelas','clientes','vencimientos'],
+  Administrador: ['procesos','tutelas','clientes','facturacion','ordenesCompra','administracion','setup'],
+  Jefe: ['procesos','tutelas','clientes','facturacion','ordenesCompra'],
+  Colaborador: ['procesos','tutelas','clientes'],
 };
 // Correo que no aparece en Equipo MD: mismo bloqueo de menú que Colaborador
 // (el más restringido de los 3 roles reales) — nunca acceso total a ciegas.
