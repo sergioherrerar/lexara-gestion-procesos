@@ -133,6 +133,11 @@ export default function MiniCalendarioAudienciasTerminos({ audiencias, terminos,
         <span><span className="punto punto-audiencia" /> Audiencias</span>
         <span><span className="punto punto-termino" /> Términos</span>
         <span><span className="punto punto-pendiente" /> Pendientes</span>
+        {/* Festivo (pedido explícito del usuario 2026-09-17: "incluye color
+            de festivos") — no es un punto (los festivos no tienen punto en
+            el día, sombrean toda la celda), así que se representa con un
+            cuadrito en vez de un círculo para no confundirlo con los otros 3. */}
+        <span><span className="cuadrito cuadrito-festivo" /> Festivos</span>
       </div>
       <div className="mini-calendario-grid">
         {DIAS_SEMANA.map((d,i) => <div key={i} className="mini-calendario-diasemana">{d}</div>)}

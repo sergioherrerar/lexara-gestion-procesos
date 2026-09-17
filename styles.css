@@ -475,6 +475,11 @@
   /* Mismo azul ya usado en "Cargando datos…" (.status-loading) — se reusa en
      vez de inventar un cuarto color nuevo en la paleta. */
   .punto-pendiente{background:#2f5fa8;}
+  /* Cuadrito de la leyenda para Festivos — mismo fondo/borde que ya usa
+     .mini-calendario-celda.festivo, en cuadrado (no círculo) para no
+     confundirlo con los puntos de Audiencias/Términos/Pendientes. */
+  .cuadrito{width:10px; height:10px; border-radius:3px; flex-shrink:0; display:inline-block;}
+  .cuadrito-festivo{background:#fbe4e2; border:1px solid #a3281c;}
   .mini-calendario-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:4px; padding:12px;}
   .mini-calendario-diasemana{text-align:center; font-size:13px; color:var(--texto-suave); font-weight:600; padding-bottom:6px;}
   .mini-calendario-celda{
