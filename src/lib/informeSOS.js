@@ -102,20 +102,46 @@ export function nitPorCliente(clientes){
   });
   return mapa;
 }
-export function resolverValorColumnaSOS(campo, p, nitPorClienteMapa){
+// Mapa Colaborador (Nombre, normalizado) -> Identificación — para rellenar
+// "CC Apoderada" cuando esa columna está vacía en SharePoint pero sí se sabe
+// quién es el abogado/apoderado (su cédula vive en Colaboradores MD).
+// Agregado 2026-09-17, bug real reportado por el usuario con una captura de
+// producción: "no lo hizo en todas las filas" — muchos procesos reales
+// tienen el nombre del apoderado pero no su CC Apoderada propia.
+export function identificacionPorColaborador(colaboradores){
+  const mapa = new Map();
+  (colaboradores||[]).forEach(c => {
+    const nombre = (c.Nombre||"").trim().toLowerCase();
+    if(nombre) mapa.set(nombre, c.Identificacion || "");
+  });
+  return mapa;
+}
+export function resolverValorColumnaSOS(campo, p, nitPorClienteMapa, identificacionPorColaboradorMapa){
   if(campo === 'DemandanteIdentificacion') return nitPorClienteMapa.get((p.Cliente||"").trim().toLowerCase()) || "";
+  // AbogadoEncargado (2026-09-17, mismo bug real): muchos procesos reales
+  // solo tienen lleno el campo viejo "Apoderado", no el más nuevo "Abogado
+  // encargado" — sin este respaldo, esas filas quedaban en blanco donde
+  // antes sí mostraban algo.
+  if(campo === 'AbogadoEncargado') return p.AbogadoEncargado || p.Apoderado || "";
+  if(campo === 'CCApoderada'){
+    if(p.CCApoderada) return p.CCApoderada;
+    const nombreAbogado = (p.AbogadoEncargado || p.Apoderado || "").trim().toLowerCase();
+    return nombreAbogado ? (identificacionPorColaboradorMapa?.get(nombreAbogado) || "") : "";
+  }
   return p[campo];
 }
 
 // "entidad" no se usa (el nombre de la Entidad ya está fijo en este archivo,
 // es siempre "SOS") — se recibe solo para que la firma sea igual a la del
 // resto de generadores de Excel (ver FORMATOS_POR_ENTIDAD en InformesView.jsx).
-// "clientes" se agregó 2026-09-17 para poder resolver el NIT (ver arriba).
-export async function generarInformeSOSExcel(entidad, procesos, clientes){
+// "clientes" y "colaboradores" se agregaron 2026-09-17 para poder resolver
+// el NIT y la CC Apoderada de respaldo (ver arriba).
+export async function generarInformeSOSExcel(entidad, procesos, clientes, colaboradores){
   const { default: ExcelJS } = await import('exceljs');
   const wb = new ExcelJS.Workbook();
   const ws = wb.addWorksheet("SOS");
   const nits = nitPorCliente(clientes);
+  const identificaciones = identificacionPorColaborador(colaboradores);
 
   ws.columns = COLUMNAS_SOS.map((c, i) => ({ width: ANCHOS[i] || 14 }));
 
@@ -129,7 +155,7 @@ export async function generarInformeSOSExcel(entidad, procesos, clientes){
 
   procesos.forEach(p => {
     const valores = COLUMNAS_SOS.map(([, campo, tipo]) => {
-      const raw = resolverValorColumnaSOS(campo, p, nits);
+      const raw = resolverValorColumnaSOS(campo, p, nits, identificaciones);
       if(tipo === 'money') return parseMonto(raw);
       if(tipo === 'date') return fechaISOaExcel(raw);
       if(tipo === 'html') return stripHtml(raw);

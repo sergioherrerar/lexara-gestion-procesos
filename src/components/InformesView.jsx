@@ -372,7 +372,7 @@ export default function InformesView({ procesos, clientes, facturas, desistimien
     const formato = FORMATOS_POR_ENTIDAD[entidad.toUpperCase()];
     if(!formato?.excel) return;
     setGenerando(entidad);
-    try{ await formato.excel(entidad, procesos.filter(p => p.Entidad === entidad && esProcesoActivo(p)), clientes); }
+    try{ await formato.excel(entidad, procesos.filter(p => p.Entidad === entidad && esProcesoActivo(p)), clientes, colaboradores); }
     catch(err){ console.error(err); notify?.("No se pudo generar el Excel de " + entidad + ": " + mensajeError(err), 'error'); }
     finally { setGenerando(null); }
   }
@@ -475,7 +475,7 @@ export default function InformesView({ procesos, clientes, facturas, desistimien
   // cruces. Pedido explícito del usuario 2026-08-22.
   async function handleGenerarExcelGeneral(){
     setGenerandoGeneral(true);
-    try{ await generarInformeGeneralProcesosExcel(procesos, clientes); }
+    try{ await generarInformeGeneralProcesosExcel(procesos, clientes, colaboradores); }
     catch(err){ console.error(err); notify?.("No se pudo generar el Excel general de procesos: " + mensajeError(err), 'error'); }
     finally { setGenerandoGeneral(false); }
   }

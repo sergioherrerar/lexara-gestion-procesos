@@ -7,20 +7,22 @@
 // para poder distinguir de dónde es cada fila una vez mezcladas todas.
 // Ver [[project_informes_modulo]].
 import { stripHtml, parseMonto } from './graph';
-import { COLUMNAS_SOS, ANCHOS, COLOR_ENCABEZADO, fechaISOaExcel, limpiarHash, nitPorCliente, resolverValorColumnaSOS } from './informeSOS';
+import { COLUMNAS_SOS, ANCHOS, COLOR_ENCABEZADO, fechaISOaExcel, limpiarHash, nitPorCliente, identificacionPorColaborador, resolverValorColumnaSOS } from './informeSOS';
 
 const COLUMNAS_EXTRA = [["Entidad", "Entidad", "text"], ["Estado V/T", "EstadoVT", "text"]];
 const ANCHOS_EXTRA = [16, 14];
 const COLUMNAS = [...COLUMNAS_EXTRA, ...COLUMNAS_SOS];
 const ANCHOS_TOTAL = [...ANCHOS_EXTRA, ...ANCHOS];
 
-// "clientes" agregado 2026-09-17 (mismo motivo que en informeSOS.js: el NIT
-// del cliente vive en la lista Clientes, no en el Proceso).
-export async function generarInformeGeneralProcesosExcel(procesos, clientes){
+// "clientes"/"colaboradores" agregados 2026-09-17 (mismo motivo que en
+// informeSOS.js: el NIT vive en Clientes y la CC Apoderada de respaldo en
+// Colaboradores MD, no en el Proceso).
+export async function generarInformeGeneralProcesosExcel(procesos, clientes, colaboradores){
   const { default: ExcelJS } = await import('exceljs');
   const wb = new ExcelJS.Workbook();
   const ws = wb.addWorksheet("Todos los procesos");
   const nits = nitPorCliente(clientes);
+  const identificaciones = identificacionPorColaborador(colaboradores);
 
   ws.columns = COLUMNAS.map((c, i) => ({ width: ANCHOS_TOTAL[i] || 14 }));
 
@@ -34,7 +36,7 @@ export async function generarInformeGeneralProcesosExcel(procesos, clientes){
 
   procesos.forEach(p => {
     const valores = COLUMNAS.map(([, campo, tipo]) => {
-      const raw = resolverValorColumnaSOS(campo, p, nits);
+      const raw = resolverValorColumnaSOS(campo, p, nits, identificaciones);
       if(tipo === 'money') return parseMonto(raw);
       if(tipo === 'date') return fechaISOaExcel(raw);
       if(tipo === 'html') return stripHtml(raw);

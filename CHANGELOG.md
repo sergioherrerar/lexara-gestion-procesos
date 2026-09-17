@@ -3,6 +3,7 @@
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
 ## 2026-09-17
+- **Corrige bug real: "Apoderado"/"CC Apoderada" quedaban vacíos en muchas filas del Excel SOS** — el usuario reportó con una captura de producción que la corrección de ayer "no lo hizo en todas las filas". Causa: muchos procesos reales solo tienen lleno el campo viejo "Apoderado", no el más nuevo "Abogado encargado" que se empezó a usar; y "CC Apoderada" muchas veces está vacía aunque sí se sepa quién es el abogado. Ahora "Apoderado o agente oficioso (SNS)" usa Abogado encargado y, si está vacío, cae de respaldo a Apoderado; "Identificación Apoderado..." usa CC Apoderada y, si está vacía, busca la cédula del abogado en Colaboradores MD por su nombre. Mismo arreglo en el Excel de "Todos los procesos".
 - **Ajustes al informe Excel de SOS, pedidos explícitos del usuario:**
   - Nueva columna **"Radicacion del Proceso"** entre "Valor radicacion" (K) y "Fecha Admision del Proceso" (L→M) — mismo dato que Radicado/Número Corto.
   - **"Apoderado o agente oficioso (SNS)"** ahora trae **Abogado encargado** (antes traía "Apoderado", llenado de forma inconsistente).
