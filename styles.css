@@ -452,17 +452,23 @@
   /* Agrandado (2026-09-16, pedido explícito del usuario: "al calendario
      agranda un poco por favor") — de 320px a 380px, con tipografía y celdas
      proporcionalmente más grandes. */
-  .mini-calendario{max-width:380px; margin:0 0 20px; border:1px solid var(--gris-linea); border-radius:var(--radius); overflow:hidden; background:var(--blanco);}
-  .mini-calendario-header{display:flex; align-items:center; gap:8px; padding:12px 14px; background:var(--verde-oscuro); color:#fff;}
-  .mini-calendario-logo{width:26px; height:26px; object-fit:contain; flex-shrink:0;}
-  .mini-calendario-header span{flex:1; text-align:center; font-weight:600; font-size:15px;}
-  .mini-calendario-header button{background:none; border:none; color:#fff; cursor:pointer; font-size:20px; line-height:1; padding:3px 9px; border-radius:4px;}
+  .mini-calendario{width:min(440px, 92vw); margin:0 0 20px; border:1px solid var(--gris-linea); border-radius:var(--radius); overflow:hidden; background:var(--blanco);}
+  .mini-calendario-header{display:flex; align-items:center; gap:9px; padding:14px 16px; background:var(--verde-oscuro); color:#fff;}
+  .mini-calendario-logo{width:30px; height:30px; object-fit:contain; flex-shrink:0;}
+  .mini-calendario-header span{flex:1; text-align:center; font-weight:600; font-size:17px;}
+  .mini-calendario-header button{background:none; border:none; color:#fff; cursor:pointer; font-size:23px; line-height:1; padding:3px 10px; border-radius:4px;}
   .mini-calendario-header button:hover{background:rgba(255,255,255,.15);}
-  .mini-calendario-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:3px; padding:10px;}
-  .mini-calendario-diasemana{text-align:center; font-size:12px; color:var(--texto-suave); font-weight:600; padding-bottom:5px;}
+  /* Leyenda de colores, visible apenas se abre el calendario — pedido
+     explícito del usuario 2026-09-17 ("apenas lo abras muestre que el color
+     son audiencias y color terminos"), para no depender de pasar el mouse
+     sobre un punto para saber qué significa cada color. */
+  .mini-calendario-leyenda{display:flex; gap:16px; justify-content:center; padding:9px 14px; background:var(--gris-claro); border-bottom:1px solid var(--gris-linea); font-size:12.5px; color:var(--texto-suave);}
+  .mini-calendario-leyenda span{display:flex; align-items:center; gap:5px;}
+  .mini-calendario-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:4px; padding:12px;}
+  .mini-calendario-diasemana{text-align:center; font-size:13px; color:var(--texto-suave); font-weight:600; padding-bottom:6px;}
   .mini-calendario-celda{
     position:relative; aspect-ratio:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
-    border-radius:6px; font-size:13.5px; gap:3px; border:none; background:none; cursor:pointer; font-family:inherit; color:var(--texto);
+    border-radius:6px; font-size:15.5px; gap:4px; border:none; background:none; cursor:pointer; font-family:inherit; color:var(--texto);
   }
   .mini-calendario-celda:hover:not(.vacia){background:var(--gris-claro);}
   .mini-calendario-celda.vacia{visibility:hidden; cursor:default;}
@@ -474,8 +480,8 @@
   .mini-calendario-celda.hoy .numero{font-weight:700;}
   .mini-calendario-celda.seleccionado{background:var(--verde-oscuro);}
   .mini-calendario-celda.seleccionado .numero{color:#fff; font-weight:700;}
-  .mini-calendario-celda .puntos{display:flex; gap:3px;}
-  .mini-calendario-celda .punto{width:6px; height:6px; border-radius:50%; flex-shrink:0;}
+  .mini-calendario-celda .puntos{display:flex; gap:4px;}
+  .mini-calendario-celda .punto{width:7px; height:7px; border-radius:50%; flex-shrink:0;}
   .mini-calendario-celda .punto-audiencia{background:var(--verde-claro);}
   .mini-calendario-celda .punto-termino{background:var(--naranja);}
 
@@ -1169,6 +1175,17 @@
        de siempre, que ya funcionaba bien. */
     table{width:auto;}
     thead th, tbody td{white-space:nowrap;}
+
+    /* El mini calendario de la cabecera se ancla al botón (chico, no al
+       borde real de la pantalla) — en celular ese botón casi nunca queda
+       pegado al borde derecho, así que un popover ancho se salía por la
+       izquierda (izquierda/derecha en position:absolute son relativos al
+       botón, no a la pantalla). Se cambia a position:fixed (relativo de
+       verdad a la pantalla) y se estira a sus bordes — la barra superior
+       mide siempre 64px y no se mueve con el scroll de abajo, así que
+       "top:64px" siempre queda pegado justo debajo de ella. */
+    .topbar-calendario-popover{position:fixed; top:64px; left:12px; right:12px; margin-top:0;}
+    .topbar-calendario-popover .mini-calendario{width:100%;}
   }
 
   /* ---------- Hoja imprimible de factura/orden de compra ---------- */

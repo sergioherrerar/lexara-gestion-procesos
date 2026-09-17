@@ -125,6 +125,10 @@ export default function MiniCalendarioAudienciasTerminos({ audiencias, terminos,
         <span>{MESES[cursor.mes]} {cursor.anio}</span>
         <button type="button" onClick={() => cambiarMes(1)} aria-label="Mes siguiente">›</button>
       </div>
+      <div className="mini-calendario-leyenda">
+        <span><span className="punto punto-audiencia" /> Audiencias</span>
+        <span><span className="punto punto-termino" /> Términos</span>
+      </div>
       <div className="mini-calendario-grid">
         {DIAS_SEMANA.map((d,i) => <div key={i} className="mini-calendario-diasemana">{d}</div>)}
         {celdas.map((d, i) => {

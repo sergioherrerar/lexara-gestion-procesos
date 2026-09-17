@@ -235,11 +235,17 @@ function soloFechaISO(v){
 function renderGenericField(key, type, form, setField, canWrite){
   // RadicacionProceso: columna real de SharePoint con datos mezclados (a
   // veces fecha, a veces un código corto como "2009-01102" — ver nota en
-  // TRAZABILIDAD_SECTION). Se guarda como texto para no perder el dato, pero
-  // para MOSTRARLO se reusa fmtDate (mismo formato legible del resto del
-  // portal) — ya está pensado para esto: si el valor sí parece una fecha ISO
-  // lo formatea bonito, y si no (como el código corto), lo deja tal cual.
-  if(key === 'RadicacionProceso') return <input type="text" value={fmtDate(form[key]) === "—" ? "" : fmtDate(form[key])} onChange={e => setField(key, e.target.value)} readOnly={!canWrite} />;
+  // TRAZABILIDAD_SECTION). Pedido explícito del usuario: que se vea y se
+  // edite igual que sus "compañeras" de fecha (calendario nativo), pero solo
+  // cuando el valor guardado de verdad es una fecha (AAAA-MM-DD...) — si es
+  // uno de esos códigos cortos, un <input type="date"> lo dejaría en blanco
+  // y arriesgaría borrarlo, así que ese caso se muestra como texto plano.
+  if(key === 'RadicacionProceso'){
+    const raw = form[key];
+    const pareceFecha = !raw || /^\d{4}-\d{2}-\d{2}/.test(raw);
+    if(pareceFecha) return <input type="date" value={soloFechaISO(raw)} onChange={e => setField(key, e.target.value)} readOnly={!canWrite} />;
+    return <input type="text" value={raw} onChange={e => setField(key, e.target.value)} readOnly={!canWrite} />;
+  }
   if(type==='richtext') return <RichTextEditor value={form[key]} onChange={v => setField(key, v)} readOnly={!canWrite} />;
   if(type==='textarea') return <textarea value={form[key]} onChange={e => setField(key, e.target.value)} readOnly={!canWrite} />;
   if(type==='money') return <input type="text" className="input-money" value={form[key]} onChange={e => setField(key, e.target.value)} onBlur={e => setField(key, fmtMonto(parseMonto(e.target.value)))} readOnly={!canWrite} />;
