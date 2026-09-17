@@ -33,11 +33,14 @@ export const COLUMNAS_SOS = [
   ["Demandado", "Demandado", "text"],
   ["Valor radicacion", "ValorRadicacion", "money"],
   // Agregada 2026-09-17, pedido explícito del usuario ("entre columnas K-L
-  // introduce la columna 'Radicación del Proceso'"). Es un campo de FECHA
-  // propio (no el mismo Radicado/Numero_Corto como se asumió al principio —
-  // corregido al ver el mapeo real exportado por el usuario, ver
-  // RadicacionProceso en config.js).
-  ["Radicacion del Proceso", "RadicacionProceso", "date"],
+  // introduce la columna 'Radicación del Proceso'"). Se probó como columna
+  // de fecha, pero el usuario mostró un proceso real donde esta misma
+  // columna trae "2009-01102" (un código corto, no una fecha) — en
+  // SharePoint es texto libre con datos mezclados, no una fecha confiable.
+  // Se deja como "text" a propósito (ver nota más completa en
+  // ProcesoDrawer.jsx, TRAZABILIDAD_SECTION) para mostrar el valor tal cual
+  // viene, sin forzar ningún formato de fecha que no aplica siempre.
+  ["Radicacion del Proceso", "RadicacionProceso", "text"],
   ["Fecha Admision del Proceso", "FechaAdmision", "date"],
   ["Fecha reforma de demanda", "FechaReformaDemanda", "date"],
   ["Valor Reforma", "ValorReforma", "money"],
@@ -177,7 +180,7 @@ export async function generarInformeSOSExcel(entidad, procesos, clientes, colabo
     if(idx > 0) ws.getColumn(idx).numFmt = '"$"#,##0.00';
   });
   // Fechas en formato dd/mm/aaaa.
-  ["Radicacion del Proceso","Fecha Admision del Proceso","Fecha reforma de demanda","fecha ultimo estado"].forEach(header => {
+  ["Fecha Admision del Proceso","Fecha reforma de demanda","fecha ultimo estado"].forEach(header => {
     const idx = COLUMNAS_SOS.findIndex(c => c[0] === header) + 1;
     if(idx > 0) ws.getColumn(idx).numFmt = 'dd/mm/yyyy';
   });

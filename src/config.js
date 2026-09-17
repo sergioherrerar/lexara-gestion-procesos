@@ -1137,6 +1137,7 @@ export const DEMO_PROCESOS = [
     NumeroContrato:"CT-2025-090", FechaAdmision:"2026-02-10", FechaContestacion:"2026-05-05", CalificacionContingencia:"PROBABLE", PorcentajeCalificacion:"0,5",
     Observaciones:"Ejemplo de proceso de recobro ante ADRES.",
     NoCompleto:"1100133440062025000990", ParteActuamos:"Con el Demandante", Demandante:"EPS Ejemplo de Salud S.A.", DemandanteIdentificacion:"900.000.111-2", Demandado:"ADRES", AbogadoEncargado:"Dahiana Camila Pedraza", CCApoderada:"1.014.300.118",
+    RadicacionProceso:"2021-08-24T07:00:00Z",
     NaturalezaProceso:"Administrativo", Subclasificacion:"Nulidad y restablecimiento del derecho", Numero5Digitos:"2025-00099",
     Departamento:"BOGOTÁ D.C.", Municipio:"BOGOTÁ D.C.", GlosaDemandada:"Recobro por glosa de auditoría", MedidaCautelar:"No",
     ValorRadicacion:"850.000.000,00", ValorReforma:"850.000.000,00", ValorActualDemanda:"912.400.000,00", ValorCarteraActual:"912.400.000,00",

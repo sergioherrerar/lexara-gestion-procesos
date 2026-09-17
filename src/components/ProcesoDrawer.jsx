@@ -150,12 +150,16 @@ const TRAZABILIDAD_SECTION = {title:"Fechas del proceso", fields: [
   ["FechaReformaDemanda","date"],
   ["FechaTerminacion","date"],
   // Agregado 2026-09-17, pedido explícito del usuario ("coloca este campo en
-  // trazabilidad") — es su propia columna real de fecha en SharePoint (NO la
-  // misma que Radicado, como se asumió al principio; corregido al ver el
-  // mapeo real exportado por el usuario), así que sí se puede editar acá
-  // igual que el resto de fechas, sin el riesgo de escritura duplicada que
-  // tienen los alias de arriba (Numero5Digitos, GlosaDemandada, etc.).
-  ["RadicacionProceso","date"],
+  // trazabilidad"). Se probó como campo de fecha (el mapeo auto-detectado
+  // apuntaba a una columna real llamada "Fecha Radicación del Proceso"),
+  // pero el usuario mostró un proceso real donde esa misma columna trae
+  // "2009-01102" — NO una fecha, un código corto (mismo formato de
+  // RadicadoActual). O sea, en SharePoint es en realidad texto libre con
+  // datos mezclados, no una fecha confiable — se deja como "text" a propósito
+  // para no arriesgar que un <input type="date"> (que rechaza cualquier
+  // valor que no sea AAAA-MM-DD) borre ese dato la próxima vez que alguien
+  // guarde el proceso.
+  ["RadicacionProceso","text"],
   ["Admitida","select"],
   ["PruebaPericial","select"],
   // GlosaDemandada no se muestra acá — es la misma columna real que
@@ -206,9 +210,9 @@ const LABELS = {
   PorcentajeCalificacion:"Porcentaje de la calificación",
   // Agregados 2026-08-16 para el módulo "Informes" (formato Entidad Famisanar).
   RadicadoActual:"Radicado actual", FechaTerminacion:"Fecha terminación",
-  // Agregado 2026-09-17 para el informe SOS — su propia columna de fecha,
-  // NO la misma que Radicado (ver nota en config.js).
-  RadicacionProceso:"Fecha radicación del proceso",
+  // Agregado 2026-09-17 para el informe SOS — columna de texto libre (no
+  // confiablemente una fecha, ver nota en TRAZABILIDAD_SECTION arriba).
+  RadicacionProceso:"Radicación del proceso",
 };
 
 // Campo genérico (texto/select/money/textarea/richtext), compartido entre
