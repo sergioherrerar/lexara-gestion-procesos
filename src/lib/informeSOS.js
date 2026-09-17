@@ -32,6 +32,10 @@ export const COLUMNAS_SOS = [
   ["Despacho Judicial", "Despacho", "text"],
   ["Demandado", "Demandado", "text"],
   ["Valor radicacion", "ValorRadicacion", "money"],
+  // Agregada 2026-09-17, pedido explícito del usuario ("entre columnas K-L
+  // introduce la columna 'Radicación del Proceso'") — misma columna real que
+  // Radicado/Numero_Corto (ver RadicacionProceso en config.js).
+  ["Radicacion del Proceso", "RadicacionProceso", "text"],
   ["Fecha Admision del Proceso", "FechaAdmision", "date"],
   ["Fecha reforma de demanda", "FechaReformaDemanda", "date"],
   ["Valor Reforma", "ValorReforma", "money"],
@@ -47,9 +51,18 @@ export const COLUMNAS_SOS = [
   ["Instancia", "Instancia", "text"],
   ["Departamento", "Departamento", "text"],
   ["Municipio", "Municipio", "text"],
-  ["Apoderado o agente oficioso (SNS)", "Apoderado", "text"],
+  // Apoderado/Demandante corregidos 2026-09-17 (pedido explícito del
+  // usuario): usaban los campos "Apoderado"/"Demandante" (llenados de forma
+  // inconsistente), en vez de "Abogado encargado" y "Cliente" — los que el
+  // usuario confirmó que sí traen el dato correcto en todas las filas que lo
+  // tienen.
+  ["Apoderado o agente oficioso (SNS)", "AbogadoEncargado", "text"],
   ["Identificacion Apoderado o agente oficioso (SNS)", "CCApoderada", "text"],
-  ["Demandante (SNS)", "Demandante", "text"],
+  ["Demandante (SNS)", "Cliente", "text"],
+  // El NIT del cliente vive en la lista Clientes (campo Nit), no en el
+  // Proceso — "DemandanteIdentificacion" acá solo queda como marcador; el
+  // valor real se resuelve aparte en generarInformeSOSExcel() buscando por
+  // Cliente/RazonSocial (ver nitPorCliente más abajo).
   ["Numero de Identificacion Demandante (SNS)", "DemandanteIdentificacion", "text"],
   ["Medida Cautelar", "MedidaCautelar", "text"],
   ["Monto Medida Cautelar", "MontoMedidaCautelar", "money"],
@@ -59,7 +72,7 @@ export const COLUMNAS_SOS = [
 
 // Anchos de columna del macro original (A-V) + los que faltaban (W-AH),
 // completados con un ancho razonable para que ninguna quede angosta.
-export const ANCHOS = [5,15,11,9,9,10,24,24,17,15,18,13,13,18,10,10,45,45,18,14,14,14,20,18,14,14,24,24,24,24,14,16,20,13];
+export const ANCHOS = [5,15,11,9,9,10,24,24,17,15,18,22,13,13,18,10,10,45,45,18,14,14,14,20,18,14,14,24,24,24,24,14,16,20,13];
 
 export const COLOR_ENCABEZADO = "FF004941"; // var(--verde-oscuro) — mismo verde institucional que el macro original.
 
@@ -75,13 +88,34 @@ export function limpiarHash(v){
   return (v||"").toString().trim().replace(/^#/, "").replace(/#$/, "");
 }
 
+// Mapa Cliente (Razón Social, normalizada) -> NIT — el NIT vive en la lista
+// Clientes, no en el Proceso, así que no se puede leer con un simple
+// `p[campo]` como el resto de columnas. Agregado 2026-09-17, pedido
+// explícito del usuario ("Numero de Identificacion Demandante coloca la
+// identificación del cliente NIT"). Exportado para que informeGeneral.js
+// (reusa estas mismas columnas) resuelva el mismo campo igual.
+export function nitPorCliente(clientes){
+  const mapa = new Map();
+  (clientes||[]).forEach(c => {
+    const nombre = (c.RazonSocial||"").trim().toLowerCase();
+    if(nombre) mapa.set(nombre, c.Nit || "");
+  });
+  return mapa;
+}
+export function resolverValorColumnaSOS(campo, p, nitPorClienteMapa){
+  if(campo === 'DemandanteIdentificacion') return nitPorClienteMapa.get((p.Cliente||"").trim().toLowerCase()) || "";
+  return p[campo];
+}
+
 // "entidad" no se usa (el nombre de la Entidad ya está fijo en este archivo,
 // es siempre "SOS") — se recibe solo para que la firma sea igual a la del
 // resto de generadores de Excel (ver FORMATOS_POR_ENTIDAD en InformesView.jsx).
-export async function generarInformeSOSExcel(entidad, procesos){
+// "clientes" se agregó 2026-09-17 para poder resolver el NIT (ver arriba).
+export async function generarInformeSOSExcel(entidad, procesos, clientes){
   const { default: ExcelJS } = await import('exceljs');
   const wb = new ExcelJS.Workbook();
   const ws = wb.addWorksheet("SOS");
+  const nits = nitPorCliente(clientes);
 
   ws.columns = COLUMNAS_SOS.map((c, i) => ({ width: ANCHOS[i] || 14 }));
 
@@ -95,7 +129,7 @@ export async function generarInformeSOSExcel(entidad, procesos){
 
   procesos.forEach(p => {
     const valores = COLUMNAS_SOS.map(([, campo, tipo]) => {
-      const raw = p[campo];
+      const raw = resolverValorColumnaSOS(campo, p, nits);
       if(tipo === 'money') return parseMonto(raw);
       if(tipo === 'date') return fechaISOaExcel(raw);
       if(tipo === 'html') return stripHtml(raw);

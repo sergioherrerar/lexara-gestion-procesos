@@ -3,6 +3,12 @@
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
 ## 2026-09-17
+- **Ajustes al informe Excel de SOS, pedidos explícitos del usuario:**
+  - Nueva columna **"Radicacion del Proceso"** entre "Valor radicacion" (K) y "Fecha Admision del Proceso" (L→M) — mismo dato que Radicado/Número Corto.
+  - **"Apoderado o agente oficioso (SNS)"** ahora trae **Abogado encargado** (antes traía "Apoderado", llenado de forma inconsistente).
+  - **"Demandante (SNS)"** ahora trae **Cliente** (antes traía el campo "Demandante" directo).
+  - **"Numero de Identificacion Demandante (SNS)"** ahora trae el **NIT real del Cliente** (buscado en la lista Clientes por Razón Social) — antes, por un mapeo mal confirmado, mostraba el nombre del cliente en vez de su NIT. Mismo arreglo aplicado también al Excel de "Todos los procesos" (comparte el mismo formato de columnas).
+  - **"Radicación del proceso" también se agregó a la pestaña Trazabilidad** de cada Proceso judicial (dato de solo lectura, mismo valor que el Número Corto que ya se ve arriba del todo del panel).
 - **Corrige el formato de la lista de valores del filtro de columna, en todo el portal** — pedido explícito del usuario con una captura de "Fecha de Creación" en Tutelas: al ser un campo de fecha Y hora, la lista mostraba una fila por cada instante exacto en formato ISO crudo ("2026-01-05T14:06:51Z"), en vez de agrupar por día en el mismo formato legible que ya usa el resto del portal ("05 ene. 2026"). Se agregó `clavePorDia()` en graph.js (agrupa por día antes de armar la lista) y se reutiliza `fmtDate()` (ya usada en toda la app) para mostrarlo bonito — afecta cualquier columna de fecha/hora de las 7 tablas que usan este filtro.
 
 ## 2026-09-16

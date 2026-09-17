@@ -286,6 +286,11 @@ export const SHAREPOINT_LISTS_CONFIG = [
       // finales) — se deja como su propio campo en vez de adivinar el cálculo.
       {key:"RadicadoActual", label:"Radicado actual", hint:["radicado actual"]},
       {key:"FechaTerminacion", label:"Fecha terminación", hint:["fecha terminacion","fecha terminación"]},
+      // Agregado 2026-09-17, pedido explícito del usuario para el informe SOS
+      // ("entre columnas K-L introduce la columna 'Radicación del Proceso'").
+      // Misma columna real que Radicado (Numero_Corto) — mismo patrón ya
+      // usado para Numero5Digitos/NaturalezaProceso/etc. arriba.
+      {key:"RadicacionProceso", label:"Radicación del proceso", hint:["radicacion del proceso","radicación del proceso"]},
     ],
     // Mapeo real completo, confirmado por el usuario desde Configuración y
     // exportado el 2026-08-16 ("actualiza el proceso de mapeo") — se deja
@@ -341,11 +346,12 @@ export const SHAREPOINT_LISTS_CONFIG = [
       Admitida: "Admitida",
       PruebaPericial: "Prueba_x0020_Pericial",
       OrigenTipoGlosa: "Origen_x002f_Tipo_x0020_Glosa",
-      // Estos 5 no son columnas propias — apuntan a la MISMA columna real de
+      // Estos no son columnas propias — apuntan a la MISMA columna real de
       // otro campo (confirmado por el usuario en Configuración).
       NaturalezaProceso: "Tipo_x0020_de_x0020_Accion",       // = TipoAccion
       Subclasificacion: "Tipo_x0020_de_x0020_Proceso",       // = TipoProceso
       Numero5Digitos: "numero_x0020_corto",                  // = Radicado
+      RadicacionProceso: "numero_x0020_corto",               // = Radicado (agregado 2026-09-17, informe SOS)
       ValorCarteraActual: "Valor_x0020_Actual_x0020_Demanda", // = ValorActualDemanda
       // OJO: el mapeo auto-detectado el 2026-09-07 sugirió "LinkCarpetas" acá
       // en vez de "LinkCliente" (las 2 columnas se ven parecidas para el
@@ -355,6 +361,11 @@ export const SHAREPOINT_LISTS_CONFIG = [
       EnlaceProceso: "LinkCliente",                          // = LinkCliente
       GlosaDemandada: "Origen_x002f_Tipo_x0020_Glosa",        // = OrigenTipoGlosa
       RadicadoActual: "No_x0020_Completo",                    // = NoCompleto
+      // Este mapeo de por sí ya no se usa para calcular el valor real (ver
+      // nota 2026-09-17 en informeSOS.js: el NIT vive en la lista Clientes,
+      // no en el Proceso, así que ese archivo lo busca por Cliente/RazonSocial
+      // en vez de leer esta columna) — se deja el mapeo solo para que
+      // Configuración no muestre este campo como "sin mapear".
       DemandanteIdentificacion: "Cliente",                    // = Cliente
       Departamento: "Ciudad",
       Municipio: "Ciudad",                                    // mismo campo que Departamento

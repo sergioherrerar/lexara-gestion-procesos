@@ -7,17 +7,20 @@
 // para poder distinguir de dónde es cada fila una vez mezcladas todas.
 // Ver [[project_informes_modulo]].
 import { stripHtml, parseMonto } from './graph';
-import { COLUMNAS_SOS, ANCHOS, COLOR_ENCABEZADO, fechaISOaExcel, limpiarHash } from './informeSOS';
+import { COLUMNAS_SOS, ANCHOS, COLOR_ENCABEZADO, fechaISOaExcel, limpiarHash, nitPorCliente, resolverValorColumnaSOS } from './informeSOS';
 
 const COLUMNAS_EXTRA = [["Entidad", "Entidad", "text"], ["Estado V/T", "EstadoVT", "text"]];
 const ANCHOS_EXTRA = [16, 14];
 const COLUMNAS = [...COLUMNAS_EXTRA, ...COLUMNAS_SOS];
 const ANCHOS_TOTAL = [...ANCHOS_EXTRA, ...ANCHOS];
 
-export async function generarInformeGeneralProcesosExcel(procesos){
+// "clientes" agregado 2026-09-17 (mismo motivo que en informeSOS.js: el NIT
+// del cliente vive en la lista Clientes, no en el Proceso).
+export async function generarInformeGeneralProcesosExcel(procesos, clientes){
   const { default: ExcelJS } = await import('exceljs');
   const wb = new ExcelJS.Workbook();
   const ws = wb.addWorksheet("Todos los procesos");
+  const nits = nitPorCliente(clientes);
 
   ws.columns = COLUMNAS.map((c, i) => ({ width: ANCHOS_TOTAL[i] || 14 }));
 
@@ -31,7 +34,7 @@ export async function generarInformeGeneralProcesosExcel(procesos){
 
   procesos.forEach(p => {
     const valores = COLUMNAS.map(([, campo, tipo]) => {
-      const raw = p[campo];
+      const raw = resolverValorColumnaSOS(campo, p, nits);
       if(tipo === 'money') return parseMonto(raw);
       if(tipo === 'date') return fechaISOaExcel(raw);
       if(tipo === 'html') return stripHtml(raw);

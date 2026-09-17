@@ -934,6 +934,15 @@ export default function ProcesoDrawer({ proceso, clientes, colaboradores, factur
             <div className="field-section">
               <h4>{TRAZABILIDAD_SECTION.title}</h4>
               <div className="field-card-grid">
+                {/* Solo lectura (pedido explícito del usuario 2026-09-17:
+                    "coloca este campo en trazabilidad") — misma columna real
+                    que "Radicado" (Numero_Corto), ya visible arriba del todo
+                    del drawer; se muestra de nuevo acá por conveniencia, sin
+                    pasar por el formulario editable para no arriesgar una
+                    escritura duplicada/en conflicto sobre la misma columna
+                    (mismo criterio que el resto de alias de esta pantalla,
+                    ver comentarios en FIELD_SECTIONS más arriba). */}
+                <FieldCard label="Radicación del proceso">{proceso.Radicado || "—"}</FieldCard>
                 {TRAZABILIDAD_SECTION.fields.map(([key,type]) => (
                   <FieldCard label={LABELS[key]} full={type==='richtext'} key={key}>
                     {renderGenericField(key, type, form, setField, canWrite)}
