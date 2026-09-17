@@ -233,6 +233,13 @@ function soloFechaISO(v){
 }
 
 function renderGenericField(key, type, form, setField, canWrite){
+  // RadicacionProceso: columna real de SharePoint con datos mezclados (a
+  // veces fecha, a veces un código corto como "2009-01102" — ver nota en
+  // TRAZABILIDAD_SECTION). Se guarda como texto para no perder el dato, pero
+  // para MOSTRARLO se reusa fmtDate (mismo formato legible del resto del
+  // portal) — ya está pensado para esto: si el valor sí parece una fecha ISO
+  // lo formatea bonito, y si no (como el código corto), lo deja tal cual.
+  if(key === 'RadicacionProceso') return <input type="text" value={fmtDate(form[key]) === "—" ? "" : fmtDate(form[key])} onChange={e => setField(key, e.target.value)} readOnly={!canWrite} />;
   if(type==='richtext') return <RichTextEditor value={form[key]} onChange={v => setField(key, v)} readOnly={!canWrite} />;
   if(type==='textarea') return <textarea value={form[key]} onChange={e => setField(key, e.target.value)} readOnly={!canWrite} />;
   if(type==='money') return <input type="text" className="input-money" value={form[key]} onChange={e => setField(key, e.target.value)} onBlur={e => setField(key, fmtMonto(parseMonto(e.target.value)))} readOnly={!canWrite} />;

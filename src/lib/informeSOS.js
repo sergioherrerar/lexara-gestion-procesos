@@ -10,7 +10,7 @@
 // ExcelJS/jsPDF son librerías pesadas que solo hacen falta al generar estos
 // informes puntuales — se importan de forma diferida (dynamic import) para
 // que no infle el paquete principal que se descarga en cada inicio de sesión.
-import { stripHtml, parseMonto, fmtMonto, procesoForDesistimiento } from './graph';
+import { stripHtml, parseMonto, fmtMonto, procesoForDesistimiento, fmtDate } from './graph';
 import { generarCartaInformePDF, fechaLarga, fechaCorta, VERDE_OSCURO, GRIS_SUAVE } from './informesPDF';
 
 // [columna Excel, header exacto que la Entidad SOS espera, campo interno de
@@ -133,6 +133,11 @@ export function resolverValorColumnaSOS(campo, p, nitPorClienteMapa, identificac
     const nombreAbogado = (p.AbogadoEncargado || p.Apoderado || "").trim().toLowerCase();
     return nombreAbogado ? (identificacionPorColaboradorMapa?.get(nombreAbogado) || "") : "";
   }
+  // RadicacionProceso: columna real con datos mezclados (a veces fecha, a
+  // veces un código corto — ver nota junto a esta columna en COLUMNAS_SOS).
+  // fmtDate ya está pensada para esto: formatea bonito si de verdad parece
+  // una fecha ISO, y deja el valor tal cual si no (ej. "2009-01102").
+  if(campo === 'RadicacionProceso') return p.RadicacionProceso ? fmtDate(p.RadicacionProceso) : "";
   return p[campo];
 }
 
