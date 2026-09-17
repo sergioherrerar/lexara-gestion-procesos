@@ -464,6 +464,14 @@
      sobre un punto para saber qué significa cada color. */
   .mini-calendario-leyenda{display:flex; gap:16px; justify-content:center; padding:9px 14px; background:var(--gris-claro); border-bottom:1px solid var(--gris-linea); font-size:12.5px; color:var(--texto-suave);}
   .mini-calendario-leyenda span{display:flex; align-items:center; gap:5px;}
+  /* .punto/.punto-audiencia/.punto-termino: color y tamaño del punto en sí
+     (antes solo existían pegados a ".mini-calendario-celda", así que en la
+     leyenda de arriba no se veía ningún color — bug real reportado por el
+     usuario con captura: "no muestra el color de la audiencia/término"). Se
+     sacan a una regla propia para poder reusarlos aquí también. */
+  .punto{width:7px; height:7px; border-radius:50%; flex-shrink:0; display:inline-block;}
+  .punto-audiencia{background:var(--verde-claro);}
+  .punto-termino{background:var(--naranja);}
   .mini-calendario-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:4px; padding:12px;}
   .mini-calendario-diasemana{text-align:center; font-size:13px; color:var(--texto-suave); font-weight:600; padding-bottom:6px;}
   .mini-calendario-celda{
@@ -481,9 +489,6 @@
   .mini-calendario-celda.seleccionado{background:var(--verde-oscuro);}
   .mini-calendario-celda.seleccionado .numero{color:#fff; font-weight:700;}
   .mini-calendario-celda .puntos{display:flex; gap:4px;}
-  .mini-calendario-celda .punto{width:7px; height:7px; border-radius:50%; flex-shrink:0;}
-  .mini-calendario-celda .punto-audiencia{background:var(--verde-claro);}
-  .mini-calendario-celda .punto-termino{background:var(--naranja);}
 
   /* Panel del día elegido (2026-09-15, pedido explícito del usuario: lista
      resumida de Audiencias/Términos de ese día + formulario rápido para
