@@ -3,6 +3,7 @@
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
 ## 2026-09-18
+- **Las 3 mini tablas de "Vencimientos de esta semana" ya tienen el color de su tipo** — pedido explícito del usuario, viendo que las 3 se veían con el mismo encabezado genérico. Ahora usan los mismos colores que ya sombrean los días del mini calendario: verde para Audiencias, naranja para Términos, azul para Pendientes (encabezado de la tabla, borde superior y el título de cada mini tabla).
 - **Nuevo panel "Vencimientos de esta semana" en el módulo Vencimientos** — pedido explícito del usuario, entre las pestañas y la tabla, visible sin importar cuál pestaña esté activa: junta Audiencias (Número Corto, Tipo de audiencia, Fecha), Términos (Número Corto, Tipo de término, Vencimiento) y Pendientes (Pendiente, Para, Fecha) de la semana en curso (lunes a domingo), cada uno en su propia mini tabla. El usuario lo pidió justo porque Pendientes ya se puede filtrar por columna pero Audiencias/Términos todavía no — este panel da un vistazo rápido de lo próximo a vencer sin depender de ningún filtro.
 
 ## 2026-09-17

@@ -75,8 +75,8 @@ function VencimientosSemana({ audiencias, terminos, pendientes, procesos }){
       <div className="panel-head"><h3>Vencimientos de esta semana</h3></div>
       <div className="panel-body" style={{padding:'14px 20px', display:'flex', flexWrap:'wrap', gap:24}}>
         {audienciasSemana.length > 0 && (
-          <div style={{flex:'1 1 260px', minWidth:0}}>
-            <p className="save-hint" style={{margin:'0 0 8px', fontWeight:600, color:'var(--verde-oscuro)'}}>Audiencias</p>
+          <div className="vencimientos-semana-audiencia" style={{flex:'1 1 260px', minWidth:0}}>
+            <p className="save-hint semana-tipo-titulo" style={{margin:'0 0 8px', fontWeight:600}}>Audiencias</p>
             <div className="table-wrap">
               <table className="table-compact">
                 <thead><tr><th>Número Corto</th><th>Tipo de audiencia</th><th>Fecha</th></tr></thead>
@@ -90,8 +90,8 @@ function VencimientosSemana({ audiencias, terminos, pendientes, procesos }){
           </div>
         )}
         {terminosSemana.length > 0 && (
-          <div style={{flex:'1 1 260px', minWidth:0}}>
-            <p className="save-hint" style={{margin:'0 0 8px', fontWeight:600, color:'var(--verde-oscuro)'}}>Términos</p>
+          <div className="vencimientos-semana-termino" style={{flex:'1 1 260px', minWidth:0}}>
+            <p className="save-hint semana-tipo-titulo" style={{margin:'0 0 8px', fontWeight:600}}>Términos</p>
             <div className="table-wrap">
               <table className="table-compact">
                 <thead><tr><th>Número Corto</th><th>Tipo de término</th><th>Vencimiento</th></tr></thead>
@@ -105,8 +105,8 @@ function VencimientosSemana({ audiencias, terminos, pendientes, procesos }){
           </div>
         )}
         {pendientesSemana.length > 0 && (
-          <div style={{flex:'1 1 260px', minWidth:0}}>
-            <p className="save-hint" style={{margin:'0 0 8px', fontWeight:600, color:'var(--verde-oscuro)'}}>Pendientes</p>
+          <div className="vencimientos-semana-pendiente" style={{flex:'1 1 260px', minWidth:0}}>
+            <p className="save-hint semana-tipo-titulo" style={{margin:'0 0 8px', fontWeight:600}}>Pendientes</p>
             <div className="table-wrap">
               <table className="table-compact">
                 <thead><tr><th>Pendiente</th><th>Para</th><th>Fecha</th></tr></thead>

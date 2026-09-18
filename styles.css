@@ -503,6 +503,21 @@
   .mini-calendario-celda.con-termino .numero{color:#b3590a; font-weight:700;}
   .mini-calendario-celda.con-pendiente{background:#eaf1fb;}
   .mini-calendario-celda.con-pendiente .numero{color:#2f5fa8; font-weight:700;}
+  /* Mini tablas de "Vencimientos de esta semana" (2026-09-18, pedido
+     explícito del usuario: "pinta el fondo del color de audiencia termino
+     pendiente igual al del calendario") — mismos pares fondo/texto que ya
+     usan los días sombreados del mini calendario (con-audiencia/con-termino/
+     con-pendiente arriba), para que ambos lugares del portal se vean
+     consistentes con el mismo código de color. */
+  .vencimientos-semana-audiencia .semana-tipo-titulo{color:var(--verde-oscuro);}
+  .vencimientos-semana-audiencia .table-wrap{border-top-color:var(--verde-oscuro);}
+  .vencimientos-semana-audiencia thead th{background:#d7f2e4; border-bottom-color:var(--verde-claro); color:var(--verde-oscuro);}
+  .vencimientos-semana-termino .semana-tipo-titulo{color:#b3590a;}
+  .vencimientos-semana-termino .table-wrap{border-top-color:var(--naranja);}
+  .vencimientos-semana-termino thead th{background:#fdece0; border-bottom-color:var(--naranja); color:#b3590a;}
+  .vencimientos-semana-pendiente .semana-tipo-titulo{color:#2f5fa8;}
+  .vencimientos-semana-pendiente .table-wrap{border-top-color:#2f5fa8;}
+  .vencimientos-semana-pendiente thead th{background:#eaf1fb; border-bottom-color:#2f5fa8; color:#2f5fa8;}
   .mini-calendario-celda.hoy{box-shadow:inset 0 0 0 2px var(--verde-oscuro);}
   .mini-calendario-celda.hoy .numero{font-weight:700;}
   .mini-calendario-celda.seleccionado{background:var(--verde-oscuro);}
