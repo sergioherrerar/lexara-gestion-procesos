@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-18
+- **Nuevo panel "Vencimientos de esta semana" en el módulo Vencimientos** — pedido explícito del usuario, entre las pestañas y la tabla, visible sin importar cuál pestaña esté activa: junta Audiencias (Número Corto, Tipo de audiencia, Fecha), Términos (Número Corto, Tipo de término, Vencimiento) y Pendientes (Pendiente, Para, Fecha) de la semana en curso (lunes a domingo), cada uno en su propia mini tabla. El usuario lo pidió justo porque Pendientes ya se puede filtrar por columna pero Audiencias/Términos todavía no — este panel da un vistazo rápido de lo próximo a vencer sin depender de ningún filtro.
+
 ## 2026-09-17
 - **La leyenda del mini calendario ahora también incluye "Festivos"** — pedido explícito del usuario. Como los festivos no tienen un punto en el día (sombrean toda la celda, no un punto pequeño), se representan con un cuadrito rosado en vez de un círculo, para no confundirlo con los otros 3 tipos.
 - **El panel del día en el mini calendario ahora dice el tipo de audiencia/término, no solo el Número Corto** — pedido explícito del usuario. Al hacer clic en un día con Audiencia o Término, la lista ahora dice, por ejemplo, "Audiencia 11001-33-44-006-2025-00099-00 — Audiencia De Alegaciones Y Juzgamiento Art. 182 Cpaca" en vez de solo el radicado (el tooltip al pasar el mouse ya lo traía; solo faltaba en la lista de abajo al hacer clic).
