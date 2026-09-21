@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-22 (8)
+- **En Administración → Horas Extras, la columna "Tutelas del día" ahora también muestra el total** — pedido explícito del usuario viendo la tabla en vivo. Antes solo se veía el desglose (Tutelas / Impugnaciones / Otras); ahora hay una caja "Total" al frente con la suma de las tres, para no tener que sumarlas a mano.
+
 ## 2026-09-22 (7)
 - **El aviso de "no se pudieron cargar los datos de SharePoint" ahora dice cuál lista falló** — antes, si una sola lista de SharePoint (de cerca de 20) le negaba el acceso a una cuenta, todo el inicio de sesión fallaba con un mensaje genérico ("Error de SharePoint (403): Access denied") que no decía cuál — visto en vivo por el usuario justo después de esta publicación. Ahora el aviso incluye el nombre de la lista al frente (ej. "[Horas Extras] Error de SharePoint (403): Access denied"), para poder identificar de una vez qué permiso falta.
 

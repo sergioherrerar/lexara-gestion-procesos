@@ -122,6 +122,7 @@ export default function HorasExtrasTab({ horasExtras, tutelas, colaboradores, on
                   <td><strong>{total}</strong></td>
                   <td>
                     <div style={{display:'flex', gap:6}}>
+                      <CajaConteo label="Total" valor={conteo.TUTELA + conteo.IMPUGNACION + conteo.Otras} color="var(--verde-oscuro)" />
                       <CajaConteo label="Tutelas" valor={conteo.TUTELA} color={colorDeTipoRespuesta('TUTELA')} />
                       <CajaConteo label="Impugn." valor={conteo.IMPUGNACION} color={colorDeTipoRespuesta('IMPUGNACION')} />
                       <CajaConteo label="Otras" valor={conteo.Otras} color="var(--texto-suave)" />
