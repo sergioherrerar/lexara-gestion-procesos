@@ -215,6 +215,10 @@ const LABELS = {
   RadicacionProceso:"Radicación del proceso",
 };
 
+function escapeHtml(s){
+  return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
 // Campo genérico (texto/select/money/textarea/richtext), compartido entre
 // la pestaña "Datos generales" y "Trazabilidad fechas" — evita repetir el
 // mismo switch de tipos dos veces. Los casos especiales por campo (Cliente,
@@ -474,6 +478,11 @@ export default function ProcesoDrawer({ proceso, clientes, colaboradores, factur
   // Los campos "link" son columnas de "Hipervínculo o imagen" en SharePoint
   // — Graph las espera como {Url, Description}, no como texto plano, o el
   // guardado no toma el dato (aunque no siempre avisa con error).
+  // Pedido explícito del usuario 2026-09-22, viendo un proceso real: cuando
+  // se actualiza "Estado" (reemplazando el texto por el nuevo auto/actuación),
+  // el valor ANTERIOR no debe perderse — se archiva solo, como una línea más
+  // al final de "Histórico" (misma bitácora narrativa de arriba), antes de
+  // que "Estado" se sobreescriba con el texto nuevo que se acaba de escribir.
   function handleSave(){
     const payload = {};
     ALL_SECTIONS.forEach(sec => sec.fields.forEach(([key,type]) => {
@@ -485,6 +494,13 @@ export default function ProcesoDrawer({ proceso, clientes, colaboradores, factur
       const cambio = type==='money' ? actual !== original : String(actual) !== String(original ?? "");
       if(cambio) payload[key] = type==='link' && actual ? { Url: actual, Description: actual } : actual;
     }));
+    if(payload.Estado !== undefined){
+      const estadoAnterior = stripHtml(proceso.Estado || "").trim();
+      if(estadoAnterior){
+        const historicoActual = payload.Historico !== undefined ? payload.Historico : (form.Historico || "");
+        payload.Historico = historicoActual + `<div>${escapeHtml(estadoAnterior)}</div>`;
+      }
+    }
     onSave(payload);
   }
 

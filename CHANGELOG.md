@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-22 (9)
+- **En Procesos judiciales, al actualizar "Estado" el valor anterior se archiva solo en "Histórico"** — pedido explícito del usuario viendo un proceso real. Antes, al escribir el nuevo auto/actuación en "Estado", el texto anterior se perdía sin dejar rastro. Ahora, al guardar, ese valor anterior se agrega como una nueva línea al final de "Histórico" (respetando lo que ya hubiera ahí, con su formato), y "Estado" queda solo con lo que se acaba de escribir.
+
 ## 2026-09-22 (8)
 - **En Administración → Horas Extras, la columna "Tutelas del día" ahora también muestra el total** — pedido explícito del usuario viendo la tabla en vivo. Antes solo se veía el desglose (Tutelas / Impugnaciones / Otras); ahora hay una caja "Total" al frente con la suma de las tres, para no tener que sumarlas a mano.
 
