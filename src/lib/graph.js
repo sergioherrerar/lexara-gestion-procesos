@@ -372,14 +372,19 @@ export function mensajeError(err){
   // graphFetch (ver abajo) arma el error como "Graph 400: {"error":{...}}" —
   // se saca solo el mensaje real, sin el JSON crudo (a veces recortado, si
   // la respuesta era larga, así que el parseo puede fallar — ahí se cae al
-  // mensaje genérico de abajo en vez de reventar).
-  const graphMatch = msg.match(/^Graph (\d+): (\{[\s\S]*)$/);
+  // mensaje genérico de abajo en vez de reventar). cargarTodasLasListas le
+  // antepone "[Nombre de la lista] " cuando el error viene de conectar una
+  // lista puntual — se conserva ese prefijo para señalar dónde está el problema.
+  const listadoMatch = msg.match(/^(\[[^\]]+\] )(Graph (\d+): [\s\S]*)$/);
+  const prefijoLista = listadoMatch ? listadoMatch[1] : '';
+  const msgSinPrefijo = listadoMatch ? listadoMatch[2] : msg;
+  const graphMatch = msgSinPrefijo.match(/^Graph (\d+): (\{[\s\S]*)$/);
   if(graphMatch){
     try{
       const detalle = JSON.parse(graphMatch[2])?.error?.message;
-      if(detalle) return `Error de SharePoint (${graphMatch[1]}): ${detalle}`;
+      if(detalle) return `${prefijoLista}Error de SharePoint (${graphMatch[1]}): ${detalle}`;
     }catch{ /* JSON incompleto/recortado — se cae al genérico */ }
-    return `Error de SharePoint (código ${graphMatch[1]}).`;
+    return `${prefijoLista}Error de SharePoint (código ${graphMatch[1]}).`;
   }
   return msg;
 }

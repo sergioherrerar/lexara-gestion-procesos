@@ -62,7 +62,20 @@ async function cargarTodasLasListas(config, lists, sid){
   }
   return Promise.all(lists.map(async list => {
     const listSiteId = await siteIdForList(config, list, sid, siteCache);
-    const connected = await Graph.connectList(listSiteId, list);
+    let connected;
+    try{
+      connected = await Graph.connectList(listSiteId, list);
+    }catch(err){
+      // Bug real 2026-09-21: un 403 "Access denied" en UNA sola lista (de
+      // ~20, en 2-3 sitios distintos) tumbaba TODA la carga con un mensaje
+      // genérico que no decía cuál — el usuario veía "Access denied" sin
+      // ninguna pista de qué lista/sitio de SharePoint le estaba negando el
+      // acceso a esa cuenta en particular. Se re-lanza con el nombre de la
+      // lista al frente para que el aviso en pantalla señale exactamente
+      // dónde está el problema de permisos.
+      err.message = `[${list.label}] ${err.message}`;
+      throw err;
+    }
     // Bug real corregido 2026-09-02: esta carga (la de cada inicio de
     // sesión normal) usaba `list.mapping` tal cual venía de config.js +
     // localStorage, SIN adivinar los campos que todavía no tuvieran

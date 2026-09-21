@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-22 (7)
+- **El aviso de "no se pudieron cargar los datos de SharePoint" ahora dice cuál lista falló** — antes, si una sola lista de SharePoint (de cerca de 20) le negaba el acceso a una cuenta, todo el inicio de sesión fallaba con un mensaje genérico ("Error de SharePoint (403): Access denied") que no decía cuál — visto en vivo por el usuario justo después de esta publicación. Ahora el aviso incluye el nombre de la lista al frente (ej. "[Horas Extras] Error de SharePoint (403): Access denied"), para poder identificar de una vez qué permiso falta.
+
 ## 2026-09-22 (6)
 - **En Tutelas, "Entidad" y "Cliente" ahora son listas fijas, no todos los Clientes del despacho** — pedido explícito del usuario, viendo una tutela real con "Colmedica" (mal escrito) en el desplegable de Entidad, mezclado con clientes de otras Entidades. Ahora Entidad solo tiene **GRUPO COLMEDICA**, y Cliente solo **Colmedica Medicina Prepagada S.A.**, **Aliansalud Entidad Promotora de Salud S.A.** y **Unidad Médica y de Diagnóstico S.A.** — que es en la práctica todo lo que maneja este módulo. Una tutela ya guardada con otro valor lo sigue mostrando igual, no se pierde.
 
