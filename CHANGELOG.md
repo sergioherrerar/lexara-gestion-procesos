@@ -2,6 +2,21 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-22 (6)
+- **En Tutelas, "Entidad" y "Cliente" ahora son listas fijas, no todos los Clientes del despacho** — pedido explícito del usuario, viendo una tutela real con "Colmedica" (mal escrito) en el desplegable de Entidad, mezclado con clientes de otras Entidades. Ahora Entidad solo tiene **GRUPO COLMEDICA**, y Cliente solo **Colmedica Medicina Prepagada S.A.**, **Aliansalud Entidad Promotora de Salud S.A.** y **Unidad Médica y de Diagnóstico S.A.** — que es en la práctica todo lo que maneja este módulo. Una tutela ya guardada con otro valor lo sigue mostrando igual, no se pierde.
+
+## 2026-09-22 (5) — gráficas del Dashboard con "realce" (degradado + sombra)
+- **Dona, barras y barras de proporción del Dashboard ahora tienen un degradado sutil + sombra propia** — pedido explícito del usuario ("con realce", "tres D") — da sensación de volumen sin inventar tamaños ni distorsionar los datos (se evitó a propósito una torta "3D" de verdad, que sí engañaría el ojo sobre el tamaño real de cada porción).
+
+## 2026-09-22 (4)
+- **Ajuste de colores de las gráficas del Dashboard, a pedido del usuario** — el verde de la paleta pasa a ser el "verde claro" real de marca (#52bbb5, el mismo de los íconos y el mini calendario) en vez del verde más saturado que se había elegido solo por pasar la validación de contraste; el 2° color pasa de azul a gris neutro (#d0d0d0, el mismo gris ya usado en el resto del portal); el naranja se confirma en el naranja de marca (#ef7d00, ya estaba así).
+
+## 2026-09-22 (3)
+- **Datos de ejemplo: se agrega un desistimiento "No aprobado"** — pedido explícito del usuario, viendo el Dashboard en modo demo con solo "Aprobado"/"Sin desistimiento". El panel "Desistimientos por estado" ya soportaba cualquier valor real de la columna "Aprobación" sin tocar código — solo faltaba un dato de ejemplo con un 3er estado para poder verlo en modo demo.
+
+## 2026-09-22 (2)
+- **Se quitan "Clientes" y "Facturación" del Panorama general** — pedido explícito del usuario: "en el panorama general no debe salir nada administrativo". El Dashboard queda enfocado solo en procesos (Procesos Lexara, Tipo de Acción); esos 2 datos administrativos ya viven en sus propios módulos (Clientes, Solicitud De Factura E.). Las tarjetas de arriba se acomodan solas al espacio disponible, sin dejar huecos vacíos.
+
 ## 2026-09-22
 - **Rediseño del Dashboard: más profesional, con distintos tipos de gráficas y mejor uso del espacio** — pedido explícito del usuario. Cambios:
   - **Fondo institucional suave** en toda la pantalla de Dashboard (antes gris plano), y un acento de color a la izquierda de cada tarjeta de arriba, a juego con su ícono.

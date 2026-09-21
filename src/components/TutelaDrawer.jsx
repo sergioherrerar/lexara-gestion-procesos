@@ -35,6 +35,15 @@ const ABOGADO_RESPUESTA_DEFECTO = "Ariana Martin Mendoza";
 // (columna real de Búsqueda en SharePoint, ver graphFieldsFromUpdates en
 // graph.js) prácticamente solo maneja este valor en la práctica.
 const ENTIDAD_DEFECTO = "GRUPO COLMEDICA";
+// Listas fijas de Entidad/Cliente para Tutelas (2026-09-22, pedido explícito
+// del usuario, viendo una tutela real con "Colmedica" en vez de "GRUPO
+// COLMEDICA" y clientes de otras Entidades mezclados en el desplegable):
+// antes estas 2 salían de TODA la lista de Clientes del despacho (todas las
+// Entidades juntas) — en la práctica, Tutelas solo trabaja con este puñado
+// de Entidad/Clientes, así que se dejan fijas acá en vez de depender de la
+// lista general (que además puede traer valores viejos/mal escritos).
+const ENTIDAD_OPCIONES_TUTELAS = ["GRUPO COLMEDICA"];
+const CLIENTE_OPCIONES_TUTELAS = ["COLMEDICA MEDICINA PREPAGADA S.A.", "ALIANSALUD ENTIDAD PROMOTORA DE SALUD S.A.", "UNIDAD MÉDICA Y DE DIAGNÓSTICO S.A."];
 
 const FIELDS = ["NoTutela", "MedidaCautelar",
   "Departamento", "Ciudad", "Proceso", "FechaNotificacion", "FechaVencimiento", "Prestacion", "TipoRespuesta",
@@ -62,7 +71,7 @@ function emptyForm(tutela){
 }
 
 export default function TutelaDrawer({
-  tutela, clientes, temas, colaboradores, liveMode, onClose, onSave, onDelete,
+  tutela, temas, colaboradores, liveMode, onClose, onSave, onDelete,
   onCreateTema, onSaveTema, saving, canWrite = true,
 }){
   const [form, setForm] = useState(null);
@@ -119,9 +128,9 @@ export default function TutelaDrawer({
 
   function handleSave(){ onSave(form); }
 
-  const clienteNombres = clientes.map(c => c.RazonSocial).filter(Boolean);
+  const clienteNombres = [...CLIENTE_OPCIONES_TUTELAS];
   if(form.Cliente && !clienteNombres.includes(form.Cliente)) clienteNombres.unshift(form.Cliente);
-  const entidadOpciones = Array.from(new Set(clientes.map(c => c.Entidad).filter(Boolean))).sort((a,b)=>a.localeCompare(b));
+  const entidadOpciones = [...ENTIDAD_OPCIONES_TUTELAS];
   if(form.Entidad && !entidadOpciones.includes(form.Entidad)) entidadOpciones.unshift(form.Entidad);
   const tipoVinculacionOpciones = [...TIPO_VINCULACION_OPCIONES];
   if(form.TipoVinculacionEntidad && !tipoVinculacionOpciones.includes(form.TipoVinculacionEntidad)) tipoVinculacionOpciones.unshift(form.TipoVinculacionEntidad);

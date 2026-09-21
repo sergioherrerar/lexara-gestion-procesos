@@ -32,7 +32,7 @@ export function ProportionBar({ data, emptyMsg }){
     <div className="proportion-bar">
       <div className="proportion-bar-track">
         {porciones.map(p => (
-          <div key={p.label} className="proportion-bar-segment" style={{width: p.pct + '%', background: p.color}} title={`${p.label}: ${Math.round(p.pct)}%`} />
+          <div key={p.label} className="proportion-bar-segment" style={{width: p.pct + '%', backgroundColor: p.color}} title={`${p.label}: ${Math.round(p.pct)}%`} />
         ))}
       </div>
       <div className="proportion-bar-legend">
@@ -79,7 +79,7 @@ export function RankedProgressList({ items, emptyMsg, formatValue = v => `$ ${fm
               <span className="ranked-row-label">{it.label}</span>
               <span className="ranked-row-pct">{Math.round(pct)}%</span>
             </div>
-            <div className="ranked-row-track"><div className="ranked-row-fill" style={{width: Math.max(2,pct) + '%', background: color}} /></div>
+            <div className="ranked-row-track"><div className="ranked-row-fill" style={{width: Math.max(2,pct) + '%', backgroundColor: color}} /></div>
             <div className="ranked-row-meta">{it.count} {it.count===1 ? 'registro' : 'registros'} · {formatValue(it.value)}</div>
           </div>
         );

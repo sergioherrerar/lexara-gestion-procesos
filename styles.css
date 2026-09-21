@@ -290,7 +290,12 @@
   .view-header p{margin:0; color:var(--texto-suave); font-size:13.5px;}
 
   /* ---------- Dashboard ---------- */
-  .stat-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:26px;}
+  /* auto-fit (2026-09-22, tras quitar Clientes/Facturación del Dashboard —
+     "no debe salir nada administrativo") — con repeat(4,1fr) a secas, 2
+     tarjetas hubieran quedado angostas y con 2 columnas de espacio vacío al
+     lado; así se acomodan solas al ancho real que hay, sin importar cuántas
+     tarjetas termine habiendo. */
+  .stat-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(220px,1fr)); gap:16px; margin-bottom:26px;}
   /* Franja de color a la izquierda (2026-09-22, rediseño del Dashboard,
      pedido explícito del usuario: "totalmente profesionales... vistoso")
      — antes las 4 tarjetas eran idénticas salvo por el ícono; el color de
@@ -329,11 +334,19 @@
   .bar-row{display:flex; align-items:center; gap:12px; padding:8px 0;}
   .bar-row .bar-label{width:38%; flex-shrink:0; font-size:12.5px; color:var(--texto); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   .bar-row .bar-track{flex:1; background:var(--gris-claro); border-radius:6px; height:14px; overflow:hidden;}
-  /* Degradado sutil del mismo color (2026-09-22, rediseño del Dashboard) —
-     un solo tono, más oscuro a la izquierda, más claro a la derecha, NO un
-     arcoíris — sigue siendo una magnitud (un solo color), solo con más
-     textura que un relleno plano. */
-  .bar-row .bar-fill{height:100%; border-radius:6px; min-width:4px; background-image:linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,.16) 100%); transition:filter .12s ease;}
+  /* "Realce" (2026-09-22, pedido explícito del usuario: "con realce", "tres
+     D") — 2 capas de degradado (una franja de brillo horizontal + una
+     franja vertical más clara arriba) más una sombra propia, para dar
+     sensación de volumen a la barra sin inventar datos ni tamaños — sigue
+     siendo el mismo largo real, solo con más textura que un relleno plano. */
+  .bar-row .bar-fill{
+    height:100%; border-radius:6px; min-width:4px;
+    background-image:
+      linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,.18) 100%),
+      linear-gradient(180deg, rgba(255,255,255,.38) 0%, rgba(255,255,255,0) 55%);
+    box-shadow:0 1px 2px rgba(0,20,18,.18);
+    transition:filter .12s ease;
+  }
   .bar-row:hover .bar-fill{filter:brightness(1.06);}
   .bar-row .bar-value{width:26px; text-align:right; font-family:var(--font-mono); font-size:11.5px; font-weight:600; color:var(--texto); flex-shrink:0; font-variant-numeric:tabular-nums;}
   /* Barra apilada por Tipo Respuesta (StackedBarChart.jsx, Informes >
@@ -353,7 +366,11 @@
      una dona no deja leer el % con precisión. ---------- */
   .proportion-bar{padding:18px 20px 20px;}
   .proportion-bar-track{display:flex; height:28px; border-radius:8px; overflow:hidden; background:var(--gris-claro); box-shadow:inset 0 0 0 1px var(--gris-linea);}
-  .proportion-bar-segment{height:100%; min-width:2px; transition:filter .12s ease;}
+  .proportion-bar-segment{
+    height:100%; min-width:2px; transition:filter .12s ease;
+    background-image:linear-gradient(180deg, rgba(255,255,255,.4) 0%, rgba(255,255,255,0) 55%);
+    box-shadow:inset 0 -1px 2px rgba(0,20,18,.14);
+  }
   .proportion-bar-segment:hover{filter:brightness(1.08);}
   .proportion-bar-legend{display:flex; flex-wrap:wrap; gap:14px; margin-top:14px;}
   .proportion-bar-legend-item{display:flex; align-items:center; gap:6px; font-size:12.5px; color:var(--texto);}
@@ -370,7 +387,11 @@
   .ranked-row-label{font-size:13px; font-weight:600; color:var(--texto);}
   .ranked-row-pct{font-family:var(--font-display); font-size:15px; font-weight:700; color:var(--verde-oscuro);}
   .ranked-row-track{background:var(--gris-claro); border-radius:5px; height:8px; overflow:hidden;}
-  .ranked-row-fill{height:100%; border-radius:5px;}
+  .ranked-row-fill{
+    height:100%; border-radius:5px;
+    background-image:linear-gradient(180deg, rgba(255,255,255,.4) 0%, rgba(255,255,255,0) 55%);
+    box-shadow:0 1px 2px rgba(0,20,18,.16);
+  }
   .ranked-row-meta{font-size:11.5px; color:var(--texto-suave); margin-top:5px; font-variant-numeric:tabular-nums;}
   /* Detalle por abogado (InformesView.jsx, debajo del gráfico apilado) —
      una tarjeta por abogado con su valor total en el encabezado y cada

@@ -1,4 +1,17 @@
+import { useId } from 'react';
 import { ICON_SVG } from '../config';
+
+// Aclara un color hex mezclándolo hacia blanco (2026-09-22, pedido explícito
+// del usuario: "diseña los gráficos... con realce" — un degradado sutil de
+// cada color hacia una versión más clara del mismo, no un color inventado,
+// para dar sensación de volumen sin dejar de ser el mismo tono de la
+// leyenda/paleta.
+function aclararColor(hex, cantidad){
+  const n = parseInt(hex.slice(1), 16);
+  const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+  const mezclar = c => Math.round(c + (255 - c) * cantidad);
+  return `rgb(${mezclar(r)}, ${mezclar(g)}, ${mezclar(b)})`;
+}
 
 // Paleta categórica (2026-09-22, rediseño del Dashboard) — validada con el
 // verificador de la skill de dataviz (contraste CVD, piso de croma, banda
@@ -9,7 +22,14 @@ import { ICON_SVG } from '../config';
 // distinguirlos. El orden importa: el naranja y el verde quedan separados
 // (no van seguidos) porque esa pareja específica sí se confunde en
 // protanopía si quedan adyacentes.
-export const PALETA_CATEGORICA = ['#0f9d58', '#1d5fa3', '#ef7d00', '#7d4fb0', '#a3281c', '#c9971f'];
+// Verde cambiado a #52bbb5 (2026-09-22, pedido explícito del usuario,
+// señalando la dona real) — es el mismo "verde claro" que ya usa el resto
+// del portal (íconos, puntos del mini calendario), en vez del verde más
+// saturado que se había elegido antes solo por pasar la validación de
+// contraste. Se mantiene igual: cada color ya va siempre acompañado de su
+// nombre en la leyenda (nunca "solo color"), así que no depende de que este
+// tono se distinga solo por el ojo.
+export const PALETA_CATEGORICA = ['#52bbb5', '#d0d0d0', '#ef7d00', '#7d4fb0', '#a3281c', '#c9971f'];
 const PALETA = PALETA_CATEGORICA;
 
 function puntoEnCirculo(cx, cy, r, anguloDeg){
@@ -34,6 +54,11 @@ function describirArco(cx, cy, r, anguloInicio, anguloFin){
 // del total, dentro de la dona (ej. "procesos") — opcional, sin romper los
 // llamados existentes que no lo mandan.
 export default function PieChart({ data, emptyMsg, size = 150, centerLabel }){
+  // Prefijo único por instancia (2026-09-22) — si algún día hay 2 donas en
+  // la misma pantalla, los id de <linearGradient>/<filter> del "realce" no
+  // se pueden repetir en el mismo documento HTML o una dona termina
+  // pintándose con el degradado de la otra.
+  const idBase = useId();
   const conValor = (data||[]).filter(d => d.value > 0);
   const total = conValor.reduce((s,d) => s + d.value, 0);
   if(!total){
@@ -53,17 +78,37 @@ export default function PieChart({ data, emptyMsg, size = 150, centerLabel }){
     anguloActual = fin;
     return { ...d, color: PALETA[i % PALETA.length], path: barrido >= 359.99 ? null : describirArco(cx, cy, r, inicio, fin) };
   });
+  const coloresUnicos = Array.from(new Set(porciones.map(p => p.color)));
   return (
     <div className="pie-chart">
       <div className="pie-chart-svg-wrap">
         <svg viewBox={`0 0 ${size} ${size}`} width={size} height={size}>
+          <defs>
+            {/* Degradado propio por color (2026-09-22, pedido explícito del
+                usuario: "con realce") — más claro arriba-izquierda, el tono
+                real de la leyenda abajo-derecha; da sensación de volumen sin
+                inventar un color nuevo ni distorsionar el tamaño real de
+                cada porción (evita el error clásico de una torta "3D" de
+                verdad, que sí engaña el ojo sobre el tamaño). */}
+            {coloresUnicos.map(c => (
+              <linearGradient key={c} id={`${idBase}-g-${c}`} x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor={aclararColor(c, .32)} />
+                <stop offset="100%" stopColor={c} />
+              </linearGradient>
+            ))}
+            <filter id={`${idBase}-sombra`} x="-30%" y="-30%" width="160%" height="160%">
+              <feDropShadow dx="0" dy="1.5" stdDeviation="1.6" floodColor="#00291f" floodOpacity=".22" />
+            </filter>
+          </defs>
           {/* stroke blanco entre porciones (2026-09-22) — separador visual
               real entre segmentos, en vez de que queden pegados unos con
               otros sin ningún espacio. */}
-          {porciones.map(p => p.path
-            ? <path key={p.label} d={p.path} fill={p.color} stroke="#fff" strokeWidth="2" />
-            : <circle key={p.label} cx={cx} cy={cy} r={r} fill={p.color} />
-          )}
+          <g filter={`url(#${idBase}-sombra)`}>
+            {porciones.map(p => p.path
+              ? <path key={p.label} d={p.path} fill={`url(#${idBase}-g-${p.color})`} stroke="#fff" strokeWidth="2" />
+              : <circle key={p.label} cx={cx} cy={cy} r={r} fill={`url(#${idBase}-g-${p.color})`} />
+            )}
+          </g>
           <circle cx={cx} cy={cy} r={r * 0.58} fill="#fff" />
         </svg>
         {/* Total al centro de la dona (2026-09-22, pedido explícito del
