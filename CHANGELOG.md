@@ -2,6 +2,16 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-22
+- **Rediseño del Dashboard: más profesional, con distintos tipos de gráficas y mejor uso del espacio** — pedido explícito del usuario. Cambios:
+  - **Fondo institucional suave** en toda la pantalla de Dashboard (antes gris plano), y un acento de color a la izquierda de cada tarjeta de arriba, a juego con su ícono.
+  - **"Procesos activos por Estado" ahora es una dona** con el total al centro (antes era una barra) — más apropiado para pocas categorías (Vigente/Terminado/etc.), con % + cantidad en la leyenda.
+  - **"Procesos Admitidos" y "Procesos con Prueba Pericial" (Sí/No) ahora son una barra de proporción 100%** en vez de una dona — con 2-3 categorías, una dona no deja leer el % exacto; la barra sí lo escribe directo.
+  - **"Desistimientos" se unifica en una sola lista rankeada** (de mayor a menor valor en pesos, con su barra de progreso) — antes eran 2 paneles sueltos (un anillo con lista de texto plano, y una dona aparte).
+  - **"Procesos filtrados" y "Valor cartera actual" comparten un solo panel** en vez de 2 — mismo contenido, menos "cascarón" repetido.
+  - La paleta de colores de las gráficas se rehízo y se validó con una herramienta de accesibilidad (daltonismo, contraste) — la anterior tenía 2 tonos cafés casi idénticos entre sí y un par naranja/verde que se confunde en cierto tipo de daltonismo; ambos problemas ya no existen en la paleta nueva.
+  - Nota: los archivos que se descargan (HTML/Word del análisis por Entidad) siguen con su diseño de antes — este rediseño es solo de la pantalla en vivo del Dashboard.
+
 ## 2026-09-21 (2)
 - **Manual de usuario: nuevo módulo "Vencimientos" (9 de 9)** — pedido explícito del usuario, para dejar al día todo lo agregado esta semana. Cubre las 3 pestañas (Audiencias, Términos, Pendientes), el panel "Vencimientos de esta semana" y el mini calendario de la cabecera (colores, festivos, agendar evento). De paso se agregaron 2 notas a secciones ya existentes: una pregunta frecuente en Procesos judiciales sobre por qué "Apoderado"/"Abogado encargado" ya solo muestran abogados, y una explicación del filtro de columna estilo Excel para fechas (árbol Año/Mes/Día) en la sección de Tutelas, aclarando que aplica a todas las tablas del portal.
 ## 2026-09-21

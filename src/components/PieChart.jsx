@@ -1,9 +1,16 @@
 import { ICON_SVG } from '../config';
 
-// Paleta institucional reusada para las porciones — mismos colores que ya
-// usa el resto de la app (verde oscuro/claro, naranja, semáforo rojo, azul
-// de correo) en vez de inventar colores nuevos.
-const PALETA = ['#004941', '#ef7d00', '#52bbb5', '#a3281c', '#1d5fa3', '#8a6410', '#6b5115', '#5c6b68'];
+// Paleta categórica (2026-09-22, rediseño del Dashboard) — validada con el
+// verificador de la skill de dataviz (contraste CVD, piso de croma, banda
+// de luminosidad) en vez de reusar a ojo los colores institucionales de la
+// UI. Los 2 primeros colores institucionales (verde/naranja de marca) SÍ se
+// conservan, pero varios de los que seguían (un verde azulado y 2 cafés casi
+// idénticos entre sí) fallaban las pruebas — un daltónico no podía
+// distinguirlos. El orden importa: el naranja y el verde quedan separados
+// (no van seguidos) porque esa pareja específica sí se confunde en
+// protanopía si quedan adyacentes.
+export const PALETA_CATEGORICA = ['#0f9d58', '#1d5fa3', '#ef7d00', '#7d4fb0', '#a3281c', '#c9971f'];
+const PALETA = PALETA_CATEGORICA;
 
 function puntoEnCirculo(cx, cy, r, anguloDeg){
   const rad = (anguloDeg * Math.PI) / 180;
@@ -23,7 +30,10 @@ function describirArco(cx, cy, r, anguloInicio, anguloFin){
 // 0°→360° con el mismo punto de inicio y fin no se puede describir con un
 // solo "A" de SVG (queda invisible), es un caso especial real de este tipo
 // de gráfico, no un descuido.
-export default function PieChart({ data, emptyMsg, size = 150 }){
+// `centerLabel` (2026-09-22, rediseño del Dashboard) — texto chico arriba
+// del total, dentro de la dona (ej. "procesos") — opcional, sin romper los
+// llamados existentes que no lo mandan.
+export default function PieChart({ data, emptyMsg, size = 150, centerLabel }){
   const conValor = (data||[]).filter(d => d.value > 0);
   const total = conValor.reduce((s,d) => s + d.value, 0);
   if(!total){
@@ -45,19 +55,36 @@ export default function PieChart({ data, emptyMsg, size = 150 }){
   });
   return (
     <div className="pie-chart">
-      <svg viewBox={`0 0 ${size} ${size}`} width={size} height={size}>
-        {porciones.map(p => p.path
-          ? <path key={p.label} d={p.path} fill={p.color} />
-          : <circle key={p.label} cx={cx} cy={cy} r={r} fill={p.color} />
-        )}
-        <circle cx={cx} cy={cy} r={r * 0.58} fill="#fff" />
-      </svg>
+      <div className="pie-chart-svg-wrap">
+        <svg viewBox={`0 0 ${size} ${size}`} width={size} height={size}>
+          {/* stroke blanco entre porciones (2026-09-22) — separador visual
+              real entre segmentos, en vez de que queden pegados unos con
+              otros sin ningún espacio. */}
+          {porciones.map(p => p.path
+            ? <path key={p.label} d={p.path} fill={p.color} stroke="#fff" strokeWidth="2" />
+            : <circle key={p.label} cx={cx} cy={cy} r={r} fill={p.color} />
+          )}
+          <circle cx={cx} cy={cy} r={r * 0.58} fill="#fff" />
+        </svg>
+        {/* Total al centro de la dona (2026-09-22, pedido explícito del
+            usuario: gráficas "más vistosas") — el hueco blanco del centro
+            antes quedaba vacío; ahora muestra la suma real de las porciones. */}
+        <div className="pie-chart-center">
+          <div className="pie-chart-center-value">{total}</div>
+          {centerLabel && <div className="pie-chart-center-label">{centerLabel}</div>}
+        </div>
+      </div>
       <div className="pie-legend">
         {porciones.map(p => (
           <div className="pie-legend-row" key={p.label}>
             <span className="pie-legend-dot" style={{background: p.color}}></span>
             <span className="pie-legend-label" title={p.label}>{p.label}</span>
-            <span className="pie-legend-value">{p.value}</span>
+            {/* % y cantidad juntos en una sola columna (2026-09-22) — bug
+                real encontrado al probar: con las 2 como columnas propias
+                (cada una con su min-width), en un panel angosto el label
+                se quedaba sin espacio y se veía prácticamente en blanco
+                (1.5px de ancho real). Un solo texto compacto arregla eso. */}
+            <span className="pie-legend-pct">{Math.round(p.value/total*100)}% <span className="pie-legend-value">({p.value})</span></span>
           </div>
         ))}
       </div>

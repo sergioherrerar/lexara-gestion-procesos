@@ -271,26 +271,53 @@
   .search-bar input{border:none; background:none; outline:none; font-size:13.5px; width:100%; font-family:var(--font-body); overflow:hidden; text-overflow:ellipsis;}
   .search-bar svg{width:15px; height:15px; color:var(--texto-suave); flex-shrink:0;}
   .view{padding:26px 28px 60px; overflow-y:auto; flex:1;}
+  /* Fondo del Dashboard (2026-09-22, pedido explícito del usuario: "dale un
+     fondo") — un degradado institucional muy suave (verde/naranja de marca,
+     casi imperceptible) en vez del gris plano de siempre, para que la
+     pantalla de inicio se sienta menos "hoja en blanco" sin perder
+     formalidad — las tarjetas siguen siendo blancas lisas encima, el fondo
+     solo se nota en los bordes/huecos entre ellas. Solo en Dashboard (clase
+     aparte, ver DashboardView.jsx) — el resto de vistas del portal sigue
+     con el fondo gris de siempre. */
+  .dashboard-view{
+    background:
+      radial-gradient(1100px 480px at 0% 0%, rgba(82,187,181,.10), transparent 60%),
+      radial-gradient(900px 460px at 100% 0%, rgba(239,125,0,.06), transparent 55%),
+      var(--bg);
+  }
   .view-header{display:flex; align-items:flex-end; justify-content:space-between; margin-bottom:22px;}
   .view-header h1{font-family:var(--font-display); font-size:25px; font-weight:600; margin:0 0 4px; color:var(--verde-oscuro);}
   .view-header p{margin:0; color:var(--texto-suave); font-size:13.5px;}
 
   /* ---------- Dashboard ---------- */
   .stat-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:26px;}
+  /* Franja de color a la izquierda (2026-09-22, rediseño del Dashboard,
+     pedido explícito del usuario: "totalmente profesionales... vistoso")
+     — antes las 4 tarjetas eran idénticas salvo por el ícono; el color de
+     esa franja combina con el ícono de cada una, para que la fila entera se
+     lea como un conjunto con jerarquía visual, sin perder la formalidad
+     (sigue siendo una tarjeta blanca lisa, solo con un acento). */
   .stat-card{
-    background:#fff; border:1px solid var(--gris-linea); border-radius:var(--radius);
-    padding:18px 20px; box-shadow:var(--shadow);
+    position:relative; background:#fff; border:1px solid var(--gris-linea); border-radius:var(--radius);
+    padding:18px 20px 18px 24px; box-shadow:var(--shadow); overflow:hidden;
+    transition:box-shadow .15s ease, transform .15s ease;
   }
-  .stat-card .top{display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;}
+  .stat-card::before{content:''; position:absolute; top:0; left:0; bottom:0; width:4px; background:var(--acento, var(--verde-oscuro));}
+  .stat-card:hover{box-shadow:0 2px 6px rgba(0,30,26,.10), 0 10px 22px rgba(0,30,26,.09); transform:translateY(-1px);}
+  .stat-card .top{display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;}
   .stat-card .label{font-size:12px; color:var(--texto-suave); font-weight:600; text-transform:uppercase; letter-spacing:.04em;}
-  .stat-card .icon{width:30px; height:30px; border-radius:8px; display:flex; align-items:center; justify-content:center;}
-  .stat-card .icon svg{width:15px; height:15px;}
-  .stat-card .value{font-family:var(--font-display); font-size:30px; font-weight:600; color:var(--verde-oscuro); line-height:1;}
-  .stat-card .delta{font-size:12px; color:var(--texto-suave); margin-top:6px;}
+  .stat-card .icon{width:32px; height:32px; border-radius:9px; display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+  .stat-card .icon svg{width:16px; height:16px;}
+  .stat-card .value{font-family:var(--font-display); font-size:32px; font-weight:600; color:var(--verde-oscuro); line-height:1; font-variant-numeric:tabular-nums;}
+  .stat-card .delta{font-size:12px; color:var(--texto-suave); margin-top:7px;}
   .icon-teal{background:#e4f4f3; color:var(--verde-claro);}
   .icon-orange{background:#fdece0; color:var(--naranja);}
   .icon-yellow{background:#fef4de; color:#a97a0f;}
   .icon-green{background:#e3efee; color:var(--verde-oscuro);}
+  .stat-card.acento-teal{--acento:var(--verde-claro);}
+  .stat-card.acento-orange{--acento:var(--naranja);}
+  .stat-card.acento-yellow{--acento:#c9971f;}
+  .stat-card.acento-green{--acento:var(--verde-oscuro);}
 
   .panel-grid{display:grid; grid-template-columns:1.4fr 1fr; gap:16px;}
   .panel-grid-2{grid-template-columns:repeat(2,1fr);}
@@ -298,12 +325,17 @@
      (2026-09-15, pedido explícito del usuario: "70 audiencia terminos y 30
      vinculos") — 70/30 en vez del 50/50 genérico de panel-grid-2. */
   .panel-grid-70-30{grid-template-columns:7fr 3fr;}
-  .bar-chart{padding:14px 20px 18px;}
-  .bar-row{display:flex; align-items:center; gap:10px; padding:7px 0;}
+  .bar-chart{padding:16px 20px 20px;}
+  .bar-row{display:flex; align-items:center; gap:12px; padding:8px 0;}
   .bar-row .bar-label{width:38%; flex-shrink:0; font-size:12.5px; color:var(--texto); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
-  .bar-row .bar-track{flex:1; background:var(--gris-claro); border-radius:5px; height:16px; overflow:hidden;}
-  .bar-row .bar-fill{height:100%; border-radius:5px; min-width:3px;}
-  .bar-row .bar-value{width:24px; text-align:right; font-family:var(--font-mono); font-size:11.5px; color:var(--texto-suave); flex-shrink:0;}
+  .bar-row .bar-track{flex:1; background:var(--gris-claro); border-radius:6px; height:14px; overflow:hidden;}
+  /* Degradado sutil del mismo color (2026-09-22, rediseño del Dashboard) —
+     un solo tono, más oscuro a la izquierda, más claro a la derecha, NO un
+     arcoíris — sigue siendo una magnitud (un solo color), solo con más
+     textura que un relleno plano. */
+  .bar-row .bar-fill{height:100%; border-radius:6px; min-width:4px; background-image:linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,.16) 100%); transition:filter .12s ease;}
+  .bar-row:hover .bar-fill{filter:brightness(1.06);}
+  .bar-row .bar-value{width:26px; text-align:right; font-family:var(--font-mono); font-size:11.5px; font-weight:600; color:var(--texto); flex-shrink:0; font-variant-numeric:tabular-nums;}
   /* Barra apilada por Tipo Respuesta (StackedBarChart.jsx, Informes >
      Tutelas por Abogado) — mismo track que .bar-row, dividido en segmentos
      de color en vez de un único relleno; el valor en pesos necesita más
@@ -315,6 +347,31 @@
      y el monto en pesos quedaba apretado en 24px, partiéndose en 2 líneas
      ("$" arriba, el número abajo). */
   .bar-row .bar-value.bar-value-monto{width:auto; min-width:100px; white-space:nowrap;}
+
+  /* ---------- Barra de proporción 100% apilada (ProportionBar en
+     DashboardCharts.jsx) — para un campo de 2-3 categorías (ej. Sí/No) donde
+     una dona no deja leer el % con precisión. ---------- */
+  .proportion-bar{padding:18px 20px 20px;}
+  .proportion-bar-track{display:flex; height:28px; border-radius:8px; overflow:hidden; background:var(--gris-claro); box-shadow:inset 0 0 0 1px var(--gris-linea);}
+  .proportion-bar-segment{height:100%; min-width:2px; transition:filter .12s ease;}
+  .proportion-bar-segment:hover{filter:brightness(1.08);}
+  .proportion-bar-legend{display:flex; flex-wrap:wrap; gap:14px; margin-top:14px;}
+  .proportion-bar-legend-item{display:flex; align-items:center; gap:6px; font-size:12.5px; color:var(--texto);}
+  .proportion-bar-dot{width:9px; height:9px; border-radius:50%; flex-shrink:0;}
+  .proportion-bar-label{color:var(--texto-suave);}
+  .proportion-bar-pct{font-family:var(--font-display); font-size:14px; color:var(--texto);}
+  .proportion-bar-count{font-family:var(--font-mono); font-size:11px; color:var(--texto-suave);}
+
+  /* ---------- Lista rankeada con barra de progreso (RankedProgressList en
+     DashboardCharts.jsx) — varias categorías con su propio $, ordenadas de
+     mayor a menor, cada una con su % y su barra. ---------- */
+  .ranked-list{display:flex; flex-direction:column; gap:14px; padding:16px 20px 20px;}
+  .ranked-row-top{display:flex; align-items:baseline; justify-content:space-between; gap:10px; margin-bottom:5px;}
+  .ranked-row-label{font-size:13px; font-weight:600; color:var(--texto);}
+  .ranked-row-pct{font-family:var(--font-display); font-size:15px; font-weight:700; color:var(--verde-oscuro);}
+  .ranked-row-track{background:var(--gris-claro); border-radius:5px; height:8px; overflow:hidden;}
+  .ranked-row-fill{height:100%; border-radius:5px;}
+  .ranked-row-meta{font-size:11.5px; color:var(--texto-suave); margin-top:5px; font-variant-numeric:tabular-nums;}
   /* Detalle por abogado (InformesView.jsx, debajo del gráfico apilado) —
      una tarjeta por abogado con su valor total en el encabezado y cada
      Tipo Respuesta con su propio monto debajo; regla del proyecto de
@@ -353,12 +410,21 @@
   .checklist-filter-stat-body{display:flex; align-items:center; justify-content:center; padding:12px;}
 
   /* ---------- Gráfico de torta/dona (PieChart.jsx) ---------- */
-  .pie-chart{display:flex; align-items:center; gap:16px; padding:14px 20px 18px; flex-wrap:wrap;}
-  .pie-legend{display:flex; flex-direction:column; gap:6px; min-width:0; flex:1;}
-  .pie-legend-row{display:flex; align-items:center; gap:7px; font-size:12.5px; color:var(--texto);}
+  .pie-chart{display:flex; align-items:center; gap:18px; padding:16px 20px 20px; flex-wrap:wrap;}
+  .pie-chart-svg-wrap{position:relative; flex-shrink:0; display:flex;}
+  .pie-chart-center{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; pointer-events:none;}
+  .pie-chart-center-value{font-family:var(--font-display); font-size:22px; font-weight:700; color:var(--verde-oscuro); line-height:1;}
+  .pie-chart-center-label{font-size:9.5px; color:var(--texto-suave); text-transform:uppercase; letter-spacing:.04em; margin-top:3px;}
+  .pie-legend{display:flex; flex-direction:column; gap:7px; min-width:110px; flex:1;}
+  .pie-legend-row{display:flex; align-items:center; gap:7px; font-size:12.5px; color:var(--texto); padding:2px 0;}
   .pie-legend-dot{width:10px; height:10px; border-radius:50%; flex-shrink:0;}
-  .pie-legend-label{flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
-  .pie-legend-value{font-family:var(--font-mono); font-size:11.5px; color:var(--texto-suave); flex-shrink:0;}
+  /* min-width propio (2026-09-22, bug real: sin esto, en un panel angosto
+     con 2 columnas el label se quedaba con 1.5px de ancho real — casi
+     invisible — porque flex:1 solo no evita que un hermano con su propio
+     ancho mínimo se lo coma todo). */
+  .pie-legend-label{flex:1; min-width:56px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .pie-legend-pct{font-family:var(--font-mono); font-size:12px; font-weight:700; color:var(--texto); flex-shrink:0; white-space:nowrap;}
+  .pie-legend-value{font-weight:400; color:var(--texto-suave); font-size:11px;}
 
   /* ---------- Anillo con valor destacado en el centro (StatRing en PieChart.jsx) ---------- */
   .stat-ring{position:relative; flex-shrink:0;}

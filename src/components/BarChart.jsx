@@ -18,7 +18,7 @@ export default function BarChart({ data, color, emptyMsg, maxBars = 8 }){
         <div className="bar-row" key={r.label}>
           <div className="bar-label" title={r.label}>{r.label}</div>
           <div className="bar-track">
-            <div className="bar-fill" style={{width: Math.max(4, Math.round(r.value/max*100)) + '%', background: color}}></div>
+            <div className="bar-fill" style={{width: Math.max(4, Math.round(r.value/max*100)) + '%', backgroundColor: color}}></div>
           </div>
           <div className="bar-value">{r.value}</div>
         </div>

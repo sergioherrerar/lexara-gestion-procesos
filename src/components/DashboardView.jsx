@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import BarChart from './BarChart';
 import PieChart, { StatRing } from './PieChart';
+import { ProportionBar, RankedProgressList } from './DashboardCharts';
 import ChecklistFilter from './ChecklistFilter';
 import { stripHtml, groupCount, parseMonto, fmtMonto, desistimientosForProceso, mensajeError } from '../lib/graph';
 import { generarDashboardEntidadHTML } from '../lib/exportarDashboardHTML';
@@ -45,10 +46,10 @@ export default function DashboardView({ procesos, clientes = [], facturas = [], 
   const tiposDistintos = new Set(procesos.map(p => stripHtml(p.TipoAccion) || "Sin dato"));
 
   const stats = [
-    {label:"Procesos Lexara", value:activos.length, icon:<IconFolder/>, cls:'icon-teal', delta:`${procesos.length} en total`},
-    {label:"Tipo de Acción", value:tiposDistintos.size, icon:<IconAlert/>, cls:'icon-green', delta:"Categorías distintas"},
-    {label:"Clientes", value:clientes.length, icon:<IconUsers/>, cls:'icon-orange', delta:"Registrados en total"},
-    {label:"Facturación", value:facturas.length, icon:<IconReceipt/>, cls:'icon-yellow', delta:`${ordenesCompra.length} órdenes de compra`},
+    {label:"Procesos Lexara", value:activos.length, icon:<IconFolder/>, cls:'icon-teal', acento:'acento-teal', delta:`${procesos.length} en total`},
+    {label:"Tipo de Acción", value:tiposDistintos.size, icon:<IconAlert/>, cls:'icon-green', acento:'acento-green', delta:"Categorías distintas"},
+    {label:"Clientes", value:clientes.length, icon:<IconUsers/>, cls:'icon-orange', acento:'acento-orange', delta:"Registrados en total"},
+    {label:"Facturación", value:facturas.length, icon:<IconReceipt/>, cls:'icon-yellow', acento:'acento-yellow', delta:`${ordenesCompra.length} órdenes de compra`},
   ];
 
   const estadoData = groupCount(activos, p => p.EstadoVT);
@@ -123,7 +124,6 @@ export default function DashboardView({ procesos, clientes = [], facturas = [], 
     });
     return Array.from(mapa.entries()).map(([label,d]) => ({ label, cantidad:d.cantidad, valor:d.valor })).sort((a,b)=>b.cantidad-a.cantidad);
   })();
-  const dataDesistimientosEstado = desistimientosPorEstado.map(d => ({ label:d.label, value:d.cantidad }));
 
   // Exporta el panel de "Análisis de procesos por Entidad" a un .html
   // autocontenido: los datos de la Entidad elegida quedan embebidos y los 6
@@ -156,7 +156,7 @@ export default function DashboardView({ procesos, clientes = [], facturas = [], 
   }
 
   return (
-    <div className="view">
+    <div className="view dashboard-view">
       <div className="view-header">
         <div>
           <h1>Panorama general</h1>
@@ -166,7 +166,7 @@ export default function DashboardView({ procesos, clientes = [], facturas = [], 
 
       <div className="stat-grid">
         {stats.map(s => (
-          <div className="stat-card" key={s.label}>
+          <div className={"stat-card " + s.acento} key={s.label}>
             <div className="top"><span className="label">{s.label}</span><span className={"icon " + s.cls}>{s.icon}</span></div>
             <div className="value">{s.value}</div>
             <div className="delta">{s.delta}</div>
@@ -178,7 +178,7 @@ export default function DashboardView({ procesos, clientes = [], facturas = [], 
         <div className="panel">
           <div className="panel-head"><h3>Procesos activos por Estado</h3></div>
           <div className="panel-body">
-            <BarChart data={estadoData} color="var(--verde-oscuro)" emptyMsg="No hay datos de Estado V/T para los procesos activos." />
+            <PieChart data={estadoData} centerLabel="procesos" emptyMsg="No hay datos de Estado V/T para los procesos activos." />
           </div>
         </div>
         <div className="panel">
@@ -229,18 +229,14 @@ export default function DashboardView({ procesos, clientes = [], facturas = [], 
             <ChecklistFilter title="Etapa del proceso" options={opcionesConConteo(procesosPorEntidad, campoEtapa)} selected={filtros.etapa} onToggle={v => toggleFiltro('etapa', v)} onClear={() => limpiarFiltro('etapa')} />
           </div>
 
-          <div className="panel-grid panel-grid-2" style={{marginTop:18}}>
-            <div className="panel">
-              <div className="panel-head"><h3>Procesos filtrados</h3></div>
-              <div className="panel-body" style={{padding:'20px'}}>
-                <StatRing layout="lado" size={90} color="var(--verde-oscuro)" lines={[{text:'Cantidad de procesos'}, {text: String(procesosFiltrados.length), big:true}]} />
-              </div>
-            </div>
-            <div className="panel">
-              <div className="panel-head"><h3>Valor cartera actual</h3></div>
-              <div className="panel-body" style={{padding:'20px'}}>
-                <StatRing layout="lado" size={90} color="var(--naranja)" lines={[{text:'Suma de procesos filtrados'}, {text: '$ '+fmtMonto(valorCarteraActual), big:true}]} />
-              </div>
+          {/* Antes eran 2 paneles separados (uno por cada anillo) — pedido
+              explícito del usuario ("aprovechamiento de espacio"): un solo
+              panel con las 2 cifras lado a lado, mismo encabezado. */}
+          <div className="panel" style={{marginTop:18}}>
+            <div className="panel-head"><h3>Resumen de la selección</h3></div>
+            <div className="panel-body" style={{padding:'20px', display:'flex', gap:32, flexWrap:'wrap'}}>
+              <StatRing layout="lado" size={90} color="var(--verde-oscuro)" lines={[{text:'Cantidad de procesos'}, {text: String(procesosFiltrados.length), big:true}]} />
+              <StatRing layout="lado" size={90} color="var(--naranja)" lines={[{text:'Valor cartera actual'}, {text: '$ '+fmtMonto(valorCarteraActual), big:true}]} />
             </div>
           </div>
 
@@ -249,9 +245,13 @@ export default function DashboardView({ procesos, clientes = [], facturas = [], 
               <div className="panel-head"><h3>Naturaleza del Proceso</h3></div>
               <div className="panel-body"><BarChart data={dataNaturaleza} color="var(--verde-oscuro)" emptyMsg="No hay datos de Naturaleza del Proceso." /></div>
             </div>
+            {/* Sí/No se lee mejor como barra de proporción que como dona
+                (2026-09-22, rediseño del Dashboard) — con solo 2 categorías,
+                el % exacto es difícil de estimar en una dona; acá queda
+                escrito. */}
             <div className="panel">
               <div className="panel-head"><h3>Procesos Admitidos</h3></div>
-              <div className="panel-body"><PieChart data={dataAdmitida} emptyMsg="No hay datos de Admitida." /></div>
+              <div className="panel-body"><ProportionBar data={dataAdmitida} emptyMsg="No hay datos de Admitida." /></div>
             </div>
             <div className="panel">
               <div className="panel-head"><h3>Subclasificación</h3></div>
@@ -259,29 +259,24 @@ export default function DashboardView({ procesos, clientes = [], facturas = [], 
             </div>
             <div className="panel">
               <div className="panel-head"><h3>Procesos con Prueba Pericial</h3></div>
-              <div className="panel-body"><PieChart data={dataPrueba} emptyMsg="No hay datos de Prueba Pericial." /></div>
+              <div className="panel-body"><ProportionBar data={dataPrueba} emptyMsg="No hay datos de Prueba Pericial." /></div>
             </div>
-            <div className="panel">
-              <div className="panel-head"><h3>Total de desistimientos</h3></div>
-              <div className="panel-body" style={{padding:'20px'}}>
-                {desistimientosFiltrados.length ? (
-                  <>
-                    <StatRing layout="lado" size={90} color="var(--verde-claro)" lines={[{text:`${desistimientosFiltrados.length} desistimiento${desistimientosFiltrados.length===1?'':'s'}`}, {text:'$ '+fmtMonto(valorDesistimientos), big:true}]} />
-                    <div className="valor-por-estado-lista">
-                      {desistimientosPorEstado.map(d => (
-                        <div className="valor-por-estado-row" key={d.label}>
-                          <span className="valor-por-estado-label">{d.label}</span>
-                          <span className="valor-por-estado-valor">$ {fmtMonto(d.valor)}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </>
-                ) : <div className="empty-state empty-state-compact">No hay desistimientos para estos procesos.</div>}
+            {/* Antes eran 2 paneles (un anillo+lista de texto plano, y una
+                dona aparte) — se unen en un solo panel rankeado de mayor a
+                menor $, con su propia barra de progreso por estado. */}
+            <div className="panel" style={{gridColumn:'1 / -1'}}>
+              <div className="panel-head">
+                <h3>Desistimientos por estado</h3>
+                {desistimientosFiltrados.length > 0 && (
+                  <span className="save-hint">{desistimientosFiltrados.length} desistimiento{desistimientosFiltrados.length===1?'':'s'} · $ {fmtMonto(valorDesistimientos)} en total</span>
+                )}
               </div>
-            </div>
-            <div className="panel">
-              <div className="panel-head"><h3>Desistimientos</h3></div>
-              <div className="panel-body"><PieChart data={dataDesistimientosEstado} emptyMsg="No hay desistimientos para estos procesos." /></div>
+              <div className="panel-body">
+                <RankedProgressList
+                  items={desistimientosPorEstado.map(d => ({ label: d.label, count: d.cantidad, value: d.valor }))}
+                  emptyMsg="No hay desistimientos para estos procesos."
+                />
+              </div>
             </div>
           </div>
         </div>
