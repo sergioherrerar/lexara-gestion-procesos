@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { mensajeError, opcionesTiposAccionParaAlerta } from '../lib/graph';
+import { mensajeError, opcionesTiposAccionParaAlerta, abogadosDisponibles } from '../lib/graph';
 import { diasHabilesRestantes, colorCuentaRegresiva, etiquetaCuentaRegresiva, sumarDiasHabilesJudiciales } from '../lib/audienciasTerminos';
 import { construirMensajeWhatsAppAudienciasTerminos } from '../lib/whatsappAudienciasTerminos';
 import { generarAudienciasTerminosExcel } from '../lib/informeAudienciasTerminosExcel';
@@ -17,14 +17,9 @@ import IconButton, { IconTextButton } from './IconButton';
 // lib/audienciasTerminos.js) se pinta con los mismos colores de badge que ya
 // usa el resto de la app (verde/naranja/rojo/gris).
 function soloFechaISO(v){ return String(v || "").slice(0, 10); }
-
-// Solo colaboradores activos cuyo Cargo contiene "abogado" (pedido explícito
-// del usuario 2026-09-15) — compartido entre el selector de "Abogado
-// responsable" del formulario y el de la fila en edición de la tabla, para
-// que ambos muestren siempre la misma lista.
-function abogadosDisponibles(colaboradores){
-  return (colaboradores||[]).filter(c => c.Activo !== false && /abogad/i.test(c.Cargo || ""));
-}
+// abogadosDisponibles (solo colaboradores activos con cargo de abogado) se
+// movió a lib/graph.js 2026-09-21 para reusarla también en Tutelas y
+// Procesos judiciales — ver nota grande ahí.
 
 // Orden de la tabla — pedido explícito del usuario 2026-09-15: "que en la
 // parte superior esté el próximo a vencer". Antes se ordenaba por la fecha

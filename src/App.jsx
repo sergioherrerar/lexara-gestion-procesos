@@ -370,6 +370,7 @@ export default function App(){
         tutela={app.activeTutela}
         clientes={app.clientes}
         temas={app.temas}
+        colaboradores={app.colaboradores}
         liveMode={app.liveMode}
         onClose={app.closeTutelaDrawer}
         onSave={app.saveTutela}

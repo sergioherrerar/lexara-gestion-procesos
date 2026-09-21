@@ -429,6 +429,18 @@ export function normalize(str){
   }).join("");
 }
 
+// Colaboradores activos cuyo Cargo contiene "abogado" — criterio compartido
+// por todos los selectores de "abogado responsable/encargado" del portal
+// (Audiencias, Abogado Respuesta de Tutelas, Apoderado/Abogado encargado de
+// Procesos). Antes vivía duplicado en cada componente por separado (y en
+// Procesos ni siquiera se aplicaba — mostraba TODOS los colaboradores, sin
+// filtrar por cargo); pedido explícito del usuario 2026-09-21: "aca solo los
+// cargos que contengan abogado y estén activos", viendo el selector de
+// "Abogado encargado" listando también a gente sin cargo de abogado.
+export function abogadosDisponibles(colaboradores){
+  return (colaboradores||[]).filter(c => c.Activo !== false && /abogad/i.test(c.Cargo || ""));
+}
+
 // Conecta una lista: descubre su listId, columnas y elementos reales.
 // Devuelve un objeto NUEVO (no muta `list`), para respetar la inmutabilidad de React.
 export async function connectList(siteId, list){

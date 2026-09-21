@@ -1273,12 +1273,17 @@ export const DEMO_ORDENES_COMPRA = [
     Subtotal:"180.000,00", Iva:"34.200,00", Total:"214.200,00", RetIva:"", ValorAPagar:"214.200,00"},
 ];
 
+// Cargo agregado 2026-09-21 (antes no lo traía ninguno) — para que en modo
+// demo también se puedan probar los selectores de "Abogado responsable" que
+// filtran colaboradores por Cargo (Audiencias, Abogado Respuesta de
+// Tutelas): sin esto esas listas salían vacías en demo, aunque en producción
+// sí funcionaran. Valores ficticios, no representan el Cargo real de nadie.
 export const DEMO_COLABORADORES = [
-  {id:1, Nombre:"Monica Paola Gómez", TipoIdentificacion:"C.C.", Identificacion:"40.039.240", Telefono:"+57 312 4420026", Direccion:"Carrera 56B", Correo:"Gerencia@lexaraabogados.com", Activo:true, Rol:"Jefe", FechaIngreso:"2021-01-01"},
-  {id:2, Nombre:"Sergio Alexander Herrera", TipoIdentificacion:"C.C.", Identificacion:"80.728.333", Telefono:"+57 310 4380043", Direccion:"Calle 128 No 87", Correo:"Soporte@lexaraabogados.com", Activo:true, Rol:"Administrador", FechaIngreso:"2023-01-10"},
-  {id:3, Nombre:"Dahiana Camila Pedraza", TipoIdentificacion:"C.C.", Identificacion:"1.014.300.118", Telefono:"+57 3202751824", Direccion:"Cll 69a #105-35", Correo:"dcpedrazap@lexaraabogados.com", Activo:true, Rol:"Colaborador", FechaIngreso:"2024-01-15"},
-  {id:4, Nombre:"Daniel Santiago Flechas", TipoIdentificacion:"C.C.", Identificacion:"1.032.502.681", Telefono:"+57 310 4112130", Direccion:"Carrera 49B", Correo:"Asesoriajuridica@lexaraabogados.com", Activo:true, Rol:"Colaborador", FechaIngreso:"2023-02-07"},
-  {id:5, Nombre:"Ariana Andrea Torres", TipoIdentificacion:"C.C", Identificacion:"1.006.415.925", Telefono:"+57 3124720", Direccion:"Calle 27a #33-6", Correo:"Tutelas@lexaraabogados.com", Activo:true, Rol:"Colaborador", FechaIngreso:"2024-08-26"},
+  {id:1, Nombre:"Monica Paola Gómez", TipoIdentificacion:"C.C.", Identificacion:"40.039.240", Telefono:"+57 312 4420026", Direccion:"Carrera 56B", Correo:"Gerencia@lexaraabogados.com", Activo:true, Rol:"Jefe", Cargo:"Contador Publico", FechaIngreso:"2021-01-01"},
+  {id:2, Nombre:"Sergio Alexander Herrera", TipoIdentificacion:"C.C.", Identificacion:"80.728.333", Telefono:"+57 310 4380043", Direccion:"Calle 128 No 87", Correo:"Soporte@lexaraabogados.com", Activo:true, Rol:"Administrador", Cargo:"Analista de Help Desk", FechaIngreso:"2023-01-10"},
+  {id:3, Nombre:"Dahiana Camila Pedraza", TipoIdentificacion:"C.C.", Identificacion:"1.014.300.118", Telefono:"+57 3202751824", Direccion:"Cll 69a #105-35", Correo:"dcpedrazap@lexaraabogados.com", Activo:true, Rol:"Colaborador", Cargo:"Abogado Especialista", FechaIngreso:"2024-01-15"},
+  {id:4, Nombre:"Daniel Santiago Flechas", TipoIdentificacion:"C.C.", Identificacion:"1.032.502.681", Telefono:"+57 310 4112130", Direccion:"Carrera 49B", Correo:"Asesoriajuridica@lexaraabogados.com", Activo:true, Rol:"Colaborador", Cargo:"Abogado Procesos", FechaIngreso:"2023-02-07"},
+  {id:5, Nombre:"Ariana Andrea Torres", TipoIdentificacion:"C.C", Identificacion:"1.006.415.925", Telefono:"+57 3124720", Direccion:"Calle 27a #33-6", Correo:"Tutelas@lexaraabogados.com", Activo:true, Rol:"Colaborador", Cargo:"Abogado Procesos", FechaIngreso:"2024-08-26"},
 ];
 
 export const DEMO_FORMAS_PAGO = [

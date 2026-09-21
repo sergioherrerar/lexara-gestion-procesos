@@ -7,7 +7,7 @@ import {
   tiposAccionDistinct, tiposProcesoParaAccion, despachosParaAccion, abrirFacturaSiigo,
   generarLinksCarpetaProceso, generarLinkContratoProceso,
   rutaEntidadDeProceso, resolverDriveIdPrincipal, listarContenidoRuta, listarHijos,
-  crearLinkCompartidoSoporte, crearLinkEdicionOrganizacion, mensajeError,
+  crearLinkCompartidoSoporte, crearLinkEdicionOrganizacion, mensajeError, abogadosDisponibles,
 } from '../lib/graph';
 import IconButton, { IconTextButton } from './IconButton';
 import { FieldCard, RichTextEditor } from './FormFields';
@@ -565,17 +565,24 @@ export default function ProcesoDrawer({ proceso, clientes, colaboradores, factur
   if(form.Municipio && !municipioOpciones.includes(form.Municipio)) municipioOpciones.unshift(form.Municipio);
 
   // Entidad: lista de valores reales que ya existen en la lista de Clientes
-  // (no una lista fija). Apoderado: nombres reales de Colaborador Lexara
-  // (Equipo MD). En ambos casos, si el valor ya guardado no está en esa
-  // lista, se agrega igual para no perderlo de vista (mismo criterio que
-  // Cliente/Tipo de Acción arriba).
+  // (no una lista fija). Apoderado/Abogado encargado: nombres de
+  // colaboradores ACTIVOS con cargo de abogado (Equipo MD) — corregido
+  // 2026-09-21, pedido explícito del usuario viendo el selector real
+  // "Abogado encargado" listando también gente sin cargo de abogado ("aca
+  // solo los cargos que contengan abogado y estén activos"); antes mostraba
+  // TODOS los colaboradores sin filtrar. Mismo criterio ya usado en
+  // Audiencias/Tutelas (ver abogadosDisponibles en lib/graph.js). En ambos
+  // casos, si el valor ya guardado no está en esa lista, se agrega igual
+  // para no perderlo de vista (mismo criterio que Cliente/Tipo de Acción
+  // arriba).
   const entidadOpciones = Array.from(new Set(clientes.map(c => c.Entidad).filter(Boolean))).sort((a,b)=>a.localeCompare(b));
   if(form.Entidad && !entidadOpciones.includes(form.Entidad)) entidadOpciones.unshift(form.Entidad);
-  const apoderadoOpciones = Array.from(new Set((colaboradores||[]).map(c => c.Nombre).filter(Boolean))).sort((a,b)=>a.localeCompare(b));
+  const nombresAbogados = Array.from(new Set(abogadosDisponibles(colaboradores).map(c => c.Nombre).filter(Boolean))).sort((a,b)=>a.localeCompare(b));
+  const apoderadoOpciones = [...nombresAbogados];
   if(form.Apoderado && !apoderadoOpciones.includes(form.Apoderado)) apoderadoOpciones.unshift(form.Apoderado);
   // Abogado encargado: misma lista de nombres que Apoderado, pero con su
   // propio arreglo (para no duplicar/perder el valor guardado de cada uno).
-  const abogadoEncargadoOpciones = Array.from(new Set((colaboradores||[]).map(c => c.Nombre).filter(Boolean))).sort((a,b)=>a.localeCompare(b));
+  const abogadoEncargadoOpciones = [...nombresAbogados];
   if(form.AbogadoEncargado && !abogadoEncargadoOpciones.includes(form.AbogadoEncargado)) abogadoEncargadoOpciones.unshift(form.AbogadoEncargado);
 
   const facturasRelacionadas = facturasForProceso(facturas, proceso)

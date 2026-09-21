@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { FieldCard, RichTextEditor } from './FormFields';
 import { IconTextButton } from './IconButton';
-import { temasParaPrestacion } from '../lib/graph';
+import { temasParaPrestacion, abogadosDisponibles } from '../lib/graph';
 import { DEPARTAMENTOS_COLOMBIA, municipiosDe } from '../lib/colombiaGeo';
 import { useEscapeToClose } from '../hooks/useEscapeToClose';
 
@@ -19,7 +19,17 @@ const SI_NO = ["Sí", "No"];
 const TIPO_VINCULACION_OPCIONES = ["Accionada", "Vinculada"];
 const PRESTACION_OPCIONES = ["Asistencial", "Económica", "Administrativa"];
 const TIPO_RESPUESTA_OPCIONES = ["ACLARACION", "ALCANCE", "APLAZAMIENTO", "CUMPLIMIENTO FALLO", "CORRECION", "IMPUGNACION", "MODULACION", "NULIDAD", "REQUERIMIENTO", "TUTELA"];
-const ABOGADO_RESPUESTA_OPCIONES = ["Ariana Martin Mendoza", "Mónica Paola Quintero", "Daniel Santiago Flechas"];
+// CORREGIDO 2026-09-21 (pedido explícito del usuario, tras el bug real de
+// Cargo: "recuerda también incluir en todas las listas del portal... todos
+// donde esté colaborador o abogado responsable") — antes era una lista fija
+// de 3 nombres a mano, así que un abogado nuevo (ej. Miguel Torres) nunca
+// aparecía acá aunque ya estuviera en Equipo MD. Ahora se arma en vivo con
+// abogadosDisponibles (lib/graph.js) — mismo criterio ya usado y probado en
+// Audiencias — así que cualquiera que se agregue a Equipo MD con un cargo
+// de abogado aparece acá solo, sin tocar código.
+// Nombre exacto histórico del valor por defecto — se mantiene como
+// respaldo por si "Ariana" todavía no está en la lista dinámica de arriba
+// (ej. en modo demo, donde el Cargo no está confirmado contra SharePoint).
 const ABOGADO_RESPUESTA_DEFECTO = "Ariana Martin Mendoza";
 // Pedido explícito del usuario 2026-08-28, mientras "Entidad" en Tutelas
 // (columna real de Búsqueda en SharePoint, ver graphFieldsFromUpdates en
@@ -52,7 +62,7 @@ function emptyForm(tutela){
 }
 
 export default function TutelaDrawer({
-  tutela, clientes, temas, liveMode, onClose, onSave, onDelete,
+  tutela, clientes, temas, colaboradores, liveMode, onClose, onSave, onDelete,
   onCreateTema, onSaveTema, saving, canWrite = true,
 }){
   const [form, setForm] = useState(null);
@@ -119,7 +129,7 @@ export default function TutelaDrawer({
   if(form.Prestacion && !prestacionOpciones.includes(form.Prestacion)) prestacionOpciones.unshift(form.Prestacion);
   const tipoRespuestaOpciones = [...TIPO_RESPUESTA_OPCIONES];
   if(form.TipoRespuesta && !tipoRespuestaOpciones.includes(form.TipoRespuesta)) tipoRespuestaOpciones.unshift(form.TipoRespuesta);
-  const abogadoRespuestaOpciones = [...ABOGADO_RESPUESTA_OPCIONES];
+  const abogadoRespuestaOpciones = abogadosDisponibles(colaboradores).map(c => c.Nombre);
   if(form.AbogadoRespuesta && !abogadoRespuestaOpciones.includes(form.AbogadoRespuesta)) abogadoRespuestaOpciones.unshift(form.AbogadoRespuesta);
   const temaOpciones = temasParaPrestacion(temas, form.Prestacion);
   if(form.Tema && !temaOpciones.includes(form.Tema)) temaOpciones.unshift(form.Tema);
