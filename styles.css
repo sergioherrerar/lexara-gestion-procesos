@@ -712,7 +712,13 @@
      por texto "Colmedica" también traía "GRUPO COLMEDICA" por contenerlo) —
      mismo patrón visual que .col-header-menu-item, con casilla a la
      izquierda. */
-  .col-header-menu-checklist{max-height:160px; overflow-y:auto; display:flex; flex-direction:column; gap:1px; margin:0 2px 2px;}
+  /* overscroll-behavior:contain (2026-09-19) — sin esto, al llegar al final
+     del propio checklist la rueda del mouse sigue de largo y desplaza la
+     PÁGINA de fondo, lo que a su vez cierra el menú (ver onScroll arriba) —
+     bug real reportado por el usuario ("se da clic para seleccionar
+     cualquier elemento de la fila y se quita el filtro"). Esto contiene el
+     scroll dentro del propio checklist, nunca se lo pasa a la página. */
+  .col-header-menu-checklist{max-height:160px; overflow-y:auto; overscroll-behavior:contain; display:flex; flex-direction:column; gap:1px; margin:0 2px 2px;}
   .col-header-menu-check{
     display:flex; align-items:center; gap:8px; padding:6px 8px; border-radius:6px;
     font-size:13px; color:var(--texto); cursor:pointer;
@@ -720,6 +726,21 @@
   .col-header-menu-check:hover{background:var(--gris-claro);}
   .col-header-menu-check input[type="checkbox"]{flex-shrink:0; accent-color:var(--verde-oscuro); cursor:pointer;}
   .col-header-menu-check span{overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  /* Árbol Año > Mes > Día para columnas de fecha (2026-09-19, pedido
+     explícito del usuario: "que en fecha sea igual a Excel en todas las
+     tablas que contengas fechas") — mismo AutoFiltro de Excel, con
+     casillas de 3 estados y flechita para colapsar cada rama. */
+  .col-header-menu-arbol-fecha{max-height:220px;}
+  .col-header-menu-arbol-fila{display:flex; align-items:center;}
+  .col-header-menu-arbol-fila .col-header-menu-check{flex:1; min-width:0;}
+  .col-header-menu-arbol-flecha{
+    flex-shrink:0; width:18px; height:18px; display:flex; align-items:center; justify-content:center;
+    background:none; border:none; cursor:pointer; color:var(--texto-suave); font-size:10px; padding:0;
+  }
+  .col-header-menu-arbol-flecha:hover{color:var(--texto);}
+  .col-header-menu-arbol-nivel-2{margin-left:18px;}
+  .col-header-menu-arbol-nivel-3{margin-left:36px;}
+  .col-header-menu-arbol-nivel-3 .col-header-menu-check{padding:4px 8px;}
   .clear-filters-link{
     font-size:12px; color:var(--verde-oscuro); cursor:pointer; text-decoration:underline;
     background:none; border:none; padding:0; font-weight:600;

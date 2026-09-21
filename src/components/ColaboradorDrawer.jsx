@@ -10,10 +10,17 @@ const ROL_OPTIONS = ["Administrador", "Jefe", "Colaborador"];
 const TIPO_COLABORADOR_OPTIONS = ["Trabajador", "Contratista"];
 // Lista fija (no texto libre) para poder agrupar/filtrar por Cargo más
 // adelante sin que un typo ("Abogada junior" vs "Abogada Junior") rompa el
-// agrupamiento — pedido explícito del usuario 2026-08-22. Cargos reales
-// confirmados por el usuario (perfiles del equipo). Si aparece alguien con
-// un cargo nuevo que no esté acá, agregarlo a esta lista.
-const CARGO_OPTIONS = ["Gerente", "Abogado de Procesos", "Abogada Junior", "Soporte técnico y administrativo"];
+// agrupamiento — pedido explícito del usuario 2026-08-22.
+//
+// CORREGIDA 2026-09-21 (bug real): la lista anterior ("Gerente", "Abogado de
+// Procesos", "Abogada Junior", "Soporte técnico y administrativo") no
+// coincidía con las opciones REALES de la columna "Cargo" en SharePoint —
+// al crear un colaborador nuevo (Miguel Torres, cargo "Abogado de
+// Procesos"), SharePoint rechazó el guardado con un 400: "El texto que ha
+// escrito no es un elemento de la lista". El usuario confirmó las opciones
+// reales exportando la columna desde SharePoint — quedan exactas acá
+// (incluye "Abogado Procesos", SIN "de", que es la que de verdad existe).
+const CARGO_OPTIONS = ["Abogado Especialista", "Contador Publico", "Analista de Help Desk", "Abogado Procesos"];
 
 function emptyForm(colaborador){
   return {

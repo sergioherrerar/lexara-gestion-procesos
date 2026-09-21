@@ -1,6 +1,22 @@
 import { useState, useRef, useEffect, useLayoutEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { fmtDate, clavePorDia } from '../lib/graph';
+import { clavePorDia } from '../lib/graph';
+import { MESES_NOMBRES } from '../lib/horasExtras';
+
+// Casilla de 3 estados (marcada / vacía / "algunos") — como Año y Mes en el
+// árbol de fechas de abajo, un checkbox HTML normal no tiene forma de pintar
+// "algunos de mis hijos están marcados" con una sola prop, hay que tocar la
+// propiedad `.indeterminate` del elemento directamente en el DOM.
+function CasillaTresEstados({ checked, indeterminate, onChange, children }){
+  const ref = useRef(null);
+  useEffect(() => { if(ref.current) ref.current.indeterminate = !checked && indeterminate; }, [checked, indeterminate]);
+  return (
+    <label className="col-header-menu-check">
+      <input ref={ref} type="checkbox" checked={checked} onChange={onChange} />
+      <span>{children}</span>
+    </label>
+  );
+}
 
 // Encabezado de columna con menú desplegable (ordenar A-Z/Z-A + filtrar por
 // texto + checklist de valores exactos), parecido al AutoFiltro de columna
@@ -44,7 +60,23 @@ export default function ColumnHeaderMenu({ column, sort, onSort, filterValue, on
     // Cierra al hacer scroll (en vez de recalcular posición) — más simple y
     // evita que el menú quede "flotando" en un lugar equivocado si el
     // usuario mueve la tabla o la página mientras está abierto.
-    function onScroll(){ setOpen(false); }
+    //
+    // BUG REAL corregido 2026-09-19 (reportado por el usuario: "se da clic
+    // para seleccionar cualquier elemento de la fila y se quita el filtro"):
+    // el checklist de "O elige de la lista" (o el árbol de fechas) puede
+    // necesitar su propio scroll interno cuando hay muchos valores — como el
+    // evento "scroll" no burbujea pero SÍ pasa por la fase de captura, este
+    // listener en `window` con `capture:true` también se disparaba al
+    // desplazarse DENTRO del propio menú, cerrándolo antes de que el clic en
+    // la casilla llegara a registrarse. Se ignora el scroll que viene de
+    // dentro del menú mismo.
+    function onScroll(e){
+      // e.target no siempre es un elemento real (el resize no trae target
+      // usable, y algunos scroll sintéticos tampoco) — .contains() exige un
+      // Node de verdad o truena.
+      if(e.target instanceof Node && menuRef.current?.contains(e.target)) return;
+      setOpen(false);
+    }
     document.addEventListener('mousedown', onDocPointer);
     document.addEventListener('keydown', onKeyDown);
     window.addEventListener('scroll', onScroll, true);
@@ -82,6 +114,38 @@ export default function ColumnHeaderMenu({ column, sort, onSort, filterValue, on
     return Array.from(set).sort((a,b) => a.localeCompare(b));
   }, [rows, column]);
 
+  // Columna de fecha (2026-09-19, pedido explícito del usuario: "que en
+  // fecha sea igual a Excel en todas las tablas que contengas fechas") — se
+  // detecta sola por la FORMA del dato (AAAA-MM-DD, lo que ya deja
+  // clavePorDia), sin tener que marcar cada columna de cada tabla a mano; se
+  // arma un árbol Año > Mes > Día como el AutoFiltro de Excel, en vez del
+  // checklist plano de siempre.
+  const esColumnaFecha = valoresDisponibles.length > 0 && valoresDisponibles.every(v => /^\d{4}-\d{2}-\d{2}$/.test(v));
+  const arbolFechas = useMemo(() => {
+    if(!esColumnaFecha) return null;
+    const anios = new Map(); // "2026" -> Map("03" -> ["2026-03-05","2026-03-12",...])
+    valoresDisponibles.forEach(v => {
+      const [anio, mes] = v.split('-');
+      if(!anios.has(anio)) anios.set(anio, new Map());
+      const meses = anios.get(anio);
+      if(!meses.has(mes)) meses.set(mes, []);
+      meses.get(mes).push(v);
+    });
+    return anios;
+  }, [esColumnaFecha, valoresDisponibles]);
+  // Expandido por defecto (2026-09-19) — con pocas fechas (el caso normal en
+  // este portal) ver todo de una vez sin tener que ir abriendo año por año y
+  // mes por mes es más simple para un usuario no técnico; igual se puede
+  // colapsar con la flechita si la lista llega a ser larga.
+  const [colapsados, setColapsados] = useState(() => new Set());
+  function alternarColapso(clave){
+    setColapsados(prev => {
+      const next = new Set(prev);
+      next.has(clave) ? next.delete(clave) : next.add(clave);
+      return next;
+    });
+  }
+
   if(column.filterable === false){
     return <th>{column.label}</th>;
   }
@@ -95,6 +159,15 @@ export default function ColumnHeaderMenu({ column, sort, onSort, filterValue, on
     const yaElegido = valoresElegidos.includes(valor);
     const nuevos = yaElegido ? valoresElegidos.filter(v => v !== valor) : [...valoresElegidos, valor];
     onFilterChange(column.key, { valores: nuevos });
+  }
+  // Marcar/desmarcar un grupo entero de días de una sola vez (clic en el
+  // checkbox de un Año o de un Mes) — mismo comportamiento que Excel: si
+  // todos los días del grupo ya estaban marcados, los quita todos; si no
+  // (ninguno o "algunos" — estado indeterminado), los marca todos.
+  function alternarGrupo(dias){
+    const todosMarcados = dias.every(d => valoresElegidos.includes(d));
+    const sinElGrupo = valoresElegidos.filter(v => !dias.includes(v));
+    onFilterChange(column.key, { valores: todosMarcados ? sinElGrupo : [...sinElGrupo, ...dias] });
   }
 
   return (
@@ -125,19 +198,74 @@ export default function ColumnHeaderMenu({ column, sort, onSort, filterValue, on
             <input
               type="text"
               className="col-header-menu-input"
-              placeholder="Escribe para filtrar…"
+              placeholder={esColumnaFecha ? "dd/mm/aaaa…" : "Escribe para filtrar…"}
               autoFocus
               value={texto}
               onChange={e => onFilterChange(column.key, { texto: e.target.value })}
             />
-            {valoresDisponibles.length > 0 && (
+            {esColumnaFecha && arbolFechas && (
+              <>
+                <label className="col-header-menu-label">O elige de la lista</label>
+                <div className="col-header-menu-checklist col-header-menu-arbol-fecha">
+                  <CasillaTresEstados
+                    checked={valoresElegidos.length === valoresDisponibles.length}
+                    indeterminate={valoresElegidos.length > 0}
+                    onChange={() => alternarGrupo(valoresDisponibles)}
+                  >(Seleccionar todo)</CasillaTresEstados>
+                  {Array.from(arbolFechas.entries()).map(([anio, meses]) => {
+                    const diasDelAnio = Array.from(meses.values()).flat();
+                    const anioColapsado = colapsados.has(anio);
+                    return (
+                      <div key={anio} className="col-header-menu-arbol-nivel">
+                        <div className="col-header-menu-arbol-fila">
+                          <button type="button" className="col-header-menu-arbol-flecha" onClick={() => alternarColapso(anio)} aria-label={anioColapsado ? `Mostrar ${anio}` : `Ocultar ${anio}`}>
+                            {anioColapsado ? '▸' : '▾'}
+                          </button>
+                          <CasillaTresEstados
+                            checked={diasDelAnio.every(d => valoresElegidos.includes(d))}
+                            indeterminate={diasDelAnio.some(d => valoresElegidos.includes(d))}
+                            onChange={() => alternarGrupo(diasDelAnio)}
+                          >{anio}</CasillaTresEstados>
+                        </div>
+                        {!anioColapsado && Array.from(meses.entries()).map(([mes, dias]) => {
+                          const claveMes = `${anio}-${mes}`;
+                          const mesColapsado = colapsados.has(claveMes);
+                          return (
+                            <div key={mes} className="col-header-menu-arbol-nivel col-header-menu-arbol-nivel-2">
+                              <div className="col-header-menu-arbol-fila">
+                                <button type="button" className="col-header-menu-arbol-flecha" onClick={() => alternarColapso(claveMes)} aria-label={mesColapsado ? `Mostrar ${MESES_NOMBRES[Number(mes)-1]}` : `Ocultar ${MESES_NOMBRES[Number(mes)-1]}`}>
+                                  {mesColapsado ? '▸' : '▾'}
+                                </button>
+                                <CasillaTresEstados
+                                  checked={dias.every(d => valoresElegidos.includes(d))}
+                                  indeterminate={dias.some(d => valoresElegidos.includes(d))}
+                                  onChange={() => alternarGrupo(dias)}
+                                >{MESES_NOMBRES[Number(mes)-1]}</CasillaTresEstados>
+                              </div>
+                              {!mesColapsado && dias.map(d => (
+                                <div key={d} className="col-header-menu-arbol-nivel col-header-menu-arbol-nivel-3">
+                                  <CasillaTresEstados checked={valoresElegidos.includes(d)} indeterminate={false} onChange={() => alternarValor(d)}>
+                                    {Number(d.slice(8,10))}
+                                  </CasillaTresEstados>
+                                </div>
+                              ))}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+            {!esColumnaFecha && valoresDisponibles.length > 0 && (
               <>
                 <label className="col-header-menu-label">O elige de la lista</label>
                 <div className="col-header-menu-checklist">
                   {valoresDisponibles.map(v => (
                     <label key={v} className="col-header-menu-check">
                       <input type="checkbox" checked={valoresElegidos.includes(v)} onChange={() => alternarValor(v)} />
-                      <span>{fmtDate(v)}</span>
+                      <span>{v}</span>
                     </label>
                   ))}
                 </div>

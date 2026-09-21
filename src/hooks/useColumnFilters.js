@@ -1,6 +1,18 @@
 import { useState } from 'react';
 import { normalize, clavePorDia } from '../lib/graph';
 
+// Si el valor crudo empieza como una fecha ISO ("2026-03-12..."), lo pasa a
+// dd/mm/aaaa para comparar contra lo que el usuario escribe — pedido
+// explícito del usuario 2026-09-19 ("que en el buscador coloque la fecha y
+// el filtro se reduzca a la fecha que se coloca"): antes el texto libre
+// comparaba contra el ISO crudo, así que escribir la fecha en el formato
+// que se VE en pantalla (día/mes/año) nunca encontraba nada. No hace falta
+// marcar la columna como "de fecha" — se detecta solo por la forma del dato.
+function paraCompararTexto(valorCrudo){
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(valorCrudo);
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : valorCrudo;
+}
+
 // Filtro por columna: cada tabla define sus columnas ({key, value(row)}) y
 // este hook guarda, por columna, un filtro de texto ("contiene", sin
 // distinguir mayúsculas/tildes) Y una lista de valores exactos elegidos de
@@ -41,7 +53,7 @@ export function useColumnFilters(){
       if(f.valores && f.valores.length) return f.valores.includes(clavePorDia(valorCrudo));
       const texto = (f.texto || "").trim();
       if(!texto) return true;
-      return normalize(valorCrudo).includes(normalize(texto));
+      return normalize(paraCompararTexto(valorCrudo)).includes(normalize(texto));
     });
   }
   const hasActiveFilters = Object.values(filters).some(f => (f?.texto || "").trim() || (f?.valores || []).length);
