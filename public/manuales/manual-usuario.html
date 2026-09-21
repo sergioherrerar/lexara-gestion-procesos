@@ -190,6 +190,7 @@
   .ss-chip.gray{background:#eceeed; color:#5c6b68;}
   .ss-chip.orange{background:#fdf1e2; color:#b3590a;}
   .ss-chip.red{background:#fbe4e2; color:#a3281c;}
+  .ss-chip.blue{background:#e4edf7; color:#1d5fa3;}
   .ss-tab-bar{display:flex; gap:4px; flex-wrap:wrap; margin-bottom:16px; border-bottom:1px solid #e4e4e1; padding-bottom:0;}
   .ss-tab{font-size:12px; font-weight:600; padding:8px 14px; color:#5c6b68; border-bottom:2px solid transparent;}
   .ss-tab.active{color:#004941; border-bottom-color:#004941;}
@@ -274,6 +275,13 @@
     <a href="#pj-informe-cliente">Informe para un cliente</a>
     <a href="#pj-formulario">El formulario del proceso</a>
     <a href="#pj-preguntas">Preguntas frecuentes</a>
+
+    <div class="toc-group-label">Vencimientos</div>
+    <a href="#ve-que-es">Qué es este módulo</a>
+    <a href="#ve-pestanas">Audiencias, Términos y Pendientes</a>
+    <a href="#ve-semana">Vencimientos de esta semana</a>
+    <a href="#ve-calendario">El mini calendario</a>
+    <a href="#ve-preguntas">Preguntas frecuentes</a>
 
     <div class="toc-group-label">Dashboard</div>
     <a href="#db-que-es">Qué es este módulo</a>
@@ -368,7 +376,8 @@
       <h3>Buscar, ordenar y filtrar</h3>
       <ul>
         <li>La caja de búsqueda de arriba de todo (junto al logo) busca por <strong>No. Tutela</strong>, <strong>Cliente</strong> o <strong>Entidad</strong> a la vez.</li>
-        <li>Dale clic al nombre de cualquier columna (donde está la flechita <span class="kbd">▾</span>) para ordenarla, o para filtrarla a valores concretos — igual que en Excel.</li>
+        <li>Dale clic al nombre de cualquier columna (donde está la flechita <span class="kbd">▾</span>) para ordenarla, o para filtrarla a valores concretos — igual que en Excel. Este mismo filtro de columna vive en <strong>todas</strong> las tablas del portal (Procesos, Clientes, Facturas, Órdenes de compra, Colaboradores, Vencimientos), no solo en Tutelas.</li>
+        <li>En una columna de <strong>fecha</strong>, la lista de valores se arma como un árbol <strong>Año → Mes → Día</strong> con casillas (incluida "Seleccionar todo"), calcado del AutoFiltro de Excel — y el cuadro de texto también entiende una fecha escrita como se ve en pantalla (día/mes/año), no solo el texto exacto.</li>
         <li>Si tienes varios filtros de columna activos, aparece el enlace <strong>"Limpiar filtros de columna"</strong> junto al contador de resultados.</li>
       </ul>
 
@@ -637,12 +646,113 @@
           <h4>¿Cómo hago para ver un proceso ya terminado?</h4>
           <p>Dale clic a "Ver terminados" arriba a la derecha de los filtros de Entidad — la lista cambia a mostrar solo los terminados, y el botón se convierte en "← Ver vigentes" para volver.</p>
         </div>
+        <div class="faq-item">
+          <h4>¿Por qué no veo a alguien en "Apoderado" o "Abogado encargado"?</h4>
+          <p>Esos 2 campos solo muestran colaboradores de Equipo MD que estén <strong>activos</strong> y cuyo <strong>Cargo</strong> contenga la palabra "abogado" (Abogado Procesos, Abogado Especialista) — alguien con otro cargo (Contador, Analista de Help Desk) no aparece ahí a propósito. Si falta un abogado nuevo, revisa que ya esté creado en Administración → Colaboradores MD con el cargo correcto.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================= VENCIMIENTOS ============================= -->
+    <section id="ve-que-es">
+      <div class="doc-eyebrow"><span class="dot"></span>Módulo 3 de 9 · Vencimientos</div>
+      <h2>Qué es este módulo</h2>
+      <p>Junta en un solo lugar las 3 cosas que tienen fecha límite: <strong>Audiencias</strong>, <strong>Términos</strong> y <strong>Pendientes</strong> (tareas del equipo, con o sin proceso asociado). Antes Audiencias y Términos vivían dentro de Informes, repartidos aparte de los Pendientes — ahora las 3 comparten pestañas, un resumen de la semana y el mismo mini calendario de la cabecera.</p>
+    </section>
+
+    <section id="ve-pestanas">
+      <span class="step-num">1</span>
+      <h2>Audiencias, Términos y Pendientes</h2>
+      <p class="section-sub">3 pestañas dentro del mismo módulo — cada una con su formulario para agregar y su propia tabla.</p>
+
+      <div class="screen">
+        <div class="screen-bar"><span class="screen-dot"></span><span class="screen-dot"></span><span class="screen-dot"></span><span class="screen-label">Vencimientos → Pendientes</span></div>
+        <div class="screen-pad">
+          <div class="ss-tab-bar">
+            <span class="ss-tab">Audiencias</span><span class="ss-tab">Términos</span><span class="ss-tab active">Pendientes</span>
+          </div>
+          <table class="ss-table">
+            <thead><tr><th>Pendiente</th><th>Pendiente de</th><th>Pendiente para</th><th>Fecha</th><th>Estado</th></tr></thead>
+            <tbody>
+              <tr><td>Revisar traslado de la demanda</td><td>Carlos Andrés Peña</td><td>María Fernanda Ruiz</td><td>20 sep. 2026</td><td><span class="ss-chip green">Vigente</span></td></tr>
+              <tr><td>Estar pendiente de acceso</td><td>Mónica Paola Quintero</td><td>Sergio Herrera Ramírez</td><td>24 sep. 2026</td><td><span class="ss-chip green">Vigente</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="caption">Pestaña "Pendientes", con su tabla de filtro por columna</div>
+      </div>
+
+      <table class="field-table">
+        <tr><th>Pestaña</th><th>Qué es</th><th>Se puede vincular a un proceso</th></tr>
+        <tr><td>Audiencias</td><td>Número Corto, Tipo de audiencia, Fecha, Hora, Abogado responsable.</td><td>Sí, siempre (buscando por Número Corto).</td></tr>
+        <tr><td>Términos</td><td>Número Corto, Tipo de término, Días hábiles y Vencimiento (se calcula solo, contando días hábiles judiciales — sábados nunca cuentan).</td><td>Sí, siempre.</td></tr>
+        <tr><td>Pendientes</td><td>Qué hay que hacer, quién lo pide ("Pendiente de"), quién lo tiene que hacer ("Pendiente para"), fecha, estado (Vigente/Terminado) y una observación.</td><td><strong>Opcional</strong> — puede ser una tarea suelta, sin ningún proceso.</td></tr>
+      </table>
+
+      <div class="callout tip">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        <div>"Pendiente de" y "Pendiente para" se eligen de una lista de colaboradores <strong>activos y de tipo Trabajador</strong> (no salen Contratistas) — no hace falta que tengan cargo de abogado, cualquiera del equipo puede tener un pendiente.</div>
+      </div>
+
+      <div class="callout warn">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg>
+        <div>Toda Audiencia, Término o Pendiente que tenga fecha queda agendada también en el calendario de Outlook del despacho, automáticamente — no hay que crear el evento aparte.</div>
+      </div>
+    </section>
+
+    <section id="ve-semana">
+      <span class="step-num">2</span>
+      <h2>Vencimientos de esta semana</h2>
+      <p class="section-sub">Un resumen entre las pestañas y la tabla — siempre visible, sin importar cuál pestaña tengas abierta.</p>
+
+      <div class="screen">
+        <div class="screen-bar"><span class="screen-dot"></span><span class="screen-dot"></span><span class="screen-dot"></span><span class="screen-label">Vencimientos de esta semana</span></div>
+        <div class="screen-pad">
+          <div class="ss-field-grid">
+            <div class="ss-field"><div class="ss-field-label">Audiencias</div><div class="ss-field-value">11001-33-44-006-2025 · 14 sep.</div></div>
+            <div class="ss-field"><div class="ss-field-label">Términos</div><div class="ss-field-value">11001-31-03-045-2023 · 15 sep.</div></div>
+          </div>
+        </div>
+        <div class="caption">Cada tipo en su propia mini tabla, con su color</div>
+      </div>
+
+      <p>Junta lo que vence esta semana (lunes a domingo) de los 3 tipos, cada uno en su propia mini tabla y con su color — <strong style="color:#004941;">verde</strong> para Audiencias, <strong style="color:#b3590a;">naranja</strong> para Términos, <strong style="color:#1d5fa3;">azul</strong> para Pendientes, mismos colores que el mini calendario. Si no hay nada esa semana, simplemente dice "Nada vence esta semana".</p>
+    </section>
+
+    <section id="ve-calendario">
+      <span class="step-num">3</span>
+      <h2>El mini calendario</h2>
+      <p class="section-sub">El ícono de calendario en la cabecera del portal, al lado del buscador — funciona en cualquier pantalla, no solo en Vencimientos.</p>
+
+      <ul>
+        <li>Cada día con Audiencia/Término/Pendiente se sombrea de su color (igual que en "Vencimientos de esta semana"), y los festivos de Colombia se marcan en rosado.</li>
+        <li>La leyenda de arriba del todo explica los 4 colores: Audiencias, Términos, Pendientes y Festivos.</li>
+        <li>Clic en cualquier día: muestra la lista de lo que hay ese día (con el tipo de audiencia/término, no solo el número) y, si el despacho está conectado a SharePoint, un formulario rápido para agendar un evento nuevo directo en Outlook (distinto de Audiencias/Términos/Pendientes).</li>
+      </ul>
+
+      <div class="callout tip">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        <div>Este mini calendario es siempre visible para cualquiera que haya iniciado sesión, igual que Dashboard e Informes — no depende de los módulos permitidos de cada persona.</div>
+      </div>
+    </section>
+
+    <section id="ve-preguntas">
+      <h2>Preguntas frecuentes</h2>
+      <div class="faq">
+        <div class="faq-item">
+          <h4>¿Un Pendiente tiene que estar ligado a un proceso?</h4>
+          <p>No. Es opcional — si escribes un Número Corto que sí existe, queda vinculado (y se ve en ese proceso); si lo dejas vacío, queda como una tarea suelta del equipo.</p>
+        </div>
+        <div class="faq-item">
+          <h4>¿Dónde quedaron Audiencias y Términos, ya no están en Informes?</h4>
+          <p>Se movieron completas a este módulo, "Vencimientos" — junto con Pendientes, en vez de quedar repartidas. El resto de Informes (Detalle por Entidad, Cruce de archivos, etc.) sigue igual.</p>
+        </div>
       </div>
     </section>
 
     <!-- ============================= DASHBOARD ============================= -->
     <section id="db-que-es">
-      <div class="doc-eyebrow"><span class="dot"></span>Módulo 3 de 8 · Dashboard</div>
+      <div class="doc-eyebrow"><span class="dot"></span>Módulo 4 de 9 · Dashboard</div>
       <h2>Qué es este módulo</h2>
       <p>Es la pantalla de inicio — un panorama en vivo de todo el despacho, más un panel para analizar los procesos de una Entidad en particular con filtros tipo Excel. <strong>Dashboard e Informes son los dos únicos módulos que ve cualquier persona que inicie sesión</strong>, sin importar sus permisos.</p>
     </section>
@@ -698,7 +808,7 @@
 
     <!-- ============================= SOLICITUD DE FACTURA E. ============================= -->
     <section id="fa-que-es">
-      <div class="doc-eyebrow"><span class="dot"></span>Módulo 4 de 8 · Solicitud De Factura E.</div>
+      <div class="doc-eyebrow"><span class="dot"></span>Módulo 5 de 9 · Solicitud De Factura E.</div>
       <h2>Qué es este módulo</h2>
       <p>Lleva el control de cada factura que emite el despacho: a quién, por qué contrato, con qué líneas de cobro, y en qué estado va (Radicada, Pagada, Anulada).</p>
     </section>
@@ -750,7 +860,7 @@
 
     <!-- ============================= ÓRDENES DE COMPRA ============================= -->
     <section id="oc-que-es">
-      <div class="doc-eyebrow"><span class="dot"></span>Módulo 5 de 8 · Órdenes de compra</div>
+      <div class="doc-eyebrow"><span class="dot"></span>Módulo 6 de 9 · Órdenes de compra</div>
       <h2>Qué es este módulo</h2>
       <p>Funciona igual que Solicitud De Factura E. — mismas secciones (Relaciones, Datos generales, Líneas de detalle, Totales) y el mismo formulario de líneas — solo que para órdenes de compra en vez de facturas.</p>
     </section>
@@ -767,7 +877,7 @@
 
     <!-- ============================= CLIENTES ============================= -->
     <section id="cl-que-es">
-      <div class="doc-eyebrow"><span class="dot"></span>Módulo 6 de 8 · Clientes</div>
+      <div class="doc-eyebrow"><span class="dot"></span>Módulo 7 de 9 · Clientes</div>
       <h2>Qué es este módulo</h2>
       <p>El directorio de empresas cliente del despacho — Razón social, NIT, dirección, teléfono, correo y la Entidad a la que pertenecen. La columna <strong>"Procesos"</strong> de la lista cuenta, para cada cliente, cuántos procesos tiene registrados.</p>
     </section>
@@ -784,7 +894,7 @@
 
     <!-- ============================= ADMINISTRACIÓN ============================= -->
     <section id="ad-que-es">
-      <div class="doc-eyebrow"><span class="dot"></span>Módulo 7 de 8 · Administración</div>
+      <div class="doc-eyebrow"><span class="dot"></span>Módulo 8 de 9 · Administración</div>
       <h2>Qué es este módulo</h2>
       <p>Todo lo administrativo del despacho, en un solo lugar por pestañas: el equipo, vacaciones, certificaciones, documentos internos, horas extras, egresos y facturación por Entidad. <strong>Acceso restringido</strong> — solo lo ve quien tenga el módulo "Administración" marcado en su ficha de colaborador (normalmente, solo Administradores).</p>
     </section>
@@ -894,7 +1004,7 @@
 
     <!-- ============================= INFORMES ============================= -->
     <section id="inf-que-es">
-      <div class="doc-eyebrow"><span class="dot"></span>Módulo 8 de 8 · Informes</div>
+      <div class="doc-eyebrow"><span class="dot"></span>Módulo 9 de 9 · Informes</div>
       <h2>Qué es este módulo</h2>
       <p>Informes formales por Entidad, herramientas para Tutelas, y 2 utilidades de análisis (Revisión de Procesos y Cruce de archivos). <strong>Dashboard e Informes son los dos únicos módulos que ve cualquier persona que inicie sesión</strong>, sin importar sus permisos.</p>
     </section>
@@ -957,7 +1067,7 @@
 
     <footer class="doc-footer">
       Manual de usuario — Lexara Gestión de Procesos · MD Abogados SAS<br>
-      Guía completa de los 8 módulos — se irá actualizando a medida que la aplicación cambie.
+      Guía completa de los 9 módulos — se irá actualizando a medida que la aplicación cambie.
     </footer>
   </main>
 </div>
