@@ -271,7 +271,7 @@ function renderGenericField(key, type, form, setField, canWrite){
 }
 const EMPTY_NEW_CLIENTE = {RazonSocial:"", Nit:"", Direccion:"", Telefono:"", Correo:""};
 
-export default function ProcesoDrawer({ proceso, clientes, colaboradores, facturas, ordenesCompra, formasPago, desistimientos, audiencias, terminos, tiposAccion, liveMode, onClose, onSave, onNavigateAway, onCreateCliente, onOpenFactura, onPrintFactura, onCreateFactura, onOpenOrdenCompra, onPrintOrdenCompra, onCreateOrdenCompra, onOpenFormaPago, onCreateFormaPago, onOpenDesistimiento, onCreateDesistimiento, onCrearAudiencia, onEditarAudiencia, onEliminarAudiencia, onCrearTermino, onEditarTermino, onEliminarTermino, saving, canWrite = true, config, notify }){
+export default function ProcesoDrawer({ proceso, clientes, colaboradores, facturas, ordenesCompra, formasPago, desistimientos, audiencias, terminos, tiposAccion, liveMode, onClose, onSave, onNavigateAway, onCreateCliente, onOpenFactura, onPrintFactura, onCreateFactura, onOpenOrdenCompra, onPrintOrdenCompra, onCreateOrdenCompra, onOpenFormaPago, onCreateFormaPago, onOpenDesistimiento, onCreateDesistimiento, onCrearAudiencia, onEditarAudiencia, onEliminarAudiencia, onCrearTermino, onEditarTermino, onEliminarTermino, onCreateTipoTermino, saving, canWrite = true, config, notify }){
   const [form, setForm] = useState(null);
   const [showNewCliente, setShowNewCliente] = useState(false);
   const [newCliente, setNewCliente] = useState(EMPTY_NEW_CLIENTE);
@@ -761,6 +761,7 @@ export default function ProcesoDrawer({ proceso, clientes, colaboradores, factur
                 audiencias={audienciasRelacionadas} terminos={terminosRelacionados} notify={notify}
                 onCrearAudiencia={onCrearAudiencia} onEditarAudiencia={onEditarAudiencia} onEliminarAudiencia={onEliminarAudiencia}
                 onCrearTermino={onCrearTermino} onEditarTermino={onEditarTermino} onEliminarTermino={onEliminarTermino}
+                onCreateTipoTermino={onCreateTipoTermino}
               />
             </div>
           )}

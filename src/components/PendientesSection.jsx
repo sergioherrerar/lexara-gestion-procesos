@@ -18,7 +18,11 @@ const ESTADO_OPTIONS = ["Vigente", "Terminado"];
 
 function soloFechaISO(v){ return String(v || "").slice(0, 10); }
 
-function PendienteForm({ inicial, colaboradores, procesos, onGuardar, onCancelar, guardando }){
+// Exportado también (2026-09-22, pedido explícito del usuario: "al momento de
+// dar clic en el día [del mini calendario], agreguemos... un pendiente") para
+// reusarlo tal cual desde el panel del día del mini calendario de la
+// cabecera, sin duplicar el formulario.
+export function PendienteForm({ inicial, colaboradores, procesos, onGuardar, onCancelar, guardando }){
   const [form, setForm] = useState(() => {
     if(!inicial) return { Pendiente:"", PendienteDe:"", PendientePara:"", FechaPendiente:"", Estado:"Vigente", Observacion:"", numeroCorto:"", ProcesoMD:null };
     const procesoInicial = inicial.ProcesoMD ? (procesos||[]).find(p => String(p.id) === String(inicial.ProcesoMD)) : null;

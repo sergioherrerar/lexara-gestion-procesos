@@ -2,6 +2,8 @@ import { useState, useMemo } from 'react';
 import { festivosColombia, nombresFestivosColombia } from '../lib/horasExtras';
 import { sumarDiasHabilesJudiciales } from '../lib/audienciasTerminos';
 import { mensajeError } from '../lib/graph';
+import { FormularioNuevo } from './AudienciasTerminosTab';
+import { PendienteForm } from './PendientesSection';
 // Verde claro (no "verde oscuro", pedido explícito del usuario 2026-09-16)
 // — el logo se ve sobre el encabezado verde oscuro del calendario; con la
 // versión verde oscura quedaba invisible (bug real reportado por el usuario:
@@ -67,13 +69,26 @@ function fechaLarga(iso){
   return `${DIAS_LARGO[dt.getDay()]} ${d} de ${MESES[m-1].toLowerCase()}`;
 }
 
-export default function MiniCalendarioAudienciasTerminos({ audiencias, terminos, pendientes, procesos, liveMode, onCrearEventoPersonalizado, notify }){
+export default function MiniCalendarioAudienciasTerminos({
+  audiencias, terminos, pendientes, procesos, tiposAccion, colaboradores, liveMode,
+  onCrearEventoPersonalizado, onCrearAudiencia, onCrearTermino, onCreateTipoTermino, onCrearPendiente,
+  canWrite = true, notify,
+}){
   const hoy = new Date();
   const [cursor, setCursor] = useState({ anio: hoy.getFullYear(), mes: hoy.getMonth() });
   const [diaSeleccionado, setDiaSeleccionado] = useState(null);
   const [nombreEvento, setNombreEvento] = useState('');
   const [horaEvento, setHoraEvento] = useState('');
   const [guardando, setGuardando] = useState(false);
+  // "Agregar audiencia/término/pendiente desde el día" (2026-09-22, pedido
+  // explícito del usuario: "al momento de dar clic en el día, agreguemos una
+  // audiencia un termino o un pendiente y otro tipo de evento como ya esta")
+  // — antes el panel del día solo permitía programar un evento suelto
+  // directo en Outlook ("otro"); ahora se elige primero QUÉ se quiere crear,
+  // y se reusan los mismos formularios que ya existen en Vencimientos, con
+  // la fecha de ese día ya precargada.
+  const [tipoNuevo, setTipoNuevo] = useState(null);
+  const [guardandoTipado, setGuardandoTipado] = useState(false);
   const eventos = useMemo(() => eventosPorDia(audiencias, terminos, pendientes, procesos), [audiencias, terminos, pendientes, procesos]);
   const festivos = festivosColombia(cursor.anio);
   const nombresFestivos = nombresFestivosColombia(cursor.anio);
@@ -103,6 +118,16 @@ export default function MiniCalendarioAudienciasTerminos({ audiencias, terminos,
     setDiaSeleccionado(iso === diaSeleccionado ? null : iso);
     setNombreEvento('');
     setHoraEvento('');
+    setTipoNuevo(null);
+  }
+
+  // onCrearPendiente (igual que onCrearAudiencia/onCrearTermino en
+  // useLexaraApp.js) ya atrapa sus propios errores y avisa con notify — acá
+  // solo hace falta manejar el estado de "guardando" del mini-formulario.
+  async function guardarPendiente(datos){
+    setGuardandoTipado(true);
+    try{ await onCrearPendiente?.(datos); }
+    finally{ setGuardandoTipado(false); setTipoNuevo(null); }
   }
 
   async function handleAgregarEvento(e){
@@ -215,17 +240,61 @@ export default function MiniCalendarioAudienciasTerminos({ audiencias, terminos,
           ) : (
             <p className="mini-calendario-dia-vacio">Sin audiencias, términos ni pendientes este día.</p>
           )}
-          <form onSubmit={handleAgregarEvento} className="mini-calendario-nuevo-evento">
-            <input
-              type="text" placeholder="Nombre del evento nuevo…" value={nombreEvento}
-              onChange={e => setNombreEvento(e.target.value)} disabled={!liveMode || guardando}
-            />
-            <input type="time" value={horaEvento} onChange={e => setHoraEvento(e.target.value)} disabled={!liveMode || guardando} />
-            <button type="submit" className="btn-secondary" disabled={!liveMode || guardando || !nombreEvento.trim()}>
-              {guardando ? "Guardando…" : "+ Agendar"}
-            </button>
-          </form>
-          {!liveMode && <p className="mini-calendario-dia-vacio">Programar un evento nuevo solo funciona conectado a SharePoint.</p>}
+          {canWrite && (
+            <div className="mini-calendario-tipo-nuevo">
+              <div className="mini-calendario-tipo-botones">
+                {[
+                  {key:'audiencia', label:'+ Audiencia'},
+                  {key:'termino', label:'+ Término'},
+                  {key:'pendiente', label:'+ Pendiente'},
+                  {key:'otro', label:'+ Otro evento'},
+                ].map(op => (
+                  <button
+                    key={op.key} type="button"
+                    className={"mini-calendario-tipo-btn" + (tipoNuevo===op.key ? " active" : "")}
+                    onClick={() => setTipoNuevo(t => t===op.key ? null : op.key)}
+                  >{op.label}</button>
+                ))}
+              </div>
+              {(tipoNuevo === 'audiencia' || tipoNuevo === 'termino') && (
+                <div className="mini-calendario-form-embebido">
+                  <FormularioNuevo
+                    key={tipoNuevo + '-' + diaSeleccionado}
+                    tipo={tipoNuevo === 'audiencia' ? 'audiencias' : 'terminos'}
+                    procesos={procesos} tiposAccion={tiposAccion} colaboradores={colaboradores} notify={notify}
+                    onCrear={tipoNuevo === 'audiencia' ? onCrearAudiencia : onCrearTermino}
+                    onCreateTipoTermino={tipoNuevo === 'termino' ? onCreateTipoTermino : undefined}
+                    fechaInicial={diaSeleccionado}
+                  />
+                </div>
+              )}
+              {tipoNuevo === 'pendiente' && (
+                <div className="mini-calendario-form-embebido">
+                  <PendienteForm
+                    key={'pendiente-' + diaSeleccionado}
+                    inicial={{ FechaPendiente: diaSeleccionado }}
+                    colaboradores={colaboradores} procesos={procesos}
+                    onGuardar={guardarPendiente} onCancelar={() => setTipoNuevo(null)} guardando={guardandoTipado}
+                  />
+                </div>
+              )}
+              {tipoNuevo === 'otro' && (
+                <>
+                  <form onSubmit={handleAgregarEvento} className="mini-calendario-nuevo-evento">
+                    <input
+                      type="text" placeholder="Nombre del evento nuevo…" value={nombreEvento}
+                      onChange={e => setNombreEvento(e.target.value)} disabled={!liveMode || guardando}
+                    />
+                    <input type="time" value={horaEvento} onChange={e => setHoraEvento(e.target.value)} disabled={!liveMode || guardando} />
+                    <button type="submit" className="btn-secondary" disabled={!liveMode || guardando || !nombreEvento.trim()}>
+                      {guardando ? "Guardando…" : "+ Agendar"}
+                    </button>
+                  </form>
+                  {!liveMode && <p className="mini-calendario-dia-vacio">Programar un evento nuevo solo funciona conectado a SharePoint.</p>}
+                </>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>

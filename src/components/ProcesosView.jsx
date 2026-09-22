@@ -7,7 +7,7 @@ import { useColumnFilters } from '../hooks/useColumnFilters';
 import { useColumnSort } from '../hooks/useColumnSort';
 import { generarFichaProcesoPDF } from '../lib/informeProceso';
 import { generarImpulsoProcesalWord, enviarBorradorImpulsoProcesalGraph, abrirCorreoImpulsoProcesal } from '../lib/formatoImpulsoProcesal';
-import { ResumenAudienciasTerminos, proximosAVencer } from './AudienciasTerminosTab';
+import { ResumenAudienciasTerminos } from './AudienciasTerminosTab';
 
 function matchesFilter(p, currentFilter){
   if(currentFilter==='todos') return true;
@@ -46,10 +46,6 @@ export default function ProcesosView({ procesos, currentFilter, setFilter, searc
   // la parte derecha"). Ver vincularLinksProcesosMasivo en useLexaraApp.js.
   const [vinculandoLinks, setVinculandoLinks] = useState(false);
   const procesosSinLinks = procesos.filter(p => !p.LinkCarpeta || !p.LinkCliente || !p.LinkContrato).length;
-  // Si no hay nada pendiente por vencer, ResumenAudienciasTerminos no
-  // muestra nada (ver AudienciasTerminosTab.jsx) — acá hace falta saberlo de
-  // antemano para no dejar la mitad izquierda del 70/30 vacía cuando eso pasa.
-  const hayAudienciasTerminosUrgentes = proximosAVencer(audiencias, terminos, procesos).length > 0;
   async function handleVincularLinksMasivo(){
     setVinculandoLinks(true);
     try{ await vincularLinksProcesosMasivo?.(); }
@@ -135,55 +131,37 @@ export default function ProcesosView({ procesos, currentFilter, setFilter, searc
             onKeyDown={e => { if(e.key==='Enter' || e.key===' '){ e.preventDefault(); setFilter(f.key); } }}
           >{f.label}</div>
         ))}
-        <div
-          className={"filter-chip filter-chip-terminados" + (showTerminados ? " active" : "")}
-          style={{marginLeft:'auto'}}
-          onClick={() => setShowTerminados(v => !v)}
-          role="button" tabIndex={0}
-          onKeyDown={e => { if(e.key==='Enter' || e.key===' '){ e.preventDefault(); setShowTerminados(v => !v); } }}
-        >
-          {showTerminados ? "← Ver vigentes" : `Ver terminados (${totalTerminados})`}
-        </div>
-      </div>
-      {/* Fila dividida en mitades (pedido explícito del usuario 2026-09-15:
-          "la ideal Vincular Carpeta a la derecha y términos y audiencias a
-          la izquierda / solo dividir el espacio en mitad") — el resumen de
-          Audiencias/Términos a la izquierda, el aviso de "Vincular links
-          automáticamente" (sin cambios, el botón único de siempre) a la
-          derecha. En mobile se apilan igual que el resto de la app. */}
-      {(() => {
-        const banner = canWrite && procesosSinLinks > 0 && (
-          <div className="field-warning" style={{minWidth:0, display:'flex', alignItems:'center', gap:10, flexWrap:'wrap', marginBottom: hayAudienciasTerminosUrgentes ? 0 : 16}}>
-            <span>{procesosSinLinks} proceso(s) todavía no tienen alguno de sus links (Carpeta/Cliente/Contrato) llenos.</span>
+        <div style={{marginLeft:'auto', display:'flex', gap:8, alignItems:'center'}}>
+          {/* Reducido a un botón chico sin el mensaje largo (pedido explícito
+              del usuario 2026-09-22, viendo el aviso grande en vivo: "esto
+              solo dejelo un boton pequeño sin el mensaje... junto a Ver
+              terminados") — el conteo y la explicación completa quedan en el
+              tooltip y en el diálogo de confirmación, no siempre visibles. */}
+          {canWrite && procesosSinLinks > 0 && (
             <button
               type="button"
-              className="btn-secondary"
-              style={{marginLeft:'auto'}}
+              className="filter-chip filter-chip-vincular"
               disabled={vinculandoLinks}
+              title={`${procesosSinLinks} proceso(s) todavía no tienen alguno de sus links (Carpeta/Cliente/Contrato) llenos.`}
               onClick={() => requestConfirm(
                 `¿Buscar y llenar automáticamente los links (Carpeta/Cliente/Contrato) de los ${procesosSinLinks} proceso(s) que aún no los tienen? Solo se llenan los que tengan una coincidencia clara — los demás se dejan igual. Esto actualiza SharePoint de una vez.`,
                 handleVincularLinksMasivo
               )}
             >
-              {vinculandoLinks ? "Vinculando…" : "Vincular links automáticamente"}
+              {vinculandoLinks ? "Vinculando…" : `Vincular links (${procesosSinLinks})`}
             </button>
+          )}
+          <div
+            className={"filter-chip filter-chip-terminados" + (showTerminados ? " active" : "")}
+            onClick={() => setShowTerminados(v => !v)}
+            role="button" tabIndex={0}
+            onKeyDown={e => { if(e.key==='Enter' || e.key===' '){ e.preventDefault(); setShowTerminados(v => !v); } }}
+          >
+            {showTerminados ? "← Ver vigentes" : `Ver terminados (${totalTerminados})`}
           </div>
-        );
-        if(hayAudienciasTerminosUrgentes && banner){
-          return (
-            <div className="panel-grid panel-grid-70-30" style={{marginBottom:16}}>
-              <ResumenAudienciasTerminos audiencias={audiencias} terminos={terminos} procesos={procesos} style={{marginBottom:0, minWidth:0}} />
-              {banner}
-            </div>
-          );
-        }
-        return (
-          <>
-            <ResumenAudienciasTerminos audiencias={audiencias} terminos={terminos} procesos={procesos} />
-            {banner}
-          </>
-        );
-      })()}
+        </div>
+      </div>
+      <ResumenAudienciasTerminos audiencias={audiencias} terminos={terminos} procesos={procesos} />
       <div className="table-wrap">
         <table>
           <thead>

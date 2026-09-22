@@ -109,7 +109,14 @@ export default function App(){
           terminos={app.terminos}
           pendientes={app.pendientes}
           procesos={app.procesos}
+          tiposAccion={app.tiposAccion}
+          colaboradores={app.colaboradores}
           onCrearEventoPersonalizado={app.crearEventoCalendarioPersonalizado}
+          onCrearAudiencia={app.crearAudiencia}
+          onCrearTermino={app.crearTermino}
+          onCreateTipoTermino={app.createTipoTermino}
+          onCrearPendiente={app.crearPendiente}
+          canWrite={app.canWrite}
           notify={app.notify}
         />
         {app.signingIn && app.liveMode && <CargaInicialOverlay />}
@@ -203,6 +210,7 @@ export default function App(){
             onCrearPendiente={app.crearPendiente}
             onEditarPendiente={app.editarPendiente}
             onEliminarPendiente={app.eliminarPendiente}
+            onCreateTipoTermino={app.createTipoTermino}
             canWrite={app.canWrite}
           />
         )}
@@ -295,6 +303,7 @@ export default function App(){
         onCrearTermino={app.crearTermino}
         onEditarTermino={app.editarTermino}
         onEliminarTermino={app.eliminarTermino}
+        onCreateTipoTermino={app.createTipoTermino}
         saving={app.saving}
         canWrite={app.canWrite && !app.procesoViewOnly}
         config={app.config}

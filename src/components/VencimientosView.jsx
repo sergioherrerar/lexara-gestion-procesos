@@ -130,6 +130,7 @@ export default function VencimientosView({
   onCrearAudiencia, onEditarAudiencia, onEliminarAudiencia,
   onCrearTermino, onEditarTermino, onEliminarTermino,
   onCrearPendiente, onEditarPendiente, onEliminarPendiente,
+  onCreateTipoTermino,
   canWrite = true,
 }){
   const [subTab, setSubTab] = useState('audiencias');
@@ -157,7 +158,7 @@ export default function VencimientosView({
       )}
       {subTab==='terminos' && (
         <div style={{marginTop:20}}>
-          {canWrite && <FormularioNuevo tipo="terminos" procesos={procesos} tiposAccion={tiposAccion} colaboradores={colaboradores} notify={notify} onCrear={onCrearTermino} />}
+          {canWrite && <FormularioNuevo tipo="terminos" procesos={procesos} tiposAccion={tiposAccion} colaboradores={colaboradores} notify={notify} onCrear={onCrearTermino} onCreateTipoTermino={onCreateTipoTermino} />}
           <TablaRegistros tipo="terminos" registros={terminos} procesos={procesos} colaboradores={colaboradores} notify={notify} onEditar={onEditarTermino} onEliminar={onEliminarTermino} />
         </div>
       )}

@@ -45,10 +45,28 @@ const MODOS = [
 // formulario se usa DESDE el panel de un Proceso judicial en concreto (ver
 // AudienciasTerminosDelProceso más abajo), ya se sabe cuál es el proceso, así
 // que se salta el paso de buscarlo por Número Corto.
-export function FormularioNuevo({ tipo, procesos, tiposAccion, colaboradores, notify, onCrear, procesoFijo }){
-  const vacio = { numeroCorto:'', proceso: procesoFijo ? procesoFijo.id : null, descripcion:'', fecha:'', hora:'', diasHabiles:'', abogado:'' };
+const NUEVO_TIPO_SENTINEL = '__nuevo_tipo_termino__';
+
+// `fechaInicial` (2026-09-22, pedido explícito del usuario: "al momento de
+// dar clic en el día [del mini calendario], agreguemos una audiencia [o] un
+// término") — cuando este formulario se abre desde el panel de un día ya
+// elegido en el mini calendario, se precarga esa fecha en vez de dejarla
+// vacía; el usuario igual puede cambiarla.
+export function FormularioNuevo({ tipo, procesos, tiposAccion, colaboradores, notify, onCrear, procesoFijo, onCreateTipoTermino, fechaInicial }){
+  const vacio = { numeroCorto:'', proceso: procesoFijo ? procesoFijo.id : null, descripcion:'', fecha: fechaInicial || '', hora:'', diasHabiles:'', abogado:'' };
   const [form, setForm] = useState(vacio);
   const [guardando, setGuardando] = useState(false);
+  // "Agregar tipo de término personalizado" (2026-09-22, pedido explícito del
+  // usuario: "agregar uno personal que yo coloque... que se llene a la lista
+  // SharePoint Tipos de Acción... y quede actualizado en las listas
+  // desplegables de términos"). Solo para Términos (no se pidió para
+  // Audiencias) — se elige la última opción del select ("+ Agregar...") y se
+  // revela un mini-formulario (nombre + días) que crea una fila nueva en la
+  // lista de referencia "Tipos de Acción" (mismo Tipo de Acción del proceso
+  // actual, TipoAlerta="Termino") y de una vez la deja seleccionada acá.
+  const [nuevoTipoNombre, setNuevoTipoNombre] = useState('');
+  const [nuevoTipoDias, setNuevoTipoDias] = useState('');
+  const [creandoTipo, setCreandoTipo] = useState(false);
 
   const procesoEncontrado = procesoFijo || (form.proceso ? (procesos||[]).find(p => p.id === form.proceso) : null);
   const tipoAccionProceso = procesoEncontrado?.TipoAccion || '';
@@ -56,14 +74,32 @@ export function FormularioNuevo({ tipo, procesos, tiposAccion, colaboradores, no
     () => opcionesTiposAccionParaAlerta(tiposAccion, tipoAccionProceso, tipo === 'audiencias' ? 'Audiencia' : 'Termino'),
     [tiposAccion, tipoAccionProceso, tipo]
   );
+  const mostrandoNuevoTipo = form.descripcion === NUEVO_TIPO_SENTINEL;
 
   function buscarProceso(val){
     const matched = (procesos||[]).find(p => p.Radicado === val);
     setForm(prev => ({ ...prev, numeroCorto: val, proceso: matched ? matched.id : null, descripcion:'', diasHabiles:'' }));
+    setNuevoTipoNombre(''); setNuevoTipoDias('');
   }
   function elegirDescripcion(desc){
+    if(desc === NUEVO_TIPO_SENTINEL){
+      setForm(prev => ({ ...prev, descripcion: desc, diasHabiles:'' }));
+      return;
+    }
     const fila = opciones.find(o => o.Descripcion === desc);
     setForm(prev => ({ ...prev, descripcion: desc, diasHabiles: tipo === 'terminos' ? String(fila?.Dias || prev.diasHabiles || '') : prev.diasHabiles }));
+  }
+  async function handleCrearTipoTermino(){
+    if(!nuevoTipoNombre.trim()){ notify?.("Escribe el nombre del nuevo tipo de término.", 'error'); return; }
+    setCreandoTipo(true);
+    try{
+      const creado = await onCreateTipoTermino?.({ tipoAccion: tipoAccionProceso, descripcion: nuevoTipoNombre.trim(), dias: nuevoTipoDias });
+      if(creado){
+        setForm(prev => ({ ...prev, descripcion: creado.Descripcion, diasHabiles: String(creado.Dias || nuevoTipoDias || '') }));
+        setNuevoTipoNombre(''); setNuevoTipoDias('');
+      }
+    }catch(err){ console.error(err); notify?.(mensajeError(err), 'error'); }
+    finally{ setCreandoTipo(false); }
   }
 
   const vencimientoCalculado = tipo === 'terminos' && form.fecha && form.diasHabiles
@@ -72,7 +108,7 @@ export function FormularioNuevo({ tipo, procesos, tiposAccion, colaboradores, no
 
   async function handleAgregar(){
     if(!form.proceso){ notify?.("Escribe un Número Corto que exista para asociar el registro a un proceso.", 'error'); return; }
-    if(!form.descripcion){ notify?.("Elige el tipo de " + (tipo==='audiencias' ? 'audiencia' : 'término') + ".", 'error'); return; }
+    if(!form.descripcion || form.descripcion === NUEVO_TIPO_SENTINEL){ notify?.("Elige (o termina de crear) el tipo de " + (tipo==='audiencias' ? 'audiencia' : 'término') + ".", 'error'); return; }
     if(!form.fecha){ notify?.("Completa la fecha.", 'error'); return; }
     setGuardando(true);
     try{
@@ -114,8 +150,25 @@ export function FormularioNuevo({ tipo, procesos, tiposAccion, colaboradores, no
         <select value={form.descripcion} onChange={e => elegirDescripcion(e.target.value)} disabled={!procesoEncontrado}>
           <option value="">{procesoEncontrado ? (opciones.length ? "Selecciona…" : "Sin opciones para este Tipo de Acción") : "Primero busca el proceso"}</option>
           {opciones.map(o => <option value={o.Descripcion} key={o.id}>{o.Descripcion}</option>)}
+          {tipo === 'terminos' && onCreateTipoTermino && <option value={NUEVO_TIPO_SENTINEL}>+ Agregar tipo de término nuevo…</option>}
         </select>
       </div>
+      {mostrandoNuevoTipo && (
+        <div className="field" style={{minWidth:340, display:'flex', gap:10, alignItems:'flex-end', flexWrap:'wrap', padding:10, borderRadius:8, background:'var(--gris-claro)'}}>
+          <div className="field" style={{minWidth:180}}>
+            <label>Nombre del tipo de término</label>
+            <input type="text" value={nuevoTipoNombre} onChange={e => setNuevoTipoNombre(e.target.value)} placeholder="Ej. Contestación demanda" />
+          </div>
+          <div className="field" style={{minWidth:90}}>
+            <label>Días (por defecto)</label>
+            <input type="text" inputMode="decimal" value={nuevoTipoDias} onChange={e => setNuevoTipoDias(e.target.value)} />
+          </div>
+          <IconTextButton icon="add" variant="primary" onClick={handleCrearTipoTermino} disabled={creandoTipo}>
+            {creandoTipo ? "Creando…" : "Crear y usar"}
+          </IconTextButton>
+          <button type="button" className="btn-secondary" onClick={() => { setForm(prev => ({...prev, descripcion:'', diasHabiles:''})); setNuevoTipoNombre(''); setNuevoTipoDias(''); }}>Cancelar</button>
+        </div>
+      )}
       <div className="field" style={{minWidth:160}}>
         <label>{tipo === 'audiencias' ? 'Fecha de la audiencia' : 'Fecha de notificación'}</label>
         <input type="date" value={form.fecha} onChange={e => setForm({...form, fecha: e.target.value})} />
@@ -328,7 +381,7 @@ export function ResumenAudienciasTerminos({ audiencias, terminos, procesos, styl
   );
 }
 
-export default function AudienciasTerminosTab({ procesos, tiposAccion, colaboradores, audiencias, terminos, notify, onCrearAudiencia, onEditarAudiencia, onEliminarAudiencia, onCrearTermino, onEditarTermino, onEliminarTermino }){
+export default function AudienciasTerminosTab({ procesos, tiposAccion, colaboradores, audiencias, terminos, notify, onCrearAudiencia, onEditarAudiencia, onEliminarAudiencia, onCrearTermino, onEditarTermino, onEliminarTermino, onCreateTipoTermino }){
   const [modo, setModo] = useState('audiencias');
   const [generandoExcel, setGenerandoExcel] = useState(false);
 
@@ -368,6 +421,7 @@ export default function AudienciasTerminosTab({ procesos, tiposAccion, colaborad
         <FormularioNuevo
           tipo={modo} procesos={procesos} tiposAccion={tiposAccion} colaboradores={colaboradores} notify={notify}
           onCrear={modo === 'audiencias' ? onCrearAudiencia : onCrearTermino}
+          onCreateTipoTermino={onCreateTipoTermino}
         />
         <TablaRegistros
           tipo={modo} registros={modo === 'audiencias' ? audiencias : terminos} procesos={procesos} colaboradores={colaboradores} notify={notify}
@@ -386,7 +440,7 @@ export default function AudienciasTerminosTab({ procesos, tiposAccion, colaborad
 // audiencias/términos de ESE proceso (ya filtradas por el llamador con
 // audienciasForProceso/terminosForProceso, ver graph.js) y, al crear una
 // nueva, ya no hay que buscar el proceso — se usa directo el que está abierto.
-export function AudienciasTerminosDelProceso({ proceso, procesos, tiposAccion, colaboradores, audiencias, terminos, notify, onCrearAudiencia, onEditarAudiencia, onEliminarAudiencia, onCrearTermino, onEditarTermino, onEliminarTermino }){
+export function AudienciasTerminosDelProceso({ proceso, procesos, tiposAccion, colaboradores, audiencias, terminos, notify, onCrearAudiencia, onEditarAudiencia, onEliminarAudiencia, onCrearTermino, onEditarTermino, onEliminarTermino, onCreateTipoTermino }){
   const [modo, setModo] = useState('audiencias');
   return (
     <div>
@@ -399,6 +453,7 @@ export function AudienciasTerminosDelProceso({ proceso, procesos, tiposAccion, c
         tipo={modo} procesos={procesos} tiposAccion={tiposAccion} colaboradores={colaboradores} notify={notify}
         procesoFijo={proceso}
         onCrear={modo === 'audiencias' ? onCrearAudiencia : onCrearTermino}
+        onCreateTipoTermino={onCreateTipoTermino}
       />
       <TablaRegistros
         tipo={modo} registros={modo === 'audiencias' ? audiencias : terminos} procesos={procesos} colaboradores={colaboradores} notify={notify}

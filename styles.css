@@ -624,6 +624,25 @@
   .mini-calendario-nuevo-evento input[type="time"]{flex:0 0 90px;}
   .mini-calendario-nuevo-evento input{padding:7px 9px; border:1px solid var(--gris-linea); border-radius:6px; font-size:13.5px; font-family:inherit;}
   .mini-calendario-nuevo-evento button{font-size:13.5px; padding:7px 11px; white-space:nowrap;}
+  /* Selector "qué quiero agregar" (2026-09-22, pedido explícito del usuario:
+     "agreguemos una audiencia un termino o un pendiente y otro tipo de
+     evento como ya esta") — 4 botones chicos, y debajo el formulario
+     correspondiente (se reusan FormularioNuevo/PendienteForm tal cual, sin
+     duplicar esos formularios). */
+  .mini-calendario-tipo-botones{display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px;}
+  .mini-calendario-tipo-btn{
+    font-size:12.5px; font-weight:600; padding:6px 10px; border-radius:16px;
+    border:1px solid var(--gris-linea); background:var(--gris-claro); color:var(--texto-suave); cursor:pointer;
+  }
+  .mini-calendario-tipo-btn:hover{background:#e9e9e6;}
+  .mini-calendario-tipo-btn.active{background:var(--verde-oscuro); border-color:var(--verde-oscuro); color:#fff;}
+  /* El formulario embebido reusa .field de todo el resto de la app, pensado
+     para paneles anchos — acá el popover mide como mucho 440px, así que se
+     reduce el tamaño de fuente y el ancho mínimo de cada campo para que
+     quepan apilados sin desbordar ni obligar scroll horizontal. */
+  .mini-calendario-form-embebido{font-size:13px;}
+  .mini-calendario-form-embebido .field{min-width:0 !important; flex:1 1 100% !important;}
+  .mini-calendario-form-embebido input, .mini-calendario-form-embebido select{width:100%; box-sizing:border-box;}
 
   /* Botón + desplegable del mini calendario en la cabecera del portal
      (2026-09-15, pedido explícito del usuario: "que viva en la cabecera del
@@ -632,13 +651,17 @@
      pantalla en celular sin necesitar una media query aparte. */
   .topbar-calendario-wrap{position:relative;}
   .topbar-calendario-btn{
-    display:flex; align-items:center; justify-content:center;
-    width:36px; height:36px; border-radius:50%; flex-shrink:0;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
+    width:56px; padding:5px 4px 4px; border-radius:10px; flex-shrink:0;
     border:1px solid var(--gris-linea); background:var(--gris-claro);
-    cursor:pointer; padding:0;
+    cursor:pointer;
   }
   .topbar-calendario-btn:hover{background:#e9e9e6;}
   .topbar-calendario-btn img{width:20px; height:20px; object-fit:contain;}
+  /* Etiqueta bajo el ícono (2026-09-22, pedido explícito del usuario viendo
+     el botón en vivo: "coloca la palabra calendario") — antes el botón no
+     tenía ningún texto, solo el ícono, y no era obvio qué abría. */
+  .topbar-calendario-label{font-size:9.5px; font-weight:600; color:var(--texto-suave); line-height:1; white-space:nowrap;}
   .topbar-calendario-popover{
     position:absolute; top:100%; right:0; margin-top:8px; z-index:40;
     box-shadow:0 8px 24px rgba(0,20,18,.16); border-radius:var(--radius);
@@ -682,6 +705,11 @@
   .filter-chip-terminados:hover{color:#b3590a; border-color:#b3590a;}
   .filter-chip-terminados.active{background:var(--naranja); color:#fff; border-color:var(--naranja);}
   .filter-chip-terminados.active:hover{color:#fff;}
+  /* "Vincular links" reducido a chip chico junto a "Ver terminados" (2026-09-22,
+     pedido explícito del usuario) — ya no es un banner con mensaje largo. */
+  .filter-chip-vincular{color:var(--verde-oscuro); border-color:var(--verde-oscuro); background:#fff;}
+  .filter-chip-vincular:hover:not(:disabled){background:var(--verde-oscuro); color:#fff;}
+  .filter-chip-vincular:disabled{opacity:.6; cursor:default;}
   /* Barra "Informe para un cliente" (Procesos judiciales) — desplegable de
      Cliente + botón para descargar el informe HTML de ese cliente (con
      botón de pago adentro) — ver exportarInformeCliente.js. Con tinte e

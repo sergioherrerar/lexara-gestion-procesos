@@ -1375,6 +1375,31 @@ export function useLexaraApp(){
     }
     notify("Guardado con éxito en Lexara", 'success');
   }
+  // "Agregar un tipo de término personalizado" (2026-09-22, pedido explícito
+  // del usuario desde Vencimientos > Términos: "que este nuevo dato se llene
+  // a la lista SharePoint Tipos de Acción... y luego quede actualizado en
+  // las listas desplegables"). Mismo patrón simple que createTema/
+  // createValorEntidad — "tiposAccion" es una lista de referencia sin panel
+  // propio (ver nota grande en config.js), así que un tipo de término nuevo
+  // es solo una fila más ahí: NombreIdTipoProceso (el Tipo de Acción del
+  // proceso actual, para que el nuevo tipo aparezca en su misma cascada),
+  // Descripcion (el nombre que escribe el usuario) y TipoAlerta="Termino".
+  async function createTipoTermino({ tipoAccion, descripcion, dias }){
+    const nuevo = { id: 'tmp-' + Math.random().toString(36).slice(2), NombreIdTipoProceso: tipoAccion, Descripcion: descripcion, TipoAlerta: 'Termino', Dias: dias };
+    if(liveMode){
+      setSaving(true);
+      const list = listByKey('tiposAccion');
+      const { id, ...nuevoSinId } = nuevo;
+      try{
+        const created = await Graph.crearItemConLookups(list.siteId || siteId, list, nuevoSinId);
+        nuevo.id = created.id; nuevo._graphId = created.id;
+      }catch(err){ console.error(err); notify("No se pudo crear el tipo de término en SharePoint: " + Graph.mensajeError(err), 'error'); setSaving(false); return null; }
+      setSaving(false);
+    }
+    setTiposAccion(prev => [...prev, nuevo]);
+    notify("Tipo de término creado con éxito en Lexara", 'success');
+    return nuevo;
+  }
   async function createValorEntidad(fields){
     const nuevo = { id: 'tmp-' + Math.random().toString(36).slice(2), ...fields };
     if(liveMode){
@@ -1783,7 +1808,7 @@ export function useLexaraApp(){
     activeFormaPago, openFormaPago, newFormaPagoFromProceso, closeFormaPagoDrawer, saveFormaPago, deleteFormaPago,
     activeDesistimiento, openDesistimiento, newDesistimientoFromProceso, closeDesistimientoDrawer, saveDesistimiento, deleteDesistimiento,
     activeTutela, openTutela, newTutela, duplicateTutela, closeTutelaDrawer, saveTutela, deleteTutela, corregirEntidadFaltanteTutelas,
-    createTema, saveTema, createValorEntidad, saveValorEntidad,
+    createTema, saveTema, createTipoTermino, createValorEntidad, saveValorEntidad,
     createHoraExtra, aprobarHoraExtra, editarHoraExtra, eliminarHoraExtra,
     crearPeriodoVacaciones, editarPeriodoVacaciones, eliminarPeriodoVacaciones,
     crearProveedorGastos, editarProveedorGastos, eliminarProveedorGastos,

@@ -2,6 +2,16 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-22 (12)
+- **En Procesos judiciales, el aviso de "Vincular links" se redujo a un botón chico junto a "Ver terminados"** — pedido explícito del usuario viendo el aviso grande en vivo. Antes era un banner ancho con un mensaje largo ("N proceso(s) todavía no tienen alguno de sus links…"); ahora es solo un botón "Vincular links (N)", con esa misma explicación disponible al pasar el mouse (tooltip) y en el diálogo de confirmación de siempre.
+
+## 2026-09-22 (11)
+- **El mini calendario de la cabecera ahora permite crear una Audiencia, un Término o un Pendiente directamente desde el día elegido** — pedido explícito del usuario ("agreguemos una audiencia un termino o un pendiente y otro tipo de evento como ya esta"). Antes, al hacer clic en un día, solo se podía programar un evento suelto en el calendario de Outlook; ahora hay 4 botones ("+ Audiencia", "+ Término", "+ Pendiente", "+ Otro evento") que abren el mismo formulario de siempre, con la fecha de ese día ya precargada.
+- **El botón del mini calendario en la cabecera ahora dice "Calendario"** — antes era solo un ícono sin texto, pedido explícito del usuario viéndolo en vivo.
+
+## 2026-09-22 (10)
+- **En Vencimientos → Términos, ahora se puede crear un tipo de término personalizado desde el mismo formulario** — pedido explícito del usuario. El desplegable "Tipo de término" tiene una última opción "+ Agregar tipo de término nuevo…" que pide un nombre y los días por defecto, y lo guarda como una fila más en la lista de referencia de SharePoint "Tipos de Acción" — a partir de ahí queda disponible para cualquier otro término del mismo Tipo de Acción, tanto en Vencimientos como dentro del panel de cada Proceso judicial.
+
 ## 2026-09-22 (9)
 - **En Procesos judiciales, al actualizar "Estado" el valor anterior se archiva solo en "Histórico"** — pedido explícito del usuario viendo un proceso real. Antes, al escribir el nuevo auto/actuación en "Estado", el texto anterior se perdía sin dejar rastro. Ahora, al guardar, ese valor anterior se agrega como una nueva línea al final de "Histórico" (respetando lo que ya hubiera ahí, con su formato), y "Estado" queda solo con lo que se acaba de escribir.
 

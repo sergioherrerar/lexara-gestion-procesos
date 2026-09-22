@@ -15,7 +15,7 @@ const TITLES = {dashboard:"Dashboard", informes:"Informes", procesos:"Procesos j
 // es demasiado alto para ir siempre visible en una barra angosta, así que
 // vive en un desplegable — mismo patrón de clic-afuera-para-cerrar que ya usa
 // ColumnHeaderMenu.jsx.
-function BotonCalendarioTopbar({ audiencias, terminos, pendientes, procesos, liveMode, onCrearEventoPersonalizado, notify }){
+function BotonCalendarioTopbar({ audiencias, terminos, pendientes, procesos, tiposAccion, colaboradores, liveMode, onCrearEventoPersonalizado, onCrearAudiencia, onCrearTermino, onCreateTipoTermino, onCrearPendiente, canWrite, notify }){
   const [abierto, setAbierto] = useState(false);
   const ref = useRef(null);
 
@@ -35,12 +35,16 @@ function BotonCalendarioTopbar({ audiencias, terminos, pendientes, procesos, liv
     <div className="topbar-calendario-wrap" ref={ref}>
       <button type="button" className="topbar-calendario-btn" onClick={() => setAbierto(v => !v)} aria-label="Ver mini calendario de Audiencias/Términos">
         <img src={miniVerdeOscuro} alt="" />
+        <span className="topbar-calendario-label">Calendario</span>
       </button>
       {abierto && (
         <div className="topbar-calendario-popover">
           <MiniCalendarioAudienciasTerminos
             audiencias={audiencias} terminos={terminos} pendientes={pendientes} procesos={procesos}
-            liveMode={liveMode} onCrearEventoPersonalizado={onCrearEventoPersonalizado} notify={notify}
+            tiposAccion={tiposAccion} colaboradores={colaboradores}
+            liveMode={liveMode} onCrearEventoPersonalizado={onCrearEventoPersonalizado}
+            onCrearAudiencia={onCrearAudiencia} onCrearTermino={onCrearTermino} onCreateTipoTermino={onCreateTipoTermino}
+            onCrearPendiente={onCrearPendiente} canWrite={canWrite} notify={notify}
           />
         </div>
       )}
@@ -48,7 +52,7 @@ function BotonCalendarioTopbar({ audiencias, terminos, pendientes, procesos, liv
   );
 }
 
-export default function Topbar({ view, liveMode, searchQuery, onSearch, onOpenMobileNav, onRefresh, refreshing, cargandoInicial, audiencias, terminos, pendientes, procesos, onCrearEventoPersonalizado, notify }){
+export default function Topbar({ view, liveMode, searchQuery, onSearch, onOpenMobileNav, onRefresh, refreshing, cargandoInicial, audiencias, terminos, pendientes, procesos, tiposAccion, colaboradores, onCrearEventoPersonalizado, onCrearAudiencia, onCrearTermino, onCreateTipoTermino, onCrearPendiente, canWrite, notify }){
   const cargando = refreshing || cargandoInicial;
   return (
     <div className="topbar">
@@ -75,7 +79,10 @@ export default function Topbar({ view, liveMode, searchQuery, onSearch, onOpenMo
       </div>
       <BotonCalendarioTopbar
         audiencias={audiencias} terminos={terminos} pendientes={pendientes} procesos={procesos}
-        liveMode={liveMode} onCrearEventoPersonalizado={onCrearEventoPersonalizado} notify={notify}
+        tiposAccion={tiposAccion} colaboradores={colaboradores}
+        liveMode={liveMode} onCrearEventoPersonalizado={onCrearEventoPersonalizado}
+        onCrearAudiencia={onCrearAudiencia} onCrearTermino={onCrearTermino} onCreateTipoTermino={onCreateTipoTermino}
+        onCrearPendiente={onCrearPendiente} canWrite={canWrite} notify={notify}
       />
       <div className="search-bar">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
