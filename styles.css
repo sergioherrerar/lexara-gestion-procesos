@@ -567,8 +567,31 @@
      confundirlo con los puntos de Audiencias/Términos/Pendientes. */
   .cuadrito{width:10px; height:10px; border-radius:3px; flex-shrink:0; display:inline-block;}
   .cuadrito-festivo{background:#fbe4e2; border:1px solid #a3281c;}
+  /* Envuelve el grid + las 2 franjas de fin de semana (ver más abajo) — hace
+     falta este contenedor aparte, ya sin padding propio, para que las
+     franjas absolutas se puedan medir con calc() a partir del padding y los
+     gaps reales del grid interno, sin desalinearse. */
+  .mini-calendario-grid-area{position:relative;}
   .mini-calendario-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:4px; padding:12px;}
-  .mini-calendario-diasemana{text-align:center; font-size:13px; color:var(--texto-suave); font-weight:600; padding-bottom:6px;}
+  /* Letras D L M X J V S en negrilla y verde oscuro institucional (2026-09-22,
+     pedido explícito del usuario viéndolas en vivo — antes eran gris suave). */
+  .mini-calendario-diasemana{position:relative; text-align:center; font-size:13px; color:var(--verde-oscuro); font-weight:700; padding-bottom:6px;}
+  /* Fin de semana sombreado como UNA franja continua, no celda por celda
+     (2026-09-22, pedido explícito del usuario: primero "dale sombra al
+     domingo y al sabado", y al verla dividida en cuadros con gaps, "que no
+     quede dividida... como una sola columna, que no se vean las divisiones
+     de fila"). Van FUERA del grid (ponerlas como ítems del propio grid le
+     rompía el auto-acomodo a las 7 columnas — bug real visto al probar,
+     las letras D L M X J V quedaban corridas de fila). Ancho = una columna
+     real del grid: contenido sin padding (24px) menos los 6 gaps de 4px,
+     entre 7. Position:relative en .mini-calendario-celda (ya existía) hace
+     que las celdas, al ir después en el DOM, pinten encima de la franja. */
+  .mini-calendario-finde-franja{
+    position:absolute; top:12px; bottom:12px; width:calc((100% - 24px - 24px) / 7);
+    background:var(--gris-claro); border-radius:6px; pointer-events:none;
+  }
+  .mini-calendario-finde-franja.domingo{left:12px;}
+  .mini-calendario-finde-franja.sabado{right:12px;}
   .mini-calendario-celda{
     position:relative; aspect-ratio:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
     border-radius:6px; font-size:15.5px; gap:4px; border:none; background:none; cursor:pointer; font-family:inherit; color:var(--texto);

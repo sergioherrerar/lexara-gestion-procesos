@@ -1773,9 +1773,9 @@ export function useLexaraApp(){
   // dónde volver a leerlo sin abrir otra vez Microsoft Graph). tipo:'personalizado'
   // con un id nuevo cada vez (Date.now()) para que nunca choque con el de un
   // evento ya existente.
-  async function crearEventoCalendarioPersonalizado({ nombre, fechaISO, horaHHMM }){
+  async function crearEventoCalendarioPersonalizado({ nombre, fechaISO, horaHHMM, horaFinHHMM }){
     if(!liveMode) throw new Error("Programar un evento nuevo solo funciona conectado a SharePoint (modo en vivo), no en modo demo.");
-    return Graph.sincronizarEventoCalendario({ ...config, CALENDARIO_AUDIENCIAS_TERMINOS }, { tipo:'personalizado', id: Date.now(), asunto: nombre, fechaISO, horaHHMM });
+    return Graph.sincronizarEventoCalendario({ ...config, CALENDARIO_AUDIENCIAS_TERMINOS }, { tipo:'personalizado', id: Date.now(), asunto: nombre, fechaISO, horaHHMM, horaFinHHMM });
   }
 
   return {

@@ -218,7 +218,13 @@ function sumarDiasISO(fechaISO, dias){
 // usuario 2026-09-13: "que se modifica la fecha en la app se modifique en el
 // calendario". Una Audiencia trae hora puntual (evento de 1 hora); un
 // Término es un vencimiento, se agenda como evento de día completo.
-export async function sincronizarEventoCalendario(config, { tipo, id, asunto, fechaISO, horaHHMM, notas }){
+// `horaFinHHMM` (2026-09-22, pedido explícito del usuario: "cuando sea otro
+// tipo de evento colocar hora de finalización") — solo aplica al evento
+// "personalizado" con hora puntual (Audiencia/Término nunca la mandan: la
+// Audiencia siempre es de 1 hora fija, y el Término es de día completo).
+// Sin hora de finalización, se mantiene el comportamiento de siempre
+// (+1 hora desde el inicio, mismo día).
+export async function sincronizarEventoCalendario(config, { tipo, id, asunto, fechaISO, horaHHMM, horaFinHHMM, notas }){
   if(!config.CALENDARIO_AUDIENCIAS_TERMINOS || !fechaISO) return null; // calendario todavía no configurado, o sin fecha — no hace nada
   const base = await pathCalendario(config);
   if(!base) return null;
@@ -231,7 +237,9 @@ export async function sincronizarEventoCalendario(config, { tipo, id, asunto, fe
     body = {
       subject: asunto, isAllDay:false,
       start:{ dateTime:`${fechaISO}T${horaHHMM}:00`, timeZone: zonaHoraria },
-      end:{ dateTime:`${fechaISO}T${finHora}:${String(m||0).padStart(2,'0')}:00`, timeZone: zonaHoraria },
+      end: horaFinHHMM
+        ? { dateTime:`${fechaISO}T${horaFinHHMM}:00`, timeZone: zonaHoraria }
+        : { dateTime:`${fechaISO}T${finHora}:${String(m||0).padStart(2,'0')}:00`, timeZone: zonaHoraria },
     };
   } else {
     body = {

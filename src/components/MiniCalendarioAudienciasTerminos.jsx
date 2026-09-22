@@ -79,6 +79,7 @@ export default function MiniCalendarioAudienciasTerminos({
   const [diaSeleccionado, setDiaSeleccionado] = useState(null);
   const [nombreEvento, setNombreEvento] = useState('');
   const [horaEvento, setHoraEvento] = useState('');
+  const [horaFinEvento, setHoraFinEvento] = useState('');
   const [guardando, setGuardando] = useState(false);
   // "Agregar audiencia/término/pendiente desde el día" (2026-09-22, pedido
   // explícito del usuario: "al momento de dar clic en el día, agreguemos una
@@ -118,6 +119,7 @@ export default function MiniCalendarioAudienciasTerminos({
     setDiaSeleccionado(iso === diaSeleccionado ? null : iso);
     setNombreEvento('');
     setHoraEvento('');
+    setHoraFinEvento('');
     setTipoNuevo(null);
   }
 
@@ -135,10 +137,11 @@ export default function MiniCalendarioAudienciasTerminos({
     if(!nombreEvento.trim()) return;
     setGuardando(true);
     try{
-      await onCrearEventoPersonalizado?.({ nombre: nombreEvento.trim(), fechaISO: diaSeleccionado, horaHHMM: horaEvento || null });
+      await onCrearEventoPersonalizado?.({ nombre: nombreEvento.trim(), fechaISO: diaSeleccionado, horaHHMM: horaEvento || null, horaFinHHMM: horaEvento ? (horaFinEvento || null) : null });
       notify?.(`Evento agendado en el calendario de Outlook para el ${fechaLarga(diaSeleccionado)}.`, 'success');
       setNombreEvento('');
       setHoraEvento('');
+      setHoraFinEvento('');
     }catch(err){ console.error(err); notify?.("No se pudo programar el evento: " + mensajeError(err), 'error'); }
     finally { setGuardando(false); }
   }
@@ -164,13 +167,29 @@ export default function MiniCalendarioAudienciasTerminos({
             cuadrito en vez de un círculo para no confundirlo con los otros 3. */}
         <span><span className="cuadrito cuadrito-festivo" /> Festivos</span>
       </div>
-      <div className="mini-calendario-grid">
-        {DIAS_SEMANA.map((d,i) => <div key={i} className="mini-calendario-diasemana">{d}</div>)}
-        {celdas.map((d, i) => {
+      <div className="mini-calendario-grid-area">
+        {/* Sábado/domingo sombreados como una franja continua (2026-09-22,
+            pedido explícito del usuario: primero "dale sombra al domingo y
+            al sábado", y al ver que quedaba dividido celda por celda, "que
+            no quede dividida... como una sola columna, que no se vean las
+            divisiones de fila"). Van FUERA del grid (no como ítems propios
+            de grid — eso rompía el auto-acomodo de las 7 columnas, corrido
+            visto al probar) — son 2 franjas sueltas, posicionadas por CSS
+            (columna 1 y columna 7, ancho calculado a partir del padding y
+            los gaps reales del grid) y detrás de las celdas porque van
+            primero en el DOM y ambas usan position (celdas ya son
+            position:relative). */}
+        <div className="mini-calendario-finde-franja domingo" />
+        <div className="mini-calendario-finde-franja sabado" />
+        <div className="mini-calendario-grid">
+          {DIAS_SEMANA.map((d,i) => <div key={i} className="mini-calendario-diasemana">{d}</div>)}
+          {celdas.map((d, i) => {
           if(d == null) return <div key={i} className="mini-calendario-celda vacia" />;
           const iso = isoDelDia(d);
           const esFestivo = festivos.has(iso);
-          const esDomingo = new Date(cursor.anio, cursor.mes, d).getDay() === 0;
+          const diaSemanaNum = new Date(cursor.anio, cursor.mes, d).getDay();
+          const esDomingo = diaSemanaNum === 0;
+          const esSabado = diaSemanaNum === 6;
           const ev = eventos.get(iso);
           const esHoy = iso === hoyISO;
           const esSeleccionado = iso === diaSeleccionado;
@@ -200,7 +219,7 @@ export default function MiniCalendarioAudienciasTerminos({
             <button
               type="button"
               key={i}
-              className={"mini-calendario-celda" + (esFestivo ? ' festivo' : '') + (tipoEvento ? ' con-' + tipoEvento : '') + (esDomingo ? ' domingo' : '') + (esHoy ? ' hoy' : '') + (esSeleccionado ? ' seleccionado' : '')}
+              className={"mini-calendario-celda" + (esFestivo ? ' festivo' : '') + (tipoEvento ? ' con-' + tipoEvento : '') + (esDomingo ? ' domingo' : '') + (esSabado ? ' sabado' : '') + (esHoy ? ' hoy' : '') + (esSeleccionado ? ' seleccionado' : '')}
               onClick={() => elegirDia(iso)}
               title={titulo || undefined}
             >
@@ -214,7 +233,8 @@ export default function MiniCalendarioAudienciasTerminos({
               )}
             </button>
           );
-        })}
+          })}
+        </div>
       </div>
       {diaSeleccionado && (
         <div className="mini-calendario-dia-panel">
@@ -285,7 +305,15 @@ export default function MiniCalendarioAudienciasTerminos({
                       type="text" placeholder="Nombre del evento nuevo…" value={nombreEvento}
                       onChange={e => setNombreEvento(e.target.value)} disabled={!liveMode || guardando}
                     />
-                    <input type="time" value={horaEvento} onChange={e => setHoraEvento(e.target.value)} disabled={!liveMode || guardando} />
+                    <input type="time" title="Hora de inicio" value={horaEvento} onChange={e => setHoraEvento(e.target.value)} disabled={!liveMode || guardando} />
+                    {/* Hora de finalización (2026-09-22, pedido explícito del
+                        usuario) — solo aplica con hora de inicio (sin hora es
+                        un evento de día completo); por defecto, si se deja
+                        vacía, sigue siendo 1 hora después del inicio como
+                        siempre. */}
+                    {horaEvento && (
+                      <input type="time" title="Hora de finalización" value={horaFinEvento} onChange={e => setHoraFinEvento(e.target.value)} disabled={!liveMode || guardando} />
+                    )}
                     <button type="submit" className="btn-secondary" disabled={!liveMode || guardando || !nombreEvento.trim()}>
                       {guardando ? "Guardando…" : "+ Agendar"}
                     </button>

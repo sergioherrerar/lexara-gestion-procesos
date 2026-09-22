@@ -2,6 +2,10 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-22 (13)
+- **En el mini calendario, sábado y domingo se sombrean como una franja continua** — pedido explícito del usuario viéndolo en vivo (primero pidió sombrear el fin de semana, y al ver que quedaba dividido celda por celda con cortes, pidió que fuera una sola columna sin divisiones de fila). Las letras D L M X J V S también pasaron a negrilla y verde oscuro institucional (antes gris suave).
+- **En "+ Otro evento" del mini calendario, ahora se puede indicar la hora de finalización** — pedido explícito del usuario. Aparece un segundo campo de hora junto al de inicio; si se deja vacío, el evento sigue durando 1 hora como siempre. Solo afecta el evento que se crea en el calendario de Outlook, no se guarda en ninguna lista de SharePoint.
+
 ## 2026-09-22 (12)
 - **En Procesos judiciales, el aviso de "Vincular links" se redujo a un botón chico junto a "Ver terminados"** — pedido explícito del usuario viendo el aviso grande en vivo. Antes era un banner ancho con un mensaje largo ("N proceso(s) todavía no tienen alguno de sus links…"); ahora es solo un botón "Vincular links (N)", con esa misma explicación disponible al pasar el mouse (tooltip) y en el diálogo de confirmación de siempre.
 
