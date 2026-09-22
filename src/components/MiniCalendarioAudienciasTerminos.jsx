@@ -248,7 +248,7 @@ export default function MiniCalendarioAudienciasTerminos({
             ev?.audiencias?.length ? `Audiencias:\n${tituloDia(ev.audiencias)}` : null,
             ev?.terminos?.length ? `Términos:\n${tituloDia(ev.terminos)}` : null,
             ev?.pendientes?.length ? `Pendientes:\n${tituloDia(ev.pendientes, it => it.Pendiente)}` : null,
-            ev?.otros?.length ? `Otros:\n${ev.otros.map(o => o.asunto || '—').join('\n')}` : null,
+            ev?.otros?.length ? `Otros:\n${ev.otros.map(o => `${o.hora ? o.hora + ' — ' : ''}${o.asunto || '—'}`).join('\n')}` : null,
           ].filter(Boolean).join('\n\n');
           // Sombreado de la celda por tipo de evento (pedido explícito del
           // usuario 2026-09-17: "sombrea del color asi como los fectivos
@@ -308,7 +308,7 @@ export default function MiniCalendarioAudienciasTerminos({
                   descripción del día colocar el evento otros") — traídos de
                   vuelta de Outlook (ver listarOtrosEventosDelMes arriba). */}
               {eventosDelDia.otros.map(o => (
-                <li key={'o'+o.id} className="mini-calendario-dia-item-otro"><strong>Otro</strong> {o.asunto || '—'}</li>
+                <li key={'o'+o.id} className="mini-calendario-dia-item-otro"><strong>Otro</strong> {o.asunto || '—'}{o.hora ? ` · ${o.hora}` : ''}</li>
               ))}
             </ul>
           ) : (

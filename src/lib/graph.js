@@ -224,7 +224,7 @@ export async function listarEventosPersonalizadosDelMes(config, anio, mes){
   const inicio = new Date(anio, mes, 1); inicio.setDate(inicio.getDate()-1);
   const fin = new Date(anio, mes+1, 1); fin.setDate(fin.getDate()+1);
   const fmt = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}T00:00:00`;
-  let url = `${base}/calendarView?startDateTime=${fmt(inicio)}&endDateTime=${fmt(fin)}&$select=subject,start,body&$top=250`;
+  let url = `${base}/calendarView?startDateTime=${fmt(inicio)}&endDateTime=${fmt(fin)}&$select=subject,start,isAllDay,body&$top=250`;
   const resultado = [];
   for(let pagina = 0; pagina < 10 && url; pagina++){
     const res = await graphFetchCalendar(url, { headers: { Prefer: `outlook.timezone="${zonaHoraria}"` } });
@@ -232,7 +232,11 @@ export async function listarEventosPersonalizadosDelMes(config, anio, mes){
     eventos.forEach(ev => {
       const marca = extraerMarcaDeNotas(ev.body?.content);
       if(marca && marca.startsWith('personalizado:')){
-        resultado.push({ id: marca, fecha: String(ev.start?.dateTime||'').slice(0,10), asunto: ev.subject || '' });
+        // `hora` (2026-09-22, pedido explícito del usuario: "por favor le
+        // incluyes la hora") — solo si el evento tiene hora puntual (no es
+        // de día completo); de un "2026-09-25T09:00:00" se saca "09:00".
+        const hora = !ev.isAllDay ? String(ev.start?.dateTime||'').slice(11,16) : null;
+        resultado.push({ id: marca, fecha: String(ev.start?.dateTime||'').slice(0,10), asunto: ev.subject || '', hora });
       }
     });
     url = res?.["@odata.nextLink"] || null;

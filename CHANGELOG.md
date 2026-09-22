@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-22 (17)
+- **Los eventos "Otros" del mini calendario ahora muestran también la hora** — pedido explícito del usuario viendo un evento real en el panel del día ("Grabación Reels" sin hora). Solo aparece cuando el evento tiene hora puntual (no es de día completo).
+
 ## 2026-09-22 (16) — retoques visuales del mini calendario
 - **"Audiencia"/"Término"/"Pendiente" en el panel del día ahora salen en verde institucional, negrita y un poco más grandes** — pedido explícito del usuario, viéndolo en vivo ("Otro" mantiene su propio color ámbar).
 - **Las celdas del mes ahora tienen una forma más orgánica, tipo "gota"** — pedido explícito del usuario, con la foto de un calendario de pared como ejemplo (3 esquinas bien redondeadas, 1 más recta).
