@@ -207,6 +207,39 @@ async function buscarEventoAudienciaTermino(config, marca){
   return null;
 }
 
+// Trae los eventos "personalizados" (creados desde "+ Otro evento" en el
+// mini calendario) del mes indicado — pedido explícito del usuario
+// 2026-09-22: "en la descripción del día colocar el evento otros también
+// colocar el color en cabecera del calendario Otros". Antes esos eventos
+// eran de una sola vía (se creaban en Outlook y la app nunca los volvía a
+// leer) — usa calendarView (en vez de paginar /events como
+// buscarEventoAudienciaTermino) porque ya filtra por rango de fechas del
+// lado de Graph, más liviano para consultarlo cada vez que se abre el
+// calendario o se cambia de mes. Un día de margen a cada lado del mes por
+// si la zona horaria corre algún evento límite al día siguiente/anterior.
+export async function listarEventosPersonalizadosDelMes(config, anio, mes){
+  const base = await pathCalendario(config);
+  if(!base) return [];
+  const zonaHoraria = "SA Pacific Standard Time";
+  const inicio = new Date(anio, mes, 1); inicio.setDate(inicio.getDate()-1);
+  const fin = new Date(anio, mes+1, 1); fin.setDate(fin.getDate()+1);
+  const fmt = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}T00:00:00`;
+  let url = `${base}/calendarView?startDateTime=${fmt(inicio)}&endDateTime=${fmt(fin)}&$select=subject,start,body&$top=250`;
+  const resultado = [];
+  for(let pagina = 0; pagina < 10 && url; pagina++){
+    const res = await graphFetchCalendar(url, { headers: { Prefer: `outlook.timezone="${zonaHoraria}"` } });
+    const eventos = res?.value || [];
+    eventos.forEach(ev => {
+      const marca = extraerMarcaDeNotas(ev.body?.content);
+      if(marca && marca.startsWith('personalizado:')){
+        resultado.push({ id: marca, fecha: String(ev.start?.dateTime||'').slice(0,10), asunto: ev.subject || '' });
+      }
+    });
+    url = res?.["@odata.nextLink"] || null;
+  }
+  return resultado;
+}
+
 function sumarDiasISO(fechaISO, dias){
   const [y,m,d] = String(fechaISO).slice(0,10).split('-').map(Number);
   const date = new Date(y, m-1, d + dias);

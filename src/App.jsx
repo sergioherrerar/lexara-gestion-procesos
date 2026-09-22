@@ -112,6 +112,7 @@ export default function App(){
           tiposAccion={app.tiposAccion}
           colaboradores={app.colaboradores}
           onCrearEventoPersonalizado={app.crearEventoCalendarioPersonalizado}
+          onListarOtrosEventosDelMes={app.listarOtrosEventosDelMes}
           onCrearAudiencia={app.crearAudiencia}
           onCrearTermino={app.crearTermino}
           onCreateTipoTermino={app.createTipoTermino}

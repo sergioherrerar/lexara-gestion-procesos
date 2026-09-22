@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-22 (14)
+- **Los eventos "Otros" del mini calendario ahora se vuelven a leer de Outlook y se ven en color #52bbb5** — pedido explícito del usuario. Antes, un evento creado con "+ Otro evento" quedaba solo en Outlook, sin ningún rastro en la app (de una sola vía). Ahora aparece como punto en su día, la celda se sombrea, sale listado en el panel del día ("Otro"), y "Otros" quedó agregado a la leyenda de la cabecera del calendario — todo en el mismo color teal.
+
 ## 2026-09-22 (13)
 - **En el mini calendario, sábado y domingo se sombrean como una franja continua** — pedido explícito del usuario viéndolo en vivo (primero pidió sombrear el fin de semana, y al ver que quedaba dividido celda por celda con cortes, pidió que fuera una sola columna sin divisiones de fila). Las letras D L M X J V S también pasaron a negrilla y verde oscuro institucional (antes gris suave).
 - **En "+ Otro evento" del mini calendario, ahora se puede indicar la hora de finalización** — pedido explícito del usuario. Aparece un segundo campo de hora junto al de inicio; si se deja vacío, el evento sigue durando 1 hora como siempre. Solo afecta el evento que se crea en el calendario de Outlook, no se guarda en ninguna lista de SharePoint.

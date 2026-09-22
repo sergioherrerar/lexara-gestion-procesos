@@ -562,6 +562,10 @@
   /* Mismo azul ya usado en "Cargando datos…" (.status-loading) — se reusa en
      vez de inventar un cuarto color nuevo en la paleta. */
   .punto-pendiente{background:#2f5fa8;}
+  /* "Otros" (2026-09-22, pedido explícito del usuario: "para otros eventos
+     dejalo con color #52bbb5") — mismo teal ya validado en la paleta de
+     gráficas del Dashboard (PALETA_CATEGORICA en PieChart.jsx). */
+  .punto-otro{background:#52bbb5;}
   /* Cuadrito de la leyenda para Festivos — mismo fondo/borde que ya usa
      .mini-calendario-celda.festivo, en cuadrado (no círculo) para no
      confundirlo con los puntos de Audiencias/Términos/Pendientes. */
@@ -613,6 +617,10 @@
   .mini-calendario-celda.con-termino .numero{color:#b3590a; font-weight:700;}
   .mini-calendario-celda.con-pendiente{background:#eaf1fb;}
   .mini-calendario-celda.con-pendiente .numero{color:#2f5fa8; font-weight:700;}
+  .mini-calendario-celda.con-otro{background:#dcf2f0;}
+  .mini-calendario-celda.con-otro .numero{color:#1a7a73; font-weight:700;}
+  /* Ítem "Otro" en la lista del día — mismo teal del punto/celda. */
+  .mini-calendario-dia-item-otro strong{color:#1a7a73 !important;}
   /* Mini tablas de "Vencimientos de esta semana" (2026-09-18, pedido
      explícito del usuario: "pinta el fondo del color de audiencia termino
      pendiente igual al del calendario") — mismos pares fondo/texto que ya

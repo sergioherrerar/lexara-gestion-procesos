@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { festivosColombia, nombresFestivosColombia } from '../lib/horasExtras';
 import { sumarDiasHabilesJudiciales } from '../lib/audienciasTerminos';
 import { mensajeError } from '../lib/graph';
@@ -20,35 +20,40 @@ import miniVerdeClaro from '../assets/Mini verde claro.png';
 // se puede desincronizar.
 //
 // Cada día es clicable (pedido explícito del usuario, mismo día 2026-09-15):
-// muestra abajo la lista resumida de Audiencias/Términos de ESE día
-// ("Término" {Número Corto} / "Audiencia" {Número Corto}) y un formulario
-// rápido para programar un evento NUEVO, distinto de Audiencias/Términos,
-// directo en el calendario compartido de Outlook (nombre + fecha del día
-// elegido + hora) — ver crearEventoCalendarioPersonalizado en
-// useLexaraApp.js. Ese evento nuevo no queda representado por ningún punto
-// acá (no hay ninguna lista propia de donde volver a leerlo sin conectarse
-// de nuevo a Microsoft Graph), es de una sola vía.
+// muestra abajo la lista resumida de Audiencias/Términos/Pendientes/Otros de
+// ESE día y un formulario rápido para crear cada uno. Los eventos "Otros"
+// (creados con "+ Otro evento", directo en el calendario compartido de
+// Outlook — ver crearEventoCalendarioPersonalizado en useLexaraApp.js) SÍ se
+// vuelven a leer (2026-09-22, pedido explícito del usuario: "en la
+// descripción del día colocar el evento otros también colocar el color en
+// cabecera") — antes era de una sola vía, sin volver a mostrarse acá; ahora
+// listarOtrosEventosDelMes (useLexaraApp.js/graph.js) los trae por mes cada
+// vez que se abre el calendario o se cambia de mes, buscando la misma marca
+// oculta ("LEXARA-MARCA:personalizado:...") que ya usa el resto de la
+// sincronización con Outlook.
 const MESES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 const DIAS_SEMANA = ['D','L','M','X','J','V','S'];
 const DIAS_LARGO = ["domingo","lunes","martes","miércoles","jueves","viernes","sábado"];
 
 function soloFechaISO(v){ return String(v || "").slice(0, 10); }
 
-// Junta Audiencias/Términos/Pendientes por fecha objetivo (ISO) ->
-// {audiencias:[], terminos:[], pendientes:[]}. "Pendientes" agregado
-// 2026-09-17 (pedido explícito del usuario) — a diferencia de las otras 2,
-// se asocia por "Proceso" (r.Proceso, real ProcesoMD) que puede venir vacío
-// (tarea suelta, sin proceso vinculado), así que ese cruce es opcional.
-function eventosPorDia(audiencias, terminos, pendientes, procesos){
+// Junta Audiencias/Términos/Pendientes/Otros por fecha objetivo (ISO) ->
+// {audiencias:[], terminos:[], pendientes:[], otros:[]}. "Pendientes"
+// agregado 2026-09-17 (pedido explícito del usuario) — a diferencia de las
+// otras 2, se asocia por "Proceso" (r.Proceso, real ProcesoMD) que puede
+// venir vacío (tarea suelta, sin proceso vinculado), así que ese cruce es
+// opcional. "Otros" (2026-09-22) no tiene proceso — son eventos sueltos del
+// calendario de Outlook, ya vienen con {id, fecha, asunto}.
+function eventosPorDia(audiencias, terminos, pendientes, otros, procesos){
   const mapa = new Map();
   function agregar(registros, tipo, fechaDe, procesoDe){
     (registros||[]).forEach(r => {
       const fecha = fechaDe(r);
       if(!fecha) return;
-      if(!mapa.has(fecha)) mapa.set(fecha, { audiencias:[], terminos:[], pendientes:[] });
+      if(!mapa.has(fecha)) mapa.set(fecha, { audiencias:[], terminos:[], pendientes:[], otros:[] });
       // String(...) (mismo bug real ya corregido en AudienciasTerminosTab.jsx):
       // en vivo r.Proceso puede llegar como número y p.id siempre es texto.
-      const procesoId = procesoDe(r);
+      const procesoId = procesoDe ? procesoDe(r) : null;
       const proceso = procesoId ? (procesos||[]).find(p => String(p.id) === String(procesoId)) || null : null;
       mapa.get(fecha)[tipo].push({ ...r, proceso });
     });
@@ -56,6 +61,7 @@ function eventosPorDia(audiencias, terminos, pendientes, procesos){
   agregar(audiencias, 'audiencias', r => soloFechaISO(r.FechaAudiencia), r => r.Proceso);
   agregar(terminos, 'terminos', r => soloFechaISO(r.VencimientoTermino) || sumarDiasHabilesJudiciales(soloFechaISO(r.FechaNotificacion), r.DiasHabiles), r => r.Proceso);
   agregar(pendientes, 'pendientes', r => soloFechaISO(r.FechaPendiente), r => r.ProcesoMD);
+  agregar(otros, 'otros', r => soloFechaISO(r.fecha), null);
   return mapa;
 }
 
@@ -71,11 +77,24 @@ function fechaLarga(iso){
 
 export default function MiniCalendarioAudienciasTerminos({
   audiencias, terminos, pendientes, procesos, tiposAccion, colaboradores, liveMode,
-  onCrearEventoPersonalizado, onCrearAudiencia, onCrearTermino, onCreateTipoTermino, onCrearPendiente,
+  onCrearEventoPersonalizado, onListarOtrosEventosDelMes, onCrearAudiencia, onCrearTermino, onCreateTipoTermino, onCrearPendiente,
   canWrite = true, notify,
 }){
   const hoy = new Date();
   const [cursor, setCursor] = useState({ anio: hoy.getFullYear(), mes: hoy.getMonth() });
+  // "Otros" del mes visible (2026-09-22) — se traen aparte (no vienen en
+  // props, a diferencia de audiencias/terminos/pendientes que ya están
+  // cargados de antes en memoria) porque viven solo en Outlook; se piden de
+  // nuevo cada vez que se abre el calendario o se cambia de mes.
+  const [otrosDelMes, setOtrosDelMes] = useState([]);
+  useEffect(() => {
+    let cancelado = false;
+    (async () => {
+      const r = await onListarOtrosEventosDelMes?.(cursor.anio, cursor.mes);
+      if(!cancelado) setOtrosDelMes(r || []);
+    })();
+    return () => { cancelado = true; };
+  }, [cursor.anio, cursor.mes, onListarOtrosEventosDelMes]);
   const [diaSeleccionado, setDiaSeleccionado] = useState(null);
   const [nombreEvento, setNombreEvento] = useState('');
   const [horaEvento, setHoraEvento] = useState('');
@@ -90,7 +109,7 @@ export default function MiniCalendarioAudienciasTerminos({
   // la fecha de ese día ya precargada.
   const [tipoNuevo, setTipoNuevo] = useState(null);
   const [guardandoTipado, setGuardandoTipado] = useState(false);
-  const eventos = useMemo(() => eventosPorDia(audiencias, terminos, pendientes, procesos), [audiencias, terminos, pendientes, procesos]);
+  const eventos = useMemo(() => eventosPorDia(audiencias, terminos, pendientes, otrosDelMes, procesos), [audiencias, terminos, pendientes, otrosDelMes, procesos]);
   const festivos = festivosColombia(cursor.anio);
   const nombresFestivos = nombresFestivosColombia(cursor.anio);
 
@@ -142,6 +161,11 @@ export default function MiniCalendarioAudienciasTerminos({
       setNombreEvento('');
       setHoraEvento('');
       setHoraFinEvento('');
+      // Refresca "Otros" del mes de una vez, para que el evento recién
+      // creado aparezca en la descripción del día sin tener que cerrar y
+      // volver a abrir el mini calendario.
+      const actualizados = await onListarOtrosEventosDelMes?.(cursor.anio, cursor.mes);
+      setOtrosDelMes(actualizados || []);
     }catch(err){ console.error(err); notify?.("No se pudo programar el evento: " + mensajeError(err), 'error'); }
     finally { setGuardando(false); }
   }
@@ -161,6 +185,11 @@ export default function MiniCalendarioAudienciasTerminos({
         <span><span className="punto punto-audiencia" /> Audiencias</span>
         <span><span className="punto punto-termino" /> Términos</span>
         <span><span className="punto punto-pendiente" /> Pendientes</span>
+        {/* "Otros" (2026-09-22, pedido explícito del usuario: "para otros
+            eventos dejalo con color #52bbb5... también colocar el color en
+            cabecera del calendario Otros") — mismo color en el punto, la
+            celda sombreada y la lista del día. */}
+        <span><span className="punto punto-otro" /> Otros</span>
         {/* Festivo (pedido explícito del usuario 2026-09-17: "incluye color
             de festivos") — no es un punto (los festivos no tienen punto en
             el día, sombrean toda la celda), así que se representa con un
@@ -203,6 +232,7 @@ export default function MiniCalendarioAudienciasTerminos({
             ev?.audiencias?.length ? `Audiencias:\n${tituloDia(ev.audiencias)}` : null,
             ev?.terminos?.length ? `Términos:\n${tituloDia(ev.terminos)}` : null,
             ev?.pendientes?.length ? `Pendientes:\n${tituloDia(ev.pendientes, it => it.Pendiente)}` : null,
+            ev?.otros?.length ? `Otros:\n${ev.otros.map(o => o.asunto || '—').join('\n')}` : null,
           ].filter(Boolean).join('\n\n');
           // Sombreado de la celda por tipo de evento (pedido explícito del
           // usuario 2026-09-17: "sombrea del color asi como los fectivos
@@ -211,9 +241,10 @@ export default function MiniCalendarioAudienciasTerminos({
           // color), no solo el punto pequeño de abajo. Un festivo se ve
           // igual que siempre (su color es el festivo, no se mezcla); si un
           // día no es festivo pero tiene más de un tipo de evento, se
-          // muestra el de mayor prioridad (Audiencia > Término > Pendiente).
+          // muestra el de mayor prioridad (Audiencia > Término > Pendiente >
+          // Otro — "Otro" al final, 2026-09-22, es el menos crítico de los 4).
           const tipoEvento = !esFestivo
-            ? (ev?.audiencias?.length ? 'audiencia' : ev?.terminos?.length ? 'termino' : ev?.pendientes?.length ? 'pendiente' : null)
+            ? (ev?.audiencias?.length ? 'audiencia' : ev?.terminos?.length ? 'termino' : ev?.pendientes?.length ? 'pendiente' : ev?.otros?.length ? 'otro' : null)
             : null;
           return (
             <button
@@ -229,6 +260,7 @@ export default function MiniCalendarioAudienciasTerminos({
                   {ev.audiencias.length > 0 && <span className="punto punto-audiencia" />}
                   {ev.terminos.length > 0 && <span className="punto punto-termino" />}
                   {ev.pendientes.length > 0 && <span className="punto punto-pendiente" />}
+                  {ev.otros.length > 0 && <span className="punto punto-otro" />}
                 </span>
               )}
             </button>
@@ -241,7 +273,7 @@ export default function MiniCalendarioAudienciasTerminos({
           <p className="mini-calendario-dia-titulo">
             {fechaLarga(diaSeleccionado)}{nombreFestivoDiaSeleccionado ? ` · ${nombreFestivoDiaSeleccionado}` : ''}
           </p>
-          {(eventosDelDia?.terminos?.length || eventosDelDia?.audiencias?.length || eventosDelDia?.pendientes?.length) ? (
+          {(eventosDelDia?.terminos?.length || eventosDelDia?.audiencias?.length || eventosDelDia?.pendientes?.length || eventosDelDia?.otros?.length) ? (
             <ul className="mini-calendario-dia-lista">
               {/* El tipo de audiencia/término (Descripcion) se agrega acá
                   (pedido explícito del usuario 2026-09-17: "que muestre tipo
@@ -255,6 +287,12 @@ export default function MiniCalendarioAudienciasTerminos({
               ))}
               {eventosDelDia.pendientes.map(p => (
                 <li key={'p'+p.id}><strong>Pendiente</strong> {p.Pendiente || '—'}{p.proceso?.Radicado ? ` (${p.proceso.Radicado})` : ''}</li>
+              ))}
+              {/* "Otros" (2026-09-22, pedido explícito del usuario: "en la
+                  descripción del día colocar el evento otros") — traídos de
+                  vuelta de Outlook (ver listarOtrosEventosDelMes arriba). */}
+              {eventosDelDia.otros.map(o => (
+                <li key={'o'+o.id} className="mini-calendario-dia-item-otro"><strong>Otro</strong> {o.asunto || '—'}</li>
               ))}
             </ul>
           ) : (

@@ -1777,6 +1777,17 @@ export function useLexaraApp(){
     if(!liveMode) throw new Error("Programar un evento nuevo solo funciona conectado a SharePoint (modo en vivo), no en modo demo.");
     return Graph.sincronizarEventoCalendario({ ...config, CALENDARIO_AUDIENCIAS_TERMINOS }, { tipo:'personalizado', id: Date.now(), asunto: nombre, fechaISO, horaHHMM, horaFinHHMM });
   }
+  // "Otros" en el mini calendario (2026-09-22, pedido explícito del usuario:
+  // "en la descripción del día colocar el evento otros también colocar el
+  // color en cabecera") — antes los eventos de "+ Otro evento" nunca se
+  // volvían a leer (ver nota grande de crearEventoCalendarioPersonalizado
+  // arriba). El mini calendario llama esto cada vez que se abre o se cambia
+  // de mes; en demo (o sin calendario configurado) devuelve vacío sin tronar.
+  async function listarOtrosEventosDelMes(anio, mes){
+    if(!liveMode) return [];
+    try{ return await Graph.listarEventosPersonalizadosDelMes({ ...config, CALENDARIO_AUDIENCIAS_TERMINOS }, anio, mes); }
+    catch(err){ console.error(err); return []; }
+  }
 
   return {
     config, saveConfig, clearConfig,
@@ -1795,7 +1806,7 @@ export function useLexaraApp(){
     crearAudiencia, editarAudiencia, eliminarAudiencia,
     crearTermino, editarTermino, eliminarTermino,
     crearPendiente, editarPendiente, eliminarPendiente,
-    crearEventoCalendarioPersonalizado,
+    crearEventoCalendarioPersonalizado, listarOtrosEventosDelMes,
     currentFilter, setFilter: setCurrentFilter, searchQuery, setSearchQuery: setSearchQuery,
     onSearch: setSearchQuery,
     activeProceso, openProceso, newProceso, closeDrawer, saveProceso, procesoViewOnly, rememberReturnToProceso, vincularLinksProcesosMasivo,

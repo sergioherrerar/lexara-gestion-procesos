@@ -15,7 +15,7 @@ const TITLES = {dashboard:"Dashboard", informes:"Informes", procesos:"Procesos j
 // es demasiado alto para ir siempre visible en una barra angosta, así que
 // vive en un desplegable — mismo patrón de clic-afuera-para-cerrar que ya usa
 // ColumnHeaderMenu.jsx.
-function BotonCalendarioTopbar({ audiencias, terminos, pendientes, procesos, tiposAccion, colaboradores, liveMode, onCrearEventoPersonalizado, onCrearAudiencia, onCrearTermino, onCreateTipoTermino, onCrearPendiente, canWrite, notify }){
+function BotonCalendarioTopbar({ audiencias, terminos, pendientes, procesos, tiposAccion, colaboradores, liveMode, onCrearEventoPersonalizado, onListarOtrosEventosDelMes, onCrearAudiencia, onCrearTermino, onCreateTipoTermino, onCrearPendiente, canWrite, notify }){
   const [abierto, setAbierto] = useState(false);
   const ref = useRef(null);
 
@@ -43,6 +43,7 @@ function BotonCalendarioTopbar({ audiencias, terminos, pendientes, procesos, tip
             audiencias={audiencias} terminos={terminos} pendientes={pendientes} procesos={procesos}
             tiposAccion={tiposAccion} colaboradores={colaboradores}
             liveMode={liveMode} onCrearEventoPersonalizado={onCrearEventoPersonalizado}
+            onListarOtrosEventosDelMes={onListarOtrosEventosDelMes}
             onCrearAudiencia={onCrearAudiencia} onCrearTermino={onCrearTermino} onCreateTipoTermino={onCreateTipoTermino}
             onCrearPendiente={onCrearPendiente} canWrite={canWrite} notify={notify}
           />
@@ -52,7 +53,7 @@ function BotonCalendarioTopbar({ audiencias, terminos, pendientes, procesos, tip
   );
 }
 
-export default function Topbar({ view, liveMode, searchQuery, onSearch, onOpenMobileNav, onRefresh, refreshing, cargandoInicial, audiencias, terminos, pendientes, procesos, tiposAccion, colaboradores, onCrearEventoPersonalizado, onCrearAudiencia, onCrearTermino, onCreateTipoTermino, onCrearPendiente, canWrite, notify }){
+export default function Topbar({ view, liveMode, searchQuery, onSearch, onOpenMobileNav, onRefresh, refreshing, cargandoInicial, audiencias, terminos, pendientes, procesos, tiposAccion, colaboradores, onCrearEventoPersonalizado, onListarOtrosEventosDelMes, onCrearAudiencia, onCrearTermino, onCreateTipoTermino, onCrearPendiente, canWrite, notify }){
   const cargando = refreshing || cargandoInicial;
   return (
     <div className="topbar">
@@ -81,6 +82,7 @@ export default function Topbar({ view, liveMode, searchQuery, onSearch, onOpenMo
         audiencias={audiencias} terminos={terminos} pendientes={pendientes} procesos={procesos}
         tiposAccion={tiposAccion} colaboradores={colaboradores}
         liveMode={liveMode} onCrearEventoPersonalizado={onCrearEventoPersonalizado}
+        onListarOtrosEventosDelMes={onListarOtrosEventosDelMes}
         onCrearAudiencia={onCrearAudiencia} onCrearTermino={onCrearTermino} onCreateTipoTermino={onCreateTipoTermino}
         onCrearPendiente={onCrearPendiente} canWrite={canWrite} notify={notify}
       />
