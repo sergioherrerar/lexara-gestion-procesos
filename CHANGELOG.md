@@ -2,6 +2,11 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-22 (16) — retoques visuales del mini calendario
+- **"Audiencia"/"Término"/"Pendiente" en el panel del día ahora salen en verde institucional, negrita y un poco más grandes** — pedido explícito del usuario, viéndolo en vivo ("Otro" mantiene su propio color ámbar).
+- **Las celdas del mes ahora tienen una forma más orgánica, tipo "gota"** — pedido explícito del usuario, con la foto de un calendario de pared como ejemplo (3 esquinas bien redondeadas, 1 más recta).
+- **El encabezado D L M X J V S quedó separado del resto de la cuadrícula, cada letra con su propio fondo gris y borde suave** — pedido explícito del usuario, en varias correcciones sucesivas viéndolo en vivo. De paso, la franja gris de sábado/domingo ahora arranca justo en los números del día, ya no le pasa por detrás a la letra del encabezado.
+
 ## 2026-09-22 (15)
 - **El color de "Otros" en el mini calendario cambió a #fbbc33** — pedido explícito del usuario, corrigiendo el color inicial (#52bbb5, publicación anterior).
 

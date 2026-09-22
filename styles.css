@@ -577,9 +577,28 @@
      gaps reales del grid interno, sin desalinearse. */
   .mini-calendario-grid-area{position:relative;}
   .mini-calendario-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:4px; padding:12px;}
+  /* Fila del encabezado D L M X J V S, separada del grid de números (ver
+     comentario grande en MiniCalendarioAudienciasTerminos.jsx: "dejemos la
+     columna de gris solo hasta el numero del día no hasta la letra") — mismo
+     padding lateral y mismas 7 columnas que .mini-calendario-grid para que
+     las letras queden alineadas exactamente arriba de sus números. */
+  .mini-calendario-diasemana-fila{display:grid; grid-template-columns:repeat(7,1fr); gap:4px; padding:12px 12px 0;}
   /* Letras D L M X J V S en negrilla y verde oscuro institucional (2026-09-22,
      pedido explícito del usuario viéndolas en vivo — antes eran gris suave). */
-  .mini-calendario-diasemana{position:relative; text-align:center; font-size:13px; color:var(--verde-oscuro); font-weight:700; padding-bottom:6px;}
+  /* Borde tipo "marca de agua" en cada letra del encabezado (2026-09-22,
+     pedido explícito del usuario viéndolo en vivo: "coloca los bordes de
+     marca de agua en las letras de los días de la semana") — un contorno
+     bien tenue (mismo gris de las líneas del calendario, muy suave), no un
+     borde marcado, para que se note como un sello discreto detrás de la
+     letra en vez de una caja llamativa. */
+  .mini-calendario-diasemana{
+    position:relative; text-align:center; font-size:13px; color:var(--verde-oscuro); font-weight:700;
+    padding:4px 0 8px; margin:0 auto; width:80%;
+    /* Mismo gris sólido de la franja de fin de semana (2026-09-22, pedido
+       explícito del usuario: "coloca todo esta fila gris igual que la
+       columna") — antes era solo un contorno tenue, ahora rellena igual. */
+    background:var(--gris-claro); border:1px solid var(--gris-linea); border-radius:46% 46% 46% 12%;
+  }
   /* Fin de semana sombreado como UNA franja continua, no celda por celda
      (2026-09-22, pedido explícito del usuario: primero "dale sombra al
      domingo y al sabado", y al verla dividida en cuadros con gaps, "que no
@@ -598,7 +617,11 @@
   .mini-calendario-finde-franja.sabado{right:12px;}
   .mini-calendario-celda{
     position:relative; aspect-ratio:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
-    border-radius:6px; font-size:15.5px; gap:4px; border:none; background:none; cursor:pointer; font-family:inherit; color:var(--texto);
+    /* Forma de "gota" (2026-09-22, pedido explícito del usuario con un
+       calendario de pared físico de ejemplo) — 3 esquinas bien redondeadas
+       y 1 más recta, en vez del cuadrado con esquinas parejas de antes. */
+    border-radius:46% 46% 46% 12%;
+    font-size:15.5px; gap:4px; border:none; background:none; cursor:pointer; font-family:inherit; color:var(--texto); transition:border-radius .15s ease;
   }
   .mini-calendario-celda:hover:not(.vacia){background:var(--gris-claro);}
   .mini-calendario-celda.vacia{visibility:hidden; cursor:default;}
@@ -648,7 +671,14 @@
   .mini-calendario-dia-panel{border-top:1px solid var(--gris-linea); padding:12px 14px 14px;}
   .mini-calendario-dia-titulo{margin:0 0 7px; font-size:13.5px; font-weight:600; color:var(--verde-oscuro); text-transform:capitalize;}
   .mini-calendario-dia-lista{list-style:none; margin:0 0 9px; padding:0; display:flex; flex-direction:column; gap:4px; font-size:13.5px; max-height:130px; overflow-y:auto;}
-  .mini-calendario-dia-lista strong{color:var(--texto-suave); font-weight:600; margin-right:4px;}
+  /* Tipo de evento (Audiencia/Término/Pendiente) en negrilla, verde oscuro
+     institucional y un punto más grande que el resto de la línea (2026-09-22,
+     pedido explícito del usuario viéndolo en vivo: "colócalo en verde
+     institucional negrita y un tamaño un numero mas grande") — antes era
+     gris del mismo tamaño que el resto, se perdía entre el detalle. "Otro"
+     mantiene su propio color ámbar (ver .mini-calendario-dia-item-otro más
+     abajo, gana por order de cascada) — solo tamaño/negrilla se comparten. */
+  .mini-calendario-dia-lista strong{color:var(--verde-oscuro); font-weight:700; font-size:14.5px; margin-right:4px;}
   .mini-calendario-dia-vacio{margin:0 0 9px; font-size:13px; color:var(--texto-suave);}
   .mini-calendario-nuevo-evento{display:flex; flex-wrap:wrap; gap:6px;}
   .mini-calendario-nuevo-evento input[type="text"]{flex:1 1 140px; min-width:0;}

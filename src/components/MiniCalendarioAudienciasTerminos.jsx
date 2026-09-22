@@ -37,6 +37,16 @@ const DIAS_LARGO = ["domingo","lunes","martes","miércoles","jueves","viernes","
 
 function soloFechaISO(v){ return String(v || "").slice(0, 10); }
 
+// Celdas (null = relleno antes del día 1) de un mes cualquiera.
+function celdasDelMes(anio, mes){
+  const primerDiaSemana = new Date(anio, mes, 1).getDay();
+  const diasEnMes = new Date(anio, mes + 1, 0).getDate();
+  const celdas = [];
+  for(let i=0; i<primerDiaSemana; i++) celdas.push(null);
+  for(let d=1; d<=diasEnMes; d++) celdas.push(d);
+  return celdas;
+}
+
 // Junta Audiencias/Términos/Pendientes/Otros por fecha objetivo (ISO) ->
 // {audiencias:[], terminos:[], pendientes:[], otros:[]}. "Pendientes"
 // agregado 2026-09-17 (pedido explícito del usuario) — a diferencia de las
@@ -113,11 +123,7 @@ export default function MiniCalendarioAudienciasTerminos({
   const festivos = festivosColombia(cursor.anio);
   const nombresFestivos = nombresFestivosColombia(cursor.anio);
 
-  const primerDiaSemana = new Date(cursor.anio, cursor.mes, 1).getDay();
-  const diasEnMes = new Date(cursor.anio, cursor.mes + 1, 0).getDate();
-  const celdas = [];
-  for(let i=0; i<primerDiaSemana; i++) celdas.push(null);
-  for(let d=1; d<=diasEnMes; d++) celdas.push(d);
+  const celdas = celdasDelMes(cursor.anio, cursor.mes);
 
   function isoDelDia(d){
     return `${cursor.anio}-${String(cursor.mes+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
@@ -196,6 +202,17 @@ export default function MiniCalendarioAudienciasTerminos({
             cuadrito en vez de un círculo para no confundirlo con los otros 3. */}
         <span><span className="cuadrito cuadrito-festivo" /> Festivos</span>
       </div>
+      {/* Encabezado D L M X J V S aparte del grid de números (2026-09-22,
+          pedido explícito del usuario: "dejemos la columna de gris solo
+          hasta el numero del día no hasta la letra del día") — antes vivía
+          dentro del mismo .mini-calendario-grid que los números, así que la
+          franja de fin de semana (ver abajo) también le pasaba por detrás.
+          Separado en su propia fila, la franja (que arranca en
+          .mini-calendario-grid-area, ya sin el encabezado adentro) empieza
+          justo en la primera fila de números. */}
+      <div className="mini-calendario-diasemana-fila">
+        {DIAS_SEMANA.map((d,i) => <div key={i} className="mini-calendario-diasemana">{d}</div>)}
+      </div>
       <div className="mini-calendario-grid-area">
         {/* Sábado/domingo sombreados como una franja continua (2026-09-22,
             pedido explícito del usuario: primero "dale sombra al domingo y
@@ -211,7 +228,6 @@ export default function MiniCalendarioAudienciasTerminos({
         <div className="mini-calendario-finde-franja domingo" />
         <div className="mini-calendario-finde-franja sabado" />
         <div className="mini-calendario-grid">
-          {DIAS_SEMANA.map((d,i) => <div key={i} className="mini-calendario-diasemana">{d}</div>)}
           {celdas.map((d, i) => {
           if(d == null) return <div key={i} className="mini-calendario-celda vacia" />;
           const iso = isoDelDia(d);
