@@ -76,10 +76,10 @@ export const INITIAL_CONFIG = {
 // Tutelas — pedido explícito del usuario 2026-09-23: "no son mas de 5
 // correos los cuales envían tutelas los puedo colocar manualmente" (en vez
 // de leer la libreta de contactos real del buzón, que hubiera necesitado
-// pedir un permiso nuevo en Azure AD). Confirmado 2026-09-23: por ahora solo
-// daniacp@colmedica.com — el usuario avisó que hay 2 correos más que
-// "eventualmente la reemplazan", agregar cuando los confirme.
-export const TUTELAS_REMITENTES_PERMITIDOS = ["daniacp@colmedica.com"];
+// pedir un permiso nuevo en Azure AD). Confirmado 2026-09-23: daniacp@colmedica.com
+// y Mgabrielac@aliansalud.com.co — puede haber más correos que "eventualmente
+// los reemplazan", agregar cuando se confirmen.
+export const TUTELAS_REMITENTES_PERMITIDOS = ["daniacp@colmedica.com", "Mgabrielac@aliansalud.com.co"];
 
 // "Diligenciamiento Formatos Empresas" (Informes > Herramientas) — agregada
 // 2026-09-11, pedido explícito del usuario ("Opción 1 + A"): carpeta real

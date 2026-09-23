@@ -2,6 +2,21 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-23 (13)
+- **Agrega Mgabrielac@aliansalud.com.co a la lista de remitentes permitidos en "Leer correo (IA)"** — pedido explícito del usuario, junto con daniacp@colmedica.com que ya estaba.
+
+## 2026-09-23 (12)
+- **Si un PDF de una tutela viene protegido con contraseña, el robot intenta abrirlo solo** — busca posibles cédulas en el asunto/cuerpo del correo y prueba abrir ese adjunto puntual con Ghostscript usando esas cédulas como contraseña (las EPS suelen proteger estos PDF con la cédula del paciente). Si no logra abrirlo, el error ahora dice el nombre exacto del archivo protegido en vez del código crudo de Claude. Requiere volver a subir `robot-tutelas/extraer-tutela.php` a cPanel.
+
+## 2026-09-23 (11)
+- **Sube de 20 a 40 el máximo de adjuntos que el robot acepta por correo** — un correo real de tutela (reenviado, con adjuntos acumulados de rondas anteriores) volvió a superar el límite anterior. Requiere volver a subir `robot-tutelas/extraer-tutela.php` a cPanel.
+
+## 2026-09-23 (10)
+- **Corrige que Claude cortaba la respuesta a la mitad en "Leer correo (IA)"** ("no devolvió un JSON válido con registros") — con varios registros por cliente más el campo Tema, la respuesta ya no cabía en el límite anterior; se sube de 1500 a 4000 tokens de respuesta.
+
+## 2026-09-23 (9)
+- **"Leer correo (IA)" ahora también extrae el campo Tema, categorizando como lo haría un abogado** — pedido explícito del usuario. Se le da a Claude una lista de referencia de categorías ya usadas en el despacho y se le pide razonar sobre el fondo de lo que pide la tutela, no solo por palabras clave.
+
 ## 2026-09-23 (8)
 - **Corrige que "Leer correo (IA)" mostraba correos viejos primero** — sin pedirle el orden a Microsoft, dentro de la ventana de 90 días traía 200 correos cualquiera, no los más recientes. Ahora sí se pide ordenado por fecha (ya no choca con el filtro de remitente, que se quitó de esa consulta en la publicación anterior).
 
