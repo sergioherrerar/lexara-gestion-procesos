@@ -23,8 +23,8 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
   // los demás ni tener que volver a leer el correo/llamar a Claude de nuevo.
   const [resultado, setResultado] = useState(null); // { mensajeId, registros:[{...,_creado}] } | null
   // Rango de fechas (2026-09-23, pedido explícito del usuario: "que pueda
-  // colocarle leer los correos del día tal a día tal") — opcional, vacío por
-  // defecto (trae los últimos 20 correos sin acotar por fecha).
+  // colocarle leer los correos del día tal a día tal") — opcional; vacío,
+  // leerCorreosTutelas igual acota sola a los últimos 90 días por defecto.
   const [desde, setDesde] = useState('');
   const [hasta, setHasta] = useState('');
 
@@ -34,8 +34,7 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
       setCargando(true);
       setErrorCarga('');
       try{
-        const top = (desde || hasta) ? 100 : 20;
-        const r = await leerCorreosTutelas(correoBuzon, remitentesPermitidos, top, desde || undefined, hasta || undefined);
+        const r = await leerCorreosTutelas(correoBuzon, remitentesPermitidos, 200, desde || undefined, hasta || undefined);
         if(!cancelado) setMensajes(r);
       }catch(err){
         console.error(err);

@@ -391,34 +391,34 @@ export async function crearBorradorCorreo({ to, cc, subject, htmlBody, adjuntoNo
 // nuevo en Azure AD para esto.
 //
 // `remitentesPermitidos`: lista fija de correos (TUTELAS_REMITENTES_PERMITIDOS
-// en config.js) — se arma el filtro OData como
-// "from/emailAddress/address eq 'a' or from/emailAddress/address eq 'b'...".
-// Si la lista viene vacía, no se aplica ningún filtro de remitente (trae los
-// últimos correos del buzón sin distinguir quién los mandó) — así el botón
-// sigue siendo útil apenas se comparta el buzón, sin esperar a tener la
-// lista definitiva de remitentes.
-// `desde`/`hasta` (2026-09-23, pedido explícito del usuario: "que pueda
-// colocarle leer los correos del día tal a día tal") — fechas ISO
-// ("aaaa-mm-dd"), opcionales, para acotar por rango además del remitente.
-export async function leerCorreosTutelas(correoBuzon, remitentesPermitidos, top = 20, desde, hasta){
+// en config.js). Bug real reportado por el usuario 2026-09-23: filtrar por
+// "from/emailAddress/address" en la consulta a Graph/Exchange da
+// "Error 400: The restriction or sort order is too complex" — pasa incluso
+// SIN ningún $orderby, así que el problema es el filtro por remitente en sí
+// (una propiedad anidada), no la combinación con el orden. Por eso el
+// filtro por remitente se hace ACÁ, del lado del portal, después de traer
+// los correos — a Graph solo se le pide (opcionalmente) el rango de fechas,
+// que sí es una propiedad simple y no da este error.
+// `desde`/`hasta` (pedido explícito del usuario: "que pueda colocarle leer
+// los correos del día tal a día tal") — fechas ISO ("aaaa-mm-dd"),
+// opcionales. Sin ninguna de las dos, se acota igual a los últimos 90 días
+// (el buzón real tiene miles de correos — sin este límite, `top` traería
+// puros correos recientes de OTROS remitentes y nunca llegaría a los de
+// Tutelas, que pueden no ser los más nuevos del buzón entero).
+export async function leerCorreosTutelas(correoBuzon, remitentesPermitidos, top = 200, desde, hasta){
   const token = await getMailToken();
-  const filtroRemitentes = (remitentesPermitidos||[]).filter(Boolean)
-    .map(correo => `from/emailAddress/address eq '${correo.replace(/'/g, "''")}'`)
-    .join(' or ');
   const partesFiltro = [];
-  if(filtroRemitentes) partesFiltro.push(`(${filtroRemitentes})`);
-  if(desde) partesFiltro.push(`receivedDateTime ge ${desde}T00:00:00Z`);
+  const desdeEfectivo = desde || (() => {
+    const d = new Date(); d.setDate(d.getDate() - 90);
+    return d.toISOString().slice(0,10);
+  })();
+  partesFiltro.push(`receivedDateTime ge ${desdeEfectivo}T00:00:00Z`);
   if(hasta) partesFiltro.push(`receivedDateTime le ${hasta}T23:59:59Z`);
-  // Sin $orderby (2026-09-23, bug real reportado por el usuario: "Error de
-  // SharePoint (400): The restriction or sort order is too complex") —
-  // Exchange/Graph no deja combinar $orderby con un $filter que use
-  // "from/emailAddress/address" al mismo tiempo. Se ordena acá mismo, del
-  // lado del cliente, en vez de pedírselo a Graph.
   const params = new URLSearchParams({
     $select: 'id,subject,from,receivedDateTime,hasAttachments,bodyPreview',
     $top: String(top),
+    $filter: partesFiltro.join(' and '),
   });
-  if(partesFiltro.length) params.set('$filter', partesFiltro.join(' and '));
   const url = `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(correoBuzon)}/messages?${params.toString()}`;
   const res = await fetch(url, { headers: { Authorization:`Bearer ${token}` } });
   if(!res.ok){
@@ -426,15 +426,19 @@ export async function leerCorreosTutelas(correoBuzon, remitentesPermitidos, top 
     throw new Error(`Graph ${res.status}: ${body.substring(0,300)}`);
   }
   const data = await res.json();
-  return (data.value || []).sort((a,b) => String(b.receivedDateTime||"").localeCompare(String(a.receivedDateTime||""))).map(m => ({
-    id: m.id,
-    asunto: m.subject || '(sin asunto)',
-    remitente: m.from?.emailAddress?.address || '',
-    remitenteNombre: m.from?.emailAddress?.name || '',
-    fecha: m.receivedDateTime,
-    tieneAdjuntos: !!m.hasAttachments,
-    resumen: m.bodyPreview || '',
-  }));
+  const remitentesLower = (remitentesPermitidos||[]).filter(Boolean).map(c => c.trim().toLowerCase());
+  return (data.value || [])
+    .filter(m => !remitentesLower.length || remitentesLower.includes((m.from?.emailAddress?.address||'').trim().toLowerCase()))
+    .sort((a,b) => String(b.receivedDateTime||"").localeCompare(String(a.receivedDateTime||"")))
+    .map(m => ({
+      id: m.id,
+      asunto: m.subject || '(sin asunto)',
+      remitente: m.from?.emailAddress?.address || '',
+      remitenteNombre: m.from?.emailAddress?.name || '',
+      fecha: m.receivedDateTime,
+      tieneAdjuntos: !!m.hasAttachments,
+      resumen: m.bodyPreview || '',
+    }));
 }
 
 // Cuerpo completo (texto plano, sin HTML) + adjuntos en base64 de UN correo

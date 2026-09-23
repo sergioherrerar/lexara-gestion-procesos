@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-23 (4)
+- **Corrige de fondo el error "The restriction or sort order is too complex" en "Leer correo (IA)"** — el intento anterior (quitar el orden) no fue suficiente: el problema real es que Exchange rechaza filtrar por remitente ("from") en la propia consulta. Ahora ese filtro se hace del lado del portal (después de traer los correos), y a Microsoft solo se le pide el rango de fechas (últimos 90 días si no se elige ninguno).
+
 ## 2026-09-23 (3)
 - **Corrige un error real al listar correos en "Leer correo (IA)"** ("The restriction or sort order is too complex") — Microsoft Graph no deja combinar el filtro por remitente con "ordenar por fecha" en la misma consulta; ahora se pide sin ordenar y se ordena del lado del portal.
 
