@@ -70,6 +70,10 @@ export const INITIAL_CONFIG = {
   // robot-tutelas/ en este mismo repo, sube a public_html/robot-tutelas/,
   // NUNCA dentro de public_html/app/ que se reemplaza en cada publicación).
   ROBOT_CLAUDE_URL: "https://www.lexaraabogados.com/robot-tutelas/extraer-tutela.php",
+  // Pestaña "Preguntas" de "Entrenar IA" (2026-09-23) — mismo robot/carpeta,
+  // otro archivo: responde preguntas sobre las tutelas ya cargadas en el
+  // portal, sin guardar nada. Ver robot-tutelas/responder-pregunta.php.
+  ROBOT_PREGUNTAS_URL: "https://www.lexaraabogados.com/robot-tutelas/responder-pregunta.php",
 };
 
 // Lista fija de correos remitentes válidos para "Leer correo (IA)" en

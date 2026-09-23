@@ -109,6 +109,7 @@ export default function TutelasView({ tutelas, searchQuery, onOpenTutela, onCrea
         <EntrenarIAModal
           tutelas={tutelas}
           onAgregarCorreccion={onAgregarCorreccionIA}
+          robotPreguntasUrl={config?.ROBOT_PREGUNTAS_URL}
           onClose={() => setMostrarEntrenarIA(false)}
           notify={notify}
         />
