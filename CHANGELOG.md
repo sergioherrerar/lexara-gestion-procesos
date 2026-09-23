@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-23 (15) — "Entrenar IA" en Tutelas
+- **Nuevo botón "Entrenar IA" en Tutelas** — pedido explícito del usuario, para que el abogado que maneja el tema día a día deje correcciones reales sobre el campo Tema de tutelas ya guardadas (nueva columna "Corrección IA" en SharePoint, con historial tipo chat automático de SharePoint — fecha y autor los pone SharePoint solo). Escribes el No. Tutela, ves el historial si ya tiene, y agregas una nota nueva. "Leer correo (IA)" ahora manda esas correcciones reales al robot como ejemplo de referencia (con más peso que la lista genérica de categorías), para categorizar el Tema con el criterio propio del despacho. Requiere volver a subir `robot-tutelas/extraer-tutela.php` a cPanel.
+
 ## 2026-09-23 (14)
 - **Corrige que "Leer correo (IA)" se cerraba sola al crear un borrador de un correo con varios clientes** — el formulario de "Nueva tutela" quedaba tapado por la ventana de correo (mismo z-index alto de las cajas de confirmación) y cualquier clic dentro se interpretaba como "clic afuera", cerrándola. Ahora el drawer queda encima y la ventana de correo se conserva debajo para seguir creando los demás borradores; solo se cierra con la X.
 

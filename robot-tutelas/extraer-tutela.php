@@ -54,6 +54,12 @@ if(!is_array($entrada)){
 $asunto = (string)($entrada['asunto'] ?? '');
 $cuerpo = (string)($entrada['cuerpo'] ?? '');
 $adjuntos = is_array($entrada['adjuntos'] ?? null) ? $entrada['adjuntos'] : [];
+// "Entrenar IA" (2026-09-23, pedido explícito del usuario) — correcciones
+// reales que el abogado a cargo ya dejó sobre el campo Tema de tutelas
+// guardadas (columna "Corrección IA" en SharePoint) — el portal las manda
+// acá como ejemplos de referencia reales, con más peso que la lista
+// genérica de categorías de abajo.
+$correcciones = is_array($entrada['correcciones'] ?? null) ? $entrada['correcciones'] : [];
 
 // Límite de seguridad — no mandar cantidades absurdas de adjuntos a la API
 // (ni de costo, ni de tamaño de la solicitud). Subido de 8 a 20 y luego a 40
@@ -112,10 +118,29 @@ TXT;
 // registro por cada uno" — una misma tutela puede señalar a más de uno de
 // los 3 clientes reales (Colmedica/Aliansalud/Unidad Médica), y en ese caso
 // hace falta UN REGISTRO POR CADA CLIENTE, no uno solo con los 3 mezclados.
+// 2026-09-23, pedido explícito del usuario ("Entrenar IA") — el abogado a
+// cargo va dejando correcciones reales sobre casos anteriores donde el
+// robot categorizó mal el Tema; se le muestran a Claude como precedentes
+// reales del despacho, con más peso que la lista genérica de arriba.
+$correccionesTexto = '';
+if($correcciones){
+    $lineas = [];
+    foreach($correcciones as $c){
+        $noT = trim((string)($c['noTutela'] ?? ''));
+        $temaAnterior = trim((string)($c['temaActual'] ?? ''));
+        $nota = trim((string)($c['correccion'] ?? ''));
+        if(!$nota) continue;
+        $lineas[] = "- Tutela {$noT} (Tema que había quedado: \"{$temaAnterior}\"): {$nota}";
+    }
+    if($lineas){
+        $correccionesTexto = "\n\nADEMÁS, estas son correcciones REALES que el abogado a cargo ya dejó sobre casos anteriores de este mismo despacho — tenlas en cuenta como criterio de referencia, con más peso que la lista genérica de categorías, sobre todo si el caso nuevo se parece a alguno de estos:\n" . implode("\n", $lineas);
+    }
+}
+
 $instrucciones = "Eres un asistente que extrae datos de una tutela judicial colombiana recibida por correo electrónico, para un despacho de abogados. " .
     "Lee el asunto, el cuerpo del correo y los documentos adjuntos (pueden ser PDF o imágenes escaneadas de la tutela). " .
     "Esta tutela puede señalar/vincular a MÁS DE UNO de los 3 clientes reales del despacho (COLMEDICA MEDICINA PREPAGADA S.A., ALIANSALUD ENTIDAD PROMOTORA DE SALUD S.A., UNIDAD MÉDICA Y DE DIAGNÓSTICO S.A.) al mismo tiempo — en ese caso arma UN REGISTRO POR CADA CLIENTE señalado (mismos datos generales de la tutela, cambiando solo el campo Cliente en cada uno), en vez de un solo registro mezclado. Si solo aplica a un cliente, devuelve un solo registro igual. " .
-    "Para el campo Tema, razona como lo haría un abogado especialista en tutelas de salud: analiza de fondo qué es lo que realmente está pidiendo/reclamando el accionante (no solo busques palabras clave sueltas) y elige la categoría que mejor describa ese fondo del asunto, apoyándote en esta lista de categorías ya usadas por el despacho como referencia (puede que la real no esté exactamente aquí — en ese caso, usa la más parecida en significado, con tus propias palabras si hace falta):\n{$temasReferencia}\n\n" .
+    "Para el campo Tema, razona como lo haría un abogado especialista en tutelas de salud: analiza de fondo qué es lo que realmente está pidiendo/reclamando el accionante (no solo busques palabras clave sueltas) y elige la categoría que mejor describa ese fondo del asunto, apoyándote en esta lista de categorías ya usadas por el despacho como referencia (puede que la real no esté exactamente aquí — en ese caso, usa la más parecida en significado, con tus propias palabras si hace falta):\n{$temasReferencia}" . $correccionesTexto . "\n\n" .
     "Devuelve SOLO un objeto JSON (sin texto adicional antes o después, sin bloques de markdown) con esta forma exacta: {\"registros\": [ {...un registro...}, {...otro registro si aplica...} ]}. Cada registro debe tener EXACTAMENTE estas claves, dejando \"\" (cadena vacía) en lo que no puedas determinar con certeza — nunca inventes un dato que no esté en el correo:\n\n" . $camposEsperados;
 
 $contenido = [];

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { leerCorreosTutelas, leerCorreoCompleto, mensajeError } from '../lib/graph';
+import { leerCorreosTutelas, leerCorreoCompleto, mensajeError, stripHtml } from '../lib/graph';
 import { IconTextButton } from './IconButton';
 
 // "API Claude" Tarea 1 (2026-09-23, pedido explícito del usuario, con
@@ -9,7 +9,7 @@ import { IconTextButton } from './IconButton';
 // devolver los campos que Claude extrajo para prellenar "Nueva tutela". El
 // usuario SIEMPRE revisa y confirma en el formulario antes de guardar — acá
 // nunca se toca SharePoint, solo se arma el objeto de campos iniciales.
-export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitidos, robotUrl, onExtraido, onClose, notify }){
+export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitidos, robotUrl, tutelas, onExtraido, onClose, notify }){
   const [cargando, setCargando] = useState(true);
   const [errorCarga, setErrorCarga] = useState('');
   const [mensajes, setMensajes] = useState([]);
@@ -54,6 +54,15 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
     setProcesando(true);
     try{
       const completo = await leerCorreoCompleto(correoBuzon, mensaje.id);
+      // "Entrenar IA" (2026-09-23) — correcciones reales que el abogado ya
+      // dejó sobre el campo Tema de tutelas guardadas (columna "Corrección
+      // IA" en SharePoint) — se mandan como ejemplo de referencia para que
+      // el robot categorice con el mismo criterio del despacho. Se limita a
+      // 30 para no inflar de más la solicitud a Claude.
+      const correcciones = (tutelas || [])
+        .filter(t => t.CorreccionIA)
+        .slice(0, 30)
+        .map(t => ({ noTutela: t.NoTutela, temaActual: t.Tema, correccion: stripHtml(t.CorreccionIA) }));
       const res = await fetch(robotUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -61,6 +70,7 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
           asunto: completo.asunto,
           cuerpo: completo.cuerpo,
           adjuntos: completo.adjuntos.map(a => ({ nombre: a.nombre, tipo: a.tipo, base64: a.base64 })),
+          correcciones,
         }),
       });
       let data;

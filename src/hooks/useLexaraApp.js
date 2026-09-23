@@ -1234,6 +1234,49 @@ export function useLexaraApp(){
     setDraftTutela(resto);
   }
   function closeTutelaDrawer(){ setActiveTutelaId(null); setDraftTutela(null); }
+  // "Entrenar IA" (2026-09-23, pedido explícito del usuario) — agrega una
+  // corrección al campo "Corrección IA" de una tutela YA GUARDADA (no un
+  // borrador), sin necesidad de abrir el formulario completo. La columna en
+  // SharePoint tiene "Anexar cambios al texto existente" activado, así que
+  // solo se manda el texto NUEVO (SharePoint arma el historial con fecha y
+  // autor solo) — después de guardar, se vuelve a leer ese campo puntual
+  // para traer el historial real ya actualizado (no se puede adivinar del
+  // lado del portal cómo queda formateado). Estas correcciones alimentan a
+  // "Leer correo (IA)" como ejemplos reales de referencia (ver
+  // LeerCorreoTutelaModal.jsx).
+  async function agregarCorreccionIA(tutelaId, texto){
+    const tutela = tutelas.find(t => t.id === tutelaId);
+    if(!tutela || !texto?.trim()) return;
+    if(!liveMode){
+      const anterior = tutela.CorreccionIA || '';
+      const nuevo = anterior + `<p><strong>${account?.name || 'Usuario'}</strong> — ${new Date().toLocaleString('es-CO')}<br/>${texto}</p>`;
+      setTutelas(prev => prev.map(t => t.id===tutelaId ? {...t, CorreccionIA: nuevo} : t));
+      notify("Corrección agregada", 'success');
+      return;
+    }
+    setSaving(true);
+    const list = listByKey('tutelas');
+    const columnaReal = list.mapping.CorreccionIA;
+    if(!columnaReal){
+      setSaving(false);
+      notify('Falta mapear "Corrección IA" en Configuración antes de poder usar esto.', 'error');
+      return;
+    }
+    try{
+      const graphBody = await Graph.graphFieldsFromUpdates(list.siteId || siteId, list, { CorreccionIA: texto });
+      await Graph.graphFetch(`/sites/${list.siteId || siteId}/lists/${list.listId}/items/${tutela._graphId}/fields`, {
+        method:"PATCH", body: JSON.stringify(graphBody)
+      });
+      const releido = await Graph.graphFetch(`/sites/${list.siteId || siteId}/lists/${list.listId}/items/${tutela._graphId}/fields?$select=${columnaReal}`);
+      const valorFresco = Graph.coerceFieldValue(releido?.[columnaReal] ?? '');
+      setTutelas(prev => prev.map(t => t.id===tutelaId ? {...t, CorreccionIA: valorFresco} : t));
+      notify("Corrección agregada", 'success');
+    }catch(err){
+      console.error(err);
+      notify("No se pudo guardar la corrección: " + Graph.mensajeError(err), 'error');
+    }
+    setSaving(false);
+  }
   async function saveTutela(updates){
     if(!activeTutela) return;
 
@@ -1823,7 +1866,7 @@ export function useLexaraApp(){
     activeColaborador, openColaborador, newColaborador, closeColaboradorDrawer, saveColaborador, deleteColaborador,
     activeFormaPago, openFormaPago, newFormaPagoFromProceso, closeFormaPagoDrawer, saveFormaPago, deleteFormaPago,
     activeDesistimiento, openDesistimiento, newDesistimientoFromProceso, closeDesistimientoDrawer, saveDesistimiento, deleteDesistimiento,
-    activeTutela, openTutela, newTutela, duplicateTutela, closeTutelaDrawer, saveTutela, deleteTutela, corregirEntidadFaltanteTutelas,
+    activeTutela, openTutela, newTutela, duplicateTutela, closeTutelaDrawer, saveTutela, deleteTutela, corregirEntidadFaltanteTutelas, agregarCorreccionIA,
     createTema, saveTema, createTipoTermino, createValorEntidad, saveValorEntidad,
     createHoraExtra, aprobarHoraExtra, editarHoraExtra, eliminarHoraExtra,
     crearPeriodoVacaciones, editarPeriodoVacaciones, eliminarPeriodoVacaciones,

@@ -761,6 +761,15 @@ export const SHAREPOINT_LISTS_CONFIG = [
       // muy probablemente texto enriquecido real en SharePoint, igual que
       // Historico/Observaciones en Procesos Judiciales.
       {key:"Solicita", label:"Solicita", hint:["solicita"]},
+      // "Entrenar IA" (2026-09-23, pedido explícito del usuario) — columna
+      // NUEVA de texto enriquecido con "Anexar cambios al texto existente"
+      // activado en SharePoint: cada corrección que el abogado escriba
+      // queda anexada con fecha/autor automáticos (no hay que armar ese
+      // historial a mano, SharePoint ya lo hace). Sin mapeo horneado
+      // todavía — se agregó DESPUÉS del mapeo confirmado 2026-08-25, así
+      // que hay que confirmarla una vez en Configuración (o dejar que
+      // guessListMapping la adivine sola por el hint).
+      {key:"CorreccionIA", label:"Corrección IA", hint:["correccion ia","corrección ia"]},
     ],
     // Mapeo real completo, confirmado por el usuario desde Configuración y
     // exportado el 2026-08-25 ("mira el mapeo si quedó bien") — se deja
