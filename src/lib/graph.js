@@ -461,7 +461,15 @@ export async function leerCorreoCompleto(correoBuzon, mensajeId){
   // "Observaciones" de Procesos.
   const cuerpoTexto = stripHtml(msg.body?.content || '').trim();
 
-  const resAdj = await fetch(`${base}/attachments?$select=id,name,contentType,size,contentBytes`, { headers });
+  // Sin $select (2026-09-23, bug real: "Could not find a property named
+  // 'contentBytes' on type 'microsoft.graph.attachment'") — /attachments
+  // devuelve el tipo genérico "attachment" (puede ser de archivo, de otro
+  // correo incrustado, o de referencia), y ese tipo base NO tiene
+  // "contentBytes" (solo el tipo derivado "fileAttachment" sí) — Graph no
+  // deja pedir con $select una propiedad que no existe en el tipo base de
+  // la colección. Sin $select, cada adjunto de archivo sí trae
+  // contentBytes por defecto.
+  const resAdj = await fetch(`${base}/attachments`, { headers });
   if(!resAdj.ok){
     const body = await resAdj.text();
     throw new Error(`Graph ${resAdj.status}: ${body.substring(0,300)}`);

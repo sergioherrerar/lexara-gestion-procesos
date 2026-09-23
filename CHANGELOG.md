@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-23 (5)
+- **Corrige error real al extraer adjuntos en "Leer correo (IA)"** ("Could not find a property named 'contentBytes'") — se pedía una propiedad que solo existe en un subtipo de adjunto, no en el tipo genérico de la colección; ahora se piden los adjuntos completos, sin ese filtro.
+
 ## 2026-09-23 (4)
 - **Corrige de fondo el error "The restriction or sort order is too complex" en "Leer correo (IA)"** — el intento anterior (quitar el orden) no fue suficiente: el problema real es que Exchange rechaza filtrar por remitente ("from") en la propia consulta. Ahora ese filtro se hace del lado del portal (después de traer los correos), y a Microsoft solo se le pide el rango de fechas (últimos 90 días si no se elige ninguno).
 
