@@ -23,6 +23,12 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
   // `_creado` propio para poder ir creando uno por uno sin perder de vista
   // los demás ni tener que volver a leer el correo/llamar a Claude de nuevo.
   const [resultado, setResultado] = useState(null); // { mensajeId, registros:[{...,_creado}] } | null
+  // 2026-09-24, pedido explícito del usuario ("que le pueda preguntar sobre
+  // la tutela que acaba de analizar la IA") — guarda el asunto/cuerpo del
+  // correo recién extraído para poder mandárselo también a la pestaña
+  // "Preguntas" de "Entrenar IA" (ver casoActual más abajo), además de los
+  // campos ya estructurados en `resultado`.
+  const [correoActual, setCorreoActual] = useState(null); // { asunto, cuerpo } | null
   // Rango de fechas (2026-09-23, pedido explícito del usuario: "que pueda
   // colocarle leer los correos del día tal a día tal") — opcional; vacío,
   // leerCorreosTutelas igual acota sola a los últimos 90 días por defecto.
@@ -81,6 +87,7 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
       }
       const registros = Array.isArray(data.registros) ? data.registros : [data.campos || {}];
       setResultado({ mensajeId: mensaje.id, registros: registros.map(r => ({ ...r, _creado: false })) });
+      setCorreoActual({ asunto: completo.asunto, cuerpo: completo.cuerpo });
     }catch(err){
       console.error(err);
       notify?.('No se pudo extraer los datos con IA: ' + (err.message || mensajeError(err)), 'error');
@@ -146,7 +153,7 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
         <ul className="leer-correo-lista">
           {mensajes.map(m => (
             <li key={m.id} className={"leer-correo-item" + (seleccionadoId===m.id ? ' activo' : '')}>
-              <button type="button" className="leer-correo-item-btn" onClick={() => { setSeleccionadoId(m.id); setResultado(null); }}>
+              <button type="button" className="leer-correo-item-btn" onClick={() => { setSeleccionadoId(m.id); setResultado(null); setCorreoActual(null); }}>
                 <strong>{m.remitenteNombre || m.remitente || 'Remitente desconocido'}</strong>
                 <span>{m.asunto}</span>
                 <span className="save-hint">
@@ -198,7 +205,13 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
         </ul>
         </div>
         <div className="leer-correo-col-lateral">
-          <EntrenarIAPanel tutelas={tutelas || []} onAgregarCorreccion={onAgregarCorreccionIA} robotPreguntasUrl={robotPreguntasUrl} notify={notify} />
+          <EntrenarIAPanel
+            tutelas={tutelas || []}
+            onAgregarCorreccion={onAgregarCorreccionIA}
+            robotPreguntasUrl={robotPreguntasUrl}
+            notify={notify}
+            casoActual={resultado ? { asunto: correoActual?.asunto, cuerpo: correoActual?.cuerpo, registros: resultado.registros } : null}
+          />
         </div>
         </div>
       </div>

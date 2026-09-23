@@ -20,7 +20,17 @@ import { IconTextButton } from './IconButton';
 // LeerCorreoTutelaModal.jsx), además de seguir existiendo como ventana
 // propia (el botón "Entrenar IA" de TutelasView, para cuando no se está
 // leyendo ningún correo).
-export function EntrenarIAPanel({ tutelas, onAgregarCorreccion, robotPreguntasUrl, notify }){
+// `casoActual` (2026-09-24, pedido explícito del usuario: "de la tutela
+// [recién extraída] dime quién es el usuario, qué están solicitando,
+// quiénes están vinculados, las pretensiones... todo lo que se pueda
+// preguntar de la tutela que acaba de analizar la IA") — cuando este panel
+// se muestra al lado de "Leer correo (IA)" (ver LeerCorreoTutelaModal.jsx),
+// trae el asunto/cuerpo del correo recién leído + los registros que Claude
+// ya extrajo de él, AUNQUE esa tutela todavía no se haya guardado en
+// SharePoint. Se manda como contexto con prioridad en la pestaña
+// "Preguntas", para poder responder sobre ese caso puntual con más detalle
+// del que cabe en los campos fijos (Solicita/Usuario/Cliente/etc.).
+export function EntrenarIAPanel({ tutelas, onAgregarCorreccion, robotPreguntasUrl, notify, casoActual }){
   const [tab, setTab] = useState('correccion'); // 'correccion' | 'preguntas'
   return (
     <div className="entrenar-ia-panel">
@@ -30,7 +40,7 @@ export function EntrenarIAPanel({ tutelas, onAgregarCorreccion, robotPreguntasUr
       </div>
       {tab === 'correccion'
         ? <TabCorreccion tutelas={tutelas} onAgregarCorreccion={onAgregarCorreccion} notify={notify} />
-        : <TabPreguntas tutelas={tutelas} robotPreguntasUrl={robotPreguntasUrl} notify={notify} />}
+        : <TabPreguntas tutelas={tutelas} robotPreguntasUrl={robotPreguntasUrl} notify={notify} casoActual={casoActual} />}
     </div>
   );
 }
@@ -138,7 +148,7 @@ function TabCorreccion({ tutelas, onAgregarCorreccion, notify }){
   );
 }
 
-function TabPreguntas({ tutelas, robotPreguntasUrl, notify }){
+function TabPreguntas({ tutelas, robotPreguntasUrl, notify, casoActual }){
   const [pregunta, setPregunta] = useState('');
   const [mensajes, setMensajes] = useState([]); // [{autor:'yo'|'ia', texto}]
   const [enviando, setEnviando] = useState(false);
@@ -163,7 +173,7 @@ function TabPreguntas({ tutelas, robotPreguntasUrl, notify }){
       const res = await fetch(robotPreguntasUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pregunta: texto, tutelas: tutelasCompactas }),
+        body: JSON.stringify({ pregunta: texto, tutelas: tutelasCompactas, casoActual: casoActual || undefined }),
       });
       let data;
       try{ data = await res.json(); }catch{ data = null; }
@@ -184,6 +194,11 @@ function TabPreguntas({ tutelas, robotPreguntasUrl, notify }){
       <p className="save-hint" style={{margin:'0 0 14px'}}>
         Pregúntale sobre las tutelas que ya están cargadas en el portal (ej. "¿cuántas de Colmédica por Tema?"). Esto no guarda nada, solo responde.
       </p>
+      {casoActual && (
+        <p className="save-hint" style={{margin:'0 0 14px', color:'var(--verde-oscuro)', fontWeight:600}}>
+          También puedes preguntar sobre el correo que acabas de leer (ej. "¿quién es el usuario?", "¿qué están solicitando?", "¿quiénes están vinculados?", "dime las pretensiones") — aunque esa tutela todavía no esté guardada.
+        </p>
+      )}
       <div className="entrenar-ia-historial entrenar-ia-chat">
         {!mensajes.length && <p className="empty-state empty-state-compact">Escribe tu primera pregunta abajo.</p>}
         {mensajes.map((m,i) => (

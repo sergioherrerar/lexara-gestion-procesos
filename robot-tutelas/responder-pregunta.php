@@ -47,13 +47,20 @@ if(!is_array($entrada)){
 
 $pregunta = trim((string)($entrada['pregunta'] ?? ''));
 $tutelas = is_array($entrada['tutelas'] ?? null) ? $entrada['tutelas'] : [];
+// "Preguntas" desde "Leer correo (IA)" (2026-09-24, pedido explícito del
+// usuario: "de la tutela [recién extraída] dime quién es el usuario, qué
+// están solicitando, quiénes están vinculados, las pretensiones...") — el
+// correo que Claude ACABA de analizar (puede que esa tutela ni siquiera
+// esté guardada todavía). Trae más detalle que la tabla de abajo: el
+// asunto/cuerpo real del correo, no solo los campos ya resumidos.
+$casoActual = is_array($entrada['casoActual'] ?? null) ? $entrada['casoActual'] : null;
 
 if(!$pregunta){
     http_response_code(400);
     echo json_encode(['error' => 'Falta la pregunta.']);
     exit;
 }
-if(!$tutelas){
+if(!$tutelas && !$casoActual){
     http_response_code(400);
     echo json_encode(['error' => 'No hay tutelas cargadas en el portal para responder sobre ellas.']);
     exit;
@@ -88,10 +95,27 @@ $avisoIncompleta = $incompleta
     ? "\n\nAVISO: la lista de abajo NO incluye todas las tutelas (se recortó a las primeras {$limiteFilas} por límite de tamaño) — si la pregunta necesita un conteo total exacto y sospechas que puede haber más filas de las mostradas, acláraselo al usuario en vez de dar un número como si fuera definitivo."
     : '';
 
+// Bloque del caso recién leído (ver nota arriba sobre $casoActual) — se le
+// da MÁS peso que la tabla general, con el asunto/cuerpo real del correo
+// (ahí suele estar el detalle de pretensiones/vinculados que no cabe en los
+// campos fijos de la tabla) más los registros que Claude ya extrajo.
+$casoActualTexto = '';
+if($casoActual){
+    $asuntoCaso = (string)($casoActual['asunto'] ?? '');
+    $cuerpoCaso = (string)($casoActual['cuerpo'] ?? '');
+    if(mb_strlen($cuerpoCaso) > 6000){ $cuerpoCaso = mb_substr($cuerpoCaso, 0, 6000) . '…'; }
+    $registrosCaso = is_array($casoActual['registros'] ?? null) ? $casoActual['registros'] : [];
+    $registrosTexto = $registrosCaso ? json_encode($registrosCaso, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) : '(sin campos extraídos)';
+    $casoActualTexto = "\n\nCASO QUE SE ACABA DE LEER CON \"Leer correo (IA)\" AHORA MISMO (dale MÁS prioridad que la tabla de tutelas de abajo cuando la pregunta se refiera a \"esta tutela\"/\"este caso\" o mencione su número — ADEMÁS, esta tutela puede que TODAVÍA NO esté guardada en el portal, así que puede no aparecer en esa tabla):\n" .
+        "Asunto del correo: {$asuntoCaso}\n\nCuerpo del correo (fuente completa, úsalo para detalles como pretensiones, quiénes están vinculados, etc. que no quepan en los campos de abajo):\n{$cuerpoCaso}\n\n" .
+        "Campos que Claude ya extrajo de este caso (uno por cliente vinculado, si aplica):\n{$registrosTexto}";
+}
+
 $instrucciones = "Eres un asistente del despacho de abogados \"md abogados sas\", ayudas a responder preguntas sobre sus tutelas reales usando el portal Lexara. " .
     "A continuación tienes la lista de tutelas actualmente cargadas en el portal, en formato tabla — una tutela por línea, columnas separadas por \"|\", en este orden: " . implode(', ', $columnas) . "." .
     $avisoIncompleta .
-    "\n\nResponde la pregunta del usuario basándote ÚNICAMENTE en estos datos reales — nunca inventes números, nombres, fechas o casos que no estén en la lista. Si la pregunta no se puede responder con certeza a partir de estos datos, dilo claramente en vez de adivinar. Responde en español, de forma clara, breve y directa, como si le hablaras a un abogado colega — puedes usar listas o números cuando ayude a la claridad.\n\nDATOS (fecha de hoy: " . date('Y-m-d') . "):\n{$tabla}";
+    $casoActualTexto .
+    "\n\nResponde la pregunta del usuario basándote ÚNICAMENTE en estos datos reales — nunca inventes números, nombres, fechas o casos que no estén acá. Si la pregunta no se puede responder con certeza a partir de estos datos, dilo claramente en vez de adivinar. Responde en español, de forma clara, breve y directa, como si le hablaras a un abogado colega — puedes usar listas o números cuando ayude a la claridad.\n\nDATOS (fecha de hoy: " . date('Y-m-d') . "):\n{$tabla}";
 
 $body = [
     'model' => 'claude-sonnet-5',

@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-24 (2)
+- **La pestaña "Preguntas" ahora también responde sobre la tutela que se acaba de leer con "Leer correo (IA)"** — pedido explícito del usuario ("dime quién es el usuario", "qué están solicitando", "quiénes están vinculados", "las pretensiones"). Antes solo sabía de tutelas ya guardadas; ahora, si hay un correo recién extraído en pantalla, también le manda a Claude el asunto/cuerpo completo del correo y los campos ya extraídos, aunque esa tutela todavía no se haya guardado. Requiere volver a subir `robot-tutelas/responder-pregunta.php` a cPanel.
+
 ## 2026-09-24 (1)
 - **"Leer correo (IA)" ya no se cierra al hacer clic afuera** — pedido explícito del usuario ("es mejor mantenerla hasta que el usuario le dé cerrar con la X"). Mismo cambio en "Entrenar IA". Ahora solo se cierran con el botón X.
 - **"Leer correo (IA)" ahora muestra "Entrenar IA" (Corrección/Preguntas) al lado, siempre visible** — pedido explícito del usuario viéndolo en vivo ("mejor colocarlo al lado... mira qué datos trajo y corrige y pregunta"), aprovechando el espacio vacío de la ventana. En pantallas angostas (celular) se apila en vez de quedar lado a lado.
