@@ -414,10 +414,19 @@ export async function leerCorreosTutelas(correoBuzon, remitentesPermitidos, top 
   })();
   partesFiltro.push(`receivedDateTime ge ${desdeEfectivo}T00:00:00Z`);
   if(hasta) partesFiltro.push(`receivedDateTime le ${hasta}T23:59:59Z`);
+  // $orderby (2026-09-23, bug real: "los primeros de la lista son de
+  // junio" — sin pedirle el orden a Graph, dentro del rango de 90 días
+  // devolvía 200 correos cualquiera, no los más recientes, y luego se
+  // ordenaban entre ellos pero seguían siendo los más viejos del rango).
+  // Ahora SÍ se puede pedir — el error de "restriction or sort order too
+  // complex" de antes era por combinar el orden con el filtro de remitente
+  // (ya no va en esta consulta), no por ordenar junto con el filtro de
+  // fecha (misma propiedad simple, sí es soportado).
   const params = new URLSearchParams({
     $select: 'id,subject,from,receivedDateTime,hasAttachments,bodyPreview',
     $top: String(top),
     $filter: partesFiltro.join(' and '),
+    $orderby: 'receivedDateTime desc',
   });
   const url = `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(correoBuzon)}/messages?${params.toString()}`;
   const res = await fetch(url, { headers: { Authorization:`Bearer ${token}` } });

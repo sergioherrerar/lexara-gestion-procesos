@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-23 (8)
+- **Corrige que "Leer correo (IA)" mostraba correos viejos primero** — sin pedirle el orden a Microsoft, dentro de la ventana de 90 días traía 200 correos cualquiera, no los más recientes. Ahora sí se pide ordenado por fecha (ya no choca con el filtro de remitente, que se quitó de esa consulta en la publicación anterior).
+
 ## 2026-09-23 (7)
 - **En "Leer correo (IA)", la vista previa de cada registro detectado ahora también muestra el Número Corto (Proceso)** — pedido explícito del usuario. Ahora es Cliente · No. Tutela · Tipo Respuesta · Número Corto · Usuario.
 
