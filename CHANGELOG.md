@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-23 (18)
+- **"Leer correo (IA)" ahora manda menos adjuntos "de relleno" a Claude, sin perder ningún dato real** — pedido explícito del usuario, para que la extracción sea más rápida. Dos filtros que solo quitan ruido: (1) ya no se mandan las imágenes de firma/logo que Outlook incrusta en el cuerpo del correo (nunca son el documento de la tutela), y (2) si el mismo archivo queda pegado varias veces por reenvíos ("RV:"), se manda una sola copia en vez de repetirlo. También se activó el "caché" de las instrucciones fijas en la llamada a Claude (más rápido cuando se procesan varios correos seguidos en la misma sesión). Requiere volver a subir `robot-tutelas/extraer-tutela.php` a cPanel.
+
 ## 2026-09-23 (17)
 - **Corrige que "Leer correo (IA)" a veces ponía el radicado judicial largo en "No. Tutela"** — la instrucción decía "el número/radicado de la tutela", y esa palabra "radicado" confundía a la IA con el radicado judicial largo (que va en Proceso). Ahora queda claro que es el número corto interno de la entidad (ej. "28159") y que nunca debe ser el radicado. Requiere volver a subir `robot-tutelas/extraer-tutela.php` a cPanel.
 

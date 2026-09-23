@@ -176,7 +176,16 @@ $body = [
     // campo Tema nuevo, la respuesta se quedaba corta y el JSON llegaba
     // incompleto/cortado a la mitad).
     'max_tokens' => 4000,
-    'system' => $instrucciones,
+    // 2026-09-23, pedido explícito del usuario ("que la extracción sea más
+    // rápida sin perder nada") — cache_control en las instrucciones: son
+    // siempre las mismas (solo cambian cuando se agrega una corrección
+    // nueva en "Entrenar IA"), así que Claude no tiene que "releerlas" de
+    // cero en cada correo que se procese en la misma sesión de trabajo. No
+    // afecta los adjuntos (esos sí son distintos en cada correo, siguen
+    // procesándose completos — nada se deja de leer).
+    'system' => [
+        ['type' => 'text', 'text' => $instrucciones, 'cache_control' => ['type' => 'ephemeral']],
+    ],
     'messages' => [
         ['role' => 'user', 'content' => $contenido],
     ],

@@ -486,8 +486,26 @@ export async function leerCorreoCompleto(correoBuzon, mensajeId){
   const dataAdj = await resAdj.json();
   // Solo adjuntos "de archivo" normales (fileAttachment) — se descartan
   // adjuntos de tipo evento/contacto incrustados, que no traen contentBytes.
+  // 2026-09-23, pedido explícito del usuario ("que la extracción sea más
+  // rápida sin perder nada") — dos filtros que SOLO quitan ruido, nunca
+  // contenido real de la tutela:
+  // 1) isInline: true son las imágenes de la firma de correo (logos,
+  //    íconos de redes) que Outlook incrusta en el cuerpo HTML — Graph las
+  //    expone igual como "adjuntos", pero nunca son el documento de la
+  //    tutela. Se descartan (más rápido de mandar y ya no cuentan para el
+  //    límite de 40).
+  // 2) Adjuntos con el MISMO contenido exacto (mismo base64) — muy común en
+  //    correos "RV:"/reenviados, donde el mismo PDF queda pegado en cada
+  //    ronda de reenvío. Se manda una sola copia (el contenido es idéntico,
+  //    no se pierde nada).
+  const vistos = new Set();
   const adjuntos = (dataAdj.value || [])
-    .filter(a => a.contentBytes)
+    .filter(a => a.contentBytes && !a.isInline)
+    .filter(a => {
+      if(vistos.has(a.contentBytes)) return false;
+      vistos.add(a.contentBytes);
+      return true;
+    })
     .map(a => ({ nombre: a.name, tipo: a.contentType || 'application/octet-stream', base64: a.contentBytes, tamano: a.size }));
 
   return {
