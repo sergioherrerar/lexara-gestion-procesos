@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-23 (14)
+- **Corrige que "Leer correo (IA)" se cerraba sola al crear un borrador de un correo con varios clientes** — el formulario de "Nueva tutela" quedaba tapado por la ventana de correo (mismo z-index alto de las cajas de confirmación) y cualquier clic dentro se interpretaba como "clic afuera", cerrándola. Ahora el drawer queda encima y la ventana de correo se conserva debajo para seguir creando los demás borradores; solo se cierra con la X.
+
 ## 2026-09-23 (13)
 - **Agrega Mgabrielac@aliansalud.com.co a la lista de remitentes permitidos en "Leer correo (IA)"** — pedido explícito del usuario, junto con daniacp@colmedica.com que ya estaba.
 
