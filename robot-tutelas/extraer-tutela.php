@@ -77,7 +77,7 @@ $camposEsperados = <<<TXT
 - Departamento (texto, nombre real de un departamento de Colombia)
 - Ciudad (texto)
 - Juzgado (texto)
-- Proceso (texto/número del proceso judicial, si aparece)
+- Proceso (el "número corto" del proceso, formato EXACTO aaaa-nnnnn — año de 4 dígitos, guion, número de 5 dígitos, ej. "2026-00942". Si en el correo aparece el radicado judicial completo y largo, como "23-001-40-03-003-2026-00942-00", saca de ahí SOLO esa parte año-número de 5 dígitos — nunca pongas el radicado completo en este campo)
 - FechaNotificacion (fecha en formato aaaa-mm-dd)
 - FechaVencimiento (fecha en formato aaaa-mm-dd)
 - TipoRespuesta (exactamente uno de: ACLARACION, ALCANCE, APLAZAMIENTO, CUMPLIMIENTO FALLO, CORRECION, IMPUGNACION, MODULACION, NULIDAD, REQUERIMIENTO, TUTELA — la PRIMERA vez que se ve un caso casi siempre es TUTELA, pero léelo del contenido real del correo, no lo asumas siempre)
