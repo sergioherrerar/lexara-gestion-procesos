@@ -409,9 +409,13 @@ export async function leerCorreosTutelas(correoBuzon, remitentesPermitidos, top 
   if(filtroRemitentes) partesFiltro.push(`(${filtroRemitentes})`);
   if(desde) partesFiltro.push(`receivedDateTime ge ${desde}T00:00:00Z`);
   if(hasta) partesFiltro.push(`receivedDateTime le ${hasta}T23:59:59Z`);
+  // Sin $orderby (2026-09-23, bug real reportado por el usuario: "Error de
+  // SharePoint (400): The restriction or sort order is too complex") —
+  // Exchange/Graph no deja combinar $orderby con un $filter que use
+  // "from/emailAddress/address" al mismo tiempo. Se ordena acá mismo, del
+  // lado del cliente, en vez de pedírselo a Graph.
   const params = new URLSearchParams({
     $select: 'id,subject,from,receivedDateTime,hasAttachments,bodyPreview',
-    $orderby: 'receivedDateTime desc',
     $top: String(top),
   });
   if(partesFiltro.length) params.set('$filter', partesFiltro.join(' and '));
@@ -422,7 +426,7 @@ export async function leerCorreosTutelas(correoBuzon, remitentesPermitidos, top 
     throw new Error(`Graph ${res.status}: ${body.substring(0,300)}`);
   }
   const data = await res.json();
-  return (data.value || []).map(m => ({
+  return (data.value || []).sort((a,b) => String(b.receivedDateTime||"").localeCompare(String(a.receivedDateTime||""))).map(m => ({
     id: m.id,
     asunto: m.subject || '(sin asunto)',
     remitente: m.from?.emailAddress?.address || '',

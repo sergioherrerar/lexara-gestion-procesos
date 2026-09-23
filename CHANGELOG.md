@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-23 (3)
+- **Corrige un error real al listar correos en "Leer correo (IA)"** ("The restriction or sort order is too complex") — Microsoft Graph no deja combinar el filtro por remitente con "ordenar por fecha" en la misma consulta; ahora se pide sin ordenar y se ordena del lado del portal.
+
 ## 2026-09-23 (2)
 - **"Leer correo (IA)" ahora se puede filtrar por rango de fechas** — pedido explícito del usuario. Nuevos campos "Desde"/"Hasta" arriba de la lista de correos; vacíos, sigue trayendo los últimos 20 como antes.
 
