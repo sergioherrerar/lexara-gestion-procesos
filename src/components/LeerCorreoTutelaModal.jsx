@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { leerCorreosTutelas, leerCorreoCompleto, mensajeError, stripHtml } from '../lib/graph';
 import { IconTextButton } from './IconButton';
+import { EntrenarIAPanel } from './EntrenarIAModal';
 
 // "API Claude" Tarea 1 (2026-09-23, pedido explícito del usuario, con
 // aprobación interna — ver [[project_api_claude_tutelas]]) — leer un correo
@@ -9,7 +10,7 @@ import { IconTextButton } from './IconButton';
 // devolver los campos que Claude extrajo para prellenar "Nueva tutela". El
 // usuario SIEMPRE revisa y confirma en el formulario antes de guardar — acá
 // nunca se toca SharePoint, solo se arma el objeto de campos iniciales.
-export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitidos, robotUrl, tutelas, onExtraido, onClose, notify }){
+export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitidos, robotUrl, tutelas, onAgregarCorreccionIA, robotPreguntasUrl, onExtraido, onClose, notify }){
   const [cargando, setCargando] = useState(true);
   const [errorCarga, setErrorCarga] = useState('');
   const [mensajes, setMensajes] = useState([]);
@@ -98,14 +99,22 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
   }
 
   return (
-    <div className="confirm-overlay leer-correo-overlay" onClick={onClose}>
-      <div className="confirm-box leer-correo-box" onClick={e => e.stopPropagation()}>
+    <div className="confirm-overlay leer-correo-overlay">
+      <div className="confirm-box leer-correo-box leer-correo-box-ancha">
         <div className="leer-correo-head">
           <h3>Leer correo de Tutelas (IA)</h3>
           <button className="drawer-close" onClick={onClose} aria-label="Cerrar">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
           </button>
         </div>
+        {/* 2026-09-24, pedido explícito del usuario ("mejor colocarlo al
+            lado... mira qué datos trajo y corrige y pregunta") — 2 columnas:
+            a la izquierda la lectura de correos de siempre, a la derecha
+            "Entrenar IA" (Corrección/Preguntas) SIEMPRE visible, para poder
+            corregir un Tema o preguntar sin cerrar esta ventana. En
+            pantallas angostas se apilan (ver .leer-correo-2col en CSS). */}
+        <div className="leer-correo-2col">
+        <div className="leer-correo-col-principal">
         <p className="save-hint" style={{margin:'0 0 14px'}}>
           Elige un correo, dale "Extraer con IA" y revisa los datos en el formulario de "Nueva tutela" antes de guardar.
         </p>
@@ -187,6 +196,11 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
             </li>
           ))}
         </ul>
+        </div>
+        <div className="leer-correo-col-lateral">
+          <EntrenarIAPanel tutelas={tutelas || []} onAgregarCorreccion={onAgregarCorreccionIA} robotPreguntasUrl={robotPreguntasUrl} notify={notify} />
+        </div>
+        </div>
       </div>
     </div>
   );

@@ -2,6 +2,10 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-24 (1)
+- **"Leer correo (IA)" ya no se cierra al hacer clic afuera** — pedido explícito del usuario ("es mejor mantenerla hasta que el usuario le dé cerrar con la X"). Mismo cambio en "Entrenar IA". Ahora solo se cierran con el botón X.
+- **"Leer correo (IA)" ahora muestra "Entrenar IA" (Corrección/Preguntas) al lado, siempre visible** — pedido explícito del usuario viéndolo en vivo ("mejor colocarlo al lado... mira qué datos trajo y corrige y pregunta"), aprovechando el espacio vacío de la ventana. En pantallas angostas (celular) se apila en vez de quedar lado a lado.
+
 ## 2026-09-23 (18)
 - **"Leer correo (IA)" ahora manda menos adjuntos "de relleno" a Claude, sin perder ningún dato real** — pedido explícito del usuario, para que la extracción sea más rápida. Dos filtros que solo quitan ruido: (1) ya no se mandan las imágenes de firma/logo que Outlook incrusta en el cuerpo del correo (nunca son el documento de la tutela), y (2) si el mismo archivo queda pegado varias veces por reenvíos ("RV:"), se manda una sola copia en vez de repetirlo. También se activó el "caché" de las instrucciones fijas en la llamada a Claude (más rápido cuando se procesan varios correos seguidos en la misma sesión). Requiere volver a subir `robot-tutelas/extraer-tutela.php` a cPanel.
 

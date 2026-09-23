@@ -1257,6 +1257,24 @@
      cierra con la X). */
   .leer-correo-overlay{z-index:35;}
   .leer-correo-box{max-width:520px; max-height:80vh; overflow-y:auto;}
+  /* 2026-09-24, pedido explícito del usuario viendo "Leer correo (IA)" en
+     vivo ("mejor colocarlo al lado... mira qué datos trajo y corrige y
+     pregunta") — versión ancha con "Entrenar IA" (Corrección/Preguntas)
+     siempre visible al lado, en vez de una ventana aparte. En pantallas
+     angostas (celular) se apilan una sobre otra en vez de lado a lado —
+     mismo contenido y funciones en los 2 casos (ver [[feedback_pc_mobile_parity]]). */
+  .leer-correo-box-ancha{max-width:960px;}
+  .leer-correo-2col{display:flex; gap:22px; align-items:flex-start;}
+  .leer-correo-col-principal{flex:1 1 55%; min-width:0; max-height:70vh; overflow-y:auto; padding-right:4px;}
+  .leer-correo-col-lateral{
+    flex:1 1 40%; min-width:280px; max-width:360px; max-height:70vh; overflow-y:auto;
+    border-left:1px solid var(--gris-linea); padding-left:20px;
+  }
+  @media (max-width:760px){
+    .leer-correo-2col{flex-direction:column;}
+    .leer-correo-col-principal, .leer-correo-col-lateral{max-width:none; max-height:none; overflow-y:visible;}
+    .leer-correo-col-lateral{border-left:none; border-top:1px solid var(--gris-linea); padding-left:0; padding-top:16px; margin-top:6px;}
+  }
   .leer-correo-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;}
   .leer-correo-head h3{margin:0; font-size:17px; color:var(--verde-oscuro);}
   .leer-correo-lista{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:8px;}

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { IconTextButton } from './IconButton';
 
-// "Entrenar IA" (2026-09-23, pedido explícito del usuario) — ventana con 2
+// "Entrenar IA" (2026-09-23, pedido explícito del usuario) — panel con 2
 // pestañas para el abogado que maneja Tutelas día a día:
 // - "Corrección": escribe el No. Tutela, ve el historial de correcciones
 //   que ya tenga esa tutela (columna "Corrección IA" en SharePoint, con
@@ -12,25 +12,40 @@ import { IconTextButton } from './IconButton';
 // - "Preguntas": chat de solo lectura — le pregunta a Claude sobre las
 //   tutelas YA CARGADAS en el portal (ej. "¿cuántas de Colmédica por
 //   Tema?"). No guarda nada ni toca SharePoint, es puramente informativo.
-export default function EntrenarIAModal({ tutelas, onAgregarCorreccion, robotPreguntasUrl, onClose, notify }){
+//
+// 2026-09-24, pedido explícito del usuario viendo "Leer correo (IA)" en
+// vivo ("mejor colocarlo al lado... mira qué datos trajo y corrige y
+// pregunta") — el contenido (pestañas + lo de abajo) vive en EntrenarIAPanel
+// para poder mostrarlo EMBEBIDO al lado de "Leer correo (IA)" (ver
+// LeerCorreoTutelaModal.jsx), además de seguir existiendo como ventana
+// propia (el botón "Entrenar IA" de TutelasView, para cuando no se está
+// leyendo ningún correo).
+export function EntrenarIAPanel({ tutelas, onAgregarCorreccion, robotPreguntasUrl, notify }){
   const [tab, setTab] = useState('correccion'); // 'correccion' | 'preguntas'
-
   return (
-    <div className="confirm-overlay leer-correo-overlay" onClick={onClose}>
-      <div className="confirm-box leer-correo-box" onClick={e => e.stopPropagation()}>
+    <div className="entrenar-ia-panel">
+      <div className="entrenar-ia-tabs">
+        <button type="button" className={tab==='correccion' ? 'activo' : ''} onClick={() => setTab('correccion')}>Corrección</button>
+        <button type="button" className={tab==='preguntas' ? 'activo' : ''} onClick={() => setTab('preguntas')}>Preguntas</button>
+      </div>
+      {tab === 'correccion'
+        ? <TabCorreccion tutelas={tutelas} onAgregarCorreccion={onAgregarCorreccion} notify={notify} />
+        : <TabPreguntas tutelas={tutelas} robotPreguntasUrl={robotPreguntasUrl} notify={notify} />}
+    </div>
+  );
+}
+
+export default function EntrenarIAModal({ tutelas, onAgregarCorreccion, robotPreguntasUrl, onClose, notify }){
+  return (
+    <div className="confirm-overlay leer-correo-overlay">
+      <div className="confirm-box leer-correo-box">
         <div className="leer-correo-head">
           <h3>Entrenar IA (Tutelas)</h3>
           <button className="drawer-close" onClick={onClose} aria-label="Cerrar">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
           </button>
         </div>
-        <div className="entrenar-ia-tabs">
-          <button type="button" className={tab==='correccion' ? 'activo' : ''} onClick={() => setTab('correccion')}>Corrección</button>
-          <button type="button" className={tab==='preguntas' ? 'activo' : ''} onClick={() => setTab('preguntas')}>Preguntas</button>
-        </div>
-        {tab === 'correccion'
-          ? <TabCorreccion tutelas={tutelas} onAgregarCorreccion={onAgregarCorreccion} notify={notify} />
-          : <TabPreguntas tutelas={tutelas} robotPreguntasUrl={robotPreguntasUrl} notify={notify} />}
+        <EntrenarIAPanel tutelas={tutelas} onAgregarCorreccion={onAgregarCorreccion} robotPreguntasUrl={robotPreguntasUrl} notify={notify} />
       </div>
     </div>
   );

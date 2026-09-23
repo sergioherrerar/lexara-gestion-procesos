@@ -100,6 +100,8 @@ export default function TutelasView({ tutelas, searchQuery, onOpenTutela, onCrea
           remitentesPermitidos={TUTELAS_REMITENTES_PERMITIDOS}
           robotUrl={config?.ROBOT_CLAUDE_URL}
           tutelas={tutelas}
+          onAgregarCorreccionIA={onAgregarCorreccionIA}
+          robotPreguntasUrl={config?.ROBOT_PREGUNTAS_URL}
           notify={notify}
           onClose={() => setMostrarLeerCorreo(false)}
           onExtraido={campos => onCreateTutela(campos)}
