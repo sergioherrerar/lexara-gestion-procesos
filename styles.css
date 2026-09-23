@@ -1246,7 +1246,16 @@
   /* "Leer correo de Tutelas (IA)" (2026-09-23, "API Claude" Tarea 1) — reusa
      .confirm-overlay/.confirm-box (mismo fondo oscurecido) pero con su
      propio ancho, ya que necesita listar varios correos, no solo un mensaje
-     de confirmación corto. */
+     de confirmación corto.
+     z-index PROPIO, más bajo que .confirm-overlay (bug real 2026-09-23: al
+     crear un borrador con un correo que señala varios clientes, se abre el
+     drawer de "Nueva tutela" — z-index 40/41 — pero esta ventana se quedaba
+     arriba con z-index 81 y se comía los clics del formulario, cerrándose
+     sola en vez de dejar usar el drawer. Ahora queda por debajo del drawer,
+     así el usuario llena/guarda esa tutela y, al cerrar el drawer, vuelve a
+     ver esta ventana intacta para crear el siguiente borrador — solo se
+     cierra con la X). */
+  .leer-correo-overlay{z-index:35;}
   .leer-correo-box{max-width:520px; max-height:80vh; overflow-y:auto;}
   .leer-correo-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;}
   .leer-correo-head h3{margin:0; font-size:17px; color:var(--verde-oscuro);}

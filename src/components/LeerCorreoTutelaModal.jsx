@@ -88,7 +88,7 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
   }
 
   return (
-    <div className="confirm-overlay" onClick={onClose}>
+    <div className="confirm-overlay leer-correo-overlay" onClick={onClose}>
       <div className="confirm-box leer-correo-box" onClick={e => e.stopPropagation()}>
         <div className="leer-correo-head">
           <h3>Leer correo de Tutelas (IA)</h3>
