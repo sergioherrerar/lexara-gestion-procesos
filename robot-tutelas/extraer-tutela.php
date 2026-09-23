@@ -76,7 +76,7 @@ if(count($adjuntos) > 40){
 // claves, ni una más ni una menos, para que el portal las pueda usar
 // directo sin tener que traducir nombres.
 $camposEsperados = <<<TXT
-- NoTutela (texto, el número/radicado de la tutela)
+- NoTutela (texto, el número CORTO interno que la entidad remitente le asigna a la tutela — normalmente 4 o 5 dígitos, ej. "28159" — casi siempre aparece en el asunto del correo, como "TUTELA No. 28159" o similar. IMPORTANTE: nunca pongas aquí el radicado judicial largo (ese va en el campo Proceso, ya sea completo o solo su parte año-número). Si de verdad no encuentras un número corto de este tipo en ningún lado del correo, deja este campo vacío en vez de usar el radicado judicial o cualquier otro número que no sea este)
 - Entidad (texto, casi siempre "GRUPO COLMEDICA")
 - Cliente (EXACTAMENTE uno de estos 3 textos, tal cual, sin variarlos: "COLMEDICA MEDICINA PREPAGADA S.A.", "ALIANSALUD ENTIDAD PROMOTORA DE SALUD S.A.", "UNIDAD MÉDICA Y DE DIAGNÓSTICO S.A.")
 - TipoVinculacionEntidad (exactamente "Accionada" o "Vinculada")

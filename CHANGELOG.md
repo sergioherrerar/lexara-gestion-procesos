@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-23 (17)
+- **Corrige que "Leer correo (IA)" a veces ponía el radicado judicial largo en "No. Tutela"** — la instrucción decía "el número/radicado de la tutela", y esa palabra "radicado" confundía a la IA con el radicado judicial largo (que va en Proceso). Ahora queda claro que es el número corto interno de la entidad (ej. "28159") y que nunca debe ser el radicado. Requiere volver a subir `robot-tutelas/extraer-tutela.php` a cPanel.
+
 ## 2026-09-23 (16)
 - **"Entrenar IA" ahora tiene 2 pestañas: Corrección y Preguntas** — pedido explícito del usuario. "Preguntas" es un chat de solo lectura: le preguntas a Claude sobre las tutelas ya cargadas en el portal (ej. "¿cuántas de Colmédica por Tema?", "¿cuál es el Tema más frecuente?") y responde con esos datos reales, sin inventar ni guardar nada. Nuevo archivo `robot-tutelas/responder-pregunta.php` en cPanel.
 
