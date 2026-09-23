@@ -156,7 +156,10 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
                         <div key={i} className="leer-correo-registro-item">
                           <div>
                             <strong>{r.Cliente || 'Cliente sin definir'}</strong>
-                            <span className="save-hint"> · {r.NoTutela || 'sin número'} · {r.TipoRespuesta || '—'}{r.Usuario ? ` · ${r.Usuario}` : ''}</span>
+                            {/* Cliente, No. Tutela, Tipo Respuesta, Número
+                                corto (Proceso) y Usuario — pedido explícito
+                                del usuario 2026-09-23, viéndolo en vivo. */}
+                            <span className="save-hint"> · {r.NoTutela || 'sin número'} · {r.TipoRespuesta || '—'}{r.Proceso ? ` · ${r.Proceso}` : ''}{r.Usuario ? ` · ${r.Usuario}` : ''}</span>
                           </div>
                           {r._creado ? (
                             <span className="badge badge-verde">Creado</span>

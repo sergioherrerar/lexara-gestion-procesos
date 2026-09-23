@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-23 (7)
+- **En "Leer correo (IA)", la vista previa de cada registro detectado ahora también muestra el Número Corto (Proceso)** — pedido explícito del usuario. Ahora es Cliente · No. Tutela · Tipo Respuesta · Número Corto · Usuario.
+
 ## 2026-09-23 (6)
 - **Sube de 8 a 20 el máximo de adjuntos que el robot acepta por correo** — un correo real de tutela ya traía más de 8. Requiere volver a subir `robot-tutelas/extraer-tutela.php` a cPanel (Claude no tiene acceso directo al servidor).
 
