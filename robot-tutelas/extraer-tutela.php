@@ -119,8 +119,13 @@ $instrucciones = "Eres un asistente que extrae datos de una tutela judicial colo
     "Devuelve SOLO un objeto JSON (sin texto adicional antes o después, sin bloques de markdown) con esta forma exacta: {\"registros\": [ {...un registro...}, {...otro registro si aplica...} ]}. Cada registro debe tener EXACTAMENTE estas claves, dejando \"\" (cadena vacía) en lo que no puedas determinar con certeza — nunca inventes un dato que no esté en el correo:\n\n" . $camposEsperados;
 
 $contenido = [];
+// Nombre del adjunto que quedó en cada índice de $contenido (2026-09-23) —
+// permite, si Claude devuelve un error sobre "content.N", decirle al usuario
+// EXACTAMENTE qué archivo adjunto tuvo el problema (p.ej. un PDF con clave).
+$nombresPorIndice = [];
 $textoCorreo = "Asunto del correo: {$asunto}\n\nCuerpo del correo:\n{$cuerpo}";
 $contenido[] = ['type' => 'text', 'text' => $textoCorreo];
+$nombresPorIndice[] = '(texto del correo)';
 
 // Excel NO se manda (Claude no lo puede leer visualmente como un PDF/imagen)
 // — se ignora por ahora; si el correo trae la tutela en un Excel adjunto en
@@ -128,11 +133,14 @@ $contenido[] = ['type' => 'text', 'text' => $textoCorreo];
 foreach($adjuntos as $adj){
     $tipo = (string)($adj['tipo'] ?? '');
     $base64 = (string)($adj['base64'] ?? '');
+    $nombreAdj = (string)($adj['nombre'] ?? 'adjunto sin nombre');
     if(!$base64) continue;
     if(strpos($tipo, 'image/') === 0){
         $contenido[] = ['type' => 'image', 'source' => ['type' => 'base64', 'media_type' => $tipo, 'data' => $base64]];
+        $nombresPorIndice[] = $nombreAdj;
     } elseif($tipo === 'application/pdf'){
         $contenido[] = ['type' => 'document', 'source' => ['type' => 'base64', 'media_type' => $tipo, 'data' => $base64]];
+        $nombresPorIndice[] = $nombreAdj;
     }
 }
 
@@ -149,20 +157,66 @@ $body = [
     ],
 ];
 
-$ch = curl_init('https://api.anthropic.com/v1/messages');
-curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-curl_setopt($ch, CURLOPT_POST, true);
-curl_setopt($ch, CURLOPT_HTTPHEADER, [
-    'content-type: application/json',
-    'x-api-key: ' . $apiKey,
-    'anthropic-version: 2023-06-01',
-]);
-curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($body));
-curl_setopt($ch, CURLOPT_TIMEOUT, 90);
-$respuesta = curl_exec($ch);
-$codigoHttp = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-$errorCurl = curl_error($ch);
-curl_close($ch);
+function llamarClaude(array $body, string $apiKey){
+    $ch = curl_init('https://api.anthropic.com/v1/messages');
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        'content-type: application/json',
+        'x-api-key: ' . $apiKey,
+        'anthropic-version: 2023-06-01',
+    ]);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($body));
+    curl_setopt($ch, CURLOPT_TIMEOUT, 90);
+    $respuesta = curl_exec($ch);
+    $codigoHttp = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $errorCurl = curl_error($ch);
+    curl_close($ch);
+    return [$respuesta, $codigoHttp, $errorCurl];
+}
+
+// 2026-09-23, pedido explícito del usuario: los PDF que las EPS mandan
+// protegidos con contraseña casi siempre usan la CÉDULA del accionante
+// (paciente) como contraseña — un dato que casi siempre también aparece en
+// texto plano en el asunto/cuerpo del correo, no solo dentro del PDF. Si
+// Claude rechaza un adjunto por venir protegido, se buscan posibles cédulas
+// en el texto del correo y se intenta abrir ese PDF puntual con Ghostscript
+// probándolas como contraseña, para no tener que pedirle nada al usuario.
+function extraerPosiblesCedulas($texto){
+    $candidatas = [];
+    if(preg_match_all('/(?:c\.?\s?c\.?|c[eé]dula|identificaci[oó]n|identificado\s+con)\D{0,20}(\d{6,10})/iu', $texto, $m)){
+        $candidatas = array_merge($candidatas, $m[1]);
+    }
+    if(preg_match_all('/\b(\d{6,10})\b/', $texto, $m2)){
+        $candidatas = array_merge($candidatas, $m2[1]);
+    }
+    return array_values(array_unique($candidatas));
+}
+
+function intentarDesprotegerPdf(string $base64Pdf, array $candidatas){
+    if(!function_exists('shell_exec') || !$candidatas) return null;
+    $gs = trim((string)@shell_exec('command -v gs 2>/dev/null'));
+    if(!$gs) return null;
+    $tmpIn = tempnam(sys_get_temp_dir(), 'pdfin_');
+    $tmpOut = tempnam(sys_get_temp_dir(), 'pdfout_');
+    file_put_contents($tmpIn, base64_decode($base64Pdf));
+    $resultado = null;
+    foreach($candidatas as $clave){
+        @unlink($tmpOut);
+        $cmd = $gs . ' -q -dBATCH -dNOPAUSE -sDEVICE=pdfwrite -sPDFPassword=' . escapeshellarg($clave)
+            . ' -sOutputFile=' . escapeshellarg($tmpOut) . ' ' . escapeshellarg($tmpIn) . ' 2>&1';
+        @shell_exec($cmd);
+        if(file_exists($tmpOut) && filesize($tmpOut) > 0){
+            $resultado = base64_encode(file_get_contents($tmpOut));
+            break;
+        }
+    }
+    @unlink($tmpIn);
+    if(file_exists($tmpOut)) @unlink($tmpOut);
+    return $resultado;
+}
+
+[$respuesta, $codigoHttp, $errorCurl] = llamarClaude($body, $apiKey);
 
 if($errorCurl){
     http_response_code(502);
@@ -171,6 +225,37 @@ if($errorCurl){
 }
 
 $data = json_decode($respuesta, true);
+
+// Si el único problema fue un PDF protegido con contraseña, se intenta
+// desproteger ESE adjunto puntual con las posibles cédulas del correo y se
+// reintenta UNA sola vez con esa versión ya desprotegida.
+if($codigoHttp !== 200){
+    $detalle = $data['error']['message'] ?? $respuesta;
+    if(preg_match('/content\.(\d+)\.pdf.*password protected/i', $detalle, $mIdx)){
+        $indice = (int)$mIdx[1];
+        $candidatas = extraerPosiblesCedulas($asunto . ' ' . $cuerpo);
+        $desprotegido = isset($contenido[$indice]['source']['data'])
+            ? intentarDesprotegerPdf($contenido[$indice]['source']['data'], $candidatas)
+            : null;
+        if($desprotegido){
+            $contenido[$indice]['source']['data'] = $desprotegido;
+            $body['messages'][0]['content'] = $contenido;
+            [$respuesta, $codigoHttp, $errorCurl] = llamarClaude($body, $apiKey);
+            if($errorCurl){
+                http_response_code(502);
+                echo json_encode(['error' => 'No se pudo conectar con la API de Claude: ' . $errorCurl]);
+                exit;
+            }
+            $data = json_decode($respuesta, true);
+        } else {
+            $nombreAdj = $nombresPorIndice[$indice] ?? 'uno de los adjuntos';
+            http_response_code(502);
+            echo json_encode(['error' => "El adjunto \"{$nombreAdj}\" viene protegido con contraseña y no se pudo abrir automáticamente probando la cédula del accionante que aparece en el correo. Ábrelo a mano en tu computador (la contraseña suele ser la cédula del paciente) y extrae los datos de ese archivo manualmente."]);
+            exit;
+        }
+    }
+}
+
 if($codigoHttp !== 200){
     $detalle = $data['error']['message'] ?? $respuesta;
     http_response_code(502);
