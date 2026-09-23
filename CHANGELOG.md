@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-24 (3)
+- **Corrige que las correcciones de "Entrenar IA" podían quedar descartadas al azar al pasar de 30** — pedido explícito del usuario ("que las correcciones también las tome para casos en general"). Antes se cortaban a las primeras 30 SIN ordenar (orden arbitrario de SharePoint), así que con más de 30 tutelas corregidas, algunas dejaban de mandarse al robot sin avisar. Ahora se ordenan por No. Tutela (las más recientes primero) y se sube el límite a 150.
+
 ## 2026-09-24 (2)
 - **La pestaña "Preguntas" ahora también responde sobre la tutela que se acaba de leer con "Leer correo (IA)"** — pedido explícito del usuario ("dime quién es el usuario", "qué están solicitando", "quiénes están vinculados", "las pretensiones"). Antes solo sabía de tutelas ya guardadas; ahora, si hay un correo recién extraído en pantalla, también le manda a Claude el asunto/cuerpo completo del correo y los campos ya extraídos, aunque esa tutela todavía no se haya guardado. Requiere volver a subir `robot-tutelas/responder-pregunta.php` a cPanel.
 

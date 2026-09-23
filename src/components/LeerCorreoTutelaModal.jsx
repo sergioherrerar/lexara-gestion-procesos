@@ -63,12 +63,21 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
       const completo = await leerCorreoCompleto(correoBuzon, mensaje.id);
       // "Entrenar IA" (2026-09-23) — correcciones reales que el abogado ya
       // dejó sobre el campo Tema de tutelas guardadas (columna "Corrección
-      // IA" en SharePoint) — se mandan como ejemplo de referencia para que
-      // el robot categorice con el mismo criterio del despacho. Se limita a
-      // 30 para no inflar de más la solicitud a Claude.
+      // IA" en SharePoint) — se mandan SIEMPRE como ejemplo de referencia
+      // para TODOS los correos futuros, no solo una vez para esa tutela
+      // puntual (pedido explícito del usuario 2026-09-24: "que las
+      // correcciones también las tome para casos en general"). Antes se
+      // cortaba a las primeras 30 SIN ordenar (orden arbitrario de
+      // SharePoint) — si había más de 30 tutelas con corrección, algunas
+      // quedaban descartadas al azar y dejaban de usarse sin avisar. Ahora
+      // se ordenan por No. Tutela descendente (las más recientes primero,
+      // más relevantes para el criterio actual del despacho) antes de
+      // cortar, y se sube el límite a 150 (es solo texto corto, no
+      // adjuntos — no pesa nada comparado con los documentos).
       const correcciones = (tutelas || [])
         .filter(t => t.CorreccionIA)
-        .slice(0, 30)
+        .sort((a,b) => (Number(b.NoTutela)||0) - (Number(a.NoTutela)||0))
+        .slice(0, 150)
         .map(t => ({ noTutela: t.NoTutela, temaActual: t.Tema, correccion: stripHtml(t.CorreccionIA) }));
       const res = await fetch(robotUrl, {
         method: 'POST',
