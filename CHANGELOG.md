@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-23 (6)
+- **Sube de 8 a 20 el máximo de adjuntos que el robot acepta por correo** — un correo real de tutela ya traía más de 8. Requiere volver a subir `robot-tutelas/extraer-tutela.php` a cPanel (Claude no tiene acceso directo al servidor).
+
 ## 2026-09-23 (5)
 - **Corrige error real al extraer adjuntos en "Leer correo (IA)"** ("Could not find a property named 'contentBytes'") — se pedía una propiedad que solo existe en un subtipo de adjunto, no en el tipo genérico de la colección; ahora se piden los adjuntos completos, sin ese filtro.
 

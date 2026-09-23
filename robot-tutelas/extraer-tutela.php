@@ -56,10 +56,11 @@ $cuerpo = (string)($entrada['cuerpo'] ?? '');
 $adjuntos = is_array($entrada['adjuntos'] ?? null) ? $entrada['adjuntos'] : [];
 
 // Límite de seguridad — no mandar cantidades absurdas de adjuntos a la API
-// (ni de costo, ni de tamaño de la solicitud).
-if(count($adjuntos) > 8){
+// (ni de costo, ni de tamaño de la solicitud). Subido de 8 a 20 (2026-09-23,
+// bug real: un correo real de tutela normal ya traía más de 8 adjuntos).
+if(count($adjuntos) > 20){
     http_response_code(400);
-    echo json_encode(['error' => 'Demasiados adjuntos en este correo (máximo 8) — extrae los datos a mano para este caso.']);
+    echo json_encode(['error' => 'Demasiados adjuntos en este correo (máximo 20) — extrae los datos a mano para este caso.']);
     exit;
 }
 
