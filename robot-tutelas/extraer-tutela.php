@@ -87,6 +87,23 @@ $camposEsperados = <<<TXT
 - NoIdentificacion (texto, cédula del accionante)
 - Correo (texto, correo del juzgado que envía la notificación)
 - Solicita (texto largo, resumen en tus propias palabras de qué pide la tutela)
+- Tema (categoría de la tutela — ver instrucciones)
+TXT;
+
+// 2026-09-23, pedido explícito del usuario viendo un correo real: "en tema
+// debe categorizar lo mejor posible según lo investigado por la IA...
+// adecuar con pensamientos de abogado la mejor opción" — "Tema" en el
+// portal es un desplegable que depende de "Prestación" y se llena desde una
+// lista de SharePoint que puede crecer con el tiempo — el robot NO tiene
+// acceso a esa lista en vivo, así que se le da la lista de categorías más
+// comunes vistas hasta ahora como referencia (no necesariamente completa) y
+// se le pide razonar como abogado cuál encaja mejor con el contenido real
+// del correo/adjuntos, no solo por palabras clave sueltas. El usuario
+// siempre revisa este campo en el formulario antes de guardar, así que si
+// la categoría real no está en esta lista, elige la más parecida en
+// significado — no hace falta que sea una coincidencia exacta de texto.
+$temasReferencia = <<<TXT
+AGENDAMIENTO DE CONSULTA, AUTORIZACIÓN Y SUMINISTRO DE SERVICIOS DE SALUD, ENTREGA DE MEDICAMENTOS, EXCLUSIÓN DE SERVICIO, EXCLUSION INVIMA, EXCLUSIÓN POR TOPES DE COBERTURA, INDICACION INVIMA, PÉRDIDA DE ANTIGÜEDAD, PORTABILIDAD, PREEXISTENCIA, PUERTA DE ENTRADA / RED NO ADSCRITA, SERVICIO CON FALLAS EN ORDEN O PRESCRIPCIÓN, SERVICIO DE CUIDADOR O ENFERMERÍA, SERVICIO NO PBS, SERVICIO NO SOLICITADO, TRATAMIENTO INTEGRAL
 TXT;
 
 // 2026-09-23, pedido explícito del usuario viendo un correo real: "hay tres
@@ -97,6 +114,7 @@ TXT;
 $instrucciones = "Eres un asistente que extrae datos de una tutela judicial colombiana recibida por correo electrónico, para un despacho de abogados. " .
     "Lee el asunto, el cuerpo del correo y los documentos adjuntos (pueden ser PDF o imágenes escaneadas de la tutela). " .
     "Esta tutela puede señalar/vincular a MÁS DE UNO de los 3 clientes reales del despacho (COLMEDICA MEDICINA PREPAGADA S.A., ALIANSALUD ENTIDAD PROMOTORA DE SALUD S.A., UNIDAD MÉDICA Y DE DIAGNÓSTICO S.A.) al mismo tiempo — en ese caso arma UN REGISTRO POR CADA CLIENTE señalado (mismos datos generales de la tutela, cambiando solo el campo Cliente en cada uno), en vez de un solo registro mezclado. Si solo aplica a un cliente, devuelve un solo registro igual. " .
+    "Para el campo Tema, razona como lo haría un abogado especialista en tutelas de salud: analiza de fondo qué es lo que realmente está pidiendo/reclamando el accionante (no solo busques palabras clave sueltas) y elige la categoría que mejor describa ese fondo del asunto, apoyándote en esta lista de categorías ya usadas por el despacho como referencia (puede que la real no esté exactamente aquí — en ese caso, usa la más parecida en significado, con tus propias palabras si hace falta):\n{$temasReferencia}\n\n" .
     "Devuelve SOLO un objeto JSON (sin texto adicional antes o después, sin bloques de markdown) con esta forma exacta: {\"registros\": [ {...un registro...}, {...otro registro si aplica...} ]}. Cada registro debe tener EXACTAMENTE estas claves, dejando \"\" (cadena vacía) en lo que no puedas determinar con certeza — nunca inventes un dato que no esté en el correo:\n\n" . $camposEsperados;
 
 $contenido = [];
