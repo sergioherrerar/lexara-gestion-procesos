@@ -22,6 +22,11 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
   // `_creado` propio para poder ir creando uno por uno sin perder de vista
   // los demás ni tener que volver a leer el correo/llamar a Claude de nuevo.
   const [resultado, setResultado] = useState(null); // { mensajeId, registros:[{...,_creado}] } | null
+  // Rango de fechas (2026-09-23, pedido explícito del usuario: "que pueda
+  // colocarle leer los correos del día tal a día tal") — opcional, vacío por
+  // defecto (trae los últimos 20 correos sin acotar por fecha).
+  const [desde, setDesde] = useState('');
+  const [hasta, setHasta] = useState('');
 
   useEffect(() => {
     let cancelado = false;
@@ -29,7 +34,8 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
       setCargando(true);
       setErrorCarga('');
       try{
-        const r = await leerCorreosTutelas(correoBuzon, remitentesPermitidos);
+        const top = (desde || hasta) ? 100 : 20;
+        const r = await leerCorreosTutelas(correoBuzon, remitentesPermitidos, top, desde || undefined, hasta || undefined);
         if(!cancelado) setMensajes(r);
       }catch(err){
         console.error(err);
@@ -39,7 +45,7 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
       }
     })();
     return () => { cancelado = true; };
-  }, [correoBuzon, remitentesPermitidos]);
+  }, [correoBuzon, remitentesPermitidos, desde, hasta]);
 
   async function handleExtraer(mensaje){
     if(!robotUrl){
@@ -94,6 +100,24 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
         <p className="save-hint" style={{margin:'0 0 14px'}}>
           Elige un correo, dale "Extraer con IA" y revisa los datos en el formulario de "Nueva tutela" antes de guardar.
         </p>
+        {/* Rango de fechas (2026-09-23, pedido explícito del usuario) — filtra
+            los correos por "Desde"/"Hasta"; con los dos vacíos, trae los
+            últimos 20 sin acotar por fecha (comportamiento de siempre). */}
+        <div style={{display:'flex', gap:10, flexWrap:'wrap', marginBottom:14}}>
+          <div className="field" style={{minWidth:140}}>
+            <label>Desde</label>
+            <input type="date" value={desde} onChange={e => setDesde(e.target.value)} />
+          </div>
+          <div className="field" style={{minWidth:140}}>
+            <label>Hasta</label>
+            <input type="date" value={hasta} onChange={e => setHasta(e.target.value)} />
+          </div>
+          {(desde || hasta) && (
+            <button type="button" className="btn-secondary" style={{alignSelf:'flex-end'}} onClick={() => { setDesde(''); setHasta(''); }}>
+              Quitar filtro de fecha
+            </button>
+          )}
+        </div>
         {cargando && <p>Cargando correos…</p>}
         {!cargando && errorCarga && <div className="field-warning">{errorCarga}</div>}
         {!cargando && !errorCarga && mensajes.length === 0 && (

@@ -397,17 +397,24 @@ export async function crearBorradorCorreo({ to, cc, subject, htmlBody, adjuntoNo
 // últimos correos del buzón sin distinguir quién los mandó) — así el botón
 // sigue siendo útil apenas se comparta el buzón, sin esperar a tener la
 // lista definitiva de remitentes.
-export async function leerCorreosTutelas(correoBuzon, remitentesPermitidos, top = 20){
+// `desde`/`hasta` (2026-09-23, pedido explícito del usuario: "que pueda
+// colocarle leer los correos del día tal a día tal") — fechas ISO
+// ("aaaa-mm-dd"), opcionales, para acotar por rango además del remitente.
+export async function leerCorreosTutelas(correoBuzon, remitentesPermitidos, top = 20, desde, hasta){
   const token = await getMailToken();
   const filtroRemitentes = (remitentesPermitidos||[]).filter(Boolean)
     .map(correo => `from/emailAddress/address eq '${correo.replace(/'/g, "''")}'`)
     .join(' or ');
+  const partesFiltro = [];
+  if(filtroRemitentes) partesFiltro.push(`(${filtroRemitentes})`);
+  if(desde) partesFiltro.push(`receivedDateTime ge ${desde}T00:00:00Z`);
+  if(hasta) partesFiltro.push(`receivedDateTime le ${hasta}T23:59:59Z`);
   const params = new URLSearchParams({
     $select: 'id,subject,from,receivedDateTime,hasAttachments,bodyPreview',
     $orderby: 'receivedDateTime desc',
     $top: String(top),
   });
-  if(filtroRemitentes) params.set('$filter', filtroRemitentes);
+  if(partesFiltro.length) params.set('$filter', partesFiltro.join(' and '));
   const url = `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(correoBuzon)}/messages?${params.toString()}`;
   const res = await fetch(url, { headers: { Authorization:`Bearer ${token}` } });
   if(!res.ok){
