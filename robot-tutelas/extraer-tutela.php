@@ -137,7 +137,11 @@ foreach($adjuntos as $adj){
 
 $body = [
     'model' => 'claude-sonnet-5',
-    'max_tokens' => 1500,
+    // Subido de 1500 a 4000 (2026-09-23, bug real: "Claude no devolvió un
+    // JSON válido con registros" — con varios registros por cliente + el
+    // campo Tema nuevo, la respuesta se quedaba corta y el JSON llegaba
+    // incompleto/cortado a la mitad).
+    'max_tokens' => 4000,
     'system' => $instrucciones,
     'messages' => [
         ['role' => 'user', 'content' => $contenido],
