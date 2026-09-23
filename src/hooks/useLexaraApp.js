@@ -1212,7 +1212,12 @@ export function useLexaraApp(){
   function openTutela(id){ setDraftTutela(null); setActiveTutelaId(id); }
   // "+ Nueva tutela" solo abre un borrador local — no toca SharePoint hasta
   // que el usuario le da "Guardar cambios" (mismo criterio que el resto de módulos).
-  function newTutela(){ setActiveTutelaId(null); setDraftTutela({}); }
+  // `camposIniciales` (2026-09-23, "API Claude" Tarea 1 — pedido explícito
+  // del usuario: leer un correo de Tutelas@ y abrir "Nueva tutela" ya
+  // prellenada con lo que Claude extrajo, para revisar y confirmar antes de
+  // guardar) — mismo "nuevo borrador local" de siempre, solo que arranca con
+  // esos campos en vez de vacío. Nunca toca SharePoint hasta que se guarde.
+  function newTutela(camposIniciales){ setActiveTutelaId(null); setDraftTutela(camposIniciales || {}); }
   // Pedido explícito del usuario 2026-08-29: varios casos reales de Tutelas
   // comparten TODOS los datos (mismo Proceso/Tema/Juzgado/fechas) y solo
   // cambian de Cliente/Entidad — en vez de repetir el formulario completo a

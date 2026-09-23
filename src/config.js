@@ -58,7 +58,28 @@ export const INITIAL_CONFIG = {
   // las listas SharePoint "TasasInteres"/"IPC", igual que antes con el Excel.
   IPC_FUENTE_URL: "https://www.dane.gov.co/index.php/estadisticas-por-tema/precios-y-costos/indice-de-precios-al-consumidor-ipc",
   TASAS_INTERES_FUENTE_URL: "https://www.superfinanciera.gov.co/publicaciones/10829/sala-de-prensacomunicados-de-prensa-interes-bancario-corriente-10829/",
+  // "API Claude" Tarea 1 (2026-09-23, pedido explícito del usuario, ya con
+  // aprobación interna — ver [[project_api_claude_tutelas]]): leer un correo
+  // de este buzón y mandarlo al "robot" (PHP en el mismo cPanel de
+  // www.lexaraabogados.com/app) para que la API de Claude extraiga los
+  // campos de una Tutela nueva. El buzón todavía NO está compartido de
+  // fábrica — cada cuenta que use el botón necesita acceso delegado
+  // ("Acceso completo") a este buzón, dado desde admin.microsoft.com.
+  TUTELAS_BUZON_CORREO: "Tutelas@lexaraabogados.com",
+  // URL real del robot en cPanel — confirmado subido 2026-09-23 (ver
+  // robot-tutelas/ en este mismo repo, sube a public_html/robot-tutelas/,
+  // NUNCA dentro de public_html/app/ que se reemplaza en cada publicación).
+  ROBOT_CLAUDE_URL: "https://www.lexaraabogados.com/robot-tutelas/extraer-tutela.php",
 };
+
+// Lista fija de correos remitentes válidos para "Leer correo (IA)" en
+// Tutelas — pedido explícito del usuario 2026-09-23: "no son mas de 5
+// correos los cuales envían tutelas los puedo colocar manualmente" (en vez
+// de leer la libreta de contactos real del buzón, que hubiera necesitado
+// pedir un permiso nuevo en Azure AD). Confirmado 2026-09-23: por ahora solo
+// daniacp@colmedica.com — el usuario avisó que hay 2 correos más que
+// "eventualmente la reemplazan", agregar cuando los confirme.
+export const TUTELAS_REMITENTES_PERMITIDOS = ["daniacp@colmedica.com"];
 
 // "Diligenciamiento Formatos Empresas" (Informes > Herramientas) — agregada
 // 2026-09-11, pedido explícito del usuario ("Opción 1 + A"): carpeta real

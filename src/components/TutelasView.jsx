@@ -1,8 +1,10 @@
-import { ICON_SVG } from '../config';
+import { useState } from 'react';
+import { ICON_SVG, TUTELAS_REMITENTES_PERMITIDOS } from '../config';
 import { fmtDate } from '../lib/graph';
 import IconButton, { IconTextButton } from './IconButton';
 import ColumnHeaderMenu from './ColumnHeaderMenu';
 import TableScrollWrap from './TableScrollWrap';
+import LeerCorreoTutelaModal from './LeerCorreoTutelaModal';
 import { useColumnFilters } from '../hooks/useColumnFilters';
 import { useColumnSort } from '../hooks/useColumnSort';
 
@@ -28,9 +30,14 @@ function hoyISO(){
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 
-export default function TutelasView({ tutelas, searchQuery, onOpenTutela, onCreateTutela, onDuplicateTutela, onDeleteTutela, canWrite = true }){
+export default function TutelasView({ tutelas, searchQuery, onOpenTutela, onCreateTutela, onDuplicateTutela, onDeleteTutela, canWrite = true, liveMode, config, notify }){
   const { filters, setFilter, clearFilters, rowMatches, hasActiveFilters } = useColumnFilters();
   const { sort, setSortKey, sortRows } = useColumnSort();
+  // "Leer correo (IA)" — "API Claude" Tarea 1 (2026-09-23, pedido explícito
+  // del usuario, con aprobación interna, ver [[project_api_claude_tutelas]]).
+  // Solo tiene sentido conectado a SharePoint en vivo (necesita leer un
+  // buzón real de Outlook) — en modo demo no se muestra.
+  const [mostrarLeerCorreo, setMostrarLeerCorreo] = useState(false);
   // Contador de tutelas que vencen hoy — se recalcula en cada render, así
   // que siempre queda al día con lo último que haya en `tutelas` (recién
   // cargado o después de un refresh).
@@ -72,9 +79,22 @@ export default function TutelasView({ tutelas, searchQuery, onOpenTutela, onCrea
           <span className={"badge " + (vencenHoy > 0 ? "badge-alerta" : "badge-gris")} style={{fontSize:14, padding:'8px 16px'}}>
             {vencenHoy} {vencenHoy === 1 ? "vence" : "vencen"} hoy
           </span>
+          {canWrite && liveMode && (
+            <IconTextButton icon="add" variant="secondary" onClick={() => setMostrarLeerCorreo(true)}>Leer correo (IA)</IconTextButton>
+          )}
           {canWrite && <IconTextButton icon="add" variant="primary" onClick={onCreateTutela}>Nueva tutela</IconTextButton>}
         </div>
       </div>
+      {mostrarLeerCorreo && (
+        <LeerCorreoTutelaModal
+          correoBuzon={config?.TUTELAS_BUZON_CORREO}
+          remitentesPermitidos={TUTELAS_REMITENTES_PERMITIDOS}
+          robotUrl={config?.ROBOT_CLAUDE_URL}
+          notify={notify}
+          onClose={() => setMostrarLeerCorreo(false)}
+          onExtraido={campos => onCreateTutela(campos)}
+        />
+      )}
       {/* Diferencia por tipo, solo de lo que vence HOY (pedido explícito del
           usuario 2026-09-01) — en su propia fila, separada del título/botón
           de arriba: metida en la misma fila del view-header (que no tiene

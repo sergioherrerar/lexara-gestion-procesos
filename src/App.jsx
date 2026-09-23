@@ -153,6 +153,9 @@ export default function App(){
             onDuplicateTutela={app.duplicateTutela}
             onDeleteTutela={app.deleteTutela}
             canWrite={app.canWrite}
+            liveMode={app.liveMode}
+            config={app.config}
+            notify={app.notify}
           />
         )}
         {app.view === 'clientes' && canAccessView(app.modulosPermitidos, 'clientes') && (

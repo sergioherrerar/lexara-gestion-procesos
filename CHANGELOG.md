@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-23 (1) — "Leer correo (IA)" en Tutelas
+- **Nuevo botón "Leer correo (IA)" en Tutelas** — pedido explícito del usuario, con aprobación interna del proyecto. Lee los correos del buzón Tutelas@lexaraabogados.com, manda el contenido y los adjuntos (PDF/imágenes) a un robot propio que usa la API de Claude para extraer los datos de la tutela, y abre "Nueva tutela" ya prellenada para revisar y confirmar antes de guardar — nunca se guarda automático. Si el correo señala a más de un cliente real (Colmedica/Aliansalud/Unidad Médica), se arma un borrador por cada uno. Solo visible conectado a SharePoint en vivo, no en modo demo.
+
 ## 2026-09-22 (17)
 - **Los eventos "Otros" del mini calendario ahora muestran también la hora** — pedido explícito del usuario viendo un evento real en el panel del día ("Grabación Reels" sin hora). Solo aparece cuando el evento tiene hora puntual (no es de día completo).
 

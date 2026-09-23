@@ -381,6 +381,92 @@ export async function crearBorradorCorreo({ to, cc, subject, htmlBody, adjuntoNo
   return { ...mensaje, carpetaBorradores, carpetaReal };
 }
 
+// "API Claude" Tarea 1 (2026-09-23, pedido explícito del usuario, ya con
+// aprobación interna — ver [[project_api_claude_tutelas]]) — leer correos del
+// buzón de Tutelas para mandarlos al robot. Usa el mismo getMailToken()
+// (Mail.ReadWrite, ya aprobado) de arriba — funciona sobre OTRO buzón
+// (/users/{correo}/messages en vez de /me/messages) siempre que la cuenta
+// que inició sesión tenga acceso delegado ("Acceso completo") a ese buzón,
+// dado desde admin.microsoft.com — la app en sí no necesita ningún permiso
+// nuevo en Azure AD para esto.
+//
+// `remitentesPermitidos`: lista fija de correos (TUTELAS_REMITENTES_PERMITIDOS
+// en config.js) — se arma el filtro OData como
+// "from/emailAddress/address eq 'a' or from/emailAddress/address eq 'b'...".
+// Si la lista viene vacía, no se aplica ningún filtro de remitente (trae los
+// últimos correos del buzón sin distinguir quién los mandó) — así el botón
+// sigue siendo útil apenas se comparta el buzón, sin esperar a tener la
+// lista definitiva de remitentes.
+export async function leerCorreosTutelas(correoBuzon, remitentesPermitidos, top = 20){
+  const token = await getMailToken();
+  const filtroRemitentes = (remitentesPermitidos||[]).filter(Boolean)
+    .map(correo => `from/emailAddress/address eq '${correo.replace(/'/g, "''")}'`)
+    .join(' or ');
+  const params = new URLSearchParams({
+    $select: 'id,subject,from,receivedDateTime,hasAttachments,bodyPreview',
+    $orderby: 'receivedDateTime desc',
+    $top: String(top),
+  });
+  if(filtroRemitentes) params.set('$filter', filtroRemitentes);
+  const url = `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(correoBuzon)}/messages?${params.toString()}`;
+  const res = await fetch(url, { headers: { Authorization:`Bearer ${token}` } });
+  if(!res.ok){
+    const body = await res.text();
+    throw new Error(`Graph ${res.status}: ${body.substring(0,300)}`);
+  }
+  const data = await res.json();
+  return (data.value || []).map(m => ({
+    id: m.id,
+    asunto: m.subject || '(sin asunto)',
+    remitente: m.from?.emailAddress?.address || '',
+    remitenteNombre: m.from?.emailAddress?.name || '',
+    fecha: m.receivedDateTime,
+    tieneAdjuntos: !!m.hasAttachments,
+    resumen: m.bodyPreview || '',
+  }));
+}
+
+// Cuerpo completo (texto plano, sin HTML) + adjuntos en base64 de UN correo
+// puntual ya elegido por el usuario — se piden juntos porque ambos hacen
+// falta para mandárselos al robot de una vez.
+export async function leerCorreoCompleto(correoBuzon, mensajeId){
+  const token = await getMailToken();
+  const headers = { Authorization:`Bearer ${token}` };
+  const base = `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(correoBuzon)}/messages/${mensajeId}`;
+
+  const resMsg = await fetch(`${base}?$select=subject,body,from,receivedDateTime`, { headers });
+  if(!resMsg.ok){
+    const body = await resMsg.text();
+    throw new Error(`Graph ${resMsg.status}: ${body.substring(0,300)}`);
+  }
+  const msg = await resMsg.json();
+  // El cuerpo llega como HTML (contentType casi siempre "html") — se le
+  // quitan las etiquetas para mandarle a Claude texto plano legible, mismo
+  // criterio que stripHtml() ya usado en el resto de la app para "Estado"/
+  // "Observaciones" de Procesos.
+  const cuerpoTexto = stripHtml(msg.body?.content || '').trim();
+
+  const resAdj = await fetch(`${base}/attachments?$select=id,name,contentType,size,contentBytes`, { headers });
+  if(!resAdj.ok){
+    const body = await resAdj.text();
+    throw new Error(`Graph ${resAdj.status}: ${body.substring(0,300)}`);
+  }
+  const dataAdj = await resAdj.json();
+  // Solo adjuntos "de archivo" normales (fileAttachment) — se descartan
+  // adjuntos de tipo evento/contacto incrustados, que no traen contentBytes.
+  const adjuntos = (dataAdj.value || [])
+    .filter(a => a.contentBytes)
+    .map(a => ({ nombre: a.name, tipo: a.contentType || 'application/octet-stream', base64: a.contentBytes, tamano: a.size }));
+
+  return {
+    asunto: msg.subject || '(sin asunto)',
+    remitente: msg.from?.emailAddress?.address || '',
+    fecha: msg.receivedDateTime,
+    cuerpo: cuerpoTexto,
+    adjuntos,
+  };
+}
+
 // Traduce errores técnicos (de MSAL o de la respuesta cruda de Graph, casi
 // siempre en inglés) a un mensaje en español entendible — pedido explícito
 // del usuario 2026-09-10 ("trata de que todos los errores sean español").

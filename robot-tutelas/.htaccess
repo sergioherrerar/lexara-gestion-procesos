@@ -1,0 +1,6 @@
+# No pasa nada grave si alguien pide config.php directo por la URL (PHP solo
+# "retorna" el arreglo, no lo imprime) — pero por seguridad extra, se bloquea
+# el acceso web directo a los archivos de configuración de todas formas.
+<FilesMatch "^config(\.example)?\.php$">
+    Require all denied
+</FilesMatch>

@@ -1243,6 +1243,32 @@
   .confirm-box p{margin:0 0 18px; font-size:14.5px; color:var(--texto); line-height:1.6;}
   .confirm-actions{display:flex; gap:10px; justify-content:flex-end;}
 
+  /* "Leer correo de Tutelas (IA)" (2026-09-23, "API Claude" Tarea 1) — reusa
+     .confirm-overlay/.confirm-box (mismo fondo oscurecido) pero con su
+     propio ancho, ya que necesita listar varios correos, no solo un mensaje
+     de confirmación corto. */
+  .leer-correo-box{max-width:520px; max-height:80vh; overflow-y:auto;}
+  .leer-correo-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;}
+  .leer-correo-head h3{margin:0; font-size:17px; color:var(--verde-oscuro);}
+  .leer-correo-lista{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:8px;}
+  .leer-correo-item{border:1px solid var(--gris-linea); border-radius:10px; overflow:hidden;}
+  .leer-correo-item.activo{border-color:var(--verde-claro);}
+  .leer-correo-item-btn{
+    display:flex; flex-direction:column; gap:2px; width:100%; text-align:left;
+    padding:10px 12px; border:none; background:#fff; cursor:pointer; font-family:inherit; font-size:13.5px;
+  }
+  .leer-correo-item-btn:hover{background:var(--gris-claro);}
+  .leer-correo-item.activo .leer-correo-item-btn{background:#eef7f6;}
+  .leer-correo-item-accion{padding:0 12px 12px;}
+  /* Uno o varios registros detectados por el robot (2026-09-23, un correo
+     puede señalar a más de un cliente real a la vez) — cada uno en su
+     propia fila, con su botón de crear borrador independiente. */
+  .leer-correo-registros{display:flex; flex-direction:column; gap:8px;}
+  .leer-correo-registro-item{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    padding:8px 10px; border:1px solid var(--gris-linea); border-radius:8px; background:var(--gris-claro); font-size:13px;
+  }
+
   /* ---------- Botones de ícono (acciones de fila: editar/eliminar/abrir/nuevo) ---------- */
   .icon-btn{
     display:inline-flex; align-items:center; justify-content:center;
