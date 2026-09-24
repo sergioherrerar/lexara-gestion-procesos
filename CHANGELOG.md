@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-24 (4)
+- **Corrige que no aparecía el botón de cerrar (X) en "Leer correo (IA)"/"Entrenar IA"** — reportado por el usuario viéndolo en vivo. El botón usaba un posicionamiento pensado para los paneles grandes (Cliente, Factura, etc.) que, con el nuevo layout de 2 columnas, lo dejaba fuera de vista. Ahora queda fijo dentro del encabezado de la ventana.
+
 ## 2026-09-24 (3)
 - **Corrige que las correcciones de "Entrenar IA" podían quedar descartadas al azar al pasar de 30** — pedido explícito del usuario ("que las correcciones también las tome para casos en general"). Antes se cortaban a las primeras 30 SIN ordenar (orden arbitrario de SharePoint), así que con más de 30 tutelas corregidas, algunas dejaban de mandarse al robot sin avisar. Ahora se ordenan por No. Tutela (las más recientes primero) y se sube el límite a 150.
 

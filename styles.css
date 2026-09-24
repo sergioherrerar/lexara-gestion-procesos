@@ -1276,6 +1276,13 @@
     .leer-correo-col-lateral{border-left:none; border-top:1px solid var(--gris-linea); padding-left:0; padding-top:16px; margin-top:6px;}
   }
   .leer-correo-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;}
+  /* 2026-09-24, bug real: el botón de cerrar (.drawer-close, position:absolute
+     pensado para los paneles grandes tipo #tutela-drawer) quedaba fuera de
+     vista acá — su "ancestro posicionado" más cercano terminaba siendo el
+     overlay de pantalla completa, no esta caja, y con el layout de 2
+     columnas el cálculo quedaba peor todavía. Se fija como parte normal del
+     encabezado (ya alineado a la derecha por el space-between de arriba). */
+  .leer-correo-head .drawer-close{position:static; flex-shrink:0;}
   .leer-correo-head h3{margin:0; font-size:17px; color:var(--verde-oscuro);}
   .leer-correo-lista{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:8px;}
   .leer-correo-item{border:1px solid var(--gris-linea); border-radius:10px; overflow:hidden;}
