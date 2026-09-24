@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { leerCorreosTutelas, leerCorreoCompleto, mensajeError, stripHtml } from '../lib/graph';
-import { IconTextButton } from './IconButton';
+import IconButton, { IconTextButton } from './IconButton';
 import { EntrenarIAPanel } from './EntrenarIAModal';
 import { useDraggable } from '../hooks/useDraggable';
+import { useLexiaVoz } from '../hooks/useLexiaVoz';
+import lexiaAvatar from '../assets/LexIA avatar.jpg';
 
 // "API Claude" Tarea 1 (2026-09-23, pedido explícito del usuario, con
 // aprobación interna — ver [[project_api_claude_tutelas]]) — leer un correo
@@ -35,6 +37,20 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
   // leerCorreosTutelas igual acota sola a los últimos 90 días por defecto.
   const [desde, setDesde] = useState('');
   const [hasta, setHasta] = useState('');
+  // "Dar vida" a LexIA (2026-09-24, pedido explícito del usuario: "podemos
+  // darle voz y que lea lo que envía") — un solo saludo hablado al abrir
+  // esta ventana (no cada vez que cambia algo adentro, por eso el arreglo
+  // vacío []). El botón de la bocina prende/apaga la voz para lo que sea
+  // que LexIA "diga" de ahora en adelante (este saludo + las respuestas de
+  // la pestaña "Preguntas", ver EntrenarIAModal.jsx).
+  const { activada: vozActivada, setActivada: setVozActivada, decir } = useLexiaVoz();
+  const [mostrarSaludo, setMostrarSaludo] = useState(true);
+  useEffect(() => {
+    decir('Hola, soy LexIA. Elige un correo y dale extraer, o pregúntame lo que necesites.');
+    const t = setTimeout(() => setMostrarSaludo(false), 6000);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     let cancelado = false;
@@ -124,10 +140,29 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
       <div className="confirm-box leer-correo-box leer-correo-box-ancha" style={{transform: `translate(${offset.x}px, ${offset.y}px)`}}>
         <div className="leer-correo-head" {...dragHandleProps}>
           <h3>Leer correo de Tutelas (LexIA)</h3>
-          <button className="drawer-close" onClick={onClose} aria-label="Cerrar">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
-          </button>
+          <div style={{display:'flex', alignItems:'center', gap:4}}>
+            <IconButton
+              icon={vozActivada ? 'volumeOn' : 'volumeOff'}
+              variant="secondary"
+              label={vozActivada ? 'Silenciar a LexIA' : 'Activar la voz de LexIA'}
+              onClick={() => setVozActivada(v => !v)}
+            />
+            <button className="drawer-close" onClick={onClose} aria-label="Cerrar">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+          </div>
         </div>
+        {/* "Dar vida" a LexIA (2026-09-24, pedido explícito del usuario:
+            "una animación saliendo y saludando") — aparece al abrir esta
+            ventana y se retira sola a los pocos segundos (ver setTimeout
+            arriba), para no quitarle espacio permanente a la lista de
+            correos. */}
+        {mostrarSaludo && (
+          <div className="lexia-saludo">
+            <img src={lexiaAvatar} alt="LexIA" className="lexia-avatar" />
+            <div className="lexia-burbuja">¡Hola! Soy LexIA. Elige un correo y dale "Extraer con LexIA", o pregúntame lo que necesites al lado.</div>
+          </div>
+        )}
         {/* 2026-09-24, pedido explícito del usuario ("mejor colocarlo al
             lado... mira qué datos trajo y corrige y pregunta") — 2 columnas:
             a la izquierda la lectura de correos de siempre, a la derecha
@@ -231,6 +266,7 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
             robotPreguntasUrl={robotPreguntasUrl}
             notify={notify}
             casoActual={resultado ? { asunto: correoActual?.asunto, cuerpo: correoActual?.cuerpo, registros: resultado.registros } : null}
+            decirLexia={decir}
           />
         </div>
         </div>

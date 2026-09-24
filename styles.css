@@ -1271,6 +1271,29 @@
     border-left:1px solid var(--gris-linea); padding-left:20px;
   }
   .leer-correo-col-lateral-titulo{margin:0 0 6px; font-size:17px; color:var(--verde-oscuro);}
+
+  /* "Dar vida" a LexIA (2026-09-24, pedido explícito del usuario: "darle
+     una imagen virtual... una animación saliendo y saludando") — aparece
+     al abrir "Leer correo (LexIA)", con el avatar real que mandó el
+     usuario (ver src/assets/LexIA avatar.jpg y [[feedback_use_real_assets]]). */
+  @keyframes lexia-entrada{
+    0%{ opacity:0; transform: translateY(-14px) scale(.7); }
+    60%{ opacity:1; transform: translateY(2px) scale(1.05); }
+    100%{ opacity:1; transform: translateY(0) scale(1); }
+  }
+  .lexia-saludo{display:flex; align-items:center; gap:12px; margin:0 0 16px;}
+  .lexia-avatar{
+    width:54px; height:54px; border-radius:50%; object-fit:cover; flex-shrink:0;
+    border:2px solid var(--verde-claro); animation: lexia-entrada .55s cubic-bezier(.34,1.56,.64,1) both;
+  }
+  .lexia-burbuja{
+    background:#eef7f6; border:1px solid var(--verde-claro); border-radius:14px 14px 14px 2px;
+    padding:9px 14px; font-size:13px; color:var(--texto); line-height:1.5;
+    animation: lexia-entrada .55s .12s cubic-bezier(.34,1.56,.64,1) both;
+  }
+  @media (prefers-reduced-motion: reduce){
+    .lexia-avatar, .lexia-burbuja{animation:none;}
+  }
   @media (max-width:760px){
     .leer-correo-2col{flex-direction:column;}
     .leer-correo-col-principal, .leer-correo-col-lateral{max-width:none; max-height:none; overflow-y:visible;}
