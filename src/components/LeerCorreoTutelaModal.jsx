@@ -4,7 +4,7 @@ import IconButton, { IconTextButton } from './IconButton';
 import { EntrenarIAPanel } from './EntrenarIAModal';
 import { useDraggable } from '../hooks/useDraggable';
 import { useLexiaVoz } from '../hooks/useLexiaVoz';
-import lexiaAvatar from '../assets/LexIA avatar.jpg';
+import lexiaAvatar from '../assets/LexIA avatar.png';
 
 // "API Claude" Tarea 1 (2026-09-23, pedido explícito del usuario, con
 // aprobación interna — ver [[project_api_claude_tutelas]]) — leer un correo
