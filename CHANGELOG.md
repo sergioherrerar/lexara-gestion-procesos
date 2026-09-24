@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-24 (12)
+- **LexIA ahora dice/muestra "Estoy trabajando para ti…" mientras extrae los datos de un correo** — pedido explícito del usuario, se me había quedado pendiente. Aparece junto al avatar "corriendo" y también se lee en voz alta si la voz está activada.
+
 ## 2026-09-24 (11)
 - **El avatar de LexIA ya usa un PNG real con transparencia** — el usuario mandó una versión ya recortada (fondo transparente de verdad), reemplaza el difuminado que se había puesto como parche temporal. Se ve completa y limpia, sin fondo ni recuadro.
 

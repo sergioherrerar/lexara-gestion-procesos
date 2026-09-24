@@ -76,6 +76,7 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
       return;
     }
     setProcesando(true);
+    decir('Estoy trabajando para ti.');
     try{
       const completo = await leerCorreoCompleto(correoBuzon, mensaje.id);
       // "Entrenar IA" (2026-09-23) — correcciones reales que el abogado ya
@@ -222,7 +223,12 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
                           carrera real, así que se simula con un rebote +
                           balanceo en bucle mientras dura la extracción. */}
                       {procesando && seleccionadoId === m.id && (
-                        <img src={lexiaAvatar} alt="LexIA corriendo" className="lexia-avatar lexia-avatar-corriendo" />
+                        <>
+                          <img src={lexiaAvatar} alt="LexIA corriendo" className="lexia-avatar lexia-avatar-corriendo" />
+                          {/* "Y mensaje: estoy trabajando para ti" (2026-09-24,
+                              pedido explícito del usuario). */}
+                          <span className="save-hint" style={{fontStyle:'italic'}}>Estoy trabajando para ti…</span>
+                        </>
                       )}
                     </div>
                   )}
