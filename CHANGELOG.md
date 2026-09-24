@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-24 (15)
+- **El avatar de LexIA ahora tiene relieve 3D** — pedido explícito del usuario ("que se vea como el 3D"). Mismo estilo ya usado en las pestañas principales del portal (degradado + sombra + brillo, como una insignia física) detrás de la perrita, en el botón, el saludo y mientras "corre".
+
 ## 2026-09-24 (14)
 - **Rediseña el botón que abre "Leer correo" como el botón de LexIA** — pedido explícito del usuario ("colócalo en el verde claro, coloca el avatar en miniatura y colócale solo LexIA"). Ahora es verde claro institucional, con su avatar real en miniatura y el texto solo dice "LexIA".
 

@@ -1209,7 +1209,12 @@
   }
   .btn-lexia:hover{background:var(--verde-oscuro);}
   .btn-lexia:active{transform:translateY(1px);}
-  .btn-lexia-avatar{width:28px; height:28px; object-fit:contain; flex-shrink:0;}
+  .btn-lexia-avatar{
+    width:28px; height:28px; object-fit:contain; flex-shrink:0; box-sizing:border-box;
+    border-radius:50%; padding:3px;
+    background:radial-gradient(circle at 35% 28%, #ffffff, #cdeae7 82%);
+    box-shadow:0 2px 4px rgba(15,40,35,.2), inset 0 1px 1px rgba(255,255,255,.9);
+  }
   /* Botón "Todos" (Gastos) activo — mismo verde institucional que un tab
      seleccionado (.drawer-tab.active), para que se note que el filtro de
      Mes/Año está apagado. */
@@ -1297,8 +1302,17 @@
     100%{ opacity:1; transform: translateY(0) scale(1); }
   }
   .lexia-saludo{display:flex; align-items:center; gap:12px; margin:0 0 16px;}
+  /* "Que el avatar se vea como el 3D" (2026-09-24, pedido explícito del
+     usuario) — mismo recibo de relieve ya usado en .drawer-tab (degradado
+     + sombra hacia afuera + brillo hundido arriba, como una placa/insignia
+     física) en vez de un ícono plano. Como el PNG tiene transparencia real
+     (object-fit:contain, sin recortar a la perrita), este fondo circular
+     se ve DETRÁS de ella, como si estuviera parada sobre una insignia. */
   .lexia-avatar{
-    width:64px; height:64px; object-fit:contain; flex-shrink:0;
+    width:64px; height:64px; object-fit:contain; flex-shrink:0; box-sizing:border-box;
+    border-radius:50%; padding:6px;
+    background:radial-gradient(circle at 35% 28%, #ffffff, var(--gris-claro) 78%);
+    box-shadow:0 3px 6px rgba(15,40,35,.18), inset 0 1px 2px rgba(255,255,255,.9), inset 0 -3px 5px rgba(15,40,35,.10);
     animation: lexia-entrada .55s cubic-bezier(.34,1.56,.64,1) both;
   }
   .lexia-burbuja{
@@ -1319,7 +1333,9 @@
     50%{ transform: translateY(-7px) rotate(6deg); }
   }
   .lexia-avatar-corriendo{
-    width:34px; height:34px; animation: lexia-corriendo .45s ease-in-out infinite;
+    width:34px; height:34px; padding:4px;
+    box-shadow:0 2px 5px rgba(15,40,35,.18), inset 0 1px 2px rgba(255,255,255,.9), inset 0 -2px 4px rgba(15,40,35,.10);
+    animation: lexia-corriendo .45s ease-in-out infinite;
   }
   @media (prefers-reduced-motion: reduce){
     .lexia-avatar-corriendo{animation:none;}
