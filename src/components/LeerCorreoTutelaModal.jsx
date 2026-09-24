@@ -3,7 +3,6 @@ import { leerCorreosTutelas, leerCorreoCompleto, mensajeError, stripHtml } from 
 import IconButton, { IconTextButton } from './IconButton';
 import { EntrenarIAPanel } from './EntrenarIAModal';
 import { useDraggable } from '../hooks/useDraggable';
-import { useLexiaVoz } from '../hooks/useLexiaVoz';
 import lexiaAvatar from '../assets/LexIA avatar.png';
 
 // "API Claude" Tarea 1 (2026-09-23, pedido explícito del usuario, con
@@ -13,7 +12,7 @@ import lexiaAvatar from '../assets/LexIA avatar.png';
 // devolver los campos que Claude extrajo para prellenar "Nueva tutela". El
 // usuario SIEMPRE revisa y confirma en el formulario antes de guardar — acá
 // nunca se toca SharePoint, solo se arma el objeto de campos iniciales.
-export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitidos, robotUrl, tutelas, onAgregarCorreccionIA, robotPreguntasUrl, onExtraido, onClose, notify }){
+export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitidos, robotUrl, tutelas, onAgregarCorreccionIA, robotPreguntasUrl, onExtraido, onClose, notify, vozActivada, setVozActivada, decir }){
   const [cargando, setCargando] = useState(true);
   const [errorCarga, setErrorCarga] = useState('');
   const [mensajes, setMensajes] = useState([]);
@@ -38,18 +37,17 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
   const [desde, setDesde] = useState('');
   const [hasta, setHasta] = useState('');
   // "Dar vida" a LexIA (2026-09-24, pedido explícito del usuario: "podemos
-  // darle voz y que lea lo que envía") — un solo saludo hablado al abrir
-  // esta ventana (no cada vez que cambia algo adentro, por eso el arreglo
-  // vacío []). El botón de la bocina prende/apaga la voz para lo que sea
-  // que LexIA "diga" de ahora en adelante (este saludo + las respuestas de
-  // la pestaña "Preguntas", ver EntrenarIAModal.jsx).
-  const { activada: vozActivada, setActivada: setVozActivada, decir } = useLexiaVoz();
+  // darle voz y que lea lo que envía... que salude con la voz al abrir") —
+  // `vozActivada`/`setVozActivada`/`decir` vienen de TutelasView (no se
+  // instancian acá): el saludo hablado se dispara ahí mismo, DENTRO del
+  // clic que abre esta ventana — varios navegadores solo dejan sonar la
+  // síntesis de voz pegada al gesto real del usuario, no un instante
+  // después (que es lo que pasaba disparándolo en un useEffect al montar
+  // este modal). Acá solo queda el temporizador visual del saludo.
   const [mostrarSaludo, setMostrarSaludo] = useState(true);
   useEffect(() => {
-    decir('Hola, soy LexIA. Elige un correo y dale extraer, o pregúntame lo que necesites.');
     const t = setTimeout(() => setMostrarSaludo(false), 6000);
     return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {

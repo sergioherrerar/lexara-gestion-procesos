@@ -7,6 +7,7 @@ import TableScrollWrap from './TableScrollWrap';
 import LeerCorreoTutelaModal from './LeerCorreoTutelaModal';
 import { useColumnFilters } from '../hooks/useColumnFilters';
 import { useColumnSort } from '../hooks/useColumnSort';
+import { useLexiaVoz } from '../hooks/useLexiaVoz';
 
 // Orden pedido explícito del usuario 2026-09-01 — Juzgado se quitó de la
 // tabla (no estaba en la lista que pidió); sigue existiendo como dato, solo
@@ -40,6 +41,14 @@ export default function TutelasView({ tutelas, searchQuery, onOpenTutela, onCrea
   // Solo tiene sentido conectado a SharePoint en vivo (necesita leer un
   // buzón real de Outlook) — en modo demo no se muestra.
   const [mostrarLeerCorreo, setMostrarLeerCorreo] = useState(false);
+  // Voz de LexIA (2026-09-24, pedido explícito del usuario: "que salude
+  // con la voz al abrir") — se instancia acá (no dentro del modal) para
+  // poder disparar el saludo DENTRO del mismo clic que abre la ventana:
+  // varios navegadores solo dejan sonar la síntesis de voz si queda
+  // pegada al gesto real del usuario, no un instante después (que es lo
+  // que pasaba cuando el saludo se disparaba en un useEffect al montar el
+  // modal, un tris más tarde que el clic).
+  const { activada: vozActivada, setActivada: setVozActivada, decir } = useLexiaVoz();
   // Contador de tutelas que vencen hoy — se recalcula en cada render, así
   // que siempre queda al día con lo último que haya en `tutelas` (recién
   // cargado o después de un refresh).
@@ -82,7 +91,10 @@ export default function TutelasView({ tutelas, searchQuery, onOpenTutela, onCrea
             {vencenHoy} {vencenHoy === 1 ? "vence" : "vencen"} hoy
           </span>
           {canWrite && liveMode && (
-            <IconTextButton icon="add" variant="secondary" onClick={() => setMostrarLeerCorreo(true)}>Leer correo (LexIA)</IconTextButton>
+            <IconTextButton icon="add" variant="secondary" onClick={() => {
+              setMostrarLeerCorreo(true);
+              decir('Hola, soy LexIA. Elige un correo y dale extraer, o pregúntame lo que necesites.');
+            }}>Leer correo (LexIA)</IconTextButton>
           )}
           {canWrite && <IconTextButton icon="add" variant="primary" onClick={onCreateTutela}>Nueva tutela</IconTextButton>}
         </div>
@@ -96,6 +108,9 @@ export default function TutelasView({ tutelas, searchQuery, onOpenTutela, onCrea
           onAgregarCorreccionIA={onAgregarCorreccionIA}
           robotPreguntasUrl={config?.ROBOT_PREGUNTAS_URL}
           notify={notify}
+          vozActivada={vozActivada}
+          setVozActivada={setVozActivada}
+          decir={decir}
           onClose={() => setMostrarLeerCorreo(false)}
           onExtraido={campos => onCreateTutela(campos)}
         />
