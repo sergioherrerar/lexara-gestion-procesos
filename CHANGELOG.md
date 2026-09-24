@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-24 (10)
+- **Corrige el avatar de LexIA: en círculo se le cortaban las patas/orejas y quedaba una mancha sin forma** — reportado por el usuario ("sácala de ese círculo que quedó solo la silueta"). No hay forma de recortar el fondo real sin herramientas de edición (y este caso —perrita blanca sobre fondo casi blanco— es de los más difíciles para cualquier recorte automático), así que en su lugar se difumina el borde de la foto (viñeta) para que se mezcle con el fondo blanco de la ventana en vez de un cuadro recortado.
+
 ## 2026-09-24 (9)
 - **LexIA "corre" mientras extrae los datos de un correo** — pedido explícito del usuario ("que esté como corriendo mientras lee la información"). Junto al botón "Extraer con LexIA", mientras dura el proceso, su avatar rebota/se balancea en bucle (es una foto fija, se simula el movimiento ya que no hay cuadros de una animación real).
 

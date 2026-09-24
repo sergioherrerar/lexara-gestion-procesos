@@ -1283,8 +1283,20 @@
   }
   .lexia-saludo{display:flex; align-items:center; gap:12px; margin:0 0 16px;}
   .lexia-avatar{
-    width:54px; height:54px; border-radius:50%; object-fit:cover; flex-shrink:0;
-    border:2px solid var(--verde-claro); animation: lexia-entrada .55s cubic-bezier(.34,1.56,.64,1) both;
+    /* 2026-09-24, bug real reportado por el usuario: en círculo (border-
+       radius:50%) se le cortaban las patas/orejas y quedaba una mancha sin
+       forma reconocible ("quedó solo la silueta") — se saca del círculo.
+       No hay forma de recortar el fondo real (foto de perrita blanca sobre
+       fondo casi blanco, el caso más difícil para cualquier herramienta de
+       recorte automático) sin arriesgar comerse el pelaje, así que en vez
+       de eso se difumina el borde de la foto (viñeta) para que se mezcle
+       con el fondo blanco de la ventana en vez de verse como un cuadro
+       recortado — se pidió explícitamente algo así ("com[o] png [sin
+       fondo]") tras confirmar que no había herramienta de recorte a mano. */
+    width:64px; height:64px; object-fit:cover; flex-shrink:0;
+    -webkit-mask-image: radial-gradient(circle, #000 58%, transparent 88%);
+    mask-image: radial-gradient(circle, #000 58%, transparent 88%);
+    animation: lexia-entrada .55s cubic-bezier(.34,1.56,.64,1) both;
   }
   .lexia-burbuja{
     background:#eef7f6; border:1px solid var(--verde-claro); border-radius:14px 14px 14px 2px;
