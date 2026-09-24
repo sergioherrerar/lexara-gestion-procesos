@@ -74,7 +74,7 @@ function TabCorreccion({ tutelas, onAgregarCorreccion, notify }){
       {!seleccionada && (
         <>
           <p className="save-hint" style={{margin:'0 0 14px'}}>
-            Escribe el número de una tutela ya guardada para dejarle una corrección sobre el campo Tema — esto ayuda a que "Leer correo (IA)" categorice mejor los casos parecidos.
+            Escribe el número de una tutela ya guardada para dejarle una corrección sobre el campo Tema — esto ayuda a que LexIA categorice mejor los casos parecidos.
           </p>
           <div className="field" style={{marginBottom:12}}>
             <label>No. Tutela</label>
@@ -135,7 +135,7 @@ function TabPreguntas({ tutelas, robotPreguntasUrl, notify, casoActual }){
     const texto = pregunta.trim();
     if(!texto || enviando) return;
     if(!robotPreguntasUrl){
-      notify?.('Falta terminar de instalar el robot de preguntas (ROBOT_PREGUNTAS_URL en config.js).', 'error');
+      notify?.('Falta terminar de instalar LexIA (ROBOT_PREGUNTAS_URL en config.js).', 'error');
       return;
     }
     setMensajes(prev => [...prev, { autor:'yo', texto }]);
@@ -156,7 +156,7 @@ function TabPreguntas({ tutelas, robotPreguntasUrl, notify, casoActual }){
       let data;
       try{ data = await res.json(); }catch{ data = null; }
       if(!res.ok || !data || data.error){
-        throw new Error((data && data.error) || `El robot respondió con error (código ${res.status}).`);
+        throw new Error((data && data.error) || `LexIA respondió con error (código ${res.status}).`);
       }
       setMensajes(prev => [...prev, { autor:'ia', texto: data.respuesta || '(sin respuesta)' }]);
     }catch(err){
@@ -170,7 +170,7 @@ function TabPreguntas({ tutelas, robotPreguntasUrl, notify, casoActual }){
   return (
     <>
       <p className="save-hint" style={{margin:'0 0 14px'}}>
-        Pregúntale sobre las tutelas que ya están cargadas en el portal (ej. "¿cuántas de Colmédica por Tema?"). Esto no guarda nada, solo responde.
+        Pregúntale a LexIA sobre las tutelas que ya están cargadas en el portal (ej. "¿cuántas de Colmédica por Tema?"). Esto no guarda nada, solo responde.
       </p>
       {casoActual && (
         <p className="save-hint" style={{margin:'0 0 14px', color:'var(--verde-oscuro)', fontWeight:600}}>

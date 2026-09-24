@@ -33,7 +33,9 @@ function hoyISO(){
 export default function TutelasView({ tutelas, searchQuery, onOpenTutela, onCreateTutela, onDuplicateTutela, onDeleteTutela, onAgregarCorreccionIA, canWrite = true, liveMode, config, notify }){
   const { filters, setFilter, clearFilters, rowMatches, hasActiveFilters } = useColumnFilters();
   const { sort, setSortKey, sortRows } = useColumnSort();
-  // "Leer correo (IA)" — "API Claude" Tarea 1 (2026-09-23, pedido explícito
+  // "Leer correo (LexIA)" — nombre elegido por el usuario 2026-09-24 para
+  // el robot/asistente ("con Lexara mejor... me gusta LexIA"), en vez del
+  // genérico "(IA)" de antes. "API Claude" Tarea 1 (2026-09-23, pedido explícito
   // del usuario, con aprobación interna, ver [[project_api_claude_tutelas]]).
   // Solo tiene sentido conectado a SharePoint en vivo (necesita leer un
   // buzón real de Outlook) — en modo demo no se muestra.
@@ -80,7 +82,7 @@ export default function TutelasView({ tutelas, searchQuery, onOpenTutela, onCrea
             {vencenHoy} {vencenHoy === 1 ? "vence" : "vencen"} hoy
           </span>
           {canWrite && liveMode && (
-            <IconTextButton icon="add" variant="secondary" onClick={() => setMostrarLeerCorreo(true)}>Leer correo (IA)</IconTextButton>
+            <IconTextButton icon="add" variant="secondary" onClick={() => setMostrarLeerCorreo(true)}>Leer correo (LexIA)</IconTextButton>
           )}
           {canWrite && <IconTextButton icon="add" variant="primary" onClick={onCreateTutela}>Nueva tutela</IconTextButton>}
         </div>

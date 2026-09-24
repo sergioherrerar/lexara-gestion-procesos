@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-24 (7)
+- **El asistente de IA de Tutelas ya tiene nombre propio: "LexIA"** — pedido explícito del usuario ("con Lexara mejor... me gusta LexIA"). Reemplaza el genérico "(IA)" en el botón, el título de "Leer correo", "Extraer con...", "Entrenar..." y los mensajes de error.
+
 ## 2026-09-24 (6)
 - **Quita el botón "Entrenar IA" aparte de Tutelas** — pedido explícito del usuario ("quitemos este botón, al lado derecho coloquemos Entrenar IA"). Ahora "Entrenar IA" vive solo como la columna de al lado dentro de "Leer correo (IA)" (con su propio título), ya no hace falta una ventana aparte.
 

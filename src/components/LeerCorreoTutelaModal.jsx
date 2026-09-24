@@ -56,7 +56,7 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
 
   async function handleExtraer(mensaje){
     if(!robotUrl){
-      notify?.('Falta terminar de instalar el robot (ROBOT_CLAUDE_URL en config.js) antes de poder usar esto.', 'error');
+      notify?.('Falta terminar de instalar LexIA (ROBOT_CLAUDE_URL en config.js) antes de poder usar esto.', 'error');
       return;
     }
     setProcesando(true);
@@ -93,7 +93,7 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
       let data;
       try{ data = await res.json(); }catch{ data = null; }
       if(!res.ok || !data || data.error){
-        throw new Error((data && data.error) || `El robot respondió con error (código ${res.status}).`);
+        throw new Error((data && data.error) || `LexIA respondió con error (código ${res.status}).`);
       }
       const registros = Array.isArray(data.registros) ? data.registros : [data.campos || {}];
       setResultado({ mensajeId: mensaje.id, registros: registros.map(r => ({ ...r, _creado: false })) });
@@ -123,7 +123,7 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
     <div className="confirm-overlay leer-correo-overlay">
       <div className="confirm-box leer-correo-box leer-correo-box-ancha" style={{transform: `translate(${offset.x}px, ${offset.y}px)`}}>
         <div className="leer-correo-head" {...dragHandleProps}>
-          <h3>Leer correo de Tutelas (IA)</h3>
+          <h3>Leer correo de Tutelas (LexIA)</h3>
           <button className="drawer-close" onClick={onClose} aria-label="Cerrar">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
           </button>
@@ -137,7 +137,7 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
         <div className="leer-correo-2col">
         <div className="leer-correo-col-principal">
         <p className="save-hint" style={{margin:'0 0 14px'}}>
-          Elige un correo, dale "Extraer con IA" y revisa los datos en el formulario de "Nueva tutela" antes de guardar.
+          Elige un correo, dale "Extraer con LexIA" y revisa los datos en el formulario de "Nueva tutela" antes de guardar.
         </p>
         {/* Rango de fechas (2026-09-23, pedido explícito del usuario) — filtra
             los correos por "Desde"/"Hasta"; con los dos vacíos, trae los
@@ -178,7 +178,7 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
                 <div className="leer-correo-item-accion">
                   {!(resultado && resultado.mensajeId === m.id) && (
                     <IconTextButton icon="add" variant="primary" disabled={procesando} onClick={() => handleExtraer(m)}>
-                      {procesando ? 'Extrayendo…' : '+ Extraer con IA'}
+                      {procesando ? 'Extrayendo…' : '+ Extraer con LexIA'}
                     </IconTextButton>
                   )}
                   {/* Uno o varios registros detectados (2026-09-23, ver nota
@@ -224,7 +224,7 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
               coloquemos Entrenar IA") — ya no existe un botón/ventana aparte
               para esto, "Entrenar IA" vive solo acá, al lado de "Leer
               correo (IA)". */}
-          <h4 className="leer-correo-col-lateral-titulo">Entrenar IA</h4>
+          <h4 className="leer-correo-col-lateral-titulo">Entrenar LexIA</h4>
           <EntrenarIAPanel
             tutelas={tutelas || []}
             onAgregarCorreccion={onAgregarCorreccionIA}
