@@ -1198,6 +1198,18 @@
   .btn-secondary:hover{border-color:var(--verde-claro); color:var(--verde-oscuro);}
   .btn-secondary:active{transform:translateY(1px);}
   .btn-secondary:disabled{color:var(--gris); cursor:default; transform:none;}
+  /* Botón de LexIA (2026-09-24, pedido explícito del usuario: "colócalo en
+     el verde claro, coloca el avatar en miniatura y colócale solo LexIA")
+     — verde claro institucional + su avatar real en miniatura. */
+  .btn-lexia{
+    background:var(--verde-claro); color:#fff; border:none; padding:8px 18px 8px 8px; border-radius:8px;
+    font-size:13.5px; font-weight:600; cursor:pointer;
+    display:inline-flex; align-items:center; gap:8px;
+    transition:background .15s ease, transform .05s ease;
+  }
+  .btn-lexia:hover{background:var(--verde-oscuro);}
+  .btn-lexia:active{transform:translateY(1px);}
+  .btn-lexia-avatar{width:28px; height:28px; object-fit:contain; flex-shrink:0;}
   /* Botón "Todos" (Gastos) activo — mismo verde institucional que un tab
      seleccionado (.drawer-tab.active), para que se note que el filtro de
      Mes/Año está apagado. */

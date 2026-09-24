@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-24 (14)
+- **Rediseña el botón que abre "Leer correo" como el botón de LexIA** — pedido explícito del usuario ("colócalo en el verde claro, coloca el avatar en miniatura y colócale solo LexIA"). Ahora es verde claro institucional, con su avatar real en miniatura y el texto solo dice "LexIA".
+
 ## 2026-09-24 (13)
 - **Corrige que el saludo hablado de LexIA a veces no sonaba al abrir "Leer correo"** — reportado por el usuario. Se disparaba un instante después del clic (al montar la ventana), y varios navegadores solo dejan sonar la voz si queda pegada al gesto real del usuario. Ahora se dispara justo dentro del clic del botón.
 

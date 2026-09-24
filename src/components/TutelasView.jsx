@@ -8,6 +8,7 @@ import LeerCorreoTutelaModal from './LeerCorreoTutelaModal';
 import { useColumnFilters } from '../hooks/useColumnFilters';
 import { useColumnSort } from '../hooks/useColumnSort';
 import { useLexiaVoz } from '../hooks/useLexiaVoz';
+import lexiaAvatar from '../assets/LexIA avatar.png';
 
 // Orden pedido explícito del usuario 2026-09-01 — Juzgado se quitó de la
 // tabla (no estaba en la lista que pidió); sigue existiendo como dato, solo
@@ -90,11 +91,18 @@ export default function TutelasView({ tutelas, searchQuery, onOpenTutela, onCrea
           <span className={"badge " + (vencenHoy > 0 ? "badge-alerta" : "badge-gris")} style={{fontSize:14, padding:'8px 16px'}}>
             {vencenHoy} {vencenHoy === 1 ? "vence" : "vencen"} hoy
           </span>
+          {/* Botón de LexIA (2026-09-24, pedido explícito del usuario:
+              "colócalo en el verde claro, coloca el avatar en miniatura y
+              colócale solo LexIA") — botón propio, no el genérico
+              IconTextButton (necesita el avatar real, no un ícono SVG). */}
           {canWrite && liveMode && (
-            <IconTextButton icon="add" variant="secondary" onClick={() => {
+            <button type="button" className="btn-lexia" onClick={() => {
               setMostrarLeerCorreo(true);
               decir('Hola, soy LexIA. Elige un correo y dale extraer, o pregúntame lo que necesites.');
-            }}>Leer correo (LexIA)</IconTextButton>
+            }}>
+              <img src={lexiaAvatar} alt="" className="btn-lexia-avatar" />
+              LexIA
+            </button>
           )}
           {canWrite && <IconTextButton icon="add" variant="primary" onClick={onCreateTutela}>Nueva tutela</IconTextButton>}
         </div>
