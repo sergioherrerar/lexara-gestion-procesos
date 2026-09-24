@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { leerCorreosTutelas, leerCorreoCompleto, mensajeError, stripHtml } from '../lib/graph';
 import { IconTextButton } from './IconButton';
 import { EntrenarIAPanel } from './EntrenarIAModal';
+import { useDraggable } from '../hooks/useDraggable';
 
 // "API Claude" Tarea 1 (2026-09-23, pedido explícito del usuario, con
 // aprobación interna — ver [[project_api_claude_tutelas]]) — leer un correo
@@ -114,10 +115,14 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
     });
   }
 
+  // 2026-09-24, pedido explícito del usuario ("que se deje arrastrar la
+  // ventana con el clic pulsado") — se toma desde el encabezado.
+  const { offset, dragHandleProps } = useDraggable();
+
   return (
     <div className="confirm-overlay leer-correo-overlay">
-      <div className="confirm-box leer-correo-box leer-correo-box-ancha">
-        <div className="leer-correo-head">
+      <div className="confirm-box leer-correo-box leer-correo-box-ancha" style={{transform: `translate(${offset.x}px, ${offset.y}px)`}}>
+        <div className="leer-correo-head" {...dragHandleProps}>
           <h3>Leer correo de Tutelas (IA)</h3>
           <button className="drawer-close" onClick={onClose} aria-label="Cerrar">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>

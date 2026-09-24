@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { IconTextButton } from './IconButton';
+import { useDraggable } from '../hooks/useDraggable';
 
 // "Entrenar IA" (2026-09-23, pedido explícito del usuario) — panel con 2
 // pestañas para el abogado que maneja Tutelas día a día:
@@ -46,10 +47,13 @@ export function EntrenarIAPanel({ tutelas, onAgregarCorreccion, robotPreguntasUr
 }
 
 export default function EntrenarIAModal({ tutelas, onAgregarCorreccion, robotPreguntasUrl, onClose, notify }){
+  // 2026-09-24, pedido explícito del usuario ("que se deje arrastrar la
+  // ventana con el clic pulsado") — se toma desde el encabezado.
+  const { offset, dragHandleProps } = useDraggable();
   return (
     <div className="confirm-overlay leer-correo-overlay">
-      <div className="confirm-box leer-correo-box">
-        <div className="leer-correo-head">
+      <div className="confirm-box leer-correo-box" style={{transform: `translate(${offset.x}px, ${offset.y}px)`}}>
+        <div className="leer-correo-head" {...dragHandleProps}>
           <h3>Entrenar IA (Tutelas)</h3>
           <button className="drawer-close" onClick={onClose} aria-label="Cerrar">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>

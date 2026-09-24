@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-24 (5)
+- **"Leer correo (IA)" y "Entrenar IA" ahora se pueden arrastrar** — pedido explícito del usuario ("que se deje arrastrar la ventana con el clic pulsado"). Se toman desde el encabezado (título), igual con mouse que con el dedo en celular; el botón de cerrar (X) sigue funcionando normal, no arrastra.
+
 ## 2026-09-24 (4)
 - **Corrige que no aparecía el botón de cerrar (X) en "Leer correo (IA)"/"Entrenar IA"** — reportado por el usuario viéndolo en vivo. El botón usaba un posicionamiento pensado para los paneles grandes (Cliente, Factura, etc.) que, con el nuevo layout de 2 columnas, lo dejaba fuera de vista. Ahora queda fijo dentro del encabezado de la ventana.
 
