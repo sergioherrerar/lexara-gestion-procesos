@@ -120,6 +120,14 @@ function TabCorreccion({ tutelas, onAgregarCorreccion, notify }){
           <IconTextButton icon="add" variant="primary" disabled={enviando || !texto.trim()} onClick={handleEnviar}>
             {enviando ? 'Guardando…' : 'Agregar corrección'}
           </IconTextButton>
+          {/* "Mientras guardas la información, algo como 'tienes razón, lo
+              tendré en cuenta para no equivocarme de nuevo'" (2026-09-24,
+              pedido explícito del usuario). */}
+          {enviando && (
+            <p className="save-hint" style={{marginTop:8, fontStyle:'italic'}}>
+              Tienes razón, lo tendré en cuenta para no equivocarme de nuevo.
+            </p>
+          )}
         </>
       )}
     </>
@@ -186,7 +194,9 @@ function TabPreguntas({ tutelas, robotPreguntasUrl, notify, casoActual, decirLex
             {m.texto}
           </div>
         ))}
-        {enviando && <div className="entrenar-ia-burbuja entrenar-ia-burbuja-ia">Pensando…</div>}
+        {/* "Mientras responde la pregunta, algo como 'estoy buscando lo que
+            me pediste'" (2026-09-24, pedido explícito del usuario). */}
+        {enviando && <div className="entrenar-ia-burbuja entrenar-ia-burbuja-ia">Estoy buscando lo que me pediste…</div>}
       </div>
       <div className="field" style={{margin:'14px 0'}}>
         <label>Tu pregunta</label>

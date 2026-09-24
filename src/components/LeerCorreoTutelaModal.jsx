@@ -272,8 +272,12 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
               del usuario: "quitemos el botón [de arriba], al lado derecho
               coloquemos Entrenar IA") — ya no existe un botón/ventana aparte
               para esto, "Entrenar IA" vive solo acá, al lado de "Leer
-              correo (IA)". */}
-          <h4 className="leer-correo-col-lateral-titulo">Entrenar LexIA</h4>
+              correo (IA)". Avatar en miniatura junto al título (2026-09-24,
+              "por acá también coloca LexIA") — mismo criterio del botón. */}
+          <h4 className="leer-correo-col-lateral-titulo">
+            <img src={lexiaAvatar} alt="" className="btn-lexia-avatar" style={{marginRight:8, verticalAlign:'middle'}} />
+            Entrenar LexIA
+          </h4>
           <EntrenarIAPanel
             tutelas={tutelas || []}
             onAgregarCorreccion={onAgregarCorreccionIA}

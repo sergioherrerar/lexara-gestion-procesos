@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-24 (17)
+- **Ajustes de personalidad de LexIA** — pedidos explícitos del usuario: avatar en miniatura junto al título "Entrenar LexIA"; mientras responde una pregunta ahora dice "Estoy buscando lo que me pediste…"; mientras guarda una corrección dice "Tienes razón, lo tendré en cuenta para no equivocarme de nuevo."
+
 ## 2026-09-24 (16)
 - **LexIA ahora usa la guía real de criterios de clasificación del despacho para Prestación/Tema** — el usuario mandó "CRITERIOS DE CLASIFICACIÓN.docx", con reglas distintas según el Cliente (Colmédica y Aliansalud tienen criterios diferentes para el mismo Tema, no solo palabras clave). Reemplaza la lista genérica de categorías que tenía antes. Requiere volver a subir `robot-tutelas/extraer-tutela.php` a cPanel.
 
