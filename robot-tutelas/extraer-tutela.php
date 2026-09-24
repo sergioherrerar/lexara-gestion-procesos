@@ -97,20 +97,49 @@ $camposEsperados = <<<TXT
 - Tema (categoría de la tutela — ver instrucciones)
 TXT;
 
-// 2026-09-23, pedido explícito del usuario viendo un correo real: "en tema
-// debe categorizar lo mejor posible según lo investigado por la IA...
-// adecuar con pensamientos de abogado la mejor opción" — "Tema" en el
-// portal es un desplegable que depende de "Prestación" y se llena desde una
-// lista de SharePoint que puede crecer con el tiempo — el robot NO tiene
-// acceso a esa lista en vivo, así que se le da la lista de categorías más
-// comunes vistas hasta ahora como referencia (no necesariamente completa) y
-// se le pide razonar como abogado cuál encaja mejor con el contenido real
-// del correo/adjuntos, no solo por palabras clave sueltas. El usuario
-// siempre revisa este campo en el formulario antes de guardar, así que si
-// la categoría real no está en esta lista, elige la más parecida en
-// significado — no hace falta que sea una coincidencia exacta de texto.
-$temasReferencia = <<<TXT
-AGENDAMIENTO DE CONSULTA, AUTORIZACIÓN Y SUMINISTRO DE SERVICIOS DE SALUD, ENTREGA DE MEDICAMENTOS, EXCLUSIÓN DE SERVICIO, EXCLUSION INVIMA, EXCLUSIÓN POR TOPES DE COBERTURA, INDICACION INVIMA, PÉRDIDA DE ANTIGÜEDAD, PORTABILIDAD, PREEXISTENCIA, PUERTA DE ENTRADA / RED NO ADSCRITA, SERVICIO CON FALLAS EN ORDEN O PRESCRIPCIÓN, SERVICIO DE CUIDADOR O ENFERMERÍA, SERVICIO NO PBS, SERVICIO NO SOLICITADO, TRATAMIENTO INTEGRAL
+// 2026-09-24, pedido explícito del usuario: mandó la guía REAL de criterios
+// de clasificación del despacho ("CRITERIOS DE CLASIFICACIÓN.docx") — es
+// mucho más precisa que la lista genérica que había antes, porque el
+// criterio correcto depende de CUÁL Cliente (Colmédica/Aliansalud tienen
+// reglas distintas para el mismo Tema) Y de la Prestación, no solo de
+// palabras clave. Se transcribe tal cual el documento (no parafraseado) para
+// no perder matices reales del criterio del despacho. El documento no cubre
+// UNIDAD MÉDICA Y DE DIAGNÓSTICO S.A. (el 3er cliente real) — mientras no
+// haya una guía propia para ella, se le pide a Claude aplicar el mismo
+// criterio de Colmédica por defecto (ver $instrucciones más abajo).
+$criteriosClasificacion = <<<TXT
+1. PRESTACIÓN ASISTENCIAL — COLMÉDICA MEDICINA PREPAGADA
+Corresponde a todos los asuntos relacionados con servicios de salud. El tema se determina conforme a lo expuesto en el escrito de tutela:
+- Agendamiento de consulta: cuando el accionante alega falta de agenda.
+- Exclusión del servicio: cuando solicita autorización de medicamentos, no obstante los medicamentos no hacen parte de las coberturas del contrato motivo por el cual son exclusión; igualmente, cuando manifiesta que otro tipo de servicios le fueron negados por exclusión.
+- Exclusión INVIMA: únicamente cuando el escrito indica que el medicamento fue negado por no cumplir con las indicaciones INVIMA.
+- Exclusión por topes: cuando la entidad emitió autorización, pero limitada a un tope determinado, esto es, hasta cierto monto.
+- Preexistencia: cuando se manifiesta que los servicios fueron negados por tratarse de una patología preexistente.
+- Servicio de cuidador o enfermería: cuando esta sea la pretensión.
+- Tratamiento integral: cuando esta sea la pretensión principal.
+- Autorización y suministro de servicios de salud: tema residual, aplicable cuando se trate de servicios de salud que no encuadren en ninguno de los anteriores.
+
+2. PRESTACIÓN ASISTENCIAL — ALIANSALUD EPS
+Corresponde a todos los asuntos relacionados con servicios de salud. El tema se determina así:
+- Agendamiento de servicio: cuando el accionante manifiesta que no logra obtener agenda para un servicio y solicita su programación.
+- Entrega de medicamentos: cuando el escrito indica que la EPS ya autorizó los medicamentos, pero existen inconvenientes con su entrega.
+- Portabilidad: cuando el accionante se encuentra en un municipio distinto a Bogotá y solicita que el servicio se le brinde en dicho municipio, o que se le active o renueve la portabilidad.
+- Puerta de entrada / red no adscrita: cuando las órdenes médicas provienen del acceso a través de otra entidad y no de prestadores adscritos a Aliansalud EPS. Caso típico: se acciona contra Colmédica Medicina Prepagada y el juzgado vincula a la EPS, sin que el accionante mencione ni se evidencien órdenes de prestadores adscritos a esta, sino que provienen de CMP.
+- Servicio no PBS: cuando se solicitan silla de ruedas, medias, plantillas, equinoterapia, acompañamiento terapéutico en contexto escolar o musicoterapia, servicios excluidos del Plan de Beneficios en Salud.
+- Servicio de cuidador o enfermería: cuando esta sea la pretensión.
+- Tratamiento integral: cuando esta sea la pretensión.
+- Autorización y suministro de servicios de salud: tema residual, aplicable cuando se trate de servicios de salud que no encuadren en ninguno de los anteriores.
+
+3. PRESTACIÓN ECONÓMICA
+- Colmédica Medicina Prepagada: asuntos financieros, incapacidades, licencias o reembolsos.
+- Aliansalud EPS: asuntos financieros, incapacidades, licencias, reembolsos y exoneración de cuotas moderadoras y copagos.
+En ambos casos, el Tema describe la particularidad puntual del caso (ej. "Reembolso", "Incapacidad", "Licencia de maternidad", "Exoneración cuota moderadora") — no hay una lista cerrada para esta Prestación.
+
+4. PRESTACIÓN ADMINISTRATIVA (igual para cualquier cliente)
+- Derechos de petición: solicitudes de respuesta a derechos de petición.
+- Afiliación: inconvenientes relacionados con la afiliación.
+- Estabilidad laboral reforzada: solicitudes de estabilidad laboral reforzada.
+- Solicitudes a otra entidad: aplica cuando la EPS o CMP no son las entidades accionadas y lo pretendido no las involucra; por ejemplo, cuando se acciona contra una secretaría de salud solicitando certificado de discapacidad, o contra una administración por cuotas de administración.
 TXT;
 
 // 2026-09-23, pedido explícito del usuario viendo un correo real: "hay tres
@@ -133,14 +162,14 @@ if($correcciones){
         $lineas[] = "- Tutela {$noT} (Tema que había quedado: \"{$temaAnterior}\"): {$nota}";
     }
     if($lineas){
-        $correccionesTexto = "\n\nADEMÁS, estas son correcciones REALES que el abogado a cargo ya dejó sobre casos anteriores de este mismo despacho — tenlas en cuenta como criterio de referencia, con más peso que la lista genérica de categorías, sobre todo si el caso nuevo se parece a alguno de estos:\n" . implode("\n", $lineas);
+        $correccionesTexto = "\n\nADEMÁS, estas son correcciones REALES que el abogado a cargo ya dejó sobre casos anteriores de este mismo despacho — tenlas en cuenta como criterio de referencia, con más peso que la guía de criterios de arriba si entran en conflicto, sobre todo si el caso nuevo se parece a alguno de estos:\n" . implode("\n", $lineas);
     }
 }
 
 $instrucciones = "Eres un asistente que extrae datos de una tutela judicial colombiana recibida por correo electrónico, para un despacho de abogados. " .
     "Lee el asunto, el cuerpo del correo y los documentos adjuntos (pueden ser PDF o imágenes escaneadas de la tutela). " .
     "Esta tutela puede señalar/vincular a MÁS DE UNO de los 3 clientes reales del despacho (COLMEDICA MEDICINA PREPAGADA S.A., ALIANSALUD ENTIDAD PROMOTORA DE SALUD S.A., UNIDAD MÉDICA Y DE DIAGNÓSTICO S.A.) al mismo tiempo — en ese caso arma UN REGISTRO POR CADA CLIENTE señalado (mismos datos generales de la tutela, cambiando solo el campo Cliente en cada uno), en vez de un solo registro mezclado. Si solo aplica a un cliente, devuelve un solo registro igual. " .
-    "Para el campo Tema, razona como lo haría un abogado especialista en tutelas de salud: analiza de fondo qué es lo que realmente está pidiendo/reclamando el accionante (no solo busques palabras clave sueltas) y elige la categoría que mejor describa ese fondo del asunto, apoyándote en esta lista de categorías ya usadas por el despacho como referencia (puede que la real no esté exactamente aquí — en ese caso, usa la más parecida en significado, con tus propias palabras si hace falta):\n{$temasReferencia}" . $correccionesTexto . "\n\n" .
+    "Para los campos Prestación y Tema, aplica ESTRICTAMENTE esta guía real de criterios de clasificación del despacho — el criterio correcto depende de CUÁL Cliente Y de la Prestación, no son categorías genéricas ni palabras clave sueltas. Analiza de fondo qué es lo que realmente está pidiendo/reclamando el accionante y compáralo contra las condiciones exactas de cada Tema antes de elegir uno. Para UNIDAD MÉDICA Y DE DIAGNÓSTICO S.A. (no cubierta explícitamente en la guía) aplica el mismo criterio que para COLMEDICA MEDICINA PREPAGADA S.A. Si de verdad el caso no encaja en ninguna condición descrita, usa el Tema residual \"Autorización y suministro de servicios de salud\" (Asistencial) en vez de inventar uno nuevo:\n{$criteriosClasificacion}" . $correccionesTexto . "\n\n" .
     "Devuelve SOLO un objeto JSON (sin texto adicional antes o después, sin bloques de markdown) con esta forma exacta: {\"registros\": [ {...un registro...}, {...otro registro si aplica...} ]}. Cada registro debe tener EXACTAMENTE estas claves, dejando \"\" (cadena vacía) en lo que no puedas determinar con certeza — nunca inventes un dato que no esté en el correo:\n\n" . $camposEsperados;
 
 $contenido = [];

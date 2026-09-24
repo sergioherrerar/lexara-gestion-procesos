@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-24 (16)
+- **LexIA ahora usa la guía real de criterios de clasificación del despacho para Prestación/Tema** — el usuario mandó "CRITERIOS DE CLASIFICACIÓN.docx", con reglas distintas según el Cliente (Colmédica y Aliansalud tienen criterios diferentes para el mismo Tema, no solo palabras clave). Reemplaza la lista genérica de categorías que tenía antes. Requiere volver a subir `robot-tutelas/extraer-tutela.php` a cPanel.
+
 ## 2026-09-24 (15)
 - **El avatar de LexIA ahora tiene relieve 3D** — pedido explícito del usuario ("que se vea como el 3D"). Mismo estilo ya usado en las pestañas principales del portal (degradado + sombra + brillo, como una insignia física) detrás de la perrita, en el botón, el saludo y mientras "corre".
 
