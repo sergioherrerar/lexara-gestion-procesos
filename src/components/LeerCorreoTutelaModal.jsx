@@ -219,6 +219,12 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
         </ul>
         </div>
         <div className="leer-correo-col-lateral">
+          {/* Título propio de esta columna (2026-09-24, pedido explícito
+              del usuario: "quitemos el botón [de arriba], al lado derecho
+              coloquemos Entrenar IA") — ya no existe un botón/ventana aparte
+              para esto, "Entrenar IA" vive solo acá, al lado de "Leer
+              correo (IA)". */}
+          <h4 className="leer-correo-col-lateral-titulo">Entrenar IA</h4>
           <EntrenarIAPanel
             tutelas={tutelas || []}
             onAgregarCorreccion={onAgregarCorreccionIA}

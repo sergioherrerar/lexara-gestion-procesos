@@ -5,7 +5,6 @@ import IconButton, { IconTextButton } from './IconButton';
 import ColumnHeaderMenu from './ColumnHeaderMenu';
 import TableScrollWrap from './TableScrollWrap';
 import LeerCorreoTutelaModal from './LeerCorreoTutelaModal';
-import EntrenarIAModal from './EntrenarIAModal';
 import { useColumnFilters } from '../hooks/useColumnFilters';
 import { useColumnSort } from '../hooks/useColumnSort';
 
@@ -39,11 +38,6 @@ export default function TutelasView({ tutelas, searchQuery, onOpenTutela, onCrea
   // Solo tiene sentido conectado a SharePoint en vivo (necesita leer un
   // buzón real de Outlook) — en modo demo no se muestra.
   const [mostrarLeerCorreo, setMostrarLeerCorreo] = useState(false);
-  // "Entrenar IA" (2026-09-23, pedido explícito del usuario) — mismo
-  // criterio: el abogado deja correcciones reales sobre el Tema de tutelas
-  // ya guardadas, para que el robot de "Leer correo (IA)" las use como
-  // ejemplo. Solo tiene sentido en vivo (escribe en SharePoint).
-  const [mostrarEntrenarIA, setMostrarEntrenarIA] = useState(false);
   // Contador de tutelas que vencen hoy — se recalcula en cada render, así
   // que siempre queda al día con lo último que haya en `tutelas` (recién
   // cargado o después de un refresh).
@@ -86,9 +80,6 @@ export default function TutelasView({ tutelas, searchQuery, onOpenTutela, onCrea
             {vencenHoy} {vencenHoy === 1 ? "vence" : "vencen"} hoy
           </span>
           {canWrite && liveMode && (
-            <IconTextButton icon="edit" variant="secondary" onClick={() => setMostrarEntrenarIA(true)}>Entrenar IA</IconTextButton>
-          )}
-          {canWrite && liveMode && (
             <IconTextButton icon="add" variant="secondary" onClick={() => setMostrarLeerCorreo(true)}>Leer correo (IA)</IconTextButton>
           )}
           {canWrite && <IconTextButton icon="add" variant="primary" onClick={onCreateTutela}>Nueva tutela</IconTextButton>}
@@ -105,15 +96,6 @@ export default function TutelasView({ tutelas, searchQuery, onOpenTutela, onCrea
           notify={notify}
           onClose={() => setMostrarLeerCorreo(false)}
           onExtraido={campos => onCreateTutela(campos)}
-        />
-      )}
-      {mostrarEntrenarIA && (
-        <EntrenarIAModal
-          tutelas={tutelas}
-          onAgregarCorreccion={onAgregarCorreccionIA}
-          robotPreguntasUrl={config?.ROBOT_PREGUNTAS_URL}
-          onClose={() => setMostrarEntrenarIA(false)}
-          notify={notify}
         />
       )}
       {/* Diferencia por tipo, solo de lo que vence HOY (pedido explícito del

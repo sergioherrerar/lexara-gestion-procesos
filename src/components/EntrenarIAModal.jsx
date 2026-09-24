@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react';
 import { IconTextButton } from './IconButton';
-import { useDraggable } from '../hooks/useDraggable';
 
 // "Entrenar IA" (2026-09-23, pedido explícito del usuario) — panel con 2
 // pestañas para el abogado que maneja Tutelas día a día:
@@ -16,21 +15,15 @@ import { useDraggable } from '../hooks/useDraggable';
 //
 // 2026-09-24, pedido explícito del usuario viendo "Leer correo (IA)" en
 // vivo ("mejor colocarlo al lado... mira qué datos trajo y corrige y
-// pregunta") — el contenido (pestañas + lo de abajo) vive en EntrenarIAPanel
-// para poder mostrarlo EMBEBIDO al lado de "Leer correo (IA)" (ver
-// LeerCorreoTutelaModal.jsx), además de seguir existiendo como ventana
-// propia (el botón "Entrenar IA" de TutelasView, para cuando no se está
-// leyendo ningún correo).
-// `casoActual` (2026-09-24, pedido explícito del usuario: "de la tutela
-// [recién extraída] dime quién es el usuario, qué están solicitando,
-// quiénes están vinculados, las pretensiones... todo lo que se pueda
-// preguntar de la tutela que acaba de analizar la IA") — cuando este panel
-// se muestra al lado de "Leer correo (IA)" (ver LeerCorreoTutelaModal.jsx),
-// trae el asunto/cuerpo del correo recién leído + los registros que Claude
-// ya extrajo de él, AUNQUE esa tutela todavía no se haya guardado en
-// SharePoint. Se manda como contexto con prioridad en la pestaña
-// "Preguntas", para poder responder sobre ese caso puntual con más detalle
-// del que cabe en los campos fijos (Solicita/Usuario/Cliente/etc.).
+// pregunta", y luego "quitemos el botón [standalone], al lado derecho
+// coloquemos Entrenar IA") — este panel ya NO tiene ventana propia, vive
+// SOLO embebido al lado de "Leer correo (IA)" (ver LeerCorreoTutelaModal.jsx).
+// `casoActual` (pedido explícito del usuario: "de la tutela [recién
+// extraída] dime quién es el usuario, qué están solicitando, quiénes están
+// vinculados, las pretensiones...") — trae el asunto/cuerpo del correo
+// recién leído + los registros que Claude ya extrajo de él, AUNQUE esa
+// tutela todavía no se haya guardado en SharePoint. Se manda como contexto
+// con prioridad en la pestaña "Preguntas".
 export function EntrenarIAPanel({ tutelas, onAgregarCorreccion, robotPreguntasUrl, notify, casoActual }){
   const [tab, setTab] = useState('correccion'); // 'correccion' | 'preguntas'
   return (
@@ -42,25 +35,6 @@ export function EntrenarIAPanel({ tutelas, onAgregarCorreccion, robotPreguntasUr
       {tab === 'correccion'
         ? <TabCorreccion tutelas={tutelas} onAgregarCorreccion={onAgregarCorreccion} notify={notify} />
         : <TabPreguntas tutelas={tutelas} robotPreguntasUrl={robotPreguntasUrl} notify={notify} casoActual={casoActual} />}
-    </div>
-  );
-}
-
-export default function EntrenarIAModal({ tutelas, onAgregarCorreccion, robotPreguntasUrl, onClose, notify }){
-  // 2026-09-24, pedido explícito del usuario ("que se deje arrastrar la
-  // ventana con el clic pulsado") — se toma desde el encabezado.
-  const { offset, dragHandleProps } = useDraggable();
-  return (
-    <div className="confirm-overlay leer-correo-overlay">
-      <div className="confirm-box leer-correo-box" style={{transform: `translate(${offset.x}px, ${offset.y}px)`}}>
-        <div className="leer-correo-head" {...dragHandleProps}>
-          <h3>Entrenar IA (Tutelas)</h3>
-          <button className="drawer-close" onClick={onClose} aria-label="Cerrar">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
-          </button>
-        </div>
-        <EntrenarIAPanel tutelas={tutelas} onAgregarCorreccion={onAgregarCorreccion} robotPreguntasUrl={robotPreguntasUrl} notify={notify} />
-      </div>
     </div>
   );
 }

@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-24 (6)
+- **Quita el botón "Entrenar IA" aparte de Tutelas** — pedido explícito del usuario ("quitemos este botón, al lado derecho coloquemos Entrenar IA"). Ahora "Entrenar IA" vive solo como la columna de al lado dentro de "Leer correo (IA)" (con su propio título), ya no hace falta una ventana aparte.
+
 ## 2026-09-24 (5)
 - **"Leer correo (IA)" y "Entrenar IA" ahora se pueden arrastrar** — pedido explícito del usuario ("que se deje arrastrar la ventana con el clic pulsado"). Se toman desde el encabezado (título), igual con mouse que con el dedo en celular; el botón de cerrar (X) sigue funcionando normal, no arrastra.
 

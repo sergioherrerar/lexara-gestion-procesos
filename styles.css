@@ -1270,6 +1270,7 @@
     flex:1 1 40%; min-width:280px; max-width:360px; max-height:70vh; overflow-y:auto;
     border-left:1px solid var(--gris-linea); padding-left:20px;
   }
+  .leer-correo-col-lateral-titulo{margin:0 0 6px; font-size:17px; color:var(--verde-oscuro);}
   @media (max-width:760px){
     .leer-correo-2col{flex-direction:column;}
     .leer-correo-col-principal, .leer-correo-col-lateral{max-width:none; max-height:none; overflow-y:visible;}
