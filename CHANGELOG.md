@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-24 (9)
+- **LexIA "corre" mientras extrae los datos de un correo** — pedido explícito del usuario ("que esté como corriendo mientras lee la información"). Junto al botón "Extraer con LexIA", mientras dura el proceso, su avatar rebota/se balancea en bucle (es una foto fija, se simula el movimiento ya que no hay cuadros de una animación real).
+
 ## 2026-09-24 (8) — LexIA cobra vida
 - **LexIA ahora tiene avatar, saludo animado y voz** — pedido explícito del usuario ("darle una imagen virtual... animación saliendo y saludando... podemos darle voz y que lea lo que envía"). Al abrir "Leer correo (LexIA)" aparece su avatar real (foto que mandó el usuario) con una animación de entrada y un saludo hablado (síntesis de voz nativa del navegador, sin costo ni servicio nuevo); el saludo se retira solo a los pocos segundos. Nuevo botón de bocina en el encabezado para silenciarla — las respuestas de la pestaña "Preguntas" también se leen en voz alta mientras esté activada.
 

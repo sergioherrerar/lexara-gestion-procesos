@@ -1294,6 +1294,21 @@
   @media (prefers-reduced-motion: reduce){
     .lexia-avatar, .lexia-burbuja{animation:none;}
   }
+  /* "Que la perrita esté como corriendo mientras lee la información"
+     (2026-09-24, pedido explícito del usuario) — mientras "Extraer con
+     LexIA" está en proceso, junto al botón. Rebote + balanceo en bucle,
+     simulando carrera sobre una foto fija (no hay cuadros de animación
+     real disponibles). */
+  @keyframes lexia-corriendo{
+    0%, 100%{ transform: translateY(0) rotate(-6deg); }
+    50%{ transform: translateY(-7px) rotate(6deg); }
+  }
+  .lexia-avatar-corriendo{
+    width:34px; height:34px; animation: lexia-corriendo .45s ease-in-out infinite;
+  }
+  @media (prefers-reduced-motion: reduce){
+    .lexia-avatar-corriendo{animation:none;}
+  }
   @media (max-width:760px){
     .leer-correo-2col{flex-direction:column;}
     .leer-correo-col-principal, .leer-correo-col-lateral{max-width:none; max-height:none; overflow-y:visible;}
