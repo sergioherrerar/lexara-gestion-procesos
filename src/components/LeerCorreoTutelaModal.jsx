@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { leerCorreosTutelas, leerCorreoCompleto, mensajeError, stripHtml } from '../lib/graph';
+import { leerCorreosTutelas, extraerTutelaConLexIA, mensajeError } from '../lib/graph';
 import IconButton, { IconTextButton } from './IconButton';
 import { EntrenarIAPanel } from './EntrenarIAModal';
 import { useDraggable } from '../hooks/useDraggable';
@@ -12,7 +12,7 @@ import lexiaAvatar from '../assets/LexIA avatar.png';
 // devolver los campos que Claude extrajo para prellenar "Nueva tutela". El
 // usuario SIEMPRE revisa y confirma en el formulario antes de guardar — acá
 // nunca se toca SharePoint, solo se arma el objeto de campos iniciales.
-export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitidos, robotUrl, tutelas, onAgregarCorreccionIA, robotPreguntasUrl, onExtraido, onClose, notify, vozActivada, setVozActivada, decir, lexiaHablando, lexiaPausada, pausarLexia, continuarLexia }){
+export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitidos, robotUrl, tutelas, onAgregarCorreccionIA, robotPreguntasUrl, onExtraido, onClose, notify, vozActivada, setVozActivada, decir, lexiaHablando, lexiaPausada, pausarLexia, continuarLexia, precargaLexIA }){
   const [cargando, setCargando] = useState(true);
   const [errorCarga, setErrorCarga] = useState('');
   const [mensajes, setMensajes] = useState([]);
@@ -73,46 +73,22 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
       notify?.('Falta terminar de instalar LexIA (ROBOT_CLAUDE_URL en config.js) antes de poder usar esto.', 'error');
       return;
     }
+    // Precarga de LexIA (2026-09-25, pedido explícito del usuario: "que
+    // apenas ingresen al portal cargue la lectura" de la SIGUIENTE tutela
+    // que todavía no esté guardada) — si este correo YA se extrajo de
+    // fondo al iniciar sesión, se usa ese resultado directo, sin llamar de
+    // nuevo al robot (instantáneo, y no se gasta Claude dos veces).
+    if(precargaLexIA && precargaLexIA.mensajeId === mensaje.id){
+      setResultado({ mensajeId: mensaje.id, registros: precargaLexIA.registros });
+      setCorreoActual({ asunto: precargaLexIA.asunto, cuerpo: precargaLexIA.cuerpo });
+      return;
+    }
     setProcesando(true);
     decir('Estoy trabajando para ti.');
     try{
-      const completo = await leerCorreoCompleto(correoBuzon, mensaje.id);
-      // "Entrenar IA" (2026-09-23) — correcciones reales que el abogado ya
-      // dejó sobre el campo Tema de tutelas guardadas (columna "Corrección
-      // IA" en SharePoint) — se mandan SIEMPRE como ejemplo de referencia
-      // para TODOS los correos futuros, no solo una vez para esa tutela
-      // puntual (pedido explícito del usuario 2026-09-24: "que las
-      // correcciones también las tome para casos en general"). Antes se
-      // cortaba a las primeras 30 SIN ordenar (orden arbitrario de
-      // SharePoint) — si había más de 30 tutelas con corrección, algunas
-      // quedaban descartadas al azar y dejaban de usarse sin avisar. Ahora
-      // se ordenan por No. Tutela descendente (las más recientes primero,
-      // más relevantes para el criterio actual del despacho) antes de
-      // cortar, y se sube el límite a 150 (es solo texto corto, no
-      // adjuntos — no pesa nada comparado con los documentos).
-      const correcciones = (tutelas || [])
-        .filter(t => t.CorreccionIA)
-        .sort((a,b) => (Number(b.NoTutela)||0) - (Number(a.NoTutela)||0))
-        .slice(0, 150)
-        .map(t => ({ noTutela: t.NoTutela, temaActual: t.Tema, correccion: stripHtml(t.CorreccionIA) }));
-      const res = await fetch(robotUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          asunto: completo.asunto,
-          cuerpo: completo.cuerpo,
-          adjuntos: completo.adjuntos.map(a => ({ nombre: a.nombre, tipo: a.tipo, base64: a.base64 })),
-          correcciones,
-        }),
-      });
-      let data;
-      try{ data = await res.json(); }catch{ data = null; }
-      if(!res.ok || !data || data.error){
-        throw new Error((data && data.error) || `LexIA respondió con error (código ${res.status}).`);
-      }
-      const registros = Array.isArray(data.registros) ? data.registros : [data.campos || {}];
-      setResultado({ mensajeId: mensaje.id, registros: registros.map(r => ({ ...r, _creado: false })) });
-      setCorreoActual({ asunto: completo.asunto, cuerpo: completo.cuerpo });
+      const extraido = await extraerTutelaConLexIA(correoBuzon, mensaje.id, tutelas, robotUrl);
+      setResultado({ mensajeId: mensaje.id, registros: extraido.registros });
+      setCorreoActual({ asunto: extraido.asunto, cuerpo: extraido.cuerpo });
     }catch(err){
       console.error(err);
       notify?.('No se pudo extraer los datos con IA: ' + (err.message || mensajeError(err)), 'error');
@@ -226,6 +202,14 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
                 <span>{m.asunto}</span>
                 <span className="save-hint">
                   {m.fecha ? new Date(m.fecha).toLocaleString('es-CO') : '—'}{m.tieneAdjuntos ? ' · con adjuntos' : ''}
+                  {/* Precarga de LexIA (2026-09-25, pedido explícito del
+                      usuario) — avisa cuál correo ya se leyó de fondo al
+                      entrar, para que se entienda por qué ese sale al
+                      instante y los demás no. */}
+                  {precargaLexIA && precargaLexIA.mensajeId === m.id && ' · '}
+                  {precargaLexIA && precargaLexIA.mensajeId === m.id && (
+                    <span className="badge badge-verde" style={{marginLeft:2}}>Ya leído por LexIA</span>
+                  )}
                 </span>
               </button>
               {seleccionadoId === m.id && (

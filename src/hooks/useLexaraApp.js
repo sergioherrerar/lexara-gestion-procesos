@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { INITIAL_CONFIG, SHAREPOINT_LISTS_CONFIG, DEMO_PROCESOS, DEMO_CLIENTES, DEMO_FACTURAS, DEMO_ORDENES_COMPRA, DEMO_COLABORADORES, DEMO_FORMAS_PAGO, DEMO_DESISTIMIENTOS, DEMO_TIPOS_ACCION, DEMO_TUTELAS, DEMO_TEMAS, DEMO_VALORES_ENTIDAD, DEMO_HORAS_EXTRAS, DEMO_VACACIONES_PERIODOS, DEMO_PROVEEDORES_GASTOS, DEMO_CUENTAS_COBRO_GASTOS, DEMO_PAGOS_POR_REALIZAR, DEMO_GASTOS, DEMO_TASAS_INTERES, DEMO_IPC, DEMO_AUDIENCIAS, DEMO_TERMINOS, DEMO_PENDIENTES, CALENDARIO_AUDIENCIAS_TERMINOS, RUTAS_CARPETAS_ENTIDAD } from '../config';
+import { INITIAL_CONFIG, SHAREPOINT_LISTS_CONFIG, DEMO_PROCESOS, DEMO_CLIENTES, DEMO_FACTURAS, DEMO_ORDENES_COMPRA, DEMO_COLABORADORES, DEMO_FORMAS_PAGO, DEMO_DESISTIMIENTOS, DEMO_TIPOS_ACCION, DEMO_TUTELAS, DEMO_TEMAS, DEMO_VALORES_ENTIDAD, DEMO_HORAS_EXTRAS, DEMO_VACACIONES_PERIODOS, DEMO_PROVEEDORES_GASTOS, DEMO_CUENTAS_COBRO_GASTOS, DEMO_PAGOS_POR_REALIZAR, DEMO_GASTOS, DEMO_TASAS_INTERES, DEMO_IPC, DEMO_AUDIENCIAS, DEMO_TERMINOS, DEMO_PENDIENTES, CALENDARIO_AUDIENCIAS_TERMINOS, RUTAS_CARPETAS_ENTIDAD, TUTELAS_REMITENTES_PERMITIDOS } from '../config';
 import * as Graph from '../lib/graph';
 import { canWrite as canWriteForColaborador, modulosPermitidosDe, MODULOS_DISPONIBLES } from '../lib/permissions';
 
@@ -168,6 +168,13 @@ export function useLexaraApp(){
   const [tutelas, setTutelas] = useState([]);
   const [activeTutelaId, setActiveTutelaId] = useState(null);
   const [draftTutela, setDraftTutela] = useState(null);
+  // Precarga de LexIA (2026-09-25, pedido explícito del usuario: "que
+  // apenas ingresen al portal cargue la lectura" de UN correo, para que ya
+  // esté lista al llegar al botón de LexIA) — { mensajeId, asunto, cuerpo,
+  // registros } | null. Se llena sola, una vez, al iniciar sesión (ver
+  // precargarSiguienteTutelaLexIA más abajo); LeerCorreoTutelaModal la usa
+  // en vez de volver a llamar al robot si el correo elegido coincide.
+  const [precargaLexIA, setPrecargaLexIA] = useState(null);
   const [temas, setTemas] = useState([]);
   const [valoresEntidad, setValoresEntidad] = useState([]);
   // Horas Extras (Administración, agregado 2026-08-31) — mismo criterio
@@ -397,7 +404,8 @@ export function useLexaraApp(){
       setFormasPago(updated.find(l => l.key==='formasPago')?.items || []);
       setDesistimientos(updated.find(l => l.key==='desistimientos')?.items || []);
       setTiposAccion(updated.find(l => l.key==='tiposAccion')?.items || []);
-      setTutelas(updated.find(l => l.key==='tutelas')?.items || []);
+      const tutelasCargadas = updated.find(l => l.key==='tutelas')?.items || [];
+      setTutelas(tutelasCargadas);
       setTemas(updated.find(l => l.key==='temas')?.items || []);
       setValoresEntidad(updated.find(l => l.key==='valoresEntidad')?.items || []);
       setHorasExtras(updated.find(l => l.key==='horasExtras')?.items || []);
@@ -411,9 +419,36 @@ export function useLexaraApp(){
       setAudiencias(updated.find(l => l.key==='audiencias')?.items || []);
       setTerminos(updated.find(l => l.key==='terminos')?.items || []);
       setPendientes(updated.find(l => l.key==='pendientes')?.items || []);
+      // Precarga de LexIA (2026-09-25, pedido explícito del usuario) — de
+      // fondo, SIN esperar (no debe demorar el resto del inicio de sesión).
+      // Tiene su propio try/catch adentro, así que un error acá nunca
+      // afecta el resto del login.
+      precargarSiguienteTutelaLexIA(tutelasCargadas);
     }catch(err){
       console.error(err);
       notify("Se inició sesión, pero no se pudieron cargar los datos de SharePoint: " + Graph.mensajeError(err) + " — probá el botón de Actualizar.", 'error');
+    }
+  }
+
+  // 2026-09-25, pedido explícito del usuario: "que apenas ingresen al
+  // portal cargue la lectura" — pero NO de los 5 correos más recientes (eso
+  // gastaría Claude 5 veces sin garantía de usarse), sino de UN SOLO correo
+  // puntual: el de la SIGUIENTE tutela que todavía no esté guardada (el
+  // número consecutivo de más, +1) — el candidato con más probabilidad real
+  // de ser el que el usuario va a procesar. Si no hay un correo así
+  // todavía, no se precarga nada (no hay "más reciente" de respaldo).
+  async function precargarSiguienteTutelaLexIA(tutelasActuales){
+    try{
+      if(!config?.TUTELAS_BUZON_CORREO || !config?.ROBOT_CLAUDE_URL) return;
+      const mensajes = await Graph.leerCorreosTutelas(config.TUTELAS_BUZON_CORREO, TUTELAS_REMITENTES_PERMITIDOS, 200);
+      const correo = Graph.encontrarCorreoSiguienteTutela(mensajes, tutelasActuales);
+      if(!correo) return;
+      const extraido = await Graph.extraerTutelaConLexIA(config.TUTELAS_BUZON_CORREO, correo.id, tutelasActuales, config.ROBOT_CLAUDE_URL);
+      setPrecargaLexIA({ mensajeId: correo.id, ...extraido });
+    }catch(err){
+      // No es crítico — si falla, "Leer correo (LexIA)" simplemente extrae
+      // ese correo normal (con IA) cuando el usuario lo pida, como siempre.
+      console.error('Precarga de LexIA falló (no crítico):', err);
     }
   }
 
@@ -1866,7 +1901,7 @@ export function useLexaraApp(){
     activeColaborador, openColaborador, newColaborador, closeColaboradorDrawer, saveColaborador, deleteColaborador,
     activeFormaPago, openFormaPago, newFormaPagoFromProceso, closeFormaPagoDrawer, saveFormaPago, deleteFormaPago,
     activeDesistimiento, openDesistimiento, newDesistimientoFromProceso, closeDesistimientoDrawer, saveDesistimiento, deleteDesistimiento,
-    activeTutela, openTutela, newTutela, duplicateTutela, closeTutelaDrawer, saveTutela, deleteTutela, corregirEntidadFaltanteTutelas, agregarCorreccionIA,
+    activeTutela, openTutela, newTutela, duplicateTutela, closeTutelaDrawer, saveTutela, deleteTutela, corregirEntidadFaltanteTutelas, agregarCorreccionIA, precargaLexIA,
     createTema, saveTema, createTipoTermino, createValorEntidad, saveValorEntidad,
     createHoraExtra, aprobarHoraExtra, editarHoraExtra, eliminarHoraExtra,
     crearPeriodoVacaciones, editarPeriodoVacaciones, eliminarPeriodoVacaciones,

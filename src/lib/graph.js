@@ -450,6 +450,32 @@ export async function leerCorreosTutelas(correoBuzon, remitentesPermitidos, top 
     }));
 }
 
+// Precarga de LexIA (2026-09-25, pedido explícito del usuario) — casi todos
+// los asuntos dicen "TUTELA [No.] NNNNN" en algún punto (a veces con
+// prefijos como "RV:"/"VINCULA ALIANSALUD EPS"/"FALLO" antes). No hace
+// falta IA para esto, es puro texto: se busca la PRIMERA vez que aparece la
+// palabra "TUTELA" seguida (con o sin "No.") de un número de 4 a 6 dígitos.
+export function numeroTutelaDeAsunto(asunto){
+  const m = String(asunto || '').match(/TUTELA\s*(?:No\.?\s*)?(\d{4,6})/i);
+  return m ? Number(m[1]) : null;
+}
+
+// De una lista de correos ya leídos (leerCorreosTutelas) y las tutelas ya
+// guardadas en el portal, encuentra el correo de la SIGUIENTE tutela (el
+// número consecutivo de más de la lista, +1) que todavía no esté guardada
+// — pedido explícito del usuario: "que identifique que ese correo no está
+// en la lista de tutelas y es el número siguiente de los que están [ya]".
+// Entre varios correos con ese mismo número (reenvíos/aclaraciones), se
+// prefiere uno CON adjuntos (hace falta el documento real para extraer
+// algo), y entre esos, el más reciente (la lista ya viene ordenada así).
+export function encontrarCorreoSiguienteTutela(mensajes, tutelas){
+  const maxExistente = (tutelas || []).reduce((max, t) => Math.max(max, Number(t.NoTutela) || 0), 0);
+  const siguiente = maxExistente + 1;
+  const candidatos = (mensajes || []).filter(m => numeroTutelaDeAsunto(m.asunto) === siguiente);
+  if(!candidatos.length) return null;
+  return candidatos.find(m => m.tieneAdjuntos) || candidatos[0];
+}
+
 // Cuerpo completo (texto plano, sin HTML) + adjuntos en base64 de UN correo
 // puntual ya elegido por el usuario — se piden juntos porque ambos hacen
 // falta para mandárselos al robot de una vez.
@@ -515,6 +541,40 @@ export async function leerCorreoCompleto(correoBuzon, mensajeId){
     cuerpo: cuerpoTexto,
     adjuntos,
   };
+}
+
+// Precarga de LexIA (2026-09-25, pedido explícito del usuario: "que apenas
+// ingresen al portal cargue la lectura" del correo de la SIGUIENTE tutela
+// que todavía no esté en la lista) — misma llamada al robot que hacía
+// LeerCorreoTutelaModal.handleExtraer, sacada a una función propia para que
+// tanto el botón "Extraer con LexIA" como la precarga automática usen
+// EXACTAMENTE la misma lógica (correcciones incluidas), sin duplicar código.
+// Lanza si el robot no está configurado o responde con error.
+export async function extraerTutelaConLexIA(correoBuzon, mensajeId, tutelas, robotUrl){
+  if(!robotUrl) throw new Error('Falta terminar de instalar LexIA (ROBOT_CLAUDE_URL en config.js).');
+  const completo = await leerCorreoCompleto(correoBuzon, mensajeId);
+  const correcciones = (tutelas || [])
+    .filter(t => t.CorreccionIA)
+    .sort((a,b) => (Number(b.NoTutela)||0) - (Number(a.NoTutela)||0))
+    .slice(0, 150)
+    .map(t => ({ noTutela: t.NoTutela, temaActual: t.Tema, correccion: stripHtml(t.CorreccionIA) }));
+  const res = await fetch(robotUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      asunto: completo.asunto,
+      cuerpo: completo.cuerpo,
+      adjuntos: completo.adjuntos.map(a => ({ nombre: a.nombre, tipo: a.tipo, base64: a.base64 })),
+      correcciones,
+    }),
+  });
+  let data;
+  try{ data = await res.json(); }catch{ data = null; }
+  if(!res.ok || !data || data.error){
+    throw new Error((data && data.error) || `LexIA respondió con error (código ${res.status}).`);
+  }
+  const registros = Array.isArray(data.registros) ? data.registros : [data.campos || {}];
+  return { asunto: completo.asunto, cuerpo: completo.cuerpo, registros: registros.map(r => ({ ...r, _creado: false })) };
 }
 
 // Traduce errores técnicos (de MSAL o de la respuesta cruda de Graph, casi

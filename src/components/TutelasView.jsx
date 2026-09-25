@@ -32,7 +32,7 @@ function hoyISO(){
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 
-export default function TutelasView({ tutelas, searchQuery, onOpenTutela, onCreateTutela, onDuplicateTutela, onDeleteTutela, onAgregarCorreccionIA, canWrite = true, liveMode, config, notify }){
+export default function TutelasView({ tutelas, searchQuery, onOpenTutela, onCreateTutela, onDuplicateTutela, onDeleteTutela, onAgregarCorreccionIA, precargaLexIA, canWrite = true, liveMode, config, notify }){
   const { filters, setFilter, clearFilters, rowMatches, hasActiveFilters } = useColumnFilters();
   const { sort, setSortKey, sortRows } = useColumnSort();
   // "Leer correo (LexIA)" — nombre elegido por el usuario 2026-09-24 para
@@ -116,6 +116,7 @@ export default function TutelasView({ tutelas, searchQuery, onOpenTutela, onCrea
           robotUrl={config?.ROBOT_CLAUDE_URL}
           tutelas={tutelas}
           onAgregarCorreccionIA={onAgregarCorreccionIA}
+          precargaLexIA={precargaLexIA}
           robotPreguntasUrl={config?.ROBOT_PREGUNTAS_URL}
           notify={notify}
           vozActivada={vozActivada}
