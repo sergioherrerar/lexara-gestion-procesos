@@ -147,7 +147,7 @@ export default function ColumnHeaderMenu({ column, sort, onSort, filterValue, on
   }
 
   if(column.filterable === false){
-    return <th>{column.label}</th>;
+    return <th><span style={column.labelColor ? { color: column.labelColor } : undefined}>{column.label}</span></th>;
   }
 
   const isSorted = !!sort && sort.key === column.key;
@@ -179,7 +179,7 @@ export default function ColumnHeaderMenu({ column, sort, onSort, filterValue, on
           className={"col-header-btn" + (isSorted || isFiltered ? " active" : "")}
           onClick={() => setOpen(v => !v)}
         >
-          <span>{column.label}</span>
+          <span style={column.labelColor ? { color: column.labelColor } : undefined}>{column.label}</span>
           {isSorted && <span className="col-header-sort-arrow">{sort.dir === 'asc' ? '▲' : '▼'}</span>}
           {isFiltered && <span className="col-header-filter-dot" title="Columna filtrada" />}
           <svg className="col-header-chevron" viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="3">

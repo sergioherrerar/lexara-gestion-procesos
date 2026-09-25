@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-25 (9)
+- **El encabezado "Vencimiento" de la tabla de Tutelas ahora se ve en rojo** — pedido explícito del usuario, para que resalte igual que el badge de alerta de "vencen hoy".
+
 ## 2026-09-25 (8)
 - **Omite de la lista de "Leer correo (LexIA)" el correo automático del propio portal** ("Notificación de Tutelas del... y Vencimiento de las respuestas del...", que Dania solo responde confirmando) — pedido explícito del usuario, no es una tutela nueva y no sirve para extraer nada.
 

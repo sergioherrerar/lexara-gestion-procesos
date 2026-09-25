@@ -19,7 +19,10 @@ const COLUMNS = [
   {key:'entidad', label:'Entidad', value: t => t.Entidad || ""},
   {key:'cliente', label:'Cliente', value: t => t.Cliente || ""},
   {key:'tipoRespuesta', label:'Tipo Respuesta', value: t => t.TipoRespuesta || ""},
-  {key:'fechaVencimiento', label:'Vencimiento', value: t => t.FechaVencimiento || ""},
+  // Rojo (2026-09-25, pedido explícito del usuario) — resalta el encabezado
+  // para que "Vencimiento" salte a la vista, misma columna crítica que ya
+  // tiene el badge de alerta de "vencen hoy" arriba.
+  {key:'fechaVencimiento', label:'Vencimiento', value: t => t.FechaVencimiento || "", labelColor:'#d64541'},
   {key:'fechaNotificacion', label:'Fecha Notificación', value: t => t.FechaNotificacion || ""},
   {key:'tema', label:'Tema', value: t => t.Tema || ""},
   {key:'acciones', label:'Acciones', filterable:false},
