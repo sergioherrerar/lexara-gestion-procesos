@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-25 (1)
+- **Renombra las pestañas de "Entrenar LexIA": "Corrección" → "Enséñame", "Preguntas" → "Pregúntame"** — pedido explícito del usuario.
+
 ## 2026-09-24 (22)
 - **Mueve el avatar de "Entrenar LexIA" a la derecha del texto** — pedido explícito del usuario (antes iba a la izquierda).
 

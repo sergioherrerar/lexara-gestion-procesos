@@ -29,8 +29,8 @@ export function EntrenarIAPanel({ tutelas, onAgregarCorreccion, robotPreguntasUr
   return (
     <div className="entrenar-ia-panel">
       <div className="entrenar-ia-tabs">
-        <button type="button" className={tab==='correccion' ? 'activo' : ''} onClick={() => setTab('correccion')}>Corrección</button>
-        <button type="button" className={tab==='preguntas' ? 'activo' : ''} onClick={() => setTab('preguntas')}>Preguntas</button>
+        <button type="button" className={tab==='correccion' ? 'activo' : ''} onClick={() => setTab('correccion')}>Enséñame</button>
+        <button type="button" className={tab==='preguntas' ? 'activo' : ''} onClick={() => setTab('preguntas')}>Pregúntame</button>
       </div>
       {tab === 'correccion'
         ? <TabCorreccion tutelas={tutelas} onAgregarCorreccion={onAgregarCorreccion} notify={notify} />
