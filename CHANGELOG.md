@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-25 (17)
+- **La etiqueta "Ya leído por LexIA" ahora también sale en cualquier correo ya extraído manualmente** (no solo el precargado de fondo) — pedido explícito del usuario, junto al badge "Creado".
+
 ## 2026-09-25 (16)
 - **Corrige que LexIA escribía el Tema en formato distinto al de la lista real** (ej. "Entrega de medicamentos" en vez de "ENTREGA DE MEDICAMENTOS") — reportado por el usuario con captura: como Tema es un desplegable de una lista fija, si no coincide letra por letra (mayúsculas incluidas) queda como un valor huérfano sin seleccionar. Ahora se le aclara explícitamente que debe escribirlo siempre en mayúsculas, aunque la guía de criterios esté redactada en formato normal. Requiere volver a subir `robot-tutelas/extraer-tutela.php` a cPanel.
 

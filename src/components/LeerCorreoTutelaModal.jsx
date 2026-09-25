@@ -255,9 +255,16 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
                   {/* Precarga de LexIA (2026-09-25, pedido explícito del
                       usuario) — avisa cuál correo ya se leyó de fondo al
                       entrar, para que se entienda por qué ese sale al
-                      instante y los demás no. */}
-                  {precargaLexIA && precargaLexIA.mensajeId === m.id && ' · '}
-                  {precargaLexIA && precargaLexIA.mensajeId === m.id && (
+                      instante y los demás no. 2026-09-25, pedido explícito
+                      del usuario ("aparte de Creado también colócale Ya
+                      leído por LexIA") — se generaliza: también sale en
+                      cualquier correo que YA se haya extraído en esta
+                      sesión (aunque haya sido con el botón manual, no solo
+                      el precargado de fondo), para que quede claro que ese
+                      correo ya fue leído por LexIA sin tener que volver a
+                      abrirlo. */}
+                  {(precargaLexIA?.mensajeId === m.id || resultado?.mensajeId === m.id) && ' · '}
+                  {(precargaLexIA?.mensajeId === m.id || resultado?.mensajeId === m.id) && (
                     <span className="badge badge-verde" style={{marginLeft:2}}>Ya leído por LexIA</span>
                   )}
                 </span>
