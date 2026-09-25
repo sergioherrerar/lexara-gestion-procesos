@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-24 (18)
+- **Quita el círculo blanco detrás del avatar de LexIA — solo queda la figura con relieve 3D** — pedido explícito del usuario. En vez de una insignia circular detrás, ahora es una sombra que sigue la silueta real de la perrita (drop-shadow, respeta la transparencia del PNG), sin ningún fondo/disco.
+
 ## 2026-09-24 (17)
 - **Ajustes de personalidad de LexIA** — pedidos explícitos del usuario: avatar en miniatura junto al título "Entrenar LexIA"; mientras responde una pregunta ahora dice "Estoy buscando lo que me pediste…"; mientras guarda una corrección dice "Tienes razón, lo tendré en cuenta para no equivocarme de nuevo."
 
