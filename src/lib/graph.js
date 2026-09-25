@@ -438,6 +438,12 @@ export async function leerCorreosTutelas(correoBuzon, remitentesPermitidos, top 
   const remitentesLower = (remitentesPermitidos||[]).filter(Boolean).map(c => c.trim().toLowerCase());
   return (data.value || [])
     .filter(m => !remitentesLower.length || remitentesLower.includes((m.from?.emailAddress?.address||'').trim().toLowerCase()))
+    // 2026-09-25, pedido explícito del usuario: el correo automático que el
+    // MISMO portal genera ("Notificación de Tutelas del... y Vencimiento de
+    // las respuestas del...", que Dania solo responde confirmando si está o
+    // no de acuerdo) no es una tutela nueva — se omite de esta lista, no
+    // sirve para extraer nada.
+    .filter(m => !/notificaci[oó]n de tutelas del.*vencimiento de las respuestas del/i.test(m.subject || ''))
     .sort((a,b) => String(b.receivedDateTime||"").localeCompare(String(a.receivedDateTime||"")))
     .map(m => ({
       id: m.id,
