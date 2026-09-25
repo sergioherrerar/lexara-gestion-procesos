@@ -438,13 +438,28 @@ export function useLexaraApp(){
   // de ser el que el usuario va a procesar. Si no hay un correo así
   // todavía, no se precarga nada (no hay "más reciente" de respaldo).
   async function precargarSiguienteTutelaLexIA(tutelasActuales){
+    // 2026-09-25, reportado por el usuario ("no veo ningún cambio") — antes
+    // esto era invisible tanto si funcionaba como si no había nada que
+    // precargar (no llega correo nuevo siempre), así que no había forma de
+    // saber cuál de las dos cosas pasó. Ahora se avisa en pantalla cuando
+    // sí precarga algo (caso poco frecuente, no es ruidoso); cuando no hay
+    // candidato es normal y esperado, solo queda en la consola para poder
+    // revisarlo si hace falta.
+    const maxExistente = (tutelasActuales || []).reduce((max, t) => Math.max(max, Number(t.NoTutela) || 0), 0);
     try{
-      if(!config?.TUTELAS_BUZON_CORREO || !config?.ROBOT_CLAUDE_URL) return;
+      if(!config?.TUTELAS_BUZON_CORREO || !config?.ROBOT_CLAUDE_URL){
+        console.log('Precarga de LexIA: no corrió (falta TUTELAS_BUZON_CORREO o ROBOT_CLAUDE_URL en config.js).');
+        return;
+      }
       const mensajes = await Graph.leerCorreosTutelas(config.TUTELAS_BUZON_CORREO, TUTELAS_REMITENTES_PERMITIDOS, 200);
       const correo = Graph.encontrarCorreoSiguienteTutela(mensajes, tutelasActuales);
-      if(!correo) return;
+      if(!correo){
+        console.log(`Precarga de LexIA: no encontró todavía un correo para la tutela ${maxExistente + 1} (la siguiente después de la más alta guardada, ${maxExistente}) entre ${mensajes.length} correos revisados.`);
+        return;
+      }
       const extraido = await Graph.extraerTutelaConLexIA(config.TUTELAS_BUZON_CORREO, correo.id, tutelasActuales, config.ROBOT_CLAUDE_URL);
       setPrecargaLexIA({ mensajeId: correo.id, ...extraido });
+      notify(`LexIA ya leyó de fondo el correo de la tutela ${maxExistente + 1} — la vas a ver marcada como "Ya leído por LexIA" en "Leer correo (LexIA)".`, 'success');
     }catch(err){
       // No es crítico — si falla, "Leer correo (LexIA)" simplemente extrae
       // ese correo normal (con IA) cuando el usuario lo pida, como siempre.

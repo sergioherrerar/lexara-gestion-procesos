@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-25 (6)
+- **La precarga de LexIA ahora avisa cuando sí encuentra algo para precargar** — reportado por el usuario ("no veo ningún cambio"). Antes era invisible tanto si funcionaba como si no había un correo nuevo que precargar (lo normal, no llega uno siempre) — ahora sale un aviso en pantalla cuando sí precarga algo; si no aparece nada, es que todavía no ha llegado el correo de la siguiente tutela.
+
 ## 2026-09-25 (5) — Precarga de LexIA
 - **LexIA ya lee de fondo, apenas inicias sesión, el correo de la SIGUIENTE tutela que todavía no esté guardada** — pedido explícito del usuario, con condiciones específicas: solo se precarga UN correo (no varios, para no gastar de más), identificado por texto (sin IA) buscando "TUTELA [No.] NNNNN" en el asunto y comparando contra el No. Tutela más alto ya guardado — el "siguiente" número exacto (+1). Si ese correo llega y lo abres en "Leer correo (LexIA)", sale al instante (ya se leyó), con una etiqueta "Ya leído por LexIA" para que se note cuál es.
 
