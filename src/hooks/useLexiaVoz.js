@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 
 // Voz de LexIA (2026-09-24, pedido explícito del usuario: "podemos darle
 // voz y que lea lo que envía") — usa la síntesis de voz nativa del
@@ -7,57 +7,92 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 // localStorage para no tener que volver a apagarla cada vez que se abre la
 // ventana.
 //
-// 2026-09-25, pedido explícito del usuario ("coloca un botón de stop y uno
-// play para parar o continuar con la lectura") — se agregan `hablando`/
-// `pausada` (para poder mostrar/activar los botones correctos) y
-// `pausar()`/`continuar()`, además del `decir()` de siempre. Se apoya en
-// speechSynthesis.pause()/resume() (nativo del navegador, no hace falta
-// guardar el texto a mano) y en los eventos de la utterance para saber en
-// qué estado quedó.
+// 2026-09-25, pedido explícito del usuario ("un botón de stop y uno play
+// para parar o continuar con la lectura") — bug real reportado ("al darle
+// clic no hace ninguna acción"): speechSynthesis.pause()/resume() nativos
+// son famosos por fallar (sobre todo resume() en Chrome, un bug viejo y
+// nunca arreglado del todo). En vez de depender de eso, el texto se parte
+// en frases y se van leyendo UNA POR UNA con utterances chiquitas propias:
+// "pausar" simplemente corta la frase actual (se repite completa al
+// continuar, no se pierde nada de contenido) y "continuar" sigue leyendo
+// las frases que faltan. Nunca se usa pause()/resume() del navegador.
 const LEXIA_VOZ_KEY = 'lexia-voz-activada';
 
 export function useLexiaVoz(){
-  const [activada, setActivada] = useState(() => {
+  const [activada, setActivadaState] = useState(() => {
     try{ const v = localStorage.getItem(LEXIA_VOZ_KEY); return v === null ? true : v === '1'; }
     catch{ return true; }
   });
   const [hablando, setHablando] = useState(false);
   const [pausada, setPausada] = useState(false);
-  const utteranceRef = useRef(null);
+  // Refs (no re-render) para la cola de frases y el punto donde va —
+  // `detenido` marca si debe seguir encadenando frases al terminar una.
+  const colaRef = useRef([]);
+  const indiceRef = useRef(0);
+  const detenidoRef = useRef(true);
 
-  useEffect(() => {
-    try{ localStorage.setItem(LEXIA_VOZ_KEY, activada ? '1' : '0'); }catch{}
-    if(!activada && 'speechSynthesis' in window){
-      window.speechSynthesis.cancel();
+  const setActivada = useCallback((valor) => {
+    setActivadaState(prev => {
+      const next = typeof valor === 'function' ? valor(prev) : valor;
+      try{ localStorage.setItem(LEXIA_VOZ_KEY, next ? '1' : '0'); }catch{}
+      if(!next && 'speechSynthesis' in window){
+        detenidoRef.current = true;
+        window.speechSynthesis.cancel();
+        setHablando(false);
+        setPausada(false);
+      }
+      return next;
+    });
+  }, []);
+
+  const hablarDesde = useCallback((indice) => {
+    const cola = colaRef.current;
+    if(indice >= cola.length){
       setHablando(false);
       setPausada(false);
+      return;
     }
-  }, [activada]);
+    indiceRef.current = indice;
+    const u = new SpeechSynthesisUtterance(cola[indice]);
+    u.lang = 'es-CO';
+    u.rate = 1.03;
+    u.onend = () => {
+      if(detenidoRef.current) return; // se pausó/canceló mientras leía esta frase
+      hablarDesde(indice + 1);
+    };
+    u.onerror = () => { setHablando(false); setPausada(false); };
+    window.speechSynthesis.speak(u);
+  }, []);
 
   const decir = useCallback((texto) => {
     if(!activada || !texto || !('speechSynthesis' in window)) return;
     try{
+      detenidoRef.current = true;
       window.speechSynthesis.cancel();
-      const u = new SpeechSynthesisUtterance(texto);
-      u.lang = 'es-CO';
-      u.rate = 1.03;
-      u.onstart = () => { setHablando(true); setPausada(false); };
-      u.onend = () => { setHablando(false); setPausada(false); };
-      u.onerror = () => { setHablando(false); setPausada(false); };
-      u.onpause = () => setPausada(true);
-      u.onresume = () => setPausada(false);
-      utteranceRef.current = u;
-      window.speechSynthesis.speak(u);
+      // Frases por punto/signo de cierre — trozos cortos y confiables en
+      // vez de mandar el texto completo como una sola utterance larga.
+      const trozos = texto.split(/(?<=[.!?])\s+/).map(t => t.trim()).filter(Boolean);
+      colaRef.current = trozos.length ? trozos : [texto];
+      detenidoRef.current = false;
+      setPausada(false);
+      setHablando(true);
+      hablarDesde(0);
     }catch{ /* Web Speech no disponible en este navegador — no es crítico, sigue solo sin voz. */ }
-  }, [activada]);
+  }, [activada, hablarDesde]);
 
   const pausar = useCallback(() => {
-    if('speechSynthesis' in window) window.speechSynthesis.pause();
+    if(!('speechSynthesis' in window)) return;
+    detenidoRef.current = true;
+    window.speechSynthesis.cancel();
+    setPausada(true);
   }, []);
 
   const continuar = useCallback(() => {
-    if('speechSynthesis' in window) window.speechSynthesis.resume();
-  }, []);
+    if(!('speechSynthesis' in window)) return;
+    detenidoRef.current = false;
+    setPausada(false);
+    hablarDesde(indiceRef.current);
+  }, [hablarDesde]);
 
   return { activada, setActivada, decir, hablando, pausada, pausar, continuar };
 }

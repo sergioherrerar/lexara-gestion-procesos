@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-25 (4)
+- **Corrige que los botones de sonido/pausa de LexIA no hacían nada** — reportado por el usuario. speechSynthesis.pause()/resume() nativos del navegador son famosos por fallar (sobre todo resume() en Chrome). Ahora el texto se parte en frases y se leen una por una con utterances propias — pausar corta la frase actual (se repite completa al continuar) y ya no depende de esa función nativa poco confiable.
+
 ## 2026-09-25 (3)
 - **Nuevos botones de pausar/continuar la lectura en voz alta de LexIA** — pedido explícito del usuario ("un botón de stop y uno play"). Aparecen junto al ícono de sonido solo mientras LexIA está hablando, y desaparecen cuando termina.
 
