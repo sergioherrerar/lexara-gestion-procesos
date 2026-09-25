@@ -540,6 +540,10 @@
   .badge-naranja{background:#fdece0; color:#b3590a;}
   .badge-amarillo{background:#fef4de; color:#8a6410;}
   .badge-gris{background:var(--gris-claro); color:var(--texto-suave);}
+  /* "Vencen hoy" con la misma forma y tamaño que los botones (2026-09-24,
+     pedido explícito del usuario) — mismo padding/radio/tamaño de fuente
+     que .btn-primary, sin tocar el color de fondo (rojo/gris de alerta). */
+  .badge-forma-boton{padding:11px 20px; border-radius:8px; font-size:13.5px;}
   .badge-rojo{background:#fbe4e2; color:#a3281c;}
   .badge-truncate{display:inline-block; max-width:360px; white-space:normal; line-height:1.5; vertical-align:middle;}
 

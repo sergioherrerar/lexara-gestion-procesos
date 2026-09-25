@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-24 (20)
+- **"Vencen hoy" ahora tiene la misma forma y tamaño que "Nueva tutela"** — pedido explícito del usuario. Deja de verse como una pastilla chica y pasa a ser un rectángulo redondeado igual de grande, manteniendo el color de alerta.
+
 ## 2026-09-24 (19)
 - **El botón de LexIA en Tutelas queda centrado, debajo de "Calendario"** — pedido explícito del usuario. Se separa del grupo de la derecha ("vencen hoy"/"Nueva tutela") y queda en la mitad del encabezado de la vista.
 

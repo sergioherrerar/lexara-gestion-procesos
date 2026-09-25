@@ -103,7 +103,7 @@ export default function TutelasView({ tutelas, searchQuery, onOpenTutela, onCrea
           </button>
         )}
         <div style={{display:'flex', alignItems:'center', gap:12, flexWrap:'wrap'}}>
-          <span className={"badge " + (vencenHoy > 0 ? "badge-alerta" : "badge-gris")} style={{fontSize:14, padding:'8px 16px'}}>
+          <span className={"badge badge-forma-boton " + (vencenHoy > 0 ? "badge-alerta" : "badge-gris")}>
             {vencenHoy} {vencenHoy === 1 ? "vence" : "vencen"} hoy
           </span>
           {canWrite && <IconTextButton icon="add" variant="primary" onClick={onCreateTutela}>Nueva tutela</IconTextButton>}
