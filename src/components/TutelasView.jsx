@@ -82,28 +82,30 @@ export default function TutelasView({ tutelas, searchQuery, onOpenTutela, onCrea
 
   return (
     <div className="view">
-      <div className="view-header">
+      <div className="view-header view-header-lexia">
         <div>
           <h1>Tutelas</h1>
           <p>{rows.length} de {tutelas.length} tutelas{hasActiveFilters && <> · <button type="button" className="clear-filters-link" onClick={clearFilters}>Limpiar filtros de columna</button></>}</p>
         </div>
+        {/* Botón de LexIA centrado (2026-09-24, pedido explícito del
+            usuario: "mejor deja el botón de LexIA en la mitad, debajo del
+            calendario") — el calendario global vive centrado en la barra
+            superior (Topbar.jsx), así que este botón queda alineado
+            debajo de ese mismo eje central, separado del grupo de la
+            derecha (badge/Nueva tutela). */}
+        {canWrite && liveMode && (
+          <button type="button" className="btn-lexia view-header-lexia-btn" onClick={() => {
+            setMostrarLeerCorreo(true);
+            decir('Hola, soy LexIA. Elige un correo y dale extraer, o pregúntame lo que necesites.');
+          }}>
+            <img src={lexiaAvatar} alt="" className="btn-lexia-avatar" />
+            LexIA
+          </button>
+        )}
         <div style={{display:'flex', alignItems:'center', gap:12, flexWrap:'wrap'}}>
           <span className={"badge " + (vencenHoy > 0 ? "badge-alerta" : "badge-gris")} style={{fontSize:14, padding:'8px 16px'}}>
             {vencenHoy} {vencenHoy === 1 ? "vence" : "vencen"} hoy
           </span>
-          {/* Botón de LexIA (2026-09-24, pedido explícito del usuario:
-              "colócalo en el verde claro, coloca el avatar en miniatura y
-              colócale solo LexIA") — botón propio, no el genérico
-              IconTextButton (necesita el avatar real, no un ícono SVG). */}
-          {canWrite && liveMode && (
-            <button type="button" className="btn-lexia" onClick={() => {
-              setMostrarLeerCorreo(true);
-              decir('Hola, soy LexIA. Elige un correo y dale extraer, o pregúntame lo que necesites.');
-            }}>
-              <img src={lexiaAvatar} alt="" className="btn-lexia-avatar" />
-              LexIA
-            </button>
-          )}
           {canWrite && <IconTextButton icon="add" variant="primary" onClick={onCreateTutela}>Nueva tutela</IconTextButton>}
         </div>
       </div>

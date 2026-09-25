@@ -286,6 +286,18 @@
       var(--bg);
   }
   .view-header{display:flex; align-items:flex-end; justify-content:space-between; margin-bottom:22px;}
+  /* Botón de LexIA centrado en Tutelas (2026-09-24, pedido explícito del
+     usuario: "en la mitad, debajo del calendario" — el calendario global
+     vive centrado en la barra superior, ver Topbar.jsx) — position:relative
+     acá + absolute en el botón, para que quede centrado sin importar el
+     ancho real de los grupos de la izquierda/derecha. */
+  .view-header-lexia{position:relative;}
+  .view-header-lexia-btn{
+    position:absolute; left:50%; top:0; transform:translateX(-50%);
+  }
+  @media (max-width:900px){
+    .view-header-lexia-btn{position:static; transform:none; margin:10px 0;}
+  }
   .view-header h1{font-family:var(--font-display); font-size:25px; font-weight:600; margin:0 0 4px; color:var(--verde-oscuro);}
   .view-header p{margin:0; color:var(--texto-suave); font-size:13.5px;}
 

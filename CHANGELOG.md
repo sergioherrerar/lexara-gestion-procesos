@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-24 (19)
+- **El botón de LexIA en Tutelas queda centrado, debajo de "Calendario"** — pedido explícito del usuario. Se separa del grupo de la derecha ("vencen hoy"/"Nueva tutela") y queda en la mitad del encabezado de la vista.
+
 ## 2026-09-24 (18)
 - **Quita el círculo blanco detrás del avatar de LexIA — solo queda la figura con relieve 3D** — pedido explícito del usuario. En vez de una insignia circular detrás, ahora es una sombra que sigue la silueta real de la perrita (drop-shadow, respeta la transparencia del PNG), sin ningún fondo/disco.
 
