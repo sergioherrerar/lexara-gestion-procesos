@@ -147,8 +147,8 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
               columna derecha, sin alinearse con el título de acá. */}
           <div className="leer-correo-head-derecha">
             <h4 className="leer-correo-col-lateral-titulo">
-              <img src={lexiaAvatar} alt="" className="btn-lexia-avatar leer-correo-head-avatar" />
               Entrenar LexIA
+              <img src={lexiaAvatar} alt="" className="btn-lexia-avatar leer-correo-head-avatar" />
             </h4>
             <IconButton
               icon={vozActivada ? 'volumeOn' : 'volumeOff'}

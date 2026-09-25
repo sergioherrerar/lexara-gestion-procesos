@@ -1301,7 +1301,7 @@
     flex:1 1 40%; min-width:280px; max-width:360px; max-height:70vh; overflow-y:auto;
     border-left:1px solid var(--gris-linea); padding-left:20px;
   }
-  .leer-correo-col-lateral-titulo{margin:0; font-size:17px; color:var(--verde-oscuro); display:flex; align-items:center; white-space:nowrap;}
+  .leer-correo-col-lateral-titulo{margin:0; font-size:17px; color:var(--verde-oscuro); display:flex; align-items:center; gap:8px; white-space:nowrap;}
   /* "Entrenar LexIA" alineado con el título de la izquierda, junto al
      ícono de sonido (2026-09-24, pedido explícito del usuario) — vive
      ahora en el mismo encabezado compartido, no adentro de la columna. */
