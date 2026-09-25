@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-25 (16)
+- **Corrige que LexIA escribía el Tema en formato distinto al de la lista real** (ej. "Entrega de medicamentos" en vez de "ENTREGA DE MEDICAMENTOS") — reportado por el usuario con captura: como Tema es un desplegable de una lista fija, si no coincide letra por letra (mayúsculas incluidas) queda como un valor huérfano sin seleccionar. Ahora se le aclara explícitamente que debe escribirlo siempre en mayúsculas, aunque la guía de criterios esté redactada en formato normal. Requiere volver a subir `robot-tutelas/extraer-tutela.php` a cPanel.
+
 ## 2026-09-25 (15)
 - **Corrige que la precarga de LexIA se quedaba pegada en la misma tutela ya guardada** — reportado por el usuario: guardó la 28164 y, al reabrir "Leer correo (LexIA)", seguía marcada esa en vez de la nueva siguiente (28165). Ahora se vuelve a revisar cada vez que se abre esa ventana, no solo al iniciar sesión — sin repetir el gasto si el candidato no cambió desde la última vez.
 
