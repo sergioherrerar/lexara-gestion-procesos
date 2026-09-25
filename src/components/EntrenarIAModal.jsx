@@ -25,12 +25,15 @@ import { IconTextButton } from './IconButton';
 // tutela todavía no se haya guardado en SharePoint. Se manda como contexto
 // con prioridad en la pestaña "Preguntas".
 export function EntrenarIAPanel({ tutelas, onAgregarCorreccion, robotPreguntasUrl, notify, casoActual, decirLexia }){
-  const [tab, setTab] = useState('correccion'); // 'correccion' | 'preguntas'
+  // "Pregúntame" primero, tanto en el orden de los botones como la pestaña
+  // que abre por defecto (2026-09-25, pedido explícito del usuario:
+  // "coloca primero Pregúntame que Enséñame").
+  const [tab, setTab] = useState('preguntas'); // 'correccion' | 'preguntas'
   return (
     <div className="entrenar-ia-panel">
       <div className="entrenar-ia-tabs">
-        <button type="button" className={tab==='correccion' ? 'activo' : ''} onClick={() => setTab('correccion')}>Enséñame</button>
         <button type="button" className={tab==='preguntas' ? 'activo' : ''} onClick={() => setTab('preguntas')}>Pregúntame</button>
+        <button type="button" className={tab==='correccion' ? 'activo' : ''} onClick={() => setTab('correccion')}>Enséñame</button>
       </div>
       {tab === 'correccion'
         ? <TabCorreccion tutelas={tutelas} onAgregarCorreccion={onAgregarCorreccion} notify={notify} />
