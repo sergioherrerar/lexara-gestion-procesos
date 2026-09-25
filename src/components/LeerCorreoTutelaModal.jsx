@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { leerCorreosTutelas, extraerTutelaConLexIA, mensajeError } from '../lib/graph';
+import { leerCorreosTutelas, extraerTutelaConLexIA, numeroTutelaDeAsunto, mensajeError } from '../lib/graph';
 import IconButton, { IconTextButton } from './IconButton';
 import { EntrenarIAPanel } from './EntrenarIAModal';
 import { useDraggable } from '../hooks/useDraggable';
@@ -36,6 +36,11 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
   // leerCorreosTutelas igual acota sola a los últimos 90 días por defecto.
   const [desde, setDesde] = useState('');
   const [hasta, setHasta] = useState('');
+  // Buscador por No. Tutela (2026-09-25, pedido explícito del usuario:
+  // "que me busque todos los correos con ese número y lo filtre y me dé un
+  // mensaje si ya está en la lista de SharePoint Tutelas o no") — mismo
+  // parseo de texto (sin IA) que ya usa la precarga automática.
+  const [busquedaNumero, setBusquedaNumero] = useState('');
   // "Dar vida" a LexIA (2026-09-24, pedido explícito del usuario: "podemos
   // darle voz y que lea lo que envía... que salude con la voz al abrir") —
   // `vozActivada`/`setVozActivada`/`decir` vienen de TutelasView (no se
@@ -109,6 +114,17 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
   // 2026-09-24, pedido explícito del usuario ("que se deje arrastrar la
   // ventana con el clic pulsado") — se toma desde el encabezado.
   const { offset, dragHandleProps } = useDraggable();
+
+  // Buscador por No. Tutela — filtra la lista comparando el número del
+  // asunto (texto plano, sin IA) contra lo escrito, y avisa si esa tutela
+  // ya existe en la lista de SharePoint.
+  const numeroBuscado = busquedaNumero.trim() ? Number(busquedaNumero.trim()) : null;
+  const mensajesFiltrados = numeroBuscado === null
+    ? mensajes
+    : mensajes.filter(m => numeroTutelaDeAsunto(m.asunto) === numeroBuscado);
+  const tutelaBuscadaExistente = numeroBuscado === null
+    ? null
+    : (tutelas || []).find(t => Number(t.NoTutela) === numeroBuscado) || null;
 
   return (
     <div className="confirm-overlay leer-correo-overlay">
@@ -187,6 +203,24 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
             </button>
           )}
         </div>
+        {/* Buscador por No. Tutela (2026-09-25, pedido explícito del
+            usuario) — filtra la lista de abajo y avisa si esa tutela ya
+            está guardada en SharePoint o no. */}
+        <div className="field" style={{marginBottom:10, maxWidth:220}}>
+          <label>Buscar por No. Tutela</label>
+          <input type="text" inputMode="numeric" value={busquedaNumero} onChange={e => setBusquedaNumero(e.target.value)} placeholder="Ej. 28159" />
+        </div>
+        {numeroBuscado !== null && (
+          tutelaBuscadaExistente ? (
+            <p className="field-warning" style={{marginBottom:14}}>
+              La tutela {numeroBuscado} YA está en la lista de SharePoint — {tutelaBuscadaExistente.Cliente || 'cliente sin definir'}, Tema: {tutelaBuscadaExistente.Tema || '—'}.
+            </p>
+          ) : (
+            <p className="save-hint" style={{marginBottom:14, color:'var(--verde-oscuro)', fontWeight:600}}>
+              La tutela {numeroBuscado} todavía NO está en la lista de SharePoint.
+            </p>
+          )
+        )}
         {cargando && <p>Cargando correos…</p>}
         {!cargando && errorCarga && <div className="field-warning">{errorCarga}</div>}
         {!cargando && !errorCarga && mensajes.length === 0 && (
@@ -194,8 +228,13 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
             No hay correos para mostrar. Revisa que esta cuenta tenga acceso ("Acceso completo") al buzón de Tutelas, y que la lista de remitentes permitidos esté configurada.
           </p>
         )}
+        {!cargando && !errorCarga && mensajes.length > 0 && numeroBuscado !== null && mensajesFiltrados.length === 0 && (
+          <p className="empty-state empty-state-compact">
+            No hay ningún correo con la tutela {numeroBuscado} entre los que están cargados (revisa el rango de fechas de arriba).
+          </p>
+        )}
         <ul className="leer-correo-lista">
-          {mensajes.map(m => (
+          {mensajesFiltrados.map(m => (
             <li key={m.id} className={"leer-correo-item" + (seleccionadoId===m.id ? ' activo' : '')}>
               <button type="button" className="leer-correo-item-btn" onClick={() => { setSeleccionadoId(m.id); setResultado(null); setCorreoActual(null); }}>
                 <strong>{m.remitenteNombre || m.remitente || 'Remitente desconocido'}</strong>

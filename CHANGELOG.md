@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-25 (7)
+- **Nuevo buscador por No. Tutela en "Leer correo (LexIA)"** — pedido explícito del usuario. Escribes el número, filtra la lista a solo los correos de esa tutela (detectado del asunto, sin IA) y avisa si esa tutela ya está guardada en la lista de SharePoint o todavía no.
+
 ## 2026-09-25 (6)
 - **La precarga de LexIA ahora avisa cuando sí encuentra algo para precargar** — reportado por el usuario ("no veo ningún cambio"). Antes era invisible tanto si funcionaba como si no había un correo nuevo que precargar (lo normal, no llega uno siempre) — ahora sale un aviso en pantalla cuando sí precarga algo; si no aparece nada, es que todavía no ha llegado el correo de la siguiente tutela.
 
