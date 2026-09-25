@@ -139,7 +139,17 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
       <div className="confirm-box leer-correo-box leer-correo-box-ancha" style={{transform: `translate(${offset.x}px, ${offset.y}px)`}}>
         <div className="leer-correo-head" {...dragHandleProps}>
           <h3>Leer correo de Tutelas (LexIA)</h3>
-          <div style={{display:'flex', alignItems:'center', gap:4}}>
+          {/* "Entrenar LexIA" alineado con el título de la izquierda, y su
+              avatar al lado del ícono de sonido, un poco más grande
+              (2026-09-24, pedido explícito del usuario: "alinea los dos
+              títulos", "LexIA colócala al lado del ícono del sonido y un
+              poco más grande") — antes vivía más abajo, adentro de la
+              columna derecha, sin alinearse con el título de acá. */}
+          <div className="leer-correo-head-derecha">
+            <h4 className="leer-correo-col-lateral-titulo">
+              <img src={lexiaAvatar} alt="" className="btn-lexia-avatar leer-correo-head-avatar" />
+              Entrenar LexIA
+            </h4>
             <IconButton
               icon={vozActivada ? 'volumeOn' : 'volumeOff'}
               variant="secondary"
@@ -268,16 +278,6 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
         </ul>
         </div>
         <div className="leer-correo-col-lateral">
-          {/* Título propio de esta columna (2026-09-24, pedido explícito
-              del usuario: "quitemos el botón [de arriba], al lado derecho
-              coloquemos Entrenar IA") — ya no existe un botón/ventana aparte
-              para esto, "Entrenar IA" vive solo acá, al lado de "Leer
-              correo (IA)". Avatar en miniatura junto al título (2026-09-24,
-              "por acá también coloca LexIA") — mismo criterio del botón. */}
-          <h4 className="leer-correo-col-lateral-titulo">
-            <img src={lexiaAvatar} alt="" className="btn-lexia-avatar" style={{marginRight:8, verticalAlign:'middle'}} />
-            Entrenar LexIA
-          </h4>
           <EntrenarIAPanel
             tutelas={tutelas || []}
             onAgregarCorreccion={onAgregarCorreccionIA}

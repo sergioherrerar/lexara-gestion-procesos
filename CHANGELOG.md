@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-24 (21)
+- **Alinea "Leer correo de Tutelas (LexIA)" y "Entrenar LexIA" en la misma fila** — pedido explícito del usuario. El avatar de "Entrenar LexIA" se movió al lado del ícono de sonido, un poco más grande, en vez de vivir más abajo dentro de su columna.
+
 ## 2026-09-24 (20)
 - **"Vencen hoy" ahora tiene la misma forma y tamaño que "Nueva tutela"** — pedido explícito del usuario. Deja de verse como una pastilla chica y pasa a ser un rectángulo redondeado igual de grande, manteniendo el color de alerta.
 
