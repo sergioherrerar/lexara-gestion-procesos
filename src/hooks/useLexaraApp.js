@@ -434,9 +434,18 @@ export function useLexaraApp(){
   // portal cargue la lectura" — pero NO de los 5 correos más recientes (eso
   // gastaría Claude 5 veces sin garantía de usarse), sino de UN SOLO correo
   // puntual: el de la SIGUIENTE tutela que todavía no esté guardada (el
-  // número consecutivo de más, +1) — el candidato con más probabilidad real
-  // de ser el que el usuario va a procesar. Si no hay un correo así
-  // todavía, no se precarga nada (no hay "más reciente" de respaldo).
+  // número consecutivo de más, +1, o el siguiente que sí tenga correo si
+  // ese exacto no llegó — ver encontrarCorreoSiguienteTutela) — el
+  // candidato con más probabilidad real de ser el que el usuario va a
+  // procesar. Si no hay un correo así todavía, no se precarga nada (no hay
+  // "más reciente" de respaldo).
+  //
+  // También se exporta (no solo se llama acá al iniciar sesión) — bug real
+  // reportado por el usuario: guardó la 28164 (ya cubierta) y al volver a
+  // abrir "Leer correo (LexIA)" seguía marcada esa en vez de la 28165 (la
+  // nueva siguiente). Se vuelve a llamar cada vez que se abre esa ventana
+  // (ver el botón de LexIA en TutelasView.jsx), así siempre avanza al
+  // último "siguiente" real en vez de quedarse pegada en la primera vez.
   async function precargarSiguienteTutelaLexIA(tutelasActuales){
     // 2026-09-25, reportado por el usuario ("no veo ningún cambio") — antes
     // esto era invisible tanto si funcionaba como si no había nada que
@@ -457,6 +466,10 @@ export function useLexaraApp(){
         console.log(`Precarga de LexIA: no encontró todavía ningún correo nuevo a partir de la tutela ${maxExistente + 1} (la más alta guardada es ${maxExistente}) entre ${mensajes.length} correos revisados.`);
         return;
       }
+      // Ya se había precargado justo este mismo correo (se volvió a llamar
+      // sin que nada nuevo se haya guardado desde entonces) — no vale la
+      // pena gastar Claude otra vez ni repetir el aviso en pantalla.
+      if(precargaLexIA?.mensajeId === correo.id) return;
       // El correo encontrado puede que NO sea maxExistente+1 exacto — si esa
       // no tenía correo, se siguió buscando más allá (pedido explícito del
       // usuario: "si no está la siguiente revise una más allá y continúe").
@@ -1920,7 +1933,7 @@ export function useLexaraApp(){
     activeColaborador, openColaborador, newColaborador, closeColaboradorDrawer, saveColaborador, deleteColaborador,
     activeFormaPago, openFormaPago, newFormaPagoFromProceso, closeFormaPagoDrawer, saveFormaPago, deleteFormaPago,
     activeDesistimiento, openDesistimiento, newDesistimientoFromProceso, closeDesistimientoDrawer, saveDesistimiento, deleteDesistimiento,
-    activeTutela, openTutela, newTutela, duplicateTutela, closeTutelaDrawer, saveTutela, deleteTutela, corregirEntidadFaltanteTutelas, agregarCorreccionIA, precargaLexIA,
+    activeTutela, openTutela, newTutela, duplicateTutela, closeTutelaDrawer, saveTutela, deleteTutela, corregirEntidadFaltanteTutelas, agregarCorreccionIA, precargaLexIA, precargarSiguienteTutelaLexIA,
     createTema, saveTema, createTipoTermino, createValorEntidad, saveValorEntidad,
     createHoraExtra, aprobarHoraExtra, editarHoraExtra, eliminarHoraExtra,
     crearPeriodoVacaciones, editarPeriodoVacaciones, eliminarPeriodoVacaciones,

@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-25 (15)
+- **Corrige que la precarga de LexIA se quedaba pegada en la misma tutela ya guardada** — reportado por el usuario: guardó la 28164 y, al reabrir "Leer correo (LexIA)", seguía marcada esa en vez de la nueva siguiente (28165). Ahora se vuelve a revisar cada vez que se abre esa ventana, no solo al iniciar sesión — sin repetir el gasto si el candidato no cambió desde la última vez.
+
 ## 2026-09-25 (14)
 - **"Pregúntame" ahora va primero que "Enséñame"** (orden de los botones y pestaña que abre por defecto) — pedido explícito del usuario.
 
