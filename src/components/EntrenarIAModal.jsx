@@ -134,6 +134,21 @@ function TabCorreccion({ tutelas, onAgregarCorreccion, notify }){
   );
 }
 
+// 2026-09-25, pedido explícito del usuario: "quítale que no coloque
+// asteriscos... la voz dice asterisco, asterisco y se corta mucho la
+// idea" — la instrucción del robot ya le pide no usar markdown, pero esto
+// es un respaldo por si el modelo igual se cuela con **negrita**/listas/
+// encabezados en alguna respuesta — se limpia también acá antes de
+// mostrar/leer, nunca debe llegar un asterisco a pantalla ni a la voz.
+function limpiarMarkdown(texto){
+  return String(texto || '')
+    .replace(/\*\*(.*?)\*\*/g, '$1')
+    .replace(/\*(.*?)\*/g, '$1')
+    .replace(/^#{1,6}\s+/gm, '')
+    .replace(/^[-*]\s+/gm, '')
+    .replace(/[*_`]/g, '');
+}
+
 function TabPreguntas({ tutelas, robotPreguntasUrl, notify, casoActual, decirLexia }){
   const [pregunta, setPregunta] = useState('');
   const [mensajes, setMensajes] = useState([]); // [{autor:'yo'|'ia', texto}]
@@ -166,7 +181,7 @@ function TabPreguntas({ tutelas, robotPreguntasUrl, notify, casoActual, decirLex
       if(!res.ok || !data || data.error){
         throw new Error((data && data.error) || `LexIA respondió con error (código ${res.status}).`);
       }
-      const respuesta = data.respuesta || '(sin respuesta)';
+      const respuesta = limpiarMarkdown(data.respuesta || '(sin respuesta)');
       setMensajes(prev => [...prev, { autor:'ia', texto: respuesta }]);
       decirLexia?.(respuesta);
     }catch(err){

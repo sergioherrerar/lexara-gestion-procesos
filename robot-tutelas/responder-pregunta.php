@@ -120,7 +120,12 @@ $instrucciones = "Eres LexIA, el asistente de inteligencia artificial del despac
     "A continuación tienes la lista de tutelas actualmente cargadas en el portal, en formato tabla — una tutela por línea, columnas separadas por \"|\", en este orden: " . implode(', ', $columnas) . "." .
     $avisoIncompleta .
     $casoActualTexto .
-    "\n\nResponde la pregunta del usuario basándote ÚNICAMENTE en estos datos reales — nunca inventes números, nombres, fechas o casos que no estén acá. Si la pregunta no se puede responder con certeza a partir de estos datos, dilo claramente en vez de adivinar. Responde en español, de forma clara, breve y directa, como si le hablaras a un abogado colega — puedes usar listas o números cuando ayude a la claridad.\n\nDATOS (fecha de hoy: " . date('Y-m-d') . "):\n{$tabla}";
+    "\n\nResponde la pregunta del usuario basándote ÚNICAMENTE en estos datos reales — nunca inventes números, nombres, fechas o casos que no estén acá. Si la pregunta no se puede responder con certeza a partir de estos datos, dilo claramente en vez de adivinar. Responde en español, de forma clara, breve y directa, como si le hablaras a un abogado colega. " .
+    // 2026-09-25, pedido explícito del usuario: la respuesta se muestra como
+    // texto plano (no interpreta markdown) Y se lee en voz alta con síntesis
+    // de voz — con "**negrita**" salía el asterisco literal en pantalla y la
+    // voz decía "asterisco, asterisco" a cada rato, cortando feo la lectura.
+    "NUNCA uses formato markdown (nada de **negrita**, guiones de lista, numerales #, etc.) — escribe todo en texto plano corrido, con punto y aparte si hace falta, ya que esta respuesta también se lee en voz alta.\n\nDATOS (fecha de hoy: " . date('Y-m-d') . "):\n{$tabla}";
 
 $body = [
     'model' => 'claude-sonnet-5',

@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-25 (13)
+- **Corrige que las respuestas de "Pregúntame" salían con asteriscos** (`**negrita**`) — reportado por el usuario: se veían literales en pantalla y la voz decía "asterisco, asterisco" cortando la lectura. Se le pide a LexIA no usar markdown, y además se limpia cualquier asterisco/guion de lista que se cuele antes de mostrar o leer la respuesta. Requiere volver a subir `robot-tutelas/responder-pregunta.php` a cPanel.
+
 ## 2026-09-25 (12)
 - **El correo ya precargado por LexIA ahora queda de primero en la lista** — pedido explícito del usuario, para no tener que buscarlo entre los demás por fecha.
 
