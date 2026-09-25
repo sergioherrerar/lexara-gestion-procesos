@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-25 (12)
+- **El correo ya precargado por LexIA ahora queda de primero en la lista** — pedido explícito del usuario, para no tener que buscarlo entre los demás por fecha.
+
 ## 2026-09-25 (11)
 - **La precarga de LexIA ya no se rinde si el número siguiente exacto no tiene correo** — reportado por el usuario con un caso real (guardada hasta 28162, sin correo de la 28163, pero sí de la 28164 y 28165). Ahora sigue probando +2, +3... hasta encontrar el primero que sí tenga correo, en vez de darse por vencida en el primer hueco.
 

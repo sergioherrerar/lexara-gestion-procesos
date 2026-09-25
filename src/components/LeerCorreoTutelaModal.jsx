@@ -125,6 +125,17 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
   const tutelaBuscadaExistente = numeroBuscado === null
     ? null
     : (tutelas || []).find(t => Number(t.NoTutela) === numeroBuscado) || null;
+  // "Después de que sea leída su información, déjalo de primeras en la
+  // lista" (2026-09-25, pedido explícito del usuario) — el correo ya
+  // precargado por LexIA queda arriba de todo, sin importar su fecha, para
+  // no tener que buscarlo entre los demás.
+  const mensajesOrdenados = precargaLexIA
+    ? [...mensajesFiltrados].sort((a,b) => {
+        if(a.id === precargaLexIA.mensajeId) return -1;
+        if(b.id === precargaLexIA.mensajeId) return 1;
+        return 0;
+      })
+    : mensajesFiltrados;
 
   return (
     <div className="confirm-overlay leer-correo-overlay">
@@ -234,7 +245,7 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
           </p>
         )}
         <ul className="leer-correo-lista">
-          {mensajesFiltrados.map(m => (
+          {mensajesOrdenados.map(m => (
             <li key={m.id} className={"leer-correo-item" + (seleccionadoId===m.id ? ' activo' : '')}>
               <button type="button" className="leer-correo-item-btn" onClick={() => { setSeleccionadoId(m.id); setResultado(null); setCorreoActual(null); }}>
                 <strong>{m.remitenteNombre || m.remitente || 'Remitente desconocido'}</strong>
