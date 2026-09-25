@@ -454,12 +454,16 @@ export function useLexaraApp(){
       const mensajes = await Graph.leerCorreosTutelas(config.TUTELAS_BUZON_CORREO, TUTELAS_REMITENTES_PERMITIDOS, 200);
       const correo = Graph.encontrarCorreoSiguienteTutela(mensajes, tutelasActuales);
       if(!correo){
-        console.log(`Precarga de LexIA: no encontró todavía un correo para la tutela ${maxExistente + 1} (la siguiente después de la más alta guardada, ${maxExistente}) entre ${mensajes.length} correos revisados.`);
+        console.log(`Precarga de LexIA: no encontró todavía ningún correo nuevo a partir de la tutela ${maxExistente + 1} (la más alta guardada es ${maxExistente}) entre ${mensajes.length} correos revisados.`);
         return;
       }
+      // El correo encontrado puede que NO sea maxExistente+1 exacto — si esa
+      // no tenía correo, se siguió buscando más allá (pedido explícito del
+      // usuario: "si no está la siguiente revise una más allá y continúe").
+      const numeroEncontrado = Graph.numeroTutelaDeAsunto(correo.asunto) ?? (maxExistente + 1);
       const extraido = await Graph.extraerTutelaConLexIA(config.TUTELAS_BUZON_CORREO, correo.id, tutelasActuales, config.ROBOT_CLAUDE_URL);
       setPrecargaLexIA({ mensajeId: correo.id, ...extraido });
-      notify(`LexIA ya leyó de fondo el correo de la tutela ${maxExistente + 1} — la vas a ver marcada como "Ya leído por LexIA" en "Leer correo (LexIA)".`, 'success');
+      notify(`LexIA ya leyó de fondo el correo de la tutela ${numeroEncontrado} — la vas a ver marcada como "Ya leído por LexIA" en "Leer correo (LexIA)".`, 'success');
     }catch(err){
       // No es crítico — si falla, "Leer correo (LexIA)" simplemente extrae
       // ese correo normal (con IA) cuando el usuario lo pida, como siempre.

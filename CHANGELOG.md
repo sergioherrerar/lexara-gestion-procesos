@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-25 (11)
+- **La precarga de LexIA ya no se rinde si el número siguiente exacto no tiene correo** — reportado por el usuario con un caso real (guardada hasta 28162, sin correo de la 28163, pero sí de la 28164 y 28165). Ahora sigue probando +2, +3... hasta encontrar el primero que sí tenga correo, en vez de darse por vencida en el primer hueco.
+
 ## 2026-09-25 (10)
 - **Centra todos los títulos de columna** (encabezados con menú de orden/filtro, en las 5 tablas del portal) — pedido explícito del usuario. La flechita de despliegue ahora va junto al texto en vez de pegada al borde derecho.
 
