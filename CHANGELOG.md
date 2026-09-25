@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-25 (10)
+- **Centra todos los títulos de columna** (encabezados con menú de orden/filtro, en las 5 tablas del portal) — pedido explícito del usuario. La flechita de despliegue ahora va junto al texto en vez de pegada al borde derecho.
+
 ## 2026-09-25 (9)
 - **El encabezado "Vencimiento" de la tabla de Tutelas ahora se ve en rojo** — pedido explícito del usuario, para que resalte igual que el badge de alerta de "vencen hoy".
 

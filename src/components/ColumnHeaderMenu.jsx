@@ -147,7 +147,7 @@ export default function ColumnHeaderMenu({ column, sort, onSort, filterValue, on
   }
 
   if(column.filterable === false){
-    return <th><span style={column.labelColor ? { color: column.labelColor } : undefined}>{column.label}</span></th>;
+    return <th style={{textAlign:'center'}}><span style={column.labelColor ? { color: column.labelColor } : undefined}>{column.label}</span></th>;
   }
 
   const isSorted = !!sort && sort.key === column.key;

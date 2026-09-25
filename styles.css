@@ -864,14 +864,19 @@
   thead th.col-header-cell{padding:0;}
   .col-header-menu-wrap{position:relative;}
   .col-header-btn{
-    width:100%; display:flex; align-items:center; gap:6px; text-align:left;
+    /* Centrado (2026-09-25, pedido explícito del usuario: "todos los
+       títulos colócalos centrados") — el grupo completo (texto + flecha de
+       orden + punto de filtro + chevron) se centra como un bloque; el
+       chevron ya no queda pegado al borde derecho (margin-left:auto), va
+       justo al lado del texto para que el centrado se vea real. */
+    width:100%; display:flex; align-items:center; justify-content:center; gap:6px; text-align:center;
     background:none; border:none; cursor:pointer; padding:12px 16px;
     font-size:11px; text-transform:uppercase; letter-spacing:.05em; font-weight:700;
     color:var(--texto-suave); transition:color .15s ease, background .15s ease; font-family:inherit;
   }
   .col-header-btn:hover{color:var(--verde-oscuro); background:#e9e9e6;}
   .col-header-btn.active{color:var(--verde-oscuro);}
-  .col-header-chevron{opacity:.45; flex-shrink:0; margin-left:auto;}
+  .col-header-chevron{opacity:.45; flex-shrink:0;}
   .col-header-btn:hover .col-header-chevron, .col-header-btn.active .col-header-chevron{opacity:1;}
   .col-header-sort-arrow{font-size:9px; color:var(--verde-claro); flex-shrink:0;}
   .col-header-filter-dot{width:6px; height:6px; border-radius:50%; background:var(--naranja); flex-shrink:0;}
