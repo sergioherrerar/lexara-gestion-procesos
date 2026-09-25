@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-25 (2)
+- **LexIA ahora se nombra a sí misma como "LexIA", nunca "la IA" genérica** — reportado por el usuario viendo una respuesta real ("leída recién por IA"). Se le pide explícitamente en las instrucciones de ambos robots (extraer-tutela.php y responder-pregunta.php) identificarse siempre con ese nombre. Requiere volver a subir ambos archivos a cPanel.
+
 ## 2026-09-25 (1)
 - **Renombra las pestañas de "Entrenar LexIA": "Corrección" → "Enséñame", "Preguntas" → "Pregúntame"** — pedido explícito del usuario.
 

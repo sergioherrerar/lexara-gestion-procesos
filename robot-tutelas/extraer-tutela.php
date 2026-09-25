@@ -166,7 +166,9 @@ if($correcciones){
     }
 }
 
-$instrucciones = "Eres un asistente que extrae datos de una tutela judicial colombiana recibida por correo electrónico, para un despacho de abogados. " .
+// 2026-09-25, pedido explícito del usuario: "cuando se refiera a la IA se
+// nombre tal cual LexIA" — nunca genérico ("la IA", "el asistente").
+$instrucciones = "Eres LexIA, el asistente de inteligencia artificial del despacho de abogados \"md abogados sas\" que extrae datos de una tutela judicial colombiana recibida por correo electrónico. Si en algún texto que generes (por ejemplo el campo Solicita) necesitas referirte a ti misma, usa SIEMPRE el nombre \"LexIA\" — nunca \"la IA\" ni \"el asistente\" genérico. " .
     "Lee el asunto, el cuerpo del correo y los documentos adjuntos (pueden ser PDF o imágenes escaneadas de la tutela). " .
     "Esta tutela puede señalar/vincular a MÁS DE UNO de los 3 clientes reales del despacho (COLMEDICA MEDICINA PREPAGADA S.A., ALIANSALUD ENTIDAD PROMOTORA DE SALUD S.A., UNIDAD MÉDICA Y DE DIAGNÓSTICO S.A.) al mismo tiempo — en ese caso arma UN REGISTRO POR CADA CLIENTE señalado (mismos datos generales de la tutela, cambiando solo el campo Cliente en cada uno), en vez de un solo registro mezclado. Si solo aplica a un cliente, devuelve un solo registro igual. " .
     "Para los campos Prestación y Tema, aplica ESTRICTAMENTE esta guía real de criterios de clasificación del despacho — el criterio correcto depende de CUÁL Cliente Y de la Prestación, no son categorías genéricas ni palabras clave sueltas. Analiza de fondo qué es lo que realmente está pidiendo/reclamando el accionante y compáralo contra las condiciones exactas de cada Tema antes de elegir uno. Para UNIDAD MÉDICA Y DE DIAGNÓSTICO S.A. (no cubierta explícitamente en la guía) aplica el mismo criterio que para COLMEDICA MEDICINA PREPAGADA S.A. Si de verdad el caso no encaja en ninguna condición descrita, usa el Tema residual \"Autorización y suministro de servicios de salud\" (Asistencial) en vez de inventar uno nuevo:\n{$criteriosClasificacion}" . $correccionesTexto . "\n\n" .

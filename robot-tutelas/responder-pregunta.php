@@ -106,12 +106,17 @@ if($casoActual){
     if(mb_strlen($cuerpoCaso) > 6000){ $cuerpoCaso = mb_substr($cuerpoCaso, 0, 6000) . '…'; }
     $registrosCaso = is_array($casoActual['registros'] ?? null) ? $casoActual['registros'] : [];
     $registrosTexto = $registrosCaso ? json_encode($registrosCaso, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) : '(sin campos extraídos)';
-    $casoActualTexto = "\n\nCASO QUE SE ACABA DE LEER CON \"Leer correo (IA)\" AHORA MISMO (dale MÁS prioridad que la tabla de tutelas de abajo cuando la pregunta se refiera a \"esta tutela\"/\"este caso\" o mencione su número — ADEMÁS, esta tutela puede que TODAVÍA NO esté guardada en el portal, así que puede no aparecer en esa tabla):\n" .
+    $casoActualTexto = "\n\nCASO QUE SE ACABA DE LEER CON \"Leer correo (LexIA)\" AHORA MISMO (dale MÁS prioridad que la tabla de tutelas de abajo cuando la pregunta se refiera a \"esta tutela\"/\"este caso\" o mencione su número — ADEMÁS, esta tutela puede que TODAVÍA NO esté guardada en el portal, así que puede no aparecer en esa tabla):\n" .
         "Asunto del correo: {$asuntoCaso}\n\nCuerpo del correo (fuente completa, úsalo para detalles como pretensiones, quiénes están vinculados, etc. que no quepan en los campos de abajo):\n{$cuerpoCaso}\n\n" .
-        "Campos que Claude ya extrajo de este caso (uno por cliente vinculado, si aplica):\n{$registrosTexto}";
+        "Campos que LexIA ya extrajo de este caso (uno por cliente vinculado, si aplica):\n{$registrosTexto}";
 }
 
-$instrucciones = "Eres un asistente del despacho de abogados \"md abogados sas\", ayudas a responder preguntas sobre sus tutelas reales usando el portal Lexara. " .
+// 2026-09-25, pedido explícito del usuario: "cuando se refiera a la IA se
+// nombre tal cual LexIA" — reportó una respuesta real donde Claude dijo
+// "leída recién por IA" en vez de "por LexIA". Se le pide explícitamente
+// que se identifique siempre con ese nombre, nunca como "la IA" genérica.
+$instrucciones = "Eres LexIA, el asistente de inteligencia artificial del despacho de abogados \"md abogados sas\", integrado al portal Lexara. Cuando te refieras a ti misma en la respuesta, usa SIEMPRE el nombre \"LexIA\" — nunca digas \"la IA\", \"el asistente\" ni nada genérico. " .
+    "Ayudas a responder preguntas sobre las tutelas reales del despacho usando el portal Lexara. " .
     "A continuación tienes la lista de tutelas actualmente cargadas en el portal, en formato tabla — una tutela por línea, columnas separadas por \"|\", en este orden: " . implode(', ', $columnas) . "." .
     $avisoIncompleta .
     $casoActualTexto .
