@@ -49,7 +49,7 @@ export default function TutelasView({ tutelas, searchQuery, onOpenTutela, onCrea
   // pegada al gesto real del usuario, no un instante después (que es lo
   // que pasaba cuando el saludo se disparaba en un useEffect al montar el
   // modal, un tris más tarde que el clic).
-  const { activada: vozActivada, setActivada: setVozActivada, decir } = useLexiaVoz();
+  const { activada: vozActivada, setActivada: setVozActivada, decir, hablando: lexiaHablando, pausada: lexiaPausada, pausar: pausarLexia, continuar: continuarLexia } = useLexiaVoz();
   // Contador de tutelas que vencen hoy — se recalcula en cada render, así
   // que siempre queda al día con lo último que haya en `tutelas` (recién
   // cargado o después de un refresh).
@@ -121,6 +121,10 @@ export default function TutelasView({ tutelas, searchQuery, onOpenTutela, onCrea
           vozActivada={vozActivada}
           setVozActivada={setVozActivada}
           decir={decir}
+          lexiaHablando={lexiaHablando}
+          lexiaPausada={lexiaPausada}
+          pausarLexia={pausarLexia}
+          continuarLexia={continuarLexia}
           onClose={() => setMostrarLeerCorreo(false)}
           onExtraido={campos => onCreateTutela(campos)}
         />

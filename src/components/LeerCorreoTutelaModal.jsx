@@ -12,7 +12,7 @@ import lexiaAvatar from '../assets/LexIA avatar.png';
 // devolver los campos que Claude extrajo para prellenar "Nueva tutela". El
 // usuario SIEMPRE revisa y confirma en el formulario antes de guardar — acá
 // nunca se toca SharePoint, solo se arma el objeto de campos iniciales.
-export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitidos, robotUrl, tutelas, onAgregarCorreccionIA, robotPreguntasUrl, onExtraido, onClose, notify, vozActivada, setVozActivada, decir }){
+export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitidos, robotUrl, tutelas, onAgregarCorreccionIA, robotPreguntasUrl, onExtraido, onClose, notify, vozActivada, setVozActivada, decir, lexiaHablando, lexiaPausada, pausarLexia, continuarLexia }){
   const [cargando, setCargando] = useState(true);
   const [errorCarga, setErrorCarga] = useState('');
   const [mensajes, setMensajes] = useState([]);
@@ -156,6 +156,16 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
               label={vozActivada ? 'Silenciar a LexIA' : 'Activar la voz de LexIA'}
               onClick={() => setVozActivada(v => !v)}
             />
+            {/* "Un botón de stop y uno play para parar o continuar con la
+                lectura" (2026-09-25, pedido explícito del usuario) — solo
+                aparecen mientras LexIA está hablando/en pausa, no ocupan
+                espacio el resto del tiempo. */}
+            {lexiaHablando && !lexiaPausada && (
+              <IconButton icon="pause" variant="secondary" label="Pausar la lectura" onClick={pausarLexia} />
+            )}
+            {lexiaHablando && lexiaPausada && (
+              <IconButton icon="play" variant="secondary" label="Continuar la lectura" onClick={continuarLexia} />
+            )}
             <button className="drawer-close" onClick={onClose} aria-label="Cerrar">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
             </button>

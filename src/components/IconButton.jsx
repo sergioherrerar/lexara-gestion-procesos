@@ -128,6 +128,18 @@ export const ICONS = {
       <path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="m17 9 5 5"/><path d="m22 9-5 5"/>
     </svg>
   ),
+  // Pausar/continuar la lectura en voz alta de LexIA (2026-09-25, pedido
+  // explícito del usuario: "un botón de stop y uno play").
+  pause: (
+    <svg viewBox="0 0 24 24" fill="currentColor" stroke="none">
+      <rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/>
+    </svg>
+  ),
+  play: (
+    <svg viewBox="0 0 24 24" fill="currentColor" stroke="none">
+      <path d="M7 4.5v15l13-7.5z"/>
+    </svg>
+  ),
 };
 
 // Muchos links vienen de SharePoint sin "https://" delante (o con espacios
