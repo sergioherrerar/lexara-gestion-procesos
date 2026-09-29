@@ -190,7 +190,13 @@ export function filtrarHorasExtrasPorMes(horasExtras, anio, mesIndex0, soloAprob
   const { inicio, fin } = rangoHorasExtrasDelMes(anio, mesIndex0);
   return (horasExtras||[]).filter(h => {
     if(soloAprobadas && !h.Aprobado) return false;
-    const [y,m,d] = String(h.Fecha||"").split('-').map(Number);
+    // Bug real reportado por el usuario ("no me muestra ninguna") — Fecha
+    // real de SharePoint llega como fecha Y HORA completa
+    // ("2026-09-05T00:00:00Z"), no solo "2026-09-05" (mismo caso que ya
+    // resuelve soloFecha() arriba). Sin el .slice(0,10), el tercer pedazo
+    // del split quedaba "05T00:00:00Z" — Number(...) de eso es NaN, así que
+    // TODAS las filas se descartaban por el `!d`.
+    const [y,m,d] = String(h.Fecha||"").slice(0,10).split('-').map(Number);
     if(!y || !m || !d) return false;
     const fecha = new Date(y, m-1, d);
     return fecha >= inicio && fecha <= fin;

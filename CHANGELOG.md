@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-29 (2)
+- **Corrige que Horas Extras dejó de mostrar registros tras el corte día 28** — bug real introducido en el cambio anterior: la Fecha real de SharePoint llega con hora completa ("2026-09-05T00:00:00Z"), y el nuevo filtro por rango no le quitaba esa parte antes de convertirla a número, así que TODAS las filas se descartaban. Reportado por el usuario ("no me muestra ninguna").
+
 ## 2026-09-29 (1)
 - **Horas Extras ahora usa el mismo corte del día 28 que "Tutelas por Abogado"/"Tutelas por Cliente"** — pedido explícito del usuario ("que el mes solo tome hasta el 28 y el resto de días queden para el siguiente mes"). Antes filtraba por mes calendario simple (1 al 30/31); ahora es del 29 del mes anterior al 28 de este, tanto en Administración > Horas Extras como en Informes > Horas Extras > Registros. Se agregó una nota junto al selector de mes en ambos lugares para que quede claro el corte.
 
