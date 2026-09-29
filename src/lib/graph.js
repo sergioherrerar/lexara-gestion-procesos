@@ -620,7 +620,17 @@ async function resolverCarpetaLexIAOneDrive(urlCarpeta){
 
 // Nombre fijo (no lleva fecha) — así una re-extracción de la misma tutela
 // ACTUALIZA el mismo archivo en vez de ir acumulando copias.
+// Orden "N Tutela" (2026-09-29, pedido explícito del usuario viendo la
+// carpeta real en OneDrive: "primero coloca el número después tutelas") —
+// antes era "Tutela N". `rutaLexIAVieja` se mantiene para las carpetas que
+// ya se habían creado con el nombre anterior (27918/28195), tanto para
+// LEER esas 2 como para que `listarTutelasAnalizadasEnOneDrive` las siga
+// reconociendo — no hace falta renombrarlas a mano, ambos formatos
+// conviven mientras existan.
 function rutaLexIA(numeroTutela){
+  return `${numeroTutela} Tutela/Lectura LexIA.txt`;
+}
+function rutaLexIAVieja(numeroTutela){
   return `Tutela ${numeroTutela}/Lectura LexIA.txt`;
 }
 
@@ -679,18 +689,24 @@ export async function guardarLecturaLexIAEnOneDrive(urlCarpeta, numeroTutela, me
 // llama debe seguir con la extracción normal, no romper el flujo. No usa
 // graphFetch para este GET puntual porque esa función siempre intenta
 // parsear la respuesta como JSON — acá la respuesta es el .txt crudo.
+async function leerArchivoOneDrive(driveId, folderId, ruta){
+  const token = await getGraphToken();
+  const res = await fetch(
+    `https://graph.microsoft.com/v1.0/drives/${driveId}/items/${folderId}:/${encodeURIComponent(ruta).replace(/%2F/g,'/')}:/content`,
+    { headers:{ Authorization:`Bearer ${token}` } }
+  );
+  return res.ok ? res.text() : null;
+}
+
 export async function buscarLecturaLexIAGuardada(urlCarpeta, numeroTutela){
   if(!numeroTutela) return null;
   try{
     const { driveId, folderId } = await resolverCarpetaLexIAOneDrive(urlCarpeta);
-    const ruta = rutaLexIA(numeroTutela);
-    const token = await getGraphToken();
-    const res = await fetch(
-      `https://graph.microsoft.com/v1.0/drives/${driveId}/items/${folderId}:/${encodeURIComponent(ruta).replace(/%2F/g,'/')}:/content`,
-      { headers:{ Authorization:`Bearer ${token}` } }
-    );
-    if(!res.ok) return null; // 404 (no existe todavía) u otro error — sigue con la extracción normal
-    const texto = await res.text();
+    // Prueba primero el nombre nuevo ("N Tutela") y, si no existe, el
+    // viejo ("Tutela N") — ver nota en rutaLexIA/rutaLexIAVieja arriba.
+    const texto = (await leerArchivoOneDrive(driveId, folderId, rutaLexIA(numeroTutela)))
+      || (await leerArchivoOneDrive(driveId, folderId, rutaLexIAVieja(numeroTutela)));
+    if(!texto) return null; // no existe todavía (ni nuevo ni viejo) — sigue con la extracción normal
     const inicio = texto.indexOf(MARCADOR_JSON_INICIO);
     const fin = texto.indexOf(MARCADOR_JSON_FIN);
     if(inicio === -1 || fin === -1) return null;
@@ -719,7 +735,10 @@ export async function listarTutelasAnalizadasEnOneDrive(urlCarpeta){
     const res = await graphFetch(url);
     (res.value || []).forEach(item => {
       if(!item.folder) return;
-      const m = /^Tutela\s+(\d+)$/i.exec((item.name||'').trim());
+      const nombre = (item.name||'').trim();
+      // Reconoce los 2 formatos de nombre ("N Tutela", el nuevo, y
+      // "Tutela N", el viejo — ver rutaLexIA/rutaLexIAVieja arriba).
+      const m = /^(\d+)\s+Tutela$/i.exec(nombre) || /^Tutela\s+(\d+)$/i.exec(nombre);
       if(m) numeros.add(m[1]);
     });
     url = res['@odata.nextLink'] || null;

@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-29 (20)
+- **Cambia el orden del nombre de las carpetas de LexIA en OneDrive** — pedido explícito del usuario viendo la carpeta real: ahora es "27918 Tutela" en vez de "Tutela 27918". Las 2 carpetas que ya existían con el nombre viejo (27918/28195) siguen funcionando igual — la app reconoce los dos formatos, solo las nuevas se crean con el orden nuevo.
+
 ## 2026-09-29 (19)
 - **Los mensajes de lo que está haciendo LexIA ahora salen debajo del avatar grande** — pedido explícito del usuario con un boceto. Antes estaban repartidos en 2 lugares (la burbuja de saludo arriba de la lista de correos, y "Estoy trabajando para ti" junto al botón de extraer); ahora es un solo mensaje, justo debajo del marco, que cambia según lo que esté haciendo (saludando, trabajando, hablando).
 
