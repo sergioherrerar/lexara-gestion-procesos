@@ -70,6 +70,23 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
     return () => clearTimeout(t);
   }, []);
 
+  // Bug real reportado 2026-09-29, SEGUNDA vuelta (el primer arreglo — cargar
+  // al hacer clic en el correo de la lista — no bastaba: el usuario le
+  // preguntaba a "Pregúntame" sin haber hecho clic todavía en el correo
+  // precargado, así que casoActual seguía en null): apenas se abre esta
+  // ventana, si ya hay una tutela precargada, se carga de una vez en
+  // `resultado`/`correoActual` — así "Pregúntame" tiene contexto desde el
+  // primer segundo, sin depender de que el usuario haga clic en nada
+  // primero. Solo si `resultado` sigue vacío (no pisa una extracción manual
+  // que el usuario ya esté revisando).
+  useEffect(() => {
+    if(precargaLexIA && !resultado){
+      setResultado({ mensajeId: precargaLexIA.mensajeId, registros: precargaLexIA.registros });
+      setCorreoActual({ asunto: precargaLexIA.asunto, cuerpo: precargaLexIA.cuerpo });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [precargaLexIA]);
+
   useEffect(() => {
     let cancelado = false;
     (async () => {

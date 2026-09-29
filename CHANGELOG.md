@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-29 (16)
+- **Segunda vuelta al arreglo de "Pregúntame" con la tutela precargada** — el primer intento (cargarla al hacer clic en el correo de la lista) no bastaba: el usuario le preguntaba directo sin haber hecho clic todavía. Ahora se carga sola apenas se abre "Leer correo de Tutelas", sin depender de ningún clic. Verificado con una prueba real montando el componente con una tutela precargada de mentira: el aviso de "también puedes preguntar sobre el correo que acabas de leer" ya aparece de inmediato.
+
 ## 2026-09-29 (15)
 - **Corrige que "Pregúntame" no sabía nada de una tutela marcada "Ya leído por LexIA"** — reportado por el usuario con captura (28195). La insignia sale con solo la precarga automática de fondo, pero el panel de Preguntas solo se llenaba al apretar "Extraer con LexIA" — así que parecía que ya la conocía sin ser cierto. Ahora, al elegir en la lista un correo que ya está precargado, se carga de una vez (instantáneo) para que "Pregúntame" ya tenga el contexto sin tener que apretar el botón primero.
 
