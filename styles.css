@@ -322,25 +322,32 @@
   }
   /* Burbuja "¡Púlsame para ayudarte!" — aparece cuando el botón ya
      aterrizó (delay .65s) y se desvanece sola pasados unos segundos, sin
-     necesitar ningún estado de React ni temporizador. */
+     necesitar ningún estado de React ni temporizador.
+     Bug real reportado 2026-09-29 ("quedó por detrás del baner"): puesta
+     ARRIBA del botón (bottom:100%) se salía por el borde superior de
+     `.view` (padding de solo 26px) y `.view{overflow-y:auto}` la recortaba
+     ahí mismo — se veía como si quedara "detrás" del Calendario de arriba,
+     aunque en realidad estaba solo cortada por el scroll. Debajo del botón
+     sí hay aire de sobra antes de la fila de conteos, así que no se
+     recorta. */
   .lexia-tip-burbuja{
-    position:absolute; bottom:100%; left:50%; transform:translateX(-50%);
-    margin-bottom:12px; max-width:150px; text-align:center; white-space:normal;
+    position:absolute; top:100%; left:50%; transform:translateX(-50%);
+    margin-top:12px; max-width:150px; text-align:center; white-space:normal;
     background:#eef7f6; border:1px solid var(--verde-claro); color:var(--verde-oscuro);
     font-size:12.5px; font-weight:600; line-height:1.35; padding:7px 12px; border-radius:12px;
     box-shadow:0 4px 10px rgba(15,40,35,.14); pointer-events:none;
     animation: lexia-tip-vida 5.5s .65s cubic-bezier(.34,1.56,.64,1) both;
   }
   .lexia-tip-burbuja::after{
-    content:''; position:absolute; top:100%; left:50%; transform:translateX(-50%);
-    border:6px solid transparent; border-top-color:#eef7f6;
+    content:''; position:absolute; bottom:100%; left:50%; transform:translateX(-50%);
+    border:6px solid transparent; border-bottom-color:#eef7f6;
   }
   @keyframes lexia-tip-vida{
-    0%{ opacity:0; transform: translateX(-50%) translateY(6px) scale(.85); }
-    10%{ opacity:1; transform: translateX(-50%) translateY(-2px) scale(1.04); }
+    0%{ opacity:0; transform: translateX(-50%) translateY(-6px) scale(.85); }
+    10%{ opacity:1; transform: translateX(-50%) translateY(2px) scale(1.04); }
     16%{ transform: translateX(-50%) translateY(0) scale(1); }
     82%{ opacity:1; transform: translateX(-50%) translateY(0) scale(1); }
-    100%{ opacity:0; transform: translateX(-50%) translateY(-6px) scale(.95); }
+    100%{ opacity:0; transform: translateX(-50%) translateY(6px) scale(.95); }
   }
   @media (prefers-reduced-motion: reduce){
     .lexia-btn-caida, .lexia-tip-burbuja{animation:none;}

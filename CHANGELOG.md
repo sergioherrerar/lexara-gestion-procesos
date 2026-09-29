@@ -2,6 +2,10 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-29 (6)
+- **Corrige que la burbuja de LexIA quedaba "detrás" del Calendario** — reportado por el usuario con captura: en realidad no era un problema de capas, sino que la burbuja aparecía ARRIBA del botón y `.view` (con scroll propio) la recortaba por el borde superior. Ahora aparece debajo del botón, donde sí hay espacio.
+- **Corrige que los botones de Pausar y Silenciar la voz de LexIA no funcionaban** — reportado por el usuario. Al llamar `speechSynthesis.cancel()` para pausar/silenciar, el navegador dispara `onerror` (no `onend`) en la frase interrumpida, y ese `onerror` pisaba el estado recién puesto (el botón de pausa desaparecía en vez de convertirse en el de continuar). Se le agregó el mismo guard que ya tenía `onend`.
+
 ## 2026-09-29 (5)
 - **Animación de "caída" y botón de LexIA más grande** — pedido explícito del usuario. El botón "LexIA" de Tutelas ahora cae con rebote desde arriba cada vez que se abre esa vista, con una burbuja "¡Púlsame para ayudarte!" que aparece al aterrizar y se desvanece sola. Además, el avatar dentro del botón y en el panel "Entrenar LexIA" se agrandó (se veía muy chico/recortado siendo una foto vertical) y el botón quedó un poco más ancho para que respire mejor.
 

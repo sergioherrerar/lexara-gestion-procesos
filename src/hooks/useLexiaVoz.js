@@ -60,7 +60,14 @@ export function useLexiaVoz(){
       if(detenidoRef.current) return; // se pausó/canceló mientras leía esta frase
       hablarDesde(indice + 1);
     };
-    u.onerror = () => { setHablando(false); setPausada(false); };
+    // Bug real reportado 2026-09-29 ("no funcionan pausa ni silenciar"): al
+    // llamar speechSynthesis.cancel() para pausar/silenciar/hablar de
+    // nuevo, el navegador dispara onerror (no onend) en la frase que se
+    // interrumpió — sin este guard, ese onerror pisaba el pausada:true que
+    // pausar() ACABABA de poner, y el botón de pausa desaparecía de
+    // inmediato en vez de convertirse en el de continuar. Mismo guard que
+    // ya usa onend arriba.
+    u.onerror = () => { if(detenidoRef.current) return; setHablando(false); setPausada(false); };
     window.speechSynthesis.speak(u);
   }, []);
 
