@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-29 (8)
+- **Avatar grande de LexIA en "Leer correo de Tutelas"** — pedido explícito del usuario ("dar más protagonismo... casi el mismo tamaño de la ventana"). Nueva columna a la derecha con el avatar en tamaño grande, que ahora cambia de POSE según la etapa (no solo de animación): de pie mientras espera, con la mano en la oreja mientras extrae/procesa el correo, y con las manos abiertas mientras lee la respuesta en voz alta. Usa 2 fotos nuevas que mandó el usuario (se les quitó a mano el sello "Made with AI" que traían).
+
 ## 2026-09-29 (7)
 - **La lista de "Leer correo de Tutelas" ahora se ordena por número de tutela (consecutivo), no por fecha del correo** — pedido explícito del usuario, viendo en vivo que el correo siguiente al precargado (28195) aparecía uno de una tutela vieja (27918) por venir después en fecha. Ahora el precargado sigue de primero, y el resto queda en orden 28196, 28197, 28198... (los correos sin número reconocible en el asunto quedan al final).
 - **Nuevo botón "Actualizar lista"** en "Leer correo de Tutelas" — pedido explícito del usuario, para traer los correos que hayan entrado sin tener que cerrar y volver a abrir la ventana.

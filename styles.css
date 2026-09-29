@@ -1357,12 +1357,72 @@
      siempre visible al lado, en vez de una ventana aparte. En pantallas
      angostas (celular) se apilan una sobre otra en vez de lado a lado —
      mismo contenido y funciones en los 2 casos (ver [[feedback_pc_mobile_parity]]). */
-  .leer-correo-box-ancha{max-width:960px;}
+  /* Ensanchado 2026-09-29 (antes 960px) para que quepa la 3ª columna del
+     avatar grande (.leer-correo-col-avatar) sin apretar las otras 2. */
+  .leer-correo-box-ancha{max-width:1220px;}
   .leer-correo-2col{display:flex; gap:22px; align-items:flex-start;}
   .leer-correo-col-principal{flex:1 1 55%; min-width:0; max-height:70vh; overflow-y:auto; padding-right:4px;}
   .leer-correo-col-lateral{
     flex:1 1 40%; min-width:280px; max-width:360px; max-height:70vh; overflow-y:auto;
     border-left:1px solid var(--gris-linea); padding-left:20px;
+  }
+  /* Avatar grande al costado derecho (2026-09-29, pedido explícito del
+     usuario: "dar más protagonismo al avatar... casi el mismo tamaño de la
+     ventana", con una pose distinta según la etapa — ver estadoAvatar en
+     LeerCorreoTutelaModal.jsx). Ancho fijo (no crece/encoge) para que las
+     otras 2 columnas mantengan su proporción de siempre. */
+  .leer-correo-col-avatar{
+    flex:0 0 210px; align-self:stretch;
+    display:flex; align-items:flex-start; justify-content:center;
+    border-left:1px solid var(--gris-linea); padding-left:20px;
+  }
+  .avatar-grande{
+    width:100%; max-height:66vh; object-fit:contain;
+    filter: drop-shadow(0 12px 20px rgba(15,40,35,.3)) drop-shadow(0 2px 5px rgba(15,40,35,.2));
+  }
+  @keyframes avatar-grande-entrada{
+    0%{opacity:0; transform:translateY(16px) scale(.92);}
+    100%{opacity:1; transform:translateY(0) scale(1);}
+  }
+  /* Reposo: mientras espera que se elija/procese un correo — respiración
+     suave, de pie. */
+  .avatar-grande-reposo{
+    animation: avatar-grande-entrada .5s cubic-bezier(.34,1.56,.64,1) both, avatar-grande-flotar 3.4s .5s ease-in-out infinite;
+  }
+  @keyframes avatar-grande-flotar{
+    0%,100%{transform:translateY(0);}
+    50%{transform:translateY(-8px);}
+  }
+  /* Escuchando: mientras LexIA extrae/procesa el correo elegido (pose de
+     la mano en la oreja, ver `procesando` en LeerCorreoTutelaModal.jsx). */
+  .avatar-grande-escuchando{
+    animation: avatar-grande-entrada .5s cubic-bezier(.34,1.56,.64,1) both, avatar-grande-escuchar 1.8s .5s ease-in-out infinite;
+  }
+  @keyframes avatar-grande-escuchar{
+    0%,100%{transform:rotate(0deg);}
+    50%{transform:rotate(-3deg);}
+  }
+  /* Hablando: mientras lee la respuesta en voz alta (pose de manos
+     abiertas explicando, ver `lexiaHablando`). */
+  .avatar-grande-hablando{
+    animation: avatar-grande-entrada .5s cubic-bezier(.34,1.56,.64,1) both, avatar-grande-hablar 1s .5s ease-in-out infinite;
+  }
+  @keyframes avatar-grande-hablar{
+    0%,100%{transform:scale(1) translateY(0);}
+    50%{transform:scale(1.03) translateY(-4px);}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .avatar-grande{animation:none;}
+  }
+  @media (max-width:760px){
+    /* En celular sigue presente (ver [[feedback_pc_mobile_parity]]), pero
+       más chico y arriba de todo (order:-1) en vez de al final de la
+       columna apilada, para que no quede enterrado bajo "Entrenar LexIA". */
+    .leer-correo-col-avatar{
+      order:-1; flex:0 0 auto; width:100%; max-width:200px; margin:0 auto 16px;
+      border-left:none; padding-left:0; justify-content:center;
+    }
+    .avatar-grande{max-height:220px;}
   }
   .leer-correo-col-lateral-titulo{margin:0; font-size:17px; color:var(--verde-oscuro); display:flex; align-items:center; gap:8px; white-space:nowrap;}
   /* "Entrenar LexIA" alineado con el título de la izquierda, junto al

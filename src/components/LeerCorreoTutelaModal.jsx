@@ -4,6 +4,14 @@ import IconButton, { IconTextButton } from './IconButton';
 import { EntrenarIAPanel } from './EntrenarIAModal';
 import { useDraggable } from '../hooks/useDraggable';
 import lexiaAvatar from '../assets/LexIA avatar.png';
+// Dos poses nuevas del avatar (2026-09-29, pedido explícito del usuario:
+// "darle más protagonismo... y que se vieran diferentes movimientos en
+// diferentes etapas de la búsqueda") — antes solo había UNA pose (brazos
+// cruzados), así que "distinto movimiento por etapa" solo podía variar la
+// animación CSS sobre la misma imagen. Con estas 2 poses reales del
+// usuario sí cambia también la postura, no solo el movimiento.
+import lexiaAvatarEscuchando from '../assets/LexIA avatar - escuchando.webp';
+import lexiaAvatarHablando from '../assets/LexIA avatar - hablando.webp';
 
 // "API Claude" Tarea 1 (2026-09-23, pedido explícito del usuario, con
 // aprobación interna — ver [[project_api_claude_tutelas]]) — leer un correo
@@ -170,6 +178,13 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
     }
     return compararPorNumeroTutela(a, b);
   });
+
+  // Avatar grande con pose distinta según la etapa (2026-09-29, pedido
+  // explícito del usuario) — "escuchando" mientras LexIA está leyendo/
+  // extrayendo el correo, "hablando" mientras lee la respuesta en voz
+  // alta, y la pose de siempre (brazos cruzados) el resto del tiempo.
+  const estadoAvatar = procesando ? 'escuchando' : (lexiaHablando ? 'hablando' : 'reposo');
+  const AVATAR_POR_ESTADO = { reposo: lexiaAvatar, escuchando: lexiaAvatarEscuchando, hablando: lexiaAvatarHablando };
 
   return (
     <div className="confirm-overlay leer-correo-overlay">
@@ -373,6 +388,19 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
             notify={notify}
             casoActual={resultado ? { asunto: correoActual?.asunto, cuerpo: correoActual?.cuerpo, registros: resultado.registros } : null}
             decirLexia={decir}
+          />
+        </div>
+        {/* Avatar grande al costado derecho (2026-09-29, pedido explícito
+            del usuario: "más protagonismo... casi el mismo tamaño de la
+            ventana") — la key fuerza a React a remontar la imagen cuando
+            cambia de pose, para que la animación de entrada se dispare de
+            nuevo en cada cambio de etapa. */}
+        <div className="leer-correo-col-avatar">
+          <img
+            key={estadoAvatar}
+            src={AVATAR_POR_ESTADO[estadoAvatar]}
+            alt="LexIA"
+            className={`avatar-grande avatar-grande-${estadoAvatar}`}
           />
         </div>
         </div>
