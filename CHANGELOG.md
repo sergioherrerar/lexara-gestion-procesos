@@ -2,6 +2,10 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-29 (7)
+- **La lista de "Leer correo de Tutelas" ahora se ordena por número de tutela (consecutivo), no por fecha del correo** — pedido explícito del usuario, viendo en vivo que el correo siguiente al precargado (28195) aparecía uno de una tutela vieja (27918) por venir después en fecha. Ahora el precargado sigue de primero, y el resto queda en orden 28196, 28197, 28198... (los correos sin número reconocible en el asunto quedan al final).
+- **Nuevo botón "Actualizar lista"** en "Leer correo de Tutelas" — pedido explícito del usuario, para traer los correos que hayan entrado sin tener que cerrar y volver a abrir la ventana.
+
 ## 2026-09-29 (6)
 - **Corrige que la burbuja de LexIA quedaba "detrás" del Calendario** — reportado por el usuario con captura: en realidad no era un problema de capas, sino que la burbuja aparecía ARRIBA del botón y `.view` (con scroll propio) la recortaba por el borde superior. Ahora aparece debajo del botón, donde sí hay espacio.
 - **Corrige que los botones de Pausar y Silenciar la voz de LexIA no funcionaban** — reportado por el usuario. Al llamar `speechSynthesis.cancel()` para pausar/silenciar, el navegador dispara `onerror` (no `onend`) en la frase interrumpida, y ese `onerror` pisaba el estado recién puesto (el botón de pausa desaparecía en vez de convertirse en el de continuar). Se le agregó el mismo guard que ya tenía `onend`.

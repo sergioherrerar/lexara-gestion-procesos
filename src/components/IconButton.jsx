@@ -110,6 +110,14 @@ export const ICONS = {
       <circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>
     </svg>
   ),
+  // Flechas circulares — "Actualizar lista" (2026-09-29, pedido explícito
+  // del usuario: "un botón para actualizar la lista de los correos que
+  // estén ingresando", ver "Leer correo de Tutelas").
+  refresh: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 4v5h-5"/>
+    </svg>
+  ),
   // Caja con cinta — descargar un ZIP con varios documentos juntos
   // ("Diligenciamiento Formatos Empresas").
   zip: (

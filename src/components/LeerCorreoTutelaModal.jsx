@@ -14,6 +14,12 @@ import lexiaAvatar from '../assets/LexIA avatar.png';
 // nunca se toca SharePoint, solo se arma el objeto de campos iniciales.
 export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitidos, robotUrl, tutelas, onAgregarCorreccionIA, robotPreguntasUrl, onExtraido, onClose, notify, vozActivada, setVozActivada, decir, lexiaHablando, lexiaPausada, pausarLexia, continuarLexia, precargaLexIA }){
   const [cargando, setCargando] = useState(true);
+  // "Un botón para actualizar la lista de los correos que estén
+  // ingresando" (2026-09-29, pedido explícito del usuario) — separado de
+  // `cargando` (que reemplaza toda la lista por "Cargando correos…") para
+  // que al actualizar a mano la lista de abajo NO desaparezca, solo gira
+  // el ícono mientras llega la respuesta.
+  const [actualizando, setActualizando] = useState(false);
   const [errorCarga, setErrorCarga] = useState('');
   const [mensajes, setMensajes] = useState([]);
   const [seleccionadoId, setSeleccionadoId] = useState(null);
@@ -73,6 +79,20 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
     return () => { cancelado = true; };
   }, [correoBuzon, remitentesPermitidos, desde, hasta]);
 
+  async function handleActualizarCorreos(){
+    setActualizando(true);
+    setErrorCarga('');
+    try{
+      const r = await leerCorreosTutelas(correoBuzon, remitentesPermitidos, 200, desde || undefined, hasta || undefined);
+      setMensajes(r);
+    }catch(err){
+      console.error(err);
+      setErrorCarga(mensajeError(err));
+    }finally{
+      setActualizando(false);
+    }
+  }
+
   async function handleExtraer(mensaje){
     if(!robotUrl){
       notify?.('Falta terminar de instalar LexIA (ROBOT_CLAUDE_URL en config.js) antes de poder usar esto.', 'error');
@@ -125,17 +145,31 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
   const tutelaBuscadaExistente = numeroBuscado === null
     ? null
     : (tutelas || []).find(t => Number(t.NoTutela) === numeroBuscado) || null;
-  // "Después de que sea leída su información, déjalo de primeras en la
-  // lista" (2026-09-25, pedido explícito del usuario) — el correo ya
-  // precargado por LexIA queda arriba de todo, sin importar su fecha, para
-  // no tener que buscarlo entre los demás.
-  const mensajesOrdenados = precargaLexIA
-    ? [...mensajesFiltrados].sort((a,b) => {
-        if(a.id === precargaLexIA.mensajeId) return -1;
-        if(b.id === precargaLexIA.mensajeId) return 1;
-        return 0;
-      })
-    : mensajesFiltrados;
+  // Orden de la lista visible (2026-09-29, pedido explícito del usuario:
+  // "ya no veo tan factible que se ordene por la fecha sino por el número
+  // de tutelas según sea el consecutivo") — antes quedaba en el orden de
+  // llegada del correo (más reciente primero); ahora se ordena por el
+  // número de tutela del asunto, de menor a mayor, que es como de verdad
+  // se van revisando (28163, 28164, 28165...). Los correos sin número
+  // reconocible en el asunto quedan al final. El precargado por LexIA
+  // (la siguiente sin guardar, ver encontrarCorreoSiguienteTutela) sigue
+  // primero de todos, sin importar su número (2026-09-25, pedido explícito
+  // del usuario: "déjalo de primeras en la lista").
+  function compararPorNumeroTutela(a, b){
+    const na = numeroTutelaDeAsunto(a.asunto);
+    const nb = numeroTutelaDeAsunto(b.asunto);
+    if(na === null && nb === null) return 0;
+    if(na === null) return 1;
+    if(nb === null) return -1;
+    return na - nb;
+  }
+  const mensajesOrdenados = [...mensajesFiltrados].sort((a, b) => {
+    if(precargaLexIA){
+      if(a.id === precargaLexIA.mensajeId) return -1;
+      if(b.id === precargaLexIA.mensajeId) return 1;
+    }
+    return compararPorNumeroTutela(a, b);
+  });
 
   return (
     <div className="confirm-overlay leer-correo-overlay">
@@ -213,6 +247,9 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
               Quitar filtro de fecha
             </button>
           )}
+          <div style={{alignSelf:'flex-end'}}>
+            <IconButton icon="refresh" variant="secondary" label="Actualizar lista de correos" spinning={actualizando} onClick={handleActualizarCorreos} />
+          </div>
         </div>
         {/* Buscador por No. Tutela (2026-09-25, pedido explícito del
             usuario) — filtra la lista de abajo y avisa si esa tutela ya
