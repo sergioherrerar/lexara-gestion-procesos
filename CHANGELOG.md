@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-29 (18)
+- **La insignia "Ya leído por LexIA" ahora también sale para tutelas analizadas en sesiones anteriores** — pedido explícito del usuario, viendo en OneDrive que la carpeta "Tutela 27918" ya existía pero la lista de correos no lo mostraba (esa tutela no se había precargado/extraído en la sesión actual). Se lista una sola vez, al abrir la ventana, qué carpetas ya existen en OneDrive; al seleccionar uno de esos correos, "Pregúntame" también carga su análisis guardado de una vez, sin gastar Claude otra vez.
+
 ## 2026-09-29 (17)
 - **Corrige el color de volumen/pausar/continuar/actualizar en "Leer correo (LexIA)"** — reportado por el usuario. Esos 4 íconos nunca habían tenido un estilo propio (salían en negro plano en vez del verde institucional) desde que se crearon — ya quedaron con el mismo color que el resto de la app.
 - **Tercera vuelta al bug de "no pausa ni silencia"** — encontrado un problema real de fondo distinto a los 2 anteriores: en Chrome/Edge, si se manda a hablar ANTES de que el navegador termine de cargar su lista de voces (pasa justo al abrir la app por primera vez), la primera lectura puede quedar completamente muda — sin sonar nada, pero SIN avisar ningún error tampoco, así que por fuera se ve exactamente igual a "no hace nada". Ahora se espera a que las voces carguen antes de la primera lectura (con un tope de 1 segundo) y se le asigna una voz en español explícita, en vez de dejar que el navegador adivine.

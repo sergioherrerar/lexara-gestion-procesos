@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { leerCorreosTutelas, extraerTutelaConLexIA, numeroTutelaDeAsunto, mensajeError, buscarLecturaLexIAGuardada, guardarLecturaLexIAEnOneDrive } from '../lib/graph';
+import { leerCorreosTutelas, extraerTutelaConLexIA, numeroTutelaDeAsunto, mensajeError, buscarLecturaLexIAGuardada, guardarLecturaLexIAEnOneDrive, listarTutelasAnalizadasEnOneDrive } from '../lib/graph';
 import IconButton, { IconTextButton } from './IconButton';
 import { EntrenarIAPanel } from './EntrenarIAModal';
 import { useDraggable } from '../hooks/useDraggable';
@@ -56,6 +56,21 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
   // mensaje si ya está en la lista de SharePoint Tutelas o no") — mismo
   // parseo de texto (sin IA) que ya usa la precarga automática.
   const [busquedaNumero, setBusquedaNumero] = useState('');
+  // "Si ya creó la carpeta, colócale Ya leído" (2026-09-29, pedido
+  // explícito del usuario viendo en OneDrive una carpeta "Tutela 27918"
+  // que la lista de correos no marcaba, porque esa tutela no se había
+  // precargado ni extraído EN ESTA SESIÓN) — set con los números de
+  // tutela que YA tienen un análisis guardado de una sesión anterior;
+  // se lista una sola vez al abrir esta ventana (no un GET por correo).
+  const [analizadasOneDrive, setAnalizadasOneDrive] = useState(new Set());
+  useEffect(() => {
+    if(!onedriveCarpetaUrl) return;
+    let cancelado = false;
+    listarTutelasAnalizadasEnOneDrive(onedriveCarpetaUrl)
+      .then(set => { if(!cancelado) setAnalizadasOneDrive(set); })
+      .catch(err => console.error('No se pudo listar las tutelas ya analizadas en OneDrive:', err));
+    return () => { cancelado = true; };
+  }, [onedriveCarpetaUrl]);
   // "Dar vida" a LexIA (2026-09-24, pedido explícito del usuario: "podemos
   // darle voz y que lea lo que envía... que salude con la voz al abrir") —
   // `vozActivada`/`setVozActivada`/`decir` vienen de TutelasView (no se
@@ -352,9 +367,12 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
           </p>
         )}
         <ul className="leer-correo-lista">
-          {mensajesOrdenados.map(m => (
+          {mensajesOrdenados.map(m => {
+            const numeroDeEsteMensaje = numeroTutelaDeAsunto(m.asunto);
+            const yaAnalizadaEnOneDrive = numeroDeEsteMensaje && analizadasOneDrive.has(String(numeroDeEsteMensaje));
+            return (
             <li key={m.id} className={"leer-correo-item" + (seleccionadoId===m.id ? ' activo' : '')}>
-              <button type="button" className="leer-correo-item-btn" onClick={() => {
+              <button type="button" className="leer-correo-item-btn" onClick={async () => {
                 setSeleccionadoId(m.id);
                 // Bug real reportado 2026-09-29 ("dice que leyó esa tutela
                 // pero al preguntarle no me dice nada sobre ella"): la
@@ -368,6 +386,16 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
                 if(precargaLexIA?.mensajeId === m.id){
                   setResultado({ mensajeId: m.id, registros: precargaLexIA.registros });
                   setCorreoActual({ asunto: precargaLexIA.asunto, cuerpo: precargaLexIA.cuerpo });
+                } else if(yaAnalizadaEnOneDrive && resultado?.mensajeId !== m.id){
+                  // "Si ya creó la carpeta, colócale Ya leído" (2026-09-29,
+                  // pedido explícito del usuario) — misma idea de arriba,
+                  // pero para una tutela analizada en una sesión ANTERIOR
+                  // (no en precargaLexIA, que es solo de esta sesión).
+                  const guardada = await buscarLecturaLexIAGuardada(onedriveCarpetaUrl, numeroDeEsteMensaje);
+                  if(guardada){
+                    setResultado({ mensajeId: m.id, registros: guardada.registros });
+                    setCorreoActual({ asunto: guardada.asunto, cuerpo: guardada.cuerpo });
+                  }
                 } else if(resultado?.mensajeId !== m.id){
                   setResultado(null);
                   setCorreoActual(null);
@@ -388,8 +416,8 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
                       el precargado de fondo), para que quede claro que ese
                       correo ya fue leído por LexIA sin tener que volver a
                       abrirlo. */}
-                  {(precargaLexIA?.mensajeId === m.id || resultado?.mensajeId === m.id) && ' · '}
-                  {(precargaLexIA?.mensajeId === m.id || resultado?.mensajeId === m.id) && (
+                  {(precargaLexIA?.mensajeId === m.id || resultado?.mensajeId === m.id || yaAnalizadaEnOneDrive) && ' · '}
+                  {(precargaLexIA?.mensajeId === m.id || resultado?.mensajeId === m.id || yaAnalizadaEnOneDrive) && (
                     <span className="badge badge-verde" style={{marginLeft:2}}>Ya leído por LexIA</span>
                   )}
                 </span>
@@ -450,7 +478,8 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
                 </div>
               )}
             </li>
-          ))}
+            );
+          })}
         </ul>
         </div>
         <div className="leer-correo-col-lateral">

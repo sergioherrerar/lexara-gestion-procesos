@@ -703,6 +703,30 @@ export async function buscarLecturaLexIAGuardada(urlCarpeta, numeroTutela){
   }
 }
 
+// "Si ya creó la carpeta, colócale Ya leído" (2026-09-29, pedido explícito
+// del usuario viendo en vivo que la carpeta "Tutela 27918" ya existía en
+// OneDrive, pero la lista de correos no lo mostraba porque esa tutela
+// nunca se había precargado ni extraído EN ESTA SESIÓN) — lista las
+// subcarpetas "Tutela N" de una sola vez (no un GET por cada correo de la
+// lista, que sería carísimo) para poder marcar la insignia "Ya leído por
+// LexIA" en cualquier correo cuya tutela YA tenga un análisis guardado de
+// una sesión anterior, no solo el precargado/extraído de esta sesión.
+export async function listarTutelasAnalizadasEnOneDrive(urlCarpeta){
+  const { driveId, folderId } = await resolverCarpetaLexIAOneDrive(urlCarpeta);
+  const numeros = new Set();
+  let url = `/drives/${driveId}/items/${folderId}/children?$select=name,folder&$top=200`;
+  while(url){
+    const res = await graphFetch(url);
+    (res.value || []).forEach(item => {
+      if(!item.folder) return;
+      const m = /^Tutela\s+(\d+)$/i.exec((item.name||'').trim());
+      if(m) numeros.add(m[1]);
+    });
+    url = res['@odata.nextLink'] || null;
+  }
+  return numeros;
+}
+
 // Traduce errores técnicos (de MSAL o de la respuesta cruda de Graph, casi
 // siempre en inglés) a un mensaje en español entendible — pedido explícito
 // del usuario 2026-09-10 ("trata de que todos los errores sean español").
