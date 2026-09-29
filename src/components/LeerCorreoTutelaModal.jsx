@@ -337,7 +337,25 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
         <ul className="leer-correo-lista">
           {mensajesOrdenados.map(m => (
             <li key={m.id} className={"leer-correo-item" + (seleccionadoId===m.id ? ' activo' : '')}>
-              <button type="button" className="leer-correo-item-btn" onClick={() => { setSeleccionadoId(m.id); setResultado(null); setCorreoActual(null); }}>
+              <button type="button" className="leer-correo-item-btn" onClick={() => {
+                setSeleccionadoId(m.id);
+                // Bug real reportado 2026-09-29 ("dice que leyó esa tutela
+                // pero al preguntarle no me dice nada sobre ella"): la
+                // insignia "Ya leído por LexIA" sale con solo la precarga
+                // de fondo (precargaLexIA), pero "Pregúntame" (casoActual)
+                // solo se llenaba al apretar "Extraer con LexIA" — así que
+                // parecía que ya sabía de esa tutela sin saber en realidad.
+                // Si este correo YA está precargado, se carga de una vez al
+                // seleccionarlo (mismo dato, instantáneo, sin gastar Claude
+                // otra vez) en vez de dejar el panel de Preguntas vacío.
+                if(precargaLexIA?.mensajeId === m.id){
+                  setResultado({ mensajeId: m.id, registros: precargaLexIA.registros });
+                  setCorreoActual({ asunto: precargaLexIA.asunto, cuerpo: precargaLexIA.cuerpo });
+                } else if(resultado?.mensajeId !== m.id){
+                  setResultado(null);
+                  setCorreoActual(null);
+                }
+              }}>
                 <strong>{m.remitenteNombre || m.remitente || 'Remitente desconocido'}</strong>
                 <span>{m.asunto}</span>
                 <span className="save-hint">

@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-29 (15)
+- **Corrige que "Pregúntame" no sabía nada de una tutela marcada "Ya leído por LexIA"** — reportado por el usuario con captura (28195). La insignia sale con solo la precarga automática de fondo, pero el panel de Preguntas solo se llenaba al apretar "Extraer con LexIA" — así que parecía que ya la conocía sin ser cierto. Ahora, al elegir en la lista un correo que ya está precargado, se carga de una vez (instantáneo) para que "Pregúntame" ya tenga el contexto sin tener que apretar el botón primero.
+
 ## 2026-09-29 (14)
 - **La precarga automática de LexIA (la que corre sola al entrar al portal) también revisa/guarda en OneDrive** — mismo criterio que "Extraer con LexIA" del cambio anterior, para que ambos caminos se beneficien del respaldo y de no repetir el análisis de una tutela ya leída.
 
