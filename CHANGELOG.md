@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-29 (24)
+- **Registro de diagnóstico para el bug de volumen/pausar** — 4 intentos de arreglo ya verificados por estado interno (hablando/pausada cambian bien), pero nunca se pudo confirmar sonido real desde acá. Se agregaron mensajes en la consola del navegador (F12 → pestaña Consola) en cada paso clave (clic en el botón, llamado a speak(), inicio/fin/error real de la lectura) para poder ver EXACTAMENTE en qué paso se cae en la máquina real del usuario.
+
 ## 2026-09-29 (23)
 - **Cuarto intento del bug "no pausa ni silencia"** — el arreglo anterior (esperar a que carguen las voces antes de hablar) agregaba una espera async DENTRO de decir(), justo antes de speak() — varios navegadores bloquean speak() en silencio si no se llama de forma completamente síncrona, en respuesta directa al clic real. Ahora las voces se precargan solas en segundo plano apenas se abre la app (sin bloquear nada), y decir() volvió a ser 100% síncrono, llamando a speak() en el mismo instante del clic — igual que la primera versión, pero ya con voces/voz de mujer listas de antemano.
 

@@ -302,17 +302,17 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
               icon={vozActivada ? 'volumeOn' : 'volumeOff'}
               variant="secondary"
               label={vozActivada ? 'Silenciar a LexIA' : 'Activar la voz de LexIA'}
-              onClick={() => setVozActivada(v => !v)}
+              onClick={() => { console.log('[LexIA voz] clic en el botón de volumen'); setVozActivada(v => !v); }}
             />
             {/* "Un botón de stop y uno play para parar o continuar con la
                 lectura" (2026-09-25, pedido explícito del usuario) — solo
                 aparecen mientras LexIA está hablando/en pausa, no ocupan
                 espacio el resto del tiempo. */}
             {lexiaHablando && !lexiaPausada && (
-              <IconButton icon="pause" variant="secondary" label="Pausar la lectura" onClick={pausarLexia} />
+              <IconButton icon="pause" variant="secondary" label="Pausar la lectura" onClick={() => { console.log('[LexIA voz] clic en el botón de pausar'); pausarLexia(); }} />
             )}
             {lexiaHablando && lexiaPausada && (
-              <IconButton icon="play" variant="secondary" label="Continuar la lectura" onClick={continuarLexia} />
+              <IconButton icon="play" variant="secondary" label="Continuar la lectura" onClick={() => { console.log('[LexIA voz] clic en el botón de continuar'); continuarLexia(); }} />
             )}
           </div>
           <div className="leer-correo-head-avatar-col">
