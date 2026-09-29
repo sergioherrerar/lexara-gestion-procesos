@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { INITIAL_CONFIG, SHAREPOINT_LISTS_CONFIG, DEMO_PROCESOS, DEMO_CLIENTES, DEMO_FACTURAS, DEMO_ORDENES_COMPRA, DEMO_COLABORADORES, DEMO_FORMAS_PAGO, DEMO_DESISTIMIENTOS, DEMO_TIPOS_ACCION, DEMO_TUTELAS, DEMO_TEMAS, DEMO_VALORES_ENTIDAD, DEMO_HORAS_EXTRAS, DEMO_VACACIONES_PERIODOS, DEMO_PROVEEDORES_GASTOS, DEMO_CUENTAS_COBRO_GASTOS, DEMO_PAGOS_POR_REALIZAR, DEMO_GASTOS, DEMO_TASAS_INTERES, DEMO_IPC, DEMO_AUDIENCIAS, DEMO_TERMINOS, DEMO_PENDIENTES, CALENDARIO_AUDIENCIAS_TERMINOS, RUTAS_CARPETAS_ENTIDAD, TUTELAS_REMITENTES_PERMITIDOS } from '../config';
+import { INITIAL_CONFIG, SHAREPOINT_LISTS_CONFIG, DEMO_PROCESOS, DEMO_CLIENTES, DEMO_FACTURAS, DEMO_ORDENES_COMPRA, DEMO_COLABORADORES, DEMO_FORMAS_PAGO, DEMO_DESISTIMIENTOS, DEMO_TIPOS_ACCION, DEMO_TUTELAS, DEMO_TEMAS, DEMO_VALORES_ENTIDAD, DEMO_HORAS_EXTRAS, DEMO_VACACIONES_PERIODOS, DEMO_PROVEEDORES_GASTOS, DEMO_CUENTAS_COBRO_GASTOS, DEMO_PAGOS_POR_REALIZAR, DEMO_GASTOS, DEMO_TASAS_INTERES, DEMO_IPC, DEMO_AUDIENCIAS, DEMO_TERMINOS, DEMO_PENDIENTES, CALENDARIO_AUDIENCIAS_TERMINOS, RUTAS_CARPETAS_ENTIDAD } from '../config';
 import * as Graph from '../lib/graph';
 import { canWrite as canWriteForColaborador, modulosPermitidosDe, MODULOS_DISPONIBLES } from '../lib/permissions';
 
@@ -168,13 +168,6 @@ export function useLexaraApp(){
   const [tutelas, setTutelas] = useState([]);
   const [activeTutelaId, setActiveTutelaId] = useState(null);
   const [draftTutela, setDraftTutela] = useState(null);
-  // Precarga de LexIA (2026-09-25, pedido explícito del usuario: "que
-  // apenas ingresen al portal cargue la lectura" de UN correo, para que ya
-  // esté lista al llegar al botón de LexIA) — { mensajeId, asunto, cuerpo,
-  // registros } | null. Se llena sola, una vez, al iniciar sesión (ver
-  // precargarSiguienteTutelaLexIA más abajo); LeerCorreoTutelaModal la usa
-  // en vez de volver a llamar al robot si el correo elegido coincide.
-  const [precargaLexIA, setPrecargaLexIA] = useState(null);
   const [temas, setTemas] = useState([]);
   const [valoresEntidad, setValoresEntidad] = useState([]);
   // Horas Extras (Administración, agregado 2026-08-31) — mismo criterio
@@ -419,85 +412,9 @@ export function useLexaraApp(){
       setAudiencias(updated.find(l => l.key==='audiencias')?.items || []);
       setTerminos(updated.find(l => l.key==='terminos')?.items || []);
       setPendientes(updated.find(l => l.key==='pendientes')?.items || []);
-      // Precarga de LexIA (2026-09-25, pedido explícito del usuario) — de
-      // fondo, SIN esperar (no debe demorar el resto del inicio de sesión).
-      // Tiene su propio try/catch adentro, así que un error acá nunca
-      // afecta el resto del login.
-      precargarSiguienteTutelaLexIA(tutelasCargadas);
     }catch(err){
       console.error(err);
       notify("Se inició sesión, pero no se pudieron cargar los datos de SharePoint: " + Graph.mensajeError(err) + " — probá el botón de Actualizar.", 'error');
-    }
-  }
-
-  // 2026-09-25, pedido explícito del usuario: "que apenas ingresen al
-  // portal cargue la lectura" — pero NO de los 5 correos más recientes (eso
-  // gastaría Claude 5 veces sin garantía de usarse), sino de UN SOLO correo
-  // puntual: el de la SIGUIENTE tutela que todavía no esté guardada (el
-  // número consecutivo de más, +1, o el siguiente que sí tenga correo si
-  // ese exacto no llegó — ver encontrarCorreoSiguienteTutela) — el
-  // candidato con más probabilidad real de ser el que el usuario va a
-  // procesar. Si no hay un correo así todavía, no se precarga nada (no hay
-  // "más reciente" de respaldo).
-  //
-  // También se exporta (no solo se llama acá al iniciar sesión) — bug real
-  // reportado por el usuario: guardó la 28164 (ya cubierta) y al volver a
-  // abrir "Leer correo (LexIA)" seguía marcada esa en vez de la 28165 (la
-  // nueva siguiente). Se vuelve a llamar cada vez que se abre esa ventana
-  // (ver el botón de LexIA en TutelasView.jsx), así siempre avanza al
-  // último "siguiente" real en vez de quedarse pegada en la primera vez.
-  async function precargarSiguienteTutelaLexIA(tutelasActuales){
-    // 2026-09-25, reportado por el usuario ("no veo ningún cambio") — antes
-    // esto era invisible tanto si funcionaba como si no había nada que
-    // precargar (no llega correo nuevo siempre), así que no había forma de
-    // saber cuál de las dos cosas pasó. Ahora se avisa en pantalla cuando
-    // sí precarga algo (caso poco frecuente, no es ruidoso); cuando no hay
-    // candidato es normal y esperado, solo queda en la consola para poder
-    // revisarlo si hace falta.
-    const maxExistente = (tutelasActuales || []).reduce((max, t) => Math.max(max, Number(t.NoTutela) || 0), 0);
-    try{
-      if(!config?.TUTELAS_BUZON_CORREO || !config?.ROBOT_CLAUDE_URL){
-        console.log('Precarga de LexIA: no corrió (falta TUTELAS_BUZON_CORREO o ROBOT_CLAUDE_URL en config.js).');
-        return;
-      }
-      const mensajes = await Graph.leerCorreosTutelas(config.TUTELAS_BUZON_CORREO, TUTELAS_REMITENTES_PERMITIDOS, 200);
-      const correo = Graph.encontrarCorreoSiguienteTutela(mensajes, tutelasActuales);
-      if(!correo){
-        console.log(`Precarga de LexIA: no encontró todavía ningún correo nuevo a partir de la tutela ${maxExistente + 1} (la más alta guardada es ${maxExistente}) entre ${mensajes.length} correos revisados.`);
-        return;
-      }
-      // Ya se había precargado justo este mismo correo (se volvió a llamar
-      // sin que nada nuevo se haya guardado desde entonces) — no vale la
-      // pena gastar Claude otra vez ni repetir el aviso en pantalla.
-      if(precargaLexIA?.mensajeId === correo.id) return;
-      // El correo encontrado puede que NO sea maxExistente+1 exacto — si esa
-      // no tenía correo, se siguió buscando más allá (pedido explícito del
-      // usuario: "si no está la siguiente revise una más allá y continúe").
-      const numeroEncontrado = Graph.numeroTutelaDeAsunto(correo.asunto) ?? (maxExistente + 1);
-      // "No olvides la que hace automáticamente apenas entra al portal"
-      // (2026-09-29, pedido explícito del usuario) — la precarga de fondo
-      // también debe revisar/guardar en OneDrive, mismo criterio que
-      // LeerCorreoTutelaModal.handleExtraer: si esta tutela YA tiene una
-      // lectura guardada de una vez anterior, se reusa sin gastar Claude.
-      let extraido = config?.TUTELAS_ONEDRIVE_CARPETA_URL
-        ? await Graph.buscarLecturaLexIAGuardada(config.TUTELAS_ONEDRIVE_CARPETA_URL, numeroEncontrado)
-        : null;
-      if(extraido){
-        setPrecargaLexIA({ mensajeId: correo.id, ...extraido });
-        notify(`LexIA encontró de fondo la tutela ${numeroEncontrado} — ya la había analizado antes, no hizo falta leerla de nuevo.`, 'success');
-        return;
-      }
-      extraido = await Graph.extraerTutelaConLexIA(config.TUTELAS_BUZON_CORREO, correo.id, tutelasActuales, config.ROBOT_CLAUDE_URL);
-      setPrecargaLexIA({ mensajeId: correo.id, ...extraido });
-      notify(`LexIA ya leyó de fondo el correo de la tutela ${numeroEncontrado} — la vas a ver marcada como "Ya leído por LexIA" en "Leer correo (LexIA)".`, 'success');
-      if(config?.TUTELAS_ONEDRIVE_CARPETA_URL){
-        Graph.guardarLecturaLexIAEnOneDrive(config.TUTELAS_ONEDRIVE_CARPETA_URL, numeroEncontrado, correo, extraido.asunto, extraido.cuerpo, extraido.registros)
-          .catch(err => console.error('No se pudo guardar en OneDrive la lectura precargada de fondo:', err));
-      }
-    }catch(err){
-      // No es crítico — si falla, "Leer correo (LexIA)" simplemente extrae
-      // ese correo normal (con IA) cuando el usuario lo pida, como siempre.
-      console.error('Precarga de LexIA falló (no crítico):', err);
     }
   }
 
@@ -1950,7 +1867,7 @@ export function useLexaraApp(){
     activeColaborador, openColaborador, newColaborador, closeColaboradorDrawer, saveColaborador, deleteColaborador,
     activeFormaPago, openFormaPago, newFormaPagoFromProceso, closeFormaPagoDrawer, saveFormaPago, deleteFormaPago,
     activeDesistimiento, openDesistimiento, newDesistimientoFromProceso, closeDesistimientoDrawer, saveDesistimiento, deleteDesistimiento,
-    activeTutela, openTutela, newTutela, duplicateTutela, closeTutelaDrawer, saveTutela, deleteTutela, corregirEntidadFaltanteTutelas, agregarCorreccionIA, precargaLexIA, precargarSiguienteTutelaLexIA,
+    activeTutela, openTutela, newTutela, duplicateTutela, closeTutelaDrawer, saveTutela, deleteTutela, corregirEntidadFaltanteTutelas, agregarCorreccionIA,
     createTema, saveTema, createTipoTermino, createValorEntidad, saveValorEntidad,
     createHoraExtra, aprobarHoraExtra, editarHoraExtra, eliminarHoraExtra,
     crearPeriodoVacaciones, editarPeriodoVacaciones, eliminarPeriodoVacaciones,

@@ -35,7 +35,7 @@ function hoyISO(){
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 
-export default function TutelasView({ tutelas, searchQuery, onOpenTutela, onCreateTutela, onDuplicateTutela, onDeleteTutela, onAgregarCorreccionIA, precargaLexIA, precargarSiguienteTutelaLexIA, canWrite = true, liveMode, config, notify }){
+export default function TutelasView({ tutelas, searchQuery, onOpenTutela, onCreateTutela, onDuplicateTutela, onDeleteTutela, onAgregarCorreccionIA, canWrite = true, liveMode, config, notify }){
   const { filters, setFilter, clearFilters, rowMatches, hasActiveFilters } = useColumnFilters();
   const { sort, setSortKey, sortRows } = useColumnSort();
   // "Leer correo (LexIA)" — nombre elegido por el usuario 2026-09-24 para
@@ -107,12 +107,6 @@ export default function TutelasView({ tutelas, searchQuery, onOpenTutela, onCrea
             <button type="button" className="btn-lexia" onClick={() => {
               setMostrarLeerCorreo(true);
               decir('Hola, soy LexIA. Elige un correo y dale extraer, o pregúntame lo que necesites.');
-              // Bug real reportado por el usuario: guardó una tutela y, al
-              // volver a abrir esta ventana, seguía marcada como "precargada"
-              // la misma de antes (ya cubierta) en vez de la nueva siguiente.
-              // Se vuelve a revisar cada vez que se abre (la función misma ya
-              // no repite el gasto si el candidato no cambió).
-              precargarSiguienteTutelaLexIA?.(tutelas);
             }}>
               <img src={lexiaAvatar} alt="" className="btn-lexia-avatar" />
               LexIA
@@ -135,7 +129,6 @@ export default function TutelasView({ tutelas, searchQuery, onOpenTutela, onCrea
           onedriveCarpetaUrl={config?.TUTELAS_ONEDRIVE_CARPETA_URL}
           tutelas={tutelas}
           onAgregarCorreccionIA={onAgregarCorreccionIA}
-          precargaLexIA={precargaLexIA}
           robotPreguntasUrl={config?.ROBOT_PREGUNTAS_URL}
           notify={notify}
           vozActivada={vozActivada}

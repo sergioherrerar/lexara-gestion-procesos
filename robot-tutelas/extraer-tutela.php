@@ -162,7 +162,7 @@ if($correcciones){
         $lineas[] = "- Tutela {$noT} (Tema que había quedado: \"{$temaAnterior}\"): {$nota}";
     }
     if($lineas){
-        $correccionesTexto = "\n\nADEMÁS, estas son correcciones REALES que el abogado a cargo ya dejó sobre casos anteriores de este mismo despacho — tenlas en cuenta como criterio de referencia, con más peso que la guía de criterios de arriba si entran en conflicto, sobre todo si el caso nuevo se parece a alguno de estos:\n" . implode("\n", $lineas);
+        $correccionesTexto = "ADEMÁS, estas son correcciones REALES que el abogado a cargo ya dejó sobre casos anteriores de este mismo despacho — tenlas en cuenta como criterio de referencia, con más peso que la guía de criterios de arriba si entran en conflicto, sobre todo si el caso nuevo se parece a alguno de estos:\n" . implode("\n", $lineas);
     }
 }
 
@@ -180,8 +180,15 @@ $instrucciones = "Eres LexIA, el asistente de inteligencia artificial del despac
     // MEDICAMENTOS"). Si no coincide letra por letra (mayúsculas incluidas)
     // con una opción real de la lista, no hace match con ninguna y queda
     // como un valor huérfano que el usuario tiene que corregir a mano.
-    "IMPORTANTE sobre el formato del Tema: la guía de arriba está redactada en minúscula/mayúscula normal SOLO para que se entienda fácil el criterio — pero el valor que debes escribir en el campo Tema va SIEMPRE completo EN MAYÚSCULAS (ej. la guía dice \"Entrega de medicamentos\", pero tú escribes \"ENTREGA DE MEDICAMENTOS\"), sin importar cómo esté escrito arriba, porque es un desplegable de una lista fija real y así es como están guardadas esas opciones:\n{$criteriosClasificacion}" . $correccionesTexto . "\n\n" .
+    "IMPORTANTE sobre el formato del Tema: la guía de arriba está redactada en minúscula/mayúscula normal SOLO para que se entienda fácil el criterio — pero el valor que debes escribir en el campo Tema va SIEMPRE completo EN MAYÚSCULAS (ej. la guía dice \"Entrega de medicamentos\", pero tú escribes \"ENTREGA DE MEDICAMENTOS\"), sin importar cómo esté escrito arriba, porque es un desplegable de una lista fija real y así es como están guardadas esas opciones:\n{$criteriosClasificacion}\n\n" .
     "Devuelve SOLO un objeto JSON (sin texto adicional antes o después, sin bloques de markdown) con esta forma exacta: {\"registros\": [ {...un registro...}, {...otro registro si aplica...} ]}. Cada registro debe tener EXACTAMENTE estas claves, dejando \"\" (cadena vacía) en lo que no puedas determinar con certeza — nunca inventes un dato que no esté en el correo:\n\n" . $camposEsperados;
+// Correcciones (2026-09-29, pedido explícito del usuario, por costo de la
+// API) — se saca del bloque estable de arriba y se manda como SU PROPIO
+// bloque de sistema, al final: antes, agregar UNA corrección nueva en
+// "Entrenar IA" invalidaba la caché de las ~4,100 tokens de la guía
+// completa (porque quedaba en medio del mismo texto). Separado así, la
+// guía de criterios sigue en caché aunque se agreguen correcciones nuevas
+// — solo este bloque, más chico, se vuelve a pagar completo cuando cambia.
 
 $contenido = [];
 // Nombre del adjunto que quedó en cada índice de $contenido (2026-09-23) —
@@ -218,13 +225,15 @@ $body = [
     'max_tokens' => 4000,
     // 2026-09-23, pedido explícito del usuario ("que la extracción sea más
     // rápida sin perder nada") — cache_control en las instrucciones: son
-    // siempre las mismas (solo cambian cuando se agrega una corrección
-    // nueva en "Entrenar IA"), así que Claude no tiene que "releerlas" de
-    // cero en cada correo que se procese en la misma sesión de trabajo. No
+    // siempre las mismas, así que Claude no tiene que "releerlas" de cero
+    // en cada correo que se procese en la misma sesión de trabajo. No
     // afecta los adjuntos (esos sí son distintos en cada correo, siguen
-    // procesándose completos — nada se deja de leer).
+    // procesándose completos — nada se deja de leer). Van en 2 bloques
+    // separados (ver nota arriba de $correccionesTexto) — así agregar una
+    // corrección nueva no invalida la caché de la guía de criterios.
     'system' => [
         ['type' => 'text', 'text' => $instrucciones, 'cache_control' => ['type' => 'ephemeral']],
+        ['type' => 'text', 'text' => $correccionesTexto ?: '(sin correcciones adicionales todavía)', 'cache_control' => ['type' => 'ephemeral']],
     ],
     'messages' => [
         ['role' => 'user', 'content' => $contenido],

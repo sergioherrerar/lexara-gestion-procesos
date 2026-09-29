@@ -21,7 +21,7 @@ import lexiaAvatarSaludo from '../assets/LexIA avatar - saludo.webp';
 // devolver los campos que Claude extrajo para prellenar "Nueva tutela". El
 // usuario SIEMPRE revisa y confirma en el formulario antes de guardar — acá
 // nunca se toca SharePoint, solo se arma el objeto de campos iniciales.
-export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitidos, robotUrl, onedriveCarpetaUrl, tutelas, onAgregarCorreccionIA, robotPreguntasUrl, onExtraido, onClose, notify, vozActivada, setVozActivada, decir, lexiaHablando, lexiaPausada, pausarLexia, continuarLexia, precargaLexIA }){
+export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitidos, robotUrl, onedriveCarpetaUrl, tutelas, onAgregarCorreccionIA, robotPreguntasUrl, onExtraido, onClose, notify, vozActivada, setVozActivada, decir, lexiaHablando, lexiaPausada, pausarLexia, continuarLexia }){
   const [cargando, setCargando] = useState(true);
   // "Un botón para actualizar la lista de los correos que estén
   // ingresando" (2026-09-29, pedido explícito del usuario) — separado de
@@ -102,23 +102,6 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
     return () => clearTimeout(t);
   }, []);
 
-  // Bug real reportado 2026-09-29, SEGUNDA vuelta (el primer arreglo — cargar
-  // al hacer clic en el correo de la lista — no bastaba: el usuario le
-  // preguntaba a "Pregúntame" sin haber hecho clic todavía en el correo
-  // precargado, así que casoActual seguía en null): apenas se abre esta
-  // ventana, si ya hay una tutela precargada, se carga de una vez en
-  // `resultado`/`correoActual` — así "Pregúntame" tiene contexto desde el
-  // primer segundo, sin depender de que el usuario haga clic en nada
-  // primero. Solo si `resultado` sigue vacío (no pisa una extracción manual
-  // que el usuario ya esté revisando).
-  useEffect(() => {
-    if(precargaLexIA && !resultado){
-      setResultado({ mensajeId: precargaLexIA.mensajeId, registros: precargaLexIA.registros });
-      setCorreoActual({ asunto: precargaLexIA.asunto, cuerpo: precargaLexIA.cuerpo });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [precargaLexIA]);
-
   useEffect(() => {
     let cancelado = false;
     (async () => {
@@ -154,16 +137,6 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
   async function handleExtraer(mensaje){
     if(!robotUrl){
       notify?.('Falta terminar de instalar LexIA (ROBOT_CLAUDE_URL en config.js) antes de poder usar esto.', 'error');
-      return;
-    }
-    // Precarga de LexIA (2026-09-25, pedido explícito del usuario: "que
-    // apenas ingresen al portal cargue la lectura" de la SIGUIENTE tutela
-    // que todavía no esté guardada) — si este correo YA se extrajo de
-    // fondo al iniciar sesión, se usa ese resultado directo, sin llamar de
-    // nuevo al robot (instantáneo, y no se gasta Claude dos veces).
-    if(precargaLexIA && precargaLexIA.mensajeId === mensaje.id){
-      setResultado({ mensajeId: mensaje.id, registros: precargaLexIA.registros });
-      setCorreoActual({ asunto: precargaLexIA.asunto, cuerpo: precargaLexIA.cuerpo });
       return;
     }
     const numeroTutela = numeroTutelaDeAsunto(mensaje.asunto);
@@ -241,10 +214,7 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
   // llegada del correo (más reciente primero); ahora se ordena por el
   // número de tutela del asunto, de menor a mayor, que es como de verdad
   // se van revisando (28163, 28164, 28165...). Los correos sin número
-  // reconocible en el asunto quedan al final. El precargado por LexIA
-  // (la siguiente sin guardar, ver encontrarCorreoSiguienteTutela) sigue
-  // primero de todos, sin importar su número (2026-09-25, pedido explícito
-  // del usuario: "déjalo de primeras en la lista").
+  // reconocible en el asunto quedan al final.
   function compararPorNumeroTutela(a, b){
     const na = numeroTutelaDeAsunto(a.asunto);
     const nb = numeroTutelaDeAsunto(b.asunto);
@@ -253,13 +223,7 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
     if(nb === null) return -1;
     return na - nb;
   }
-  const mensajesOrdenados = [...mensajesFiltrados].sort((a, b) => {
-    if(precargaLexIA){
-      if(a.id === precargaLexIA.mensajeId) return -1;
-      if(b.id === precargaLexIA.mensajeId) return 1;
-    }
-    return compararPorNumeroTutela(a, b);
-  });
+  const mensajesOrdenados = [...mensajesFiltrados].sort(compararPorNumeroTutela);
 
   // Avatar grande con pose distinta según la etapa (2026-09-29, pedido
   // explícito del usuario) — "escuchando" mientras LexIA está leyendo/
@@ -391,23 +355,14 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
             <li key={m.id} className={"leer-correo-item" + (seleccionadoId===m.id ? ' activo' : '')}>
               <button type="button" className="leer-correo-item-btn" onClick={async () => {
                 setSeleccionadoId(m.id);
-                // Bug real reportado 2026-09-29 ("dice que leyó esa tutela
-                // pero al preguntarle no me dice nada sobre ella"): la
-                // insignia "Ya leído por LexIA" sale con solo la precarga
-                // de fondo (precargaLexIA), pero "Pregúntame" (casoActual)
-                // solo se llenaba al apretar "Extraer con LexIA" — así que
-                // parecía que ya sabía de esa tutela sin saber en realidad.
-                // Si este correo YA está precargado, se carga de una vez al
-                // seleccionarlo (mismo dato, instantáneo, sin gastar Claude
-                // otra vez) en vez de dejar el panel de Preguntas vacío.
-                if(precargaLexIA?.mensajeId === m.id){
-                  setResultado({ mensajeId: m.id, registros: precargaLexIA.registros });
-                  setCorreoActual({ asunto: precargaLexIA.asunto, cuerpo: precargaLexIA.cuerpo });
-                } else if(yaAnalizadaEnOneDrive && resultado?.mensajeId !== m.id){
-                  // "Si ya creó la carpeta, colócale Ya leído" (2026-09-29,
-                  // pedido explícito del usuario) — misma idea de arriba,
-                  // pero para una tutela analizada en una sesión ANTERIOR
-                  // (no en precargaLexIA, que es solo de esta sesión).
+                // "Ya leído por LexIA" para una tutela ya analizada en
+                // OneDrive (de esta sesión o de una anterior, ya no hay
+                // precarga automática — 2026-09-29, pedido explícito del
+                // usuario: "quitemos el leer automático, todo de forma
+                // manual") — se carga de una vez al seleccionarla (mismo
+                // dato, instantáneo, sin gastar Claude otra vez) en vez de
+                // dejar el panel de Preguntas vacío.
+                if(yaAnalizadaEnOneDrive && resultado?.mensajeId !== m.id){
                   const guardada = await buscarLecturaLexIAGuardada(onedriveCarpetaUrl, numeroDeEsteMensaje);
                   if(guardada){
                     setResultado({ mensajeId: m.id, registros: guardada.registros });
@@ -422,19 +377,13 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
                 <span>{m.asunto}</span>
                 <span className="save-hint">
                   {m.fecha ? new Date(m.fecha).toLocaleString('es-CO') : '—'}{m.tieneAdjuntos ? ' · con adjuntos' : ''}
-                  {/* Precarga de LexIA (2026-09-25, pedido explícito del
-                      usuario) — avisa cuál correo ya se leyó de fondo al
-                      entrar, para que se entienda por qué ese sale al
-                      instante y los demás no. 2026-09-25, pedido explícito
-                      del usuario ("aparte de Creado también colócale Ya
-                      leído por LexIA") — se generaliza: también sale en
+                  {/* 2026-09-25, pedido explícito del usuario ("aparte de
+                      Creado también colócale Ya leído por LexIA") — sale en
                       cualquier correo que YA se haya extraído en esta
-                      sesión (aunque haya sido con el botón manual, no solo
-                      el precargado de fondo), para que quede claro que ese
-                      correo ya fue leído por LexIA sin tener que volver a
-                      abrirlo. */}
-                  {(precargaLexIA?.mensajeId === m.id || resultado?.mensajeId === m.id || yaAnalizadaEnOneDrive) && ' · '}
-                  {(precargaLexIA?.mensajeId === m.id || resultado?.mensajeId === m.id || yaAnalizadaEnOneDrive) && (
+                      sesión (botón manual) o que ya tenga un análisis
+                      guardado en OneDrive de cualquier sesión. */}
+                  {(resultado?.mensajeId === m.id || yaAnalizadaEnOneDrive) && ' · '}
+                  {(resultado?.mensajeId === m.id || yaAnalizadaEnOneDrive) && (
                     <span className="badge badge-verde" style={{marginLeft:2}}>Ya leído por LexIA</span>
                   )}
                 </span>

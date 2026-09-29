@@ -153,8 +153,6 @@ export default function App(){
             onDuplicateTutela={app.duplicateTutela}
             onDeleteTutela={app.deleteTutela}
             onAgregarCorreccionIA={app.agregarCorreccionIA}
-            precargaLexIA={app.precargaLexIA}
-            precargarSiguienteTutelaLexIA={app.precargarSiguienteTutelaLexIA}
             canWrite={app.canWrite}
             liveMode={app.liveMode}
             config={app.config}

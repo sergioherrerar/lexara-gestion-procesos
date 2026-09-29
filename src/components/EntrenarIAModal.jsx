@@ -37,7 +37,7 @@ export function EntrenarIAPanel({ tutelas, onAgregarCorreccion, robotPreguntasUr
       </div>
       {tab === 'correccion'
         ? <TabCorreccion tutelas={tutelas} onAgregarCorreccion={onAgregarCorreccion} notify={notify} />
-        : <TabPreguntas tutelas={tutelas} robotPreguntasUrl={robotPreguntasUrl} notify={notify} casoActual={casoActual} casosGuardados={casosGuardados} decirLexia={decirLexia} />}
+        : <TabPreguntas robotPreguntasUrl={robotPreguntasUrl} notify={notify} casoActual={casoActual} casosGuardados={casosGuardados} decirLexia={decirLexia} />}
     </div>
   );
 }
@@ -152,7 +152,7 @@ function limpiarMarkdown(texto){
     .replace(/[*_`]/g, '');
 }
 
-function TabPreguntas({ tutelas, robotPreguntasUrl, notify, casoActual, casosGuardados, decirLexia }){
+function TabPreguntas({ robotPreguntasUrl, notify, casoActual, casosGuardados, decirLexia }){
   const [pregunta, setPregunta] = useState('');
   const [mensajes, setMensajes] = useState([]); // [{autor:'yo'|'ia', texto}]
   const [enviando, setEnviando] = useState(false);
@@ -168,16 +168,16 @@ function TabPreguntas({ tutelas, robotPreguntasUrl, notify, casoActual, casosGua
     setPregunta('');
     setEnviando(true);
     try{
-      const camposUtiles = ['NoTutela','Cliente','Entidad','Prestacion','TipoRespuesta','Tema','FechaNotificacion','FechaVencimiento','Usuario','Solicita'];
-      const tutelasCompactas = tutelas.map(t => {
-        const o = {};
-        camposUtiles.forEach(c => { o[c] = t[c] ?? ''; });
-        return o;
-      });
+      // "Para preguntar, solo vamos a dejar que se haga desde el archivo de
+      // texto que ya se guardó" (2026-09-29, pedido explícito del usuario,
+      // por costo de la API) — ya no se manda la tabla general de tutelas
+      // del portal (podía ser miles de filas, el gasto más grande de este
+      // endpoint); "Pregúntame" ahora SOLO responde sobre lo que ya está en
+      // casoActual/casosGuardados (los .txt guardados en OneDrive).
       const res = await fetch(robotPreguntasUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pregunta: texto, tutelas: tutelasCompactas, casoActual: casoActual || undefined, casosGuardados: (casosGuardados && casosGuardados.length) ? casosGuardados : undefined }),
+        body: JSON.stringify({ pregunta: texto, casoActual: casoActual || undefined, casosGuardados: (casosGuardados && casosGuardados.length) ? casosGuardados : undefined }),
       });
       let data;
       try{ data = await res.json(); }catch{ data = null; }
@@ -198,7 +198,7 @@ function TabPreguntas({ tutelas, robotPreguntasUrl, notify, casoActual, casosGua
   return (
     <>
       <p className="save-hint" style={{margin:'0 0 14px'}}>
-        Pregúntale a LexIA sobre las tutelas que ya están cargadas en el portal (ej. "¿cuántas de Colmédica por Tema?"). Esto no guarda nada, solo responde.
+        Pregúntale a LexIA sobre una tutela que ya haya sido leída/extraída (marcada "Ya leído por LexIA" en la lista). Esto no guarda nada, solo responde.
       </p>
       {casoActual && (
         <p className="save-hint" style={{margin:'0 0 14px', color:'var(--verde-oscuro)', fontWeight:600}}>
@@ -225,7 +225,7 @@ function TabPreguntas({ tutelas, robotPreguntasUrl, notify, casoActual, casosGua
         <label>Tu pregunta</label>
         <textarea rows={2} value={pregunta} onChange={e => setPregunta(e.target.value)}
           onKeyDown={e => { if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); handleEnviar(); } }}
-          placeholder='Ej. "¿Cuál es el Tema más frecuente este mes?"' />
+          placeholder='Ej. "¿Quién es el usuario de la tutela 27918?"' />
       </div>
       <IconTextButton icon="add" variant="primary" disabled={enviando || !pregunta.trim()} onClick={handleEnviar}>
         {enviando ? 'Enviando…' : 'Preguntar'}

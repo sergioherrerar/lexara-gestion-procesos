@@ -2,11 +2,21 @@
 // "Chat IA" (Tutelas) — pestaña "Preguntas" de "Entrenar IA" (2026-09-23,
 // pedido explícito del usuario). A diferencia de extraer-tutela.php (que
 // LEE un correo y arma un borrador), este archivo responde preguntas sobre
-// las tutelas YA CARGADAS en el portal (ej. "¿cuántas de Colmédica por
-// Tema?") — no guarda nada, no toca SharePoint, solo responde con texto.
-// Vive en la misma carpeta robot-tutelas/ (fuera de public_html/app/, que
-// se reemplaza entero en cada publicación del portal) y reusa el mismo
-// config.php (misma clave de la API de Claude).
+// tutelas ya leídas/extraídas por LexIA — no guarda nada, no toca
+// SharePoint, solo responde con texto. Vive en la misma carpeta
+// robot-tutelas/ (fuera de public_html/app/, que se reemplaza entero en
+// cada publicación del portal) y reusa el mismo config.php (misma clave
+// de la API de Claude).
+//
+// 2026-09-29, pedido explícito del usuario (por costo de la API): antes
+// este archivo TAMBIÉN recibía la tabla completa de tutelas cargadas en el
+// portal (hasta 1,200 filas — el gasto más grande de este endpoint, y se
+// mandaba de nuevo en CADA pregunta, sin caché). Se quitó por completo:
+// "Pregúntame" ahora SOLO responde con lo que ya está en $casoActual/
+// $casosGuardados — los .txt que ya se guardaron en OneDrive al extraer
+// cada tutela (ver guardarLecturaLexIAEnOneDrive en graph.js). Ya no puede
+// responder preguntas agregadas sobre TODAS las tutelas del portal (ej.
+// conteos generales) — solo sobre tutelas puntuales ya leídas por LexIA.
 
 header('Content-Type: application/json; charset=utf-8');
 $origenesPermitidos = ['https://sergioherrerar.github.io', 'https://www.lexaraabogados.com'];
@@ -46,13 +56,12 @@ if(!is_array($entrada)){
 }
 
 $pregunta = trim((string)($entrada['pregunta'] ?? ''));
-$tutelas = is_array($entrada['tutelas'] ?? null) ? $entrada['tutelas'] : [];
 // "Preguntas" desde "Leer correo (IA)" (2026-09-24, pedido explícito del
 // usuario: "de la tutela [recién extraída] dime quién es el usuario, qué
 // están solicitando, quiénes están vinculados, las pretensiones...") — el
 // correo que Claude ACABA de analizar (puede que esa tutela ni siquiera
-// esté guardada todavía). Trae más detalle que la tabla de abajo: el
-// asunto/cuerpo real del correo, no solo los campos ya resumidos.
+// esté guardada todavía). Trae el asunto/cuerpo real del correo, no solo
+// campos ya resumidos.
 $casoActual = is_array($entrada['casoActual'] ?? null) ? $entrada['casoActual'] : null;
 // "Le pedí algo de esta tutela y ya está leída y no encuentra
 // información" (2026-09-29, pedido explícito del usuario con captura) —
@@ -68,45 +77,16 @@ if(!$pregunta){
     echo json_encode(['error' => 'Falta la pregunta.']);
     exit;
 }
-if(!$tutelas && !$casoActual && !$casosGuardados){
+if(!$casoActual && !$casosGuardados){
     http_response_code(400);
-    echo json_encode(['error' => 'No hay tutelas cargadas en el portal para responder sobre ellas.']);
+    echo json_encode(['error' => 'Todavía no hay ninguna tutela leída por LexIA para responder sobre ella — usa "Extraer con LexIA" primero.']);
     exit;
 }
 
-// Límite de seguridad — no mandar una cantidad absurda de filas a la API
-// (costo/tamaño de la solicitud). Con más de esto, se recorta a las
-// primeras y se avisa a Claude que la lista está incompleta, para que no
-// responda conteos totales como si fueran exactos.
-$limiteFilas = 1200;
-$incompleta = count($tutelas) > $limiteFilas;
-if($incompleta){ $tutelas = array_slice($tutelas, 0, $limiteFilas); }
-
-$columnas = ['NoTutela','Cliente','Entidad','Prestacion','TipoRespuesta','Tema','FechaNotificacion','FechaVencimiento','Usuario','Solicita'];
-$filas = [implode('|', $columnas)];
-foreach($tutelas as $t){
-    $fila = [];
-    foreach($columnas as $c){
-        // "Solicita" puede ser largo (texto enriquecido, ya viene como
-        // texto plano desde el portal) — se recorta para no inflar de más
-        // la solicitud; para las demás columnas no hace falta.
-        $valor = (string)($t[$c] ?? '');
-        if($c === 'Solicita' && mb_strlen($valor) > 200){ $valor = mb_substr($valor, 0, 200) . '…'; }
-        $valor = str_replace(["\n","\r","|"], [' ',' ','/'], $valor);
-        $fila[] = $valor;
-    }
-    $filas[] = implode('|', $fila);
-}
-$tabla = implode("\n", $filas);
-
-$avisoIncompleta = $incompleta
-    ? "\n\nAVISO: la lista de abajo NO incluye todas las tutelas (se recortó a las primeras {$limiteFilas} por límite de tamaño) — si la pregunta necesita un conteo total exacto y sospechas que puede haber más filas de las mostradas, acláraselo al usuario en vez de dar un número como si fuera definitivo."
-    : '';
-
 // Bloque del caso recién leído (ver nota arriba sobre $casoActual) — se le
-// da MÁS peso que la tabla general, con el asunto/cuerpo real del correo
-// (ahí suele estar el detalle de pretensiones/vinculados que no cabe en los
-// campos fijos de la tabla) más los registros que Claude ya extrajo.
+// da MÁS peso que las demás tutelas guardadas, con el asunto/cuerpo real
+// del correo (ahí suele estar el detalle de pretensiones/vinculados) más
+// los registros que Claude ya extrajo.
 $casoActualTexto = '';
 if($casoActual){
     $asuntoCaso = (string)($casoActual['asunto'] ?? '');
@@ -114,7 +94,7 @@ if($casoActual){
     if(mb_strlen($cuerpoCaso) > 6000){ $cuerpoCaso = mb_substr($cuerpoCaso, 0, 6000) . '…'; }
     $registrosCaso = is_array($casoActual['registros'] ?? null) ? $casoActual['registros'] : [];
     $registrosTexto = $registrosCaso ? json_encode($registrosCaso, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) : '(sin campos extraídos)';
-    $casoActualTexto = "\n\nCASO QUE SE ACABA DE LEER CON \"Leer correo (LexIA)\" AHORA MISMO (dale MÁS prioridad que la tabla de tutelas de abajo cuando la pregunta se refiera a \"esta tutela\"/\"este caso\" o mencione su número — ADEMÁS, esta tutela puede que TODAVÍA NO esté guardada en el portal, así que puede no aparecer en esa tabla):\n" .
+    $casoActualTexto = "\n\nCASO QUE SE ACABA DE LEER CON \"Leer correo (LexIA)\" AHORA MISMO (dale MÁS prioridad que las demás tutelas de abajo cuando la pregunta se refiera a \"esta tutela\"/\"este caso\" o mencione su número):\n" .
         "Asunto del correo: {$asuntoCaso}\n\nCuerpo del correo (fuente completa, úsalo para detalles como pretensiones, quiénes están vinculados, etc. que no quepan en los campos de abajo):\n{$cuerpoCaso}\n\n" .
         "Campos que LexIA ya extrajo de este caso (uno por cliente vinculado, si aplica):\n{$registrosTexto}";
 }
@@ -139,7 +119,7 @@ if($casosGuardados){
         $bloques[] = "Asunto: {$asuntoG}\nCuerpo: {$cuerpoG}\nCampos extraídos: {$registrosTextoG}";
     }
     if($bloques){
-        $casosGuardadosTexto = "\n\nOTRAS TUTELAS YA LEÍDAS POR LEXIA, MARCADAS \"Ya leído por LexIA\" EN LA LISTA, PERO TODAVÍA NO GUARDADAS EN EL PORTAL (puede que ninguna de estas aparezca en la tabla de abajo — si la pregunta menciona el número de alguna de ellas, respóndela con esta información):\n" .
+        $casosGuardadosTexto = "\n\nOTRAS TUTELAS YA LEÍDAS POR LEXIA, MARCADAS \"Ya leído por LexIA\" EN LA LISTA (si la pregunta menciona el número de alguna de ellas, respóndela con esta información):\n" .
             implode("\n---\n", $bloques);
     }
 }
@@ -149,22 +129,28 @@ if($casosGuardados){
 // "leída recién por IA" en vez de "por LexIA". Se le pide explícitamente
 // que se identifique siempre con ese nombre, nunca como "la IA" genérica.
 $instrucciones = "Eres LexIA, el asistente de inteligencia artificial del despacho de abogados \"md abogados sas\", integrado al portal Lexara. Cuando te refieras a ti misma en la respuesta, usa SIEMPRE el nombre \"LexIA\" — nunca digas \"la IA\", \"el asistente\" ni nada genérico. " .
-    "Ayudas a responder preguntas sobre las tutelas reales del despacho usando el portal Lexara. " .
-    "A continuación tienes la lista de tutelas actualmente cargadas en el portal, en formato tabla — una tutela por línea, columnas separadas por \"|\", en este orden: " . implode(', ', $columnas) . "." .
-    $avisoIncompleta .
+    "Ayudas a responder preguntas sobre tutelas reales del despacho que ya fueron leídas/extraídas por LexIA (no tienes acceso a la lista completa de tutelas del portal — solo a las que se muestran abajo)." .
     $casoActualTexto .
     $casosGuardadosTexto .
-    "\n\nResponde la pregunta del usuario basándote ÚNICAMENTE en estos datos reales — nunca inventes números, nombres, fechas o casos que no estén acá. Si la pregunta no se puede responder con certeza a partir de estos datos, dilo claramente en vez de adivinar. Responde en español, de forma clara, breve y directa, como si le hablaras a un abogado colega. " .
+    "\n\nResponde la pregunta del usuario basándote ÚNICAMENTE en estos datos reales — nunca inventes números, nombres, fechas o casos que no estén acá. Si la pregunta se refiere a una tutela que no aparece en ninguno de los bloques de arriba, dilo claramente en vez de adivinar. Responde en español, de forma clara, breve y directa, como si le hablaras a un abogado colega. " .
     // 2026-09-25, pedido explícito del usuario: la respuesta se muestra como
     // texto plano (no interpreta markdown) Y se lee en voz alta con síntesis
     // de voz — con "**negrita**" salía el asterisco literal en pantalla y la
     // voz decía "asterisco, asterisco" a cada rato, cortando feo la lectura.
-    "NUNCA uses formato markdown (nada de **negrita**, guiones de lista, numerales #, etc.) — escribe todo en texto plano corrido, con punto y aparte si hace falta, ya que esta respuesta también se lee en voz alta.\n\nDATOS (fecha de hoy: " . date('Y-m-d') . "):\n{$tabla}";
+    "NUNCA uses formato markdown (nada de **negrita**, guiones de lista, numerales #, etc.) — escribe todo en texto plano corrido, con punto y aparte si hace falta, ya que esta respuesta también se lee en voz alta.\n\nFecha de hoy: " . date('Y-m-d');
 
 $body = [
     'model' => 'claude-sonnet-5',
     'max_tokens' => 1500,
-    'system' => $instrucciones,
+    // Caché (2026-09-29, pedido explícito del usuario, por costo de la
+    // API) — si se hacen varias preguntas seguidas sobre el mismo caso
+    // (casoActual/casosGuardados no cambian entre una pregunta y la
+    // siguiente), de la 2ª pregunta en adelante esto sale a ~10% del
+    // precio en vez de pagarlo completo cada vez. Dura 5 minutos — normal
+    // para una sesión de varias preguntas seguidas.
+    'system' => [
+        ['type' => 'text', 'text' => $instrucciones, 'cache_control' => ['type' => 'ephemeral']],
+    ],
     'messages' => [
         ['role' => 'user', 'content' => $pregunta],
     ],

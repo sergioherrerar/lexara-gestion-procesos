@@ -466,30 +466,6 @@ export function numeroTutelaDeAsunto(asunto){
   return m ? Number(m[1]) : null;
 }
 
-// De una lista de correos ya leídos (leerCorreosTutelas) y las tutelas ya
-// guardadas en el portal, encuentra el correo de la SIGUIENTE tutela (el
-// número consecutivo de más de la lista, +1) que todavía no esté guardada
-// — pedido explícito del usuario: "que identifique que ese correo no está
-// en la lista de tutelas y es el número siguiente de los que están [ya]".
-// Entre varios correos con ese mismo número (reenvíos/aclaraciones), se
-// prefiere uno CON adjuntos (hace falta el documento real para extraer
-// algo), y entre esos, el más reciente (la lista ya viene ordenada así).
-// 2026-09-25, pedido explícito del usuario viendo un caso real (guardada
-// hasta 28162, pero en el correo la 28163 no estaba y sí la 28164/28165):
-// "si no está la siguiente revise una más allá y continúe" — ya no se
-// rinde en el primer número que no encuentra; sigue probando +1, +2, +3...
-// hasta encontrar el primero que SÍ tenga correo (con un tope para no
-// buscar para siempre si de verdad no ha llegado nada nuevo).
-export function encontrarCorreoSiguienteTutela(mensajes, tutelas){
-  const maxExistente = (tutelas || []).reduce((max, t) => Math.max(max, Number(t.NoTutela) || 0), 0);
-  const LIMITE_BUSQUEDA = 30;
-  for(let n = maxExistente + 1; n <= maxExistente + LIMITE_BUSQUEDA; n++){
-    const candidatos = (mensajes || []).filter(m => numeroTutelaDeAsunto(m.asunto) === n);
-    if(candidatos.length) return candidatos.find(m => m.tieneAdjuntos) || candidatos[0];
-  }
-  return null;
-}
-
 // Cuerpo completo (texto plano, sin HTML) + adjuntos en base64 de UN correo
 // puntual ya elegido por el usuario — se piden juntos porque ambos hacen
 // falta para mandárselos al robot de una vez.

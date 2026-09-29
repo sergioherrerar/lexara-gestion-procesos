@@ -2,6 +2,13 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-29 (25)
+- **Reducción de costo de la API de Claude** — pedido explícito del usuario, por el saldo bajo. Cambios:
+  1. **Se quitó la precarga automática de LexIA por completo** — antes corría sola al iniciar sesión y cada vez que se abría "Leer correo (LexIA)", adivinando la siguiente tutela y extrayéndola de fondo sin que el usuario lo pidiera. Ahora todo es 100% manual: solo se extrae cuando se aprieta "Extraer con LexIA".
+  2. **"Pregúntame" ya no manda la tabla completa de tutelas del portal** (podían ser miles de filas — el gasto más grande de ese endpoint, repetido en CADA pregunta sin caché). Ahora solo responde sobre tutelas ya leídas/guardadas por LexIA (lo que ya está en OneDrive) — ya no puede responder conteos generales sobre todas las tutelas.
+  3. **Se agregó caché (`cache_control`) donde no había** — en "Pregúntame" (nueva, no existía) y separando la guía de criterios de las correcciones en "Extraer con LexIA" (antes, agregar una corrección nueva invalidaba la caché de la guía completa).
+  - **Requiere volver a subir `robot-tutelas/extraer-tutela.php` y `robot-tutelas/responder-pregunta.php` a cPanel.**
+
 ## 2026-09-29 (24)
 - **Registro de diagnóstico para el bug de volumen/pausar** — 4 intentos de arreglo ya verificados por estado interno (hablando/pausada cambian bien), pero nunca se pudo confirmar sonido real desde acá. Se agregaron mensajes en la consola del navegador (F12 → pestaña Consola) en cada paso clave (clic en el botón, llamado a speak(), inicio/fin/error real de la lectura) para poder ver EXACTAMENTE en qué paso se cae en la máquina real del usuario.
 
