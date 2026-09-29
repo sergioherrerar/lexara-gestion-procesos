@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-29 (19)
+- **Los mensajes de lo que está haciendo LexIA ahora salen debajo del avatar grande** — pedido explícito del usuario con un boceto. Antes estaban repartidos en 2 lugares (la burbuja de saludo arriba de la lista de correos, y "Estoy trabajando para ti" junto al botón de extraer); ahora es un solo mensaje, justo debajo del marco, que cambia según lo que esté haciendo (saludando, trabajando, hablando).
+
 ## 2026-09-29 (18)
 - **La insignia "Ya leído por LexIA" ahora también sale para tutelas analizadas en sesiones anteriores** — pedido explícito del usuario, viendo en OneDrive que la carpeta "Tutela 27918" ya existía pero la lista de correos no lo mostraba (esa tutela no se había precargado/extraído en la sesión actual). Se lista una sola vez, al abrir la ventana, qué carpetas ya existen en OneDrive; al seleccionar uno de esos correos, "Pregúntame" también carga su análisis guardado de una vez, sin gastar Claude otra vez.
 

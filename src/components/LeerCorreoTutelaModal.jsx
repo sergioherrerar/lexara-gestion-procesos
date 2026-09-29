@@ -250,6 +250,19 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
   // alta, y la pose de siempre (brazos cruzados) el resto del tiempo.
   const estadoAvatar = procesando ? 'escuchando' : (lexiaHablando ? 'hablando' : (mostrarSaludo ? 'saludo' : 'reposo'));
   const AVATAR_POR_ESTADO = { reposo: lexiaAvatar, escuchando: lexiaAvatarEscuchando, hablando: lexiaAvatarHablando, saludo: lexiaAvatarSaludo };
+  // "Los mensajes de lo que esté haciendo LexIA, déjalo debajo de la
+  // imagen" (2026-09-29, pedido explícito del usuario con un boceto) —
+  // antes estaban repartidos en 2 lugares (la burbuja de saludo arriba de
+  // la lista, y el "Estoy trabajando para ti" junto al botón de extraer);
+  // ahora es un solo mensaje, debajo del marco del avatar grande, que
+  // sigue la misma prioridad que estadoAvatar de arriba.
+  const mensajeAvatar = procesando
+    ? 'Estoy trabajando para ti…'
+    : lexiaHablando
+      ? 'Te estoy leyendo la respuesta en voz alta…'
+      : mostrarSaludo
+        ? '¡Hola! Soy LexIA. Elige un correo y dale "Extraer con LexIA", o pregúntame lo que necesites al lado.'
+        : '';
 
   return (
     <div className="confirm-overlay leer-correo-overlay">
@@ -291,19 +304,6 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
             </button>
           </div>
         </div>
-        {/* "Dar vida" a LexIA (2026-09-24, pedido explícito del usuario:
-            "una animación saliendo y saludando") — aparece al abrir esta
-            ventana y se retira sola a los pocos segundos (ver setTimeout
-            arriba), para no quitarle espacio permanente a la lista de
-            correos. Ya no lleva su propio avatar chiquito (2026-09-29):
-            el avatar grande de la derecha muestra la pose de saludo al
-            mismo tiempo (ver estadoAvatar), tener los dos duplicaba la
-            imagen en pantalla. */}
-        {mostrarSaludo && (
-          <div className="lexia-saludo">
-            <div className="lexia-burbuja">¡Hola! Soy LexIA. Elige un correo y dale "Extraer con LexIA", o pregúntame lo que necesites al lado.</div>
-          </div>
-        )}
         {/* 2026-09-24, pedido explícito del usuario ("mejor colocarlo al
             lado... mira qué datos trajo y corrige y pregunta") — 2 columnas:
             a la izquierda la lectura de correos de siempre, a la derecha
@@ -429,19 +429,6 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
                       <IconTextButton icon="add" variant="primary" disabled={procesando} onClick={() => handleExtraer(m)}>
                         {procesando ? 'Extrayendo…' : '+ Extraer con LexIA'}
                       </IconTextButton>
-                      {/* "Que el avatar esté como corriendo mientras lee la
-                          información" (2026-09-24, pedido explícito del
-                          usuario) — es una imagen fija, no hay cuadros de una
-                          carrera real, así que se simula con un rebote +
-                          balanceo en bucle mientras dura la extracción. */}
-                      {procesando && seleccionadoId === m.id && (
-                        <>
-                          <img src={lexiaAvatar} alt="LexIA corriendo" className="lexia-avatar lexia-avatar-corriendo" />
-                          {/* "Y mensaje: estoy trabajando para ti" (2026-09-24,
-                              pedido explícito del usuario). */}
-                          <span className="save-hint" style={{fontStyle:'italic'}}>Estoy trabajando para ti…</span>
-                        </>
-                      )}
                     </div>
                   )}
                   {/* Uno o varios registros detectados (2026-09-23, ver nota
@@ -507,6 +494,9 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
               className={`avatar-grande avatar-grande-${estadoAvatar}`}
             />
           </div>
+          {mensajeAvatar && (
+            <p key={mensajeAvatar} className="avatar-mensaje">{mensajeAvatar}</p>
+          )}
         </div>
         </div>
       </div>
