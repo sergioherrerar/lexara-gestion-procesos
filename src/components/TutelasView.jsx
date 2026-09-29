@@ -96,20 +96,29 @@ export default function TutelasView({ tutelas, searchQuery, onOpenTutela, onCrea
             superior (Topbar.jsx), así que este botón queda alineado
             debajo de ese mismo eje central, separado del grupo de la
             derecha (badge/Nueva tutela). */}
+        {/* "Que LexIA llegue como cayendo a esa posición, con un mensaje
+            púlsame para ayudarte" (2026-09-29, pedido explícito del
+            usuario) — el botón cae con rebote desde arriba cada vez que se
+            abre esta vista (mismo estilo de entrada que .lexia-entrada del
+            modal), y junto a él aparece una burbuja invitando a hacer clic,
+            que se desvanece sola después de unos segundos. */}
         {canWrite && liveMode && (
-          <button type="button" className="btn-lexia view-header-lexia-btn" onClick={() => {
-            setMostrarLeerCorreo(true);
-            decir('Hola, soy LexIA. Elige un correo y dale extraer, o pregúntame lo que necesites.');
-            // Bug real reportado por el usuario: guardó una tutela y, al
-            // volver a abrir esta ventana, seguía marcada como "precargada"
-            // la misma de antes (ya cubierta) en vez de la nueva siguiente.
-            // Se vuelve a revisar cada vez que se abre (la función misma ya
-            // no repite el gasto si el candidato no cambió).
-            precargarSiguienteTutelaLexIA?.(tutelas);
-          }}>
-            <img src={lexiaAvatar} alt="" className="btn-lexia-avatar" />
-            LexIA
-          </button>
+          <div className="lexia-btn-caida">
+            <button type="button" className="btn-lexia" onClick={() => {
+              setMostrarLeerCorreo(true);
+              decir('Hola, soy LexIA. Elige un correo y dale extraer, o pregúntame lo que necesites.');
+              // Bug real reportado por el usuario: guardó una tutela y, al
+              // volver a abrir esta ventana, seguía marcada como "precargada"
+              // la misma de antes (ya cubierta) en vez de la nueva siguiente.
+              // Se vuelve a revisar cada vez que se abre (la función misma ya
+              // no repite el gasto si el candidato no cambió).
+              precargarSiguienteTutelaLexIA?.(tutelas);
+            }}>
+              <img src={lexiaAvatar} alt="" className="btn-lexia-avatar" />
+              LexIA
+            </button>
+            <span className="lexia-tip-burbuja">¡Púlsame para ayudarte!</span>
+          </div>
         )}
         <div style={{display:'flex', alignItems:'center', gap:12, flexWrap:'wrap'}}>
           <span className={"badge badge-forma-boton " + (vencenHoy > 0 ? "badge-alerta" : "badge-gris")}>

@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-29 (5)
+- **Animación de "caída" y botón de LexIA más grande** — pedido explícito del usuario. El botón "LexIA" de Tutelas ahora cae con rebote desde arriba cada vez que se abre esa vista, con una burbuja "¡Púlsame para ayudarte!" que aparece al aterrizar y se desvanece sola. Además, el avatar dentro del botón y en el panel "Entrenar LexIA" se agrandó (se veía muy chico/recortado siendo una foto vertical) y el botón quedó un poco más ancho para que respire mejor.
+
 ## 2026-09-29 (4)
 - **Nuevo avatar de LexIA** — pedido explícito del usuario, reemplaza la foto anterior por una nueva ilustración (misma ubicación de archivo `src/assets/LexIA avatar.png`, sin tocar código de los componentes que lo usan).
 

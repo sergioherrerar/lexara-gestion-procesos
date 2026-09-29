@@ -292,11 +292,58 @@
      acá + absolute en el botón, para que quede centrado sin importar el
      ancho real de los grupos de la izquierda/derecha. */
   .view-header-lexia{position:relative;}
-  .view-header-lexia-btn{
+  /* "Que LexIA llegue cayendo a esa posición" (2026-09-29, pedido explícito
+     del usuario) — el contenedor lleva el posicionamiento (centrado,
+     igual que antes) Y la animación de caída con rebote; el <button> de
+     adentro queda libre de transform propio, así la animación nunca
+     choca con el translateY(1px) que ya usa .btn-lexia:active. */
+  .lexia-btn-caida{
     position:absolute; left:50%; top:0; transform:translateX(-50%);
+    animation: lexia-btn-cae .65s cubic-bezier(.34,1.56,.64,1) both;
+  }
+  @keyframes lexia-btn-cae{
+    0%{ opacity:0; transform: translateX(-50%) translateY(-70px) rotate(-10deg) scale(.8); }
+    55%{ opacity:1; transform: translateX(-50%) translateY(8px) rotate(5deg) scale(1.06); }
+    75%{ transform: translateX(-50%) translateY(-4px) rotate(-2deg) scale(.98); }
+    100%{ opacity:1; transform: translateX(-50%) translateY(0) rotate(0deg) scale(1); }
   }
   @media (max-width:900px){
-    .view-header-lexia-btn{position:static; transform:none; margin:10px 0;}
+    /* position:relative (no static) a propósito: sigue fluyendo igual que
+       antes en el header angosto, pero además queda como referencia para
+       que .lexia-tip-burbuja (position:absolute) se ancle a ESTE
+       contenedor y no a todo el header. */
+    .lexia-btn-caida{position:relative; transform:none; margin:10px 0; animation: lexia-btn-cae-movil .65s cubic-bezier(.34,1.56,.64,1) both;}
+  }
+  @keyframes lexia-btn-cae-movil{
+    0%{ opacity:0; transform: translateY(-70px) rotate(-10deg) scale(.8); }
+    55%{ opacity:1; transform: translateY(8px) rotate(5deg) scale(1.06); }
+    75%{ transform: translateY(-4px) rotate(-2deg) scale(.98); }
+    100%{ opacity:1; transform: translateY(0) rotate(0deg) scale(1); }
+  }
+  /* Burbuja "¡Púlsame para ayudarte!" — aparece cuando el botón ya
+     aterrizó (delay .65s) y se desvanece sola pasados unos segundos, sin
+     necesitar ningún estado de React ni temporizador. */
+  .lexia-tip-burbuja{
+    position:absolute; bottom:100%; left:50%; transform:translateX(-50%);
+    margin-bottom:12px; max-width:150px; text-align:center; white-space:normal;
+    background:#eef7f6; border:1px solid var(--verde-claro); color:var(--verde-oscuro);
+    font-size:12.5px; font-weight:600; line-height:1.35; padding:7px 12px; border-radius:12px;
+    box-shadow:0 4px 10px rgba(15,40,35,.14); pointer-events:none;
+    animation: lexia-tip-vida 5.5s .65s cubic-bezier(.34,1.56,.64,1) both;
+  }
+  .lexia-tip-burbuja::after{
+    content:''; position:absolute; top:100%; left:50%; transform:translateX(-50%);
+    border:6px solid transparent; border-top-color:#eef7f6;
+  }
+  @keyframes lexia-tip-vida{
+    0%{ opacity:0; transform: translateX(-50%) translateY(6px) scale(.85); }
+    10%{ opacity:1; transform: translateX(-50%) translateY(-2px) scale(1.04); }
+    16%{ transform: translateX(-50%) translateY(0) scale(1); }
+    82%{ opacity:1; transform: translateX(-50%) translateY(0) scale(1); }
+    100%{ opacity:0; transform: translateX(-50%) translateY(-6px) scale(.95); }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .lexia-btn-caida, .lexia-tip-burbuja{animation:none;}
   }
   .view-header h1{font-family:var(--font-display); font-size:25px; font-weight:600; margin:0 0 4px; color:var(--verde-oscuro);}
   .view-header p{margin:0; color:var(--texto-suave); font-size:13.5px;}
@@ -1223,15 +1270,19 @@
      el verde claro, coloca el avatar en miniatura y colócale solo LexIA")
      — verde claro institucional + su avatar real en miniatura. */
   .btn-lexia{
-    background:var(--verde-claro); color:#fff; border:none; padding:8px 18px 8px 8px; border-radius:8px;
-    font-size:13.5px; font-weight:600; cursor:pointer;
-    display:inline-flex; align-items:center; gap:8px;
+    background:var(--verde-claro); color:#fff; border:none; padding:7px 24px 7px 9px; border-radius:10px;
+    font-size:14px; font-weight:600; cursor:pointer;
+    display:inline-flex; align-items:center; gap:12px;
     transition:background .15s ease, transform .05s ease;
   }
   .btn-lexia:hover{background:var(--verde-oscuro);}
   .btn-lexia:active{transform:translateY(1px);}
+  /* Agrandado 2026-09-29 (pedido explícito del usuario viendo el botón en
+     vivo, "un poco más largo para que se vea mejor LexIA") — el avatar es
+     una foto vertical (retrato), así que un cuadro más grande + más
+     padding a los lados del botón le da más aire sin recortar nada. */
   .btn-lexia-avatar{
-    width:28px; height:28px; object-fit:contain; flex-shrink:0;
+    width:36px; height:36px; object-fit:contain; flex-shrink:0;
     filter: drop-shadow(0 2px 2px rgba(15,40,35,.35));
   }
   /* Botón "Todos" (Gastos) activo — mismo verde institucional que un tab
@@ -1311,7 +1362,9 @@
      ícono de sonido (2026-09-24, pedido explícito del usuario) — vive
      ahora en el mismo encabezado compartido, no adentro de la columna. */
   .leer-correo-head-derecha{display:flex; align-items:center; gap:10px;}
-  .leer-correo-head-avatar{width:38px; height:38px;}
+  /* Agrandado 2026-09-29 junto con .btn-lexia-avatar (mismo pedido del
+     usuario) — se veía muy recortado siendo una foto vertical. */
+  .leer-correo-head-avatar{width:46px; height:46px; object-fit:contain;}
 
   /* "Dar vida" a LexIA (2026-09-24, pedido explícito del usuario: "darle
      una imagen virtual... una animación saliendo y saludando") — aparece
