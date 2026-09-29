@@ -12,6 +12,7 @@ import lexiaAvatar from '../assets/LexIA avatar.png';
 // usuario sí cambia también la postura, no solo el movimiento.
 import lexiaAvatarEscuchando from '../assets/LexIA avatar - escuchando.webp';
 import lexiaAvatarHablando from '../assets/LexIA avatar - hablando.webp';
+import lexiaAvatarSaludo from '../assets/LexIA avatar - saludo.webp';
 
 // "API Claude" Tarea 1 (2026-09-23, pedido explícito del usuario, con
 // aprobación interna — ver [[project_api_claude_tutelas]]) — leer un correo
@@ -183,8 +184,8 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
   // explícito del usuario) — "escuchando" mientras LexIA está leyendo/
   // extrayendo el correo, "hablando" mientras lee la respuesta en voz
   // alta, y la pose de siempre (brazos cruzados) el resto del tiempo.
-  const estadoAvatar = procesando ? 'escuchando' : (lexiaHablando ? 'hablando' : 'reposo');
-  const AVATAR_POR_ESTADO = { reposo: lexiaAvatar, escuchando: lexiaAvatarEscuchando, hablando: lexiaAvatarHablando };
+  const estadoAvatar = procesando ? 'escuchando' : (lexiaHablando ? 'hablando' : (mostrarSaludo ? 'saludo' : 'reposo'));
+  const AVATAR_POR_ESTADO = { reposo: lexiaAvatar, escuchando: lexiaAvatarEscuchando, hablando: lexiaAvatarHablando, saludo: lexiaAvatarSaludo };
 
   return (
     <div className="confirm-overlay leer-correo-overlay">
@@ -227,10 +228,12 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
             "una animación saliendo y saludando") — aparece al abrir esta
             ventana y se retira sola a los pocos segundos (ver setTimeout
             arriba), para no quitarle espacio permanente a la lista de
-            correos. */}
+            correos. Ya no lleva su propio avatar chiquito (2026-09-29):
+            el avatar grande de la derecha muestra la pose de saludo al
+            mismo tiempo (ver estadoAvatar), tener los dos duplicaba la
+            imagen en pantalla. */}
         {mostrarSaludo && (
           <div className="lexia-saludo">
-            <img src={lexiaAvatar} alt="LexIA" className="lexia-avatar" />
             <div className="lexia-burbuja">¡Hola! Soy LexIA. Elige un correo y dale "Extraer con LexIA", o pregúntame lo que necesites al lado.</div>
           </div>
         )}

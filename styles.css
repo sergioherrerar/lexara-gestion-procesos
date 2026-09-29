@@ -1411,6 +1411,17 @@
     0%,100%{transform:scale(1) translateY(0);}
     50%{transform:scale(1.03) translateY(-4px);}
   }
+  /* Saludo: mientras dura el saludo inicial al abrir la ventana (pose de
+     mano saludando, ver `mostrarSaludo`) — vaivén rápido, como agitando la
+     mano. */
+  .avatar-grande-saludo{
+    animation: avatar-grande-entrada .5s cubic-bezier(.34,1.56,.64,1) both, avatar-grande-saludar .6s .5s ease-in-out infinite;
+  }
+  @keyframes avatar-grande-saludar{
+    0%,100%{transform:rotate(0deg);}
+    25%{transform:rotate(-4deg);}
+    75%{transform:rotate(4deg);}
+  }
   @media (prefers-reduced-motion: reduce){
     .avatar-grande{animation:none;}
   }

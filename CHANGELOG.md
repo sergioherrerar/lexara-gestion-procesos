@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-29 (9)
+- **Cuarta pose del avatar grande: "saludo"** — pedido del usuario, mandó una foto saludando con la mano. Se usa mientras dura el saludo inicial al abrir "Leer correo de Tutelas" (antes esa pose se armaba de fondo). Se le quitó el mismo sello "Made with AI" incrustado. El avatar chiquito que salía junto al globo de texto del saludo se quitó (quedaba duplicado con el grande de al lado).
+
 ## 2026-09-29 (8)
 - **Avatar grande de LexIA en "Leer correo de Tutelas"** — pedido explícito del usuario ("dar más protagonismo... casi el mismo tamaño de la ventana"). Nueva columna a la derecha con el avatar en tamaño grande, que ahora cambia de POSE según la etapa (no solo de animación): de pie mientras espera, con la mano en la oreja mientras extrae/procesa el correo, y con las manos abiertas mientras lee la respuesta en voz alta. Usa 2 fotos nuevas que mandó el usuario (se les quitó a mano el sello "Made with AI" que traían).
 
