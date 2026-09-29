@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-29 (1)
+- **Horas Extras ahora usa el mismo corte del día 28 que "Tutelas por Abogado"/"Tutelas por Cliente"** — pedido explícito del usuario ("que el mes solo tome hasta el 28 y el resto de días queden para el siguiente mes"). Antes filtraba por mes calendario simple (1 al 30/31); ahora es del 29 del mes anterior al 28 de este, tanto en Administración > Horas Extras como en Informes > Horas Extras > Registros. Se agregó una nota junto al selector de mes en ambos lugares para que quede claro el corte.
+
 ## 2026-09-25 (17)
 - **La etiqueta "Ya leído por LexIA" ahora también sale en cualquier correo ya extraído manualmente** (no solo el precargado de fondo) — pedido explícito del usuario, junto al badge "Creado".
 

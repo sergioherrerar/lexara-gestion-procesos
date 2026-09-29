@@ -172,11 +172,28 @@ export function clasificarHorasExtra(fechaISO, horaInicioStr, horaFinStr){
 // en las tablas de Informes/Administración.
 export function soloFecha(v){ return String(v||"").slice(0,10) || "—"; }
 
+// Corte día 28 (2026-09-29, pedido explícito del usuario: "hacer ese mismo
+// corte para las horas extras, que el mes solo tome hasta el 28 y el resto
+// de días queden para el siguiente mes") — mismo criterio ya usado en
+// Informes > Tutelas > "Tutelas por Abogado"/"Tutelas por Cliente" (ver
+// rangoVencimientoDelMes en informeAbogadosTutelas.js): del 29 del mes
+// anterior al 28 de este. Los años bisiestos se resuelven solos: pedir "29
+// de febrero" en un año que no es bisiesto hace que JavaScript ruede
+// automático al 1 de marzo, sin necesitar ningún caso especial.
+export function rangoHorasExtrasDelMes(anio, mesIndex0){
+  const fin = new Date(anio, mesIndex0, 28, 23, 59, 59, 999);
+  const inicio = new Date(anio, mesIndex0 - 1, 29, 0, 0, 0, 0);
+  return { inicio, fin };
+}
+
 export function filtrarHorasExtrasPorMes(horasExtras, anio, mesIndex0, soloAprobadas = true){
+  const { inicio, fin } = rangoHorasExtrasDelMes(anio, mesIndex0);
   return (horasExtras||[]).filter(h => {
     if(soloAprobadas && !h.Aprobado) return false;
-    const [y,m] = String(h.Fecha||"").split('-').map(Number);
-    return y === anio && (m-1) === mesIndex0;
+    const [y,m,d] = String(h.Fecha||"").split('-').map(Number);
+    if(!y || !m || !d) return false;
+    const fecha = new Date(y, m-1, d);
+    return fecha >= inicio && fecha <= fin;
   });
 }
 

@@ -15,7 +15,7 @@ import { generarInformeTutelasPDF, abrirCorreoTutelas, enviarBorradorTutelasGrap
 import { generarInformeGeneralProcesosExcel } from '../lib/informeGeneral';
 import { agruparPorAbogado, filtrarTutelasPorMes, generarInformeAbogadosTutelasExcel, colorDeTipoRespuesta, MESES_NOMBRES } from '../lib/informeAbogadosTutelas';
 import StackedBarChart from './StackedBarChart';
-import { clasificarHorasExtra, soloFecha, redondear } from '../lib/horasExtras';
+import { clasificarHorasExtra, soloFecha, redondear, filtrarHorasExtrasPorMes } from '../lib/horasExtras';
 import RevisionProcesosTab from './RevisionProcesosTab';
 import CruceArchivosTab from './CruceArchivosTab';
 import CrearLinkCompartirTab from './CrearLinkCompartirTab';
@@ -284,11 +284,11 @@ export default function InformesView({ procesos, clientes, facturas, desistimien
   // en Administración (ver HorasExtrasTab.jsx) — acá el chulo es de solo
   // lectura (badge), no un checkbox.
   const anioHoraExtra = hoyRef.getFullYear();
-  const registrosHoraExtraDelMes = (horasExtras||[])
-    .filter(h => {
-      const [y,m] = String(h.Fecha||"").split('-');
-      return Number(y) === anioHoraExtra && Number(m)-1 === mesHoraExtra;
-    })
+  // Corte día 28 (2026-09-29, pedido explícito del usuario) — mismo criterio
+  // que Informes > Tutelas, ver filtrarHorasExtrasPorMes/rangoHorasExtrasDelMes
+  // en horasExtras.js: del 29 del mes anterior al 28 de este. `false` = trae
+  // TODAS (aprobadas o no), igual que el filtro manual de antes.
+  const registrosHoraExtraDelMes = filtrarHorasExtrasPorMes(horasExtras, anioHoraExtra, mesHoraExtra, false)
     .sort((a,b) => String(b.Fecha||"").localeCompare(String(a.Fecha||"")));
   // Resumen por Colaborador (pedido explícito del usuario, mismo día: "al
   // lado un resumen de total de cada tipo de hora extra y todas sumadas")
@@ -645,6 +645,9 @@ export default function InformesView({ procesos, clientes, facturas, desistimien
               <select value={mesHoraExtra} onChange={e => setMesHoraExtra(Number(e.target.value))}>
                 {MESES_NOMBRES.map((m,i) => <option key={m} value={i}>{m}</option>)}
               </select>
+              {/* Corte día 28 (2026-09-29, pedido explícito del usuario) —
+                  mismo criterio ya usado en Informes > Tutelas. */}
+              <p className="save-hint" style={{margin:'6px 0 0'}}>Corte fijo el día 28: del 29 del mes anterior al 28 de este.</p>
             </div>
             {resumenColaboradorHoraExtra.grupos.length > 0 && (
               <div style={{display:'flex', gap:10, flexWrap:'wrap', flex:1}}>

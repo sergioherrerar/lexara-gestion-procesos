@@ -88,12 +88,15 @@ export default function HorasExtrasTab({ horasExtras, tutelas, colaboradores, on
           El registro lo hace cada colaborador desde Informes — acá se aprueba (chulo) y se ve la relación mensual. Solo cuentan para el resumen mensual las horas ya <strong>Aprobadas</strong>. Solo se muestran trabajadores (no contratistas) vigentes en Equipo MD.
         </p>
 
-        <div className="field" style={{maxWidth:200, marginBottom:16}}>
+        <div className="field" style={{maxWidth:200, marginBottom:6}}>
           <label>Mes</label>
           <select value={mes} onChange={e => setMes(Number(e.target.value))}>
             {MESES_NOMBRES.map((m,i) => <option key={m} value={i}>{m}</option>)}
           </select>
         </div>
+        {/* Corte día 28 (2026-09-29, pedido explícito del usuario) — mismo
+            criterio ya usado en Informes > Tutelas. */}
+        <p className="save-hint" style={{margin:'0 0 16px'}}>Corte fijo el día 28: del 29 del mes anterior al 28 de este.</p>
 
         <div className="table-wrap">
           <table>
