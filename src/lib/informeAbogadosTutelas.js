@@ -27,7 +27,8 @@
 // el rango de MARZO (empieza el 29-feb en vez del 1-mar), sin que ningún
 // día quede afuera y sin ningún caso especial escrito a mano.
 import { construirHojaTutelasXlsx, COLOR_ENCABEZADO_XLSX } from './informeTutelas';
-import { parseMonto, buscarValorEntidad } from './graph';
+import { parseMonto, buscarValorEntidad, fmtMonto } from './graph';
+import { prepararDocumentoPDF, dibujarResumenBox, VERDE_OSCURO, GRIS_SUAVE, TEXTO, BORDE_SUAVE, GRIS_ZEBRA, MARGEN, CONTENIDO_Y_INICIAL, CONTENIDO_Y_MAXIMO } from './informesPDF';
 
 export const MESES_NOMBRES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 
@@ -184,4 +185,65 @@ export async function generarInformeAbogadosTutelasExcel(tutelas, valoresEntidad
   a.click();
   a.remove();
   URL.revokeObjectURL(url);
+}
+
+// PDF — pedido explícito del usuario 2026-09-29 ("colocar un pdf con el
+// informe consolidado, mismo formato de horas extras"): mismo esqueleto
+// exacto que generarPDFHorasExtras (horasExtras.js) — barra de título verde
+// por Abogado con el subtotal a la derecha, filas zebra por Tipo Respuesta
+// debajo, resumen arriba y paginación manual — solo que acá el valor es
+// dinero (Valor Abogado, vía fmtMonto) en vez de horas.
+function fmtPeso(n){ return `$ ${fmtMonto(n)}`; }
+
+export async function generarPDFAbogadosTutelas(tutelas, valoresEntidad, anio, mesIndex0){
+  const filtradas = filtrarTutelasPorMes(tutelas, anio, mesIndex0);
+  const { grupos, totalGeneral } = agruparPorAbogado(filtradas, valoresEntidad);
+
+  const { doc, pageWidth, fecha, dibujarEncabezadoYPie, numerarPaginas } = await prepararDocumentoPDF('Tutelas por Abogado');
+  dibujarEncabezadoYPie();
+  let y = CONTENIDO_Y_INICIAL;
+
+  doc.setFont('helvetica','normal'); doc.setFontSize(10.5); doc.setTextColor(...TEXTO);
+  doc.text(`Bogotá D.C., ${fecha}`, MARGEN, y); y += 9;
+
+  y = dibujarResumenBox(doc, MARGEN, y, pageWidth - MARGEN*2, [
+    { label:'Mes', value: `${MESES_NOMBRES[mesIndex0]} ${anio}` },
+    { label:'Abogados', value: grupos.length },
+    { label:'Total general', value: fmtPeso(totalGeneral) },
+  ]) + 10;
+
+  if(!grupos.length){
+    doc.setFont('helvetica','italic'); doc.setFontSize(10); doc.setTextColor(...GRIS_SUAVE);
+    doc.text('No hay tutelas registradas para este mes.', MARGEN, y);
+  }
+
+  grupos.forEach(g => {
+    const altoBloque = 8 + g.filas.length * 7 + 3;
+    if(y + altoBloque > CONTENIDO_Y_MAXIMO){
+      doc.addPage();
+      dibujarEncabezadoYPie();
+      y = CONTENIDO_Y_INICIAL;
+    }
+    doc.setFillColor(...VERDE_OSCURO);
+    doc.rect(MARGEN, y, pageWidth - MARGEN*2, 7, 'F');
+    doc.setFont('helvetica','bold'); doc.setFontSize(10); doc.setTextColor(255);
+    doc.text(g.abogado, MARGEN + 2, y + 5);
+    doc.text(fmtPeso(g.totalAbogado), pageWidth - MARGEN - 2, y + 5, {align:'right'});
+    y += 7;
+    g.filas.forEach((f, i) => {
+      doc.setFillColor(...(i % 2 ? GRIS_ZEBRA : [255,255,255]));
+      doc.rect(MARGEN, y, pageWidth - MARGEN*2, 7, 'F');
+      doc.setDrawColor(...BORDE_SUAVE); doc.setLineWidth(0.15);
+      doc.rect(MARGEN, y, pageWidth - MARGEN*2, 7, 'S');
+      doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(...TEXTO);
+      doc.text(`${f.tipoRespuesta} (${f.cantidad})`, MARGEN + 4, y + 4.8);
+      doc.text(fmtPeso(f.total), pageWidth - MARGEN - 4, y + 4.8, {align:'right'});
+      y += 7;
+    });
+    y += 5;
+  });
+
+  numerarPaginas();
+  const hoyISO = new Date().toISOString().slice(0,10);
+  doc.save(`Tutelas por Abogado - ${MESES_NOMBRES[mesIndex0]} ${anio} - ${hoyISO}.pdf`);
 }

@@ -13,7 +13,7 @@ import { generarInformeGrupoPDF } from '../lib/informeGrupo';
 import { generarInformeLexaraExcel, generarInformeLexaraPDF } from '../lib/informeLexara';
 import { generarInformeTutelasPDF, abrirCorreoTutelas, enviarBorradorTutelasGraph, generarInformeTutelasExcel, construirMensajeWhatsAppTutelas } from '../lib/informeTutelas';
 import { generarInformeGeneralProcesosExcel } from '../lib/informeGeneral';
-import { agruparPorAbogado, filtrarTutelasPorMes, generarInformeAbogadosTutelasExcel, colorDeTipoRespuesta, MESES_NOMBRES } from '../lib/informeAbogadosTutelas';
+import { agruparPorAbogado, filtrarTutelasPorMes, generarInformeAbogadosTutelasExcel, generarPDFAbogadosTutelas, colorDeTipoRespuesta, MESES_NOMBRES } from '../lib/informeAbogadosTutelas';
 import StackedBarChart from './StackedBarChart';
 import { clasificarHorasExtra, soloFecha, redondear, filtrarHorasExtrasPorMes } from '../lib/horasExtras';
 import RevisionProcesosTab from './RevisionProcesosTab';
@@ -127,6 +127,7 @@ export default function InformesView({ procesos, clientes, facturas, desistimien
   const [mesAbogados, setMesAbogados] = useState(hoyRef.getMonth());
   const [anioAbogados] = useState(hoyRef.getFullYear());
   const [generandoAbogadosExcel, setGenerandoAbogadosExcel] = useState(false);
+  const [generandoAbogadosPDF, setGenerandoAbogadosPDF] = useState(false);
   const [corrigiendoEntidad, setCorrigiendoEntidad] = useState(false);
   // Corrección masiva puntual 2026-08-28 (ver corregirEntidadFaltanteTutelas
   // en useLexaraApp.js). 2 ajustes el mismo día:
@@ -326,6 +327,12 @@ export default function InformesView({ procesos, clientes, facturas, desistimien
     try{ await generarInformeAbogadosTutelasExcel(tutelas, valoresEntidad, anioAbogados, mesAbogados); }
     catch(err){ console.error(err); notify?.("No se pudo generar el Excel de Tutelas por Abogado: " + mensajeError(err), 'error'); }
     finally { setGenerandoAbogadosExcel(false); }
+  }
+  async function handleGenerarAbogadosPDF(){
+    setGenerandoAbogadosPDF(true);
+    try{ await generarPDFAbogadosTutelas(tutelas, valoresEntidad, anioAbogados, mesAbogados); }
+    catch(err){ console.error(err); notify?.("No se pudo generar el PDF de Tutelas por Abogado: " + mensajeError(err), 'error'); }
+    finally { setGenerandoAbogadosPDF(false); }
   }
 
   // Fila por Entidad de la tabla detallada — enfocada en Procesos judiciales,
@@ -778,6 +785,7 @@ export default function InformesView({ procesos, clientes, facturas, desistimien
               </select>
             </div>
             <IconButton icon="excel" variant="excel" label="Descargar Excel de Tutelas por Abogado" spinning={generandoAbogadosExcel} onClick={handleGenerarAbogadosExcel} />
+            <IconButton icon="pdf" variant="pdf" label="Descargar PDF de Tutelas por Abogado" spinning={generandoAbogadosPDF} onClick={handleGenerarAbogadosPDF} />
           </div>
           {tutelasEntidadInvalida.length > 0 && (
             <div className="field-warning" style={{display:'flex', alignItems:'center', gap:10, flexWrap:'wrap', marginBottom:16}}>

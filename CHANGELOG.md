@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-29 (3)
+- **Nuevo botón de PDF en Informes > Tutelas > "Tutelas por Abogado"** — pedido explícito del usuario, mismo formato institucional que ya usa el PDF de Horas Extras (barra verde por Abogado con subtotal, detalle por Tipo Respuesta debajo, resumen arriba). Muestra el mismo "Valor Abogado" ya sumado que el Excel de este mismo reporte, junto al botón de Excel existente.
+
 ## 2026-09-29 (2)
 - **Corrige que Horas Extras dejó de mostrar registros tras el corte día 28** — bug real introducido en el cambio anterior: la Fecha real de SharePoint llega con hora completa ("2026-09-05T00:00:00Z"), y el nuevo filtro por rango no le quitaba esa parte antes de convertirla a número, así que TODAS las filas se descartaban. Reportado por el usuario ("no me muestra ninguna").
 
