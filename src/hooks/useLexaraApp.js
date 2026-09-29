@@ -474,9 +474,26 @@ export function useLexaraApp(){
       // no tenía correo, se siguió buscando más allá (pedido explícito del
       // usuario: "si no está la siguiente revise una más allá y continúe").
       const numeroEncontrado = Graph.numeroTutelaDeAsunto(correo.asunto) ?? (maxExistente + 1);
-      const extraido = await Graph.extraerTutelaConLexIA(config.TUTELAS_BUZON_CORREO, correo.id, tutelasActuales, config.ROBOT_CLAUDE_URL);
+      // "No olvides la que hace automáticamente apenas entra al portal"
+      // (2026-09-29, pedido explícito del usuario) — la precarga de fondo
+      // también debe revisar/guardar en OneDrive, mismo criterio que
+      // LeerCorreoTutelaModal.handleExtraer: si esta tutela YA tiene una
+      // lectura guardada de una vez anterior, se reusa sin gastar Claude.
+      let extraido = config?.TUTELAS_ONEDRIVE_CARPETA_URL
+        ? await Graph.buscarLecturaLexIAGuardada(config.TUTELAS_ONEDRIVE_CARPETA_URL, numeroEncontrado)
+        : null;
+      if(extraido){
+        setPrecargaLexIA({ mensajeId: correo.id, ...extraido });
+        notify(`LexIA encontró de fondo la tutela ${numeroEncontrado} — ya la había analizado antes, no hizo falta leerla de nuevo.`, 'success');
+        return;
+      }
+      extraido = await Graph.extraerTutelaConLexIA(config.TUTELAS_BUZON_CORREO, correo.id, tutelasActuales, config.ROBOT_CLAUDE_URL);
       setPrecargaLexIA({ mensajeId: correo.id, ...extraido });
       notify(`LexIA ya leyó de fondo el correo de la tutela ${numeroEncontrado} — la vas a ver marcada como "Ya leído por LexIA" en "Leer correo (LexIA)".`, 'success');
+      if(config?.TUTELAS_ONEDRIVE_CARPETA_URL){
+        Graph.guardarLecturaLexIAEnOneDrive(config.TUTELAS_ONEDRIVE_CARPETA_URL, numeroEncontrado, correo, extraido.asunto, extraido.cuerpo, extraido.registros)
+          .catch(err => console.error('No se pudo guardar en OneDrive la lectura precargada de fondo:', err));
+      }
     }catch(err){
       // No es crítico — si falla, "Leer correo (LexIA)" simplemente extrae
       // ese correo normal (con IA) cuando el usuario lo pida, como siempre.

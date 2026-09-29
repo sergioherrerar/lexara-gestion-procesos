@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-29 (14)
+- **La precarga automática de LexIA (la que corre sola al entrar al portal) también revisa/guarda en OneDrive** — mismo criterio que "Extraer con LexIA" del cambio anterior, para que ambos caminos se beneficien del respaldo y de no repetir el análisis de una tutela ya leída.
+
 ## 2026-09-29 (13)
 - **Nuevo: LexIA guarda su lectura en OneDrive** — pedido explícito del usuario ("que si se cierra el navegador no se pierda lo que leyó la IA"). Cada vez que se aprieta "Extraer con LexIA", además de mostrar los datos en pantalla, se sube un .txt (correo completo + todo lo que extrajo Claude) a una subcarpeta con el número de tutela dentro de la carpeta de OneDrive que dio el usuario. Si esa tutela YA tenía una lectura guardada de una vez anterior, ya no se vuelve a gastar Claude — se avisa que ya fue analizada e invita a usar "Pregúntame" directamente.
 
