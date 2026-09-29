@@ -1379,6 +1379,14 @@
   .avatar-grande{
     width:100%; max-height:66vh; object-fit:contain;
     filter: drop-shadow(0 12px 20px rgba(15,40,35,.3)) drop-shadow(0 2px 5px rgba(15,40,35,.2));
+    /* "Dale un marco que tape las piernas, que no se vean recortadas"
+       (2026-09-29, pedido explícito del usuario) — las 4 fotos terminan de
+       golpe a la altura del muslo (así viene el recorte de origen). En vez
+       de agregar un marco/tarjeta encima, se desvanece esa última parte
+       con un degradado de máscara (mask-image) — mismo resultado (ya no se
+       ve el corte duro) sin encerrar el avatar en una caja. */
+    -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 68%, transparent 90%);
+    mask-image: linear-gradient(to bottom, #000 0%, #000 68%, transparent 90%);
   }
   @keyframes avatar-grande-entrada{
     0%{opacity:0; transform:translateY(16px) scale(.92);}

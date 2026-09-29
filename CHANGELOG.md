@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-29 (10)
+- **Corrige que se veían las piernas recortadas de golpe en el avatar grande de LexIA** — reportado por el usuario con captura. Las 4 fotos terminan de golpe a la altura del muslo (así vienen del recorte de origen); ahora esa parte se desvanece con un degradado en vez de cortarse en seco.
+
 ## 2026-09-29 (9)
 - **Cuarta pose del avatar grande: "saludo"** — pedido del usuario, mandó una foto saludando con la mano. Se usa mientras dura el saludo inicial al abrir "Leer correo de Tutelas" (antes esa pose se armaba de fondo). Se le quitó el mismo sello "Made with AI" incrustado. El avatar chiquito que salía junto al globo de texto del saludo se quitó (quedaba duplicado con el grande de al lado).
 
