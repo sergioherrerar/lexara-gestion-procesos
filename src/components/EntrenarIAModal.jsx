@@ -24,7 +24,7 @@ import { IconTextButton } from './IconButton';
 // recién leído + los registros que Claude ya extrajo de él, AUNQUE esa
 // tutela todavía no se haya guardado en SharePoint. Se manda como contexto
 // con prioridad en la pestaña "Preguntas".
-export function EntrenarIAPanel({ tutelas, onAgregarCorreccion, robotPreguntasUrl, notify, casoActual, decirLexia }){
+export function EntrenarIAPanel({ tutelas, onAgregarCorreccion, robotPreguntasUrl, notify, casoActual, casosGuardados, decirLexia }){
   // "Pregúntame" primero, tanto en el orden de los botones como la pestaña
   // que abre por defecto (2026-09-25, pedido explícito del usuario:
   // "coloca primero Pregúntame que Enséñame").
@@ -37,7 +37,7 @@ export function EntrenarIAPanel({ tutelas, onAgregarCorreccion, robotPreguntasUr
       </div>
       {tab === 'correccion'
         ? <TabCorreccion tutelas={tutelas} onAgregarCorreccion={onAgregarCorreccion} notify={notify} />
-        : <TabPreguntas tutelas={tutelas} robotPreguntasUrl={robotPreguntasUrl} notify={notify} casoActual={casoActual} decirLexia={decirLexia} />}
+        : <TabPreguntas tutelas={tutelas} robotPreguntasUrl={robotPreguntasUrl} notify={notify} casoActual={casoActual} casosGuardados={casosGuardados} decirLexia={decirLexia} />}
     </div>
   );
 }
@@ -152,7 +152,7 @@ function limpiarMarkdown(texto){
     .replace(/[*_`]/g, '');
 }
 
-function TabPreguntas({ tutelas, robotPreguntasUrl, notify, casoActual, decirLexia }){
+function TabPreguntas({ tutelas, robotPreguntasUrl, notify, casoActual, casosGuardados, decirLexia }){
   const [pregunta, setPregunta] = useState('');
   const [mensajes, setMensajes] = useState([]); // [{autor:'yo'|'ia', texto}]
   const [enviando, setEnviando] = useState(false);
@@ -177,7 +177,7 @@ function TabPreguntas({ tutelas, robotPreguntasUrl, notify, casoActual, decirLex
       const res = await fetch(robotPreguntasUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pregunta: texto, tutelas: tutelasCompactas, casoActual: casoActual || undefined }),
+        body: JSON.stringify({ pregunta: texto, tutelas: tutelasCompactas, casoActual: casoActual || undefined, casosGuardados: (casosGuardados && casosGuardados.length) ? casosGuardados : undefined }),
       });
       let data;
       try{ data = await res.json(); }catch{ data = null; }
@@ -203,6 +203,11 @@ function TabPreguntas({ tutelas, robotPreguntasUrl, notify, casoActual, decirLex
       {casoActual && (
         <p className="save-hint" style={{margin:'0 0 14px', color:'var(--verde-oscuro)', fontWeight:600}}>
           También puedes preguntar sobre el correo que acabas de leer (ej. "¿quién es el usuario?", "¿qué están solicitando?", "¿quiénes están vinculados?", "dime las pretensiones") — aunque esa tutela todavía no esté guardada.
+        </p>
+      )}
+      {!casoActual && casosGuardados && casosGuardados.length > 0 && (
+        <p className="save-hint" style={{margin:'0 0 14px', color:'var(--verde-oscuro)', fontWeight:600}}>
+          También puedes preguntar por cualquiera de las {casosGuardados.length} tutelas marcadas "Ya leído por LexIA" en la lista, aunque no hayas hecho clic en ese correo todavía.
         </p>
       )}
       <div className="entrenar-ia-historial entrenar-ia-chat">

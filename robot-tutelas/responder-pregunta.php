@@ -54,13 +54,21 @@ $tutelas = is_array($entrada['tutelas'] ?? null) ? $entrada['tutelas'] : [];
 // esté guardada todavía). Trae más detalle que la tabla de abajo: el
 // asunto/cuerpo real del correo, no solo los campos ya resumidos.
 $casoActual = is_array($entrada['casoActual'] ?? null) ? $entrada['casoActual'] : null;
+// "Le pedí algo de esta tutela y ya está leída y no encuentra
+// información" (2026-09-29, pedido explícito del usuario con captura) —
+// a diferencia de $casoActual (SOLO la tutela seleccionada en este
+// instante en la lista), esto trae TODAS las tutelas que LexIA ya analizó
+// y guardó en OneDrive pero que todavía no están guardadas en el portal —
+// así se puede preguntar por cualquiera de ellas por número, sin tener
+// que haber hecho clic en ese correo puntual primero.
+$casosGuardados = is_array($entrada['casosGuardados'] ?? null) ? $entrada['casosGuardados'] : [];
 
 if(!$pregunta){
     http_response_code(400);
     echo json_encode(['error' => 'Falta la pregunta.']);
     exit;
 }
-if(!$tutelas && !$casoActual){
+if(!$tutelas && !$casoActual && !$casosGuardados){
     http_response_code(400);
     echo json_encode(['error' => 'No hay tutelas cargadas en el portal para responder sobre ellas.']);
     exit;
@@ -111,6 +119,31 @@ if($casoActual){
         "Campos que LexIA ya extrajo de este caso (uno por cliente vinculado, si aplica):\n{$registrosTexto}";
 }
 
+// Bloque de las demás tutelas ya leídas por LexIA y guardadas en OneDrive
+// (ver nota arriba sobre $casosGuardados) — bug real reportado 2026-09-29:
+// el usuario preguntó por una tutela marcada "Ya leído por LexIA" en la
+// lista, pero como nunca había hecho clic en ESE correo puntual (solo en
+// otro), $casoActual no la traía y Claude respondía "no encuentro esa
+// tutela". Con esto, cualquiera de las ya analizadas se puede consultar
+// por número sin necesitar ese clic primero.
+$casosGuardadosTexto = '';
+if($casosGuardados){
+    $bloques = [];
+    foreach($casosGuardados as $caso){
+        if(!is_array($caso)) continue;
+        $asuntoG = (string)($caso['asunto'] ?? '');
+        $cuerpoG = (string)($caso['cuerpo'] ?? '');
+        if(mb_strlen($cuerpoG) > 3000){ $cuerpoG = mb_substr($cuerpoG, 0, 3000) . '…'; }
+        $registrosG = is_array($caso['registros'] ?? null) ? $caso['registros'] : [];
+        $registrosTextoG = $registrosG ? json_encode($registrosG, JSON_UNESCAPED_UNICODE) : '(sin campos extraídos)';
+        $bloques[] = "Asunto: {$asuntoG}\nCuerpo: {$cuerpoG}\nCampos extraídos: {$registrosTextoG}";
+    }
+    if($bloques){
+        $casosGuardadosTexto = "\n\nOTRAS TUTELAS YA LEÍDAS POR LEXIA, MARCADAS \"Ya leído por LexIA\" EN LA LISTA, PERO TODAVÍA NO GUARDADAS EN EL PORTAL (puede que ninguna de estas aparezca en la tabla de abajo — si la pregunta menciona el número de alguna de ellas, respóndela con esta información):\n" .
+            implode("\n---\n", $bloques);
+    }
+}
+
 // 2026-09-25, pedido explícito del usuario: "cuando se refiera a la IA se
 // nombre tal cual LexIA" — reportó una respuesta real donde Claude dijo
 // "leída recién por IA" en vez de "por LexIA". Se le pide explícitamente
@@ -120,6 +153,7 @@ $instrucciones = "Eres LexIA, el asistente de inteligencia artificial del despac
     "A continuación tienes la lista de tutelas actualmente cargadas en el portal, en formato tabla — una tutela por línea, columnas separadas por \"|\", en este orden: " . implode(', ', $columnas) . "." .
     $avisoIncompleta .
     $casoActualTexto .
+    $casosGuardadosTexto .
     "\n\nResponde la pregunta del usuario basándote ÚNICAMENTE en estos datos reales — nunca inventes números, nombres, fechas o casos que no estén acá. Si la pregunta no se puede responder con certeza a partir de estos datos, dilo claramente en vez de adivinar. Responde en español, de forma clara, breve y directa, como si le hablaras a un abogado colega. " .
     // 2026-09-25, pedido explícito del usuario: la respuesta se muestra como
     // texto plano (no interpreta markdown) Y se lee en voz alta con síntesis

@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-29 (22)
+- **Corrige que "Pregúntame" no reconocía una tutela marcada "Ya leído por LexIA" si no le habías hecho clic primero** — reportado por el usuario con captura (27918). Antes solo la tutela seleccionada en la lista quedaba disponible para preguntar; ahora se traen TODAS las tutelas ya analizadas en OneDrive de una vez, así se puede preguntar por cualquiera de ellas por número sin tener que seleccionarla primero. **Requiere volver a subir `robot-tutelas/responder-pregunta.php` a cPanel** para que tenga efecto completo (el lado del portal ya manda la información nueva, pero el robot en el servidor todavía no la usa hasta subir ese archivo).
+
 ## 2026-09-29 (21)
 - **Corrige que la voz de LexIA a veces salía de hombre** — el arreglo anterior (esperar a que carguen las voces) elegía la primera voz en español que encontrara, sin fijarse en cuál era. Ahora busca por nombre una voz de mujer conocida (Helena, Sabina, Mónica, Laura, etc.) y, si no encuentra ninguna así, al menos evita una con nombre de hombre conocido antes de usar cualquier otra en español.
 

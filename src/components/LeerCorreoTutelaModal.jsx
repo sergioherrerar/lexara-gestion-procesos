@@ -63,11 +63,28 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
   // tutela que YA tienen un análisis guardado de una sesión anterior;
   // se lista una sola vez al abrir esta ventana (no un GET por correo).
   const [analizadasOneDrive, setAnalizadasOneDrive] = useState(new Set());
+  // "Le pedí algo de esta tutela y ya está leída y no encuentra
+  // información" (2026-09-29, pedido explícito del usuario con captura:
+  // preguntó por la 27918, que SÍ estaba marcada "Ya leído por LexIA",
+  // pero "Pregúntame" no la conocía porque nunca había hecho clic en ese
+  // correo para cargarla en casoActual) — en vez de depender de un clic
+  // por tutela, se trae el contenido completo de TODAS las ya analizadas
+  // en OneDrive de una vez (en paralelo) y se manda como contexto extra a
+  // "Pregúntame", para que cualquiera de ellas se pueda consultar por
+  // número sin tener que seleccionarla primero en la lista.
+  const [casosGuardadosOneDrive, setCasosGuardadosOneDrive] = useState([]);
   useEffect(() => {
     if(!onedriveCarpetaUrl) return;
     let cancelado = false;
     listarTutelasAnalizadasEnOneDrive(onedriveCarpetaUrl)
-      .then(set => { if(!cancelado) setAnalizadasOneDrive(set); })
+      .then(async set => {
+        if(cancelado) return;
+        setAnalizadasOneDrive(set);
+        const casos = await Promise.all(
+          Array.from(set).map(n => buscarLecturaLexIAGuardada(onedriveCarpetaUrl, n))
+        );
+        if(!cancelado) setCasosGuardadosOneDrive(casos.filter(Boolean));
+      })
       .catch(err => console.error('No se pudo listar las tutelas ya analizadas en OneDrive:', err));
     return () => { cancelado = true; };
   }, [onedriveCarpetaUrl]);
@@ -476,6 +493,7 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
             robotPreguntasUrl={robotPreguntasUrl}
             notify={notify}
             casoActual={resultado ? { asunto: correoActual?.asunto, cuerpo: correoActual?.cuerpo, registros: resultado.registros } : null}
+            casosGuardados={casosGuardadosOneDrive}
             decirLexia={decir}
           />
         </div>
