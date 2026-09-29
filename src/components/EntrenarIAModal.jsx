@@ -152,6 +152,31 @@ function limpiarMarkdown(texto){
     .replace(/[*_`]/g, '');
 }
 
+// Cuántas tutelas guardadas se mandan "a ciegas" (sin filtrar por número)
+// cuando la pregunta no menciona ninguno en concreto — ver casosRelevantes.
+const LIMITE_CASOS_SIN_FILTRAR = 10;
+
+// (2026-09-29, por costo de la API, esta_misma tarea de "mira por todos
+// lados cómo ahorrar costos") — `casosGuardados` viene de TODAS las
+// tutelas que LexIA ya analizó y quedaron guardadas en OneDrive, una
+// carpeta que solo va a seguir creciendo con los meses (recién está
+// empezando este feature). Sin este filtro, cada pregunta mandaría a
+// Claude el texto completo de CADA tutela ya analizada alguna vez, sin
+// límite — el costo de "Pregúntame" crecería solo, para siempre. Como el
+// propio robot (responder-pregunta.php) solo sabe buscar por número
+// ("si la pregunta menciona el número de alguna de ellas..."), acá se
+// manda solo la(s) que de verdad se están preguntando. Con la lista
+// todavía chica (<= 10) se manda completa igual, sin filtrar nada.
+function casosRelevantes(casosGuardados, pregunta){
+  if(!casosGuardados || casosGuardados.length <= LIMITE_CASOS_SIN_FILTRAR) return casosGuardados;
+  const numerosMencionados = pregunta.match(/\d{4,}/g) || [];
+  if(!numerosMencionados.length) return casosGuardados.slice(0, LIMITE_CASOS_SIN_FILTRAR);
+  const filtrados = casosGuardados.filter(c =>
+    (c.registros || []).some(r => numerosMencionados.includes(String(r.NoTutela || '').trim()))
+  );
+  return filtrados.length ? filtrados : casosGuardados.slice(0, LIMITE_CASOS_SIN_FILTRAR);
+}
+
 function TabPreguntas({ robotPreguntasUrl, notify, casoActual, casosGuardados, decirLexia }){
   const [pregunta, setPregunta] = useState('');
   const [mensajes, setMensajes] = useState([]); // [{autor:'yo'|'ia', texto}]
@@ -174,10 +199,11 @@ function TabPreguntas({ robotPreguntasUrl, notify, casoActual, casosGuardados, d
       // del portal (podía ser miles de filas, el gasto más grande de este
       // endpoint); "Pregúntame" ahora SOLO responde sobre lo que ya está en
       // casoActual/casosGuardados (los .txt guardados en OneDrive).
+      const casosAMandar = casosRelevantes(casosGuardados, texto);
       const res = await fetch(robotPreguntasUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pregunta: texto, casoActual: casoActual || undefined, casosGuardados: (casosGuardados && casosGuardados.length) ? casosGuardados : undefined }),
+        body: JSON.stringify({ pregunta: texto, casoActual: casoActual || undefined, casosGuardados: (casosAMandar && casosAMandar.length) ? casosAMandar : undefined }),
       });
       let data;
       try{ data = await res.json(); }catch{ data = null; }

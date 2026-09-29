@@ -2,6 +2,12 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-29 (27)
+- **"Plan B" para cuando se acabe el saldo de la API de Claude** — pedido explícito del usuario. Ahora, cada vez que se extrae una tutela con LexIA, el portal guarda también el correo completo (asunto y cuerpo) y los adjuntos ORIGINALES (el PDF/imagen tal cual llegó) en una subcarpeta "Adjuntos originales" dentro de la carpeta de esa tutela en OneDrive — antes solo se guardaba el resumen ya procesado. Esto pasa ANTES de llamar a Claude, así que aunque el saldo se acabe y la extracción falle, todo queda guardado y listo para leerlo por otra vía (una página aparte, pagada por la cuenta de Claude, no por el saldo de cPanel).
+
+## 2026-09-29 (26)
+- **"Pregúntame" ya no manda TODAS las tutelas guardadas en OneDrive en cada pregunta** — barrida completa buscando más ahorro de costo, pedida por el usuario. Esa carpeta solo va a seguir creciendo con los meses; sin este cambio, cada pregunta iba a mandarle a Claude el texto completo de cada tutela que LexIA haya analizado alguna vez, sin límite. Ahora, si la lista ya es grande (más de 10), solo se manda la tutela puntual que la pregunta menciona por número — igual que ya hacía el robot del servidor, que solo sabe buscar así. Con la lista todavía chica se sigue mandando completa, sin ningún cambio de comportamiento.
+
 ## 2026-09-29 (25)
 - **Reducción de costo de la API de Claude** — pedido explícito del usuario, por el saldo bajo. Cambios:
   1. **Se quitó la precarga automática de LexIA por completo** — antes corría sola al iniciar sesión y cada vez que se abría "Leer correo (LexIA)", adivinando la siguiente tutela y extrayéndola de fondo sin que el usuario lo pidiera. Ahora todo es 100% manual: solo se extrae cuando se aprieta "Extraer con LexIA".

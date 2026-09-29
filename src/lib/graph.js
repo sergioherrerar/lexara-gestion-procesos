@@ -540,9 +540,21 @@ export async function leerCorreoCompleto(correoBuzon, mensajeId){
 // tanto el botón "Extraer con LexIA" como la precarga automática usen
 // EXACTAMENTE la misma lógica (correcciones incluidas), sin duplicar código.
 // Lanza si el robot no está configurado o responde con error.
-export async function extraerTutelaConLexIA(correoBuzon, mensajeId, tutelas, robotUrl){
+export async function extraerTutelaConLexIA(correoBuzon, mensajeId, tutelas, robotUrl, onedriveCarpetaUrl){
   if(!robotUrl) throw new Error('Falta terminar de instalar LexIA (ROBOT_CLAUDE_URL en config.js).');
   const completo = await leerCorreoCompleto(correoBuzon, mensajeId);
+  // Guarda los adjuntos originales en OneDrive ANTES de llamar a Claude
+  // (ver nota de guardarAdjuntosOriginalesEnOneDrive) — así quedan listos
+  // para el "plan B" aunque la llamada de abajo falle por falta de saldo.
+  // Nunca debe bloquear ni romper la extracción normal si falla.
+  const numeroTutela = numeroTutelaDeAsunto(completo.asunto);
+  if(onedriveCarpetaUrl && numeroTutela){
+    try{
+      await guardarAdjuntosOriginalesEnOneDrive(onedriveCarpetaUrl, numeroTutela, completo.asunto, completo.cuerpo, completo.adjuntos);
+    }catch(err){
+      console.error('No se pudieron guardar los adjuntos originales en OneDrive (plan B):', err);
+    }
+  }
   const correcciones = (tutelas || [])
     .filter(t => t.CorreccionIA)
     .sort((a,b) => (Number(b.NoTutela)||0) - (Number(a.NoTutela)||0))
@@ -656,6 +668,47 @@ export async function guardarLecturaLexIAEnOneDrive(urlCarpeta, numeroTutela, me
     headers: { 'Content-Type': 'text/plain; charset=utf-8' },
     body: texto,
   });
+}
+
+function base64ABytes(base64){
+  const binario = atob(base64);
+  const bytes = new Uint8Array(binario.length);
+  for(let i=0; i<binario.length; i++) bytes[i] = binario.charCodeAt(i);
+  return bytes;
+}
+
+// "Plan B" para cuando se acabe el saldo de la API de Claude (2026-09-29,
+// pedido explícito del usuario) — guarda los adjuntos ORIGINALES (el PDF/
+// imagen tal cual llegó, no solo el resumen de texto que ya guarda
+// guardarLecturaLexIAEnOneDrive) en una subcarpeta "Adjuntos originales"
+// dentro de la carpeta de esta tutela. Sirven para que, si el robot de
+// cPanel no puede llamar a Claude (sin saldo), se puedan volver a leer
+// desde otra vía (una página aparte que use tu cuenta de Claude, no el
+// saldo de la API) sin tener que ir a buscarlos al correo de nuevo.
+// Se llama ANTES de mandarle nada a Claude (ver extraerTutelaConLexIA) —
+// así, aunque esa llamada falle por falta de saldo, los adjuntos ya
+// quedaron guardados y listos para el plan B.
+export async function guardarAdjuntosOriginalesEnOneDrive(urlCarpeta, numeroTutela, asunto, cuerpo, adjuntos){
+  const { driveId, folderId } = await resolverCarpetaLexIAOneDrive(urlCarpeta);
+  // El texto del correo también se guarda (además de los adjuntos) — el
+  // plan B necesita el mismo asunto/cuerpo que hoy recibe extraer-tutela.php,
+  // no solo los adjuntos, para poder leer la tutela igual de completo.
+  const rutaCorreo = `${numeroTutela} Tutela/Adjuntos originales/Correo (asunto y cuerpo).txt`;
+  await graphFetch(`/drives/${driveId}/items/${folderId}:/${encodeURIComponent(rutaCorreo).replace(/%2F/g,'/')}:/content`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+    body: `Asunto del correo: ${asunto}\n\nCuerpo del correo:\n${cuerpo}`,
+  });
+  for(const adj of (adjuntos || [])){
+    if(!adj.base64) continue;
+    const nombre = (adj.nombre || 'adjunto').replace(/[\\/:*?"<>|]/g, '_');
+    const ruta = `${numeroTutela} Tutela/Adjuntos originales/${nombre}`;
+    await graphFetch(`/drives/${driveId}/items/${folderId}:/${encodeURIComponent(ruta).replace(/%2F/g,'/')}:/content`, {
+      method: 'PUT',
+      headers: { 'Content-Type': adj.tipo || 'application/octet-stream' },
+      body: base64ABytes(adj.base64),
+    });
+  }
 }
 
 // Antes de llamar a Claude, revisa si esta tutela YA tiene una lectura

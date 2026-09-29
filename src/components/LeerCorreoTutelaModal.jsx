@@ -167,7 +167,7 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
     }
     decir('Estoy trabajando para ti.');
     try{
-      const extraido = await extraerTutelaConLexIA(correoBuzon, mensaje.id, tutelas, robotUrl);
+      const extraido = await extraerTutelaConLexIA(correoBuzon, mensaje.id, tutelas, robotUrl, onedriveCarpetaUrl);
       setResultado({ mensajeId: mensaje.id, registros: extraido.registros });
       setCorreoActual({ asunto: extraido.asunto, cuerpo: extraido.cuerpo });
       if(onedriveCarpetaUrl && numeroTutela){
