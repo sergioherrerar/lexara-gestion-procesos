@@ -55,6 +55,23 @@ function esperarVoces(){
   return vocesListas;
 }
 
+// "Se cambió la voz por la de un hombre, ponla que siempre dé mujer"
+// (2026-09-29, pedido explícito del usuario) — la Web Speech API no expone
+// un campo de género real por voz, así que se elige por el NOMBRE de la
+// voz instalada (Windows/Edge/Chrome ponen nombres propios reales, no
+// "masculino"/"femenino"). Se prefiere una con nombre de mujer conocido;
+// si no hay ninguna así, se evita al menos una con nombre de hombre
+// conocido antes de caer en cualquier voz en español a secas.
+const NOMBRES_VOZ_FEMENINA = ['sabina','helena','laura','elvira','lucia','lucía','raquel','monica','mónica','paulina','marisol','esperanza','pilar','carmen','isabela','isabel','camila','valentina','julieta','conchita','female','mujer'];
+const NOMBRES_VOZ_MASCULINA = ['pablo','jorge','diego','enrique','alvaro','álvaro','carlos','raul','raúl','miguel','juan','andres','andrés','fernando','ricardo','male','hombre'];
+function elegirVozFemenina(voces){
+  const hispanas = voces.filter(v => (v.lang||'').toLowerCase().startsWith('es'));
+  const nombreIncluye = (v, lista) => lista.some(p => (v.name||'').toLowerCase().includes(p));
+  return hispanas.find(v => nombreIncluye(v, NOMBRES_VOZ_FEMENINA))
+    || hispanas.find(v => !nombreIncluye(v, NOMBRES_VOZ_MASCULINA))
+    || hispanas[0];
+}
+
 export function useLexiaVoz(){
   const [activada, setActivadaState] = useState(() => {
     try{ const v = localStorage.getItem(LEXIA_VOZ_KEY); return v === null ? true : v === '1'; }
@@ -146,7 +163,7 @@ export function useLexiaVoz(){
         // esperar nada, entran directo como antes.
         if(vozRef.current === null){
           const voces = await esperarVoces();
-          vozRef.current = voces.find(v => (v.lang||'').toLowerCase().startsWith('es')) || undefined;
+          vozRef.current = elegirVozFemenina(voces) || undefined;
         }
         // Frases por punto/signo de cierre — trozos cortos y confiables en
         // vez de mandar el texto completo como una sola utterance larga.

@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-29 (21)
+- **Corrige que la voz de LexIA a veces salía de hombre** — el arreglo anterior (esperar a que carguen las voces) elegía la primera voz en español que encontrara, sin fijarse en cuál era. Ahora busca por nombre una voz de mujer conocida (Helena, Sabina, Mónica, Laura, etc.) y, si no encuentra ninguna así, al menos evita una con nombre de hombre conocido antes de usar cualquier otra en español.
+
 ## 2026-09-29 (20)
 - **Cambia el orden del nombre de las carpetas de LexIA en OneDrive** — pedido explícito del usuario viendo la carpeta real: ahora es "27918 Tutela" en vez de "Tutela 27918". Las 2 carpetas que ya existían con el nombre viejo (27918/28195) siguen funcionando igual — la app reconoce los dos formatos, solo las nuevas se crean con el orden nuevo.
 
