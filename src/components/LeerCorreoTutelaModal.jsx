@@ -191,18 +191,19 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
     <div className="confirm-overlay leer-correo-overlay">
       <div className="confirm-box leer-correo-box leer-correo-box-ancha" style={{transform: `translate(${offset.x}px, ${offset.y}px)`}}>
         <div className="leer-correo-head" {...dragHandleProps}>
-          <h3>Leer correo de Tutelas (LexIA)</h3>
-          {/* "Entrenar LexIA" alineado con el título de la izquierda, y su
-              avatar al lado del ícono de sonido, un poco más grande
-              (2026-09-24, pedido explícito del usuario: "alinea los dos
-              títulos", "LexIA colócala al lado del ícono del sonido y un
-              poco más grande") — antes vivía más abajo, adentro de la
-              columna derecha, sin alinearse con el título de acá. */}
-          <div className="leer-correo-head-derecha">
-            <h4 className="leer-correo-col-lateral-titulo">
-              Entrenar LexIA
-              <img src={lexiaAvatar} alt="" className="btn-lexia-avatar leer-correo-head-avatar" />
-            </h4>
+          <div className="leer-correo-head-principal">
+            <h3>Leer correo de Tutelas (LexIA)</h3>
+          </div>
+          {/* "Entrenar LexIA" alineado arriba de SU columna, no pegado al
+              borde derecho del todo (2026-09-29, pedido explícito del
+              usuario con un boceto: quitar el avatar chiquito de acá —
+              queda duplicado con el grande de la ventana — y correr el
+              título hacia la izquierda, al espacio vacío de arriba). El
+              ancho de esta franja imita el de .leer-correo-col-lateral de
+              abajo para que quede alineada de verdad, no solo "más a la
+              izquierda" a ojo. */}
+          <div className="leer-correo-head-lateral">
+            <h4 className="leer-correo-col-lateral-titulo">Entrenar LexIA</h4>
             <IconButton
               icon={vozActivada ? 'volumeOn' : 'volumeOff'}
               variant="secondary"
@@ -219,6 +220,8 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
             {lexiaHablando && lexiaPausada && (
               <IconButton icon="play" variant="secondary" label="Continuar la lectura" onClick={continuarLexia} />
             )}
+          </div>
+          <div className="leer-correo-head-avatar-col">
             <button className="drawer-close" onClick={onClose} aria-label="Cerrar">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
             </button>

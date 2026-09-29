@@ -1455,13 +1455,20 @@
     }
   }
   .leer-correo-col-lateral-titulo{margin:0; font-size:17px; color:var(--verde-oscuro); display:flex; align-items:center; gap:8px; white-space:nowrap;}
-  /* "Entrenar LexIA" alineado con el título de la izquierda, junto al
-     ícono de sonido (2026-09-24, pedido explícito del usuario) — vive
-     ahora en el mismo encabezado compartido, no adentro de la columna. */
-  .leer-correo-head-derecha{display:flex; align-items:center; gap:10px;}
-  /* Agrandado 2026-09-29 junto con .btn-lexia-avatar (mismo pedido del
-     usuario) — se veía muy recortado siendo una foto vertical. */
-  .leer-correo-head-avatar{width:46px; height:46px; object-fit:contain;}
+  /* Encabezado en 3 franjas que imitan el ancho de las 3 columnas de abajo
+     (2026-09-29, pedido explícito del usuario con un boceto) — así
+     "Entrenar LexIA" queda alineado arriba de SU columna (.leer-correo-
+     col-lateral) en vez de pegado contra los íconos del extremo derecho.
+     El botón de cerrar quedó en su propia franja, arriba de la columna
+     del avatar — misma esquina de siempre, solo que ahora comparte franja
+     con nadie más. Ya no lleva el avatar chiquito de LexIA (quedaba
+     duplicado con el grande de la ventana de al lado). */
+  .leer-correo-head-principal{flex:1 1 55%; min-width:0;}
+  .leer-correo-head-lateral{
+    flex:1 1 40%; min-width:280px; max-width:360px;
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+  }
+  .leer-correo-head-avatar-col{flex:0 0 220px; display:flex; align-items:center; justify-content:flex-end;}
 
   /* "Dar vida" a LexIA (2026-09-24, pedido explícito del usuario: "darle
      una imagen virtual... una animación saliendo y saludando") — aparece
@@ -1516,7 +1523,16 @@
     .leer-correo-col-principal, .leer-correo-col-lateral{max-width:none; max-height:none; overflow-y:visible;}
     .leer-correo-col-lateral{border-left:none; border-top:1px solid var(--gris-linea); padding-left:0; padding-top:16px; margin-top:6px;}
   }
-  .leer-correo-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;}
+  .leer-correo-head{display:flex; align-items:center; gap:22px; margin-bottom:6px;}
+  @media (max-width:760px){
+    /* En celular las 3 columnas de abajo se apilan (.leer-correo-2col),
+       así que las franjas del encabezado ya no necesitan imitar sus
+       anchos — vuelve a un solo renglón simple (ver [[feedback_pc_mobile_parity]]). */
+    .leer-correo-head{flex-wrap:wrap;}
+    .leer-correo-head-principal{flex:1 1 auto;}
+    .leer-correo-head-lateral{flex:1 1 auto; min-width:0; max-width:none;}
+    .leer-correo-head-avatar-col{flex:0 0 auto;}
+  }
   /* 2026-09-24, bug real: el botón de cerrar (.drawer-close, position:absolute
      pensado para los paneles grandes tipo #tutela-drawer) quedaba fuera de
      vista acá — su "ancestro posicionado" más cercano terminaba siendo el

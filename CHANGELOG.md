@@ -2,6 +2,10 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-29 (12)
+- **"Entrenar LexIA" ahora está alineado arriba de su propia columna** — pedido explícito del usuario con un boceto. Se quitó el avatar chiquito que quedaba junto al título (duplicado con el grande de la ventana) y el botón de cerrar quedó solo en su propia esquina, arriba del marco.
+- **Segundo intento de arreglo de Pausar/Silenciar** — el guard que se agregó la vez pasada no alcanzaba a cubrir un caso real: si se dispara más de una lectura casi al mismo tiempo (ej. el saludo del botón "LexIA" y la precarga de fondo), un evento de la lectura VIEJA podía llegar después de que ya había arrancado la nueva y pisarle el estado igual. Ahora cada lectura lleva un número de "tanda" y se ignora cualquier evento que no sea de la tanda actual.
+
 ## 2026-09-29 (11)
 - **El avatar grande de LexIA ahora tiene un marco tipo ventana** — pedido explícito del usuario, mandó un boceto ("un marco, como si se asomara por una ventana"). Reemplaza el desvanecido a cuerpo completo de antes: ahora es un marco fijo (esquinas redondeadas, borde verde institucional) recortado más arriba, con el mismo degradado suave justo antes del borde para que no se sienta un corte en seco.
 
