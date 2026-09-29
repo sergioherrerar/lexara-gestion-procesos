@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-29 (23)
+- **Cuarto intento del bug "no pausa ni silencia"** — el arreglo anterior (esperar a que carguen las voces antes de hablar) agregaba una espera async DENTRO de decir(), justo antes de speak() — varios navegadores bloquean speak() en silencio si no se llama de forma completamente síncrona, en respuesta directa al clic real. Ahora las voces se precargan solas en segundo plano apenas se abre la app (sin bloquear nada), y decir() volvió a ser 100% síncrono, llamando a speak() en el mismo instante del clic — igual que la primera versión, pero ya con voces/voz de mujer listas de antemano.
+
 ## 2026-09-29 (22)
 - **Corrige que "Pregúntame" no reconocía una tutela marcada "Ya leído por LexIA" si no le habías hecho clic primero** — reportado por el usuario con captura (27918). Antes solo la tutela seleccionada en la lista quedaba disponible para preguntar; ahora se traen TODAS las tutelas ya analizadas en OneDrive de una vez, así se puede preguntar por cualquiera de ellas por número sin tener que seleccionarla primero. **Requiere volver a subir `robot-tutelas/responder-pregunta.php` a cPanel** para que tenga efecto completo (el lado del portal ya manda la información nueva, pero el robot en el servidor todavía no la usa hasta subir ese archivo).
 

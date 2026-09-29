@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 // Voz de LexIA (2026-09-24, pedido explícito del usuario: "podemos darle
 // voz y que lea lo que envía") — usa la síntesis de voz nativa del
@@ -100,6 +100,25 @@ export function useLexiaVoz(){
   // reemplazada se ignora, sin importar cuándo llegue.
   const generacionRef = useRef(0);
 
+  // Cuarto intento del bug "no pausa ni silencia" (2026-09-29) — los 3
+  // anteriores quedaron verificados por STATE (hablando/pausada), nunca
+  // por sonido real (no hay forma de "escuchar" en un navegador de
+  // prueba). El intento anterior esperaba a que cargaran las voces DENTRO
+  // de decir(), con un await antes de speak() — pero varios navegadores
+  // (Safari sobre todo, Chrome en ciertas configuraciones) BLOQUEAN
+  // speak() en silencio si no se llama de forma completamente síncrona,
+  // en la misma pila de ejecución del clic real del usuario: un await de
+  // por medio (aunque sea rapidísimo) puede perder esa marca de "gesto
+  // real" y dejar la lectura muda sin avisar nada — exactamente el mismo
+  // síntoma de siempre. Ahora las voces se precargan solas apenas se monta
+  // este hook (en segundo plano, sin bloquear nada), y decir() vuelve a
+  // ser 100% síncrono, llamando a speak() en el mismo instante del clic.
+  useEffect(() => {
+    esperarVoces().then(voces => {
+      if(vozRef.current === null) vozRef.current = elegirVozFemenina(voces) || undefined;
+    });
+  }, []);
+
   const setActivada = useCallback((valor) => {
     setActivadaState(prev => {
       const next = typeof valor === 'function' ? valor(prev) : valor;
@@ -152,30 +171,19 @@ export function useLexiaVoz(){
 
   const decir = useCallback((texto) => {
     if(!activada || !texto || !('speechSynthesis' in window)) return;
-    // Cancela cualquier lectura anterior YA MISMO (síncrono) — no hace
-    // falta esperar a las voces para eso, solo para la utterance nueva.
-    detenidoRef.current = true;
-    window.speechSynthesis.cancel();
-    (async () => {
-      try{
-        // Solo se busca una vez por sesión (esperarVoces() cachea su
-        // promesa) — las llamadas siguientes a decir() no vuelven a
-        // esperar nada, entran directo como antes.
-        if(vozRef.current === null){
-          const voces = await esperarVoces();
-          vozRef.current = elegirVozFemenina(voces) || undefined;
-        }
-        // Frases por punto/signo de cierre — trozos cortos y confiables en
-        // vez de mandar el texto completo como una sola utterance larga.
-        const trozos = texto.split(/(?<=[.!?])\s+/).map(t => t.trim()).filter(Boolean);
-        colaRef.current = trozos.length ? trozos : [texto];
-        detenidoRef.current = false;
-        generacionRef.current++; // lectura nueva de cero — arranca su propia tanda
-        setPausada(false);
-        setHablando(true);
-        hablarDesde(0, generacionRef.current);
-      }catch{ /* Web Speech no disponible en este navegador — no es crítico, sigue solo sin voz. */ }
-    })();
+    try{
+      detenidoRef.current = true;
+      window.speechSynthesis.cancel();
+      // Frases por punto/signo de cierre — trozos cortos y confiables en
+      // vez de mandar el texto completo como una sola utterance larga.
+      const trozos = texto.split(/(?<=[.!?])\s+/).map(t => t.trim()).filter(Boolean);
+      colaRef.current = trozos.length ? trozos : [texto];
+      detenidoRef.current = false;
+      generacionRef.current++; // lectura nueva de cero — arranca su propia tanda
+      setPausada(false);
+      setHablando(true);
+      hablarDesde(0, generacionRef.current);
+    }catch{ /* Web Speech no disponible en este navegador — no es crítico, sigue solo sin voz. */ }
   }, [activada, hablarDesde]);
 
   const pausar = useCallback(() => {
