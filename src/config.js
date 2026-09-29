@@ -74,6 +74,16 @@ export const INITIAL_CONFIG = {
   // otro archivo: responde preguntas sobre las tutelas ya cargadas en el
   // portal, sin guardar nada. Ver robot-tutelas/responder-pregunta.php.
   ROBOT_PREGUNTAS_URL: "https://www.lexaraabogados.com/robot-tutelas/responder-pregunta.php",
+  // "Guardar lectura de LexIA en OneDrive" (2026-09-29, pedido explícito del
+  // usuario: "que si de pronto se cierra el navegador no se pierda lo que
+  // leyó la IA") — carpeta real de OneDrive (no una lista de SharePoint)
+  // donde queda, por cada tutela, una subcarpeta "Tutela N" con un .txt del
+  // correo completo + los datos que extrajo Claude. Necesita el permiso
+  // Files.ReadWrite.All en Azure AD (ver getFilesToken en graph.js) — si
+  // todavía no está aprobado, esta función falla sola sin romper el resto
+  // del flujo de extracción (el usuario ve un aviso, pero los datos
+  // extraídos igual quedan disponibles para crear la tutela).
+  TUTELAS_ONEDRIVE_CARPETA_URL: "https://mydabogados-my.sharepoint.com/:f:/g/personal/tutelas_lexaraabogados_com/IgBn68eWTp8PRJ2V0cfH-ekEATMwdxnElIPo0v7Bp5x2KwA?e=mm3yG2",
 };
 
 // Lista fija de correos remitentes válidos para "Leer correo (IA)" en

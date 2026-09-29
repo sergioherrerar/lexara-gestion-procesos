@@ -132,6 +132,7 @@ export default function TutelasView({ tutelas, searchQuery, onOpenTutela, onCrea
           correoBuzon={config?.TUTELAS_BUZON_CORREO}
           remitentesPermitidos={TUTELAS_REMITENTES_PERMITIDOS}
           robotUrl={config?.ROBOT_CLAUDE_URL}
+          onedriveCarpetaUrl={config?.TUTELAS_ONEDRIVE_CARPETA_URL}
           tutelas={tutelas}
           onAgregarCorreccionIA={onAgregarCorreccionIA}
           precargaLexIA={precargaLexIA}

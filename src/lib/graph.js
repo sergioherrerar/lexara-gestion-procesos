@@ -591,6 +591,118 @@ export async function extraerTutelaConLexIA(correoBuzon, mensajeId, tutelas, rob
   return { asunto: completo.asunto, cuerpo: completo.cuerpo, registros: registros.map(r => ({ ...r, _creado: false })) };
 }
 
+// ============================================================
+// Guardar la lectura de LexIA en OneDrive (2026-09-29, pedido explícito
+// del usuario: "que si se cierra el navegador no se pierda lo que leyó la
+// IA" + "si se vuelve a consultar esa tutela, que diga que ya fue
+// analizada y pregunte qué se necesita de ella"). Por cada tutela queda
+// una subcarpeta "Tutela N" (dentro de TUTELAS_ONEDRIVE_CARPETA_URL, ver
+// config.js) con un .txt: el correo completo + los datos que extrajo
+// Claude, en texto legible, MÁS un bloque JSON delimitado al final que el
+// portal usa para releer esos mismos datos sin llamar de nuevo a la IA.
+// Reusa `codificarUrlCompartida`/`graphFetch` (Sites.ReadWrite.All, ya
+// aprobado en Azure AD) — mismo patrón ya probado en producción por
+// `resolverCarpetaSiigo`/`subirDocumentoCorporativo` más abajo en este
+// archivo: un enlace de "compartir" de OneDrive resuelve igual que uno de
+// SharePoint, no hace falta ningún permiso nuevo de Files.ReadWrite.All.
+// ============================================================
+
+// Cache por sesión (mismo criterio que carpetaSiigo) — no vuelve a
+// resolver el enlace compartido en cada extracción.
+let carpetaLexIAOneDrive = null;
+async function resolverCarpetaLexIAOneDrive(urlCarpeta){
+  if(carpetaLexIAOneDrive) return carpetaLexIAOneDrive;
+  const id = codificarUrlCompartida(urlCarpeta);
+  const item = await graphFetch(`/shares/${id}/driveItem?$select=id,parentReference`);
+  carpetaLexIAOneDrive = { driveId: item.parentReference.driveId, folderId: item.id };
+  return carpetaLexIAOneDrive;
+}
+
+// Nombre fijo (no lleva fecha) — así una re-extracción de la misma tutela
+// ACTUALIZA el mismo archivo en vez de ir acumulando copias.
+function rutaLexIA(numeroTutela){
+  return `Tutela ${numeroTutela}/Lectura LexIA.txt`;
+}
+
+const MARCADOR_JSON_INICIO = '<<<DATOS_JSON — no borrar, el portal lo usa para releer esta tutela sin llamar de nuevo a la IA>>>';
+const MARCADOR_JSON_FIN = '<<<FIN_DATOS_JSON>>>';
+
+function construirTextoLecturaLexIA(numeroTutela, mensaje, asunto, cuerpo, registros){
+  const lineas = [];
+  lineas.push(`TUTELA No. ${numeroTutela}`);
+  lineas.push(`Analizado por LexIA el ${new Date().toLocaleString('es-CO')}`);
+  lineas.push('');
+  lineas.push('===================== CORREO =====================');
+  lineas.push(`Asunto: ${asunto}`);
+  if(mensaje?.remitenteNombre || mensaje?.remitente){
+    lineas.push(`De: ${mensaje.remitenteNombre || ''} <${mensaje.remitente || ''}>`);
+  }
+  if(mensaje?.fecha) lineas.push(`Recibido: ${new Date(mensaje.fecha).toLocaleString('es-CO')}`);
+  lineas.push('');
+  lineas.push(cuerpo || '(sin cuerpo)');
+  lineas.push('');
+  lineas.push(`============ DATOS EXTRAÍDOS POR LEXIA (${registros.length} registro${registros.length===1?'':'s'}) ============`);
+  registros.forEach((r, i) => {
+    lineas.push('');
+    lineas.push(`--- Registro ${i+1} ---`);
+    Object.entries(r).forEach(([clave, valor]) => {
+      if(clave === '_creado') return;
+      lineas.push(`${clave}: ${valor ?? ''}`);
+    });
+  });
+  lineas.push('');
+  lineas.push(MARCADOR_JSON_INICIO);
+  lineas.push(JSON.stringify({ asunto, cuerpo, registros }));
+  lineas.push(MARCADOR_JSON_FIN);
+  return lineas.join('\n');
+}
+
+// Se llama justo después de un "Extraer con LexIA" exitoso — sube (o
+// reemplaza) el .txt de esta tutela. Lanza si falla (quien llama decide si
+// avisa al usuario o solo lo registra en consola, sin romper el flujo de
+// extracción que ya tuvo éxito).
+export async function guardarLecturaLexIAEnOneDrive(urlCarpeta, numeroTutela, mensaje, asunto, cuerpo, registros){
+  const { driveId, folderId } = await resolverCarpetaLexIAOneDrive(urlCarpeta);
+  const ruta = rutaLexIA(numeroTutela);
+  const texto = construirTextoLecturaLexIA(numeroTutela, mensaje, asunto, cuerpo, registros);
+  await graphFetch(`/drives/${driveId}/items/${folderId}:/${encodeURIComponent(ruta).replace(/%2F/g,'/')}:/content`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+    body: texto,
+  });
+}
+
+// Antes de llamar a Claude, revisa si esta tutela YA tiene una lectura
+// guardada de una vez anterior — si la hay, se reusa tal cual (sin gastar
+// Claude de nuevo) y se le avisa al usuario que ya estaba analizada.
+// Devuelve null si no existe (404) o si algo falla — en ambos casos quien
+// llama debe seguir con la extracción normal, no romper el flujo. No usa
+// graphFetch para este GET puntual porque esa función siempre intenta
+// parsear la respuesta como JSON — acá la respuesta es el .txt crudo.
+export async function buscarLecturaLexIAGuardada(urlCarpeta, numeroTutela){
+  if(!numeroTutela) return null;
+  try{
+    const { driveId, folderId } = await resolverCarpetaLexIAOneDrive(urlCarpeta);
+    const ruta = rutaLexIA(numeroTutela);
+    const token = await getGraphToken();
+    const res = await fetch(
+      `https://graph.microsoft.com/v1.0/drives/${driveId}/items/${folderId}:/${encodeURIComponent(ruta).replace(/%2F/g,'/')}:/content`,
+      { headers:{ Authorization:`Bearer ${token}` } }
+    );
+    if(!res.ok) return null; // 404 (no existe todavía) u otro error — sigue con la extracción normal
+    const texto = await res.text();
+    const inicio = texto.indexOf(MARCADOR_JSON_INICIO);
+    const fin = texto.indexOf(MARCADOR_JSON_FIN);
+    if(inicio === -1 || fin === -1) return null;
+    const json = texto.slice(inicio + MARCADOR_JSON_INICIO.length, fin).trim();
+    const datos = JSON.parse(json);
+    return { asunto: datos.asunto, cuerpo: datos.cuerpo, registros: (datos.registros||[]).map(r => ({ ...r, _creado:false })) };
+  }catch(err){
+    console.error('No se pudo revisar si esta tutela ya estaba analizada en OneDrive:', err);
+    return null;
+  }
+}
+
 // Traduce errores técnicos (de MSAL o de la respuesta cruda de Graph, casi
 // siempre en inglés) a un mensaje en español entendible — pedido explícito
 // del usuario 2026-09-10 ("trata de que todos los errores sean español").

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { leerCorreosTutelas, extraerTutelaConLexIA, numeroTutelaDeAsunto, mensajeError } from '../lib/graph';
+import { leerCorreosTutelas, extraerTutelaConLexIA, numeroTutelaDeAsunto, mensajeError, buscarLecturaLexIAGuardada, guardarLecturaLexIAEnOneDrive } from '../lib/graph';
 import IconButton, { IconTextButton } from './IconButton';
 import { EntrenarIAPanel } from './EntrenarIAModal';
 import { useDraggable } from '../hooks/useDraggable';
@@ -21,7 +21,7 @@ import lexiaAvatarSaludo from '../assets/LexIA avatar - saludo.webp';
 // devolver los campos que Claude extrajo para prellenar "Nueva tutela". El
 // usuario SIEMPRE revisa y confirma en el formulario antes de guardar — acá
 // nunca se toca SharePoint, solo se arma el objeto de campos iniciales.
-export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitidos, robotUrl, tutelas, onAgregarCorreccionIA, robotPreguntasUrl, onExtraido, onClose, notify, vozActivada, setVozActivada, decir, lexiaHablando, lexiaPausada, pausarLexia, continuarLexia, precargaLexIA }){
+export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitidos, robotUrl, onedriveCarpetaUrl, tutelas, onAgregarCorreccionIA, robotPreguntasUrl, onExtraido, onClose, notify, vozActivada, setVozActivada, decir, lexiaHablando, lexiaPausada, pausarLexia, continuarLexia, precargaLexIA }){
   const [cargando, setCargando] = useState(true);
   // "Un botón para actualizar la lista de los correos que estén
   // ingresando" (2026-09-29, pedido explícito del usuario) — separado de
@@ -117,12 +117,44 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
       setCorreoActual({ asunto: precargaLexIA.asunto, cuerpo: precargaLexIA.cuerpo });
       return;
     }
+    const numeroTutela = numeroTutelaDeAsunto(mensaje.asunto);
     setProcesando(true);
+    // "Si se vuelve a consultar esa tutela, que diga que ya fue analizada
+    // por LexIA y pregunte qué se necesita de ella" (2026-09-29, pedido
+    // explícito del usuario) — memoria PERSISTENTE (sobrevive a cerrar el
+    // navegador, a diferencia de la precarga de arriba, que es de la
+    // sesión actual): revisa en OneDrive si esta tutela ya tiene una
+    // lectura guardada de una vez anterior antes de gastar Claude de
+    // nuevo.
+    if(onedriveCarpetaUrl && numeroTutela){
+      try{
+        const guardada = await buscarLecturaLexIAGuardada(onedriveCarpetaUrl, numeroTutela);
+        if(guardada){
+          setResultado({ mensajeId: mensaje.id, registros: guardada.registros });
+          setCorreoActual({ asunto: guardada.asunto, cuerpo: guardada.cuerpo });
+          decir(`Esta tutela ya fue analizada por LexIA. Pregúntame lo que necesites sobre ella.`);
+          notify?.(`La tutela ${numeroTutela} ya había sido analizada por LexIA — pregúntale lo que necesites al lado, sin gastar otra lectura.`, 'success');
+          setProcesando(false);
+          return;
+        }
+      }catch(err){
+        console.error('No se pudo revisar OneDrive antes de extraer:', err);
+        // Sigue con la extracción normal — que falle guardar/consultar en
+        // OneDrive nunca debe bloquear la extracción con Claude.
+      }
+    }
     decir('Estoy trabajando para ti.');
     try{
       const extraido = await extraerTutelaConLexIA(correoBuzon, mensaje.id, tutelas, robotUrl);
       setResultado({ mensajeId: mensaje.id, registros: extraido.registros });
       setCorreoActual({ asunto: extraido.asunto, cuerpo: extraido.cuerpo });
+      if(onedriveCarpetaUrl && numeroTutela){
+        guardarLecturaLexIAEnOneDrive(onedriveCarpetaUrl, numeroTutela, mensaje, extraido.asunto, extraido.cuerpo, extraido.registros)
+          .catch(err => {
+            console.error(err);
+            notify?.('Se extrajeron los datos, pero no se pudo guardar la copia en OneDrive: ' + mensajeError(err), 'error');
+          });
+      }
     }catch(err){
       console.error(err);
       notify?.('No se pudo extraer los datos con IA: ' + (err.message || mensajeError(err)), 'error');
