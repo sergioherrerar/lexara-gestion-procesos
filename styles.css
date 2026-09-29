@@ -1601,6 +1601,13 @@
   .icon-btn-delete:hover{background:var(--naranja); color:#fff;}
   .icon-btn-refresh{color:var(--verde-oscuro); background:#e3efee;}
   .icon-btn-refresh:hover{background:var(--verde-oscuro); color:#fff;}
+  /* Nunca había existido este estilo (2026-09-29, reportado por el
+     usuario) — volumen/pausar/continuar en "Leer correo (LexIA)" usan
+     variant="secondary" desde que se crearon, pero al no tener CSS propio
+     salían con el color de texto por defecto (negro plano), en vez del
+     verde institucional del resto de los íconos. */
+  .icon-btn-secondary{color:var(--verde-claro); background:#e4f4f3;}
+  .icon-btn-secondary:hover{background:var(--verde-claro); color:#fff;}
   .icon-btn-print{color:var(--verde-claro); background:#e4f4f3;}
   .icon-btn-print:hover{background:var(--verde-claro); color:#fff;}
   .icon-btn-invoice{color:var(--verde-oscuro); background:#e3efee;}

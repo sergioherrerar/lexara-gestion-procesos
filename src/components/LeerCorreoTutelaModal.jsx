@@ -318,7 +318,7 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
             </button>
           )}
           <div style={{alignSelf:'flex-end'}}>
-            <IconButton icon="refresh" variant="secondary" label="Actualizar lista de correos" spinning={actualizando} onClick={handleActualizarCorreos} />
+            <IconButton icon="refresh" variant="refresh" label="Actualizar lista de correos" spinning={actualizando} onClick={handleActualizarCorreos} />
           </div>
         </div>
         {/* Buscador por No. Tutela (2026-09-25, pedido explícito del

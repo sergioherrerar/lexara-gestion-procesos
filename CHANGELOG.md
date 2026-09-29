@@ -2,6 +2,10 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-29 (17)
+- **Corrige el color de volumen/pausar/continuar/actualizar en "Leer correo (LexIA)"** — reportado por el usuario. Esos 4 íconos nunca habían tenido un estilo propio (salían en negro plano en vez del verde institucional) desde que se crearon — ya quedaron con el mismo color que el resto de la app.
+- **Tercera vuelta al bug de "no pausa ni silencia"** — encontrado un problema real de fondo distinto a los 2 anteriores: en Chrome/Edge, si se manda a hablar ANTES de que el navegador termine de cargar su lista de voces (pasa justo al abrir la app por primera vez), la primera lectura puede quedar completamente muda — sin sonar nada, pero SIN avisar ningún error tampoco, así que por fuera se ve exactamente igual a "no hace nada". Ahora se espera a que las voces carguen antes de la primera lectura (con un tope de 1 segundo) y se le asigna una voz en español explícita, en vez de dejar que el navegador adivine.
+
 ## 2026-09-29 (16)
 - **Segunda vuelta al arreglo de "Pregúntame" con la tutela precargada** — el primer intento (cargarla al hacer clic en el correo de la lista) no bastaba: el usuario le preguntaba directo sin haber hecho clic todavía. Ahora se carga sola apenas se abre "Leer correo de Tutelas", sin depender de ningún clic. Verificado con una prueba real montando el componente con una tutela precargada de mentira: el aviso de "también puedes preguntar sobre el correo que acabas de leer" ya aparece de inmediato.
 

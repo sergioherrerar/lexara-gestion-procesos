@@ -18,6 +18,43 @@ import { useCallback, useRef, useState } from 'react';
 // las frases que faltan. Nunca se usa pause()/resume() del navegador.
 const LEXIA_VOZ_KEY = 'lexia-voz-activada';
 
+// Bug real y muy documentado de Chrome/Edge: si se llama speak() ANTES de
+// que el navegador termine de cargar su lista de voces (getVoices()
+// arranca vacía y se llena después, de forma asíncrona, con el evento
+// "voiceschanged"), la primera utterance queda MUDA — no suena nada, pero
+// tampoco disparan ni onstart ni onerror ni onend, así que por fuera se ve
+// exactamente como si "no hiciera nada": ni falla, ni avisa, ni el estado
+// de hablando/pausada queda mal (de hecho queda bien, solo que sin sonido
+// real detrás). Esto encaja con reportes repetidos de "no pausa ni
+// silencia" que no se lograban reproducir por fuera: el problema real
+// puede ser que nunca sonó nada desde el principio, no que pausar/
+// continuar/silenciar fallen en sí. Se espera a que las voces carguen (con
+// un tope de 1s por si el navegador nunca dispara el evento) antes de la
+// PRIMERA lectura, y de paso se le asigna una voz en español explícita en
+// vez de confiar solo en el `lang` de la utterance.
+let vocesListas = null;
+function esperarVoces(){
+  if(vocesListas) return vocesListas;
+  vocesListas = new Promise(resolve => {
+    if(!('speechSynthesis' in window)){ resolve([]); return; }
+    const yaCargadas = window.speechSynthesis.getVoices();
+    if(yaCargadas.length){ resolve(yaCargadas); return; }
+    const onChange = () => {
+      window.speechSynthesis.removeEventListener('voiceschanged', onChange);
+      resolve(window.speechSynthesis.getVoices());
+    };
+    window.speechSynthesis.addEventListener('voiceschanged', onChange);
+    // Si el navegador nunca dispara el evento (pasa en algunos), no se
+    // queda esperando para siempre — sigue con lo que haya (puede ser
+    // vacío, y aun así funciona con el `lang` de la utterance como respaldo).
+    setTimeout(() => {
+      window.speechSynthesis.removeEventListener('voiceschanged', onChange);
+      resolve(window.speechSynthesis.getVoices());
+    }, 1000);
+  });
+  return vocesListas;
+}
+
 export function useLexiaVoz(){
   const [activada, setActivadaState] = useState(() => {
     try{ const v = localStorage.getItem(LEXIA_VOZ_KEY); return v === null ? true : v === '1'; }
@@ -30,6 +67,7 @@ export function useLexiaVoz(){
   const colaRef = useRef([]);
   const indiceRef = useRef(0);
   const detenidoRef = useRef(true);
+  const vozRef = useRef(null);
   // Bug real reportado 2026-09-29, DESPUÉS de un primer intento de arreglo
   // (el guard de `detenidoRef` en onerror/onend, que sigue haciendo falta
   // pero no bastaba solo): si se llama decir()/pausar()/continuar() varias
@@ -72,6 +110,10 @@ export function useLexiaVoz(){
     const u = new SpeechSynthesisUtterance(cola[indice]);
     u.lang = 'es-CO';
     u.rate = 1.03;
+    // Voz explícita en español (ver esperarVoces arriba) — de respaldo,
+    // si por algo no se encontró ninguna, se deja que el navegador
+    // elija sola por el `lang` de arriba, como ya hacía antes.
+    if(vozRef.current) u.voice = vozRef.current;
     u.onend = () => {
       if(generacion !== generacionRef.current) return;
       if(detenidoRef.current) return; // se pausó/canceló mientras leía esta frase
@@ -93,19 +135,30 @@ export function useLexiaVoz(){
 
   const decir = useCallback((texto) => {
     if(!activada || !texto || !('speechSynthesis' in window)) return;
-    try{
-      detenidoRef.current = true;
-      window.speechSynthesis.cancel();
-      // Frases por punto/signo de cierre — trozos cortos y confiables en
-      // vez de mandar el texto completo como una sola utterance larga.
-      const trozos = texto.split(/(?<=[.!?])\s+/).map(t => t.trim()).filter(Boolean);
-      colaRef.current = trozos.length ? trozos : [texto];
-      detenidoRef.current = false;
-      generacionRef.current++; // lectura nueva de cero — arranca su propia tanda
-      setPausada(false);
-      setHablando(true);
-      hablarDesde(0, generacionRef.current);
-    }catch{ /* Web Speech no disponible en este navegador — no es crítico, sigue solo sin voz. */ }
+    // Cancela cualquier lectura anterior YA MISMO (síncrono) — no hace
+    // falta esperar a las voces para eso, solo para la utterance nueva.
+    detenidoRef.current = true;
+    window.speechSynthesis.cancel();
+    (async () => {
+      try{
+        // Solo se busca una vez por sesión (esperarVoces() cachea su
+        // promesa) — las llamadas siguientes a decir() no vuelven a
+        // esperar nada, entran directo como antes.
+        if(vozRef.current === null){
+          const voces = await esperarVoces();
+          vozRef.current = voces.find(v => (v.lang||'').toLowerCase().startsWith('es')) || undefined;
+        }
+        // Frases por punto/signo de cierre — trozos cortos y confiables en
+        // vez de mandar el texto completo como una sola utterance larga.
+        const trozos = texto.split(/(?<=[.!?])\s+/).map(t => t.trim()).filter(Boolean);
+        colaRef.current = trozos.length ? trozos : [texto];
+        detenidoRef.current = false;
+        generacionRef.current++; // lectura nueva de cero — arranca su propia tanda
+        setPausada(false);
+        setHablando(true);
+        hablarDesde(0, generacionRef.current);
+      }catch{ /* Web Speech no disponible en este navegador — no es crítico, sigue solo sin voz. */ }
+    })();
   }, [activada, hablarDesde]);
 
   const pausar = useCallback(() => {
