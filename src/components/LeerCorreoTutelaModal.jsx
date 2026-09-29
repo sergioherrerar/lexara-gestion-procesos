@@ -276,9 +276,9 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
                       <IconTextButton icon="add" variant="primary" disabled={procesando} onClick={() => handleExtraer(m)}>
                         {procesando ? 'Extrayendo…' : '+ Extraer con LexIA'}
                       </IconTextButton>
-                      {/* "Que la perrita esté como corriendo mientras lee la
+                      {/* "Que el avatar esté como corriendo mientras lee la
                           información" (2026-09-24, pedido explícito del
-                          usuario) — es una foto fija, no hay cuadros de una
+                          usuario) — es una imagen fija, no hay cuadros de una
                           carrera real, así que se simula con un rebote +
                           balanceo en bucle mientras dura la extracción. */}
                       {procesando && seleccionadoId === m.id && (

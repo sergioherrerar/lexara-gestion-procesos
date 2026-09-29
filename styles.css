@@ -1317,9 +1317,9 @@
      una imagen virtual... una animación saliendo y saludando") — aparece
      al abrir "Leer correo (LexIA)", con el avatar real que mandó el
      usuario (ver src/assets/LexIA avatar.png y [[feedback_use_real_assets]]).
-     Es un PNG real con transparencia (471×471, canal alfa) — ya no hace
-     falta el difuminado/máscara que se usó como parche mientras solo había
-     una foto con fondo blanco. */
+     Es un PNG real con transparencia (canal alfa, reemplazado 2026-09-29
+     por una nueva ilustración) — no hace falta ningún difuminado/máscara
+     adicional, el drop-shadow ya sigue la forma real de la figura. */
   @keyframes lexia-entrada{
     0%{ opacity:0; transform: translateY(-14px) scale(.7); }
     60%{ opacity:1; transform: translateY(2px) scale(1.05); }
@@ -1330,7 +1330,7 @@
      una insignia circular detrás (degradado + sombra, mismo recibo de
      .drawer-tab), pero el usuario pidió quitar ese círculo blanco y dejar
      SOLO la figura del PNG con relieve 3D. drop-shadow (no box-shadow)
-     sigue la forma real de la perrita (respeta la transparencia del PNG),
+     sigue la forma real del avatar (respeta la transparencia del PNG),
      así que el relieve queda sobre ella misma, sin ningún fondo/disco. */
   .lexia-avatar{
     width:64px; height:64px; object-fit:contain; flex-shrink:0;

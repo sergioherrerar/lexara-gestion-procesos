@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-29 (4)
+- **Nuevo avatar de LexIA** — pedido explícito del usuario, reemplaza la foto anterior por una nueva ilustración (misma ubicación de archivo `src/assets/LexIA avatar.png`, sin tocar código de los componentes que lo usan).
+
 ## 2026-09-29 (3)
 - **Nuevo botón de PDF en Informes > Tutelas > "Tutelas por Abogado"** — pedido explícito del usuario, mismo formato institucional que ya usa el PDF de Horas Extras (barra verde por Abogado con subtotal, detalle por Tipo Respuesta debajo, resumen arriba). Muestra el mismo "Valor Abogado" ya sumado que el Excel de este mismo reporte, junto al botón de Excel existente.
 
