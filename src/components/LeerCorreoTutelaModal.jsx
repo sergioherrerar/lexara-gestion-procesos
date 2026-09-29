@@ -394,17 +394,20 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
           />
         </div>
         {/* Avatar grande al costado derecho (2026-09-29, pedido explícito
-            del usuario: "más protagonismo... casi el mismo tamaño de la
-            ventana") — la key fuerza a React a remontar la imagen cuando
-            cambia de pose, para que la animación de entrada se dispare de
-            nuevo en cada cambio de etapa. */}
+            del usuario: "más protagonismo", luego "un marco, como si se
+            asomara por una ventana" — mandó un boceto). La key fuerza a
+            React a remontar la imagen cuando cambia de pose, para que la
+            animación de entrada se dispare de nuevo en cada cambio de
+            etapa. */}
         <div className="leer-correo-col-avatar">
-          <img
-            key={estadoAvatar}
-            src={AVATAR_POR_ESTADO[estadoAvatar]}
-            alt="LexIA"
-            className={`avatar-grande avatar-grande-${estadoAvatar}`}
-          />
+          <div className="avatar-ventana">
+            <img
+              key={estadoAvatar}
+              src={AVATAR_POR_ESTADO[estadoAvatar]}
+              alt="LexIA"
+              className={`avatar-grande avatar-grande-${estadoAvatar}`}
+            />
+          </div>
         </div>
         </div>
       </div>

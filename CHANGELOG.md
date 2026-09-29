@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-29 (11)
+- **El avatar grande de LexIA ahora tiene un marco tipo ventana** — pedido explícito del usuario, mandó un boceto ("un marco, como si se asomara por una ventana"). Reemplaza el desvanecido a cuerpo completo de antes: ahora es un marco fijo (esquinas redondeadas, borde verde institucional) recortado más arriba, con el mismo degradado suave justo antes del borde para que no se sienta un corte en seco.
+
 ## 2026-09-29 (10)
 - **Corrige que se veían las piernas recortadas de golpe en el avatar grande de LexIA** — reportado por el usuario con captura. Las 4 fotos terminan de golpe a la altura del muslo (así vienen del recorte de origen); ahora esa parte se desvanece con un degradado en vez de cortarse en seco.
 

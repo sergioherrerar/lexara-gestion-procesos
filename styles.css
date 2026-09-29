@@ -1367,26 +1367,38 @@
     border-left:1px solid var(--gris-linea); padding-left:20px;
   }
   /* Avatar grande al costado derecho (2026-09-29, pedido explícito del
-     usuario: "dar más protagonismo al avatar... casi el mismo tamaño de la
-     ventana", con una pose distinta según la etapa — ver estadoAvatar en
-     LeerCorreoTutelaModal.jsx). Ancho fijo (no crece/encoge) para que las
-     otras 2 columnas mantengan su proporción de siempre. */
+     usuario: "dar más protagonismo al avatar", con una pose distinta según
+     la etapa — ver estadoAvatar en LeerCorreoTutelaModal.jsx). Ancho fijo
+     (no crece/encoge) para que las otras 2 columnas mantengan su
+     proporción de siempre. */
   .leer-correo-col-avatar{
-    flex:0 0 210px; align-self:stretch;
+    flex:0 0 220px; align-self:flex-start;
     display:flex; align-items:flex-start; justify-content:center;
     border-left:1px solid var(--gris-linea); padding-left:20px;
   }
+  /* "Un marco, como si se asomara por una ventana" (2026-09-29, pedido
+     explícito del usuario con un boceto: un marco rodeando el avatar,
+     recortado más arriba — ver [[feedback_use_real_assets]]). Reemplaza el
+     intento anterior de solo desvanecer las piernas: ahora el recorte
+     queda DENTRO de un marco tipo ventana (proporción fija + overflow
+     oculto), con un degradado suave justo antes de ese borde para que no
+     se sienta un corte en seco. `justify-content:center` en el marco
+     centra la imagen (más ancha que el marco) sin necesitar ningún
+     transform propio — así las animaciones de cada pose (más abajo) no
+     tienen que cargar con un translateX(-50%) adicional. */
+  .avatar-ventana{
+    position:relative; width:100%; aspect-ratio:4/5;
+    border-radius:18px; border:9px solid var(--verde-oscuro);
+    background:linear-gradient(180deg, #eef7f6, #dbe9e6);
+    box-shadow:0 10px 24px rgba(15,40,35,.22), inset 0 3px 10px rgba(0,20,18,.12);
+    overflow:hidden;
+    display:flex; align-items:flex-start; justify-content:center;
+  }
   .avatar-grande{
-    width:100%; max-height:66vh; object-fit:contain;
-    filter: drop-shadow(0 12px 20px rgba(15,40,35,.3)) drop-shadow(0 2px 5px rgba(15,40,35,.2));
-    /* "Dale un marco que tape las piernas, que no se vean recortadas"
-       (2026-09-29, pedido explícito del usuario) — las 4 fotos terminan de
-       golpe a la altura del muslo (así viene el recorte de origen). En vez
-       de agregar un marco/tarjeta encima, se desvanece esa última parte
-       con un degradado de máscara (mask-image) — mismo resultado (ya no se
-       ve el corte duro) sin encerrar el avatar en una caja. */
-    -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 68%, transparent 90%);
-    mask-image: linear-gradient(to bottom, #000 0%, #000 68%, transparent 90%);
+    width:130%; max-width:none; flex-shrink:0; object-fit:contain;
+    filter: drop-shadow(0 8px 14px rgba(15,40,35,.3));
+    -webkit-mask-image: linear-gradient(to bottom, #000 58%, transparent 88%);
+    mask-image: linear-gradient(to bottom, #000 58%, transparent 88%);
   }
   @keyframes avatar-grande-entrada{
     0%{opacity:0; transform:translateY(16px) scale(.92);}
@@ -1438,10 +1450,9 @@
        más chico y arriba de todo (order:-1) en vez de al final de la
        columna apilada, para que no quede enterrado bajo "Entrenar LexIA". */
     .leer-correo-col-avatar{
-      order:-1; flex:0 0 auto; width:100%; max-width:200px; margin:0 auto 16px;
+      order:-1; flex:0 0 auto; width:100%; max-width:190px; margin:0 auto 16px;
       border-left:none; padding-left:0; justify-content:center;
     }
-    .avatar-grande{max-height:220px;}
   }
   .leer-correo-col-lateral-titulo{margin:0; font-size:17px; color:var(--verde-oscuro); display:flex; align-items:center; gap:8px; white-space:nowrap;}
   /* "Entrenar LexIA" alineado con el título de la izquierda, junto al
