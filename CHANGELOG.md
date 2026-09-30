@@ -2,6 +2,11 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-30 (2)
+- **Nuevo botón "Extraer adjuntos" en "Leer correo de Tutelas"** — pedido explícito del usuario, al lado de "Extraer con LexIA". Crea/actualiza la carpeta de esa tutela en OneDrive con una impresión en PDF del correo completo (asunto, remitente, fecha, cuerpo) y todos sus adjuntos originales — sin llamar a Claude, no gasta nada de saldo de la API. Sirve para dejar cualquier tutela lista de antemano para el "Plan B".
+- **"Extraer con LexIA" ya no repite ese trabajo si la carpeta ya existe** — si ya se usó "Extraer adjuntos" (o una extracción anterior) para esa tutela, ahora solo agrega su archivo de texto con los datos extraídos, sin volver a subir el PDF del correo ni los adjuntos.
+- El correo guardado para el "Plan B" ahora es un PDF legible (`Correo original.pdf`) en vez de un .txt — se actualizó también el Artifact "LexIA Plan B" para leerlo igual que cualquier otro documento.
+
 ## 2026-09-30 (1)
 - **Egresos → Gastos: nuevas columnas "Cuenta" y "Tipo Cuenta"** — pedido explícito del usuario, junto a "Entidad". Se buscan en vivo en Proveedores por el nombre de "Pagado a" (misma búsqueda que ya hacía la columna Entidad), no son un campo propio del registro de Gastos.
 

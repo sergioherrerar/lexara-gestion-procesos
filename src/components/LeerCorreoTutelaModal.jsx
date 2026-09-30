@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { leerCorreosTutelas, extraerTutelaConLexIA, numeroTutelaDeAsunto, mensajeError, buscarLecturaLexIAGuardada, guardarLecturaLexIAEnOneDrive, listarTutelasAnalizadasEnOneDrive } from '../lib/graph';
+import { leerCorreosTutelas, extraerTutelaConLexIA, numeroTutelaDeAsunto, mensajeError, buscarLecturaLexIAGuardada, guardarLecturaLexIAEnOneDrive, listarTutelasAnalizadasEnOneDrive, extraerAdjuntosSinIA } from '../lib/graph';
 import IconButton, { IconTextButton } from './IconButton';
 import { EntrenarIAPanel } from './EntrenarIAModal';
 import { useDraggable } from '../hooks/useDraggable';
@@ -182,6 +182,27 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
       notify?.('No se pudo extraer los datos con IA: ' + (err.message || mensajeError(err)), 'error');
     }finally{
       setProcesando(false);
+    }
+  }
+
+  // "Extraer adjuntos" (2026-09-30, pedido explícito del usuario) — a
+  // diferencia de "Extraer con LexIA", este botón NUNCA llama a Claude:
+  // solo crea/actualiza la carpeta de la tutela en OneDrive con el correo
+  // (como PDF) y todos sus adjuntos originales, para dejarlos listos de
+  // una vez (por ejemplo para el plan B) sin gastar nada de saldo de la
+  // API. Estado propio (no `procesando`) para no bloquear/mezclarse con
+  // "Extraer con LexIA" en la misma fila.
+  const [extrayendoAdjuntosId, setExtrayendoAdjuntosId] = useState(null);
+  async function handleExtraerAdjuntos(mensaje){
+    setExtrayendoAdjuntosId(mensaje.id);
+    try{
+      const { numeroTutela, cantidadAdjuntos } = await extraerAdjuntosSinIA(correoBuzon, mensaje.id, onedriveCarpetaUrl);
+      notify?.(`Se guardaron el correo y ${cantidadAdjuntos} adjunto${cantidadAdjuntos===1?'':'s'} en la carpeta de la tutela ${numeroTutela} en OneDrive.`, 'success');
+    }catch(err){
+      console.error(err);
+      notify?.('No se pudieron guardar los adjuntos: ' + (err.message || mensajeError(err)), 'error');
+    }finally{
+      setExtrayendoAdjuntosId(null);
     }
   }
 
@@ -394,6 +415,9 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
                     <div style={{display:'flex', alignItems:'center', gap:10}}>
                       <IconTextButton icon="add" variant="primary" disabled={procesando} onClick={() => handleExtraer(m)}>
                         {procesando ? 'Extrayendo…' : '+ Extraer con LexIA'}
+                      </IconTextButton>
+                      <IconTextButton icon="zip" variant="secondary" disabled={extrayendoAdjuntosId === m.id} onClick={() => handleExtraerAdjuntos(m)}>
+                        {extrayendoAdjuntosId === m.id ? 'Extrayendo adjuntos…' : 'Extraer adjuntos'}
                       </IconTextButton>
                     </div>
                   )}

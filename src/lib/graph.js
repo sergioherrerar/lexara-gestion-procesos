@@ -546,11 +546,14 @@ export async function extraerTutelaConLexIA(correoBuzon, mensajeId, tutelas, rob
   // Guarda los adjuntos originales en OneDrive ANTES de llamar a Claude
   // (ver nota de guardarAdjuntosOriginalesEnOneDrive) — así quedan listos
   // para el "plan B" aunque la llamada de abajo falle por falta de saldo.
-  // Nunca debe bloquear ni romper la extracción normal si falla.
+  // Nunca debe bloquear ni romper la extracción normal si falla. Usa la
+  // versión que SE SALTA este trabajo si la carpeta ya se dejó lista de
+  // antemano con el botón "Extraer adjuntos" (2026-09-30, pedido explícito
+  // del usuario) — no repite la subida del PDF/adjuntos si ya están ahí.
   const numeroTutela = numeroTutelaDeAsunto(completo.asunto);
   if(onedriveCarpetaUrl && numeroTutela){
     try{
-      await guardarAdjuntosOriginalesEnOneDrive(onedriveCarpetaUrl, numeroTutela, completo.asunto, completo.cuerpo, completo.adjuntos);
+      await asegurarAdjuntosOriginalesEnOneDrive(onedriveCarpetaUrl, numeroTutela, completo);
     }catch(err){
       console.error('No se pudieron guardar los adjuntos originales en OneDrive (plan B):', err);
     }
@@ -677,6 +680,46 @@ function base64ABytes(base64){
   return bytes;
 }
 
+function arrayBufferABase64(buffer){
+  let binario = '';
+  const bytes = new Uint8Array(buffer);
+  const TAMANO_BLOQUE = 0x8000;
+  for(let i=0; i<bytes.length; i+=TAMANO_BLOQUE){
+    binario += String.fromCharCode.apply(null, bytes.subarray(i, i+TAMANO_BLOQUE));
+  }
+  return btoa(binario);
+}
+
+// "Impresión" del correo (2026-09-30, pedido explícito del usuario: "hacer
+// una impresión del mismo correo para leer todo su contenido") — un PDF
+// simple y legible con el asunto/remitente/fecha/cuerpo completos, para que
+// el correo se pueda abrir y leer igual que cualquier adjunto real, sin
+// depender del portal. Import dinámico de jsPDF (igual que el resto de
+// lib/informes*.js) para no engordar el bundle principal con una librería
+// que casi nadie carga en cada visita.
+async function construirPdfCorreoBase64(numeroTutela, correo){
+  const { default: jsPDF } = await import('jspdf');
+  const doc = new jsPDF({ unit:'mm', format:'a4' });
+  const margen = 18;
+  const anchoUtil = doc.internal.pageSize.getWidth() - margen*2;
+  const altoMaximo = doc.internal.pageSize.getHeight() - margen;
+  let y = margen;
+  doc.setFont('helvetica','bold'); doc.setFontSize(13);
+  doc.text(`TUTELA No. ${numeroTutela || '—'} — Correo original`, margen, y); y += 8;
+  doc.setFont('helvetica','normal'); doc.setFontSize(10);
+  doc.text(`Asunto: ${correo.asunto || ''}`, margen, y); y += 6;
+  if(correo.remitente){ doc.text(`De: ${correo.remitente}`, margen, y); y += 6; }
+  if(correo.fecha){ doc.text(`Recibido: ${new Date(correo.fecha).toLocaleString('es-CO')}`, margen, y); y += 6; }
+  y += 4;
+  const lineas = doc.splitTextToSize(correo.cuerpo || '(sin cuerpo)', anchoUtil);
+  for(const linea of lineas){
+    if(y > altoMaximo){ doc.addPage(); y = margen; }
+    doc.text(linea, margen, y);
+    y += 5;
+  }
+  return arrayBufferABase64(doc.output('arraybuffer'));
+}
+
 // "Plan B" para cuando se acabe el saldo de la API de Claude (2026-09-29,
 // pedido explícito del usuario) — guarda los adjuntos ORIGINALES (el PDF/
 // imagen tal cual llegó, no solo el resumen de texto que ya guarda
@@ -685,21 +728,20 @@ function base64ABytes(base64){
 // cPanel no puede llamar a Claude (sin saldo), se puedan volver a leer
 // desde otra vía (una página aparte que use tu cuenta de Claude, no el
 // saldo de la API) sin tener que ir a buscarlos al correo de nuevo.
-// Se llama ANTES de mandarle nada a Claude (ver extraerTutelaConLexIA) —
-// así, aunque esa llamada falle por falta de saldo, los adjuntos ya
-// quedaron guardados y listos para el plan B.
-export async function guardarAdjuntosOriginalesEnOneDrive(urlCarpeta, numeroTutela, asunto, cuerpo, adjuntos){
+// `correo` es el objeto completo que devuelve leerCorreoCompleto (asunto,
+// remitente, fecha, cuerpo, adjuntos). SIEMPRE sobreescribe lo que ya
+// hubiera — quien llama decide si vale la pena saltarse esto cuando la
+// carpeta ya existe (ver asegurarAdjuntosOriginalesEnOneDrive más abajo).
+export async function guardarAdjuntosOriginalesEnOneDrive(urlCarpeta, numeroTutela, correo){
   const { driveId, folderId } = await resolverCarpetaLexIAOneDrive(urlCarpeta);
-  // El texto del correo también se guarda (además de los adjuntos) — el
-  // plan B necesita el mismo asunto/cuerpo que hoy recibe extraer-tutela.php,
-  // no solo los adjuntos, para poder leer la tutela igual de completo.
-  const rutaCorreo = `${numeroTutela} Tutela/Adjuntos originales/Correo (asunto y cuerpo).txt`;
+  const rutaCorreo = `${numeroTutela} Tutela/Adjuntos originales/Correo original.pdf`;
+  const pdfBase64 = await construirPdfCorreoBase64(numeroTutela, correo);
   await graphFetch(`/drives/${driveId}/items/${folderId}:/${encodeURIComponent(rutaCorreo).replace(/%2F/g,'/')}:/content`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'text/plain; charset=utf-8' },
-    body: `Asunto del correo: ${asunto}\n\nCuerpo del correo:\n${cuerpo}`,
+    headers: { 'Content-Type': 'application/pdf' },
+    body: base64ABytes(pdfBase64),
   });
-  for(const adj of (adjuntos || [])){
+  for(const adj of (correo.adjuntos || [])){
     if(!adj.base64) continue;
     const nombre = (adj.nombre || 'adjunto').replace(/[\\/:*?"<>|]/g, '_');
     const ruta = `${numeroTutela} Tutela/Adjuntos originales/${nombre}`;
@@ -709,6 +751,43 @@ export async function guardarAdjuntosOriginalesEnOneDrive(urlCarpeta, numeroTute
       body: base64ABytes(adj.base64),
     });
   }
+}
+
+async function existeArchivoOneDrive(driveId, folderId, ruta){
+  try{
+    await graphFetch(`/drives/${driveId}/items/${folderId}:/${encodeURIComponent(ruta).replace(/%2F/g,'/')}?$select=id`);
+    return true;
+  }catch{
+    return false;
+  }
+}
+
+// "El botón Extraer con LexIA, si ya está creada la carpeta, solo coloque
+// ahí su archivo de texto" (2026-09-30, pedido explícito del usuario) —
+// evita repetir el trabajo de guardarAdjuntosOriginalesEnOneDrive (subir de
+// nuevo el PDF del correo + todos los adjuntos) cuando esta tutela ya se
+// dejó lista de antemano con el botón "Extraer adjuntos". Usada por
+// extraerTutelaConLexIA; el botón "Extraer adjuntos" en cambio llama
+// directo a guardarAdjuntosOriginalesEnOneDrive (SIEMPRE quiere (re)hacerlo).
+export async function asegurarAdjuntosOriginalesEnOneDrive(urlCarpeta, numeroTutela, correo){
+  const { driveId, folderId } = await resolverCarpetaLexIAOneDrive(urlCarpeta);
+  const rutaCorreo = `${numeroTutela} Tutela/Adjuntos originales/Correo original.pdf`;
+  if(await existeArchivoOneDrive(driveId, folderId, rutaCorreo)) return;
+  await guardarAdjuntosOriginalesEnOneDrive(urlCarpeta, numeroTutela, correo);
+}
+
+// "Extraer adjuntos" (2026-09-30, pedido explícito del usuario) — a
+// diferencia de "Extraer con LexIA", este botón NUNCA llama a Claude: solo
+// crea/actualiza la carpeta de esta tutela en OneDrive con el correo (como
+// PDF) y todos sus adjuntos originales, para dejarlos listos de una vez
+// (por ejemplo para el plan B) sin gastar nada de saldo de la API.
+export async function extraerAdjuntosSinIA(correoBuzon, mensajeId, onedriveCarpetaUrl){
+  if(!onedriveCarpetaUrl) throw new Error('Falta configurar la carpeta de OneDrive de tutelas (TUTELAS_ONEDRIVE_CARPETA_URL en config.js).');
+  const completo = await leerCorreoCompleto(correoBuzon, mensajeId);
+  const numeroTutela = numeroTutelaDeAsunto(completo.asunto);
+  if(!numeroTutela) throw new Error('No se encontró un número de tutela en el asunto de este correo.');
+  await guardarAdjuntosOriginalesEnOneDrive(onedriveCarpetaUrl, numeroTutela, completo);
+  return { numeroTutela, cantidadAdjuntos: (completo.adjuntos||[]).length };
 }
 
 // Antes de llamar a Claude, revisa si esta tutela YA tiene una lectura
