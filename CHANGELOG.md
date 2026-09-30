@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-09-30 (1)
+- **Egresos → Gastos: nuevas columnas "Cuenta" y "Tipo Cuenta"** — pedido explícito del usuario, junto a "Entidad". Se buscan en vivo en Proveedores por el nombre de "Pagado a" (misma búsqueda que ya hacía la columna Entidad), no son un campo propio del registro de Gastos.
+
 ## 2026-09-29 (27)
 - **"Plan B" para cuando se acabe el saldo de la API de Claude** — pedido explícito del usuario. Ahora, cada vez que se extrae una tutela con LexIA, el portal guarda también el correo completo (asunto y cuerpo) y los adjuntos ORIGINALES (el PDF/imagen tal cual llegó) en una subcarpeta "Adjuntos originales" dentro de la carpeta de esa tutela en OneDrive — antes solo se guardaba el resumen ya procesado. Esto pasa ANTES de llamar a Claude, así que aunque el saldo se acabe y la extracción falle, todo queda guardado y listo para leerlo por otra vía (una página aparte, pagada por la cuenta de Claude, no por el saldo de cPanel).
 

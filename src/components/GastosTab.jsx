@@ -295,6 +295,8 @@ function RegistrosSection({ nombreLista, registros, proveedores, conNumero, conT
     ...(conNumero ? [{key:'numero', label:'Numero', value: r => r.Numero || ""}] : []),
     {key:'pagadoA', label:'Pagado a', value: r => r.PagadoA || ""},
     {key:'entidad', label:'Entidad', value: r => datosBancoProveedor(r.PagadoA, proveedores).entidad || ""},
+    {key:'cuenta', label:'Cuenta', value: r => datosBancoProveedor(r.PagadoA, proveedores).cuenta || ""},
+    {key:'tipoCuenta', label:'Tipo Cuenta', value: r => datosBancoProveedor(r.PagadoA, proveedores).tipoCuenta || ""},
     {key:'fecha', label:'Fecha', value: r => r.Fecha || ""},
     {key:'valorAPagar', label:'Valor a pagar', value: r => r.ValorAPagar ?? ""},
     ...(conTipo ? [{key:'tipoDocumento', label:'Tipo Documento', value: r => r.TipoDocumento || ""}] : []),
@@ -460,6 +462,8 @@ function RegistrosSection({ nombreLista, registros, proveedores, conNumero, conT
                   {conNumero && <td>{r.Numero || "—"}</td>}
                   <td className="cliente">{r.PagadoA}</td>
                   <td>{datosBancoProveedor(r.PagadoA, proveedores).entidad}</td>
+                  <td>{datosBancoProveedor(r.PagadoA, proveedores).cuenta}</td>
+                  <td>{datosBancoProveedor(r.PagadoA, proveedores).tipoCuenta}</td>
                   <td>{fmtDate(r.Fecha)}</td>
                   <td style={{textAlign:'right', whiteSpace:'nowrap'}}>$ {fmtMonto(Number(r.ValorAPagar)||0)}</td>
                   {conTipo && <td>{r.TipoDocumento || "—"}</td>}
@@ -485,7 +489,7 @@ function RegistrosSection({ nombreLista, registros, proveedores, conNumero, conT
             <tfoot>
               <tr>
                 {conNumero && <td></td>}
-                <td colSpan={2}></td>
+                <td colSpan={4}></td>
                 <td style={{textAlign:'right', whiteSpace:'nowrap'}}><strong>Total</strong></td>
                 <td style={{textAlign:'right', whiteSpace:'nowrap'}}><strong>$ {fmtMonto(total)}</strong></td>
                 {conTipo && <td></td>}
