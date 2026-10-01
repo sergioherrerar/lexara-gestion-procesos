@@ -689,6 +689,48 @@ export function useLexaraApp(){
     notify("Guardado con éxito en Lexara", 'success');
   }
 
+  // "Edición rápida" de Estado/Fecha Estado desde la misma fila de la tabla
+  // de Procesos (2026-10-01, pedido explícito del usuario: "un editar que
+  // sea de rápido acceso... que no nos lleve a otra ventana") — SIN abrir
+  // el drawer completo. Independiente de saveProceso/activeProceso (que
+  // dependen de que el drawer esté abierto) para poder llamarse con
+  // cualquier proceso de la lista, esté o no seleccionado. Sigue
+  // alimentando "Histórico" con el Estado anterior, exactamente igual que
+  // ProcesoDrawer.handleSave (pedido explícito del usuario: "no olvides que
+  // la modificación de este campo debe seguir alimentando el campo
+  // histórico") — para que el rastro quede igual sin importar por cuál de
+  // los 2 caminos se edite.
+  function escapeHtmlEstado(s){
+    return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+  async function guardarEstadoRapidoProceso(procesoId, { Estado, FechaUltimoEstado }){
+    const proceso = procesos.find(p => p.id === procesoId);
+    if(!proceso) return;
+    const updates = { Estado, FechaUltimoEstado };
+    const estadoAnterior = Graph.stripHtml(proceso.Estado || "").trim();
+    if(estadoAnterior && estadoAnterior !== Graph.stripHtml(Estado || "").trim()){
+      updates.Historico = (proceso.Historico || "") + `<div>${escapeHtmlEstado(estadoAnterior)}</div>`;
+    }
+    if(liveMode){
+      setSaving(true);
+      const list = listByKey('procesos');
+      const graphBody = await Graph.graphFieldsFromUpdates(list.siteId || siteId, list, updates);
+      try{
+        await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items/${proceso._graphId}/fields`, {
+          method:"PATCH", body: JSON.stringify(graphBody)
+        });
+      }catch(err){
+        console.error(err, 'Campos enviados:', graphBody);
+        notify(`No se pudo guardar el Estado: ${Graph.mensajeError(err)}`, 'error');
+        setSaving(false);
+        throw err;
+      }
+      setSaving(false);
+    }
+    setProcesos(prev => prev.map(p => p.id === procesoId ? {...p, ...updates} : p));
+    notify("Estado actualizado", 'success');
+  }
+
   // Botón masivo "Llenar links de carpeta/cliente/contrato" — pedido
   // explícito del usuario 2026-09-07: "me puedes crear un boton para los
   // cree automatimente solo que tengan la coindidencia no dejarlos vaciios".
@@ -1858,7 +1900,7 @@ export function useLexaraApp(){
     crearEventoCalendarioPersonalizado, listarOtrosEventosDelMes,
     currentFilter, setFilter: setCurrentFilter, searchQuery, setSearchQuery: setSearchQuery,
     onSearch: setSearchQuery,
-    activeProceso, openProceso, newProceso, closeDrawer, saveProceso, procesoViewOnly, rememberReturnToProceso, vincularLinksProcesosMasivo,
+    activeProceso, openProceso, newProceso, closeDrawer, saveProceso, procesoViewOnly, rememberReturnToProceso, vincularLinksProcesosMasivo, guardarEstadoRapidoProceso,
     activeCliente, openCliente, closeClienteDrawer, saveCliente, deleteCliente, createCliente, updateCliente,
     activeFactura, openFactura, newFactura, duplicateFactura, abrirBorradorFactura, closeFacturaDrawer, saveFactura,
     printFactura, autoPrintFacturaId, clearAutoPrint, createFacturaFromOrdenCompra, newFacturaFromProceso,

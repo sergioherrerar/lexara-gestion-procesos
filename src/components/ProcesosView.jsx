@@ -16,6 +16,7 @@ function matchesFilter(p, currentFilter){
 function isTerminado(p){
   return (stripHtml(p.EstadoVT) || "").toLowerCase().includes('termin');
 }
+function soloFechaISO(v){ return String(v || "").slice(0, 10); }
 
 const COLUMNS = [
   // ID interno del proceso en SharePoint — pedido explícito del usuario
@@ -27,13 +28,37 @@ const COLUMNS = [
   {key:'cliente', label:'Cliente', value: p => p.Cliente || ""},
   {key:'despacho', label:'Despacho', value: p => `${p.Despacho||""} ${p.NumeroDespacho||""}`.trim()},
   {key:'estado', label:'Estado', value: p => stripHtml(p.Estado) || ""},
+  // Columna agregada 2026-10-01, pedido explícito del usuario — ya existía
+  // el dato (decide el color del badge de Estado, ver estadoBadgeClass) pero
+  // nunca se mostraba como fecha visible. Útil también como entrada directa
+  // para la edición rápida de Estado (ver más abajo).
+  {key:'fechaEstado', label:'Fecha Estado', value: p => soloFechaISO(p.FechaUltimoEstado)},
   {key:'observaciones', label:'Observación', value: p => stripHtml(p.Observaciones) || ""},
   {key:'carpeta', label:'Carpeta', filterable:false},
   {key:'acciones', label:'Acciones', filterable:false},
 ];
 
-export default function ProcesosView({ procesos, currentFilter, setFilter, searchQuery, onOpenProceso, onCreateProceso, canWrite = true, liveMode, notify, config, requestConfirm, vincularLinksProcesosMasivo, audiencias, terminos }){
+export default function ProcesosView({ procesos, currentFilter, setFilter, searchQuery, onOpenProceso, onCreateProceso, canWrite = true, liveMode, notify, config, requestConfirm, vincularLinksProcesosMasivo, audiencias, terminos, guardarEstadoRapidoProceso }){
   const [showTerminados, setShowTerminados] = useState(false);
+  // "Edición rápida" de Estado/Fecha Estado (2026-10-01, pedido explícito
+  // del usuario: "un editar que sea de rápido acceso... que no nos lleve a
+  // otra ventana") — edita SOLO estos 2 campos sin abrir el drawer completo
+  // del proceso, directo en la misma fila de la tabla.
+  const [editandoEstadoId, setEditandoEstadoId] = useState(null);
+  const [formEstado, setFormEstado] = useState({ Estado:'', FechaUltimoEstado:'' });
+  const [guardandoEstado, setGuardandoEstado] = useState(false);
+  function iniciarEdicionEstado(p){
+    setEditandoEstadoId(p.id);
+    setFormEstado({ Estado: stripHtml(p.Estado) || '', FechaUltimoEstado: soloFechaISO(p.FechaUltimoEstado) });
+  }
+  async function handleGuardarEstadoRapido(id){
+    setGuardandoEstado(true);
+    try{
+      await guardarEstadoRapidoProceso?.(id, formEstado);
+      setEditandoEstadoId(null);
+    }catch(err){ console.error(err); notify?.("No se pudo guardar el Estado: " + mensajeError(err), 'error'); }
+    finally{ setGuardandoEstado(false); }
+  }
   const [generandoPDF, setGenerandoPDF] = useState(null); // id del proceso mientras genera su ficha en PDF
   const [generandoWord, setGenerandoWord] = useState(null); // id del proceso mientras genera el Impulso Procesal en Word
   const [generandoCorreo, setGenerandoCorreo] = useState(null); // id del proceso mientras crea el borrador de correo
@@ -183,7 +208,32 @@ export default function ProcesosView({ procesos, currentFilter, setFilter, searc
                 <td className="radicado">{p.Radicado || "—"}</td>
                 <td className="cliente">{p.Cliente || "—"}</td>
                 <td>{p.Despacho || "—"}{p.NumeroDespacho ? ` · ${p.NumeroDespacho}` : ""}</td>
-                <td><span className={"badge badge-truncate " + estadoBadgeClass(p.EstadoVT, p.FechaUltimoEstado, p.Estado)}>{stripHtml(p.Estado) || "—"}</span></td>
+                {editandoEstadoId === p.id ? (
+                  <>
+                    <td onClick={e => e.stopPropagation()}>
+                      <textarea rows={2} style={{width:'100%', minWidth:160, font:'inherit'}} value={formEstado.Estado} onChange={e => setFormEstado(f => ({...f, Estado: e.target.value}))} />
+                    </td>
+                    <td onClick={e => e.stopPropagation()}>
+                      <div style={{display:'flex', flexDirection:'column', gap:6}}>
+                        <input type="date" value={formEstado.FechaUltimoEstado} onChange={e => setFormEstado(f => ({...f, FechaUltimoEstado: e.target.value}))} />
+                        <div style={{display:'flex', gap:6}}>
+                          <IconButton icon="checklist" variant="edit" label="Guardar Estado" spinning={guardandoEstado} onClick={() => handleGuardarEstadoRapido(p.id)} />
+                          <button type="button" className="btn-secondary" disabled={guardandoEstado} onClick={() => setEditandoEstadoId(null)}>Cancelar</button>
+                        </div>
+                      </div>
+                    </td>
+                  </>
+                ) : (
+                  <>
+                    <td>
+                      <div style={{display:'flex', alignItems:'center', gap:6}}>
+                        <span className={"badge badge-truncate " + estadoBadgeClass(p.EstadoVT, p.FechaUltimoEstado, p.Estado)}>{stripHtml(p.Estado) || "—"}</span>
+                        {canWrite && <IconButton icon="edit" variant="edit" label="Editar Estado y Fecha Estado" onClick={e => { e.stopPropagation(); iniciarEdicionEstado(p); }} />}
+                      </div>
+                    </td>
+                    <td>{soloFechaISO(p.FechaUltimoEstado) || "—"}</td>
+                  </>
+                )}
                 <td><span className="obs-truncate">{stripHtml(p.Observaciones) || "—"}</span></td>
                 <td>{p.LinkCarpeta ? <IconButton icon="open" variant="open" label="Abrir carpeta" href={p.LinkCarpeta} onClick={e => e.stopPropagation()} /> : "—"}</td>
                 <td style={{whiteSpace:'nowrap'}}>
@@ -201,7 +251,7 @@ export default function ProcesosView({ procesos, currentFilter, setFilter, searc
                 </td>
               </tr>
             )) : (
-              <tr><td colSpan={8}><div className="empty-state"><div className="mark" dangerouslySetInnerHTML={{__html: ICON_SVG}} />No se encontraron procesos con ese criterio.</div></td></tr>
+              <tr><td colSpan={9}><div className="empty-state"><div className="mark" dangerouslySetInnerHTML={{__html: ICON_SVG}} />No se encontraron procesos con ese criterio.</div></td></tr>
             )}
           </tbody>
         </table>

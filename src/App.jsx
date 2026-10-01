@@ -142,6 +142,7 @@ export default function App(){
             vincularLinksProcesosMasivo={app.vincularLinksProcesosMasivo}
             audiencias={app.audiencias}
             terminos={app.terminos}
+            guardarEstadoRapidoProceso={app.guardarEstadoRapidoProceso}
           />
         )}
         {app.view === 'tutelas' && canAccessView(app.modulosPermitidos, 'tutelas') && (

@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-10-01 (1)
+- **Procesos: nueva columna "Fecha Estado" y edición rápida de Estado**, pedido explícito del usuario. La fecha ya existía (decide el color del badge de Estado) pero nunca se mostraba; ahora es una columna visible. Junto al badge de Estado hay un lápiz que permite editar el texto de Estado y su fecha directo en la misma fila, sin abrir el proceso completo — al guardar, el Estado anterior se sigue archivando en "Histórico" igual que al editar desde el proceso completo.
+
 ## 2026-09-30 (2)
 - **Nuevo botón "Extraer adjuntos" en "Leer correo de Tutelas"** — pedido explícito del usuario, al lado de "Extraer con LexIA". Crea/actualiza la carpeta de esa tutela en OneDrive con una impresión en PDF del correo completo (asunto, remitente, fecha, cuerpo) y todos sus adjuntos originales — sin llamar a Claude, no gasta nada de saldo de la API. Sirve para dejar cualquier tutela lista de antemano para el "Plan B".
 - **"Extraer con LexIA" ya no repite ese trabajo si la carpeta ya existe** — si ya se usó "Extraer adjuntos" (o una extracción anterior) para esa tutela, ahora solo agrega su archivo de texto con los datos extraídos, sin volver a subir el PDF del correo ni los adjuntos.
