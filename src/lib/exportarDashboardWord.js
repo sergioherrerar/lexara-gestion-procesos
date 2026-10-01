@@ -46,9 +46,13 @@ function truncar(s, max=30){
 /* ---------------- Cálculo de datos (igual criterio que DashboardView.jsx) ---------------- */
 
 function construirFilas(procesos, desistimientos, entidad){
+  // Solo procesos VIGENTES (2026-10-01, pedido explícito del usuario —
+  // mismo criterio que DashboardView.jsx/ProcesosView.jsx: EstadoVT
+  // contiene "termin").
+  const procesosVigentes = procesos.filter(p => !(stripHtml(p.EstadoVT)||"").toLowerCase().includes('termin'));
   const procesosEntidad = entidad === 'todas'
-    ? procesos
-    : procesos.filter(p => (stripHtml(p.Entidad) || "Sin entidad") === entidad);
+    ? procesosVigentes
+    : procesosVigentes.filter(p => (stripHtml(p.Entidad) || "Sin entidad") === entidad);
   return procesosEntidad.map(p => {
     const propios = desistimientosForProceso(desistimientos, p);
     const d = propios.map(des => {
@@ -241,7 +245,22 @@ export async function generarDashboardEntidadWord(procesos, desistimientos, enti
     });
   }
 
-  function seccionImagen(texto, png, emptyMsg){
+  // Tabla de conteo (2026-10-01, pedido explícito del usuario: "incluye las
+  // tablas de los gráficos con el formato así con los colores
+  // corporativos") — mismo formato de 2 columnas (etiqueta | cifra en
+  // negrita VERDE_OSCURO, alineada a la derecha) que ya usaba el desglose
+  // de desistimientos más abajo en el documento, ahora reutilizado también
+  // para cada gráfico de arriba.
+  function filasConteo(data){
+    return data.map(d => new TableRow({
+      children: [
+        new TableCell({ width:{size:60,type:WidthType.PERCENTAGE}, margins:{top:60,bottom:60,left:80,right:80}, children:[ new Paragraph({ children:[ new TextRun({ text:d.label, size:19, color:TEXTO }) ] }) ] }),
+        new TableCell({ width:{size:40,type:WidthType.PERCENTAGE}, margins:{top:60,bottom:60,left:80,right:80}, children:[ new Paragraph({ alignment:AlignmentType.RIGHT, children:[ new TextRun({ text:String(d.value), bold:true, size:19, color:VERDE_OSCURO }) ] }) ] }),
+      ],
+    }));
+  }
+
+  function seccionImagen(texto, png, emptyMsg, data){
     const parrafos = [tituloSeccion(texto)];
     if(png){
       const anchoDestino = 340;
@@ -252,10 +271,11 @@ export async function generarDashboardEntidadWord(procesos, desistimientos, enti
     } else {
       parrafos.push(new Paragraph({ spacing:{after:160}, children:[ new TextRun({ text: emptyMsg, italics:true, size:19, color: GRIS_SUAVE }) ] }));
     }
+    if(data && data.length){
+      parrafos.push(new Table({ width:{size:70,type:WidthType.PERCENTAGE}, rows: filasConteo(data) }));
+    }
     return parrafos;
   }
-
-  const parrafoIntro = `A continuación se presenta un resumen gráfico del análisis de procesos correspondiente a ${titulo}, con corte al ${fechaLarga(hoy)}, sobre un total de ${filas.length} proceso${filas.length===1?'':'s'}.`;
 
   const filasDesglose = desistimientosPorEstado.map(d => new TableRow({
     children: [
@@ -273,32 +293,45 @@ export async function generarDashboardEntidadWord(procesos, desistimientos, enti
         default: headerMembrete,
       },
       children: [
-        new Paragraph({ alignment: AlignmentType.CENTER, spacing:{before:200, after:60}, children: [ new TextRun({ text: `Análisis de procesos — ${titulo}`, bold:true, size:32, color:VERDE_OSCURO, font:'Georgia' }) ] }),
-        new Paragraph({ alignment: AlignmentType.CENTER, spacing:{after:280}, children: [ new TextRun({ text: 'MD ABOGADOS SAS · Nit 900.495.788-3', size:18, color:GRIS_SUAVE }) ] }),
-        new Paragraph({ spacing:{after:220}, children: [ new TextRun({ text: `Bogotá D.C., ${fechaLarga(hoy)}`, size:21, color:TEXTO }) ] }),
+        // Encabezado de carta formal (2026-10-01, pedido explícito del
+        // usuario, con un ejemplo real de carta pegado como referencia:
+        // "incluye un encabezado así, mejóralo a tu criterio"). El
+        // destinatario (Doctor/a, nombre, cargo) varía según quién esté a
+        // cargo en cada Entidad en el momento — un dato que no se guarda en
+        // ningún lado del portal — así que queda como "XXX" para llenar a
+        // mano antes de enviarla (pedido explícito: "reemplaza los nombres
+        // por xxx para después... depende quien esté"). Lo que SÍ se conoce
+        // (fecha, Entidad, cantidad de procesos) se llena real, no con "XXX".
+        new Paragraph({ spacing:{before:200, after:280}, children: [ new TextRun({ text: `Bogotá D.C., ${fechaLarga(hoy)}`, size:21, color:TEXTO }) ] }),
+        new Paragraph({ spacing:{after:0}, children: [ new TextRun({ text: 'Doctor(a)', size:21, color:TEXTO }) ] }),
+        new Paragraph({ spacing:{after:0}, children: [ new TextRun({ text: 'XXX', bold:true, size:21, color:TEXTO }) ] }),
+        new Paragraph({ spacing:{after:220}, children: [ new TextRun({ text: `XXX — ${titulo}`, size:21, color:TEXTO }) ] }),
+        new Paragraph({ spacing:{after:220}, children: [ new TextRun({ text: `Asunto: Informe ejecutivo de gestión legal — ${titulo}`, bold:true, size:23, color:VERDE_OSCURO, font:'Georgia' }) ] }),
+        new Paragraph({ spacing:{after:220}, children: [ new TextRun({ text: 'Respetado(a) Doctor(a):', size:21, color:TEXTO }) ] }),
+        new Paragraph({ spacing:{after:160}, children: [ new TextRun({ text: `En mi calidad de representante legal de la empresa MD ABOGADOS SAS, me permito informarle que mi representada tiene a la fecha, con corte al ${fechaLarga(hoy)}, la representación judicial en ${filas.length} proceso${filas.length===1?'':'s'} judicial${filas.length===1?'':'es'} correspondiente${filas.length===1?'':'s'} a ${titulo}, según se relaciona en el presente informe, en el que aparece el estado de los procesos y demás asuntos relevantes.`, size:21, color:TEXTO }) ] }),
+        new Paragraph({ spacing:{after:200}, children: [ new TextRun({ text: `Los ${filas.length} proceso${filas.length===1?'':'s'} citado${filas.length===1?'':'s'} se discrimina${filas.length===1?'':'n'} así:`, size:21, color:TEXTO }) ] }),
         new Table({
           width: { size:100, type: WidthType.PERCENTAGE },
           rows: [ new TableRow({ children: [
-            celdaResumen('Procesos filtrados', String(filas.length)),
+            celdaResumen('Procesos activos', String(filas.length)),
             celdaResumen('Valor cartera actual', '$ '+fmtMonto(valorCartera)),
-            celdaResumen('Total desistimientos', `${desistimientosTodos.length} · $ ${fmtMonto(valorDesistimientos)}`),
+            celdaResumen('Total desistimientos', '$ '+fmtMonto(valorDesistimientos)),
           ]}) ],
         }),
-        new Paragraph({ spacing:{before:280, after:120}, children: [ new TextRun({ text:'Cordial saludo,', size:21, color:TEXTO }) ] }),
-        new Paragraph({ spacing:{after:80}, children: [ new TextRun({ text: parrafoIntro, size:21, color:TEXTO }) ] }),
 
-        ...seccionImagen('Naturaleza del Proceso', pngNaturaleza, 'No hay datos de Naturaleza del Proceso.'),
-        ...seccionImagen('Procesos Admitidos', pngAdmitida, 'No hay datos de Admitida.'),
-        ...seccionImagen('Subclasificación', pngSubclasificacion, 'No hay datos de Subclasificación.'),
-        ...seccionImagen('Procesos con Prueba Pericial', pngPrueba, 'No hay datos de Prueba Pericial.'),
+        ...seccionImagen('Naturaleza del Proceso', pngNaturaleza, 'No hay datos de Naturaleza del Proceso.', dataNaturaleza),
+        ...seccionImagen('Procesos Admitidos', pngAdmitida, 'No hay datos de Admitida.', dataAdmitida),
+        ...seccionImagen('Subclasificación', pngSubclasificacion, 'No hay datos de Subclasificación.', dataSubclasificacion),
+        ...seccionImagen('Procesos con Prueba Pericial', pngPrueba, 'No hay datos de Prueba Pericial.', dataPrueba),
 
         tituloSeccion('Total de desistimientos'),
         new Paragraph({ spacing:{after:100}, children: [ new TextRun({ text: `${desistimientosTodos.length} desistimiento${desistimientosTodos.length===1?'':'s'} registrado${desistimientosTodos.length===1?'':'s'} · $ ${fmtMonto(valorDesistimientos)}`, bold:true, size:21, color:VERDE_OSCURO }) ] }),
         ...(desistimientosTodos.length ? [ new Table({ width:{size:70,type:WidthType.PERCENTAGE}, rows: filasDesglose }) ] : [ new Paragraph({ spacing:{after:160}, children:[ new TextRun({ text:'No hay desistimientos para estos procesos.', italics:true, size:19, color:GRIS_SUAVE }) ] }) ]),
 
-        ...seccionImagen('Desistimientos', pngDesistimientos, 'No hay desistimientos para estos procesos.'),
+        ...seccionImagen('Desistimientos', pngDesistimientos, 'No hay desistimientos para estos procesos.', dataDesistimientosEstado),
 
-        new Paragraph({ spacing:{before:360, after:200}, children: [] }),
+        new Paragraph({ spacing:{before:360, after:120}, children: [ new TextRun({ text:'Cordial saludo,', size:21, color:TEXTO }) ] }),
+        new Paragraph({ spacing:{after:200}, children: [] }),
         new Paragraph({ children: [ new ImageRun({ type:'png', data: firmaBytes, transformation: { width: anchoFirma, height: Math.round(anchoFirma * firma.alto/firma.ancho) } }) ] }),
       ],
     }],

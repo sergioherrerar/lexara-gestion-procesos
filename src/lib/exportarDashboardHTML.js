@@ -30,9 +30,13 @@ function escapeJsonParaScript(json){
 }
 
 export function generarDashboardEntidadHTML(procesos, desistimientos, entidad){
+  // Solo procesos VIGENTES (2026-10-01, pedido explícito del usuario —
+  // mismo criterio que DashboardView.jsx/ProcesosView.jsx: EstadoVT
+  // contiene "termin").
+  const procesosVigentes = procesos.filter(p => !(stripHtml(p.EstadoVT)||"").toLowerCase().includes('termin'));
   const procesosEntidad = entidad === 'todas'
-    ? procesos
-    : procesos.filter(p => (stripHtml(p.Entidad) || "Sin entidad") === entidad);
+    ? procesosVigentes
+    : procesosVigentes.filter(p => (stripHtml(p.Entidad) || "Sin entidad") === entidad);
 
   const filas = procesosEntidad.map(p => {
     const propios = desistimientosForProceso(desistimientos, p);
@@ -251,7 +255,7 @@ function construirHTML(filas, titulo, fechaLarga){
 
       var valorCartera = filtradas.reduce(function(s,r){ return s + r.valorCartera; }, 0);
       document.getElementById('kpis-container').innerHTML =
-        '<div class="panel"><div class="panel-head"><h3>Procesos filtrados</h3></div><div class="panel-body">' + renderStatRingLado('var(--verde-oscuro)', 'Cantidad de procesos', String(filtradas.length)) + '</div></div>' +
+        '<div class="panel"><div class="panel-head"><h3>Procesos activos</h3></div><div class="panel-body">' + renderStatRingLado('var(--verde-oscuro)', 'Cantidad de procesos', String(filtradas.length)) + '</div></div>' +
         '<div class="panel"><div class="panel-head"><h3>Valor cartera actual</h3></div><div class="panel-body">' + renderStatRingLado('var(--naranja)', 'Suma de procesos filtrados', '$ ' + fmtMonto(valorCartera)) + '</div></div>';
 
       var dataNaturaleza = groupCountLocal(filtradas, 'naturaleza');

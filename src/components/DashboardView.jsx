@@ -64,8 +64,14 @@ export default function DashboardView({ procesos, desistimientos = [], notify })
   }
   function limpiarFiltro(campo){ setFiltros(prev => ({ ...prev, [campo]: new Set() })); }
 
-  const entidades = Array.from(new Set(procesos.map(p => stripHtml(p.Entidad) || "Sin entidad"))).sort((a,b)=>a.localeCompare(b));
-  const procesosPorEntidad = entidadSel === 'todas' ? procesos : procesos.filter(p => (stripHtml(p.Entidad)||"Sin entidad") === entidadSel);
+  // Solo procesos VIGENTES (2026-10-01, pedido explícito del usuario viendo
+  // el Word exportado: "verifica que solo sean procesos vigentes") — mismo
+  // criterio que el toggle "Ver terminados" de ProcesosView.jsx (EstadoVT
+  // contiene "termin"), para que este panel y sus 2 exports (HTML/Word)
+  // nunca cuenten un proceso ya terminado como "activo".
+  const procesosVigentes = procesos.filter(p => !(stripHtml(p.EstadoVT)||"").toLowerCase().includes('termin'));
+  const entidades = Array.from(new Set(procesosVigentes.map(p => stripHtml(p.Entidad) || "Sin entidad"))).sort((a,b)=>a.localeCompare(b));
+  const procesosPorEntidad = entidadSel === 'todas' ? procesosVigentes : procesosVigentes.filter(p => (stripHtml(p.Entidad)||"Sin entidad") === entidadSel);
 
   function pasaFiltros(p){
     return (!filtros.glosa.size || filtros.glosa.has(campoGlosa(p))) &&

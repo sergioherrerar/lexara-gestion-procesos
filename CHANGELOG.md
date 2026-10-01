@@ -2,6 +2,15 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-10-01 (3)
+- **El export Word del Dashboard por Entidad ahora abre como una carta formal** — pedido explícito del usuario, con un ejemplo real pegado de referencia. Fecha, "Doctor(a)" + nombre/cargo (en "XXX" para llenar a mano, varía según quién esté a cargo en cada Entidad), "Asunto:", saludo, un párrafo citando la cantidad real de procesos vigentes de esa Entidad, y "Cordial saludo," movido al final, justo antes de la firma (antes estaba mal puesto cerca del encabezado).
+
+## 2026-10-01 (2)
+- **Dashboard por Entidad (vivo + export HTML + export Word): ahora solo cuenta procesos VIGENTES** — pedido explícito del usuario viendo el Word exportado ("verifica que solo sean procesos vigentes"). Antes el conteo y los gráficos incluían también los procesos ya Terminados.
+- **"Procesos filtrados" ahora se llama "Procesos activos"** en el export Word y HTML, para que el nombre coincida con que ya solo son los vigentes.
+- **Se quitó el conteo de desistimientos del recuadro "Total desistimientos"** del Word — antes decía "83 · $21.600.049,134,50", ahora solo queda el valor en pesos.
+- **Cada gráfico del Word (Naturaleza, Admitidos, Subclasificación, Prueba Pericial, Desistimientos) ahora trae su propia tabla de cifras debajo**, con el mismo formato (y colores institucionales) que ya tenía el desglose de desistimientos — antes solo mostraban la imagen del gráfico sin tabla.
+
 ## 2026-10-01 (1)
 - **Procesos: nueva columna "Fecha Estado" y edición rápida de Estado**, pedido explícito del usuario. La fecha ya existía (decide el color del badge de Estado) pero nunca se mostraba; ahora es una columna visible. Junto al badge de Estado hay un lápiz que permite editar el texto de Estado y su fecha directo en la misma fila, sin abrir el proceso completo — al guardar, el Estado anterior se sigue archivando en "Histórico" igual que al editar desde el proceso completo.
 
