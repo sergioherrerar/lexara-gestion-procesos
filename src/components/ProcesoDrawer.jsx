@@ -8,6 +8,7 @@ import {
   generarLinksCarpetaProceso, generarLinkContratoProceso,
   rutaEntidadDeProceso, resolverDriveIdPrincipal, listarContenidoRuta, listarHijos,
   crearLinkCompartidoSoporte, crearLinkEdicionOrganizacion, mensajeError, abogadosDisponibles,
+  htmlHistoricoDesdeEstado,
 } from '../lib/graph';
 import IconButton, { IconTextButton } from './IconButton';
 import { FieldCard, RichTextEditor } from './FormFields';
@@ -214,10 +215,6 @@ const LABELS = {
   // confiablemente una fecha, ver nota en TRAZABILIDAD_SECTION arriba).
   RadicacionProceso:"Radicación del proceso",
 };
-
-function escapeHtml(s){
-  return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
 
 // Campo genérico (texto/select/money/textarea/richtext), compartido entre
 // la pestaña "Datos generales" y "Trazabilidad fechas" — evita repetir el
@@ -495,10 +492,10 @@ export default function ProcesoDrawer({ proceso, clientes, colaboradores, factur
       if(cambio) payload[key] = type==='link' && actual ? { Url: actual, Description: actual } : actual;
     }));
     if(payload.Estado !== undefined){
-      const estadoAnterior = stripHtml(proceso.Estado || "").trim();
-      if(estadoAnterior){
+      const renglones = htmlHistoricoDesdeEstado(proceso.Estado, proceso.FechaUltimoEstado);
+      if(renglones){
         const historicoActual = payload.Historico !== undefined ? payload.Historico : (form.Historico || "");
-        payload.Historico = historicoActual + `<div>${escapeHtml(estadoAnterior)}</div>`;
+        payload.Historico = historicoActual + renglones;
       }
     }
     onSave(payload);

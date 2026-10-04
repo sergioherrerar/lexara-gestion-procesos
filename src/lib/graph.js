@@ -1304,6 +1304,39 @@ export function stripHtml(html){
   tmp.innerHTML = html;
   return (tmp.textContent || tmp.innerText || "").replace(/\s+/g," ").trim();
 }
+
+// Renglones de "Histórico" a partir del Estado que se va a reemplazar
+// (2026-10-04, pedido explícito del usuario: "mira cómo agrega la
+// información a histórico: toma la fecha, le da un enter para que la
+// siguiente fila coloque el dato nuevo, siempre inicia con la fecha").
+// "Estado" suele traer varias actuaciones seguidas en un mismo texto
+// ("15-09-2025 Auto… 15-12-2025 Se allega…"), mientras que "Histórico"
+// lleva UNA actuación por renglón, cada una empezando por su fecha. Se parte
+// el texto en cada fecha dd-mm-aaaa que abre una actuación nueva (va seguida
+// de mayúscula y NO viene después de "el/del/para/…", para no partir una
+// frase tipo "audiencia para el 25-02-2027 Se…") y, si el texto no empieza
+// por una fecha, se le pone la de "Fecha último estado". Devuelve HTML
+// (un <div> por renglón), listo para sumar al final del Histórico.
+export function htmlHistoricoDesdeEstado(estadoAnterior, fechaUltimoEstado){
+  const texto = stripHtml(estadoAnterior || "");
+  if(!texto) return "";
+  const CONECTORES = /^(el|del|al|de|para|desde|hasta|fecha|día|dia|y|a|con|corte)$/i;
+  const reFecha = /(\d{1,2}-\d{1,2}-\d{4})\s+(?=[A-ZÁÉÍÓÚÑ])/g;
+  const cortes = [];
+  let m;
+  while((m = reFecha.exec(texto))){
+    const palabraPrevia = (texto.slice(0, m.index).trim().split(" ").pop() || "").replace(/[.,;:]+$/, "");
+    if(m.index === 0 || !CONECTORES.test(palabraPrevia)) cortes.push(m.index);
+  }
+  if(!cortes.length || cortes[0] > 0) cortes.unshift(0);
+  const iso = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(fechaUltimoEstado || ""));
+  const prefijo = iso ? `${iso[3]}-${iso[2]}-${iso[1]}` : "";
+  return cortes.map((inicio, i) => {
+    let renglon = texto.slice(inicio, i + 1 < cortes.length ? cortes[i + 1] : texto.length).trim();
+    if(i === 0 && prefijo && !/^\d{1,2}-\d{1,2}-\d{4}\b/.test(renglon)) renglon = `${prefijo} ${renglon}`;
+    return `<div>${renglon.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}</div>`;
+  }).join("");
+}
 export function groupCount(list, keyFn){
   const map = new Map();
   list.forEach(item => {

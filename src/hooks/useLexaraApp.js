@@ -700,16 +700,13 @@ export function useLexaraApp(){
   // la modificación de este campo debe seguir alimentando el campo
   // histórico") — para que el rastro quede igual sin importar por cuál de
   // los 2 caminos se edite.
-  function escapeHtmlEstado(s){
-    return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  }
   async function guardarEstadoRapidoProceso(procesoId, { Estado, FechaUltimoEstado }){
     const proceso = procesos.find(p => p.id === procesoId);
     if(!proceso) return;
     const updates = { Estado, FechaUltimoEstado };
-    const estadoAnterior = Graph.stripHtml(proceso.Estado || "").trim();
-    if(estadoAnterior && estadoAnterior !== Graph.stripHtml(Estado || "").trim()){
-      updates.Historico = (proceso.Historico || "") + `<div>${escapeHtmlEstado(estadoAnterior)}</div>`;
+    if(Graph.stripHtml(proceso.Estado || "") !== Graph.stripHtml(Estado || "")){
+      const renglones = Graph.htmlHistoricoDesdeEstado(proceso.Estado, proceso.FechaUltimoEstado);
+      if(renglones) updates.Historico = (proceso.Historico || "") + renglones;
     }
     if(liveMode){
       setSaving(true);

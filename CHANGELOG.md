@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-10-04 (1)
+- **Histórico: al cambiar el Estado, el Estado anterior se archiva un renglón por actuación, cada uno empezando por su fecha** — pedido explícito del usuario ("toma la fecha, le da un enter para que la siguiente fila coloque el dato nuevo, siempre inicia con la fecha"). Antes todo el Estado viejo se pegaba en un solo renglón aunque trajera varias actuaciones seguidas. Ahora se parte en cada fecha dd-mm-aaaa que abre una actuación nueva (sin partir frases como "audiencia para el 25-02-2027…"), y si el texto no empieza por fecha se le pone la de "Fecha estado". Aplica igual en el proceso completo y en la edición rápida de la fila.
+
 ## 2026-10-01 (3)
 - **El export Word del Dashboard por Entidad ahora abre como una carta formal** — pedido explícito del usuario, con un ejemplo real pegado de referencia. Fecha, "Doctor(a)" + nombre/cargo (en "XXX" para llenar a mano, varía según quién esté a cargo en cada Entidad), "Asunto:", saludo, un párrafo citando la cantidad real de procesos vigentes de esa Entidad, y "Cordial saludo," movido al final, justo antes de la firma (antes estaba mal puesto cerca del encabezado).
 
