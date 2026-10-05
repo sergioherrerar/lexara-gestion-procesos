@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react';
 import { IconTextButton } from './IconButton';
+import { leerDocumentosTutelaOneDrive } from '../lib/graph';
+import { seleccionarAdjuntosParaLexIA } from '../lib/adjuntosLexIA';
 
 // "Entrenar IA" (2026-09-23, pedido explícito del usuario) — panel con 2
 // pestañas para el abogado que maneja Tutelas día a día:
@@ -24,7 +26,7 @@ import { IconTextButton } from './IconButton';
 // recién leído + los registros que Claude ya extrajo de él, AUNQUE esa
 // tutela todavía no se haya guardado en SharePoint. Se manda como contexto
 // con prioridad en la pestaña "Preguntas".
-export function EntrenarIAPanel({ tutelas, onAgregarCorreccion, robotPreguntasUrl, notify, casoActual, casosGuardados }){
+export function EntrenarIAPanel({ tutelas, onAgregarCorreccion, robotPreguntasUrl, notify, casoActual, casosGuardados, onedriveCarpetaUrl }){
   // "Pregúntame" primero, tanto en el orden de los botones como la pestaña
   // que abre por defecto (2026-09-25, pedido explícito del usuario:
   // "coloca primero Pregúntame que Enséñame").
@@ -37,7 +39,7 @@ export function EntrenarIAPanel({ tutelas, onAgregarCorreccion, robotPreguntasUr
       </div>
       {tab === 'correccion'
         ? <TabCorreccion tutelas={tutelas} onAgregarCorreccion={onAgregarCorreccion} notify={notify} />
-        : <TabPreguntas robotPreguntasUrl={robotPreguntasUrl} notify={notify} casoActual={casoActual} casosGuardados={casosGuardados} />}
+        : <TabPreguntas robotPreguntasUrl={robotPreguntasUrl} notify={notify} casoActual={casoActual} casosGuardados={casosGuardados} onedriveCarpetaUrl={onedriveCarpetaUrl} />}
     </div>
   );
 }
@@ -193,7 +195,22 @@ function casosRelevantes(casosGuardados, pregunta){
   return filtrados.length ? filtrados : casosGuardados.slice(0, LIMITE_CASOS_SIN_FILTRAR);
 }
 
-function TabPreguntas({ robotPreguntasUrl, notify, casoActual, casosGuardados }){
+// Tope de páginas de los documentos de la carpeta de la tutela que se le dan a
+// Claude por pregunta (más bajo que el de "Extraer con LexIA", que es 80): se
+// vuelven a mandar en cada pregunta (con caché de 5 min, de la 2ª en adelante
+// salen a ~10% del precio), así que se cuida el costo.
+const PAGINAS_MAX_PREGUNTA = 40;
+
+// De qué tutela se pregunta: el primer número de 4+ dígitos de la pregunta
+// que tenga carpeta en OneDrive; si no menciona ninguno, la del caso que
+// está abierto en la lista.
+function numerosCandidatos(pregunta, casoActual){
+  const mencionados = pregunta.match(/\d{4,}/g) || [];
+  const delCaso = (casoActual?.registros || []).map(r => String(r.NoTutela || '').trim()).filter(Boolean);
+  return [...new Set([...mencionados, ...delCaso])].slice(0, 3);
+}
+
+function TabPreguntas({ robotPreguntasUrl, notify, casoActual, casosGuardados, onedriveCarpetaUrl }){
   const [pregunta, setPregunta] = useState('');
   const [mensajes, setMensajes] = useState([]); // [{autor:'yo'|'ia', texto}]
   const [enviando, setEnviando] = useState(false);
@@ -216,15 +233,58 @@ function TabPreguntas({ robotPreguntasUrl, notify, casoActual, casosGuardados })
       // endpoint); "Pregúntame" ahora SOLO responde sobre lo que ya está en
       // casoActual/casosGuardados (los .txt guardados en OneDrive).
       const casosAMandar = casosRelevantes(casosGuardados, texto);
-      const res = await fetch(robotPreguntasUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pregunta: texto, casoActual: casoActual || undefined, casosGuardados: (casosAMandar && casosAMandar.length) ? casosAMandar : undefined }),
-      });
+      // 2026-10-05, pedido explícito del usuario: LexIA va a la CARPETA de la
+      // tutela en OneDrive ("N Tutela/Adjuntos originales") a buscar la
+      // respuesta en los documentos reales (la tutela, el auto, los anexos),
+      // no solo en el texto ya resumido. Si no se pueden leer, responde con
+      // lo que ya tenía y lo avisa.
+      let documentos = [];
+      let numeroDocs = '';
+      if(onedriveCarpetaUrl){
+        try{
+          for(const n of numerosCandidatos(texto, casoActual)){
+            const bajados = await leerDocumentosTutelaOneDrive(onedriveCarpetaUrl, n);
+            if(bajados.length){
+              const { seleccionados, omitidos } = await seleccionarAdjuntosParaLexIA(bajados, { paginasMaxTotal: PAGINAS_MAX_PREGUNTA });
+              documentos = seleccionados;
+              numeroDocs = n;
+              if(omitidos.length){
+                setMensajes(prev => [...prev, { autor:'nota', texto: 'No incluí por tamaño o formato: ' + omitidos.map(o => o.nombre + ' (' + o.motivo + ')').join('; ') + '.' }]);
+              }
+              break;
+            }
+          }
+        }catch(err){
+          console.error('No se pudo leer la carpeta de la tutela en OneDrive:', err);
+          setMensajes(prev => [...prev, { autor:'nota', texto: 'No pude abrir la carpeta de la tutela en OneDrive; respondo con lo que ya tenía guardado.' }]);
+        }
+      }
+      async function preguntar(adjuntos){
+        const res = await fetch(robotPreguntasUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pregunta: texto, casoActual: casoActual || undefined, casosGuardados: (casosAMandar && casosAMandar.length) ? casosAMandar : undefined, tutelaDocumentos: numeroDocs || undefined, adjuntos: adjuntos.length ? adjuntos.map(a => ({ nombre:a.nombre, tipo:a.tipo, base64:a.base64 })) : undefined }),
+        });
+        let d;
+        try{ d = await res.json(); }catch{ d = null; }
+        if(!res.ok || !d || d.error){
+          throw new Error((d && d.error) || `LexIA respondió con error (código ${res.status}).`);
+        }
+        return d;
+      }
       let data;
-      try{ data = await res.json(); }catch{ data = null; }
-      if(!res.ok || !data || data.error){
-        throw new Error((data && data.error) || `LexIA respondió con error (código ${res.status}).`);
+      try{
+        data = await preguntar(documentos);
+        if(documentos.length){
+          setMensajes(prev => [...prev, { autor:'nota', texto: 'Consulté ' + documentos.length + ' documento' + (documentos.length === 1 ? '' : 's') + ' de la carpeta de la tutela ' + numeroDocs + ' en OneDrive.' }]);
+        }
+      }catch(err){
+        if(!documentos.length) throw err;
+        // Un documento problemático (protegido, dañado…) no debe dejar la
+        // pregunta sin respuesta: se reintenta sin los documentos.
+        console.error('Falló la consulta con documentos, se reintenta sin ellos:', err);
+        setMensajes(prev => [...prev, { autor:'nota', texto: 'No pude leer los documentos de la carpeta (' + (err.message || 'error') + '); respondo con lo que ya tenía guardado.' }]);
+        data = await preguntar([]);
       }
       const respuesta = limpiarMarkdown(data.respuesta || '(sin respuesta)');
       setMensajes(prev => [...prev, { autor:'ia', texto: respuesta }]);
@@ -253,14 +313,16 @@ function TabPreguntas({ robotPreguntasUrl, notify, casoActual, casosGuardados })
       )}
       <div className="entrenar-ia-historial entrenar-ia-chat">
         {!mensajes.length && <p className="empty-state empty-state-compact">Escribe tu primera pregunta abajo.</p>}
-        {mensajes.map((m,i) => (
+        {mensajes.map((m,i) => m.autor === 'nota' ? (
+          <p key={i} className="save-hint" style={{margin:'4px 0', fontStyle:'italic'}}>{m.texto}</p>
+        ) : (
           <div key={i} className={"entrenar-ia-burbuja " + (m.autor==='yo' ? 'entrenar-ia-burbuja-yo' : 'entrenar-ia-burbuja-ia')}>
             {m.texto}
           </div>
         ))}
         {/* "Mientras responde la pregunta, algo como 'estoy buscando lo que
             me pediste'" (2026-09-24, pedido explícito del usuario). */}
-        {enviando && <div className="entrenar-ia-burbuja entrenar-ia-burbuja-ia">Estoy buscando lo que me pediste…</div>}
+        {enviando && <div className="entrenar-ia-burbuja entrenar-ia-burbuja-ia">{onedriveCarpetaUrl ? 'Estoy buscando en la carpeta de la tutela lo que me pediste…' : 'Estoy buscando lo que me pediste…'}</div>}
       </div>
       <div className="field" style={{margin:'14px 0'}}>
         <label>Tu pregunta</label>

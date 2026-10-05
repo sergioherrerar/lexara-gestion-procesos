@@ -471,6 +471,29 @@ export function numeroTutelaDeAsunto(asunto){
 // Cuerpo completo (texto plano, sin HTML) + adjuntos en base64 de UN correo
 // puntual ya elegido por el usuario — se piden juntos porque ambos hacen
 // falta para mandárselos al robot de una vez.
+// Cuerpo del correo (HTML) como texto legible CONSERVANDO párrafos, saltos de
+// línea y filas de tablas (2026-10-05, pedido del usuario: "no olvidar que hay
+// que capturar el cuerpo del correo"). Antes se usaba stripHtml(), que junta
+// todo en un solo renglón (y deja pegado el CSS de los <style> que Outlook mete
+// en el correo) — la "impresión" del correo (Correo original.pdf) salía como un
+// bloque ilegible y a LexIA le llegaba sin estructura. DOMParser no ejecuta
+// scripts ni carga imágenes (es seguro con HTML de terceros).
+export function cuerpoCorreoComoTexto(html){
+  if(!html) return '';
+  const doc = new DOMParser().parseFromString(String(html), 'text/html');
+  doc.querySelectorAll('style, script, head, title, meta, link, noscript').forEach(n => n.remove());
+  doc.querySelectorAll('br').forEach(b => b.replaceWith('\n'));
+  doc.querySelectorAll('td, th').forEach(c => c.append(' | '));
+  doc.querySelectorAll('p, div, tr, li, h1, h2, h3, h4, h5, h6, table, blockquote, pre, hr').forEach(b => b.append('\n'));
+  return (doc.body?.textContent || '')
+    .replace(/ /g, ' ')
+    .split('\n')
+    .map(l => l.replace(/[ \t]+/g, ' ').trim().replace(/(?:\s*\|)+$/, '').trim())
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
 export async function leerCorreoCompleto(correoBuzon, mensajeId){
   const token = await getMailToken();
   const headers = { Authorization:`Bearer ${token}` };
@@ -486,7 +509,9 @@ export async function leerCorreoCompleto(correoBuzon, mensajeId){
   // quitan las etiquetas para mandarle a Claude texto plano legible, mismo
   // criterio que stripHtml() ya usado en el resto de la app para "Estado"/
   // "Observaciones" de Procesos.
-  const cuerpoTexto = stripHtml(msg.body?.content || '').trim();
+  const cuerpoTexto = msg.body?.contentType === 'text'
+    ? String(msg.body?.content || '').replace(/\r\n/g, '\n').trim()
+    : cuerpoCorreoComoTexto(msg.body?.content || '');
 
   // Sin $select (2026-09-23, bug real: "Could not find a property named
   // 'contentBytes' on type 'microsoft.graph.attachment'") — /attachments
@@ -579,9 +604,16 @@ export async function extraerTutelaConLexIA(correoBuzon, mensajeId, tutelas, rob
   // Usa la versión que SE SALTA el trabajo si la carpeta ya se dejó lista
   // con el botón "Extraer adjuntos" (2026-09-30).
   const numeroTutela = numeroTutelaDeAsunto(completo.asunto);
+  // La promesa se devuelve (guardadoAdjuntos) para que el modal pueda esperar
+  // a que termine y avisar al usuario con un resumen de lo que quedó en la
+  // carpeta — nunca rechaza (resuelve con { error } si falla).
+  let guardadoAdjuntos = Promise.resolve(null);
   if(onedriveCarpetaUrl && numeroTutela){
-    asegurarAdjuntosOriginalesEnOneDrive(onedriveCarpetaUrl, numeroTutela, completo)
-      .catch(err => console.error('No se pudieron guardar los adjuntos originales en OneDrive (plan B):', err));
+    guardadoAdjuntos = asegurarAdjuntosOriginalesEnOneDrive(onedriveCarpetaUrl, numeroTutela, completo)
+      .catch(err => {
+        console.error('No se pudieron guardar los adjuntos originales en OneDrive (plan B):', err);
+        return { error: err };
+      });
   }
   const correcciones = (tutelas || [])
     .filter(t => t.CorreccionIA)
@@ -638,7 +670,7 @@ export async function extraerTutelaConLexIA(correoBuzon, mensajeId, tutelas, rob
     throw new Error(mensajeErrorLexIA(msg));
   }
   const registros = Array.isArray(data.registros) ? data.registros : [data.campos || {}];
-  return { asunto: completo.asunto, cuerpo: completo.cuerpo, registros: registros.map(r => ({ ...r, _creado: false })), omitidos };
+  return { asunto: completo.asunto, cuerpo: completo.cuerpo, registros: registros.map(r => ({ ...r, _creado: false })), omitidos, guardadoAdjuntos };
 }
 
 // ============================================================
@@ -770,7 +802,11 @@ async function construirPdfCorreoBase64(numeroTutela, correo){
   if(correo.remitente){ doc.text(`De: ${correo.remitente}`, margen, y); y += 6; }
   if(correo.fecha){ doc.text(`Recibido: ${new Date(correo.fecha).toLocaleString('es-CO')}`, margen, y); y += 6; }
   y += 4;
-  const lineas = doc.splitTextToSize(correo.cuerpo || '(sin cuerpo)', anchoUtil);
+  // La fuente estándar de jsPDF solo dibuja los caracteres de Windows-1252
+  // (tildes, ñ, comillas curvas, guion largo, viñeta…); emojis y símbolos
+  // raros salían como basura — se reemplazan por un espacio.
+  const cuerpoPdf = (correo.cuerpo || '(sin cuerpo)').replace(/[^\n -~ -ÿ–—‘’“”•…€™]/g, ' ');
+  const lineas = doc.splitTextToSize(cuerpoPdf, anchoUtil);
   for(const linea of lineas){
     if(y > altoMaximo){ doc.addPage(); y = margen; }
     doc.text(linea, margen, y);
@@ -841,8 +877,19 @@ async function existeArchivoOneDrive(driveId, folderId, ruta){
 export async function asegurarAdjuntosOriginalesEnOneDrive(urlCarpeta, numeroTutela, correo){
   const { driveId, folderId } = await resolverCarpetaLexIAOneDrive(urlCarpeta);
   const rutaCorreo = `${numeroTutela} Tutela/Adjuntos originales/Correo original.pdf`;
-  if(await existeArchivoOneDrive(driveId, folderId, rutaCorreo)) return;
+  if(await existeArchivoOneDrive(driveId, folderId, rutaCorreo)) return { yaEstaban: true, cantidad: 0 };
   await guardarAdjuntosOriginalesEnOneDrive(urlCarpeta, numeroTutela, correo);
+  return { yaEstaban: false, cantidad: (correo.adjuntos || []).filter(a => a.base64).length };
+}
+
+// Para cuando la tutela YA estaba analizada (el botón "Extraer con LexIA" no
+// vuelve a llamar a Claude): igual deja en la carpeta el correo y los
+// adjuntos si todavía no estaban — lee el correo solo si hace falta.
+export async function asegurarCarpetaTutelaDesdeMensaje(correoBuzon, mensajeId, urlCarpeta, numeroTutela){
+  const { driveId, folderId } = await resolverCarpetaLexIAOneDrive(urlCarpeta);
+  if(await existeArchivoOneDrive(driveId, folderId, `${numeroTutela} Tutela/Adjuntos originales/Correo original.pdf`)) return { yaEstaban: true, cantidad: 0 };
+  const completo = await leerCorreoCompleto(correoBuzon, mensajeId);
+  return asegurarAdjuntosOriginalesEnOneDrive(urlCarpeta, numeroTutela, completo);
 }
 
 // "Extraer adjuntos" (2026-09-30, pedido explícito del usuario) — a
@@ -921,6 +968,61 @@ export async function listarTutelasAnalizadasEnOneDrive(urlCarpeta){
     url = res['@odata.nextLink'] || null;
   }
   return numeros;
+}
+
+// "Pregúntame" busca la respuesta en la carpeta de la tutela (2026-10-05,
+// pedido explícito del usuario: "que LexIA vaya a la carpeta de OneDrive de
+// ese caso a buscar la respuesta") — baja los documentos de
+// "N Tutela/Adjuntos originales" (el PDF de la tutela, el auto, los anexos y
+// el correo impreso) para dárselos a Claude junto con la pregunta. Solo PDF e
+// imágenes, y nada que pese más de 25 MB. Se recuerda por sesión (varias
+// preguntas seguidas sobre la misma tutela no vuelven a bajar los archivos).
+// Devuelve [] si la carpeta no existe o no tiene documentos.
+const cacheDocumentosTutela = new Map();
+export async function leerDocumentosTutelaOneDrive(urlCarpeta, numeroTutela){
+  if(!urlCarpeta || !numeroTutela) return [];
+  const clave = String(numeroTutela);
+  if(!cacheDocumentosTutela.has(clave)){
+    // No se recuerda un resultado vacío ni un error: la carpeta puede crearse
+    // (con "Extraer con LexIA" / "Extraer adjuntos") justo después.
+    cacheDocumentosTutela.set(clave, descargarDocumentosTutela(urlCarpeta, clave).then(docs => {
+      if(!docs.length) cacheDocumentosTutela.delete(clave);
+      return docs;
+    }, err => {
+      cacheDocumentosTutela.delete(clave);
+      throw err;
+    }));
+  }
+  return cacheDocumentosTutela.get(clave);
+}
+async function descargarDocumentosTutela(urlCarpeta, numeroTutela){
+  const { driveId, folderId } = await resolverCarpetaLexIAOneDrive(urlCarpeta);
+  // Mismos 2 nombres de carpeta que la lectura de texto ("N Tutela" y el viejo "Tutela N").
+  let archivos = [];
+  let carpeta = '';
+  for(const base of [`${numeroTutela} Tutela`, `Tutela ${numeroTutela}`]){
+    try{
+      const ruta = `${base}/Adjuntos originales`;
+      const res = await graphFetch(`/drives/${driveId}/items/${folderId}:/${encodeURIComponent(ruta).replace(/%2F/g,'/')}:/children?$select=name,size,file&$top=200`);
+      archivos = (res.value || []).filter(i => i.file);
+      carpeta = ruta;
+      break;
+    }catch{ /* esa variante de nombre no existe — prueba la otra */ }
+  }
+  if(!carpeta) return [];
+  const permitido = /\.(pdf|jpe?g|png|gif|webp)$/i;
+  const token = await getGraphToken();
+  const bajados = await Promise.all(archivos
+    .filter(a => permitido.test(a.name || '') && (a.size || 0) <= 25 * 1024 * 1024)
+    .map(async a => {
+      const res = await fetch(
+        `https://graph.microsoft.com/v1.0/drives/${driveId}/items/${folderId}:/${encodeURIComponent(`${carpeta}/${a.name}`).replace(/%2F/g,'/')}:/content`,
+        { headers:{ Authorization:`Bearer ${token}` } }
+      );
+      if(!res.ok) return null;
+      return { nombre: a.name, tipo: a.file?.mimeType || '', base64: arrayBufferABase64(await res.arrayBuffer()) };
+    }));
+  return bajados.filter(Boolean);
 }
 
 // Traduce errores técnicos (de MSAL o de la respuesta cruda de Graph, casi

@@ -109,7 +109,7 @@ async function paginasDePdf(base64){
  * los que por su nombre parecen el documento principal; `omitidos` lista,
  * con motivo, los que se dejaron fuera.
  */
-export async function seleccionarAdjuntosParaLexIA(adjuntos){
+export async function seleccionarAdjuntosParaLexIA(adjuntos, { paginasMaxTotal = PAGINAS_MAX_TOTAL } = {}){
   const candidatos = [];
   const omitidos = [];
   for(const [orden, a] of (adjuntos || []).entries()){
@@ -147,7 +147,7 @@ export async function seleccionarAdjuntosParaLexIA(adjuntos){
     const etiqueta = `${c.estimada ? "≈" : ""}${c.paginas} pág.`;
     if(c.paginas > PAGINAS_MAX_POR_PDF){
       omitidos.push({ nombre: c.a.nombre, motivo: `muy largo (${etiqueta})` });
-    } else if(usadas + c.paginas > PAGINAS_MAX_TOTAL){
+    } else if(usadas + c.paginas > paginasMaxTotal){
       omitidos.push({ nombre: c.a.nombre, motivo: `no cabe en el límite total (${etiqueta})` });
     } else if(caracteres + c.a.base64.length > CARACTERES_BASE64_MAX_TOTAL){
       omitidos.push({ nombre: c.a.nombre, motivo: 'no cabe en el peso máximo del correo' });

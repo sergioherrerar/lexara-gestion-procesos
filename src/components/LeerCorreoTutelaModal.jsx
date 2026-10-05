@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { normalizarBorradorTutela } from '../lib/borradorTutela';
 import { aplicarVencimientoHabil, fechaLocalISO } from '../lib/vencimientoTutela';
-import { leerCorreosTutelas, extraerTutelaConLexIA, numeroTutelaDeAsunto, normalize, mensajeError, buscarLecturaLexIAGuardada, guardarLecturaLexIAEnOneDrive, listarTutelasAnalizadasEnOneDrive, extraerAdjuntosSinIA } from '../lib/graph';
+import { leerCorreosTutelas, extraerTutelaConLexIA, numeroTutelaDeAsunto, normalize, mensajeError, buscarLecturaLexIAGuardada, guardarLecturaLexIAEnOneDrive, listarTutelasAnalizadasEnOneDrive, extraerAdjuntosSinIA, asegurarCarpetaTutelaDesdeMensaje } from '../lib/graph';
 import IconButton, { IconTextButton } from './IconButton';
 import { EntrenarIAPanel } from './EntrenarIAModal';
 import { useDraggable } from '../hooks/useDraggable';
@@ -35,6 +35,10 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
   const [mensajes, setMensajes] = useState([]);
   const [seleccionadoId, setSeleccionadoId] = useState(null);
   const [procesando, setProcesando] = useState(false);
+  // Etapa visible en el botón "Extraer con LexIA" (2026-10-05): primero lee
+  // con LexIA y luego deja el correo, los adjuntos y la lectura en la carpeta
+  // de la tutela en OneDrive.
+  const [guardandoOneDrive, setGuardandoOneDrive] = useState(false);
   // Un correo puede señalar a más de un cliente real a la vez (2026-09-23,
   // pedido explícito del usuario: "si vinculan colmedica y aliansalud se
   // debe hacer un registro por cada uno") — el robot devuelve un arreglo de
@@ -156,7 +160,17 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
         if(guardada){
           setResultado({ mensajeId: mensaje.id, registros: guardada.registros });
           setCorreoActual({ asunto: guardada.asunto, cuerpo: guardada.cuerpo });
-          notify?.(`La tutela ${numeroTutela} ya había sido analizada por LexIA — pregúntale lo que necesites al lado, sin gastar otra lectura.`, 'success');
+          // Igual deja en la carpeta el correo y los adjuntos si todavía no estaban.
+          setGuardandoOneDrive(true);
+          const carpeta = await asegurarCarpetaTutelaDesdeMensaje(correoBuzon, mensaje.id, onedriveCarpetaUrl, numeroTutela).catch(err => ({ error: err }));
+          setGuardandoOneDrive(false);
+          let extra = '';
+          if(carpeta?.error){
+            notify?.('No se pudieron guardar los adjuntos en la carpeta de la tutela: ' + mensajeError(carpeta.error) + ' — prueba con "Extraer adjuntos".', 'error');
+          } else if(!carpeta?.yaEstaban){
+            extra = ` Además guardé el correo y ${carpeta.cantidad} adjunto${carpeta.cantidad === 1 ? '' : 's'} en su carpeta de OneDrive.`;
+          }
+          notify?.(`La tutela ${numeroTutela} ya había sido analizada por LexIA — pregúntale lo que necesites al lado, sin gastar otra lectura.${extra}`, 'success');
           setProcesando(false);
           return;
         }
@@ -179,24 +193,49 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
         avisos.forEach(a => { if(!avisosVencimiento.includes(a)) avisosVencimiento.push(a); });
         return registro;
       });
-      if(avisosVencimiento.length) notify?.('Vencimiento: ' + avisosVencimiento.join(' · '), 'info');
+      // Los avisos se juntan en UN solo mensaje al final (el aviso flotante
+      // muestra uno a la vez: si cada paso avisara por separado, el último
+      // taparía al anterior — p. ej. el del vencimiento).
+      const avisosFinales = [];
+      if(avisosVencimiento.length) avisosFinales.push('Vencimiento: ' + avisosVencimiento.join(' · '));
       setResultado({ mensajeId: mensaje.id, registros: extraido.registros });
       setCorreoActual({ asunto: extraido.asunto, cuerpo: extraido.cuerpo });
       if(extraido.omitidos?.length){
-        notify?.(`LexIA no leyó ${extraido.omitidos.length} adjunto${extraido.omitidos.length === 1 ? '' : 's'} por ser demasiado largo${extraido.omitidos.length === 1 ? '' : 's'}: ${extraido.omitidos.map(o => `${o.nombre} (${o.motivo})`).join(', ')}. Revisa los datos con cuidado — con "Extraer adjuntos" quedan guardados completos en OneDrive.`, 'info');
+        avisosFinales.push(`LexIA no leyó ${extraido.omitidos.length} adjunto${extraido.omitidos.length === 1 ? '' : 's'} por ser demasiado largo${extraido.omitidos.length === 1 ? '' : 's'}: ${extraido.omitidos.map(o => `${o.nombre} (${o.motivo})`).join(', ')}. Revisa los datos con cuidado — con "Extraer adjuntos" quedan guardados completos en OneDrive.`);
       }
+      const conAvisos = base => [base, ...avisosFinales].filter(Boolean).join(' — ');
       if(onedriveCarpetaUrl && numeroTutela){
-        guardarLecturaLexIAEnOneDrive(onedriveCarpetaUrl, numeroTutela, mensaje, extraido.asunto, extraido.cuerpo, extraido.registros)
-          .catch(err => {
-            console.error(err);
-            notify?.('Se extrajeron los datos, pero no se pudo guardar la copia en OneDrive: ' + mensajeError(err), 'error');
-          });
+        // Pedido explícito del usuario 2026-10-05: este mismo botón deja en la
+        // carpeta de la tutela (N Tutela) los adjuntos originales, el correo
+        // y lo que leyó LexIA — y avisa qué quedó guardado. Los datos ya se
+        // ven en pantalla; el botón sigue girando hasta terminar de guardar.
+        setGuardandoOneDrive(true);
+        const [lectura, adjuntos] = await Promise.all([
+          guardarLecturaLexIAEnOneDrive(onedriveCarpetaUrl, numeroTutela, mensaje, extraido.asunto, extraido.cuerpo, extraido.registros).then(() => ({ ok: true }), err => ({ error: err })),
+          extraido.guardadoAdjuntos,
+        ]);
+        setGuardandoOneDrive(false);
+        if(lectura.error){
+          console.error(lectura.error);
+          notify?.(conAvisos('Se extrajeron los datos, pero no se pudo guardar la lectura en OneDrive: ' + mensajeError(lectura.error)), 'error');
+        }
+        if(adjuntos?.error){
+          notify?.(conAvisos('Se extrajeron los datos, pero no se pudieron guardar los adjuntos en OneDrive: ' + mensajeError(adjuntos.error) + ' — prueba con "Extraer adjuntos".'), 'error');
+        }
+        if(!lectura.error && !adjuntos?.error){
+          const n = adjuntos?.cantidad || 0;
+          notify?.(conAvisos(`Quedó guardado en la carpeta "${numeroTutela} Tutela" de OneDrive: la lectura de LexIA${adjuntos?.yaEstaban ? ' (el correo y los adjuntos ya estaban allí)' : `, el correo y ${n} adjunto${n === 1 ? '' : 's'}`}.`), 'success');
+        }
+      } else {
+        const mensajeFinal = conAvisos(onedriveCarpetaUrl ? 'No se guardó la carpeta en OneDrive: no se encontró un número de tutela en el asunto del correo.' : '');
+        if(mensajeFinal) notify?.(mensajeFinal, 'info');
       }
     }catch(err){
       console.error(err);
       notify?.('No se pudo extraer los datos con IA: ' + (err.message || mensajeError(err)), 'error');
     }finally{
       setProcesando(false);
+      setGuardandoOneDrive(false);
     }
   }
 
@@ -353,9 +392,17 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
         {/* Buscador por No. Tutela (2026-09-25, pedido explícito del
             usuario) — filtra la lista de abajo y avisa si esa tutela ya
             está guardada en SharePoint o no. */}
-        <div className="field" style={{marginBottom:10, maxWidth:220}}>
-          <label>Buscar por No. Tutela</label>
-          <input type="text" inputMode="numeric" value={busquedaNumero} onChange={e => setBusquedaNumero(e.target.value)} placeholder="Ej. 28159" />
+        <div style={{display:'flex', alignItems:'flex-end', gap:10, marginBottom:10}}>
+          <div className="field" style={{margin:0, maxWidth:220, flex:'0 1 220px'}}>
+            <label>Buscar por No. Tutela</label>
+            <input type="text" inputMode="numeric" value={busquedaNumero} onChange={e => setBusquedaNumero(e.target.value)} placeholder="Ej. 28159" />
+          </div>
+          {/* Pedido explícito del usuario 2026-10-05: un botón pequeño para ir
+              a ver todas las carpetas de tutelas creadas en OneDrive (cada
+              "N Tutela" con su lectura de LexIA y sus adjuntos originales). */}
+          {onedriveCarpetaUrl && (
+            <IconButton icon="folder" variant="open" label="Abrir en OneDrive las carpetas de las tutelas (adjuntos y lectura de LexIA)" href={onedriveCarpetaUrl} />
+          )}
         </div>
         {numeroBuscado !== null && (
           tutelaBuscadaExistente ? (
@@ -426,7 +473,7 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
                   {!(resultado && resultado.mensajeId === m.id) && (
                     <div style={{display:'flex', alignItems:'center', gap:10}}>
                       <IconTextButton icon="add" variant="primary" disabled={procesando} onClick={() => handleExtraer(m)}>
-                        {procesando ? 'Extrayendo…' : '+ Extraer con LexIA'}
+                        {procesando ? (guardandoOneDrive ? 'Guardando en OneDrive…' : 'Extrayendo…') : '+ Extraer con LexIA'}
                       </IconTextButton>
                       <IconTextButton icon="zip" variant="secondary" disabled={extrayendoAdjuntosId === m.id} onClick={() => handleExtraerAdjuntos(m)}>
                         {extrayendoAdjuntosId === m.id ? 'Extrayendo adjuntos…' : 'Extraer adjuntos'}
@@ -479,6 +526,7 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
             notify={notify}
             casoActual={resultado ? { asunto: correoActual?.asunto, cuerpo: correoActual?.cuerpo, registros: resultado.registros } : null}
             casosGuardados={casosGuardadosOneDrive}
+            onedriveCarpetaUrl={onedriveCarpetaUrl}
           />
         </div>
         {/* Avatar grande al costado derecho (2026-09-29, pedido explícito

@@ -21,6 +21,11 @@ export const ICONS = {
       <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><path d="M15 3h6v6"/><path d="M10 14L21 3"/>
     </svg>
   ),
+  folder: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/>
+    </svg>
+  ),
   // Logo real de Lexara (no un ícono genérico de flechas) — pedido explícito
   // del usuario 2026-08-22, para que el mismo mark que gira mientras carga
   // los datos de SharePoint sea la marca del despacho.

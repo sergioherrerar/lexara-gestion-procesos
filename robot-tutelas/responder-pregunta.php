@@ -34,6 +34,10 @@ if($_SERVER['REQUEST_METHOD'] !== 'POST'){
     exit;
 }
 
+// Con documentos adjuntos la solicitud pesa más y Claude tarda más en responder.
+@set_time_limit(180);
+@ini_set('memory_limit', '512M');
+
 $configPath = __DIR__ . '/config.php';
 if(!file_exists($configPath)){
     http_response_code(500);
@@ -51,7 +55,7 @@ if(!$apiKey || $apiKey === 'PEGA_AQUI_TU_CLAVE_REAL'){
 $entrada = json_decode(file_get_contents('php://input'), true);
 if(!is_array($entrada)){
     http_response_code(400);
-    echo json_encode(['error' => 'Solicitud inválida (no llegó un JSON válido).']);
+    echo json_encode(['error' => 'Solicitud inválida (no llegó un JSON válido) — si incluye documentos, puede que superen el tamaño máximo que acepta el servidor (post_max_size = ' . ini_get('post_max_size') . ').']);
     exit;
 }
 
@@ -71,13 +75,21 @@ $casoActual = is_array($entrada['casoActual'] ?? null) ? $entrada['casoActual'] 
 // así se puede preguntar por cualquiera de ellas por número, sin tener
 // que haber hecho clic en ese correo puntual primero.
 $casosGuardados = is_array($entrada['casosGuardados'] ?? null) ? $entrada['casosGuardados'] : [];
+// Documentos reales de la carpeta de la tutela en OneDrive ("N Tutela/Adjuntos
+// originales": el PDF de la tutela, el auto, los anexos, el correo impreso) —
+// 2026-10-05, pedido explícito del usuario: "que LexIA vaya a la carpeta de
+// ese caso a buscar la respuesta". El portal los baja de OneDrive y los manda
+// acá junto con la pregunta; ya vienen filtrados (solo PDF/imágenes, con topes
+// de páginas y de peso).
+$adjuntos = is_array($entrada['adjuntos'] ?? null) ? $entrada['adjuntos'] : [];
+$tutelaDocumentos = preg_replace('/[^0-9]/', '', (string)($entrada['tutelaDocumentos'] ?? ''));
 
 if(!$pregunta){
     http_response_code(400);
     echo json_encode(['error' => 'Falta la pregunta.']);
     exit;
 }
-if(!$casoActual && !$casosGuardados){
+if(!$casoActual && !$casosGuardados && !$adjuntos){
     http_response_code(400);
     echo json_encode(['error' => 'Todavía no hay ninguna tutela leída por LexIA para responder sobre ella — usa "Extraer con LexIA" primero.']);
     exit;
@@ -132,12 +144,44 @@ $instrucciones = "Eres LexIA, el asistente de inteligencia artificial del despac
     "Ayudas a responder preguntas sobre tutelas reales del despacho que ya fueron leídas/extraídas por LexIA (no tienes acceso a la lista completa de tutelas del portal — solo a las que se muestran abajo)." .
     $casoActualTexto .
     $casosGuardadosTexto .
+    ($adjuntos
+        ? "\n\nDOCUMENTOS ORIGINALES DE LA CARPETA DE LA TUTELA" . ($tutelaDocumentos ? " {$tutelaDocumentos}" : '') . " EN ONEDRIVE: van adjuntos al mensaje del usuario (el escrito de tutela, autos del juzgado, anexos y el correo impreso). Son la fuente más completa y confiable — búscale la respuesta ahí primero (pretensiones, hechos, accionante, vinculados, órdenes, fechas, pruebas, etc.) y complementa con los datos de arriba. Si la respuesta está en un documento, di de cuál (por su nombre de archivo). Si no la encuentras ni en los documentos ni en los datos, dilo claramente."
+        : '') .
     "\n\nResponde la pregunta del usuario basándote ÚNICAMENTE en estos datos reales — nunca inventes números, nombres, fechas o casos que no estén acá. Si la pregunta se refiere a una tutela que no aparece en ninguno de los bloques de arriba, dilo claramente en vez de adivinar. Responde en español, de forma clara, breve y directa, como si le hablaras a un abogado colega. " .
     // 2026-09-25, pedido explícito del usuario: la respuesta se muestra como
     // texto plano (no interpreta markdown) Y se lee en voz alta con síntesis
     // de voz — con "**negrita**" salía el asterisco literal en pantalla y la
     // voz decía "asterisco, asterisco" a cada rato, cortando feo la lectura.
     "NUNCA uses formato markdown (nada de **negrita**, guiones de lista, numerales #, etc.) — escribe todo en texto plano corrido, con punto y aparte si hace falta, ya que esta respuesta también se lee en voz alta.\n\nFecha de hoy: " . date('Y-m-d');
+
+// Mensaje del usuario: primero los documentos (el ÚLTIMO lleva cache_control,
+// así de la 2ª pregunta en adelante sobre la misma tutela se reusan desde la
+// caché a ~10% del precio) y al final la pregunta, que cambia cada vez.
+$contenidoUsuario = [];
+foreach($adjuntos as $adj){
+    if(!is_array($adj)) continue;
+    $tipoAdj = strtolower(trim(explode(';', (string)($adj['tipo'] ?? ''))[0]));
+    $base64Adj = (string)($adj['base64'] ?? '');
+    $nombreAdj = (string)($adj['nombre'] ?? '');
+    if(!$base64Adj) continue;
+    $extAdj = strtolower(pathinfo($nombreAdj, PATHINFO_EXTENSION));
+    if($tipoAdj === '' || $tipoAdj === 'application/octet-stream'){
+        $porExt = ['pdf' => 'application/pdf', 'jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg', 'png' => 'image/png', 'gif' => 'image/gif', 'webp' => 'image/webp'];
+        if(isset($porExt[$extAdj])) $tipoAdj = $porExt[$extAdj];
+    }
+    if($tipoAdj === 'image/jpg') $tipoAdj = 'image/jpeg';
+    if($nombreAdj !== '') $contenidoUsuario[] = ['type' => 'text', 'text' => 'Documento: ' . $nombreAdj];
+    if(in_array($tipoAdj, ['image/jpeg', 'image/png', 'image/gif', 'image/webp'], true)){
+        $contenidoUsuario[] = ['type' => 'image', 'source' => ['type' => 'base64', 'media_type' => $tipoAdj, 'data' => $base64Adj]];
+    } elseif($tipoAdj === 'application/pdf'){
+        $contenidoUsuario[] = ['type' => 'document', 'source' => ['type' => 'base64', 'media_type' => $tipoAdj, 'data' => $base64Adj]];
+    }
+}
+if($contenidoUsuario){
+    $ultimo = count($contenidoUsuario) - 1;
+    $contenidoUsuario[$ultimo]['cache_control'] = ['type' => 'ephemeral'];
+}
+$contenidoUsuario[] = ['type' => 'text', 'text' => $pregunta];
 
 $body = [
     'model' => 'claude-sonnet-5',
@@ -152,7 +196,7 @@ $body = [
         ['type' => 'text', 'text' => $instrucciones, 'cache_control' => ['type' => 'ephemeral']],
     ],
     'messages' => [
-        ['role' => 'user', 'content' => $pregunta],
+        ['role' => 'user', 'content' => $contenidoUsuario],
     ],
 ];
 
@@ -171,7 +215,7 @@ for($intento = 1; $intento <= 3; $intento++){
     ]);
     curl_setopt($ch, CURLOPT_POSTFIELDS, $json);
     curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 15);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 60);
+    curl_setopt($ch, CURLOPT_TIMEOUT, $adjuntos ? 150 : 60); // con documentos Claude tarda más
     $respuesta = curl_exec($ch);
     $codigoHttp = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     $errorCurl = curl_error($ch);
