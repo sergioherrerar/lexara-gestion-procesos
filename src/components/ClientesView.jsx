@@ -1,6 +1,6 @@
 import { ICON_SVG } from '../config';
 import { procesosForCliente } from '../lib/graph';
-import IconButton from './IconButton';
+import IconButton, { IconTextButton } from './IconButton';
 import ColumnHeaderMenu from './ColumnHeaderMenu';
 import { useColumnFilters } from '../hooks/useColumnFilters';
 import { useColumnSort } from '../hooks/useColumnSort';
@@ -16,7 +16,7 @@ const COLUMNS = [
   {key:'acciones', label:'Acciones', filterable:false},
 ];
 
-export default function ClientesView({ clientes, procesos, searchQuery, onOpenCliente, onDeleteCliente, canWrite = true }){
+export default function ClientesView({ clientes, procesos, searchQuery, onOpenCliente, onDeleteCliente, onCreateCliente, canWrite = true }){
   const { filters, setFilter, clearFilters, rowMatches, hasActiveFilters } = useColumnFilters();
   const { sort, setSortKey, sortRows } = useColumnSort();
   const query = (searchQuery||"").trim().toLowerCase();
@@ -35,6 +35,7 @@ export default function ClientesView({ clientes, procesos, searchQuery, onOpenCl
           <h1>Clientes</h1>
           <p>{rows.length} de {clientes.length} clientes{hasActiveFilters && <> · <button type="button" className="clear-filters-link" onClick={clearFilters}>Limpiar filtros de columna</button></>}</p>
         </div>
+        {canWrite && onCreateCliente && <IconTextButton icon="add" variant="primary" onClick={onCreateCliente}>Nuevo cliente</IconTextButton>}
       </div>
       <div className="table-wrap">
         <table>

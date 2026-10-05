@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-10-06 (18)
+- **Clientes: botón "Nuevo cliente"** — reportado por el usuario ("no tengo cómo agregar un cliente nuevo"). La pantalla Clientes nunca tuvo botón de crear. Ahora hay un botón verde "Nuevo cliente" arriba a la derecha (para quien tiene permiso de escritura) que abre el mismo panel de cliente en blanco, con el botón "Crear cliente". Como en Facturas, el registro NO se crea en SharePoint hasta darle "Crear cliente" (cancelar no deja nada). Validaciones: la razón social es obligatoria y no deja crear un cliente cuyo nombre ya existe (se compara sin mayúsculas ni tildes), porque el Cliente de Procesos, Facturas y Tutelas se busca por razón social y dos iguales se confundirían. Los campos que se dejen vacíos no se envían a SharePoint (una columna de elección vacía hace que rechace el registro). Probado en modo demo (abrir, validar, crear y que aparezca en la lista); la creación real en SharePoint usa la misma función que ya existía y conviene probarla con un cliente real.
+
 ## 2026-10-06 (17)
 - **Una pestaña que quedó abierta ya no se rompe al publicar una versión nueva** — reportado por el usuario con captura: "Algo salió mal — Failed to fetch dynamically imported module: …/InformesView-DBIU30YE.js". Cada publicación cambia los nombres de los archivos del portal; una pestaña abierta desde antes pedía los nombres viejos (ya no existen) al abrir Informes, Administración o "Leer correo" y mostraba el error. El sitio publicado estaba bien (verificado: los archivos nuevos cargan y el viejo ya no existe) — era solo la pestaña vieja. Ahora, si falla esa carga, la página se recarga sola UNA vez y trae la versión nueva; si aun así vuelve a fallar, muestra el error normal. Mientras tanto, a quien le salga ese mensaje: Ctrl+F5 lo arregla.
 

@@ -27,6 +27,8 @@ export default function ClienteDrawer({ cliente, liveMode, onClose, onSave, onDe
   useEscapeToClose(!!cliente, onClose);
 
   if(!cliente || !form) return null;
+  // Borrador de "Nuevo cliente": todavía no existe en SharePoint (no tiene id).
+  const esNuevo = cliente.id == null;
 
   return (
     <>
@@ -37,7 +39,7 @@ export default function ClienteDrawer({ cliente, liveMode, onClose, onSave, onDe
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
           </button>
           <div className="eyebrow">CLIENTE</div>
-          <h2>{cliente.RazonSocial || "Sin nombre"}</h2>
+          <h2>{esNuevo ? "Nuevo cliente" : (cliente.RazonSocial || "Sin nombre")}</h2>
         </div>
         <div className="drawer-body">
           <div className="field-section">
@@ -55,11 +57,11 @@ export default function ClienteDrawer({ cliente, liveMode, onClose, onSave, onDe
           {canWrite ? (
             <>
               <button className="btn-primary" onClick={() => onSave(form)} disabled={saving}>
-                {saving && <span className="btn-spinner" />}{saving ? "Guardando…" : "Guardar cambios"}
+                {saving && <span className="btn-spinner" />}{saving ? "Guardando…" : (esNuevo ? "Crear cliente" : "Guardar cambios")}
               </button>
-              <IconTextButton icon="delete" variant="secondary" onClick={() => onDelete(cliente.id)} disabled={saving}>Eliminar cliente</IconTextButton>
+              {!esNuevo && <IconTextButton icon="delete" variant="secondary" onClick={() => onDelete(cliente.id)} disabled={saving}>Eliminar cliente</IconTextButton>}
               <button className="btn-secondary" onClick={onClose} disabled={saving}>Cancelar</button>
-              <span className="save-hint">{liveMode ? "Los cambios se guardan en SharePoint." : "Modo demo — los cambios no se guardan."}</span>
+              <span className="save-hint">{liveMode ? (esNuevo ? "El cliente se crea en SharePoint al darle Crear cliente." : "Los cambios se guardan en SharePoint.") : "Modo demo — los cambios no se guardan."}</span>
             </>
           ) : (
             <>

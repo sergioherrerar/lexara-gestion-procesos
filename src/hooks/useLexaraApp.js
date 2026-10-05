@@ -146,6 +146,9 @@ export function useLexaraApp(){
   // de Tipo de Acción/Tipo de Proceso/Despacho, ver graph.js.
   const [tiposAccion, setTiposAccion] = useState([]);
   const [activeClienteId, setActiveClienteId] = useState(null);
+  // "Nuevo cliente" solo abre un borrador local — no toca SharePoint hasta que
+  // se da "Crear cliente" (mismo criterio que draftFactura).
+  const [draftCliente, setDraftCliente] = useState(null);
   const [activeFacturaId, setActiveFacturaId] = useState(null);
   const [draftFactura, setDraftFactura] = useState(null);
   const [autoPrintFacturaId, setAutoPrintFacturaId] = useState(null);
@@ -579,7 +582,7 @@ export function useLexaraApp(){
   }
 
   const activeProceso = draftProceso || procesos.find(p => p.id===activeProcesoId) || null;
-  const activeCliente = clientes.find(c => c.id===activeClienteId) || null;
+  const activeCliente = draftCliente || clientes.find(c => c.id===activeClienteId) || null;
   const activeFactura = draftFactura || facturas.find(f => f.id===activeFacturaId) || null;
   const activeOrdenCompra = draftOrdenCompra || ordenesCompra.find(o => o.id===activeOrdenCompraId) || null;
   const activeColaborador = draftColaborador || colaboradores.find(c => c.id===activeColaboradorId) || null;
@@ -784,10 +787,30 @@ export function useLexaraApp(){
     return { actualizados, sinCoincidencia, fallidos };
   }
 
-  function openCliente(id){ setActiveClienteId(id); }
-  function closeClienteDrawer(){ setActiveClienteId(null); }
+  function openCliente(id){ setDraftCliente(null); setActiveClienteId(id); }
+  function closeClienteDrawer(){ setDraftCliente(null); setActiveClienteId(null); }
+  // Pedido explícito del usuario 2026-10-05: "no tengo cómo agregar un cliente
+  // nuevo" — la pantalla Clientes no tenía botón de crear. Abre el panel en
+  // blanco; el registro solo se crea en SharePoint al darle "Crear cliente".
+  function newCliente(){ setActiveClienteId(null); setDraftCliente({}); }
   async function saveCliente(updates){
     if(!activeCliente) return;
+    if(draftCliente){
+      const razon = (updates.RazonSocial || '').trim();
+      if(!razon){ notify('Escribe la razón social del cliente.', 'error'); return; }
+      // El Cliente de Procesos/Facturas/Tutelas se busca por razón social
+      // (columna de Búsqueda): dos clientes con el mismo nombre se confundirían.
+      if(clientes.some(c => Graph.normalize(c.RazonSocial) === Graph.normalize(razon))){
+        notify('Ya existe un cliente con esa razón social. Búscalo en la lista para editarlo.', 'error');
+        return;
+      }
+      // Los campos vacíos no se envían (una columna de elección vacía hace que SharePoint rechace el registro).
+      const campos = {};
+      Object.entries(updates).forEach(([k, v]) => { const t = String(v ?? '').trim(); if(t) campos[k] = t; });
+      const creado = await createCliente(campos);
+      if(creado) setDraftCliente(null);
+      return;
+    }
     setClientes(prev => prev.map(c => c.id===activeClienteId ? {...c, ...updates} : c));
     if(liveMode){
       setSaving(true);
@@ -1951,7 +1974,7 @@ export function useLexaraApp(){
     currentFilter, setFilter: setCurrentFilter, searchQuery, setSearchQuery: setSearchQuery,
     onSearch: setSearchQuery,
     activeProceso, openProceso, newProceso, closeDrawer, saveProceso, procesoViewOnly, rememberReturnToProceso, vincularLinksProcesosMasivo, guardarEstadoRapidoProceso,
-    activeCliente, openCliente, closeClienteDrawer, saveCliente, deleteCliente, createCliente, updateCliente,
+    activeCliente, openCliente, closeClienteDrawer, saveCliente, deleteCliente, createCliente, updateCliente, newCliente,
     activeFactura, openFactura, newFactura, duplicateFactura, abrirBorradorFactura, closeFacturaDrawer, saveFactura,
     printFactura, autoPrintFacturaId, clearAutoPrint, createFacturaFromOrdenCompra, newFacturaFromProceso,
     activeOrdenCompra, openOrdenCompra, newOrdenCompra, duplicateOrdenCompra, newOrdenCompraFromProceso, abrirBorradorOrdenCompra, closeOrdenCompraDrawer, saveOrdenCompra,

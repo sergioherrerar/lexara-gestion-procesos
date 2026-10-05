@@ -180,6 +180,7 @@ export default function App(){
             searchQuery={app.searchQuery}
             onOpenCliente={app.openCliente}
             onDeleteCliente={app.deleteCliente}
+            onCreateCliente={app.newCliente}
             canWrite={app.canWrite}
           />
         )}
