@@ -175,7 +175,7 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
       // queda en OneDrive y lo que usa "Pregúntame" sea siempre lo mismo.
       const avisosVencimiento = [];
       extraido.registros = extraido.registros.map(r => {
-        const { registro, avisos } = aplicarVencimientoHabil(r, fechaLocalISO(mensaje.fecha));
+        const { registro, avisos } = aplicarVencimientoHabil(r, fechaLocalISO(mensaje.fecha), mensaje.fecha);
         avisos.forEach(a => { if(!avisosVencimiento.includes(a)) avisosVencimiento.push(a); });
         return registro;
       });
@@ -236,7 +236,7 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
     const mensajeOrigen = mensajes.find(m => m.id === resultado.mensajeId);
     // Idempotente: cubre también lecturas viejas guardadas en OneDrive, que se
     // hicieron antes de que el vencimiento se calculara con días hábiles.
-    const vencimiento = aplicarVencimientoHabil(registro, mensajeOrigen ? fechaLocalISO(mensajeOrigen.fecha) : '');
+    const vencimiento = aplicarVencimientoHabil(registro, mensajeOrigen ? fechaLocalISO(mensajeOrigen.fecha) : '', mensajeOrigen?.fecha);
     const { campos, avisos } = normalizarBorradorTutela(vencimiento.registro, {
       temas,
       numeroAsunto: mensajeOrigen ? numeroTutelaDeAsunto(mensajeOrigen.asunto) : null,
