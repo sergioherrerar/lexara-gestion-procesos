@@ -1,3 +1,5 @@
+import { seleccionarAdjuntosParaLexIA } from './adjuntosLexIA';
+
 // Estado de MSAL vive fuera de React (no es UI, solo la sesión del SDK).
 let msalInstance = null;
 let account = null;
@@ -563,23 +565,32 @@ export async function extraerTutelaConLexIA(correoBuzon, mensajeId, tutelas, rob
     .sort((a,b) => (Number(b.NoTutela)||0) - (Number(a.NoTutela)||0))
     .slice(0, 150)
     .map(t => ({ noTutela: t.NoTutela, temaActual: t.Tema, correccion: stripHtml(t.CorreccionIA) }));
+  // Solo se mandan los adjuntos que caben en un presupuesto de páginas (ver
+  // adjuntosLexIA.js) — un anexo larguísimo hacía pasar el prompt del límite
+  // de 1.000.000 de tokens de la API (error real 2026-10-06) y cada página
+  // se cobra. Los omitidos se devuelven para avisarle al usuario.
+  const { seleccionados, omitidos } = await seleccionarAdjuntosParaLexIA(completo.adjuntos);
   const res = await fetch(robotUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       asunto: completo.asunto,
       cuerpo: completo.cuerpo,
-      adjuntos: completo.adjuntos.map(a => ({ nombre: a.nombre, tipo: a.tipo, base64: a.base64 })),
+      adjuntos: seleccionados.map(a => ({ nombre: a.nombre, tipo: a.tipo, base64: a.base64 })),
       correcciones,
     }),
   });
   let data;
   try{ data = await res.json(); }catch{ data = null; }
   if(!res.ok || !data || data.error){
-    throw new Error((data && data.error) || `LexIA respondió con error (código ${res.status}).`);
+    const msg = (data && data.error) || `LexIA respondió con error (código ${res.status}).`;
+    if(/prompt is too long/i.test(msg)){
+      throw new Error('Los adjuntos de este correo son demasiado largos para que LexIA los lea. Usa "Extraer adjuntos" para guardarlos en OneDrive y llena los datos a mano.');
+    }
+    throw new Error(msg);
   }
   const registros = Array.isArray(data.registros) ? data.registros : [data.campos || {}];
-  return { asunto: completo.asunto, cuerpo: completo.cuerpo, registros: registros.map(r => ({ ...r, _creado: false })) };
+  return { asunto: completo.asunto, cuerpo: completo.cuerpo, registros: registros.map(r => ({ ...r, _creado: false })), omitidos };
 }
 
 // ============================================================

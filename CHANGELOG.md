@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-10-06 (1)
+- **"Extraer con LexIA" ya no se cae con el error "prompt is too long: 1055993 tokens > 1000000"** — reportado por el usuario. Antes se mandaban TODOS los PDF/imágenes del correo, y un solo anexo largo (p.ej. una historia clínica de cientos de folios) pasaba el límite de la API; además cada página se cobra. Ahora se cuentan las páginas de cada PDF y se manda primero lo que por su nombre parece el documento principal (escrito de tutela, auto, oficio…), con un tope de 60 páginas por PDF y 80 en total. Lo que no cabe se omite y sale un aviso con los nombres y el motivo; con "Extraer adjuntos" siguen guardándose completos en OneDrive. Si aun así la API respondiera "prompt too long", sale un mensaje claro en español. Solo cambia el portal (no hay que volver a subir nada del robot a cPanel). Ahorra saldo de la API de paso.
+
 ## 2026-10-05 (4)
 - **Órdenes Colmédica / Valores Entidad: arregla el valor en $0 y la diferencia entre el Excel y la Orden de compra** — reportado por el usuario con capturas (una tutela CORRECION de Aliansalud salía en $0,00 y el subtotal de la Orden no coincidía con el total del Excel).
   - El cruce con "Valores Entidad" (Entidad + Cliente + Tipo) era una igualdad exacta letra por letra: cualquier diferencia mínima (espacio de más, mayúsculas, tilde, "CORRECION" vs "CORRECCION") daba $0 sin avisar. Ahora ignora mayúsculas/tildes/espacios/puntuación y tolera letras dobles en el Tipo. Aplica en TODOS los informes de Tutelas (por Abogado, por Cliente, Órdenes Colmédica).

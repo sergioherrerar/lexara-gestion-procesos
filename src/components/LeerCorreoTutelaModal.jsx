@@ -169,6 +169,9 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
       const extraido = await extraerTutelaConLexIA(correoBuzon, mensaje.id, tutelas, robotUrl, onedriveCarpetaUrl);
       setResultado({ mensajeId: mensaje.id, registros: extraido.registros });
       setCorreoActual({ asunto: extraido.asunto, cuerpo: extraido.cuerpo });
+      if(extraido.omitidos?.length){
+        notify?.(`LexIA no leyó ${extraido.omitidos.length} adjunto${extraido.omitidos.length === 1 ? '' : 's'} por ser demasiado largo${extraido.omitidos.length === 1 ? '' : 's'}: ${extraido.omitidos.map(o => `${o.nombre} (${o.motivo})`).join(', ')}. Revisa los datos con cuidado — con "Extraer adjuntos" quedan guardados completos en OneDrive.`, 'info');
+      }
       if(onedriveCarpetaUrl && numeroTutela){
         guardarLecturaLexIAEnOneDrive(onedriveCarpetaUrl, numeroTutela, mensaje, extraido.asunto, extraido.cuerpo, extraido.registros)
           .catch(err => {
