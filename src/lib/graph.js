@@ -1396,6 +1396,12 @@ export function allRequiredMapped(lists){
 
 /* ---------------- Helpers de formato (sin dependencia de Graph) ---------------- */
 const MESES_CORTOS = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+// Fecha en formato dd/mm/aaaa (pedido explícito del usuario 2026-10-05 para "Fecha Estado" de Procesos).
+// Solo para MOSTRAR: el valor de la columna sigue siendo ISO para que el orden y los filtros funcionen.
+export function fmtFechaDMA(valor){
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(valor || ""));
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : "";
+}
 export function fmtDate(dateStr){
   if(!dateStr) return "—";
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(dateStr);

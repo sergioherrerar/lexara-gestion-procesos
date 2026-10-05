@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ICON_SVG } from '../config';
-import { stripHtml, estadoComoTexto, estadoBadgeClass, ultimoWordEnCarpeta, mensajeError } from '../lib/graph';
+import { stripHtml, fmtFechaDMA, estadoComoTexto, estadoBadgeClass, ultimoWordEnCarpeta, mensajeError } from '../lib/graph';
 import IconButton, { IconTextButton } from './IconButton';
 import ColumnHeaderMenu from './ColumnHeaderMenu';
 import { useColumnFilters } from '../hooks/useColumnFilters';
@@ -234,7 +234,7 @@ export default function ProcesosView({ procesos, currentFilter, setFilter, searc
                         {canWrite && <IconButton icon="edit" variant="edit" label="Editar Estado y Fecha Estado" onClick={e => { e.stopPropagation(); iniciarEdicionEstado(p); }} />}
                       </div>
                     </td>
-                    <td>{soloFechaISO(p.FechaUltimoEstado) || "—"}</td>
+                    <td>{fmtFechaDMA(p.FechaUltimoEstado) || "—"}</td>
                   </>
                 )}
                 <td><span className="obs-truncate">{stripHtml(p.Observaciones) || "—"}</span></td>
