@@ -35,27 +35,40 @@ export async function generarQRDataUrl(texto, opts = {}){
   if(conLogo){
     const ctx = canvas.getContext('2d');
     const logoImg = await cargarImagen(miniLogo);
-    const logoSize = width * logoScale;
-    const x = (width - logoSize) / 2, y = (width - logoSize) / 2;
+    // El archivo "Mini verde oscuro.png" es una imagen apaisada (16:9) con la
+    // "X" de Lexara en el centro y mucho margen transparente. Antes se
+    // estiraba ENTERA a un cuadrado, así que la X salía angosta/deformada;
+    // ahora se recorta al área de la X (mismas proporciones que la imagen
+    // original: 250,55 de 300×340 sobre 800×450) y se dibuja sin deformar.
+    const sx = logoImg.naturalWidth * (250 / 800), sy = logoImg.naturalHeight * (55 / 450);
+    const sw = logoImg.naturalWidth * (300 / 800), sh = logoImg.naturalHeight * (340 / 450);
+    const dh = width * logoScale;
+    const dw = dh * (sw / sh);
+    const x = (width - dw) / 2, y = (width - dh) / 2;
     // Fondo blanco (con esquinas redondeadas) detrás del logo, para que no
     // se mezcle con los módulos oscuros del QR justo alrededor.
-    const pad = logoSize * 0.16;
+    const pad = dh * 0.16;
     ctx.fillStyle = '#ffffff';
     if(ctx.roundRect){
       ctx.beginPath();
-      ctx.roundRect(x - pad, y - pad, logoSize + pad*2, logoSize + pad*2, 8);
+      ctx.roundRect(x - pad, y - pad, dw + pad*2, dh + pad*2, width * 8 / 256);
       ctx.fill();
     } else {
-      ctx.fillRect(x - pad, y - pad, logoSize + pad*2, logoSize + pad*2);
+      ctx.fillRect(x - pad, y - pad, dw + pad*2, dh + pad*2);
     }
-    ctx.drawImage(logoImg, x, y, logoSize, logoSize);
+    ctx.drawImage(logoImg, sx, sy, sw, sh, x, y, dw, dh);
   }
   return canvas.toDataURL('image/png');
 }
 
-// Link real de redes sociales de MD Abogados (Linktree) — confirmado por el
-// usuario 2026-09-15. Un solo lugar para cambiarlo si algún día cambia.
-export const LINK_REDES_SOCIALES = 'https://linktr.ee/LexaraAbogados';
+// Link de redes sociales y contacto de MD Abogados — un solo lugar para
+// cambiarlo si algún día cambia. Era el Linktree
+// (https://linktr.ee/LexaraAbogados, confirmado por el usuario 2026-09-15); desde
+// 2026-10-05 (pedido explícito del usuario) es la página de enlaces propia en
+// el cPanel (carpeta links-cpanel/ del repo, se sube a public_html/links/). Lo
+// usan los QR "Síguenos" de Facturas, Órdenes de compra y la Certificación
+// laboral.
+export const LINK_REDES_SOCIALES = 'https://www.lexaraabogados.com/links/';
 
 // El QR de redes sociales es siempre el mismo — se genera una sola vez y se
 // reutiliza (Facturas y Órdenes de compra compartían el mismo código copiado

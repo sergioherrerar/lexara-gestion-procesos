@@ -173,7 +173,7 @@ export async function generarCertificacionColaboradorPDF(colaborador){
   //   de verificación, el QR trae los datos directo adentro (opción 1 que
   //   confirmó el usuario): quien lo escanea puede comparar a simple vista
   //   los datos del papel contra los del código, sin necesitar internet.
-  // - "Redes sociales": el link real de Linktree de la firma.
+  // - "Redes sociales": la página de enlaces de Lexara (ver LINK_REDES_SOCIALES en qr.js).
   const idCod = idCifrado(colaborador.id);
   const textoQRSeguridad = [
     'MD ABOGADOS SAS - Verificación de certificación',

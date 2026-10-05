@@ -20,6 +20,8 @@
 // dorada abajo salen de la MISMA imagen/inserción, sin recortes ni cálculos
 // de alto — más simple y más fiel al PDF que el primer intento.
 import membreteLexara from '../assets/Membrete Lexara.png';
+import { obtenerQrRedesDataUrl } from './qr';
+import { QR_MEMBRETE } from './informesPDF';
 
 // Tamaño de página A4 (210×297mm) a 96dpi — tamaño por defecto de `docx`
 // cuando no se fija `pgSz` explícito (confirmado inspeccionando el .docx
@@ -44,8 +46,23 @@ async function bytesDelMembrete(){
 // página — listo para `sections[0].headers.default`. Recibe las clases de
 // `docx` ya importadas por quien llama, para no repetir el import dinámico
 // de la librería en cada archivo.
+// QR "Síguenos" de la franja dorada, con las mismas medidas que en los PDF
+// (QR_MEMBRETE, en mm). null si no se pudo generar — el Word sale igual sin él.
+async function bytesDelQr(){
+  try{
+    const url = await obtenerQrRedesDataUrl();
+    const res = await fetch(url);
+    return new Uint8Array(await res.arrayBuffer());
+  }catch(err){
+    console.error('No se pudo generar el QR del membrete:', err);
+    return null;
+  }
+}
+const MM_A_EMU = 36000;
+const MM_A_PX = 96 / 25.4;
+
 export async function crearHeaderMembreteWord({ Header, ImageRun, Paragraph, HorizontalPositionAlign, HorizontalPositionRelativeFrom, VerticalPositionAlign, VerticalPositionRelativeFrom, TextWrappingType }){
-  const data = await bytesDelMembrete();
+  const [data, qrData] = await Promise.all([bytesDelMembrete(), bytesDelQr()]);
   const header = new Header({ children: [
     new Paragraph({ children: [
       new ImageRun({
@@ -59,6 +76,20 @@ export async function crearHeaderMembreteWord({ Header, ImageRun, Paragraph, Hor
           wrap: { type: TextWrappingType.NONE },
         },
       }),
+      // zIndex alto: por defecto Word apila las imágenes flotantes por su alto,
+      // y el membrete (hoja completa) taparía al QR, que es chico.
+      ...(qrData ? [new ImageRun({
+        type: 'png',
+        data: qrData,
+        transformation: { width: Math.round(QR_MEMBRETE.lado * MM_A_PX), height: Math.round(QR_MEMBRETE.lado * MM_A_PX) },
+        floating: {
+          horizontalPosition: { relative: HorizontalPositionRelativeFrom.PAGE, offset: Math.round(QR_MEMBRETE.x * MM_A_EMU) },
+          verticalPosition: { relative: VerticalPositionRelativeFrom.PAGE, offset: Math.round(QR_MEMBRETE.y * MM_A_EMU) },
+          behindDocument: true,
+          zIndex: 50000000,
+          wrap: { type: TextWrappingType.NONE },
+        },
+      })] : []),
     ]}),
   ]});
   return header;

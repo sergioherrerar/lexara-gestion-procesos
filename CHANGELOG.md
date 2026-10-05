@@ -2,6 +2,14 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-10-06 (16)
+- **QR "Síguenos" en la franja dorada del membrete de TODOS los PDF y Word** — pedido explícito del usuario (señaló el hueco libre a la derecha del teléfono en un informe real). El QR de la página de enlaces (www.lexaraabogados.com/links/) queda de 18 mm en el extremo derecho de la franja dorada, en cada página. PDF: Informes por Entidad (carta), Tutelas notificadas, Tutelas por abogado, ficha de proceso, certificación laboral, vacaciones, horas extras y liquidación de intereses (todos comparten el mismo membrete). Word: Impulso Procesal y el análisis del Dashboard. Si por algún motivo no se puede generar el QR, el documento sale igual sin él. Verificado en un PDF de prueba (el QR cae justo donde se marcó, dentro de la franja, sin tapar el teléfono ni el "Página X de Y") y en el XML del Word (posición y orden de capas correctos; el QR va por encima del membrete). Nota: la certificación laboral ya traía al final su propio QR "Síguenos"; se dejó como estaba. Las hojas de Facturas y Órdenes de compra ya tenían su QR en el pie y no cambian.
+
+## 2026-10-06 (15)
+- **QR "Síguenos" ahora apunta a la página de enlaces propia (www.lexaraabogados.com/links/) en vez del Linktree** — pedido explícito del usuario. Cambia en un solo lugar (`LINK_REDES_SOCIALES` en `lib/qr.js`) y aplica a los PDF de Facturas, Órdenes de compra y Certificación laboral. El QR de "Verificación" de la certificación no cambia (lleva los datos adentro). Los PDF ya generados siguen con el QR del Linktree, que sigue funcionando. **La página debe estar subida a cPanel (`public_html/links/`) ANTES de publicar esto, o los QR nuevos llevarán a una página no encontrada.**
+- **Dashboard: panel "Código QR de enlaces de Lexara"** con vista previa del QR, botón "Descargar QR (PNG)" (1200×1200 px, listo para imprimir) y "Copiar enlace".
+- **Corrección: el logo del centro del QR salía deformado.** La imagen de la "X" de Lexara es apaisada con mucho margen y se estiraba entera a un cuadrado (X angosta). Ahora se recorta al área de la X y se dibuja con sus proporciones reales, en todos los QR (facturas, órdenes, certificación, Dashboard). Verificado que sigue leyéndose y abre la dirección correcta.
+
 ## 2026-10-06 (14)
 - **"Leer correo de Tutelas": botón de carpeta para abrir en OneDrive todas las carpetas de tutelas** — pedido explícito del usuario. Un botón pequeño (ícono de carpeta) a la derecha de "Buscar por No. Tutela" abre en una pestaña nueva la carpeta de OneDrive donde quedan todas las tutelas ("N Tutela", cada una con su lectura de LexIA y sus adjuntos originales) para consultar los adjuntos. Nuevo ícono de carpeta en los botones.
 

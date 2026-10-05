@@ -11,6 +11,7 @@
 // usuario: "el encabezado sea igual...como el de facturas".
 // Ver [[project_informes_modulo]].
 import membreteLexara from '../assets/Membrete Lexara.png';
+import { obtenerQrRedesDataUrl } from './qr';
 // Bloque de cierre completo ("Cordial saludo," + firma real + nombre/CC/TP
 // impresos, ya armado como una sola pieza) — pedido explícito del usuario
 // 2026-08-22, primero solo en la certificación de colaboradores
@@ -92,6 +93,13 @@ export const MARGEN = 18;
 // el arte del membrete deja libre hasta ~277mm antes de la franja dorada,
 // así que CONTENIDO_Y_MAXIMO se corrió de 255 a 268 para recuperar ~13mm de
 // espacio útil real (quedando aun así con margen de sobra antes del dorado).
+// QR "Síguenos" en la franja dorada del membrete (pedido explícito del
+// usuario 2026-10-05: "actualizar todos los formatos de Word y PDF colocando el
+// QR") — en el hueco libre a la derecha del teléfono, en todas las páginas de
+// todos los PDF (y, con las mismas medidas, de los Word: ver membreteWord.js).
+// Medidas en mm sobre la hoja A4: la franja dorada va de ~274 a 297 mm de alto
+// y el texto de contacto termina cerca de los 173 mm de ancho.
+export const QR_MEMBRETE = { x: 181, y: 276.5, lado: 18 };
 export const CONTENIDO_Y_INICIAL = 76;
 export const CONTENIDO_Y_MAXIMO = 268;
 
@@ -180,10 +188,12 @@ export const ANCHO_FIRMA_COMPLETA_MM = 78;
 // franja debajo del logo — mismo lugar/estilo que "SOLICITUD DE
 // FACTURACIÓN ELECTRÓNICA" en la hoja imprimible de Facturas.
 export async function prepararDocumentoPDF(tituloEncabezado = 'Reporte procesos judiciales'){
-  const [{ default: jsPDF }, { default: autoTable }, membreteDataUrl] = await Promise.all([
+  const [{ default: jsPDF }, { default: autoTable }, membreteDataUrl, qrDataUrl] = await Promise.all([
     import('jspdf'),
     import('jspdf-autotable'),
     membreteParaPDF(membreteLexara),
+    // Si no se puede generar el QR, el PDF sale igual sin él.
+    obtenerQrRedesDataUrl().catch(err => { console.error('No se pudo generar el QR del membrete:', err); return null; }),
   ]);
 
   // Protegido contra modificaciones (pedido explícito del usuario
@@ -269,6 +279,7 @@ export async function prepararDocumentoPDF(tituloEncabezado = 'Reporte procesos 
     // 48 procesos). Sin alias, jsPDF sigue sin inflar el peso del archivo
     // (mismo tamaño final que con alias) — deduplica por contenido igual.
     doc.addImage(membreteDataUrl, 'JPEG', 0, 0, pageWidth, pageHeight, undefined, 'MEDIUM');
+    if(qrDataUrl) doc.addImage(qrDataUrl, 'PNG', QR_MEMBRETE.x, QR_MEMBRETE.y, QR_MEMBRETE.lado, QR_MEMBRETE.lado);
     // Centrado (pedido explícito del usuario 2026-08-22, visto en la
     // certificación pero aplica a este encabezado COMPARTIDO por todos los
     // PDF de Informes) — antes alineado a la izquierda contra el margen.
