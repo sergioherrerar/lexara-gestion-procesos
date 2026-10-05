@@ -81,7 +81,7 @@ export default function FacturacionView({ facturas, clientes, procesos, searchQu
                   key={f.id}
                   onClick={() => onOpenFactura(f.id)}
                   role="button" tabIndex={0}
-                  onKeyDown={e => { if(e.key==='Enter' || e.key===' '){ e.preventDefault(); onOpenFactura(f.id); } }}
+                  onKeyDown={e => { if(e.target === e.currentTarget && (e.key==='Enter' || e.key===' ')){ e.preventDefault(); onOpenFactura(f.id); } }}
                 >
                   <td>{facturaNumero(f)}</td>
                   <td className="cliente">{cliente?.RazonSocial || "—"}</td>

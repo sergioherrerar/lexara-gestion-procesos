@@ -18,7 +18,12 @@ export function FieldCard({ label, full, children }){
 // hace perder el formato. Es "no controlado" (el HTML vive en el propio
 // contentEditable, no se vuelve a pintar en cada tecla) para no perder la
 // posición del cursor mientras se escribe.
-export function RichTextEditor({ value, onChange, readOnly }){
+// `alFinal` (Histórico del proceso): lo nuevo se agrega al FINAL de la bitácora,
+// pero el cuadro tiene alto máximo con scroll interno — con un Histórico largo
+// el usuario abría el proceso y no veía el cambio recién guardado (reportado
+// 2026-10-05). Con `alFinal` el cuadro se abre desplazado hasta las últimas
+// líneas y es más alto.
+export function RichTextEditor({ value, onChange, readOnly, alFinal }){
   const ref = useRef(null);
   const focusedRef = useRef(false);
 
@@ -26,7 +31,12 @@ export function RichTextEditor({ value, onChange, readOnly }){
     if(ref.current && !focusedRef.current && ref.current.innerHTML !== (value || "")){
       ref.current.innerHTML = value || "";
     }
-  }, [value]);
+    if(alFinal && ref.current && !focusedRef.current){
+      const el = ref.current;
+      el.scrollTop = el.scrollHeight;
+      requestAnimationFrame(() => { el.scrollTop = el.scrollHeight; });
+    }
+  }, [value, alFinal]);
 
   function exec(cmd, arg){
     if(readOnly) return;
@@ -47,7 +57,7 @@ export function RichTextEditor({ value, onChange, readOnly }){
       )}
       <div
         ref={ref}
-        className="richtext-body"
+        className={"richtext-body" + (alFinal ? " richtext-body-largo" : "")}
         contentEditable={!readOnly}
         suppressContentEditableWarning
         onFocus={() => { focusedRef.current = true; }}

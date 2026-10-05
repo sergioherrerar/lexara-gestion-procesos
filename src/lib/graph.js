@@ -1534,6 +1534,83 @@ export function htmlHistoricoDesdeEstado(estadoAnterior, fechaUltimoEstado){
     return `<div>${renglon.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}</div>`;
   }).join("");
 }
+// Histórico "al momento de guardar" (2026-10-05, pedido explícito del usuario:
+// "debe ser al instante, al momento de guardar; cuando se borre el Estado no
+// se debe borrar del Histórico, solo añadir nuevas líneas"). Antes, al cambiar
+// el Estado solo se archivaba el texto ANTERIOR (lo nuevo no aparecía hasta el
+// siguiente cambio). Ahora, al guardar, se agregan al FINAL del Histórico las
+// actuaciones (un renglón por fecha) del Estado anterior que todavía no estén
+// ahí y las del Estado NUEVO, sin repetir las que ya existen y SIN borrar ni
+// tocar nada de lo que ya tiene el Histórico — si el Estado se deja vacío, el
+// Histórico queda igual. Respeta los saltos de línea que se escriban en Estado
+// y parte también una fecha que quedó pegada al texto anterior ("3:00PM05-10-2026").
+// Texto del Estado CONSERVANDO sus saltos de línea (stripHtml los junta en un solo renglón y las
+// actuaciones quedaban pegadas: "…garantía. 05-10-2026 prueba…").
+export function estadoComoTexto(estado){
+  const crudo = String(estado || "");
+  return /<[a-z!/]/i.test(crudo) ? cuerpoCorreoComoTexto(crudo) : crudo.replace(/\r\n?/g, "\n");
+}
+// Si `nuevo` es `anterior` + algo más al final (lo más común: se escribe una actuación debajo de
+// las que ya había), devuelve solo ese "algo más"; si no, null. Ignora diferencias de espacios/saltos.
+function restoSiEmpiezaIgual(nuevo, anterior){
+  const n = String(nuevo || ""), a = String(anterior || "");
+  let i = 0, j = 0;
+  while(j < a.length){
+    if(/\s/.test(a[j])){ j++; continue; }
+    while(i < n.length && /\s/.test(n[i])) i++;
+    if(i >= n.length || n[i] !== a[j]) return null;
+    i++; j++;
+  }
+  return n.slice(i).trim();
+}
+function renglonesDeEstado(estado, fechaUltimoEstado){
+  const crudo = String(estado || "");
+  if(!crudo.trim()) return [];
+  const texto = estadoComoTexto(crudo);
+  const segmentos = texto.split(/\n+/).map(s => s.replace(/[ \t]+/g, " ").trim()).filter(Boolean);
+  const CONECTORES = /^(el|del|al|de|para|desde|hasta|fecha|día|dia|y|a|con|corte)$/i;
+  const reFecha = /(?<![\d/-])(\d{1,2}-\d{1,2}-\d{4})(?=\s+[A-Za-zÁÉÍÓÚÑáéíóúñ])/g;
+  const iso = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(fechaUltimoEstado || ""));
+  const prefijo = iso ? `${iso[3]}-${iso[2]}-${iso[1]}` : "";
+  const renglones = [];
+  segmentos.forEach(seg => {
+    const cortes = [0];
+    let m;
+    reFecha.lastIndex = 0;
+    while((m = reFecha.exec(seg))){
+      if(m.index === 0) continue;
+      const previo = seg.slice(0, m.index);
+      const pegada = /[A-Za-zÁÉÍÓÚÑáéíóúñ]$/.test(previo);
+      const abreConMayuscula = /^\d{1,2}-\d{1,2}-\d{4}\s+[A-ZÁÉÍÓÚÑ]/.test(seg.slice(m.index));
+      const palabraPrevia = (previo.trim().split(" ").pop() || "").replace(/[.,;:]+$/, "");
+      if(pegada || (abreConMayuscula && !CONECTORES.test(palabraPrevia))) cortes.push(m.index);
+    }
+    cortes.forEach((inicio, i) => {
+      let renglon = seg.slice(inicio, i + 1 < cortes.length ? cortes[i + 1] : seg.length).trim();
+      if(!renglon) return;
+      if(!renglones.length && prefijo && !/^\d{1,2}-\d{1,2}-\d{4}\b/.test(renglon)) renglon = `${prefijo} ${renglon}`;
+      renglones.push(renglon);
+    });
+  });
+  return renglones;
+}
+export function htmlHistoricoNuevasLineas(historicoActual, estadoAnterior, fechaAnterior, estadoNuevo, fechaNueva){
+  const clave = t => normalize(t).replace(/\s+/g, " ").trim();
+  const existente = clave(stripHtml(historicoActual || ""));
+  const vistos = new Set();
+  const nuevas = [];
+  // Si el Estado nuevo es el anterior + texto agregado al final, solo el texto agregado cuenta como
+  // nuevo (así una actuación nueva escrita en minúscula o pegada no se junta con la anterior).
+  const resto = restoSiEmpiezaIgual(estadoComoTexto(estadoNuevo), estadoComoTexto(estadoAnterior));
+  const delNuevo = resto !== null ? renglonesDeEstado(resto, fechaNueva) : renglonesDeEstado(estadoNuevo, fechaNueva);
+  [...renglonesDeEstado(estadoAnterior, fechaAnterior), ...delNuevo].forEach(r => {
+    const k = clave(r);
+    if(!k || vistos.has(k) || existente.includes(k)) return;
+    vistos.add(k);
+    nuevas.push(r);
+  });
+  return nuevas.map(r => `<div>${r.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div>`).join("");
+}
 export function groupCount(list, keyFn){
   const map = new Map();
   list.forEach(item => {

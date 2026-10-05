@@ -712,7 +712,9 @@ export function useLexaraApp(){
     if(!proceso) return;
     const updates = { Estado, FechaUltimoEstado };
     if(Graph.stripHtml(proceso.Estado || "") !== Graph.stripHtml(Estado || "")){
-      const renglones = Graph.htmlHistoricoDesdeEstado(proceso.Estado, proceso.FechaUltimoEstado);
+      // Al guardar se agregan al final del Histórico las actuaciones del Estado anterior que
+      // aún no estén y las del nuevo (nunca se borra nada; ver htmlHistoricoNuevasLineas).
+      const renglones = Graph.htmlHistoricoNuevasLineas(proceso.Historico, proceso.Estado, proceso.FechaUltimoEstado, Estado, FechaUltimoEstado);
       if(renglones) updates.Historico = (proceso.Historico || "") + renglones;
     }
     if(liveMode){

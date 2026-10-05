@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ICON_SVG } from '../config';
-import { stripHtml, estadoBadgeClass, ultimoWordEnCarpeta, mensajeError } from '../lib/graph';
+import { stripHtml, estadoComoTexto, estadoBadgeClass, ultimoWordEnCarpeta, mensajeError } from '../lib/graph';
 import IconButton, { IconTextButton } from './IconButton';
 import ColumnHeaderMenu from './ColumnHeaderMenu';
 import { useColumnFilters } from '../hooks/useColumnFilters';
@@ -49,7 +49,7 @@ export default function ProcesosView({ procesos, currentFilter, setFilter, searc
   const [guardandoEstado, setGuardandoEstado] = useState(false);
   function iniciarEdicionEstado(p){
     setEditandoEstadoId(p.id);
-    setFormEstado({ Estado: stripHtml(p.Estado) || '', FechaUltimoEstado: soloFechaISO(p.FechaUltimoEstado) });
+    setFormEstado({ Estado: estadoComoTexto(p.Estado) || '', FechaUltimoEstado: soloFechaISO(p.FechaUltimoEstado) });
   }
   async function handleGuardarEstadoRapido(id){
     setGuardandoEstado(true);
@@ -203,7 +203,9 @@ export default function ProcesosView({ procesos, currentFilter, setFilter, searc
                 key={p.id}
                 onClick={() => onOpenProceso(p.id, {viewOnly: !canWrite})}
                 role="button" tabIndex={0}
-                onKeyDown={e => { if(e.key==='Enter' || e.key===' '){ e.preventDefault(); onOpenProceso(p.id, {viewOnly: !canWrite}); } }}
+                // Solo abre con teclado cuando el foco está en la fila misma (e.target === e.currentTarget): si está
+                // dentro de un cuadro de texto, botón o fecha (p. ej. el editor rápido de Estado), Espacio/Enter es de ESE control.
+                onKeyDown={e => { if(e.target === e.currentTarget && (e.key==='Enter' || e.key===' ')){ e.preventDefault(); onOpenProceso(p.id, {viewOnly: !canWrite}); } }}
               >
                 <td style={{textAlign:'right'}}>{p.id}</td>
                 <td className="radicado">{p.Radicado || "—"}</td>

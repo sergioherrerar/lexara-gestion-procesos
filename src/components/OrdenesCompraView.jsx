@@ -69,7 +69,7 @@ export default function OrdenesCompraView({ ordenesCompra, clientes, procesos, f
                   key={oc.id}
                   onClick={() => onOpenOrdenCompra(oc.id)}
                   role="button" tabIndex={0}
-                  onKeyDown={e => { if(e.key==='Enter' || e.key===' '){ e.preventDefault(); onOpenOrdenCompra(oc.id); } }}
+                  onKeyDown={e => { if(e.target === e.currentTarget && (e.key==='Enter' || e.key===' ')){ e.preventDefault(); onOpenOrdenCompra(oc.id); } }}
                 >
                   <td>{ordenCompraNumero(oc)}</td>
                   <td className="cliente">{cliente?.RazonSocial || "—"}</td>

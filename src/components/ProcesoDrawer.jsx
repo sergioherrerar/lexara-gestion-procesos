@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import {
-  stripHtml, estadoBadgeClass, findClienteByNombre,
+  stripHtml, estadoComoTexto, estadoBadgeClass, findClienteByNombre,
   facturasForProceso, ordenesCompraForProceso, formasPagoForProceso, desistimientosForProceso, audienciasForProceso, terminosForProceso, facturaNumero, ordenCompraNumero,
   computeFacturaTotals, computeOrdenCompraTotals, estadoFacturaBadgeClass,
   facturaForOrdenCompra, fmtMonto, fmtDate, fechaFromPartes, parseMonto,
@@ -8,7 +8,7 @@ import {
   generarLinksCarpetaProceso, generarLinkContratoProceso,
   rutaEntidadDeProceso, resolverDriveIdPrincipal, listarContenidoRuta, listarHijos,
   crearLinkCompartidoSoporte, crearLinkEdicionOrganizacion, mensajeError, abogadosDisponibles,
-  htmlHistoricoDesdeEstado,
+  htmlHistoricoNuevasLineas,
 } from '../lib/graph';
 import IconButton, { IconTextButton } from './IconButton';
 import { FieldCard, RichTextEditor } from './FormFields';
@@ -57,7 +57,7 @@ function RelatedList({ emptyMsg, rows, columns, onOpen, onPrint, onBuscarSiigo, 
               key={row.id}
               onClick={() => onOpen(row.id)}
               role="button" tabIndex={0}
-              onKeyDown={e => { if(e.key==='Enter' || e.key===' '){ e.preventDefault(); onOpen(row.id); } }}
+              onKeyDown={e => { if(e.target === e.currentTarget && (e.key==='Enter' || e.key===' ')){ e.preventDefault(); onOpen(row.id); } }}
             >
               {columns.map(c => <td key={c.key}>{c.render(row)}</td>)}
               <td style={{whiteSpace:'nowrap'}}>
@@ -247,7 +247,7 @@ function renderGenericField(key, type, form, setField, canWrite){
     if(pareceFecha) return <input type="date" value={soloFechaISO(raw)} onChange={e => setField(key, e.target.value)} readOnly={!canWrite} />;
     return <input type="text" value={raw} onChange={e => setField(key, e.target.value)} readOnly={!canWrite} />;
   }
-  if(type==='richtext') return <RichTextEditor value={form[key]} onChange={v => setField(key, v)} readOnly={!canWrite} />;
+  if(type==='richtext') return <RichTextEditor value={form[key]} onChange={v => setField(key, v)} readOnly={!canWrite} alFinal={key==='Historico'} />;
   if(type==='textarea') return <textarea value={form[key]} onChange={e => setField(key, e.target.value)} readOnly={!canWrite} />;
   if(type==='money') return <input type="text" className="input-money" value={form[key]} onChange={e => setField(key, e.target.value)} onBlur={e => setField(key, fmtMonto(parseMonto(e.target.value)))} readOnly={!canWrite} />;
   if(type==='select'){
@@ -442,7 +442,7 @@ export default function ProcesoDrawer({ proceso, clientes, colaboradores, factur
         // aplanado de guardarProceso), se toma el texto en vez de tronar
         // más adelante con "...trim is not a function".
         const seguro = raw && typeof raw === 'object' ? (raw.Url || raw.LookupValue || raw.Title || "") : raw;
-        initial[key] = key==='Estado' ? stripHtml(seguro)
+        initial[key] = key==='Estado' ? estadoComoTexto(seguro)
           : type==='money' ? (seguro ? fmtMonto(parseMonto(seguro)) : "")
           : type==='date' ? soloFechaISO(seguro)
           : (seguro || "");
@@ -485,18 +485,19 @@ export default function ProcesoDrawer({ proceso, clientes, colaboradores, factur
     ALL_SECTIONS.forEach(sec => sec.fields.forEach(([key,type]) => {
       const actual = type==='money' ? parseMonto(form[key]) : (form[key] ?? "");
       const original = type==='money' ? parseMonto(proceso[key])
-        : key==='Estado' ? stripHtml(proceso[key])
+        : key==='Estado' ? estadoComoTexto(proceso[key])
         : type==='date' ? soloFechaISO(proceso[key])
         : (proceso[key] ?? "");
       const cambio = type==='money' ? actual !== original : String(actual) !== String(original ?? "");
       if(cambio) payload[key] = type==='link' && actual ? { Url: actual, Description: actual } : actual;
     }));
     if(payload.Estado !== undefined){
-      const renglones = htmlHistoricoDesdeEstado(proceso.Estado, proceso.FechaUltimoEstado);
-      if(renglones){
-        const historicoActual = payload.Historico !== undefined ? payload.Historico : (form.Historico || "");
-        payload.Historico = historicoActual + renglones;
-      }
+      // Al guardar se AGREGAN al final del Histórico las actuaciones del Estado anterior que
+      // aún no estén y las del Estado nuevo; nunca se borra nada del Histórico (ni si el
+      // Estado se deja vacío). Ver htmlHistoricoNuevasLineas en graph.js.
+      const historicoActual = payload.Historico !== undefined ? payload.Historico : (form.Historico || "");
+      const renglones = htmlHistoricoNuevasLineas(historicoActual, proceso.Estado, proceso.FechaUltimoEstado, payload.Estado, form.FechaUltimoEstado ?? proceso.FechaUltimoEstado);
+      if(renglones) payload.Historico = historicoActual + renglones;
     }
     onSave(payload);
   }
