@@ -10,7 +10,8 @@
      (se confirmó), así que no lleva <link> de Google Fonts: se usa como
      fuente LOCAL del equipo (ver --font-display/--font-body en styles.css),
      con Segoe UI/system-ui como respaldo si el equipo no la tiene. -->
-<script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@2/lib/msal-browser.min.js"></script>
+<!-- defer: ya no bloquea el dibujado de la pantalla de inicio mientras baja MSAL; se ejecuta antes del módulo de la app (mismo orden del documento). -->
+<script defer src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@2/lib/msal-browser.min.js"></script>
 </head>
 <body>
 <div id="root"></div>

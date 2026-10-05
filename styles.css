@@ -599,6 +599,10 @@
      que .btn-primary, sin tocar el color de fondo (rojo/gris de alerta). */
   .badge-forma-boton{padding:11px 20px; border-radius:8px; font-size:13.5px;}
   .badge-rojo{background:#fbe4e2; color:#a3281c;}
+  /* Tipo de registro en Vencimientos > Todos (mismos colores que las tablas de "esta semana"). */
+  .badge-tipo-audiencia{background:#d7f2e4; color:var(--verde-oscuro);}
+  .badge-tipo-termino{background:#fdece0; color:#b3590a;}
+  .badge-tipo-pendiente{background:#eaf1fb; color:#2f5fa8;}
   .badge-truncate{display:inline-block; max-width:360px; white-space:normal; line-height:1.5; vertical-align:middle;}
 
   /* Mini calendario de Audiencias/Términos (2026-09-15, pedido explícito del
@@ -1314,6 +1318,10 @@
      y cada uno con su propia animación de entrada: los de éxito/info caen
      de arriba hacia abajo (igual que antes), los de error entran de
      izquierda a derecha, para que se distingan incluso sin leer el texto. */
+  /* Con un panel lateral abierto, el aviso se sube para no tapar los botones
+     Guardar/Cancelar del pie del panel (los avisos de error no se cierran solos,
+     así que antes podían dejar el botón escondido hasta cerrarlos). */
+  body:has(.drawer-foot) .toast{bottom:88px;}
   .toast-success{background:#d7f2e4; border-left-color:var(--verde-oscuro);}
   .toast-success .toast-msg{color:var(--verde-oscuro);}
   .toast-error{

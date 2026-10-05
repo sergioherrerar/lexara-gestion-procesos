@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { ICON_SVG } from '../config';
 import { clienteForOrdenCompra, procesoForOrdenCompra, ordenCompraNumero, computeOrdenCompraTotals, facturaForOrdenCompra, facturaNumero, fmtMonto, fmtDate, fechaFromPartes } from '../lib/graph';
 import IconButton, { IconTextButton } from './IconButton';
@@ -9,11 +10,12 @@ function fechaOrdenable(oc){
   return fechaFromPartes(oc.Dia, oc.Mes, oc.Anio) || oc.Fecha || "";
 }
 
-export default function OrdenesCompraView({ ordenesCompra, clientes, procesos, facturas, searchQuery, onOpenOrdenCompra, onCreateOrdenCompra, onDuplicateOrdenCompra, onPrintOrdenCompra, onCreateFacturaFromOrdenCompra }){
+export default function OrdenesCompraView({ ordenesCompra, clientes, procesos, facturas, searchQuery, onOpenOrdenCompra, onCreateOrdenCompra, onDuplicateOrdenCompra, onPrintOrdenCompra, printingId, onCreateFacturaFromOrdenCompra }){
   const { filters, setFilter, clearFilters, rowMatches, hasActiveFilters } = useColumnFilters();
   const { sort, setSortKey, sortRows } = useColumnSort();
 
-  const COLUMNS = [
+  // Memoizado (ver FacturacionView).
+  const COLUMNS = useMemo(() => [
     {key:'numero', label:'No. orden', value: oc => ordenCompraNumero(oc)},
     {key:'cliente', label:'Cliente', value: oc => clienteForOrdenCompra(clientes, oc)?.RazonSocial || ""},
     {key:'contrato', label:'Contrato', value: oc => oc.Contrato || ""},
@@ -24,7 +26,7 @@ export default function OrdenesCompraView({ ordenesCompra, clientes, procesos, f
     {key:'total', label:'Total', value: oc => fmtMonto(computeOrdenCompraTotals(oc).total)},
     {key:'factura', label:'Factura', value: oc => { const f = facturaForOrdenCompra(facturas, oc); return f ? facturaNumero(f) : ""; }},
     {key:'acciones', label:'Acciones', filterable:false},
-  ];
+  ], [clientes, procesos, facturas]);
 
   const query = (searchQuery||"").trim().toLowerCase();
   const rows = ordenesCompra.filter(oc => {
@@ -82,7 +84,7 @@ export default function OrdenesCompraView({ ordenesCompra, clientes, procesos, f
                     <div className="row-actions">
                       <IconButton icon="edit" variant="edit" label="Ver / editar orden de compra" onClick={e => { e.stopPropagation(); onOpenOrdenCompra(oc.id); }} />
                       <IconButton icon="duplicate" variant="duplicate" label="Duplicar orden de compra" onClick={e => { e.stopPropagation(); onDuplicateOrdenCompra(oc.id); }} />
-                      <IconButton icon="pdf" variant="pdf" label="Guardar orden de compra en PDF" onClick={e => { e.stopPropagation(); onPrintOrdenCompra(oc.id); }} />
+                      <IconButton icon="pdf" variant="pdf" label="Guardar orden de compra en PDF" spinning={printingId===oc.id} onClick={e => { e.stopPropagation(); onPrintOrdenCompra(oc.id); }} />
                       <IconButton icon="invoice" variant="invoice" label="Generar factura con estos mismos datos" onClick={e => { e.stopPropagation(); onCreateFacturaFromOrdenCompra(oc.id); }} />
                     </div>
                   </td>

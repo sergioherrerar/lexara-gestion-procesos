@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { FormularioNuevo, TablaRegistros } from './AudienciasTerminosTab';
 import { PendientesSection } from './PendientesSection';
-import { sumarDiasHabilesJudiciales } from '../lib/audienciasTerminos';
+import { sumarDiasHabilesJudiciales, diasHabilesRestantes, colorCuentaRegresiva, etiquetaCuentaRegresiva } from '../lib/audienciasTerminos';
 import { fmtDate } from '../lib/graph';
 
 // Módulo "Vencimientos" (2026-09-17, pedido explícito del usuario: "que tal
@@ -13,6 +13,7 @@ import { fmtDate } from '../lib/graph';
 // ya existían — no se duplica ninguna lógica de negocio, solo cambia dónde
 // viven dentro del portal.
 const SUB_TABS = [
+  {key:'todos', label:'Todos'},
   {key:'audiencias', label:'Audiencias'},
   {key:'terminos', label:'Términos'},
   {key:'pendientes', label:'Pendientes'},
@@ -124,6 +125,112 @@ function VencimientosSemana({ audiencias, terminos, pendientes, procesos }){
   );
 }
 
+// Pestaña "Todos" (2026-10-05, pedido explícito del usuario: una pestaña
+// "todos" que al entrar a Vencimientos muestre una lista de todo ordenado por
+// fecha de vencimiento y, al lado, a qué pestaña pertenece cada uno) — junta
+// Audiencias, Términos y Pendientes en una sola lista por fecha. Es solo de
+// consulta: el tipo de cada fila es un botón que lleva a su pestaña, donde se
+// edita/elimina (reusa los mismos componentes, sin duplicar lógica).
+const TIPOS = {
+  audiencias: { label:'Audiencia', plural:'Audiencias', cls:'badge-tipo-audiencia' },
+  terminos:   { label:'Término',   plural:'Términos',   cls:'badge-tipo-termino' },
+  pendientes: { label:'Pendiente', plural:'Pendientes', cls:'badge-tipo-pendiente' },
+};
+function hoyISOLocal(){
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function TodosVencimientos({ audiencias, terminos, pendientes, procesos, onIrATab }){
+  const [filtroTipo, setFiltroTipo] = useState('todos');
+  const [verVencidos, setVerVencidos] = useState(false);
+  const hoy = hoyISOLocal();
+
+  const filas = useMemo(() => {
+    const procesoPorId = new Map((procesos||[]).map(p => [String(p.id), p]));
+    const lista = [];
+    (audiencias||[]).forEach(a => {
+      lista.push({ clave:'a'+a.id, tipo:'audiencias', fecha:soloFechaISO(a.FechaAudiencia), hora:a.HoraAudiencia||'', texto:a.Descripcion||'', responsable:a.Abogado||'', proceso:procesoPorId.get(String(a.Proceso))||null, terminado:false });
+    });
+    (terminos||[]).forEach(t => {
+      const fecha = soloFechaISO(t.VencimientoTermino) || sumarDiasHabilesJudiciales(soloFechaISO(t.FechaNotificacion), t.DiasHabiles) || '';
+      lista.push({ clave:'t'+t.id, tipo:'terminos', fecha, hora:'', texto:t.Descripcion||'', responsable:'', proceso:procesoPorId.get(String(t.Proceso))||null, terminado:false });
+    });
+    (pendientes||[]).forEach(p => {
+      lista.push({ clave:'p'+p.id, tipo:'pendientes', fecha:soloFechaISO(p.FechaPendiente), hora:'', texto:p.Pendiente||'', responsable:p.PendientePara||'', proceso:procesoPorId.get(String(p.Proceso))||null, terminado:p.Estado==='Terminado', observacion:p.Observacion||'' });
+    });
+    return lista;
+  }, [audiencias, terminos, pendientes, procesos]);
+
+  // "Vencido" = fecha anterior a hoy, o un pendiente ya Terminado. Se ocultan
+  // por defecto para que lo próximo quede arriba (con años de registros, lo
+  // viejo enterraría lo que sí hay que atender); el interruptor los muestra.
+  const esVencida = f => f.terminado || (f.fecha && f.fecha < hoy);
+  const delTipo = filas.filter(f => filtroTipo==='todos' || f.tipo===filtroTipo);
+  const vigentes = delTipo.filter(f => !esVencida(f));
+  const visibles = (verVencidos ? delTipo : vigentes)
+    .slice()
+    .sort((a,b) => {
+      if(!a.fecha && !b.fecha) return 0;
+      if(!a.fecha) return 1;   // sin fecha, al final
+      if(!b.fecha) return -1;
+      return a.fecha.localeCompare(b.fecha) || (a.hora||'').localeCompare(b.hora||'');
+    });
+  const ocultos = delTipo.length - vigentes.length;
+  const conteo = tipo => filas.filter(f => f.tipo===tipo && !esVencida(f)).length;
+
+  function cuentaRegresiva(f){
+    if(f.terminado) return { texto:'Terminado', color:'gris' };
+    if(!f.fecha) return { texto:'—', color:'gris' };
+    // Lo ya vencido no se cuenta día por día (con fechas de años atrás sería
+    // lento) — solo se marca "Vencido".
+    const restantes = f.fecha < hoy ? -1 : diasHabilesRestantes(f.fecha);
+    return { texto:etiquetaCuentaRegresiva(restantes), color:colorCuentaRegresiva(restantes) };
+  }
+
+  return (
+    <div style={{marginTop:20}}>
+      <div style={{display:'flex', gap:8, flexWrap:'wrap', alignItems:'center', marginBottom:14}}>
+        <button type="button" className={"filter-chip" + (filtroTipo==='todos' ? " active" : "")} onClick={() => setFiltroTipo('todos')}>Todos</button>
+        {Object.entries(TIPOS).map(([k,t]) => (
+          <button key={k} type="button" className={"filter-chip" + (filtroTipo===k ? " active" : "")} onClick={() => setFiltroTipo(k)}>
+            {t.plural} ({conteo(k)})
+          </button>
+        ))}
+        <label style={{display:'inline-flex', alignItems:'center', gap:6, marginLeft:'auto', fontSize:13, cursor:'pointer'}}>
+          <input type="checkbox" checked={verVencidos} onChange={e => setVerVencidos(e.target.checked)} />
+          Ver vencidos y terminados{!verVencidos && ocultos > 0 ? ` (${ocultos} ocultos)` : ''}
+        </label>
+      </div>
+      <div className="table-wrap">
+        <table className="table-compact">
+          <thead>
+            <tr><th>Tipo</th><th>Fecha</th><th>Cuenta regresiva</th><th>Proceso</th><th>Detalle</th><th>Responsable</th></tr>
+          </thead>
+          <tbody>
+            {visibles.length ? visibles.map(f => {
+              const cr = cuentaRegresiva(f);
+              const t = TIPOS[f.tipo];
+              return (
+                <tr key={f.clave}>
+                  <td><button type="button" className={"badge " + t.cls} style={{border:'none', cursor:'pointer'}} title={"Ir a la pestaña " + t.plural} onClick={() => onIrATab(f.tipo)}>{t.label}</button></td>
+                  <td style={{whiteSpace:'nowrap'}}>{f.fecha ? fmtDate(f.fecha) : "—"}{f.hora ? <div className="save-hint">{f.hora}</div> : null}</td>
+                  <td><span className={"badge badge-" + cr.color}>{cr.texto}</span></td>
+                  <td>{f.proceso?.Radicado || "—"}{f.proceso?.Cliente ? <div className="save-hint">{f.proceso.Cliente}</div> : null}</td>
+                  <td>{f.texto || "—"}{f.observacion ? <div className="save-hint">{f.observacion}</div> : null}</td>
+                  <td>{f.responsable || "—"}</td>
+                </tr>
+              );
+            }) : (
+              <tr><td colSpan={6}><div className="empty-state empty-state-compact">{ocultos > 0 && !verVencidos ? 'No hay nada vigente. Activa "Ver vencidos y terminados" para ver el historial.' : 'Todavía no hay registros.'}</div></td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 export default function VencimientosView({
   procesos, tiposAccion, colaboradores,
   audiencias, terminos, pendientes, notify,
@@ -133,7 +240,7 @@ export default function VencimientosView({
   onCreateTipoTermino,
   canWrite = true,
 }){
-  const [subTab, setSubTab] = useState('audiencias');
+  const [subTab, setSubTab] = useState('todos');
   return (
     <div className="view">
       <div className="view-header">
@@ -150,6 +257,9 @@ export default function VencimientosView({
         </div>
       </div>
       <VencimientosSemana audiencias={audiencias} terminos={terminos} pendientes={pendientes} procesos={procesos} />
+      {subTab==='todos' && (
+        <TodosVencimientos audiencias={audiencias} terminos={terminos} pendientes={pendientes} procesos={procesos} onIrATab={setSubTab} />
+      )}
       {subTab==='audiencias' && (
         <div style={{marginTop:20}}>
           {canWrite && <FormularioNuevo tipo="audiencias" procesos={procesos} tiposAccion={tiposAccion} colaboradores={colaboradores} notify={notify} onCrear={onCrearAudiencia} />}

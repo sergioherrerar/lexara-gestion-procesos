@@ -1,11 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { useLexaraApp } from './hooks/useLexaraApp';
 import { canAccessView } from './lib/permissions';
 import LoginScreen from './components/LoginScreen';
 import Sidebar from './components/Sidebar';
 import Topbar from './components/Topbar';
 import DashboardView from './components/DashboardView';
-import InformesView from './components/InformesView';
 import ProcesosView from './components/ProcesosView';
 import TutelasView from './components/TutelasView';
 import ClientesView from './components/ClientesView';
@@ -17,13 +16,23 @@ import ProcesoDrawer from './components/ProcesoDrawer';
 import ClienteDrawer from './components/ClienteDrawer';
 import FacturaDrawer from './components/FacturaDrawer';
 import OrdenCompraDrawer from './components/OrdenCompraDrawer';
-import AdministracionView from './components/AdministracionView';
 import ColaboradorDrawer from './components/ColaboradorDrawer';
 import FormaPagoDrawer from './components/FormaPagoDrawer';
 import DesistimientoDrawer from './components/DesistimientoDrawer';
 import TutelaDrawer from './components/TutelaDrawer';
 import { Toast, ConfirmDialog } from './components/Feedback';
 import CargaInicialOverlay from './components/CargaInicialOverlay';
+
+// Carga diferida (2026-10-05): Informes y Administración son los módulos más
+// pesados (generadores de PDF/Excel/Word) y no se usan en cada sesión — se
+// bajan solo la primera vez que alguien entra, en vez de retrasar el inicio
+// para todos.
+const InformesView = lazy(() => import('./components/InformesView'));
+const AdministracionView = lazy(() => import('./components/AdministracionView'));
+
+function CargandoModulo(){
+  return <div className="view"><p style={{color:'var(--texto)', opacity:.6}}>Cargando módulo…</p></div>;
+}
 
 export default function App(){
   const app = useLexaraApp();
@@ -122,6 +131,7 @@ export default function App(){
         />
         {app.signingIn && app.liveMode && <CargaInicialOverlay />}
 
+        <Suspense fallback={<CargandoModulo />}>
         {app.view === 'dashboard' && <DashboardView procesos={app.procesos} desistimientos={app.desistimientos} notify={app.notify} />}
         {app.view === 'informes' && canAccessView(app.modulosPermitidos, 'informes') && (
           <InformesView procesos={app.procesos} clientes={app.clientes} facturas={app.facturas} ordenesCompra={app.ordenesCompra} desistimientos={app.desistimientos} tutelas={app.tutelas} valoresEntidad={app.valoresEntidad} notify={app.notify} liveMode={app.liveMode} config={app.config} requestConfirm={app.requestConfirm} corregirEntidadFaltanteTutelas={app.corregirEntidadFaltanteTutelas} colaboradores={app.colaboradores} onCreateHoraExtra={app.createHoraExtra} onEditarHoraExtra={app.editarHoraExtra} onEliminarHoraExtra={app.eliminarHoraExtra} horasExtras={app.horasExtras} tasasInteres={app.tasasInteres} ipcMensual={app.ipcMensual} onCrearTasaInteres={app.crearTasaInteres} onEditarTasaInteres={app.editarTasaInteres} onEliminarTasaInteres={app.eliminarTasaInteres} onCrearIPC={app.crearIPC} onEditarIPC={app.editarIPC} onEliminarIPC={app.eliminarIPC} />
@@ -181,6 +191,7 @@ export default function App(){
             onCreateFactura={app.newFactura}
             onDuplicateFactura={app.duplicateFactura}
             onPrintFactura={app.printFactura}
+            printingId={app.autoPrintFacturaId}
             config={app.config}
             notify={app.notify}
           />
@@ -196,6 +207,7 @@ export default function App(){
             onCreateOrdenCompra={app.newOrdenCompra}
             onDuplicateOrdenCompra={app.duplicateOrdenCompra}
             onPrintOrdenCompra={app.printOrdenCompra}
+            printingId={app.autoPrintOrdenCompraId}
             onCreateFacturaFromOrdenCompra={app.createFacturaFromOrdenCompra}
           />
         )}
@@ -276,6 +288,7 @@ export default function App(){
             onDownloadMappings={app.downloadAllMappings}
           />
         )}
+        </Suspense>
       </div>
 
       <ProcesoDrawer

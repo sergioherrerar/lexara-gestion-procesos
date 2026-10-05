@@ -43,7 +43,17 @@ export function fechaCorta(iso){
 // el logo chico). Se reescala a ~150dpi por canvas y se convierte a JPEG
 // antes de dárselo a jsPDF: mucho más liviano y, junto con el alias fijo en
 // doc.addImage, se incrusta una sola vez sin importar cuántas páginas lo usen.
+// Optimización 2026-10-05: el resultado se recuerda (es siempre el mismo
+// membrete) — antes cada informe volvía a decodificarlo, redibujarlo en un
+// canvas y recomprimirlo a JPEG. Si falla, no se queda guardado el error.
+let membretePdfCache = null;
 function membreteParaPDF(url){
+  if(!membretePdfCache){
+    membretePdfCache = membreteParaPDFSinCache(url).catch(err => { membretePdfCache = null; throw err; });
+  }
+  return membretePdfCache;
+}
+function membreteParaPDFSinCache(url){
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => {
@@ -131,7 +141,17 @@ export const FIRMA_DEFECTO = {
 // sola firma — mismo motivo/técnica que membreteParaPDF() más abajo).
 // Reescalada a un ancho fijo en píxeles (la original, 1536×1024, es de
 // sobra para el tamaño real al que se imprime — unos 78mm).
+// Igual que el membrete: se recuerda por (url, ancho) — la firma es siempre
+// la misma imagen en todos los informes.
+const imagenesDataUrlCache = new Map();
 export function imagenComoDataUrl(url, anchoDestinoPx = 700){
+  const clave = url + '|' + anchoDestinoPx;
+  if(!imagenesDataUrlCache.has(clave)){
+    imagenesDataUrlCache.set(clave, imagenComoDataUrlSinCache(url, anchoDestinoPx).catch(err => { imagenesDataUrlCache.delete(clave); throw err; }));
+  }
+  return imagenesDataUrlCache.get(clave);
+}
+function imagenComoDataUrlSinCache(url, anchoDestinoPx){
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => {

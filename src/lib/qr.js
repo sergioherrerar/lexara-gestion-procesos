@@ -56,3 +56,14 @@ export async function generarQRDataUrl(texto, opts = {}){
 // Link real de redes sociales de MD Abogados (Linktree) — confirmado por el
 // usuario 2026-09-15. Un solo lugar para cambiarlo si algún día cambia.
 export const LINK_REDES_SOCIALES = 'https://linktr.ee/LexaraAbogados';
+
+// El QR de redes sociales es siempre el mismo — se genera una sola vez y se
+// reutiliza (Facturas y Órdenes de compra compartían el mismo código copiado
+// en cada drawer, con su propia caché; ahora hay una sola).
+let qrRedesCache = null;
+export function obtenerQrRedesDataUrl(){
+  if(!qrRedesCache){
+    qrRedesCache = generarQRDataUrl(LINK_REDES_SOCIALES).catch(err => { qrRedesCache = null; throw err; });
+  }
+  return qrRedesCache;
+}

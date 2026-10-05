@@ -15,14 +15,29 @@
 // escala en la práctica y generaba archivos de más de 30MB, rotos; llamando
 // html2canvas directo y pegando la imagen ya del tamaño correcto (el nodo
 // siempre mide 210×297mm reales) el archivo sale del tamaño normal.
+//
+// Optimización 2026-10-05: html2canvas CLONA el documento completo antes de
+// fotografiar el nodo (con las tablas de 700+ filas de Facturación/Procesos
+// ya montadas detrás eso tardaba segundos). Con ignoreElements solo se clona
+// lo necesario: <head> (estilos), los ancestros del nodo y el nodo mismo.
+export function precalentarLibreriasPdf(){
+  // Lo llaman los botones de PDF apenas se hace clic, en paralelo con el QR
+  // y el membrete, para no esperar las librerías en fila.
+  return Promise.all([import('jspdf'), import('html2canvas')]);
+}
+
 export async function generarPdfDesdeNodo(nodoId, nombreArchivo){
-  const [{ default: jsPDF }, { default: html2canvas }] = await Promise.all([
-    import('jspdf'),
-    import('html2canvas'),
-  ]);
+  const [{ default: jsPDF }, { default: html2canvas }] = await precalentarLibreriasPdf();
   const nodo = document.getElementById(nodoId);
   if(!nodo) throw new Error(`No se encontró el contenido a convertir en PDF ("${nodoId}").`);
-  const canvas = await html2canvas(nodo, { scale:2, useCORS:false, backgroundColor:'#ffffff' });
+  const canvas = await html2canvas(nodo, {
+    scale:2, useCORS:false, backgroundColor:'#ffffff',
+    ignoreElements: el => {
+      if(el === nodo || nodo.contains(el) || el.contains(nodo)) return false;
+      if(el === document.head || document.head.contains(el)) return false;
+      return true;
+    },
+  });
   const imgData = canvas.toDataURL('image/jpeg', 0.92);
   // Protegido contra modificaciones — mismo criterio que el resto de PDF del
   // portal (ver prepararDocumentoPDF en informesPDF.js, pedido explícito del

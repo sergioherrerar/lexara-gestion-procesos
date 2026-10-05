@@ -360,7 +360,7 @@ export function useLexaraApp(){
       try{ await testConnection(acc); }
       catch(err){
         console.error(err);
-        notify("No fue posible completar el inicio de sesión. Revisa la consola para más detalle.", 'error');
+        notify("No fue posible completar el inicio de sesión. Intenta de nuevo; si el problema continúa, avísale a soporte.", 'error');
       }
       return;
     }
@@ -414,7 +414,7 @@ export function useLexaraApp(){
       setPendientes(updated.find(l => l.key==='pendientes')?.items || []);
     }catch(err){
       console.error(err);
-      notify("Se inició sesión, pero no se pudieron cargar los datos de SharePoint: " + Graph.mensajeError(err) + " — probá el botón de Actualizar.", 'error');
+      notify("Se inició sesión, pero no se pudieron cargar los datos de SharePoint: " + Graph.mensajeError(err) + " — prueba el botón de Actualizar.", 'error');
     }
   }
 
@@ -431,7 +431,7 @@ export function useLexaraApp(){
     setSigningIn(true);
     Promise.resolve(Graph.beginSignIn(config)).catch(err => {
       console.error(err);
-      notify("No fue posible iniciar sesión. Revisa la consola para más detalle.", 'error');
+      notify("No fue posible iniciar sesión. Intenta de nuevo; si el problema continúa, avísale a soporte.", 'error');
       setSigningIn(false);
     });
   }
@@ -452,7 +452,7 @@ export function useLexaraApp(){
         if(acc) await finishSignIn(acc);
       }catch(err){
         console.error(err);
-        if(!cancelado) notify("No fue posible completar el inicio de sesión. Revisa la consola para más detalle.", 'error');
+        if(!cancelado) notify("No fue posible completar el inicio de sesión. Intenta de nuevo; si el problema continúa, avísale a soporte.", 'error');
       }
       if(!cancelado) setSigningIn(false);
     })();
@@ -491,6 +491,7 @@ export function useLexaraApp(){
       setAudiencias(updated.find(l => l.key==='audiencias')?.items || []);
       setTerminos(updated.find(l => l.key==='terminos')?.items || []);
       setPendientes(updated.find(l => l.key==='pendientes')?.items || []);
+      notify("Datos actualizados", 'success');
     }catch(err){
       console.error(err);
       notify("No se pudo actualizar la información: " + Graph.mensajeError(err), 'error');
@@ -668,8 +669,11 @@ export function useLexaraApp(){
     if(liveMode){
       setSaving(true);
       const list = listByKey('procesos');
-      const graphBody = await Graph.graphFieldsFromUpdates(list.siteId || siteId, list, updates);
+      // Dentro del try: si resolver las columnas Lookup falla (red), "Guardando…"
+      // no se queda pegado y el usuario ve el error.
+      let graphBody = {};
       try{
+        graphBody = await Graph.graphFieldsFromUpdates(list.siteId || siteId, list, updates);
         await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items/${activeProceso._graphId}/fields`, {
           method:"PATCH", body: JSON.stringify(graphBody)
         });
@@ -680,7 +684,7 @@ export function useLexaraApp(){
         // para su columna real (p.ej. un Tipo de Proceso/Despacho que no
         // coincide con las opciones fijas de esa columna en SharePoint).
         console.error(err, 'Campos enviados:', graphBody);
-        notify(`No se pudo guardar en SharePoint: ${Graph.mensajeError(err)} — campos enviados: ${Object.keys(graphBody).join(', ')}`, 'error');
+        notify(`No se pudo guardar en SharePoint: ${Graph.mensajeError(err)}`, 'error');
         setSaving(false); return;
       }
       setSaving(false);
@@ -711,8 +715,11 @@ export function useLexaraApp(){
     if(liveMode){
       setSaving(true);
       const list = listByKey('procesos');
-      const graphBody = await Graph.graphFieldsFromUpdates(list.siteId || siteId, list, updates);
+      // Dentro del try: si resolver las columnas Lookup falla (red), "Guardando…"
+      // no se queda pegado y el usuario ve el error.
+      let graphBody = {};
       try{
+        graphBody = await Graph.graphFieldsFromUpdates(list.siteId || siteId, list, updates);
         await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items/${proceso._graphId}/fields`, {
           method:"PATCH", body: JSON.stringify(graphBody)
         });
@@ -785,8 +792,9 @@ export function useLexaraApp(){
     if(liveMode){
       setSaving(true);
       const list = listByKey('clientes');
-      const fields = await Graph.graphFieldsFromUpdates(list.siteId || siteId, list, updates);
+      let fields = {};
       try{
+        fields = await Graph.graphFieldsFromUpdates(list.siteId || siteId, list, updates);
         await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items/${activeCliente._graphId || activeCliente.id}/fields`, {
           method:"PATCH", body: JSON.stringify(fields)
         });
@@ -805,8 +813,9 @@ export function useLexaraApp(){
     setClientes(prev => prev.map(c => c.id===cliente.id ? {...c, ...updates} : c));
     if(liveMode){
       const list = listByKey('clientes');
-      const fields = await Graph.graphFieldsFromUpdates(list.siteId || siteId, list, updates);
+      let fields = {};
       try{
+        fields = await Graph.graphFieldsFromUpdates(list.siteId || siteId, list, updates);
         await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items/${cliente._graphId || cliente.id}/fields`, {
           method:"PATCH", body: JSON.stringify(fields)
         });
@@ -958,8 +967,11 @@ export function useLexaraApp(){
     if(liveMode){
       setSaving(true);
       const list = listByKey('facturacion');
-      const graphBody = await Graph.graphFieldsFromUpdates(list.siteId || siteId, list, updates);
+      // Dentro del try: si resolver las columnas Lookup falla (red), "Guardando…"
+      // no se queda pegado y el usuario ve el error.
+      let graphBody = {};
       try{
+        graphBody = await Graph.graphFieldsFromUpdates(list.siteId || siteId, list, updates);
         await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items/${activeFactura._graphId}/fields`, {
           method:"PATCH", body: JSON.stringify(graphBody)
         });
@@ -1035,8 +1047,11 @@ export function useLexaraApp(){
     if(liveMode){
       setSaving(true);
       const list = listByKey('ordenesCompra');
-      const graphBody = await Graph.graphFieldsFromUpdates(list.siteId || siteId, list, updates);
+      // Dentro del try: si resolver las columnas Lookup falla (red), "Guardando…"
+      // no se queda pegado y el usuario ve el error.
+      let graphBody = {};
       try{
+        graphBody = await Graph.graphFieldsFromUpdates(list.siteId || siteId, list, updates);
         await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items/${activeOrdenCompra._graphId}/fields`, {
           method:"PATCH", body: JSON.stringify(graphBody)
         });
@@ -1082,8 +1097,9 @@ export function useLexaraApp(){
     if(liveMode){
       setSaving(true);
       const list = listByKey('colaboradores');
-      const fields = await Graph.graphFieldsFromUpdates(list.siteId || siteId, list, updates);
+      let fields = {};
       try{
+        fields = await Graph.graphFieldsFromUpdates(list.siteId || siteId, list, updates);
         await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items/${activeColaborador._graphId}/fields`, {
           method:"PATCH", body: JSON.stringify(fields)
         });
@@ -1151,8 +1167,11 @@ export function useLexaraApp(){
     if(liveMode){
       setSaving(true);
       const list = listByKey('formasPago');
-      const graphBody = await Graph.graphFieldsFromUpdates(list.siteId || siteId, list, updates);
+      // Dentro del try: si resolver las columnas Lookup falla (red), "Guardando…"
+      // no se queda pegado y el usuario ve el error.
+      let graphBody = {};
       try{
+        graphBody = await Graph.graphFieldsFromUpdates(list.siteId || siteId, list, updates);
         await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items/${activeFormaPago._graphId}/fields`, {
           method:"PATCH", body: JSON.stringify(graphBody)
         });
@@ -1219,8 +1238,11 @@ export function useLexaraApp(){
     if(liveMode){
       setSaving(true);
       const list = listByKey('desistimientos');
-      const graphBody = await Graph.graphFieldsFromUpdates(list.siteId || siteId, list, updates);
+      // Dentro del try: si resolver las columnas Lookup falla (red), "Guardando…"
+      // no se queda pegado y el usuario ve el error.
+      let graphBody = {};
       try{
+        graphBody = await Graph.graphFieldsFromUpdates(list.siteId || siteId, list, updates);
         await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items/${activeDesistimiento._graphId}/fields`, {
           method:"PATCH", body: JSON.stringify(graphBody)
         });
@@ -1368,8 +1390,11 @@ export function useLexaraApp(){
     if(liveMode){
       setSaving(true);
       const list = listByKey('tutelas');
-      const graphBody = await Graph.graphFieldsFromUpdates(list.siteId || siteId, list, updates);
+      // Dentro del try: si resolver las columnas Lookup falla (red), "Guardando…"
+      // no se queda pegado y el usuario ve el error.
+      let graphBody = {};
       try{
+        graphBody = await Graph.graphFieldsFromUpdates(list.siteId || siteId, list, updates);
         await Graph.graphFetch(`/sites/${list.siteId || siteId}/lists/${list.listId}/items/${activeTutela._graphId}/fields`, {
           method:"PATCH", body: JSON.stringify(graphBody)
         });
@@ -1476,8 +1501,9 @@ export function useLexaraApp(){
     if(liveMode){
       setSaving(true);
       const list = listByKey('temas');
-      const fields = await Graph.graphFieldsFromUpdates(list.siteId || siteId, list, updates);
+      let fields = {};
       try{
+        fields = await Graph.graphFieldsFromUpdates(list.siteId || siteId, list, updates);
         await Graph.graphFetch(`/sites/${list.siteId || siteId}/lists/${list.listId}/items/${tema._graphId || tema.id}/fields`, {
           method:"PATCH", body: JSON.stringify(fields)
         });
@@ -1534,8 +1560,9 @@ export function useLexaraApp(){
     if(liveMode){
       setSaving(true);
       const list = listByKey('valoresEntidad');
-      const fields = await Graph.graphFieldsFromUpdates(list.siteId || siteId, list, updates);
+      let fields = {};
       try{
+        fields = await Graph.graphFieldsFromUpdates(list.siteId || siteId, list, updates);
         await Graph.graphFetch(`/sites/${list.siteId || siteId}/lists/${list.listId}/items/${valor._graphId || valor.id}/fields`, {
           method:"PATCH", body: JSON.stringify(fields)
         });
@@ -1576,8 +1603,9 @@ export function useLexaraApp(){
     if(liveMode){
       setSaving(true);
       const list = listByKey('horasExtras');
-      const fields = await Graph.graphFieldsFromUpdates(list.siteId || siteId, list, { Aprobado: aprobado });
+      let fields = {};
       try{
+        fields = await Graph.graphFieldsFromUpdates(list.siteId || siteId, list, { Aprobado: aprobado });
         await Graph.graphFetch(`/sites/${list.siteId || siteId}/lists/${list.listId}/items/${hora._graphId || hora.id}/fields`, {
           method:"PATCH", body: JSON.stringify(fields)
         });
@@ -1600,8 +1628,9 @@ export function useLexaraApp(){
     if(liveMode){
       setSaving(true);
       const list = listByKey('horasExtras');
-      const fields = await Graph.graphFieldsFromUpdates(list.siteId || siteId, list, updates);
+      let fields = {};
       try{
+        fields = await Graph.graphFieldsFromUpdates(list.siteId || siteId, list, updates);
         await Graph.graphFetch(`/sites/${list.siteId || siteId}/lists/${list.listId}/items/${hora._graphId || hora.id}/fields`, {
           method:"PATCH", body: JSON.stringify(fields)
         });
@@ -1663,8 +1692,9 @@ export function useLexaraApp(){
     if(liveMode){
       setSaving(true);
       const list = listByKey('vacacionesPeriodos');
-      const fields = await Graph.graphFieldsFromUpdates(list.siteId || siteId, list, updates);
+      let fields = {};
       try{
+        fields = await Graph.graphFieldsFromUpdates(list.siteId || siteId, list, updates);
         await Graph.graphFetch(`/sites/${list.siteId || siteId}/lists/${list.listId}/items/${periodo._graphId || periodo.id}/fields`, {
           method:"PATCH", body: JSON.stringify(fields)
         });

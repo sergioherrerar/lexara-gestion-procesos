@@ -55,6 +55,25 @@ function BotonCalendarioTopbar({ audiencias, terminos, pendientes, procesos, tip
 
 export default function Topbar({ view, liveMode, searchQuery, onSearch, onOpenMobileNav, onRefresh, refreshing, cargandoInicial, audiencias, terminos, pendientes, procesos, tiposAccion, colaboradores, onCrearEventoPersonalizado, onListarOtrosEventosDelMes, onCrearAudiencia, onCrearTermino, onCreateTipoTermino, onCrearPendiente, canWrite, notify }){
   const cargando = refreshing || cargandoInicial;
+  // Búsqueda con espera de 250ms: el texto del cuadro se actualiza al instante,
+  // pero el filtrado de las tablas (miles de filas, y todo App se vuelve a
+  // dibujar) solo corre cuando el usuario deja de teclear — antes corría en
+  // CADA letra.
+  const [textoBusqueda, setTextoBusqueda] = useState(searchQuery);
+  const ultimoEnviado = useRef(searchQuery);
+  useEffect(() => {
+    // Cambio hecho desde afuera (ej. al cambiar de módulo se limpia la búsqueda).
+    if(searchQuery !== ultimoEnviado.current){
+      ultimoEnviado.current = searchQuery;
+      setTextoBusqueda(searchQuery);
+    }
+  }, [searchQuery]);
+  useEffect(() => {
+    if(textoBusqueda === ultimoEnviado.current) return;
+    const t = setTimeout(() => { ultimoEnviado.current = textoBusqueda; onSearch(textoBusqueda); }, 250);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [textoBusqueda]);
   return (
     <div className="topbar">
       <button className="mobile-nav-btn" aria-label="Abrir menú" onClick={onOpenMobileNav}>
@@ -97,8 +116,8 @@ export default function Topbar({ view, liveMode, searchQuery, onSearch, onOpenMo
             view === 'administracion' ? "Buscar por nombre, correo o cargo…" :
             "Buscar por numero corto, cliente o apoderado…"
           }
-          value={searchQuery}
-          onChange={e => onSearch(e.target.value)}
+          value={textoBusqueda}
+          onChange={e => setTextoBusqueda(e.target.value)}
         />
       </div>
     </div>

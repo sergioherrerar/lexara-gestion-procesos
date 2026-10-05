@@ -56,7 +56,7 @@ export default function ProcesosView({ procesos, currentFilter, setFilter, searc
     try{
       await guardarEstadoRapidoProceso?.(id, formEstado);
       setEditandoEstadoId(null);
-    }catch(err){ console.error(err); notify?.("No se pudo guardar el Estado: " + mensajeError(err), 'error'); }
+    }catch(err){ console.error(err); /* el aviso de error ya lo muestra guardarEstadoRapidoProceso — no se repite */ }
     finally{ setGuardandoEstado(false); }
   }
   const [generandoPDF, setGenerandoPDF] = useState(null); // id del proceso mientras genera su ficha en PDF
@@ -82,6 +82,7 @@ export default function ProcesosView({ procesos, currentFilter, setFilter, searc
   async function handleGenerarFicha(proceso){
     setGenerandoPDF(proceso.id);
     try{ await generarFichaProcesoPDF(proceso); }
+    catch(err){ console.error(err); notify?.("No se pudo generar la ficha en PDF: " + mensajeError(err), 'error'); }
     finally { setGenerandoPDF(null); }
   }
   async function handleGenerarImpulsoWord(proceso){

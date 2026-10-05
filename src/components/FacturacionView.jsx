@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { ICON_SVG } from '../config';
 import { clienteForFactura, procesoForFactura, facturaNumero, computeFacturaTotals, fmtMonto, fmtDate, fechaFromPartes, estadoFacturaBadgeClass, compareFacturaNumero, abrirFacturaSiigo, mensajeError } from '../lib/graph';
 import IconButton, { IconTextButton } from './IconButton';
@@ -10,7 +10,7 @@ function fechaOrdenable(f){
   return fechaFromPartes(f.Dia, f.Mes, f.Anio) || f.Fecha || "";
 }
 
-export default function FacturacionView({ facturas, clientes, procesos, searchQuery, onOpenFactura, onCreateFactura, onDuplicateFactura, onPrintFactura, config, notify }){
+export default function FacturacionView({ facturas, clientes, procesos, searchQuery, onOpenFactura, onCreateFactura, onDuplicateFactura, onPrintFactura, printingId, config, notify }){
   const { filters, setFilter, clearFilters, rowMatches, hasActiveFilters } = useColumnFilters();
   const { sort, setSortKey, sortRows } = useColumnSort();
   const [buscandoSiigo, setBuscandoSiigo] = useState(null); // id de la factura mientras se busca su PDF
@@ -26,7 +26,9 @@ export default function FacturacionView({ facturas, clientes, procesos, searchQu
     setBuscandoSiigo(null);
   }
 
-  const COLUMNS = [
+  // Memoizado: antes se recreaba en cada render y obligaba a ColumnHeaderMenu a
+  // recalcular las opciones de filtro de cada columna (miles de filas) cada vez.
+  const COLUMNS = useMemo(() => [
     {key:'numero', label:'No. factura', value: f => facturaNumero(f)},
     {key:'cliente', label:'Cliente', value: f => clienteForFactura(clientes, f)?.RazonSocial || ""},
     {key:'contrato', label:'Contrato', value: f => f.Contrato || ""},
@@ -37,7 +39,7 @@ export default function FacturacionView({ facturas, clientes, procesos, searchQu
     {key:'total', label:'Total', value: f => fmtMonto(computeFacturaTotals(f).total)},
     {key:'estado', label:'Estado', value: f => f.EstadoFactura || ""},
     {key:'acciones', label:'Acciones', filterable:false},
-  ];
+  ], [clientes, procesos]);
 
   const query = (searchQuery||"").trim().toLowerCase();
   const rows = facturas.filter(f => {
@@ -94,7 +96,7 @@ export default function FacturacionView({ facturas, clientes, procesos, searchQu
                     <div className="row-actions">
                       <IconButton icon="edit" variant="edit" label="Ver / editar factura" onClick={e => { e.stopPropagation(); onOpenFactura(f.id); }} />
                       <IconButton icon="duplicate" variant="duplicate" label="Duplicar factura" onClick={e => { e.stopPropagation(); onDuplicateFactura(f.id); }} />
-                      <IconButton icon="pdf" variant="pdf" label="Guardar factura en PDF" onClick={e => { e.stopPropagation(); onPrintFactura(f.id); }} />
+                      <IconButton icon="pdf" variant="pdf" label="Guardar factura en PDF" spinning={printingId===f.id} onClick={e => { e.stopPropagation(); onPrintFactura(f.id); }} />
                       <IconButton icon="open" variant="open" label="Buscar y abrir factura electrónica (Siigo)" spinning={buscandoSiigo===f.id} onClick={e => { e.stopPropagation(); handleBuscarSiigo(f); }} />
                     </div>
                   </td>

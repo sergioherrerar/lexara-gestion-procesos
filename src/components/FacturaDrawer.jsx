@@ -1,17 +1,9 @@
 import { useState, useEffect } from 'react';
 import { clienteForFactura, procesoForFactura, facturaNumero, parseMonto, fmtMonto, IVA_RATE_DEFAULT, ETAPA_CONTRATO_OPTIONS, nombreArchivoSeguro, mensajeError } from '../lib/graph';
-import { generarPdfDesdeNodo, precargarImagen } from '../lib/generarPdfDocumento';
-import { generarQRDataUrl, LINK_REDES_SOCIALES } from '../lib/qr';
+import { generarPdfDesdeNodo, precargarImagen, precalentarLibreriasPdf } from '../lib/generarPdfDocumento';
+import { obtenerQrRedesDataUrl } from '../lib/qr';
 import { useEscapeToClose } from '../hooks/useEscapeToClose';
 import membrete from '../assets/Membrete Lexara.png';
-
-// El QR de redes sociales se genera una sola vez (siempre el mismo link) y
-// se reutiliza — no hace falta rehacerlo en cada factura.
-let qrRedesDataUrlCache = null;
-function obtenerQrRedesDataUrl(){
-  if(!qrRedesDataUrlCache) qrRedesDataUrlCache = generarQRDataUrl(LINK_REDES_SOCIALES);
-  return qrRedesDataUrlCache;
-}
 
 const LINE_NUMS = [1,2,3,4,5,6];
 const OTHER_FIELDS = ["Proceso","Dia","Mes","Anio","EtapaContrato","EstadoFactura","Observacion"];
@@ -71,11 +63,17 @@ export default function FacturaDrawer({ factura, clientes, procesos, liveMode, o
       // El QR se genera una sola vez (misma URL siempre) y se aplica al
       // <img> del nodo imprimible justo antes de capturarlo — más simple y
       // sin depender del tiempo de un re-render de React.
-      const qrDataUrl = await obtenerQrRedesDataUrl();
+      // En paralelo: librerías del PDF, membrete y QR (antes iban en fila).
+      const [qrDataUrl] = await Promise.all([
+        obtenerQrRedesDataUrl(),
+        precargarImagen(membrete),
+        precalentarLibreriasPdf(),
+      ]);
       const qrImgEl = document.getElementById('factura-print-qr');
       if(qrImgEl) qrImgEl.src = qrDataUrl;
-      await Promise.all([precargarImagen(membrete), precargarImagen(qrDataUrl)]);
+      await precargarImagen(qrDataUrl);
       await generarPdfDesdeNodo('factura-print-sheet', nombreArchivoFacturaPDF(factura, clientes, procesos));
+      notify?.("PDF generado — revisa tu carpeta de Descargas.", 'success');
     }catch(err){
       console.error(err);
       notify?.("No se pudo generar el PDF: " + mensajeError(err), 'error');

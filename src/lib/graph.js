@@ -1014,11 +1014,21 @@ export async function fetchRootSiteId(config){
   return site.id;
 }
 
+// Optimización 2026-10-05: antes partía el texto en un arreglo de caracteres y
+// lo filtraba uno por uno en CADA llamada (se llama miles de veces por
+// pantalla: cruces Factura↔Proceso, filtros, ordenamientos). Ahora usa una
+// sola expresión regular (mismo resultado: descarta las marcas diacríticas
+// combinantes U+0300–U+036F) y recuerda lo ya calculado.
+const RE_MARCAS_DIACRITICAS = /[̀-ͯ]/g;
+const cacheNormalize = new Map();
 export function normalize(str){
-  return (str||"").toLowerCase().normalize("NFD").split("").filter(ch => {
-    const code = ch.charCodeAt(0);
-    return code < 0x0300 || code > 0x036f; // descarta marcas diacríticas combinantes
-  }).join("");
+  const s = str || "";
+  const guardado = cacheNormalize.get(s);
+  if(guardado !== undefined) return guardado;
+  const r = String(s).toLowerCase().normalize("NFD").replace(RE_MARCAS_DIACRITICAS, "");
+  if(cacheNormalize.size > 20000) cacheNormalize.clear();
+  cacheNormalize.set(s, r);
+  return r;
 }
 
 // Colaboradores activos cuyo Cargo contiene "abogado" — criterio compartido
@@ -1375,11 +1385,19 @@ export function estadoFacturaBadgeClass(estado){
   if(e.includes('anulada')) return 'badge-naranja';
   return 'badge-gris';
 }
+// Recuerda lo ya convertido: las tablas la llaman por cada fila en cada
+// render/filtro/orden y crear un nodo del DOM por llamada era lo más caro.
+const cacheStripHtml = new Map();
 export function stripHtml(html){
   if(!html) return "";
+  const guardado = cacheStripHtml.get(html);
+  if(guardado !== undefined) return guardado;
   const tmp = document.createElement('div');
   tmp.innerHTML = html;
-  return (tmp.textContent || tmp.innerText || "").replace(/\s+/g," ").trim();
+  const r = (tmp.textContent || tmp.innerText || "").replace(/\s+/g," ").trim();
+  if(cacheStripHtml.size > 5000) cacheStripHtml.clear();
+  cacheStripHtml.set(html, r);
+  return r;
 }
 
 // Renglones de "Histórico" a partir del Estado que se va a reemplazar
@@ -1445,10 +1463,27 @@ export function clienteForFactura(clientes, factura){
   const target = String(factura.CodigoCliente).trim();
   return clientes.find(c => String(c.id) === target) || null;
 }
+// Índice Contrato → primer Proceso con ese contrato, calculado una sola vez por
+// lista (antes cada fila de Facturas/Órdenes recorría los ~700 procesos
+// normalizando cada uno: ~700×N comparaciones por pantalla). Se invalida solo
+// cuando cambia la lista (React siempre entrega un arreglo nuevo al editar).
+const indicesProcesoPorContrato = new WeakMap();
+function procesoPorContrato(procesos, contrato){
+  let idx = indicesProcesoPorContrato.get(procesos);
+  if(!idx || idx.largo !== procesos.length){
+    const mapa = new Map();
+    for(const p of procesos){
+      const k = normalize(p.NumeroContrato);
+      if(!mapa.has(k)) mapa.set(k, p);
+    }
+    idx = { largo: procesos.length, mapa };
+    indicesProcesoPorContrato.set(procesos, idx);
+  }
+  return idx.mapa.get(normalize(contrato)) || null;
+}
 export function procesoForFactura(procesos, factura){
   if(!factura || !factura.Contrato) return null;
-  const target = normalize(factura.Contrato);
-  return procesos.find(p => normalize(p.NumeroContrato) === target) || null;
+  return procesoPorContrato(procesos, factura.Contrato);
 }
 // Inversa de procesoForFactura/procesoForOrdenCompra — para mostrar, dentro
 // del panel de un proceso, todas las facturas/órdenes de compra que
@@ -2371,8 +2406,11 @@ export function facturaLineItems(factura){
     return { n, Descripcion: factura[`Descripcion${n}`] || "", Cantidad, ValorUnitario, Total };
   });
 }
+// Crear un Intl.NumberFormat es caro y fmtMonto se llama varias veces por fila
+// en cada render — se crea una sola vez.
+const formatoMonto = new Intl.NumberFormat('es-CO', {minimumFractionDigits:2, maximumFractionDigits:2});
 export function fmtMonto(n){
-  return new Intl.NumberFormat('es-CO', {minimumFractionDigits:2, maximumFractionDigits:2}).format(n||0);
+  return formatoMonto.format(n||0);
 }
 // Nombres de archivo no pueden tener estos caracteres en Windows — usado al
 // armar el nombre sugerido de PDF de Factura/Orden de compra (ver
@@ -2443,8 +2481,7 @@ export function clienteForOrdenCompra(clientes, oc){
 }
 export function procesoForOrdenCompra(procesos, oc){
   if(!oc || !oc.Contrato) return null;
-  const target = normalize(oc.Contrato);
-  return procesos.find(p => normalize(p.NumeroContrato) === target) || null;
+  return procesoPorContrato(procesos, oc.Contrato);
 }
 // El número de orden de compra es directamente el ID del elemento en
 // SharePoint (a diferencia de Factura, que suma 91 por numeración heredada
@@ -2486,16 +2523,27 @@ export function computeOrdenCompraTotals(oc){
 // que 2 órdenes con el mismo Contrato pero Proceso/Etapa distintos quedaban
 // mal cruzadas con la misma factura — confirmado por el usuario con un caso
 // real (Órdenes 244/232, mismo Contrato, ambas apuntando a la Factura 790).
+//
+// Optimización 2026-10-05: índice (Contrato|Proceso|Etapa) → factura de
+// número más alto, calculado una sola vez por lista de facturas (mismo
+// desempate que antes: gana el número mayor y, a igualdad, la primera).
+const indicesFacturaParaOC = new WeakMap();
+function claveFacturaOC(contrato, proceso, etapa){
+  return normalize(contrato) + '\u0001' + normalize(proceso) + '\u0001' + normalize(etapa);
+}
 export function facturaForOrdenCompra(facturas, oc){
   if(!oc || !oc.Contrato) return null;
-  const targetContrato = normalize(oc.Contrato);
-  const targetProceso = normalize(oc.Proceso);
-  const targetEtapa = normalize(oc.EtapaContrato);
-  const matches = (facturas||[]).filter(f =>
-    normalize(f.Contrato) === targetContrato &&
-    normalize(f.Proceso) === targetProceso &&
-    normalize(f.EtapaContrato) === targetEtapa
-  );
-  if(!matches.length) return null;
-  return matches.reduce((best,f) => Number(facturaNumero(f)) > Number(facturaNumero(best)) ? f : best);
+  const lista = facturas || [];
+  let idx = indicesFacturaParaOC.get(lista);
+  if(!idx || idx.largo !== lista.length){
+    const mapa = new Map();
+    for(const f of lista){
+      const k = claveFacturaOC(f.Contrato, f.Proceso, f.EtapaContrato);
+      const actual = mapa.get(k);
+      if(!actual || Number(facturaNumero(f)) > Number(facturaNumero(actual))) mapa.set(k, f);
+    }
+    idx = { largo: lista.length, mapa };
+    indicesFacturaParaOC.set(lista, idx);
+  }
+  return idx.mapa.get(claveFacturaOC(oc.Contrato, oc.Proceso, oc.EtapaContrato)) || null;
 }

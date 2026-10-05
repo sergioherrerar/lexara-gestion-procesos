@@ -244,7 +244,10 @@ $body = [
     // JSON válido con registros" — con varios registros por cliente + el
     // campo Tema nuevo, la respuesta se quedaba corta y el JSON llegaba
     // incompleto/cortado a la mitad).
-    'max_tokens' => 4000,
+    // 4000 -> 8000 (2026-10-06): con varios registros por cliente y los campos
+    // nuevos (DiasTermino, fechas, Tema...) la respuesta podía quedar cortada a
+    // la mitad y el JSON llegaba incompleto. Solo se paga lo que se genera.
+    'max_tokens' => 8000,
     // 2026-09-23, pedido explícito del usuario ("que la extracción sea más
     // rápida sin perder nada") — cache_control en las instrucciones: son
     // siempre las mismas, así que Claude no tiene que "releerlas" de cero
@@ -384,18 +387,36 @@ foreach(($data['content'] ?? []) as $bloque){
     if(($bloque['type'] ?? '') === 'text'){ $texto .= $bloque['text']; }
 }
 
-// Claude a veces envuelve el JSON en ```json ... ``` aunque se le pida que
-// no lo haga — se le quita esa envoltura si aparece, antes de decodificar.
+// Claude a veces envuelve el JSON en ```json ... ``` o agrega una frase antes/
+// después aunque se le pida que no lo haga — se toma desde la primera "{" hasta
+// la última "}" antes de decodificar (2026-10-06, antes solo se quitaba la
+// envoltura de markdown y cualquier otro texto hacía fallar la extracción).
 $texto = trim($texto);
-$texto = preg_replace('/^```(json)?/i', '', $texto);
-$texto = preg_replace('/```$/', '', $texto);
-$texto = trim($texto);
+$stopReason = (string)($data['stop_reason'] ?? '');
+$posIni = strpos($texto, '{');
+$posFin = strrpos($texto, '}');
+$candidato = ($posIni !== false && $posFin !== false && $posFin > $posIni) ? substr($texto, $posIni, $posFin - $posIni + 1) : $texto;
 
-$data2 = json_decode($texto, true);
+$data2 = json_decode($candidato, true);
 $registros = is_array($data2) ? ($data2['registros'] ?? null) : null;
+// Por si devolvió directamente la lista de registros, sin el objeto envolvente.
+if(!is_array($registros) && is_array($data2) && isset($data2[0]) && is_array($data2[0])) $registros = $data2;
 if(!is_array($registros) || count($registros) === 0){
     http_response_code(502);
-    echo json_encode(['error' => 'Claude no devolvió un JSON válido con "registros".', 'crudo' => $texto]);
+    // El mensaje dice POR QUÉ falló (respuesta cortada, rechazo del modelo o
+    // texto sin JSON) y trae el comienzo de lo que contestó — antes solo decía
+    // "no devolvió un JSON válido" y no había forma de saber la causa.
+    if($stopReason === 'max_tokens'){
+        $causa = 'la respuesta de LexIA quedó cortada por ser demasiado larga (el correo tiene muchos datos). Intenta de nuevo; si se repite, usa "Extraer adjuntos" y registra la tutela a mano.';
+    } elseif($stopReason === 'refusal'){
+        $causa = 'el modelo se negó a procesar este contenido.';
+    } elseif($texto === ''){
+        $causa = 'la respuesta llegó vacía' . ($stopReason ? " (motivo: {$stopReason})" : '') . '. Intenta de nuevo.';
+    } else {
+        $vista = trim(preg_replace('/\s+/u', ' ', function_exists('mb_substr') ? mb_substr($texto, 0, 280) : substr($texto, 0, 280)));
+        $causa = 'LexIA contestó con texto en vez de datos: "' . $vista . '"' . (strlen($texto) > 280 ? '…' : '') . '. Suele pasar cuando el correo o los adjuntos no parecen una tutela; intenta de nuevo o revisa los adjuntos.';
+    }
+    echo json_encode(['error' => 'No se pudo leer la respuesta de LexIA: ' . $causa, 'crudo' => $texto, 'stop_reason' => $stopReason], JSON_INVALID_UTF8_SUBSTITUTE);
     exit;
 }
 

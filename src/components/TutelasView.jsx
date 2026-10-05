@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useState, lazy, Suspense } from 'react';
 import { ICON_SVG, TUTELAS_REMITENTES_PERMITIDOS } from '../config';
 import { fmtDate } from '../lib/graph';
 import IconButton, { IconTextButton } from './IconButton';
 import ColumnHeaderMenu from './ColumnHeaderMenu';
 import TableScrollWrap from './TableScrollWrap';
-import LeerCorreoTutelaModal from './LeerCorreoTutelaModal';
+// Carga diferida: es el módulo más pesado de Tutelas (lectura de correos + LexIA)
+// y solo se usa al abrir "Leer correo".
+const LeerCorreoTutelaModal = lazy(() => import('./LeerCorreoTutelaModal'));
 import { useColumnFilters } from '../hooks/useColumnFilters';
 import { useColumnSort } from '../hooks/useColumnSort';
 import { useLexiaVoz } from '../hooks/useLexiaVoz';
@@ -122,6 +124,7 @@ export default function TutelasView({ tutelas, temas, searchQuery, onOpenTutela,
         </div>
       </div>
       {mostrarLeerCorreo && (
+        <Suspense fallback={null}>
         <LeerCorreoTutelaModal
           correoBuzon={config?.TUTELAS_BUZON_CORREO}
           remitentesPermitidos={TUTELAS_REMITENTES_PERMITIDOS}
@@ -136,6 +139,7 @@ export default function TutelasView({ tutelas, temas, searchQuery, onOpenTutela,
           onClose={() => setMostrarLeerCorreo(false)}
           onExtraido={campos => onCreateTutela(campos)}
         />
+        </Suspense>
       )}
       {/* Diferencia por tipo, solo de lo que vence HOY (pedido explícito del
           usuario 2026-09-01) — en su propia fila, separada del título/botón
