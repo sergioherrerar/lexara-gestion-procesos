@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-10-06 (6)
+- **Mapeo de columnas: se dejan fijas en el código "Corrección IA" (Tutelas) y "Observación" (Gastos)** — del mapeo exportado por el usuario. Eran las únicas 2 columnas reales que solo existían en el mapeo guardado en el navegador de cada persona; así "Enséñame" y las observaciones de Gastos funcionan igual en GitHub Pages, cPanel y cualquier usuario, sin depender de haberlas confirmado antes en Configuración. El resto del archivo ya coincidía con el código (las otras diferencias son restos viejos del navegador que a propósito NO se hornean).
+
 ## 2026-10-06 (5)
 - **"Enséñame": "Agregar corrección" no mostraba nada** — reportado por el usuario con un video (al darle clic no pasaba nada visible y el texto quedaba escrito). Los avisos de éxito/error salen abajo a la derecha y es fácil no verlos; además, si SharePoint rechazaba el guardado, el error se mostraba y el panel igual borraba lo escrito como si se hubiera guardado. Ahora el resultado se ve AHÍ MISMO debajo del botón (verde si se guardó, naranja con el motivo si no), lo escrito solo se borra cuando de verdad se guardó, se valida que la tutela tenga su registro de SharePoint y que la columna "Corrección IA" esté mapeada (con mensaje claro si falta), y si la corrección se guardó pero falló releer el historial ya no se reporta como error.
 

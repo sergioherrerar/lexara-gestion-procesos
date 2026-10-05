@@ -822,6 +822,10 @@ export const SHAREPOINT_LISTS_CONFIG = [
       Juzgado: "juzgado",
       Correo: "Correo_x0020_Juzgados",
       Solicita: "Solicita",
+      // "Entrenar IA" — columna confirmada en Configuración (export
+      // 2026-10-06). Horneada acá para que "Enséñame" no dependa de que cada
+      // navegador/sitio (GitHub Pages y cPanel) la haya mapeado o adivinado.
+      CorreccionIA: "CorreccionIA",
     },
   },
   // Lista de referencia para el select "Tema" de Tutelas — sin panel propio
@@ -1064,7 +1068,7 @@ export const SHAREPOINT_LISTS_CONFIG = [
     // contra las columnas reales — si por lo que sea no acierta, se
     // confirma a mano una sola vez en Configuración, igual que las otras 3
     // listas de Gastos la primera vez.
-    mapping: { Numero:"Numero", PagadoA:"Pagadoa", Fecha:"Fecha", ValorAPagar:"Valorapagar", TipoDocumento:"TipoDocumento", SoporteFactura:"SoporteFactura2", SoportePago:"SoportePago2" },
+    mapping: { Numero:"Numero", PagadoA:"Pagadoa", Fecha:"Fecha", ValorAPagar:"Valorapagar", TipoDocumento:"TipoDocumento", SoporteFactura:"SoporteFactura2", SoportePago:"SoportePago2", Observacion:"Observacion" },
   },
   // Herramienta "Liquidación Intereses" (Informes > Herramientas) — agregada
   // 2026-09-09, pedido explícito del usuario: reemplaza el cálculo manual en
