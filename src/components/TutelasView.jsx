@@ -1,12 +1,13 @@
 import { useState, lazy, Suspense } from 'react';
 import { ICON_SVG, TUTELAS_REMITENTES_PERMITIDOS } from '../config';
 import { fmtDate } from '../lib/graph';
+import { cargarModulo } from '../lib/cargaModulo';
 import IconButton, { IconTextButton } from './IconButton';
 import ColumnHeaderMenu from './ColumnHeaderMenu';
 import TableScrollWrap from './TableScrollWrap';
 // Carga diferida: es el módulo más pesado de Tutelas (lectura de correos + LexIA)
 // y solo se usa al abrir "Leer correo".
-const LeerCorreoTutelaModal = lazy(() => import('./LeerCorreoTutelaModal'));
+const LeerCorreoTutelaModal = lazy(cargarModulo(() => import('./LeerCorreoTutelaModal')));
 import { useColumnFilters } from '../hooks/useColumnFilters';
 import { useColumnSort } from '../hooks/useColumnSort';
 import { useLexiaVoz } from '../hooks/useLexiaVoz';

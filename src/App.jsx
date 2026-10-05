@@ -22,13 +22,14 @@ import DesistimientoDrawer from './components/DesistimientoDrawer';
 import TutelaDrawer from './components/TutelaDrawer';
 import { Toast, ConfirmDialog } from './components/Feedback';
 import CargaInicialOverlay from './components/CargaInicialOverlay';
+import { cargarModulo, marcarCargaCorrecta } from './lib/cargaModulo';
 
 // Carga diferida (2026-10-05): Informes y Administración son los módulos más
 // pesados (generadores de PDF/Excel/Word) y no se usan en cada sesión — se
 // bajan solo la primera vez que alguien entra, en vez de retrasar el inicio
 // para todos.
-const InformesView = lazy(() => import('./components/InformesView'));
-const AdministracionView = lazy(() => import('./components/AdministracionView'));
+const InformesView = lazy(cargarModulo(() => import('./components/InformesView')));
+const AdministracionView = lazy(cargarModulo(() => import('./components/AdministracionView')));
 
 function CargandoModulo(){
   return <div className="view"><p style={{color:'var(--texto)', opacity:.6}}>Cargando módulo…</p></div>;
@@ -36,6 +37,7 @@ function CargandoModulo(){
 
 export default function App(){
   const app = useLexaraApp();
+  useEffect(() => { marcarCargaCorrecta(); }, []);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   // Ocultar el menú lateral (pedido explícito del usuario 2026-09-01) — se
   // recuerda entre sesiones en localStorage, para no tener que volver a
