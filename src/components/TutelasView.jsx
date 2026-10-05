@@ -35,7 +35,7 @@ function hoyISO(){
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 
-export default function TutelasView({ tutelas, searchQuery, onOpenTutela, onCreateTutela, onDuplicateTutela, onDeleteTutela, onAgregarCorreccionIA, canWrite = true, liveMode, config, notify }){
+export default function TutelasView({ tutelas, temas, searchQuery, onOpenTutela, onCreateTutela, onDuplicateTutela, onDeleteTutela, onAgregarCorreccionIA, canWrite = true, liveMode, config, notify }){
   const { filters, setFilter, clearFilters, rowMatches, hasActiveFilters } = useColumnFilters();
   const { sort, setSortKey, sortRows } = useColumnSort();
   // "Leer correo (LexIA)" — nombre elegido por el usuario 2026-09-24 para
@@ -52,7 +52,7 @@ export default function TutelasView({ tutelas, searchQuery, onOpenTutela, onCrea
   // pegada al gesto real del usuario, no un instante después (que es lo
   // que pasaba cuando el saludo se disparaba en un useEffect al montar el
   // modal, un tris más tarde que el clic).
-  const { activada: vozActivada, setActivada: setVozActivada, decir, hablando: lexiaHablando, pausada: lexiaPausada, pausar: pausarLexia, continuar: continuarLexia } = useLexiaVoz();
+  const { decir, hablando: lexiaHablando } = useLexiaVoz();
   // Contador de tutelas que vencen hoy — se recalcula en cada render, así
   // que siempre queda al día con lo último que haya en `tutelas` (recién
   // cargado o después de un refresh).
@@ -118,7 +118,7 @@ export default function TutelasView({ tutelas, searchQuery, onOpenTutela, onCrea
           <span className={"badge badge-forma-boton " + (vencenHoy > 0 ? "badge-alerta" : "badge-gris")}>
             {vencenHoy} {vencenHoy === 1 ? "vence" : "vencen"} hoy
           </span>
-          {canWrite && <IconTextButton icon="add" variant="primary" onClick={onCreateTutela}>Nueva tutela</IconTextButton>}
+          {canWrite && <IconTextButton icon="add" variant="primary" onClick={() => onCreateTutela()}>Nueva tutela</IconTextButton>}
         </div>
       </div>
       {mostrarLeerCorreo && (
@@ -128,16 +128,11 @@ export default function TutelasView({ tutelas, searchQuery, onOpenTutela, onCrea
           robotUrl={config?.ROBOT_CLAUDE_URL}
           onedriveCarpetaUrl={config?.TUTELAS_ONEDRIVE_CARPETA_URL}
           tutelas={tutelas}
+          temas={temas}
           onAgregarCorreccionIA={onAgregarCorreccionIA}
           robotPreguntasUrl={config?.ROBOT_PREGUNTAS_URL}
           notify={notify}
-          vozActivada={vozActivada}
-          setVozActivada={setVozActivada}
-          decir={decir}
           lexiaHablando={lexiaHablando}
-          lexiaPausada={lexiaPausada}
-          pausarLexia={pausarLexia}
-          continuarLexia={continuarLexia}
           onClose={() => setMostrarLeerCorreo(false)}
           onExtraido={campos => onCreateTutela(campos)}
         />

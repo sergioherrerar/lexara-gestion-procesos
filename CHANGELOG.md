@@ -2,6 +2,29 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-10-05 (4)
+- **Órdenes Colmédica / Valores Entidad: arregla el valor en $0 y la diferencia entre el Excel y la Orden de compra** — reportado por el usuario con capturas (una tutela CORRECION de Aliansalud salía en $0,00 y el subtotal de la Orden no coincidía con el total del Excel).
+  - El cruce con "Valores Entidad" (Entidad + Cliente + Tipo) era una igualdad exacta letra por letra: cualquier diferencia mínima (espacio de más, mayúsculas, tilde, "CORRECION" vs "CORRECCION") daba $0 sin avisar. Ahora ignora mayúsculas/tildes/espacios/puntuación y tolera letras dobles en el Tipo. Aplica en TODOS los informes de Tutelas (por Abogado, por Cliente, Órdenes Colmédica).
+  - La Orden de compra ahora suma tutela por tutela con el mismo cruce que el Excel, así los totales coinciden. Antes usaba un solo valor por línea (el de la primera "otra contestación") para TODOS los tipos de "Otras", que valen distinto. Si dentro de "Otras" hay tipos con valores distintos, salen en líneas aparte ("Otras contestaciones (ALCANCE)", etc.; la Orden admite 6 líneas y, si se pasan, se juntan con valor promedio ponderado).
+  - Si de verdad no existe la fila en "Valores Entidad" (o está vacía/en 0), la pestaña muestra un aviso con la combinación exacta que falta y cuántas tutelas afecta, en vez de dejarlas en $0 en silencio.
+
+## 2026-10-05 (3)
+- **Revisión a fondo del borrador de "Nueva tutela" que arma LexIA** — pedido explícito del usuario ("que cuando se guarda no cree conflictos por formatos ni errores de listas"). Antes, lo que extraía LexIA pasaba tal cual al formulario. Ahora se limpia primero (nuevo `lib/borradorTutela.js`) y al crear el borrador sale un aviso con lo que quedó vacío o corregido para revisar:
+  - **Sí/No**: un "Si" sin tilde se guardaba como "No" en silencio; ahora siempre queda exactamente "Sí" o "No".
+  - **Cliente/Entidad** (columnas de Búsqueda): un valor mal escrito CREABA un cliente nuevo basura en SharePoint al guardar; ahora solo queda una opción oficial de la lista, o vacío.
+  - **Listas** (Tipo vinculación, Prestación, Tipo respuesta, Tema, Departamento, Ciudad): se corrigen tildes/mayúsculas/puntuación a la opción oficial ("Economica" → "Económica", "Bogotá, D.C." → "Bogotá D.C."); si no hay coincidencia clara queda vacío en vez de un texto huérfano. El Tema solo se acepta si existe para esa Prestación.
+  - **Fechas** reales en aaaa-mm-dd (acepta dd/mm/aaaa; una fecha inexistente como 31/02 queda vacía), **No. Tutela** solo dígitos (y si no coincide con el del asunto del correo, se usa el del asunto), **Proceso** en aaaa-nnnnn, **cédula** sin puntos, **correo** solo la dirección.
+  - **Solicita** (texto enriquecido): ahora se escapa a HTML seguro — antes un "<" o "&" rompía el formato y cualquier etiqueta HTML escrita en el correo se pegaba como HTML real.
+  - Avisa si ya existe una tutela con el mismo número y Cliente (posible duplicado).
+  - "Crear borrador" ya no llama al formulario desde adentro de una actualización de estado de React, y "Nueva tutela" ya no le pasa el evento del clic como si fuera un borrador.
+  - Al guardar, la búsqueda de un valor en la lista de origen de una columna de Búsqueda ahora recorre todas las páginas (antes solo los primeros 500 y, si el valor estaba después, creaba un duplicado).
+
+## 2026-10-05 (2)
+- **"Leer correo de Tutelas": la lista de correos vuelve a ordenarse por fecha, el más nuevo arriba y el más viejo abajo** — pedido explícito del usuario (desde el 29 de septiembre estaba ordenada por número de tutela).
+
+## 2026-10-05 (1)
+- **LexIA ahora solo habla en el saludo al entrar** — pedido explícito del usuario. Se quitaron los botones de volumen/pausar/continuar del encabezado de "Leer correo de Tutelas", y LexIA ya no lee en voz alta las respuestas de "Pregúntame" ni los avisos de "Estoy trabajando…"/"ya fue analizada" (siguen saliendo escritos). La voz del saludo queda siempre activa, aunque alguien la hubiera silenciado antes.
+
 ## 2026-10-04 (1)
 - **Histórico: al cambiar el Estado, el Estado anterior se archiva un renglón por actuación, cada uno empezando por su fecha** — pedido explícito del usuario ("toma la fecha, le da un enter para que la siguiente fila coloque el dato nuevo, siempre inicia con la fecha"). Antes todo el Estado viejo se pegaba en un solo renglón aunque trajera varias actuaciones seguidas. Ahora se parte en cada fecha dd-mm-aaaa que abre una actuación nueva (sin partir frases como "audiencia para el 25-02-2027…"), y si el texto no empieza por fecha se le pone la de "Fecha estado". Aplica igual en el proceso completo y en la edición rápida de la fila.
 

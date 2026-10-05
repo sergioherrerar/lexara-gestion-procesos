@@ -4,6 +4,7 @@ import { IconTextButton } from './IconButton';
 import { temasParaPrestacion, abogadosDisponibles } from '../lib/graph';
 import { DEPARTAMENTOS_COLOMBIA, municipiosDe } from '../lib/colombiaGeo';
 import { useEscapeToClose } from '../hooks/useEscapeToClose';
+import { SI_NO, TIPO_VINCULACION_OPCIONES, PRESTACION_OPCIONES, TIPO_RESPUESTA_OPCIONES, ENTIDAD_DEFECTO, ENTIDAD_OPCIONES_TUTELAS, CLIENTE_OPCIONES_TUTELAS } from '../lib/borradorTutela';
 
 // Campos que todavía no se sabe si son un select fijo en SharePoint (el
 // formulario Access original los mostraba como desplegable, pero no
@@ -11,14 +12,9 @@ import { useEscapeToClose } from '../hooks/useEscapeToClose';
 // los que ya tienen un criterio claro se dejan como select. Ver
 // [[project_tutelas_modulo]] — a confirmar con el usuario antes de fijar
 // opciones para Departamento/Ciudad.
-const SI_NO = ["Sí", "No"];
-// Listas fijas confirmadas por el usuario 2026-08-18.
-// Tipo Vinculación Entidad NO depende de nada — es una lista fija propia
-// (corrección explícita: al principio se había armado tomando sus opciones
-// de la lista Tema por error).
-const TIPO_VINCULACION_OPCIONES = ["Accionada", "Vinculada"];
-const PRESTACION_OPCIONES = ["Asistencial", "Económica", "Administrativa"];
-const TIPO_RESPUESTA_OPCIONES = ["ACLARACION", "ALCANCE", "APLAZAMIENTO", "CUMPLIMIENTO FALLO", "CORRECION", "IMPUGNACION", "MODULACION", "NULIDAD", "REQUERIMIENTO", "TUTELA"];
+// Las listas fijas (Sí/No, Tipo Vinculación, Prestación, Tipo Respuesta,
+// Entidad y Cliente) viven en lib/borradorTutela.js — compartidas con el
+// limpiador del borrador de LexIA para que ambos usen las mismas opciones.
 // CORREGIDO 2026-09-21 (pedido explícito del usuario, tras el bug real de
 // Cargo: "recuerda también incluir en todas las listas del portal... todos
 // donde esté colaborador o abogado responsable") — antes era una lista fija
@@ -31,19 +27,6 @@ const TIPO_RESPUESTA_OPCIONES = ["ACLARACION", "ALCANCE", "APLAZAMIENTO", "CUMPL
 // respaldo por si "Ariana" todavía no está en la lista dinámica de arriba
 // (ej. en modo demo, donde el Cargo no está confirmado contra SharePoint).
 const ABOGADO_RESPUESTA_DEFECTO = "Ariana Martin Mendoza";
-// Pedido explícito del usuario 2026-08-28, mientras "Entidad" en Tutelas
-// (columna real de Búsqueda en SharePoint, ver graphFieldsFromUpdates en
-// graph.js) prácticamente solo maneja este valor en la práctica.
-const ENTIDAD_DEFECTO = "GRUPO COLMEDICA";
-// Listas fijas de Entidad/Cliente para Tutelas (2026-09-22, pedido explícito
-// del usuario, viendo una tutela real con "Colmedica" en vez de "GRUPO
-// COLMEDICA" y clientes de otras Entidades mezclados en el desplegable):
-// antes estas 2 salían de TODA la lista de Clientes del despacho (todas las
-// Entidades juntas) — en la práctica, Tutelas solo trabaja con este puñado
-// de Entidad/Clientes, así que se dejan fijas acá en vez de depender de la
-// lista general (que además puede traer valores viejos/mal escritos).
-const ENTIDAD_OPCIONES_TUTELAS = ["GRUPO COLMEDICA"];
-const CLIENTE_OPCIONES_TUTELAS = ["COLMEDICA MEDICINA PREPAGADA S.A.", "ALIANSALUD ENTIDAD PROMOTORA DE SALUD S.A.", "UNIDAD MÉDICA Y DE DIAGNÓSTICO S.A."];
 
 const FIELDS = ["NoTutela", "MedidaCautelar",
   "Departamento", "Ciudad", "Proceso", "FechaNotificacion", "FechaVencimiento", "Prestacion", "TipoRespuesta",

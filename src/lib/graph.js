@@ -1058,9 +1058,17 @@ export function guessListMapping(list){
 async function resolverOCrearLookupId(siteId, lookupInfo, valor){
   const columnaDestino = lookupInfo.columnName || "Title";
   const listaDestinoId = lookupInfo.listId;
-  const itemsRes = await graphFetch(`/sites/${siteId}/lists/${listaDestinoId}/items?$expand=fields($select=${columnaDestino})&$top=500`);
-  const existente = (itemsRes.value||[]).find(it => normalize(it.fields?.[columnaDestino]||"") === normalize(valor));
-  if(existente) return Number(existente.id);
+  // Recorre TODAS las páginas (antes solo miraba los primeros 500): si el
+  // valor existía más allá del elemento 500 no lo encontraba y CREABA un
+  // duplicado nuevo en la lista de origen (2026-10-05, revisión del guardado).
+  const objetivo = normalize(valor).trim();
+  let url = `/sites/${siteId}/lists/${listaDestinoId}/items?$expand=fields($select=${columnaDestino})&$top=500`;
+  while(url){
+    const itemsRes = await graphFetch(url);
+    const existente = (itemsRes.value||[]).find(it => normalize(it.fields?.[columnaDestino]||"").trim() === objetivo);
+    if(existente) return Number(existente.id);
+    url = itemsRes['@odata.nextLink'] || null;
+  }
   const creado = await graphFetch(`/sites/${siteId}/lists/${listaDestinoId}/items`, {
     method:"POST", body: JSON.stringify({ fields: { [columnaDestino]: valor } })
   });
@@ -2229,10 +2237,56 @@ export function parseMonto(val){
 // referencia del usuario. Un solo lugar compartido — usado por
 // informeTutelas.js, informeAbogadosTutelas.js, informeClientesTutelas.js
 // y ordenesComprasColmedica.js.
+//
+// 2026-10-05, bug real reportado por el usuario (Excel de Órdenes Colmédica
+// con una tutela CORRECION de Aliansalud en $0,00 aunque sí tenía valor): el
+// cruce era una igualdad EXACTA letra por letra de los 3 campos, así que
+// cualquier diferencia mínima entre la tutela y la fila de "Valores Entidad"
+// (un espacio de más, mayúsculas, una tilde, "CORRECION" vs "CORRECCION")
+// daba null y el valor quedaba en $0 sin avisar. Ahora se compara ignorando
+// mayúsculas/tildes/espacios/puntuación, y el Tipo además tolera letras
+// dobles ("CORRECION" == "CORRECCION"). Ver `valoresEntidadFaltantes` para
+// avisar cuando de verdad no existe la fila.
+function claveValorEntidad(s){
+  return normalize(String(s ?? "")).replace(/[^a-z0-9]/g, "");
+}
+function claveTipoValorEntidad(s){
+  return claveValorEntidad(s).replace(/(.)\1+/g, "$1");
+}
+const indicesValoresEntidad = new WeakMap();
+function indiceValoresEntidad(valoresEntidad){
+  let indice = indicesValoresEntidad.get(valoresEntidad);
+  if(!indice || indice.size > valoresEntidad.length){
+    indice = new Map();
+    valoresEntidad.forEach(v => {
+      const k = `${claveValorEntidad(v.Entidad)}|${claveValorEntidad(v.Cliente)}|${claveTipoValorEntidad(v.Tipo)}`;
+      if(!indice.has(k)) indice.set(k, v); // igual que .find: gana la primera fila
+    });
+    indicesValoresEntidad.set(valoresEntidad, indice);
+  }
+  return indice;
+}
 export function buscarValorEntidad(valoresEntidad, entidad, cliente, tipoRespuesta){
-  return (valoresEntidad||[]).find(v =>
-    v.Entidad === entidad && v.Cliente === cliente && v.Tipo === tipoRespuesta
-  ) || null;
+  if(!Array.isArray(valoresEntidad) || !valoresEntidad.length) return null;
+  const k = `${claveValorEntidad(entidad)}|${claveValorEntidad(cliente)}|${claveTipoValorEntidad(tipoRespuesta)}`;
+  return indiceValoresEntidad(valoresEntidad).get(k) || null;
+}
+
+// Combinaciones Entidad + Cliente + Tipo de estas tutelas que NO tienen un
+// valor real en "Valores Entidad" (no existe la fila, o existe pero con el
+// valor vacío/0) — por eso salen en $0 en los informes y órdenes. Una fila
+// por combinación, con cuántas tutelas afecta.
+export function valoresEntidadFaltantes(tutelas, valoresEntidad){
+  const mapa = new Map();
+  (tutelas||[]).forEach(t => {
+    const fila = buscarValorEntidad(valoresEntidad, t.Entidad, t.Cliente, t.TipoRespuesta);
+    if(fila && parseMonto(fila.ValorEntidad) > 0) return;
+    const entidad = String(t.Entidad||"").trim(), cliente = String(t.Cliente||"").trim(), tipo = String(t.TipoRespuesta||"").trim();
+    const k = `${entidad}|${cliente}|${tipo}`;
+    if(!mapa.has(k)) mapa.set(k, { entidad, cliente, tipo, cantidad: 0, sinFila: !fila });
+    mapa.get(k).cantidad++;
+  });
+  return Array.from(mapa.values());
 }
 
 // Total1..6 sí son columnas reales: se calculan al crear la factura (Cantidad ×

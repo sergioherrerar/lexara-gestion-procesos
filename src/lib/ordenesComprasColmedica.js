@@ -49,26 +49,78 @@ export function filtrarTutelasPorMesCalendario(tutelas, anio, mesIndex0){
 
 // Agrupa por Cliente las 3 líneas pedidas: Tutelas / Impugnaciones / Otras
 // contestaciones (todo lo que no sea ni Tutela ni Impugnación) — cada una
-// con su cantidad. También guarda un Tipo Respuesta "de muestra" para la
-// línea de Otras (`tipoMuestraOtras`) — esa línea junta VARIOS Tipo
-// Respuesta reales distintos (Aclaración, Alcance, etc.), pero el cruce
-// real de "Valores Entidad" da el MISMO valor para todos esos tipos por
-// cliente (confirmado con datos reales 2026-08-29) — con cualquiera de
-// ellos alcanza para buscar el valor correcto de esa línea.
+// con su cantidad. Guarda también las tutelas del grupo (`tutelas`): cada
+// una se valora con SU PROPIA Entidad + Cliente + Tipo, exactamente igual
+// que el Excel (ver valorDeTutela) — el 2026-10-05 el usuario mostró que el
+// total de la Orden de compra no coincidía con el del Excel: antes se
+// buscaba un solo valor por línea usando la Entidad de la primera tutela y
+// el tipo de la primera "otra", y los demás tipos (cada uno con su valor
+// distinto en "Valores Entidad") quedaban mal valorados.
 export function agruparPorClienteParaOrden(tutelasDelMes){
   const porCliente = new Map();
   (tutelasDelMes||[]).forEach(t => {
     const cliente = (t.Cliente||"").trim();
     if(!cliente) return;
-    if(!porCliente.has(cliente)) porCliente.set(cliente, { cliente, entidad: t.Entidad || "", cantidadTutela: 0, cantidadImpugnacion: 0, cantidadOtras: 0, tipoMuestraOtras: "" });
+    if(!porCliente.has(cliente)) porCliente.set(cliente, { cliente, entidad: t.Entidad || "", cantidadTutela: 0, cantidadImpugnacion: 0, cantidadOtras: 0, tutelas: [] });
     const g = porCliente.get(cliente);
     if(!g.entidad && t.Entidad) g.entidad = t.Entidad;
-    const tipo = (t.TipoRespuesta||"").trim().toUpperCase();
-    if(tipo === "TUTELA") g.cantidadTutela++;
-    else if(tipo === "IMPUGNACION") g.cantidadImpugnacion++;
-    else { g.cantidadOtras++; if(!g.tipoMuestraOtras) g.tipoMuestraOtras = t.TipoRespuesta; }
+    g.tutelas.push(t);
+    const clase = claseDeTutela(t);
+    if(clase === "TUTELA") g.cantidadTutela++;
+    else if(clase === "IMPUGNACION") g.cantidadImpugnacion++;
+    else g.cantidadOtras++;
   });
   return Array.from(porCliente.values()).sort((a,b) => a.cliente.localeCompare(b.cliente));
+}
+
+function claseDeTutela(t){
+  const tipo = (t.TipoRespuesta||"").trim().toUpperCase();
+  return tipo === "TUTELA" ? "TUTELA" : tipo === "IMPUGNACION" ? "IMPUGNACION" : "OTRAS";
+}
+
+// Valor de UNA tutela — el mismo cruce (y los mismos campos de la propia
+// tutela) que usa el Excel en informeClientesTutelas.js, para que ambos
+// totales siempre coincidan.
+function valorDeTutela(valoresEntidad, t){
+  const fila = buscarValorEntidad(valoresEntidad, t.Entidad, t.Cliente, t.TipoRespuesta);
+  return fila ? parseMonto(fila.ValorEntidad) : 0;
+}
+
+// Líneas de la Orden de compra de un Cliente: una por cada clase (Tutelas,
+// Impugnaciones, Otras) y valor unitario distinto — lo normal es una por
+// clase; si dentro de una clase hay tutelas con valores distintos (p.ej. dos
+// tipos de "Otras" que valen diferente) van en líneas aparte. La Orden solo
+// tiene 6 líneas: si se pasan, las de una misma clase con menos tutelas se
+// juntan en una con el valor promedio ponderado.
+function lineasDeOrden(valoresEntidad, g){
+  const lineas = [];
+  ["TUTELA", "IMPUGNACION", "OTRAS"].forEach(clase => {
+    const porValor = new Map();
+    (g.tutelas || []).filter(t => claseDeTutela(t) === clase).forEach(t => {
+      const valor = valorDeTutela(valoresEntidad, t);
+      if(!porValor.has(valor)) porValor.set(valor, { clase, valor, cantidad: 0, tipos: [] });
+      const l = porValor.get(valor);
+      l.cantidad++;
+      const nombre = (t.TipoRespuesta||"").trim() || "Sin tipo";
+      if(!l.tipos.includes(nombre)) l.tipos.push(nombre);
+    });
+    const deClase = Array.from(porValor.values()).sort((a,b) => b.cantidad - a.cantidad);
+    // Siempre queda al menos una línea por clase (con cantidad 0), igual que antes.
+    lineas.push(...(deClase.length ? deClase : [{ clase, valor: 0, cantidad: 0, tipos: [] }]));
+  });
+  while(lineas.length > 6){
+    // Primero se descarta una línea vacía (cantidad 0) antes de juntar
+    // tutelas de distinto valor — no pierde ningún dato.
+    const vacia = lineas.findIndex(l => l.cantidad === 0);
+    if(vacia !== -1){ lineas.splice(vacia, 1); continue; }
+    let idx = -1;
+    for(let i = lineas.length - 1; i > 0; i--){ if(lineas[i].clase === lineas[i-1].clase){ idx = i; break; } }
+    if(idx === -1) break;
+    const a = lineas[idx-1], b = lineas[idx];
+    const cantidad = a.cantidad + b.cantidad;
+    lineas.splice(idx-1, 2, { clase: a.clase, cantidad, valor: Math.round((a.cantidad*a.valor + b.cantidad*b.valor) / cantidad * 100) / 100, tipos: [...new Set([...a.tipos, ...b.tipos])] });
+  }
+  return lineas;
 }
 
 // Arma el borrador de Orden de compra para un Cliente — mismos campos que
@@ -79,19 +131,17 @@ export function agruparPorClienteParaOrden(tutelasDelMes){
 // graph.js) — antes se usaba un solo valor para las 3 líneas, buscado solo
 // por Entidad, que daba un total muy por encima del real.
 export function construirBorradorOrdenCompra(grupoCliente, mesIndex0, anio, valoresEntidad, clientes){
-  const { cliente, entidad, cantidadTutela, cantidadImpugnacion, cantidadOtras, tipoMuestraOtras } = grupoCliente;
+  const { cliente } = grupoCliente;
   const clienteReal = (clientes||[]).find(c => c.RazonSocial === cliente);
   const contrato = CONTRATO_POR_CLIENTE[cliente] || "";
-  const valorTutela = buscarValorEntidad(valoresEntidad, entidad, cliente, "TUTELA");
-  const valorImpugnacion = buscarValorEntidad(valoresEntidad, entidad, cliente, "IMPUGNACION");
-  const valorOtras = tipoMuestraOtras ? buscarValorEntidad(valoresEntidad, entidad, cliente, tipoMuestraOtras) : null;
+  const lineas = lineasDeOrden(valoresEntidad, grupoCliente);
   const hoy = new Date();
   // Pedido explícito del usuario 2026-08-29 (viendo el borrador real ya
   // armado): este texto va en la Descripción de la 1ª línea, no en
   // Observación (que queda vacía) — reemplaza el "Tutelas" corto que tenía
   // esa línea.
   const descripcionLinea1 = `Honorarios generados dentro del Contrato ${contrato || "—"} en MD ABOGADOS SAS y ${cliente} por las contestaciones de tutelas hechas en el mes de ${MESES_NOMBRES[mesIndex0]} del ${anio}`;
-  return {
+  const borrador = {
     CodigoCliente: clienteReal ? String(clienteReal.id) : "",
     Contrato: contrato,
     Ciudad: clienteReal?.Ciudad || "Bogota D.C",
@@ -101,10 +151,18 @@ export function construirBorradorOrdenCompra(grupoCliente, mesIndex0, anio, valo
     Dia: String(hoy.getDate()),
     Mes: String(hoy.getMonth() + 1).padStart(2, '0'),
     Anio: String(hoy.getFullYear()),
-    Descripcion1: descripcionLinea1, Cantidad1: String(cantidadTutela), ValorUnitario1: (cantidadTutela && valorTutela) ? fmtMonto(parseMonto(valorTutela.ValorEntidad)) : "",
-    Descripcion2: "Impugnaciones", Cantidad2: String(cantidadImpugnacion), ValorUnitario2: (cantidadImpugnacion && valorImpugnacion) ? fmtMonto(parseMonto(valorImpugnacion.ValorEntidad)) : "",
-    Descripcion3: "Otras contestaciones", Cantidad3: String(cantidadOtras), ValorUnitario3: (cantidadOtras && valorOtras) ? fmtMonto(parseMonto(valorOtras.ValorEntidad)) : "",
   };
+  const hayVariasOtras = lineas.filter(l => l.clase === "OTRAS").length > 1;
+  lineas.forEach((l, i) => {
+    const n = i + 1;
+    borrador[`Descripcion${n}`] = i === 0 ? descripcionLinea1
+      : l.clase === "TUTELA" ? "Tutelas"
+      : l.clase === "IMPUGNACION" ? "Impugnaciones"
+      : (hayVariasOtras && l.tipos.length ? `Otras contestaciones (${l.tipos.join(", ")})` : "Otras contestaciones");
+    borrador[`Cantidad${n}`] = String(l.cantidad);
+    borrador[`ValorUnitario${n}`] = (l.cantidad && l.valor) ? fmtMonto(l.valor) : "";
+  });
+  return borrador;
 }
 
 // Detalle en pesos por cliente (Tutelas/Impugnaciones/Otras) — pedido
@@ -115,17 +173,14 @@ export function construirBorradorOrdenCompra(grupoCliente, mesIndex0, anio, valo
 export function calcularDetalleValoresPorCliente(grupos, valoresEntidad){
   let totalGeneral = 0;
   const detalle = (grupos||[]).map(g => {
-    const valorTutela = buscarValorEntidad(valoresEntidad, g.entidad, g.cliente, "TUTELA");
-    const valorImpugnacion = buscarValorEntidad(valoresEntidad, g.entidad, g.cliente, "IMPUGNACION");
-    const valorOtras = g.tipoMuestraOtras ? buscarValorEntidad(valoresEntidad, g.entidad, g.cliente, g.tipoMuestraOtras) : null;
-    const totalTutela = g.cantidadTutela * (valorTutela ? parseMonto(valorTutela.ValorEntidad) : 0);
-    const totalImpugnacion = g.cantidadImpugnacion * (valorImpugnacion ? parseMonto(valorImpugnacion.ValorEntidad) : 0);
-    const totalOtras = g.cantidadOtras * (valorOtras ? parseMonto(valorOtras.ValorEntidad) : 0);
+    // Suma tutela por tutela (igual que el Excel) — así los totales coinciden.
+    const total = { TUTELA: 0, IMPUGNACION: 0, OTRAS: 0 };
+    (g.tutelas || []).forEach(t => { total[claseDeTutela(t)] += valorDeTutela(valoresEntidad, t); });
     const filas = [];
-    if(g.cantidadTutela) filas.push({ tipoRespuesta: "TUTELA", total: totalTutela, cantidad: g.cantidadTutela });
-    if(g.cantidadImpugnacion) filas.push({ tipoRespuesta: "IMPUGNACION", total: totalImpugnacion, cantidad: g.cantidadImpugnacion });
-    if(g.cantidadOtras) filas.push({ tipoRespuesta: "Otras contestaciones", total: totalOtras, cantidad: g.cantidadOtras });
-    const totalCliente = totalTutela + totalImpugnacion + totalOtras;
+    if(g.cantidadTutela) filas.push({ tipoRespuesta: "TUTELA", total: total.TUTELA, cantidad: g.cantidadTutela });
+    if(g.cantidadImpugnacion) filas.push({ tipoRespuesta: "IMPUGNACION", total: total.IMPUGNACION, cantidad: g.cantidadImpugnacion });
+    if(g.cantidadOtras) filas.push({ tipoRespuesta: "Otras contestaciones", total: total.OTRAS, cantidad: g.cantidadOtras });
+    const totalCliente = total.TUTELA + total.IMPUGNACION + total.OTRAS;
     totalGeneral += totalCliente;
     return { cliente: g.cliente, filas, totalCliente };
   });

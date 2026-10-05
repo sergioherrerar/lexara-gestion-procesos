@@ -148,6 +148,7 @@ export default function App(){
         {app.view === 'tutelas' && canAccessView(app.modulosPermitidos, 'tutelas') && (
           <TutelasView
             tutelas={app.tutelas}
+            temas={app.temas}
             searchQuery={app.searchQuery}
             onOpenTutela={app.openTutela}
             onCreateTutela={app.newTutela}

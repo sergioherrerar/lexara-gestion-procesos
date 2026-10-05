@@ -73,10 +73,11 @@ function elegirVozFemenina(voces){
 }
 
 export function useLexiaVoz(){
-  const [activada, setActivadaState] = useState(() => {
-    try{ const v = localStorage.getItem(LEXIA_VOZ_KEY); return v === null ? true : v === '1'; }
-    catch{ return true; }
-  });
+  // Siempre activa (2026-10-05, pedido explícito del usuario: se quitaron
+  // los botones de volumen/pausar — LexIA solo dice el saludo al entrar).
+  // Ya no se lee la preferencia guardada: quien la hubiera silenciado antes
+  // se quedaría sin saludo y sin forma de volver a activarla.
+  const [activada, setActivadaState] = useState(true);
   const [hablando, setHablando] = useState(false);
   const [pausada, setPausada] = useState(false);
   // Refs (no re-render) para la cola de frases y el punto donde va —

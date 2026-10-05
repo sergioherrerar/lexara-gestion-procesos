@@ -24,7 +24,7 @@ import { IconTextButton } from './IconButton';
 // recién leído + los registros que Claude ya extrajo de él, AUNQUE esa
 // tutela todavía no se haya guardado en SharePoint. Se manda como contexto
 // con prioridad en la pestaña "Preguntas".
-export function EntrenarIAPanel({ tutelas, onAgregarCorreccion, robotPreguntasUrl, notify, casoActual, casosGuardados, decirLexia }){
+export function EntrenarIAPanel({ tutelas, onAgregarCorreccion, robotPreguntasUrl, notify, casoActual, casosGuardados }){
   // "Pregúntame" primero, tanto en el orden de los botones como la pestaña
   // que abre por defecto (2026-09-25, pedido explícito del usuario:
   // "coloca primero Pregúntame que Enséñame").
@@ -37,7 +37,7 @@ export function EntrenarIAPanel({ tutelas, onAgregarCorreccion, robotPreguntasUr
       </div>
       {tab === 'correccion'
         ? <TabCorreccion tutelas={tutelas} onAgregarCorreccion={onAgregarCorreccion} notify={notify} />
-        : <TabPreguntas robotPreguntasUrl={robotPreguntasUrl} notify={notify} casoActual={casoActual} casosGuardados={casosGuardados} decirLexia={decirLexia} />}
+        : <TabPreguntas robotPreguntasUrl={robotPreguntasUrl} notify={notify} casoActual={casoActual} casosGuardados={casosGuardados} />}
     </div>
   );
 }
@@ -177,7 +177,7 @@ function casosRelevantes(casosGuardados, pregunta){
   return filtrados.length ? filtrados : casosGuardados.slice(0, LIMITE_CASOS_SIN_FILTRAR);
 }
 
-function TabPreguntas({ robotPreguntasUrl, notify, casoActual, casosGuardados, decirLexia }){
+function TabPreguntas({ robotPreguntasUrl, notify, casoActual, casosGuardados }){
   const [pregunta, setPregunta] = useState('');
   const [mensajes, setMensajes] = useState([]); // [{autor:'yo'|'ia', texto}]
   const [enviando, setEnviando] = useState(false);
@@ -212,7 +212,6 @@ function TabPreguntas({ robotPreguntasUrl, notify, casoActual, casosGuardados, d
       }
       const respuesta = limpiarMarkdown(data.respuesta || '(sin respuesta)');
       setMensajes(prev => [...prev, { autor:'ia', texto: respuesta }]);
-      decirLexia?.(respuesta);
     }catch(err){
       console.error(err);
       setMensajes(prev => [...prev, { autor:'ia', texto: 'No pude responder: ' + (err.message || '') }]);

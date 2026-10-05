@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { leerCorreosTutelas, extraerTutelaConLexIA, numeroTutelaDeAsunto, mensajeError, buscarLecturaLexIAGuardada, guardarLecturaLexIAEnOneDrive, listarTutelasAnalizadasEnOneDrive, extraerAdjuntosSinIA } from '../lib/graph';
+import { normalizarBorradorTutela } from '../lib/borradorTutela';
+import { leerCorreosTutelas, extraerTutelaConLexIA, numeroTutelaDeAsunto, normalize, mensajeError, buscarLecturaLexIAGuardada, guardarLecturaLexIAEnOneDrive, listarTutelasAnalizadasEnOneDrive, extraerAdjuntosSinIA } from '../lib/graph';
 import IconButton, { IconTextButton } from './IconButton';
 import { EntrenarIAPanel } from './EntrenarIAModal';
 import { useDraggable } from '../hooks/useDraggable';
@@ -21,7 +22,7 @@ import lexiaAvatarSaludo from '../assets/LexIA avatar - saludo.webp';
 // devolver los campos que Claude extrajo para prellenar "Nueva tutela". El
 // usuario SIEMPRE revisa y confirma en el formulario antes de guardar — acá
 // nunca se toca SharePoint, solo se arma el objeto de campos iniciales.
-export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitidos, robotUrl, onedriveCarpetaUrl, tutelas, onAgregarCorreccionIA, robotPreguntasUrl, onExtraido, onClose, notify, vozActivada, setVozActivada, decir, lexiaHablando, lexiaPausada, pausarLexia, continuarLexia }){
+export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitidos, robotUrl, onedriveCarpetaUrl, tutelas, temas, onAgregarCorreccionIA, robotPreguntasUrl, onExtraido, onClose, notify, lexiaHablando }){
   const [cargando, setCargando] = useState(true);
   // "Un botón para actualizar la lista de los correos que estén
   // ingresando" (2026-09-29, pedido explícito del usuario) — separado de
@@ -154,7 +155,6 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
         if(guardada){
           setResultado({ mensajeId: mensaje.id, registros: guardada.registros });
           setCorreoActual({ asunto: guardada.asunto, cuerpo: guardada.cuerpo });
-          decir(`Esta tutela ya fue analizada por LexIA. Pregúntame lo que necesites sobre ella.`);
           notify?.(`La tutela ${numeroTutela} ya había sido analizada por LexIA — pregúntale lo que necesites al lado, sin gastar otra lectura.`, 'success');
           setProcesando(false);
           return;
@@ -165,7 +165,6 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
         // OneDrive nunca debe bloquear la extracción con Claude.
       }
     }
-    decir('Estoy trabajando para ti.');
     try{
       const extraido = await extraerTutelaConLexIA(correoBuzon, mensaje.id, tutelas, robotUrl, onedriveCarpetaUrl);
       setResultado({ mensajeId: mensaje.id, registros: extraido.registros });
@@ -206,13 +205,29 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
     }
   }
 
+  // Revisión 2026-10-05 (pedido del usuario: "que cuando se guarda no cree
+  // conflictos por formatos/errores de listas"): antes el registro de
+  // LexIA pasaba tal cual al formulario — un "Si" sin tilde se guardaba como
+  // "No", una fecha o lista fuera de formato rompía el guardado, y un
+  // Cliente mal escrito CREABA un cliente nuevo en SharePoint (es una
+  // columna de Búsqueda). Ahora se limpia primero (ver lib/borradorTutela.js)
+  // y se avisa qué quedó vacío/corregido. Además, antes se llamaba a
+  // onExtraido DENTRO de la función de setResultado (efecto secundario
+  // dentro de un updater de React, que puede ejecutarse dos veces).
   function handleCrearBorrador(indice){
-    setResultado(prev => {
-      const registro = prev.registros[indice];
-      onExtraido?.(registro);
-      const registros = prev.registros.map((r,i) => i===indice ? {...r, _creado:true} : r);
-      return { ...prev, registros };
+    const registro = resultado?.registros?.[indice];
+    if(!registro) return;
+    const mensajeOrigen = mensajes.find(m => m.id === resultado.mensajeId);
+    const { campos, avisos } = normalizarBorradorTutela(registro, {
+      temas,
+      numeroAsunto: mensajeOrigen ? numeroTutelaDeAsunto(mensajeOrigen.asunto) : null,
     });
+    const yaExiste = campos.NoTutela && campos.Cliente && (tutelas || []).some(t =>
+      String(t.NoTutela) === String(campos.NoTutela) && normalize(t.Cliente || '') === normalize(campos.Cliente));
+    if(yaExiste) avisos.unshift(`Ya existe en la lista una tutela ${campos.NoTutela} con ese Cliente — revisa que no la estés duplicando.`);
+    onExtraido?.(campos);
+    setResultado(prev => prev && { ...prev, registros: prev.registros.map((r,i) => i===indice ? {...r, _creado:true} : r) });
+    if(avisos.length) notify?.('Revisa antes de guardar: ' + avisos.join(' · '), 'info');
   }
 
   // 2026-09-24, pedido explícito del usuario ("que se deje arrastrar la
@@ -229,22 +244,12 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
   const tutelaBuscadaExistente = numeroBuscado === null
     ? null
     : (tutelas || []).find(t => Number(t.NoTutela) === numeroBuscado) || null;
-  // Orden de la lista visible (2026-09-29, pedido explícito del usuario:
-  // "ya no veo tan factible que se ordene por la fecha sino por el número
-  // de tutelas según sea el consecutivo") — antes quedaba en el orden de
-  // llegada del correo (más reciente primero); ahora se ordena por el
-  // número de tutela del asunto, de menor a mayor, que es como de verdad
-  // se van revisando (28163, 28164, 28165...). Los correos sin número
-  // reconocible en el asunto quedan al final.
-  function compararPorNumeroTutela(a, b){
-    const na = numeroTutelaDeAsunto(a.asunto);
-    const nb = numeroTutelaDeAsunto(b.asunto);
-    if(na === null && nb === null) return 0;
-    if(na === null) return 1;
-    if(nb === null) return -1;
-    return na - nb;
-  }
-  const mensajesOrdenados = [...mensajesFiltrados].sort(compararPorNumeroTutela);
+  // Orden de la lista visible: por fecha y hora de recibido, el correo más
+  // NUEVO arriba y el más viejo abajo (2026-10-05, pedido explícito del
+  // usuario). El 2026-09-29 se había cambiado a orden por número de tutela
+  // ("ya no veo tan factible que se ordene por la fecha"); ahora el usuario
+  // pidió volver al orden por fecha.
+  const mensajesOrdenados = [...mensajesFiltrados].sort((a, b) => (new Date(b.fecha).getTime() || 0) - (new Date(a.fecha).getTime() || 0));
 
   // Avatar grande con pose distinta según la etapa (2026-09-29, pedido
   // explícito del usuario) — "escuchando" mientras LexIA está leyendo/
@@ -260,11 +265,9 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
   // sigue la misma prioridad que estadoAvatar de arriba.
   const mensajeAvatar = procesando
     ? 'Estoy trabajando para ti…'
-    : lexiaHablando
-      ? 'Te estoy leyendo la respuesta en voz alta…'
-      : mostrarSaludo
-        ? '¡Hola! Soy LexIA. Elige un correo y dale "Extraer con LexIA", o pregúntame lo que necesites al lado.'
-        : '';
+    : mostrarSaludo
+      ? '¡Hola! Soy LexIA. Elige un correo y dale "Extraer con LexIA", o pregúntame lo que necesites al lado.'
+      : '';
 
   return (
     <div className="confirm-overlay leer-correo-overlay">
@@ -283,22 +286,9 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
               izquierda" a ojo. */}
           <div className="leer-correo-head-lateral">
             <h4 className="leer-correo-col-lateral-titulo">Entrenar LexIA</h4>
-            <IconButton
-              icon={vozActivada ? 'volumeOn' : 'volumeOff'}
-              variant="secondary"
-              label={vozActivada ? 'Silenciar a LexIA' : 'Activar la voz de LexIA'}
-              onClick={() => { console.log('[LexIA voz] clic en el botón de volumen'); setVozActivada(v => !v); }}
-            />
-            {/* "Un botón de stop y uno play para parar o continuar con la
-                lectura" (2026-09-25, pedido explícito del usuario) — solo
-                aparecen mientras LexIA está hablando/en pausa, no ocupan
-                espacio el resto del tiempo. */}
-            {lexiaHablando && !lexiaPausada && (
-              <IconButton icon="pause" variant="secondary" label="Pausar la lectura" onClick={() => { console.log('[LexIA voz] clic en el botón de pausar'); pausarLexia(); }} />
-            )}
-            {lexiaHablando && lexiaPausada && (
-              <IconButton icon="play" variant="secondary" label="Continuar la lectura" onClick={() => { console.log('[LexIA voz] clic en el botón de continuar'); continuarLexia(); }} />
-            )}
+            {/* 2026-10-05, pedido explícito del usuario: LexIA ya no lee en
+                voz alta nada más que el saludo al entrar — se quitaron los
+                botones de volumen/pausar/continuar. */}
           </div>
           <div className="leer-correo-head-avatar-col">
             <button className="drawer-close" onClick={onClose} aria-label="Cerrar">
@@ -467,7 +457,6 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
             notify={notify}
             casoActual={resultado ? { asunto: correoActual?.asunto, cuerpo: correoActual?.cuerpo, registros: resultado.registros } : null}
             casosGuardados={casosGuardadosOneDrive}
-            decirLexia={decir}
           />
         </div>
         {/* Avatar grande al costado derecho (2026-09-29, pedido explícito

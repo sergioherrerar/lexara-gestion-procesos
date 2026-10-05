@@ -5,7 +5,7 @@ import {
   construirBorradorOrdenCompra, generarExcelOrdenesColmedica, calcularDetalleValoresPorCliente,
 } from '../lib/ordenesComprasColmedica';
 import { colorDeTipoRespuesta } from '../lib/informeAbogadosTutelas';
-import { fmtMonto, mensajeError } from '../lib/graph';
+import { fmtMonto, mensajeError, valoresEntidadFaltantes } from '../lib/graph';
 import StackedBarChart from './StackedBarChart';
 
 // "Órdenes Colmédica" (Administración) — pedido explícito del usuario
@@ -33,6 +33,10 @@ export default function OrdenesColmedicaTab({ tutelas, valoresEntidad, clientes,
   // tarjetas de detalle que ya usan "Tutelas por Abogado"/"Tutelas por
   // Cliente", con los valores reales en pesos de cada línea.
   const { detalle: detalleValores, totalGeneral: totalGeneralValores } = calcularDetalleValoresPorCliente(grupos, valoresEntidad);
+  // Combinaciones Entidad + Cliente + Tipo de este mes que no tienen valor en
+  // "Valores Entidad" — por eso salían en $0 sin avisar (2026-10-05, caso real
+  // de una tutela CORRECION de Aliansalud).
+  const faltantes = valoresEntidadFaltantes(tutelasDelMes, valoresEntidad);
 
   function handleGenerarBorrador(grupo){
     const borrador = construirBorradorOrdenCompra(grupo, mes, anio, valoresEntidad, clientes);
@@ -74,6 +78,19 @@ export default function OrdenesColmedicaTab({ tutelas, valoresEntidad, clientes,
             {generandoExcel ? "Generando…" : "Descargar Excel"}
           </IconTextButton>
         </div>
+        {faltantes.length > 0 && (
+          <div className="field-warning" style={{marginBottom:16}}>
+            <strong>Estas tutelas están en $0 porque falta su valor en "Valores Entidad":</strong>
+            <ul style={{margin:'6px 0 0', paddingLeft:18}}>
+              {faltantes.map(f => (
+                <li key={`${f.entidad}|${f.cliente}|${f.tipo}`}>
+                  {f.cliente || 'Sin cliente'} · {f.tipo || 'Sin tipo'} — {f.cantidad} tutela{f.cantidad === 1 ? '' : 's'} ({f.sinFila ? 'no existe esa fila' : 'la fila existe pero con valor vacío o 0'})
+                </li>
+              ))}
+            </ul>
+            <div style={{marginTop:6}}>Agrégalo o corrígelo en Tutelas → "Editar Valor Entidad" (Entidad, Cliente y Tipo iguales a los de la tutela) y vuelve a generar.</div>
+          </div>
+        )}
         <StackedBarChart grupos={detalleValores} labelKey="cliente" totalKey="totalCliente" emptyMsg={`No hay tutelas con vencimiento en ${MESES_NOMBRES[mes]} de ${anio}.`} />
         {detalleValores.length > 0 && (
           <div className="abogados-detalle" style={{marginBottom:20}}>
