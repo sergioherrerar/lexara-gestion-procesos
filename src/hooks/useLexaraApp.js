@@ -1284,38 +1284,61 @@ export function useLexaraApp(){
   // lado del portal cómo queda formateado). Estas correcciones alimentan a
   // "Leer correo (IA)" como ejemplos reales de referencia (ver
   // LeerCorreoTutelaModal.jsx).
+  // Devuelve `{ ok: true }` o `{ ok: false, error: "motivo en español" }` en
+  // vez de tragarse el error (2026-10-06, caso real: el usuario le daba a
+  // "Agregar corrección" y no pasaba nada visible — los avisos salen abajo a
+  // la derecha y el panel no mostraba el resultado). Así el panel de
+  // "Enséñame" muestra ahí mismo si se guardó o por qué no, y solo borra lo
+  // escrito cuando de verdad se guardó. `setSaving` se libera siempre.
   async function agregarCorreccionIA(tutelaId, texto){
     const tutela = tutelas.find(t => t.id === tutelaId);
-    if(!tutela || !texto?.trim()) return;
+    if(!tutela) return { ok: false, error: 'No encontré esa tutela en la lista cargada — ciérrala y vuelve a abrirla.' };
+    if(!texto?.trim()) return { ok: false, error: 'Escribe la corrección primero.' };
     if(!liveMode){
       const anterior = tutela.CorreccionIA || '';
       const nuevo = anterior + `<p><strong>${account?.name || 'Usuario'}</strong> — ${new Date().toLocaleString('es-CO')}<br/>${texto}</p>`;
       setTutelas(prev => prev.map(t => t.id===tutelaId ? {...t, CorreccionIA: nuevo} : t));
       notify("Corrección agregada", 'success');
-      return;
+      return { ok: true };
     }
     setSaving(true);
-    const list = listByKey('tutelas');
-    const columnaReal = list.mapping.CorreccionIA;
-    if(!columnaReal){
-      setSaving(false);
-      notify('Falta mapear "Corrección IA" en Configuración antes de poder usar esto.', 'error');
-      return;
-    }
     try{
+      const list = listByKey('tutelas');
+      const columnaReal = list?.mapping?.CorreccionIA;
+      if(!columnaReal){
+        const error = 'Falta mapear la columna "Corrección IA" de Tutelas en Configuración antes de poder guardar correcciones.';
+        notify(error, 'error');
+        return { ok: false, error };
+      }
+      if(!tutela._graphId){
+        const error = 'Esta tutela todavía no tiene su registro de SharePoint cargado — recarga la lista (botón de actualizar) y vuelve a intentarlo.';
+        notify(error, 'error');
+        return { ok: false, error };
+      }
       const graphBody = await Graph.graphFieldsFromUpdates(list.siteId || siteId, list, { CorreccionIA: texto });
       await Graph.graphFetch(`/sites/${list.siteId || siteId}/lists/${list.listId}/items/${tutela._graphId}/fields`, {
         method:"PATCH", body: JSON.stringify(graphBody)
       });
-      const releido = await Graph.graphFetch(`/sites/${list.siteId || siteId}/lists/${list.listId}/items/${tutela._graphId}/fields?$select=${columnaReal}`);
-      const valorFresco = Graph.coerceFieldValue(releido?.[columnaReal] ?? '');
-      setTutelas(prev => prev.map(t => t.id===tutelaId ? {...t, CorreccionIA: valorFresco} : t));
+      // Releer el historial armado por SharePoint es solo para mostrarlo: si
+      // ESTO falla, la corrección ya quedó guardada — no se reporta como error.
+      try{
+        const releido = await Graph.graphFetch(`/sites/${list.siteId || siteId}/lists/${list.listId}/items/${tutela._graphId}/fields?$select=${columnaReal}`);
+        const valorFresco = Graph.coerceFieldValue(releido?.[columnaReal] ?? '');
+        setTutelas(prev => prev.map(t => t.id===tutelaId ? {...t, CorreccionIA: valorFresco} : t));
+      }catch(errLectura){
+        console.error('La corrección se guardó, pero no se pudo releer el historial:', errLectura);
+        setTutelas(prev => prev.map(t => t.id===tutelaId ? {...t, CorreccionIA: (t.CorreccionIA || '') + `<p>${String(texto).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</p>`} : t));
+      }
       notify("Corrección agregada", 'success');
+      return { ok: true };
     }catch(err){
       console.error(err);
-      notify("No se pudo guardar la corrección: " + Graph.mensajeError(err), 'error');
+      const error = "No se pudo guardar la corrección: " + Graph.mensajeError(err);
+      notify(error, 'error');
+      return { ok: false, error };
+    }finally{
+      setSaving(false);
     }
-    setSaving(false);
   }
   async function saveTutela(updates){
     if(!activeTutela) return;

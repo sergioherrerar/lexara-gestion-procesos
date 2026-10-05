@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { normalizarBorradorTutela } from '../lib/borradorTutela';
+import { aplicarVencimientoHabil, fechaLocalISO } from '../lib/vencimientoTutela';
 import { leerCorreosTutelas, extraerTutelaConLexIA, numeroTutelaDeAsunto, normalize, mensajeError, buscarLecturaLexIAGuardada, guardarLecturaLexIAEnOneDrive, listarTutelasAnalizadasEnOneDrive, extraerAdjuntosSinIA } from '../lib/graph';
 import IconButton, { IconTextButton } from './IconButton';
 import { EntrenarIAPanel } from './EntrenarIAModal';
@@ -166,7 +167,19 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
       }
     }
     try{
-      const extraido = await extraerTutelaConLexIA(correoBuzon, mensaje.id, tutelas, robotUrl, onedriveCarpetaUrl);
+      const extraido = await extraerTutelaConLexIA(correoBuzon, mensaje.id, tutelas, robotUrl, onedriveCarpetaUrl, fechaLocalISO(mensaje.fecha));
+      // Vencimiento en días HÁBILES (sin sábados, domingos ni festivos de
+      // Colombia), calculado por el portal con los días que otorga el juez —
+      // no con la fecha que haya escrito Claude (ver lib/vencimientoTutela.js).
+      // Se corrige ANTES de mostrar/guardar, para que lo que se ve, lo que
+      // queda en OneDrive y lo que usa "Pregúntame" sea siempre lo mismo.
+      const avisosVencimiento = [];
+      extraido.registros = extraido.registros.map(r => {
+        const { registro, avisos } = aplicarVencimientoHabil(r, fechaLocalISO(mensaje.fecha));
+        avisos.forEach(a => { if(!avisosVencimiento.includes(a)) avisosVencimiento.push(a); });
+        return registro;
+      });
+      if(avisosVencimiento.length) notify?.('Vencimiento: ' + avisosVencimiento.join(' · '), 'info');
       setResultado({ mensajeId: mensaje.id, registros: extraido.registros });
       setCorreoActual({ asunto: extraido.asunto, cuerpo: extraido.cuerpo });
       if(extraido.omitidos?.length){
@@ -221,12 +234,16 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
     const registro = resultado?.registros?.[indice];
     if(!registro) return;
     const mensajeOrigen = mensajes.find(m => m.id === resultado.mensajeId);
-    const { campos, avisos } = normalizarBorradorTutela(registro, {
+    // Idempotente: cubre también lecturas viejas guardadas en OneDrive, que se
+    // hicieron antes de que el vencimiento se calculara con días hábiles.
+    const vencimiento = aplicarVencimientoHabil(registro, mensajeOrigen ? fechaLocalISO(mensajeOrigen.fecha) : '');
+    const { campos, avisos } = normalizarBorradorTutela(vencimiento.registro, {
       temas,
       numeroAsunto: mensajeOrigen ? numeroTutelaDeAsunto(mensajeOrigen.asunto) : null,
     });
     const yaExiste = campos.NoTutela && campos.Cliente && (tutelas || []).some(t =>
       String(t.NoTutela) === String(campos.NoTutela) && normalize(t.Cliente || '') === normalize(campos.Cliente));
+    avisos.push(...vencimiento.avisos);
     if(yaExiste) avisos.unshift(`Ya existe en la lista una tutela ${campos.NoTutela} con ese Cliente — revisa que no la estés duplicando.`);
     onExtraido?.(campos);
     setResultado(prev => prev && { ...prev, registros: prev.registros.map((r,i) => i===indice ? {...r, _creado:true} : r) });
@@ -243,7 +260,9 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
   const numeroBuscado = busquedaNumero.trim() ? Number(busquedaNumero.trim()) : null;
   const mensajesFiltrados = numeroBuscado === null
     ? mensajes
-    : mensajes.filter(m => numeroTutelaDeAsunto(m.asunto) === numeroBuscado);
+    // También acepta el número suelto en el asunto ("…28217…") aunque no diga
+    // "TUTELA" justo antes — antes esos correos no salían al buscar.
+    : mensajes.filter(m => numeroTutelaDeAsunto(m.asunto) === numeroBuscado || new RegExp(`(^|\\D)${numeroBuscado}(\\D|$)`).test(m.asunto || ''));
   const tutelaBuscadaExistente = numeroBuscado === null
     ? null
     : (tutelas || []).find(t => Number(t.NoTutela) === numeroBuscado) || null;
@@ -358,7 +377,7 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
         )}
         {!cargando && !errorCarga && mensajes.length > 0 && numeroBuscado !== null && mensajesFiltrados.length === 0 && (
           <p className="empty-state empty-state-compact">
-            No hay ningún correo con la tutela {numeroBuscado} entre los que están cargados (revisa el rango de fechas de arriba).
+            No hay ningún correo con la tutela {numeroBuscado} entre los que están cargados (revisa el rango de fechas de arriba). Si el correo sí está en el buzón, puede que venga de una dirección que no está en la lista de remitentes permitidos — avísame quién lo envió.
           </p>
         )}
         <ul className="leer-correo-lista">

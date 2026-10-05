@@ -542,52 +542,100 @@ export async function leerCorreoCompleto(correoBuzon, mensajeId){
 // tanto el botón "Extraer con LexIA" como la precarga automática usen
 // EXACTAMENTE la misma lógica (correcciones incluidas), sin duplicar código.
 // Lanza si el robot no está configurado o responde con error.
-export async function extraerTutelaConLexIA(correoBuzon, mensajeId, tutelas, robotUrl, onedriveCarpetaUrl){
+// Traduce los errores técnicos del robot/API a un mensaje que el usuario
+// entienda y sepa qué hacer (2026-10-06, revisión pedida por el usuario).
+function mensajeErrorLexIA(msg){
+  const m = String(msg || '');
+  if(/prompt is too long/i.test(m)){
+    return 'Los adjuntos de este correo son demasiado largos para que LexIA los lea. Usa "Extraer adjuntos" para guardarlos en OneDrive y llena los datos a mano.';
+  }
+  if(/credit balance|purchase credits|billing|insufficient (funds|credit)/i.test(m)){
+    return 'Se acabó el saldo de la API de Claude. Recárgalo en console.anthropic.com, o mientras tanto usa "Extraer adjuntos" y la página "LexIA Plan B".';
+  }
+  if(/overloaded|rate.?limit|\b(429|529)\b/i.test(m)){
+    return 'LexIA está saturada en este momento. Espera un minuto y vuelve a intentarlo.';
+  }
+  if(/no lleg[oó] un JSON v[aá]lido|payload too large|request entity too large|\b413\b/i.test(m)){
+    return 'Los adjuntos de este correo pesan demasiado para enviarlos a LexIA. Usa "Extraer adjuntos" para guardarlos en OneDrive y llena los datos a mano.';
+  }
+  if(/image.*(5 ?MB|exceeds)|could not process (image|pdf)|invalid base64|unsupported (image|media)/i.test(m)){
+    return 'LexIA no pudo leer uno de los adjuntos (formato dañado o no soportado). Usa "Extraer adjuntos" para guardarlos en OneDrive y llena los datos a mano.';
+  }
+  if(/timed? ?out|timeout|\b(502|504)\b|gateway/i.test(m)){
+    return 'LexIA tardó demasiado en responder (el correo trae mucho para leer). Vuelve a intentarlo; si se repite, usa "Extraer adjuntos" y llena los datos a mano.';
+  }
+  return m;
+}
+
+export async function extraerTutelaConLexIA(correoBuzon, mensajeId, tutelas, robotUrl, onedriveCarpetaUrl, fechaCorreoISO){
   if(!robotUrl) throw new Error('Falta terminar de instalar LexIA (ROBOT_CLAUDE_URL en config.js).');
   const completo = await leerCorreoCompleto(correoBuzon, mensajeId);
-  // Guarda los adjuntos originales en OneDrive ANTES de llamar a Claude
-  // (ver nota de guardarAdjuntosOriginalesEnOneDrive) — así quedan listos
-  // para el "plan B" aunque la llamada de abajo falle por falta de saldo.
-  // Nunca debe bloquear ni romper la extracción normal si falla. Usa la
-  // versión que SE SALTA este trabajo si la carpeta ya se dejó lista de
-  // antemano con el botón "Extraer adjuntos" (2026-09-30, pedido explícito
-  // del usuario) — no repite la subida del PDF/adjuntos si ya están ahí.
+  // Guarda los adjuntos originales en OneDrive para el "plan B" (ver nota de
+  // guardarAdjuntosOriginalesEnOneDrive). Se ARRANCA ya, antes de llamar a
+  // Claude (así quedan guardados aunque esa llamada falle por falta de
+  // saldo), pero SIN esperarlo: antes se esperaba, y en un correo con
+  // adjuntos pesados dejaba al usuario mirando "Extrayendo…" minutos antes
+  // de que Claude siquiera empezara. Nunca debe romper la extracción normal.
+  // Usa la versión que SE SALTA el trabajo si la carpeta ya se dejó lista
+  // con el botón "Extraer adjuntos" (2026-09-30).
   const numeroTutela = numeroTutelaDeAsunto(completo.asunto);
   if(onedriveCarpetaUrl && numeroTutela){
-    try{
-      await asegurarAdjuntosOriginalesEnOneDrive(onedriveCarpetaUrl, numeroTutela, completo);
-    }catch(err){
-      console.error('No se pudieron guardar los adjuntos originales en OneDrive (plan B):', err);
-    }
+    asegurarAdjuntosOriginalesEnOneDrive(onedriveCarpetaUrl, numeroTutela, completo)
+      .catch(err => console.error('No se pudieron guardar los adjuntos originales en OneDrive (plan B):', err));
   }
   const correcciones = (tutelas || [])
     .filter(t => t.CorreccionIA)
     .sort((a,b) => (Number(b.NoTutela)||0) - (Number(a.NoTutela)||0))
     .slice(0, 150)
     .map(t => ({ noTutela: t.NoTutela, temaActual: t.Tema, correccion: stripHtml(t.CorreccionIA) }));
-  // Solo se mandan los adjuntos que caben en un presupuesto de páginas (ver
-  // adjuntosLexIA.js) — un anexo larguísimo hacía pasar el prompt del límite
-  // de 1.000.000 de tokens de la API (error real 2026-10-06) y cada página
-  // se cobra. Los omitidos se devuelven para avisarle al usuario.
+  // Solo se mandan los adjuntos que caben en los topes y que la API acepta
+  // (ver adjuntosLexIA.js) — un anexo larguísimo pasaba el límite de
+  // 1.000.000 de tokens (error real 2026-10-06), y una imagen en formato no
+  // soportado/pesada o un PDF dañado hacía que la API rechazara TODO. Los
+  // omitidos se devuelven para avisarle al usuario.
   const { seleccionados, omitidos } = await seleccionarAdjuntosParaLexIA(completo.adjuntos);
-  const res = await fetch(robotUrl, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      asunto: completo.asunto,
-      cuerpo: completo.cuerpo,
-      adjuntos: seleccionados.map(a => ({ nombre: a.nombre, tipo: a.tipo, base64: a.base64 })),
-      correcciones,
-    }),
-  });
-  let data;
-  try{ data = await res.json(); }catch{ data = null; }
-  if(!res.ok || !data || data.error){
-    const msg = (data && data.error) || `LexIA respondió con error (código ${res.status}).`;
-    if(/prompt is too long/i.test(msg)){
-      throw new Error('Los adjuntos de este correo son demasiado largos para que LexIA los lea. Usa "Extraer adjuntos" para guardarlos en OneDrive y llena los datos a mano.');
+  // El cuerpo de un "RV:" con toda la cadena de reenvíos puede ser enorme.
+  const cuerpoParaIA = completo.cuerpo.length > 60000 ? completo.cuerpo.slice(0, 60000) + '…' : completo.cuerpo;
+
+  let pendientes = seleccionados;
+  let data = null;
+  for(let intento = 0; intento < 3; intento++){
+    let res;
+    try{
+      res = await fetch(robotUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          asunto: completo.asunto,
+          cuerpo: cuerpoParaIA,
+          // Día en que llegó el correo — el robot se lo da a Claude como
+          // referencia para la fecha de notificación.
+          fechaCorreo: fechaCorreoISO || '',
+          adjuntos: pendientes.map(a => ({ nombre: a.nombre, tipo: a.tipo, base64: a.base64 })),
+          correcciones,
+        }),
+      });
+    }catch{
+      // fetch solo lanza si no hubo respuesta (sin internet, el servidor cortó
+      // la conexión por tiempo/tamaño, o el robot no está accesible).
+      throw new Error('No se pudo comunicar con LexIA (el servidor no respondió). Revisa tu conexión; si el correo trae adjuntos pesados, usa "Extraer adjuntos" y llena los datos a mano.');
     }
-    throw new Error(msg);
+    try{ data = await res.json(); }catch{ data = null; }
+    if(res.ok && data && !data.error) break;
+    const msg = (data && data.error) || `LexIA respondió con error (código ${res.status}).`;
+    // Un PDF protegido con contraseña que el robot no pudo abrir tumba toda
+    // la solicitud — se reintenta sin ESE archivo (y se avisa que se omitió).
+    const protegido = /El adjunto "(.+?)" viene protegido/.exec(msg);
+    if(protegido && intento < 2){
+      const antes = pendientes.length;
+      pendientes = pendientes.filter(a => a.nombre !== protegido[1]);
+      if(pendientes.length < antes){
+        omitidos.push({ nombre: protegido[1], motivo: 'protegido con contraseña que no se pudo abrir' });
+        data = null;
+        continue;
+      }
+    }
+    throw new Error(mensajeErrorLexIA(msg));
   }
   const registros = Array.isArray(data.registros) ? data.registros : [data.campos || {}];
   return { asunto: completo.asunto, cuerpo: completo.cuerpo, registros: registros.map(r => ({ ...r, _creado: false })), omitidos };
@@ -752,9 +800,19 @@ export async function guardarAdjuntosOriginalesEnOneDrive(urlCarpeta, numeroTute
     headers: { 'Content-Type': 'application/pdf' },
     body: base64ABytes(pdfBase64),
   });
+  // Nombres repetidos ("Documento.pdf" dos veces, o varias "image001.png"):
+  // antes el segundo PISABA al primero y se perdía un adjunto sin avisar —
+  // ahora el repetido se guarda como "Documento (2).pdf".
+  const nombresUsados = new Set(['correo original.pdf']);
   for(const adj of (correo.adjuntos || [])){
     if(!adj.base64) continue;
-    const nombre = (adj.nombre || 'adjunto').replace(/[\\/:*?"<>|]/g, '_');
+    const base = (adj.nombre || 'adjunto').replace(/[\\/:*?"<>|]/g, '_');
+    const punto = base.lastIndexOf('.');
+    const raiz = punto > 0 ? base.slice(0, punto) : base;
+    const ext = punto > 0 ? base.slice(punto) : '';
+    let nombre = base;
+    for(let n = 2; nombresUsados.has(nombre.toLowerCase()); n++) nombre = `${raiz} (${n})${ext}`;
+    nombresUsados.add(nombre.toLowerCase());
     const ruta = `${numeroTutela} Tutela/Adjuntos originales/${nombre}`;
     await graphFetch(`/drives/${driveId}/items/${folderId}:/${encodeURIComponent(ruta).replace(/%2F/g,'/')}:/content`, {
       method: 'PUT',

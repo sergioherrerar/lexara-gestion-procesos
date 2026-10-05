@@ -12,6 +12,13 @@
 // public_html/robot-tutelas/ y deja config.php (copiado de
 // config.example.php, con la clave real) ahí mismo, junto a este archivo.
 
+// Revisión de errores (2026-10-06, pedido del usuario): un correo con varios
+// PDF pesados puede tardar más de los 30 s que suele traer PHP por defecto, y
+// decodificar/reenviar tantos adjuntos en base64 gasta mucha memoria — en
+// cualquiera de los dos casos el servidor cortaba la conexión sin avisar.
+@set_time_limit(190);
+@ini_set('memory_limit', '512M');
+
 header('Content-Type: application/json; charset=utf-8');
 // Restringido a los 2 dominios reales del portal — no "*", evita que
 // cualquier otra página use este robot con nuestra clave.
@@ -47,7 +54,9 @@ if(!$apiKey || $apiKey === 'PEGA_AQUI_TU_CLAVE_REAL'){
 $entrada = json_decode(file_get_contents('php://input'), true);
 if(!is_array($entrada)){
     http_response_code(400);
-    echo json_encode(['error' => 'Solicitud inválida (no llegó un JSON válido).']);
+    // Si el cuerpo llegó vacío porque pesaba más de lo que el servidor acepta
+    // (post_max_size), PHP lo descarta en silencio — se avisa el límite real.
+    echo json_encode(['error' => 'Solicitud inválida (no llegó un JSON válido) — puede que los adjuntos superen el tamaño máximo que acepta el servidor (post_max_size = ' . ini_get('post_max_size') . ').']);
     exit;
 }
 
@@ -85,8 +94,9 @@ $camposEsperados = <<<TXT
 - Ciudad (texto)
 - Juzgado (texto)
 - Proceso (el "número corto" del proceso, formato EXACTO aaaa-nnnnn — año de 4 dígitos, guion, número de 5 dígitos, ej. "2026-00942". Si en el correo aparece el radicado judicial completo y largo, como "23-001-40-03-003-2026-00942-00", saca de ahí SOLO esa parte año-número de 5 dígitos — nunca pongas el radicado completo en este campo)
-- FechaNotificacion (fecha en formato aaaa-mm-dd)
-- FechaVencimiento (fecha en formato aaaa-mm-dd)
+- FechaNotificacion (fecha en formato aaaa-mm-dd en que el juzgado notificó la tutela o el auto a la entidad. Si el correo o los documentos no la dicen con claridad, déjala vacía — el portal usará el día en que llegó el correo)
+- DiasTermino (número ENTERO de días que el juez o el correo otorgan para contestar — ej. "otorgó dos (2) días" → 2, "tres días hábiles" → 3, "48 horas" → 2. Solo el número, sin texto. Déjalo vacío si el plazo no se expresa en días)
+- FechaVencimiento (fecha aaaa-mm-dd. SOLO si el correo o los documentos dicen una fecha límite concreta, como "hasta el 10 de octubre". Si el plazo se expresa en días (DiasTermino), déjala VACÍA y NO la calcules tú: el portal la calcula con días hábiles — sin sábados, domingos ni festivos de Colombia)
 - TipoRespuesta (exactamente uno de: ACLARACION, ALCANCE, APLAZAMIENTO, CUMPLIMIENTO FALLO, CORRECION, IMPUGNACION, MODULACION, NULIDAD, REQUERIMIENTO, TUTELA — la PRIMERA vez que se ve un caso casi siempre es TUTELA, pero léelo del contenido real del correo, no lo asumas siempre)
 - MedidaCautelar (exactamente "Sí" o "No")
 - AgenciaOficiosa (exactamente "Sí" o "No")
@@ -195,7 +205,8 @@ $contenido = [];
 // permite, si Claude devuelve un error sobre "content.N", decirle al usuario
 // EXACTAMENTE qué archivo adjunto tuvo el problema (p.ej. un PDF con clave).
 $nombresPorIndice = [];
-$textoCorreo = "Asunto del correo: {$asunto}\n\nCuerpo del correo:\n{$cuerpo}";
+$fechaCorreoTexto = preg_match('/^\d{4}-\d{2}-\d{2}$/', (string)($entrada['fechaCorreo'] ?? '')) ? "Fecha en que llegó este correo: " . $entrada['fechaCorreo'] . "\n" : '';
+$textoCorreo = "{$fechaCorreoTexto}Asunto del correo: {$asunto}\n\nCuerpo del correo:\n{$cuerpo}";
 $contenido[] = ['type' => 'text', 'text' => $textoCorreo];
 $nombresPorIndice[] = '(texto del correo)';
 
@@ -203,11 +214,22 @@ $nombresPorIndice[] = '(texto del correo)';
 // — se ignora por ahora; si el correo trae la tutela en un Excel adjunto en
 // vez de PDF/imagen, hay que extraerla a mano. Ver nota en el proyecto.
 foreach($adjuntos as $adj){
-    $tipo = (string)($adj['tipo'] ?? '');
+    $tipo = strtolower(trim(explode(';', (string)($adj['tipo'] ?? ''))[0]));
     $base64 = (string)($adj['base64'] ?? '');
     $nombreAdj = (string)($adj['nombre'] ?? 'adjunto sin nombre');
     if(!$base64) continue;
-    if(strpos($tipo, 'image/') === 0){
+    // Outlook a veces manda un PDF/foto real como "application/octet-stream"
+    // o sin tipo — antes se ignoraba en silencio y LexIA nunca lo leía. Se
+    // deduce por la extensión del nombre.
+    $ext = strtolower(pathinfo($nombreAdj, PATHINFO_EXTENSION));
+    if($tipo === '' || $tipo === 'application/octet-stream'){
+        $porExtension = ['pdf' => 'application/pdf', 'jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg', 'png' => 'image/png', 'gif' => 'image/gif', 'webp' => 'image/webp'];
+        if(isset($porExtension[$ext])) $tipo = $porExtension[$ext];
+    }
+    if($tipo === 'image/jpg') $tipo = 'image/jpeg';
+    // La API solo acepta estas 4 imágenes — un TIFF/BMP/HEIC (escáneres,
+    // celulares) hacía que rechazara TODA la solicitud, no solo ese archivo.
+    if(in_array($tipo, ['image/jpeg', 'image/png', 'image/gif', 'image/webp'], true)){
         $contenido[] = ['type' => 'image', 'source' => ['type' => 'base64', 'media_type' => $tipo, 'data' => $base64]];
         $nombresPorIndice[] = $nombreAdj;
     } elseif($tipo === 'application/pdf'){
@@ -241,20 +263,31 @@ $body = [
 ];
 
 function llamarClaude(array $body, string $apiKey){
-    $ch = curl_init('https://api.anthropic.com/v1/messages');
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_POST, true);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, [
-        'content-type: application/json',
-        'x-api-key: ' . $apiKey,
-        'anthropic-version: 2023-06-01',
-    ]);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($body));
-    curl_setopt($ch, CURLOPT_TIMEOUT, 90);
-    $respuesta = curl_exec($ch);
-    $codigoHttp = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $errorCurl = curl_error($ch);
-    curl_close($ch);
+    $json = json_encode($body);
+    // Reintenta (hasta 3 intentos, con pausa) SOLO errores pasajeros de la API:
+    // 429 (límite de velocidad), 5xx y 529 ("overloaded") — no cuestan nada
+    // porque la solicitud nunca llegó a procesarse. Cualquier otro error
+    // (saldo, solicitud inválida…) se devuelve de una.
+    for($intento = 1; $intento <= 3; $intento++){
+        $ch = curl_init('https://api.anthropic.com/v1/messages');
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'content-type: application/json',
+            'x-api-key: ' . $apiKey,
+            'anthropic-version: 2023-06-01',
+        ]);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $json);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 15);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 150);
+        $respuesta = curl_exec($ch);
+        $codigoHttp = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $errorCurl = curl_error($ch);
+        curl_close($ch);
+        $pasajero = !$errorCurl && ($codigoHttp === 429 || $codigoHttp === 529 || $codigoHttp >= 500);
+        if(!$pasajero || $intento === 3) break;
+        sleep(3 * $intento);
+    }
     return [$respuesta, $codigoHttp, $errorCurl];
 }
 

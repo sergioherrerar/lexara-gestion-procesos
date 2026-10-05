@@ -93,7 +93,17 @@ export const INITIAL_CONFIG = {
 // pedir un permiso nuevo en Azure AD). Confirmado 2026-09-23: daniacp@colmedica.com
 // y Mgabrielac@aliansalud.com.co — puede haber más correos que "eventualmente
 // los reemplazan", agregar cuando se confirmen.
-export const TUTELAS_REMITENTES_PERMITIDOS = ["daniacp@colmedica.com", "Mgabrielac@aliansalud.com.co"];
+// 2026-10-06, caso real tutela 28217: María Gabriela Charris escribió desde
+// Mgabrielac@COLMEDICA.com (no desde @aliansalud.com.co) y el correo no
+// aparecía en la lista de LexIA. Las mismas 2 personas escriben desde los dos
+// dominios del grupo (Colmédica y Aliansalud), así que se permiten ambas
+// variantes de cada una. Si algún correo de tutelas no aparece, lo más
+// probable es que venga de una dirección que falta acá.
+export const TUTELAS_REMITENTES_PERMITIDOS = [
+  "daniacp@colmedica.com", "daniacp@aliansalud.com.co", "daniacp@umd.com.co",
+  "Mgabrielac@aliansalud.com.co", "Mgabrielac@colmedica.com",
+  "YessicaB@aliansalud.com.co", "YessicaB@colmedica.com",
+];
 
 // "Diligenciamiento Formatos Empresas" (Informes > Herramientas) — agregada
 // 2026-09-11, pedido explícito del usuario ("Opción 1 + A"): carpeta real

@@ -156,20 +156,30 @@ $body = [
     ],
 ];
 
-$ch = curl_init('https://api.anthropic.com/v1/messages');
-curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-curl_setopt($ch, CURLOPT_POST, true);
-curl_setopt($ch, CURLOPT_HTTPHEADER, [
-    'content-type: application/json',
-    'x-api-key: ' . $apiKey,
-    'anthropic-version: 2023-06-01',
-]);
-curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($body));
-curl_setopt($ch, CURLOPT_TIMEOUT, 60);
-$respuesta = curl_exec($ch);
-$codigoHttp = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-$errorCurl = curl_error($ch);
-curl_close($ch);
+// Reintenta (hasta 3 intentos, con pausa) solo errores pasajeros de la API:
+// 429 (límite de velocidad), 5xx y 529 ("overloaded") — 2026-10-06, revisión
+// de errores pedida por el usuario. Cualquier otro error se devuelve de una.
+$json = json_encode($body);
+for($intento = 1; $intento <= 3; $intento++){
+    $ch = curl_init('https://api.anthropic.com/v1/messages');
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        'content-type: application/json',
+        'x-api-key: ' . $apiKey,
+        'anthropic-version: 2023-06-01',
+    ]);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $json);
+    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 15);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 60);
+    $respuesta = curl_exec($ch);
+    $codigoHttp = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $errorCurl = curl_error($ch);
+    curl_close($ch);
+    $pasajero = !$errorCurl && ($codigoHttp === 429 || $codigoHttp === 529 || $codigoHttp >= 500);
+    if(!$pasajero || $intento === 3) break;
+    sleep(3 * $intento);
+}
 
 if($errorCurl){
     http_response_code(502);

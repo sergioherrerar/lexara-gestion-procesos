@@ -47,6 +47,10 @@ function TabCorreccion({ tutelas, onAgregarCorreccion, notify }){
   const [seleccionadaId, setSeleccionadaId] = useState(null);
   const [texto, setTexto] = useState('');
   const [enviando, setEnviando] = useState(false);
+  // Resultado del último intento, mostrado ahí mismo debajo del botón: los
+  // avisos flotantes salen abajo a la derecha y es fácil no verlos (caso real
+  // 2026-10-06: "le doy a Agregar corrección y no pasa nada").
+  const [resultado, setResultado] = useState(null); // { ok, texto } | null
 
   const query = busqueda.trim().toLowerCase();
   const coincidencias = useMemo(() => {
@@ -61,12 +65,19 @@ function TabCorreccion({ tutelas, onAgregarCorreccion, notify }){
   async function handleEnviar(){
     if(!seleccionada || !texto.trim()) return;
     setEnviando(true);
+    setResultado(null);
     try{
-      await onAgregarCorreccion(seleccionada.id, texto.trim());
-      setTexto('');
+      const r = await onAgregarCorreccion(seleccionada.id, texto.trim());
+      if(r && r.ok === false){
+        // No se guardó: el texto se conserva para no tener que reescribirlo.
+        setResultado({ ok: false, texto: r.error || 'No se pudo guardar la corrección.' });
+      } else {
+        setTexto('');
+        setResultado({ ok: true, texto: 'Corrección guardada. LexIA la tendrá en cuenta en las próximas lecturas.' });
+      }
     }catch(err){
       console.error(err);
-      notify?.('No se pudo agregar la corrección.', 'error');
+      setResultado({ ok: false, texto: 'No se pudo guardar la corrección: ' + (err?.message || 'error desconocido') });
     }finally{
       setEnviando(false);
     }
@@ -108,7 +119,7 @@ function TabCorreccion({ tutelas, onAgregarCorreccion, notify }){
               <strong>Tutela {seleccionada.NoTutela}</strong>
               <span className="save-hint"> · {seleccionada.Cliente || '—'} · Tema actual: {seleccionada.Tema || '—'}</span>
             </div>
-            <button type="button" className="btn-secondary" onClick={() => setSeleccionadaId(null)}>Cambiar</button>
+            <button type="button" className="btn-secondary" onClick={() => { setSeleccionadaId(null); setResultado(null); }}>Cambiar</button>
           </div>
           <div className="entrenar-ia-historial">
             {seleccionada.CorreccionIA
@@ -129,6 +140,11 @@ function TabCorreccion({ tutelas, onAgregarCorreccion, notify }){
           {enviando && (
             <p className="save-hint" style={{marginTop:8, fontStyle:'italic'}}>
               Tienes razón, lo tendré en cuenta para no equivocarme de nuevo.
+            </p>
+          )}
+          {!enviando && resultado && (
+            <p className={resultado.ok ? 'save-hint' : 'field-warning'} role="status" style={{marginTop:10, fontWeight:600, color: resultado.ok ? 'var(--verde-oscuro)' : undefined}}>
+              {resultado.texto}
             </p>
           )}
         </>
