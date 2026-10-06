@@ -652,22 +652,22 @@ export async function leerCorreoCompleto(correoBuzon, mensajeId){
 function mensajeErrorLexIA(msg){
   const m = String(msg || '');
   if(/prompt is too long/i.test(m)){
-    return 'Los adjuntos de este correo son demasiado largos para que LexIA los lea. Usa "Extraer adjuntos" para guardarlos en OneDrive y llena los datos a mano.';
+    return 'Los adjuntos de este correo son demasiado largos para que LexIA los lea. Los adjuntos quedan guardados en la carpeta de la tutela en OneDrive; llena los datos a mano.';
   }
   if(/credit balance|purchase credits|billing|insufficient (funds|credit)/i.test(m)){
-    return 'Se acabó el saldo de la API de Claude. Recárgalo en console.anthropic.com, o mientras tanto usa "Extraer adjuntos" y la página "LexIA Plan B".';
+    return 'Se acabó el saldo de la API de Claude. Recárgalo en console.anthropic.com, o mientras tanto usa la página "LexIA Plan B" (los adjuntos ya quedaron guardados en la carpeta de la tutela en OneDrive).';
   }
   if(/overloaded|rate.?limit|\b(429|529)\b/i.test(m)){
     return 'LexIA está saturada en este momento. Espera un minuto y vuelve a intentarlo.';
   }
   if(/no lleg[oó] un JSON v[aá]lido|payload too large|request entity too large|\b413\b/i.test(m)){
-    return 'Los adjuntos de este correo pesan demasiado para enviarlos a LexIA. Usa "Extraer adjuntos" para guardarlos en OneDrive y llena los datos a mano.';
+    return 'Los adjuntos de este correo pesan demasiado para enviarlos a LexIA. Los adjuntos quedan guardados en la carpeta de la tutela en OneDrive; llena los datos a mano.';
   }
   if(/image.*(5 ?MB|exceeds)|could not process (image|pdf)|invalid base64|unsupported (image|media)/i.test(m)){
-    return 'LexIA no pudo leer uno de los adjuntos (formato dañado o no soportado). Usa "Extraer adjuntos" para guardarlos en OneDrive y llena los datos a mano.';
+    return 'LexIA no pudo leer uno de los adjuntos (formato dañado o no soportado). Los adjuntos quedan guardados en la carpeta de la tutela en OneDrive; llena los datos a mano.';
   }
   if(/timed? ?out|timeout|\b(502|504)\b|gateway/i.test(m)){
-    return 'LexIA tardó demasiado en responder (el correo trae mucho para leer). Vuelve a intentarlo; si se repite, usa "Extraer adjuntos" y llena los datos a mano.';
+    return 'LexIA tardó demasiado en responder (el correo trae mucho para leer). Vuelve a intentarlo; si se repite, llena los datos a mano (los adjuntos quedan guardados en la carpeta de la tutela en OneDrive).';
   }
   return m;
 }
@@ -735,7 +735,7 @@ export async function extraerTutelaConLexIA(correoBuzon, mensajeId, tutelas, rob
     }catch{
       // fetch solo lanza si no hubo respuesta (sin internet, el servidor cortó
       // la conexión por tiempo/tamaño, o el robot no está accesible).
-      throw new Error('No se pudo comunicar con LexIA (el servidor no respondió). Revisa tu conexión; si el correo trae adjuntos pesados, usa "Extraer adjuntos" y llena los datos a mano.');
+      throw new Error('No se pudo comunicar con LexIA (el servidor no respondió). Revisa tu conexión; si el correo trae adjuntos pesados, llena los datos a mano (los adjuntos se guardan en la carpeta de la tutela en OneDrive).');
     }
     try{ data = await res.json(); }catch{ data = null; }
     if(res.ok && data && !data.error) break;
@@ -959,6 +959,18 @@ export async function guardarAdjuntosOriginalesEnOneDrive(urlCarpeta, numeroTute
   }
 }
 
+// "Correo original.pdf" solo cuenta como "ya está" si se guardó con la versión que incluye las capturas
+// del cuerpo del correo (2026-10-05). Los guardados antes de esa fecha se vuelven a imprimir la próxima
+// vez que se dé "Extraer con LexIA" (ya no existe un botón aparte para eso).
+const CORREO_IMPRESO_CON_IMAGENES_DESDE = '2026-10-05T23:30:00Z';
+async function correoImpresoAlDia(driveId, folderId, ruta){
+  try{
+    const item = await graphFetch(`/drives/${driveId}/items/${folderId}:/${encodeURIComponent(ruta).replace(/%2F/g,'/')}?$select=id,lastModifiedDateTime`);
+    return !item.lastModifiedDateTime || item.lastModifiedDateTime >= CORREO_IMPRESO_CON_IMAGENES_DESDE;
+  }catch{
+    return false;
+  }
+}
 async function existeArchivoOneDrive(driveId, folderId, ruta){
   try{
     await graphFetch(`/drives/${driveId}/items/${folderId}:/${encodeURIComponent(ruta).replace(/%2F/g,'/')}?$select=id`);
@@ -978,7 +990,7 @@ async function existeArchivoOneDrive(driveId, folderId, ruta){
 export async function asegurarAdjuntosOriginalesEnOneDrive(urlCarpeta, numeroTutela, correo){
   const { driveId, folderId } = await resolverCarpetaLexIAOneDrive(urlCarpeta);
   const rutaCorreo = `${numeroTutela} Tutela/Adjuntos originales/Correo original.pdf`;
-  if(await existeArchivoOneDrive(driveId, folderId, rutaCorreo)) return { yaEstaban: true, cantidad: 0 };
+  if(await correoImpresoAlDia(driveId, folderId, rutaCorreo)) return { yaEstaban: true, cantidad: 0 };
   await guardarAdjuntosOriginalesEnOneDrive(urlCarpeta, numeroTutela, correo);
   return { yaEstaban: false, cantidad: (correo.adjuntos || []).filter(a => a.base64).length };
 }
@@ -988,23 +1000,9 @@ export async function asegurarAdjuntosOriginalesEnOneDrive(urlCarpeta, numeroTut
 // adjuntos si todavía no estaban — lee el correo solo si hace falta.
 export async function asegurarCarpetaTutelaDesdeMensaje(correoBuzon, mensajeId, urlCarpeta, numeroTutela){
   const { driveId, folderId } = await resolverCarpetaLexIAOneDrive(urlCarpeta);
-  if(await existeArchivoOneDrive(driveId, folderId, `${numeroTutela} Tutela/Adjuntos originales/Correo original.pdf`)) return { yaEstaban: true, cantidad: 0 };
+  if(await correoImpresoAlDia(driveId, folderId, `${numeroTutela} Tutela/Adjuntos originales/Correo original.pdf`)) return { yaEstaban: true, cantidad: 0 };
   const completo = await leerCorreoCompleto(correoBuzon, mensajeId);
   return asegurarAdjuntosOriginalesEnOneDrive(urlCarpeta, numeroTutela, completo);
-}
-
-// "Extraer adjuntos" (2026-09-30, pedido explícito del usuario) — a
-// diferencia de "Extraer con LexIA", este botón NUNCA llama a Claude: solo
-// crea/actualiza la carpeta de esta tutela en OneDrive con el correo (como
-// PDF) y todos sus adjuntos originales, para dejarlos listos de una vez
-// (por ejemplo para el plan B) sin gastar nada de saldo de la API.
-export async function extraerAdjuntosSinIA(correoBuzon, mensajeId, onedriveCarpetaUrl){
-  if(!onedriveCarpetaUrl) throw new Error('Falta configurar la carpeta de OneDrive de tutelas (TUTELAS_ONEDRIVE_CARPETA_URL en config.js).');
-  const completo = await leerCorreoCompleto(correoBuzon, mensajeId);
-  const numeroTutela = numeroTutelaDeAsunto(completo.asunto);
-  if(!numeroTutela) throw new Error('No se encontró un número de tutela en el asunto de este correo.');
-  await guardarAdjuntosOriginalesEnOneDrive(onedriveCarpetaUrl, numeroTutela, completo);
-  return { numeroTutela, cantidadAdjuntos: (completo.adjuntos||[]).length };
 }
 
 // Antes de llamar a Claude, revisa si esta tutela YA tiene una lectura

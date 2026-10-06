@@ -407,7 +407,7 @@ if(!is_array($registros) || count($registros) === 0){
     // texto sin JSON) y trae el comienzo de lo que contestó — antes solo decía
     // "no devolvió un JSON válido" y no había forma de saber la causa.
     if($stopReason === 'max_tokens'){
-        $causa = 'la respuesta de LexIA quedó cortada por ser demasiado larga (el correo tiene muchos datos). Intenta de nuevo; si se repite, usa "Extraer adjuntos" y registra la tutela a mano.';
+        $causa = 'la respuesta de LexIA quedó cortada por ser demasiado larga (el correo tiene muchos datos). Intenta de nuevo; si se repite, registra la tutela a mano (los adjuntos quedan guardados en la carpeta de la tutela en OneDrive).';
     } elseif($stopReason === 'refusal'){
         $causa = 'el modelo se negó a procesar este contenido.';
     } elseif($texto === ''){

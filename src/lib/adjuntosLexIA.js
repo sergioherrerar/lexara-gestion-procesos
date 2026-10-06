@@ -16,8 +16,8 @@
 // Los datos que se extraen (accionante, juzgado, fechas, qué solicita,
 // vinculados…) están en el escrito de tutela y el auto del juzgado, no en los
 // anexos largos — así que se manda primero lo más probable, dentro de unos
-// topes, y lo que no cabe se omite y se avisa (sigue disponible con el botón
-// "Extraer adjuntos", que guarda TODO en OneDrive sin topes).
+// topes, y lo que no cabe se omite y se avisa (sigue disponible completo
+// en la carpeta de la tutela en OneDrive, que guarda TODO sin topes).
 
 // Tope de páginas por PDF y en total (una imagen cuenta como 1 página).
 export const PAGINAS_MAX_POR_PDF = 60;
