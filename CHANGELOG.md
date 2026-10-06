@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-10-06 (23)
+- **Pregúntame: el correo impreso (`Correo original.pdf`) ya no queda fuera por el tope de páginas** — reportado por el usuario con captura ("No incluí por tamaño o formato: Correo original.pdf (no cabe en el límite total (2 pág.))"). Los documentos se eligen por prioridad hasta 40 páginas y el correo impreso (solo 2 páginas, con el cuerpo y quién lo envió) quedaba de último, así que si los demás PDF llenaban el cupo se omitía justo el más útil. Ahora siempre se incluye primero; lo que se omite, si algo, es un anexo largo.
+
 ## 2026-10-06 (22)
 - **Procesos judiciales: "Fecha Estado" ahora se ve como dd/mm/aaaa** (ej. 31/08/2026) en vez de 2026-08-31 — pedido explícito del usuario. Es solo la forma de mostrarla: el orden y los filtros de la columna siguen funcionando por fecha real (el filtro acepta escribir dd/mm/aaaa).
 - **Pegar en el Histórico (y en Observaciones) ya no trae "caracteres raros"** — reportado por el usuario ("cuando pego una fecha en el campo Histórico sale con caracteres raros"). Al pegar desde Excel, Word, correos o páginas web llegan espacios duros, caracteres invisibles (ancho cero, marcas de dirección, guiones suaves, "�") y el formato de origen (fuente, color, tamaño). Ahora el pegado en estos cuadros es SOLO TEXTO y se limpian esos caracteres; los saltos de línea se conservan. Además, al guardar los espacios duros que el navegador mete al escribir (&nbsp;) se guardan como espacios normales. No arregla el texto que ya se pegó antes con esos caracteres (se corrige a mano o borrando y pegando de nuevo). Si el pegado de una fecha aún se ve raro, falta ver un ejemplo concreto.

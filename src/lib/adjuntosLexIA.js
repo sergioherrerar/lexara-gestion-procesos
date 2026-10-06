@@ -42,6 +42,10 @@ const RE_ANEXO = /historia|anexo|prueba|c[eé]dula|folio|soporte|epicrisis|labor
 
 function prioridadPorNombre(nombre){
   const n = String(nombre || "");
+  // "Correo original.pdf" es la impresión del cuerpo del correo (2 páginas): lo más útil y barato
+  // para responder, siempre va primero (reportado 2026-10-05: en Pregúntame quedaba fuera por el tope
+  // de páginas porque otros PDF ya habían llenado el cupo).
+  if(/^correo original\.pdf$/i.test(n.trim())) return -1;
   if(RE_PRINCIPAL.test(n)) return 0;
   if(RE_ANEXO.test(n)) return 2;
   return 1;
