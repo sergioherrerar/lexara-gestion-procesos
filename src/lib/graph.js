@@ -478,20 +478,88 @@ export function numeroTutelaDeAsunto(asunto){
 // en el correo) — la "impresión" del correo (Correo original.pdf) salía como un
 // bloque ilegible y a LexIA le llegaba sin estructura. DOMParser no ejecuta
 // scripts ni carga imágenes (es seguro con HTML de terceros).
-export function cuerpoCorreoComoTexto(html){
-  if(!html) return '';
-  const doc = new DOMParser().parseFromString(String(html), 'text/html');
+function textoDeDocumento(doc){
   doc.querySelectorAll('style, script, head, title, meta, link, noscript').forEach(n => n.remove());
   doc.querySelectorAll('br').forEach(b => b.replaceWith('\n'));
   doc.querySelectorAll('td, th').forEach(c => c.append(' | '));
   doc.querySelectorAll('p, div, tr, li, h1, h2, h3, h4, h5, h6, table, blockquote, pre, hr').forEach(b => b.append('\n'));
   return (doc.body?.textContent || '')
-    .replace(/ /g, ' ')
+    .split(String.fromCharCode(160)).join(' ')
     .split('\n')
     .map(l => l.replace(/[ \t]+/g, ' ').trim().replace(/(?:\s*\|)+$/, '').trim())
     .join('\n')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
+}
+export function cuerpoCorreoComoTexto(html){
+  if(!html) return '';
+  return textoDeDocumento(new DOMParser().parseFromString(String(html), 'text/html'));
+}
+
+// El cuerpo del correo en su orden real, como bloques de texto y de IMAGEN (2026-10-05, pedido del usuario:
+// "el correo original también incluye pantallazos, imágenes dentro del cuerpo"). Las imágenes pegadas en el
+// cuerpo llegan como adjuntos "en línea" (isInline) referenciados con cid: — antes se descartaban todas junto
+// con los logos de las firmas, y la impresión del correo salía sin sus capturas.
+export function bloquesDelCuerpo(html, imagenes){
+  if(!html) return [];
+  const lista = imagenes || [];
+  const porCid = new Map(lista.filter(i => i.contentId).map(i => [String(i.contentId).replace(/^<|>$/g, '').toLowerCase(), i]));
+  const doc = new DOMParser().parseFromString(String(html), 'text/html');
+  const usadas = new Set();
+  doc.querySelectorAll('img').forEach(img => {
+    const src = img.getAttribute('src') || '';
+    const imagen = /^cid:/i.test(src) ? porCid.get(src.slice(4).replace(/^<|>$/g, '').toLowerCase()) : null;
+    if(imagen && !usadas.has(imagen)){
+      usadas.add(imagen);
+      img.replaceWith('\n@@IMG' + lista.indexOf(imagen) + '@@\n');
+    } else {
+      img.remove();
+    }
+  });
+  const texto = textoDeDocumento(doc);
+  const bloques = [];
+  texto.split(/@@IMG(\d+)@@/).forEach((trozo, i) => {
+    if(i % 2 === 0){
+      const t = trozo.trim();
+      if(t) bloques.push({ tipo: 'texto', texto: t });
+    } else if(lista[Number(trozo)]){
+      bloques.push({ tipo: 'imagen', imagen: lista[Number(trozo)] });
+    }
+  });
+  // Imágenes en línea que el HTML no referencia con cid: van al final, para no perderlas.
+  lista.forEach(i => { if(!usadas.has(i)) bloques.push({ tipo: 'imagen', imagen: i }); });
+  return bloques;
+}
+
+// Imagen lista para el PDF (JPEG reescalado) + sus medidas reales; null si no se puede leer.
+async function imagenParaPdf(base64, tipo){
+  try{
+    const img = new Image();
+    img.src = 'data:' + (tipo || 'image/png') + ';base64,' + base64;
+    await img.decode();
+    const escala = Math.min(1, 1400 / img.naturalWidth);
+    const c = document.createElement('canvas');
+    c.width = Math.max(1, Math.round(img.naturalWidth * escala));
+    c.height = Math.max(1, Math.round(img.naturalHeight * escala));
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, c.width, c.height);
+    ctx.drawImage(img, 0, 0, c.width, c.height);
+    return { dataUrl: c.toDataURL('image/jpeg', 0.88), w: img.naturalWidth, h: img.naturalHeight };
+  }catch(err){
+    console.error('No se pudo leer una imagen del cuerpo del correo:', err);
+    return null;
+  }
+}
+const EXT_POR_TIPO = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/jpg': 'jpg', 'image/gif': 'gif', 'image/webp': 'webp' };
+// Solo las capturas de verdad (no íconos ni logos de firma): al menos 250×120 px, máximo 10.
+async function imagenesGrandesDelCuerpo(imagenes){
+  const salida = [];
+  for(const i of (imagenes || [])){
+    if(salida.length >= 10) break;
+    const info = await imagenParaPdf(i.base64, i.tipo);
+    if(info && info.w >= 250 && info.h >= 120) salida.push({ ...i, ...info });
+  }
+  return salida;
 }
 
 export async function leerCorreoCompleto(correoBuzon, mensajeId){
@@ -551,12 +619,24 @@ export async function leerCorreoCompleto(correoBuzon, mensajeId){
     })
     .map(a => ({ nombre: a.name, tipo: a.contentType || 'application/octet-stream', base64: a.contentBytes, tamano: a.size }));
 
+  // Capturas pegadas en el cuerpo (adjuntos en línea de tipo imagen): sin los íconos muy chicos.
+  const vistosInline = new Set();
+  const imagenesCuerpo = (dataAdj.value || [])
+    .filter(a => a.contentBytes && a.isInline && /^image\//i.test(a.contentType || '') && (a.size || 0) >= 8000)
+    .filter(a => { if(vistosInline.has(a.contentBytes)) return false; vistosInline.add(a.contentBytes); return true; })
+    .map(a => ({ contentId: a.contentId || '', nombre: a.name, tipo: a.contentType, base64: a.contentBytes, tamano: a.size }));
+  const bloques = msg.body?.contentType === 'text'
+    ? (cuerpoTexto ? [{ tipo: 'texto', texto: cuerpoTexto }] : [])
+    : bloquesDelCuerpo(msg.body?.content || '', imagenesCuerpo);
+
   return {
     asunto: msg.subject || '(sin asunto)',
     remitente: msg.from?.emailAddress?.address || '',
     fecha: msg.receivedDateTime,
     cuerpo: cuerpoTexto,
     adjuntos,
+    imagenesCuerpo,
+    bloques,
   };
 }
 
@@ -625,7 +705,12 @@ export async function extraerTutelaConLexIA(correoBuzon, mensajeId, tutelas, rob
   // 1.000.000 de tokens (error real 2026-10-06), y una imagen en formato no
   // soportado/pesada o un PDF dañado hacía que la API rechazara TODO. Los
   // omitidos se devuelven para avisarle al usuario.
-  const { seleccionados, omitidos } = await seleccionarAdjuntosParaLexIA(completo.adjuntos);
+  // Las capturas pegadas en el cuerpo del correo también se le dan a LexIA (pueden traer datos de la tutela).
+  const capturas = (await imagenesGrandesDelCuerpo(completo.imagenesCuerpo)).map((i, n) => ({
+    nombre: 'Imagen en el cuerpo del correo ' + (n + 1) + '.' + (EXT_POR_TIPO[String(i.tipo).toLowerCase()] || 'png'),
+    tipo: i.tipo, base64: i.base64,
+  }));
+  const { seleccionados, omitidos } = await seleccionarAdjuntosParaLexIA([...completo.adjuntos, ...capturas]);
   // El cuerpo de un "RV:" con toda la cadena de reenvíos puede ser enorme.
   const cuerpoParaIA = completo.cuerpo.length > 60000 ? completo.cuerpo.slice(0, 60000) + '…' : completo.cuerpo;
 
@@ -788,7 +873,7 @@ function arrayBufferABase64(buffer){
 // depender del portal. Import dinámico de jsPDF (igual que el resto de
 // lib/informes*.js) para no engordar el bundle principal con una librería
 // que casi nadie carga en cada visita.
-async function construirPdfCorreoBase64(numeroTutela, correo){
+export async function construirPdfCorreoBase64(numeroTutela, correo){
   const { default: jsPDF } = await import('jspdf');
   const doc = new jsPDF({ unit:'mm', format:'a4' });
   const margen = 18;
@@ -805,12 +890,28 @@ async function construirPdfCorreoBase64(numeroTutela, correo){
   // La fuente estándar de jsPDF solo dibuja los caracteres de Windows-1252
   // (tildes, ñ, comillas curvas, guion largo, viñeta…); emojis y símbolos
   // raros salían como basura — se reemplazan por un espacio.
-  const cuerpoPdf = (correo.cuerpo || '(sin cuerpo)').replace(/[^\n -~ -ÿ–—‘’“”•…€™]/g, ' ');
-  const lineas = doc.splitTextToSize(cuerpoPdf, anchoUtil);
-  for(const linea of lineas){
-    if(y > altoMaximo){ doc.addPage(); y = margen; }
-    doc.text(linea, margen, y);
-    y += 5;
+  const limpiar = t => t.replace(/[^\n -~\u00A0-\u00FF\u2013\u2014\u2018\u2019\u201C\u201D\u2022\u2026\u20AC\u2122]/g, ' ');
+  const bloques = (correo.bloques && correo.bloques.length) ? correo.bloques : [{ tipo: 'texto', texto: correo.cuerpo || '(sin cuerpo)' }];
+  for(const bloque of bloques){
+    if(bloque.tipo === 'texto'){
+      for(const linea of doc.splitTextToSize(limpiar(bloque.texto), anchoUtil)){
+        if(y > altoMaximo){ doc.addPage(); y = margen; }
+        doc.text(linea, margen, y);
+        y += 5;
+      }
+      y += 2;
+    } else {
+      const info = await imagenParaPdf(bloque.imagen.base64, bloque.imagen.tipo);
+      if(!info || info.w < 250 || info.h < 120) continue; // íconos/logos de firma
+      // Tamaño natural (96 dpi) sin pasar del ancho útil ni del alto de la hoja.
+      const maxAlto = altoMaximo - margen;
+      let dw = Math.min(anchoUtil, info.w * 25.4 / 96);
+      let dh = dw * info.h / info.w;
+      if(dh > maxAlto){ dh = maxAlto; dw = dh * info.w / info.h; }
+      if(y + dh > altoMaximo){ doc.addPage(); y = margen; }
+      doc.addImage(info.dataUrl, 'JPEG', margen, y, dw, dh);
+      y += dh + 4;
+    }
   }
   return arrayBufferABase64(doc.output('arraybuffer'));
 }
