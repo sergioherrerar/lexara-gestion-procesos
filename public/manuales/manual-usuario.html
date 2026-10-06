@@ -266,6 +266,7 @@
     <a href="#que-es">Qué es este módulo</a>
     <a href="#lista">La lista de Tutelas</a>
     <a href="#crear">Crear o editar una tutela</a>
+    <a href="#lexia">Leer correo con LexIA</a>
     <a href="#informes">Informe diario de Tutelas</a>
     <a href="#preguntas">Preguntas frecuentes</a>
 
@@ -288,6 +289,7 @@
     <a href="#db-panorama">Panorama general</a>
     <a href="#db-entidad">Análisis por Entidad</a>
     <a href="#db-exportar">Exportar el análisis</a>
+    <a href="#db-qr">Código QR de enlaces</a>
 
     <div class="toc-group-label">Solicitud De Factura E.</div>
     <a href="#fa-que-es">Qué es este módulo</a>
@@ -316,6 +318,7 @@
 
     <div class="toc-group-label">Informes</div>
     <a href="#inf-que-es">Qué es este módulo</a>
+    <a href="#inf-qr">El QR en los documentos</a>
     <a href="#inf-cliente">Informe para un cliente</a>
     <a href="#inf-horasextras">Registrar hora extra</a>
     <a href="#inf-tutelasdiario">Informe diario de Tutelas</a>
@@ -333,7 +336,7 @@
     </div>
 
     <section id="que-es">
-      <div class="doc-eyebrow"><span class="dot"></span>Módulo 1 de 8 · Tutelas</div>
+      <div class="doc-eyebrow"><span class="dot"></span>Módulo 1 de 9 · Tutelas</div>
       <h2>Qué es este módulo</h2>
       <p>El módulo <strong>Tutelas</strong> lleva el control de cada acción de tutela que le llega al despacho: quién la notifica, contra qué Entidad, en qué juzgado, y para cuándo hay que responder. Reemplaza la planilla que se llevaba antes — cada tutela queda guardada una sola vez y cualquier persona del equipo con acceso la puede consultar o actualizar.</p>
       <p>Todos los días, el módulo también arma el <strong>informe de tutelas notificadas y por vencer</strong> — el mismo que antes se armaba a mano — listo para descargar en PDF, Excel, o enviar por correo con un clic.</p>
@@ -456,8 +459,96 @@
       <p>Al final del formulario: <strong>"Guardar cambios"</strong> escribe todo en SharePoint. Si estás editando una tutela ya existente y tienes permiso, también ves <strong>"Eliminar"</strong>. Si tu usuario es de solo lectura, en vez de estos botones solo ves <strong>"Cerrar"</strong> y un aviso de que la información es de consulta.</p>
     </section>
 
-    <section id="informes">
+    <section id="lexia">
       <span class="step-num">3</span>
+      <h2>Leer correo con LexIA</h2>
+      <p class="section-sub">LexIA es el asistente del portal: lee el correo de una tutela, llena sus datos, deja todo guardado en una carpeta de OneDrive y responde tus preguntas. Se abre con el botón de <strong>leer correo</strong>, arriba de la lista de Tutelas.</p>
+
+      <div class="screen">
+        <div class="screen-bar"><span class="screen-dot"></span><span class="screen-dot"></span><span class="screen-dot"></span><span class="screen-label">Tutelas → Leer correo de Tutelas (LexIA)</span></div>
+        <div class="screen-pad">
+          <div class="ss-panel-actions" style="margin-bottom:12px;">
+            <input class="ss-date" value="Buscar por No. Tutela" readonly>
+            <span class="ss-round xls" title="Carpeta de tutelas en OneDrive"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg></span>
+          </div>
+          <table class="ss-table">
+            <thead><tr><th>Remitente</th><th>Asunto</th><th>Estado</th></tr></thead>
+            <tbody>
+              <tr><td>Juzgado 5 Civil</td><td>TUTELA 28230 - NOMBRE DEL ACCIONANTE</td><td><span class="ss-badge">con adjuntos</span></td></tr>
+              <tr><td>Aliansalud</td><td>RV: FALLO DE TUTELA 27761</td><td><span class="ss-badge">Ya leído por LexIA</span></td></tr>
+            </tbody>
+          </table>
+          <p class="ss-hint" style="margin-top:12px;">Debajo de cada correo seleccionado: <strong>+ Extraer con LexIA</strong> y <strong>Extraer adjuntos</strong>. Al lado derecho está el panel con las pestañas <strong>Pregúntame</strong> y <strong>Enséñame</strong>.</p>
+        </div>
+        <div class="caption">Vista del panel de LexIA, con datos de ejemplo</div>
+      </div>
+
+      <h3>La lista de correos</h3>
+      <ul>
+        <li>Muestra los correos del buzón de Tutelas que vienen de los <strong>remitentes autorizados</strong> (los juzgados y las personas de las entidades). Con <strong>Desde / Hasta</strong> eliges el rango de fechas y con el botón circular de flechas actualizas la lista.</li>
+        <li><strong>Buscar por No. Tutela</strong> filtra los correos de ese número y te dice si esa tutela ya está o no en la lista de Tutelas.</li>
+        <li>El botón pequeño de <strong>carpeta</strong>, a la derecha del buscador, abre en OneDrive la carpeta donde quedan todas las tutelas leídas, para consultar sus adjuntos.</li>
+        <li>La insignia <span class="ss-badge" style="margin:0;">Ya leído por LexIA</span> marca las tutelas cuya lectura ya está guardada.</li>
+      </ul>
+
+      <div class="callout tip">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        <div>Si no aparece el correo de una tutela, casi siempre es porque quien lo envió <strong>no está en la lista de remitentes autorizados</strong>. Avísale a soporte la dirección de correo y la agregan.</div>
+      </div>
+
+      <h3>Extraer con LexIA</h3>
+      <ol>
+        <li>Elige el correo y dale <strong>"+ Extraer con LexIA"</strong>. El botón dice "Extrayendo…" mientras lee y luego "Guardando en OneDrive…".</li>
+        <li>LexIA lee el asunto, el cuerpo del correo (con sus capturas de pantalla), y los adjuntos en <strong>PDF o imagen</strong> (JPG, PNG, GIF, WebP). Para no pasar el límite de lectura toma hasta 60 páginas por PDF y 80 en total; lo que no cabe se omite y te avisa cuál.</li>
+        <li>Si el correo señala a más de uno de tus clientes (por ejemplo Colmédica y Aliansalud), arma <strong>un registro por cada cliente</strong>.</li>
+        <li>Cada registro trae el botón <strong>Crear borrador</strong>: abre el formulario de "Nueva tutela" con los datos ya llenos. <strong>Tú revisas y le das Guardar</strong> — nada se guarda en SharePoint hasta ese momento.</li>
+      </ol>
+
+      <div class="callout warn">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg>
+        <div>LexIA puede equivocarse. Revisa siempre los datos (sobre todo Tema, fechas y Cliente) antes de guardar. Si corriges algo, enséñaselo en la pestaña <strong>Enséñame</strong> para que lo tenga en cuenta la próxima vez.</div>
+      </div>
+
+      <h3>La fecha de vencimiento: días hábiles</h3>
+      <p>LexIA solo lee <strong>cuántos días</strong> da el juez y la <strong>fecha de notificación</strong>; la fecha de vencimiento la calcula el portal con el calendario de Colombia:</p>
+      <ul>
+        <li>Cuentan solo los días <strong>hábiles</strong>: lunes a viernes, sin festivos. Sábado y domingo nunca cuentan. El día de la notificación no se cuenta.</li>
+        <li><strong>Horario hábil: 8:00 a. m. a 5:00 p. m.</strong> Si el correo del juzgado llega <strong>después de las 5:00 p. m.</strong>, o en sábado, domingo o festivo, se entiende notificado el <strong>siguiente día hábil</strong> y desde ahí corre el término.</li>
+      </ul>
+      <table class="field-table">
+        <tr><th>Ejemplo (2 días de término)</th><th>Se toma como notificada</th><th>Vence</th></tr>
+        <tr><td>Viernes 2 oct., 10:00 a. m.</td><td>Viernes 2 oct.</td><td>Martes 6 oct.</td></tr>
+        <tr><td>Viernes 2 oct., 6:20 p. m.</td><td>Lunes 5 oct.</td><td>Miércoles 7 oct.</td></tr>
+      </table>
+      <p>Cuando el portal ajusta una fecha te lo dice en un aviso (por ejemplo "llegó a las 18:20, después del cierre hábil"). Si el despacho da una fecha concreta en vez de días, se respeta, y solo te avisa si cae en sábado, domingo o festivo.</p>
+
+      <h3>Qué queda guardado en OneDrive</h3>
+      <p>Por cada tutela se crea una carpeta con su número (por ejemplo <strong>"28230 Tutela"</strong>) con:</p>
+      <ul>
+        <li><strong>Lectura LexIA.txt</strong> — el correo y los datos que extrajo LexIA.</li>
+        <li><strong>Adjuntos originales</strong> — los PDF e imágenes tal como llegaron, y <strong>Correo original.pdf</strong>: la impresión del cuerpo del correo, con sus párrafos y las <strong>capturas de pantalla</strong> que traiga dentro.</li>
+      </ul>
+      <p>El botón <strong>"Extraer adjuntos"</strong> guarda solo esa carpeta (el correo impreso y los adjuntos) <strong>sin gastar lectura de LexIA</strong>. Si una tutela ya fue leída, "Extraer con LexIA" no la lee de nuevo: te lo avisa y completa la carpeta si faltaba algo. Para una tutela que se guardó antes y cuyo correo impreso no trae las capturas, dale "Extraer adjuntos" y se vuelve a imprimir.</p>
+
+      <h3>Pestaña "Pregúntame"</h3>
+      <p>Escribe una pregunta sobre una tutela ya leída ("¿qué pretensiones hay en la 28230?", "¿quiénes están vinculados?"). LexIA <strong>va a la carpeta de esa tutela en OneDrive</strong> y busca la respuesta en los documentos reales (el escrito, los autos, los anexos y el correo impreso), y te dice de qué documento la sacó.</p>
+      <ul>
+        <li>Debajo de la respuesta aparece una nota: <em>"Consulté N documentos de la carpeta de la tutela…"</em>. Si algo no cupo (por tamaño o por el límite de <strong>40 páginas por pregunta</strong>), te dice cuál se dejó fuera.</li>
+        <li>Menciona el <strong>número</strong> de la tutela en la pregunta, o deja abierto ese caso en la lista.</li>
+        <li>Solo responde; <strong>no guarda ni cambia nada</strong>. Cada pregunta es independiente (no recuerda la anterior).</li>
+      </ul>
+
+      <h3>Pestaña "Enséñame"</h3>
+      <p>Escribe el No. Tutela, mira el historial de correcciones y agrega una nueva ("el Tema correcto era…"). Se guarda en la columna <strong>Corrección IA</strong> de esa tutela y LexIA la usa como ejemplo real cuando lea correos parecidos. El resultado de guardar sale <strong>ahí mismo, debajo del botón</strong>.</p>
+
+      <div class="callout tip">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        <div>Cada lectura y cada pregunta con documentos usa saldo de la API de Claude. Úsalo con confianza, pero no repitas la misma pregunta sin necesidad: de la segunda pregunta seguida sobre la misma tutela el costo baja bastante.</div>
+      </div>
+    </section>
+
+    <section id="informes">
+      <span class="step-num">4</span>
       <h2>Informe diario de Tutelas</h2>
       <p class="section-sub">Vive dentro del módulo <strong>Informes</strong> (no en Tutelas) — junta TODAS las tutelas notificadas o por vencer en una fecha, sin importar la Entidad.</p>
 
@@ -499,6 +590,18 @@
     <section id="preguntas">
       <h2>Preguntas frecuentes</h2>
       <div class="faq">
+        <div class="faq-item">
+          <h4>LexIA dice "No se pudo leer la respuesta de LexIA" — ¿qué hago?</h4>
+          <p>El mensaje ahora dice <strong>por qué</strong>: respuesta cortada por ser muy larga, el correo no parece una tutela, o LexIA contestó con texto en vez de datos. Intenta de nuevo; si se repite, usa "Extraer adjuntos" y registra la tutela a mano, y avísale a soporte con el texto del mensaje.</p>
+        </div>
+        <div class="faq-item">
+          <h4>Me sale "Algo salió mal — Failed to fetch dynamically imported module"</h4>
+          <p>Es una pestaña que quedó abierta desde antes de una actualización del portal. Recarga con <span class="kbd">Ctrl</span> + <span class="kbd">F5</span>. Tras publicar una versión nueva puede tardar hasta 10 minutos en llegarle a todos.</p>
+        </div>
+        <div class="faq-item">
+          <h4>La fecha de vencimiento no es la que dice el correo</h4>
+          <p>LexIA solo lee los días y la fecha de notificación; el portal cuenta días hábiles (sin sábados, domingos ni festivos) y respeta el horario de 8:00 a. m. a 5:00 p. m. Revisa el aviso que sale al leer el correo: te explica el cálculo.</p>
+        </div>
         <div class="faq-item">
           <h4>¿Por qué no veo el botón "Eliminar" ni puedo editar campos?</h4>
           <p>Tu usuario tiene acceso de <strong>solo lectura</strong> a este módulo — puedes consultar toda la información, pero no cambiarla. Si necesitas editar, pídele a un Administrador que revise tus permisos en Colaborador Lexara.</p>
@@ -565,6 +668,17 @@
         <li><strong>Ver terminados (N)</strong> — a la derecha de los chips de Entidad, alterna entre ver los procesos vigentes o los ya terminados.</li>
         <li>El ícono de <strong>carpeta</strong> en la columna homónima abre el link a la carpeta del proceso, si está registrado.</li>
         <li>Por fila: <strong>ojo</strong> (ver, solo consulta), <strong>lápiz</strong> (editar, si tienes permiso), <strong>PDF</strong> (descarga una ficha de una página con los datos principales del proceso).</li>
+      </ul>
+
+      <h3>Editar el Estado desde la tabla</h3>
+      <p>El lápiz que está junto al Estado abre un editor rápido (Estado y Fecha Estado) sin entrar al proceso. Escribe la nueva actuación debajo de las anteriores (con su fecha, por ejemplo <em>05-10-2026 Se allega memorial</em>) y dale <strong>"Guardar Estado"</strong>. La columna <strong>Fecha Estado</strong> se ve en formato <strong>día/mes/año</strong> (31/08/2026).</p>
+
+      <h3>El Histórico se alimenta solo</h3>
+      <p>Cada vez que guardas un cambio en el Estado — desde la tabla o desde el formulario del proceso — el portal <strong>agrega al final del Histórico</strong>, una línea por actuación y empezando por su fecha, lo que ya había en el Estado y lo nuevo que escribiste, sin repetir lo que ya está.</p>
+      <ul>
+        <li><strong>Nunca se borra nada del Histórico</strong>: si cambias o dejas vacío el Estado, el Histórico queda completo.</li>
+        <li>En el formulario, pestaña <strong>Trazabilidad</strong>, el Histórico abre mostrando las <strong>últimas líneas</strong> (lo más reciente va abajo).</li>
+        <li>Cuando <strong>pegas</strong> texto en el Histórico o en Observaciones, se pega solo el texto, limpio (sin colores ni caracteres extraños de Excel o Word).</li>
       </ul>
     </section>
 
@@ -639,6 +753,14 @@
       <h2>Preguntas frecuentes</h2>
       <div class="faq">
         <div class="faq-item">
+          <h4>Guardé el Estado y no veo el cambio en el Histórico</h4>
+          <p>El cambio se agrega al <strong>final</strong> del Histórico. El cuadro tiene su propio desplazamiento: ahora abre mostrando las últimas líneas, pero si lo ves arriba, baja con la rueda del mouse dentro del cuadro.</p>
+        </div>
+        <div class="faq-item">
+          <h4>Al escribir en el editor rápido de Estado, la barra espaciadora abría el proceso</h4>
+          <p>Ya está corregido: Espacio y Enter dentro de un cuadro de texto o de fecha son de ese cuadro y no abren el proceso. Si te pasa, recarga con Ctrl + F5.</p>
+        </div>
+        <div class="faq-item">
           <h4>¿Por qué un proceso activo sale con el semáforo en rojo?</h4>
           <p>Puede ser porque de verdad lleva más de un año sin novedad registrada, o porque no tiene ninguna fecha de "último estado" guardada — en ese segundo caso, el sistema prefiere marcarlo en rojo (que necesita revisión) en vez de gris, para no confundirlo con uno terminado.</p>
         </div>
@@ -663,13 +785,22 @@
     <section id="ve-pestanas">
       <span class="step-num">1</span>
       <h2>Audiencias, Términos y Pendientes</h2>
-      <p class="section-sub">3 pestañas dentro del mismo módulo — cada una con su formulario para agregar y su propia tabla.</p>
+      <p class="section-sub">4 pestañas dentro del mismo módulo: <strong>Todos</strong> (la que abre por defecto, para consultar) y una por cada tipo — Audiencias, Términos y Pendientes — con su formulario para agregar y su propia tabla.</p>
+
+      <h3>La pestaña "Todos"</h3>
+      <p>Junta en <strong>una sola lista</strong> las Audiencias, los Términos y los Pendientes, <strong>ordenados por fecha</strong> (lo más próximo arriba; lo que no tiene fecha, al final). Es solo de consulta.</p>
+      <ul>
+        <li>La etiqueta de color de la izquierda dice a qué pestaña pertenece cada uno: <span class="ss-chip green" style="margin-right:0;">Audiencia</span> verde, <span class="ss-chip orange" style="margin-right:0;">Término</span> naranja, Pendiente azul. <strong>Dale clic</strong> a la etiqueta para ir a esa pestaña y editarlo o eliminarlo.</li>
+        <li>Columnas: Tipo, Fecha (y hora en las audiencias), Cuenta regresiva en días hábiles, Proceso y cliente, Detalle y Responsable.</li>
+        <li>Los botones de arriba filtran por tipo y muestran cuántos hay vigentes de cada uno.</li>
+        <li>Por defecto se <strong>ocultan lo vencido y los pendientes ya terminados</strong>, para que lo próximo quede arriba. La casilla <strong>"Ver vencidos y terminados"</strong> los muestra e indica cuántos hay ocultos.</li>
+      </ul>
 
       <div class="screen">
         <div class="screen-bar"><span class="screen-dot"></span><span class="screen-dot"></span><span class="screen-dot"></span><span class="screen-label">Vencimientos → Pendientes</span></div>
         <div class="screen-pad">
           <div class="ss-tab-bar">
-            <span class="ss-tab">Audiencias</span><span class="ss-tab">Términos</span><span class="ss-tab active">Pendientes</span>
+            <span class="ss-tab">Todos</span><span class="ss-tab">Audiencias</span><span class="ss-tab">Términos</span><span class="ss-tab active">Pendientes</span>
           </div>
           <table class="ss-table">
             <thead><tr><th>Pendiente</th><th>Pendiente de</th><th>Pendiente para</th><th>Fecha</th><th>Estado</th></tr></thead>
@@ -806,6 +937,21 @@
       <p>Los dos exportan la Entidad y los filtros que tengas elegidos en ese momento.</p>
     </section>
 
+    <section id="db-qr">
+      <span class="step-num">4</span>
+      <h2>Código QR de enlaces</h2>
+      <p>Al final del Dashboard hay un panel <strong>"Código QR de enlaces de Lexara"</strong> con el QR que lleva a la página de enlaces del despacho (<strong>www.lexaraabogados.com/links/</strong>: contacto, podcast y redes sociales).</p>
+      <ul>
+        <li><strong>Descargar QR (PNG)</strong> — baja la imagen en alta resolución (1200 × 1200 px), lista para imprimir o usar en redes.</li>
+        <li><strong>Copiar enlace</strong> — copia la dirección de la página.</li>
+      </ul>
+
+      <div class="callout tip">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        <div>Es el mismo QR "Síguenos" que llevan las facturas, las órdenes de compra y las certificaciones laborales.</div>
+      </div>
+    </section>
+
     <!-- ============================= SOLICITUD DE FACTURA E. ============================= -->
     <section id="fa-que-es">
       <div class="doc-eyebrow"><span class="dot"></span>Módulo 5 de 9 · Solicitud De Factura E.</div>
@@ -885,7 +1031,8 @@
     <section id="cl-formulario">
       <span class="step-num">1</span>
       <h2>Registrar un cliente</h2>
-      <p>El formulario es una sola sección con 6 campos: <strong>Razón social, NIT, Dirección, Teléfono, Correo</strong> y <strong>Entidad</strong>. No tiene pestañas ni campos dependientes — se llena y se guarda.</p>
+      <p>Arriba a la derecha de la lista está el botón verde <strong>"Nuevo cliente"</strong> (solo si tienes permiso de edición): abre el formulario en blanco y el cliente se crea en SharePoint recién cuando le das <strong>"Crear cliente"</strong> — si cancelas, no queda nada. Para cambiar uno existente, usa el lápiz de su fila.</p>
+      <p>El formulario es una sola sección con 6 campos: <strong>Razón social, NIT, Dirección, Teléfono, Correo</strong> y <strong>Entidad</strong>. No tiene pestañas ni campos dependientes — se llena y se guarda. La <strong>razón social es obligatoria</strong> y el portal <strong>no deja crear un cliente que ya existe</strong> (compara sin importar mayúsculas ni tildes); en ese caso te avisa que lo busques en la lista y lo edites.</p>
       <div class="callout tip">
         <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
         <div>El nombre del Cliente que eliges en Tutelas, Facturas u Órdenes de compra sale de esta misma lista — mantenerla completa y sin duplicados ayuda a que esos formularios funcionen bien.</div>
@@ -1007,6 +1154,16 @@
       <div class="doc-eyebrow"><span class="dot"></span>Módulo 9 de 9 · Informes</div>
       <h2>Qué es este módulo</h2>
       <p>Informes formales por Entidad, herramientas para Tutelas, y 2 utilidades de análisis (Revisión de Procesos y Cruce de archivos). <strong>Dashboard e Informes son los dos únicos módulos que ve cualquier persona que inicie sesión</strong>, sin importar sus permisos.</p>
+    </section>
+
+    <section id="inf-qr">
+      <h2>El QR en los documentos</h2>
+      <p>Todos los <strong>PDF y Word</strong> que genera el portal con el membrete de Lexara (informes por Entidad, Tutelas, ficha de proceso, certificación laboral, vacaciones, horas extras, liquidación de intereses, Impulso Procesal y el análisis del Dashboard) llevan, en cada página, un <strong>código QR</strong> en el extremo derecho de la franja dorada, junto al teléfono. Al escanearlo se abre la página de enlaces del despacho.</p>
+
+      <div class="callout tip">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        <div>La certificación laboral además trae al final dos QR: <strong>Verificación</strong> (con los datos de la certificación, para comparar el papel sin internet) y <strong>Síguenos</strong>.</div>
+      </div>
     </section>
 
     <section id="inf-cliente">
