@@ -1,4 +1,4 @@
-import { stripHtml, parseMonto, desistimientosForProceso } from './graph';
+import { stripHtml, categoriaSiNoEnProceso, COLORES_SI_NO, parseMonto, desistimientosForProceso } from './graph';
 
 // Exportación HTML del panel "Análisis de procesos por Entidad" del
 // Dashboard (pedido explícito del usuario 2026-08-22: "que quedara en buen
@@ -19,8 +19,8 @@ const PALETA = ['#004941', '#ef7d00', '#52bbb5', '#a3281c', '#1d5fa3', '#8a6410'
 function campoGlosa(p){ return stripHtml(p.GlosaDemandada || p.OrigenTipoGlosa) || "Sin dato"; }
 function campoNaturaleza(p){ return stripHtml(p.NaturalezaProceso || p.TipoAccion) || "Sin dato"; }
 function campoSubclasificacion(p){ return stripHtml(p.Subclasificacion || p.TipoProceso) || "Sin dato"; }
-function campoAdmitida(p){ return stripHtml(p.Admitida) || "Sin dato"; }
-function campoPrueba(p){ return stripHtml(p.PruebaPericial) || "Sin dato"; }
+function campoAdmitida(p){ return categoriaSiNoEnProceso(p.Admitida); }
+function campoPrueba(p){ return categoriaSiNoEnProceso(p.PruebaPericial); }
 function campoEtapa(p){ return stripHtml(p.EtapaProcesal) || "Sin dato"; }
 
 function escapeJsonParaScript(json){
@@ -29,7 +29,9 @@ function escapeJsonParaScript(json){
   return json.replace(/<\/script/gi, '<\\/script');
 }
 
-export function generarDashboardEntidadHTML(procesos, desistimientos, entidad){
+// nombreArchivo (opcional): para que otro documento (el Word "SOS Ejecutivo")
+// pueda enlazar al HTML por un nombre conocido y sin espacios.
+export function generarDashboardEntidadHTML(procesos, desistimientos, entidad, nombreArchivo){
   // Solo procesos VIGENTES (2026-10-01, pedido explícito del usuario —
   // mismo criterio que DashboardView.jsx/ProcesosView.jsx: EstadoVT
   // contiene "termin").
@@ -61,16 +63,16 @@ export function generarDashboardEntidadHTML(procesos, desistimientos, entidad){
   const fechaLarga = new Date().toLocaleDateString('es-CO', { day:'2-digit', month:'long', year:'numeric' });
 
   const html = construirHTML(filas, titulo, fechaLarga);
-  descargarHTML(html, titulo);
+  descargarHTML(html, titulo, nombreArchivo);
 }
 
-function descargarHTML(html, titulo){
+function descargarHTML(html, titulo, nombreArchivo){
   const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   const hoy = new Date().toISOString().slice(0,10);
   a.href = url;
-  a.download = `Analisis de procesos - ${titulo} - ${hoy}.html`;
+  a.download = nombreArchivo || `Analisis de procesos - ${titulo} - ${hoy}.html`;
   document.body.appendChild(a);
   a.click();
   a.remove();
@@ -80,6 +82,7 @@ function descargarHTML(html, titulo){
 function construirHTML(filas, titulo, fechaLarga){
   const dataJson = escapeJsonParaScript(JSON.stringify(filas));
   const paletaJson = JSON.stringify(PALETA);
+  const coloresSiNoJson = JSON.stringify(COLORES_SI_NO);
 
   const css = `
     /* Aptos (pedido explícito 2026-09-07) no existe como fuente web (no está
@@ -149,6 +152,7 @@ function construirHTML(filas, titulo, fechaLarga){
   const scriptJs = `
     var FILAS = ${dataJson};
     var PALETA = ${paletaJson};
+    var COLORES_SI_NO = ${coloresSiNoJson};
     var FILTROS = { glosa:new Set(), naturaleza:new Set(), admitida:new Set(), subclasificacion:new Set(), pruebaPericial:new Set(), etapa:new Set() };
     var CAMPOS_FILTRO = [
       { key:'glosa', titulo:'Glosa demandada' },
@@ -218,7 +222,7 @@ function construirHTML(filas, titulo, fechaLarga){
       var arcoGrande = anguloFin - anguloInicio <= 180 ? 0 : 1;
       return 'M ' + cx + ' ' + cy + ' L ' + inicio.x + ' ' + inicio.y + ' A ' + r + ' ' + r + ' 0 ' + arcoGrande + ' 1 ' + fin.x + ' ' + fin.y + ' Z';
     }
-    function renderPieChart(data, emptyMsg){
+    function renderPieChart(data, emptyMsg, colores){
       var conValor = (data||[]).filter(function(d){ return d.value > 0; });
       var total = conValor.reduce(function(s,d){ return s + d.value; }, 0);
       if(!total) return '<div class="empty-state-compact">' + esc(emptyMsg) + '</div>';
@@ -228,7 +232,7 @@ function construirHTML(filas, titulo, fechaLarga){
         var barrido = (d.value/total) * 360;
         var inicio = anguloActual, fin = anguloActual + barrido;
         anguloActual = fin;
-        return { label:d.label, value:d.value, color: PALETA[i % PALETA.length], path: barrido >= 359.99 ? null : describirArco(cx, cy, r, inicio, fin) };
+        return { label:d.label, value:d.value, color: (colores && colores[d.label]) || PALETA[i % PALETA.length], path: barrido >= 359.99 ? null : describirArco(cx, cy, r, inicio, fin) };
       });
       var svgPorciones = porciones.map(function(p){
         return p.path ? '<path d="' + p.path + '" fill="' + p.color + '"></path>' : '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="' + p.color + '"></circle>';
@@ -295,9 +299,9 @@ function construirHTML(filas, titulo, fechaLarga){
 
       document.getElementById('charts-container').innerHTML =
         '<div class="panel"><div class="panel-head"><h3>Naturaleza del Proceso</h3></div><div class="panel-body">' + renderBarChart(dataNaturaleza, 'var(--verde-oscuro)', 'No hay datos de Naturaleza del Proceso.') + '</div></div>' +
-        '<div class="panel"><div class="panel-head"><h3>Procesos Admitidos</h3></div><div class="panel-body">' + renderPieChart(dataAdmitida, 'No hay datos de Admitida.') + '</div></div>' +
+        '<div class="panel"><div class="panel-head"><h3>Procesos Admitidos</h3></div><div class="panel-body">' + renderPieChart(dataAdmitida, 'No hay datos de Admitida.', COLORES_SI_NO) + '</div></div>' +
         '<div class="panel"><div class="panel-head"><h3>Subclasificación</h3></div><div class="panel-body">' + renderBarChart(dataSubclasificacion, 'var(--naranja)', 'No hay datos de Subclasificación.') + '</div></div>' +
-        '<div class="panel"><div class="panel-head"><h3>Procesos con Prueba Pericial</h3></div><div class="panel-body">' + renderPieChart(dataPrueba, 'No hay datos de Prueba Pericial.') + '</div></div>' +
+        '<div class="panel"><div class="panel-head"><h3>Procesos con Prueba Pericial</h3></div><div class="panel-body">' + renderPieChart(dataPrueba, 'No hay datos de Prueba Pericial.', COLORES_SI_NO) + '</div></div>' +
         '<div class="panel"><div class="panel-head"><h3>Total de desistimientos</h3></div><div class="panel-body">' + panelTotalDesistimientos + '</div></div>' +
         '<div class="panel"><div class="panel-head"><h3>Desistimientos</h3></div><div class="panel-body">' + renderPieChart(dataDesistimientosEstado, 'No hay desistimientos para estos procesos.') + '</div></div>';
     }

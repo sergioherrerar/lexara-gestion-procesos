@@ -1,4 +1,4 @@
-import { stripHtml, parseMonto, fmtMonto, desistimientosForProceso, groupCount } from './graph';
+import { stripHtml, categoriaSiNoEnProceso, COLORES_SI_NO, parseMonto, fmtMonto, desistimientosForProceso, groupCount } from './graph';
 import { imagenComoDataUrl } from './informesPDF';
 import { crearHeaderMembreteWord, MARGEN_SUPERIOR_MEMBRETE_MM, MARGEN_INFERIOR_MEMBRETE_MM } from './membreteWord';
 import firmaCompleta from '../assets/Firma Monica Completa.png';
@@ -19,20 +19,20 @@ import firmaCompleta from '../assets/Firma Monica Completa.png';
 // replicar el cambio en los 3 lugares (DashboardView.jsx, el export HTML y
 // este archivo).
 
-const VERDE_OSCURO = '004941';
-const NARANJA = 'ef7d00';
-const VERDE_CLARO = '52bbb5';
-const TEXTO = '1c2624';
-const GRIS_SUAVE = '5c6b68';
-const GRIS_LINEA = 'e4e4e1';
-const VERDE_TINTE = 'e6efed'; // tinte suave de VERDE_OSCURO, para la caja de resumen (mismo criterio que dibujarResumenBox en informesPDF.js)
+export const VERDE_OSCURO = '004941';
+export const NARANJA = 'ef7d00';
+export const VERDE_CLARO = '52bbb5';
+export const TEXTO = '1c2624';
+export const GRIS_SUAVE = '5c6b68';
+export const GRIS_LINEA = 'e4e4e1';
+export const VERDE_TINTE = 'e6efed'; // tinte suave de VERDE_OSCURO, para la caja de resumen (mismo criterio que dibujarResumenBox en informesPDF.js)
 const PALETA = ['004941', 'ef7d00', '52bbb5', 'a3281c', '1d5fa3', '8a6410', '6b5115', '5c6b68'];
 
 function campoGlosa(p){ return stripHtml(p.GlosaDemandada || p.OrigenTipoGlosa) || "Sin dato"; }
 function campoNaturaleza(p){ return stripHtml(p.NaturalezaProceso || p.TipoAccion) || "Sin dato"; }
 function campoSubclasificacion(p){ return stripHtml(p.Subclasificacion || p.TipoProceso) || "Sin dato"; }
-function campoAdmitida(p){ return stripHtml(p.Admitida) || "Sin dato"; }
-function campoPrueba(p){ return stripHtml(p.PruebaPericial) || "Sin dato"; }
+function campoAdmitida(p){ return categoriaSiNoEnProceso(p.Admitida); }
+function campoPrueba(p){ return categoriaSiNoEnProceso(p.PruebaPericial); }
 function campoEtapa(p){ return stripHtml(p.EtapaProcesal) || "Sin dato"; }
 
 function escXml(s){
@@ -96,7 +96,7 @@ function describirArco(cx, cy, r, anguloInicio, anguloFin){
   return `M ${cx} ${cy} L ${inicio.x} ${inicio.y} A ${r} ${r} 0 ${arcoGrande} 1 ${fin.x} ${fin.y} Z`;
 }
 
-function svgBarChart(data, colorHex){
+export function svgBarChart(data, colorHex){
   const rows = data.slice(0, 8);
   if(!rows.length) return null;
   const max = Math.max(...rows.map(r => r.value));
@@ -117,7 +117,7 @@ function svgBarChart(data, colorHex){
   return { svg, ancho, alto };
 }
 
-function svgPieChart(data){
+export function svgPieChart(data, colores){
   const conValor = (data||[]).filter(d => d.value > 0);
   const total = conValor.reduce((s,d) => s + d.value, 0);
   if(!total) return null;
@@ -127,7 +127,7 @@ function svgPieChart(data){
     const barrido = (d.value/total) * 360;
     const inicio = anguloActual, fin = anguloActual + barrido;
     anguloActual = fin;
-    return { ...d, color: PALETA[i % PALETA.length], path: barrido >= 359.99 ? null : describirArco(cx, cy, r, inicio, fin) };
+    return { ...d, color: ((colores && colores[d.label]) || "").replace("#", "") || PALETA[i % PALETA.length], path: barrido >= 359.99 ? null : describirArco(cx, cy, r, inicio, fin) };
   });
   const pad = 14, filaAlto = 20, legendAncho = 230;
   const alto = Math.max(size, porciones.length*filaAlto) + pad*2;
@@ -172,7 +172,7 @@ function svgToPngDataUrl(svgString, ancho, alto, escala = 2){
   });
 }
 
-function dataUrlABytes(dataUrl){
+export function dataUrlABytes(dataUrl){
   const base64 = dataUrl.split(',')[1];
   const binario = atob(base64);
   const bytes = new Uint8Array(binario.length);
@@ -180,7 +180,7 @@ function dataUrlABytes(dataUrl){
   return bytes;
 }
 
-async function prepararImagen(construido){
+export async function prepararImagen(construido){
   if(!construido) return null;
   const dataUrl = await svgToPngDataUrl(construido.svg, construido.ancho, construido.alto, 2);
   return { bytes: dataUrlABytes(dataUrl), ancho: construido.ancho, alto: construido.alto };
@@ -188,7 +188,7 @@ async function prepararImagen(construido){
 
 const DIAS = ["domingo","lunes","martes","miércoles","jueves","viernes","sábado"];
 const MESES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
-function fechaLarga(d){
+export function fechaLarga(d){
   return `${DIAS[d.getDay()]} ${d.getDate()} ${MESES[d.getMonth()]} de ${d.getFullYear()}`;
 }
 
@@ -214,9 +214,9 @@ export async function generarDashboardEntidadWord(procesos, desistimientos, enti
 
   const [pngNaturaleza, pngAdmitida, pngSubclasificacion, pngPrueba, pngDesistimientos, headerMembrete, firma] = await Promise.all([
     prepararImagen(svgBarChart(dataNaturaleza, VERDE_OSCURO)),
-    prepararImagen(svgPieChart(dataAdmitida)),
+    prepararImagen(svgPieChart(dataAdmitida, COLORES_SI_NO)),
     prepararImagen(svgBarChart(dataSubclasificacion, NARANJA)),
-    prepararImagen(svgPieChart(dataPrueba)),
+    prepararImagen(svgPieChart(dataPrueba, COLORES_SI_NO)),
     prepararImagen(svgPieChart(dataDesistimientosEstado)),
     crearHeaderMembreteWord({ Header, ImageRun, Paragraph, HorizontalPositionAlign, HorizontalPositionRelativeFrom, VerticalPositionAlign, VerticalPositionRelativeFrom, TextWrappingType }),
     imagenComoDataUrl(firmaCompleta, 700),

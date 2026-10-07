@@ -16,7 +16,7 @@ import { PALETA_CATEGORICA } from './PieChart';
 //   con su barra de progreso y su % — mismo lenguaje visual que un panel
 //   ejecutivo de verdad, y usa mejor el espacio vertical.
 
-export function ProportionBar({ data, emptyMsg }){
+export function ProportionBar({ data, emptyMsg, colores }){
   const conValor = (data||[]).filter(d => d.value > 0);
   const total = conValor.reduce((s,d) => s + d.value, 0);
   if(!total){
@@ -27,7 +27,7 @@ export function ProportionBar({ data, emptyMsg }){
       </div>
     );
   }
-  const porciones = conValor.map((d, i) => ({ ...d, pct: d.value/total*100, color: PALETA_CATEGORICA[i % PALETA_CATEGORICA.length] }));
+  const porciones = conValor.map((d, i) => ({ ...d, pct: d.value/total*100, color: (colores && colores[d.label]) || PALETA_CATEGORICA[i % PALETA_CATEGORICA.length] }));
   return (
     <div className="proportion-bar">
       <div className="proportion-bar-track">

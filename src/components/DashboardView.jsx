@@ -3,9 +3,10 @@ import BarChart from './BarChart';
 import PieChart, { StatRing } from './PieChart';
 import { ProportionBar, RankedProgressList } from './DashboardCharts';
 import ChecklistFilter from './ChecklistFilter';
-import { stripHtml, groupCount, parseMonto, fmtMonto, desistimientosForProceso, mensajeError } from '../lib/graph';
+import { stripHtml, categoriaSiNoEnProceso, COLORES_SI_NO, groupCount, parseMonto, fmtMonto, desistimientosForProceso, mensajeError } from '../lib/graph';
 import { generarDashboardEntidadHTML } from '../lib/exportarDashboardHTML';
 import { generarDashboardEntidadWord } from '../lib/exportarDashboardWord';
+import { generarSosEjecutivoWord } from '../lib/exportarSosEjecutivoWord';
 import IconButton from './IconButton';
 import QrEnlacesPanel from './QrEnlacesPanel';
 
@@ -24,8 +25,8 @@ function IconAlert(){
 function campoGlosa(p){ return stripHtml(p.GlosaDemandada || p.OrigenTipoGlosa) || "Sin dato"; }
 function campoNaturaleza(p){ return stripHtml(p.NaturalezaProceso || p.TipoAccion) || "Sin dato"; }
 function campoSubclasificacion(p){ return stripHtml(p.Subclasificacion || p.TipoProceso) || "Sin dato"; }
-function campoAdmitida(p){ return stripHtml(p.Admitida) || "Sin dato"; }
-function campoPrueba(p){ return stripHtml(p.PruebaPericial) || "Sin dato"; }
+function campoAdmitida(p){ return categoriaSiNoEnProceso(p.Admitida); }
+function campoPrueba(p){ return categoriaSiNoEnProceso(p.PruebaPericial); }
 function campoEtapa(p){ return stripHtml(p.EtapaProcesal) || "Sin dato"; }
 
 function opcionesConConteo(lista, campoFn){
@@ -159,6 +160,21 @@ export default function DashboardView({ procesos, desistimientos = [], notify })
     }
   }
 
+  // Informe "SOS Ejecutivo": carta formal a SOS EPS con los 4 numerales del
+  // informe modelo (siempre la Entidad SOS, sin importar el chip elegido).
+  const [generandoSos, setGenerandoSos] = useState(false);
+  async function handleSosEjecutivo(){
+    setGenerandoSos(true);
+    try{
+      await generarSosEjecutivoWord(procesos, desistimientos);
+    } catch(err){
+      console.error(err);
+      notify?.("No se pudo generar SOS Ejecutivo: " + mensajeError(err), 'error');
+    } finally {
+      setGenerandoSos(false);
+    }
+  }
+
   return (
     <div className="view dashboard-view">
       <div className="view-header">
@@ -196,7 +212,8 @@ export default function DashboardView({ procesos, desistimientos = [], notify })
       <div className="panel" style={{marginTop:20}}>
         <div className="panel-head">
           <h3>Análisis de procesos por Entidad</h3>
-          <div style={{display:'flex', gap:8}}>
+          <div style={{display:'flex', gap:8, alignItems:'center'}}>
+            <button type="button" className="btn-secondary" onClick={handleSosEjecutivo} disabled={generandoSos}>{generandoSos ? 'Generando…' : 'SOS Ejecutivo'}</button>
             <IconButton icon="html" variant="html" label="Descargar análisis interactivo (HTML)" onClick={handleExportarHTML} />
             <IconButton icon="word" variant="word" label="Descargar análisis en Word" spinning={generandoWord} onClick={handleExportarWord} />
           </div>
@@ -255,7 +272,7 @@ export default function DashboardView({ procesos, desistimientos = [], notify })
                 escrito. */}
             <div className="panel">
               <div className="panel-head"><h3>Procesos Admitidos</h3></div>
-              <div className="panel-body"><ProportionBar data={dataAdmitida} emptyMsg="No hay datos de Admitida." /></div>
+              <div className="panel-body"><ProportionBar data={dataAdmitida} colores={COLORES_SI_NO} emptyMsg="No hay datos de Admitida." /></div>
             </div>
             <div className="panel">
               <div className="panel-head"><h3>Subclasificación</h3></div>
@@ -263,7 +280,7 @@ export default function DashboardView({ procesos, desistimientos = [], notify })
             </div>
             <div className="panel">
               <div className="panel-head"><h3>Procesos con Prueba Pericial</h3></div>
-              <div className="panel-body"><ProportionBar data={dataPrueba} emptyMsg="No hay datos de Prueba Pericial." /></div>
+              <div className="panel-body"><ProportionBar data={dataPrueba} colores={COLORES_SI_NO} emptyMsg="No hay datos de Prueba Pericial." /></div>
             </div>
             {/* Antes eran 2 paneles (un anillo+lista de texto plano, y una
                 dona aparte) — se unen en un solo panel rankeado de mayor a

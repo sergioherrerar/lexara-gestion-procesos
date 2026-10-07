@@ -1501,6 +1501,19 @@ export function fmtFechaDMA(valor){
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(valor || ""));
   return m ? `${m[3]}/${m[2]}/${m[1]}` : "";
 }
+// Admitida y Prueba Pericial (2026-10-07): las dos listas son SI / NO / En Proceso, pero los datos viejos
+// traen "Sí", "SI", "si"… Para contar y graficar se unifican en una sola categoría ("Sin dato" si está vacío).
+export function categoriaSiNoEnProceso(valor){
+  const t = stripHtml(valor || "").trim();
+  if(!t) return "Sin dato";
+  const n = normalize(t);
+  if(n === "si") return "SI";
+  if(n === "no") return "NO";
+  if(n === "en proceso") return "En Proceso";
+  return t;
+}
+// Un color fijo por categoría (en las gráficas el color ya no depende del orden).
+export const COLORES_SI_NO = { "SI": "#004941", "NO": "#ef7d00", "En Proceso": "#52bbb5", "Sin dato": "#b8c0bd" };
 export function fmtDate(dateStr){
   if(!dateStr) return "—";
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(dateStr);
