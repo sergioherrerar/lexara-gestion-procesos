@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-10-07 (10)
+- **SOS Ejecutivo: lista de contratos también en los numerales 1 (Diana Santos) y 3 (Reintegros)** — pedido explícito del usuario. Igual que en el numeral 2, ahora cada uno muestra una tabla "Contrato | Procesos | Valor Cartera actual" con cuántos procesos y cuánta cartera tiene cada contrato, justo después del total de la cartera del grupo.
+
 ## 2026-10-07 (9)
 - **SOS Ejecutivo, numeral 4: los dictámenes periciales ahora van en tres tablas con su propio texto** — pedido explícito del usuario. Ahora hay una tabla y un párrafo para cada grupo: procesos con dictamen pericial entregado (SI), con dictamen pericial en proceso (En Proceso) y sin dictamen pericial (NO). El numeral abre con un resumen y la gráfica de Prueba Pericial de todos los procesos, y el título pasó de "Procesos sin dictámenes periciales" a "Procesos y dictámenes periciales", porque ahora también incluye los entregados.
 

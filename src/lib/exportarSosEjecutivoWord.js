@@ -379,6 +379,8 @@ export async function generarSosEjecutivoWord(procesos, desistimientos){
     }
     hijos.push(
       parrafo(`El total de la cartera demandada en los procesos judiciales que devienen del contrato suscrito con DIANA PATRICIA SANTOS es de ${valorEnLetras(sumar(grupos.diana))}`),
+      parrafo('Por contrato, los procesos se distribuyen así:', { despues: 100 }),
+      tablaContratos(grupos.diana), espacio(),
       parrafo('Dado que de estos procesos se habían causado honorarios de manera inicial en la jurisdicción laboral a nombre de DIANA PATRICIA SANTOS, el seguimiento a los mismos se pactó de manera verbal por parte de MD ABOGADOS SAS, pero los honorarios pactados en los contratos con la abogada inicial se causan y ella los cobra a su nombre. Inclusive en las disponibilidades presupuestales que hace la entidad son tenidos en cuenta de esa forma.'),
       ...grafico(pngDiana, 'Naturaleza del Proceso — procesos de Diana Santos'),
     );
@@ -414,6 +416,8 @@ export async function generarSosEjecutivoWord(procesos, desistimientos){
       parrafo(`Durante los años 2020 a 2022, se suscribieron contratos entre SOS EPS S.A. y MD ABOGADOS SAS para la representación judicial en procesos de reintegros ordenados por la Supersalud, y con posterioridad la ADRES contra la EPS, de los cuales a la fecha cursan ${cantidadEnLetras(grupos.reintegros.length)} proceso${grupos.reintegros.length === 1 ? '' : 's'}, cuyas cuantías son las siguientes:`),
       tablaProcesos(grupos.reintegros), espacio(),
       parrafo(`Para un total demandado de ${valorEnLetras(sumar(grupos.reintegros))}.`),
+      parrafo('Por contrato, los procesos se distribuyen así:', { despues: 100 }),
+      tablaContratos(grupos.reintegros), espacio(),
       ...grafico(pngReintegros, 'Naturaleza del Proceso — procesos de reintegros'),
     );
   }
