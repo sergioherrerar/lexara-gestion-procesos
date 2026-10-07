@@ -543,7 +543,7 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
                               Crear borrador
                             </IconTextButton>
                           )}
-                          {robotSolicitudUrl && (
+                          {robotSolicitudUrl && !__ES_CPANEL__ && (
                             <span style={{display:'inline-flex', alignItems:'center', gap:8}}>
                               <IconButton icon="mail" variant="mail" label={r._solicitud?.estado === 'listo' ? 'Solicitud de pruebas creada — si pulsas de nuevo te avisa que ya existe' : r._solicitud?.estado === 'error' ? 'Reintentar el borrador de solicitud de pruebas' : 'Crear borrador de solicitud de pruebas (reenvía el correo original a las áreas)'} spinning={r._solicitud?.estado === 'creando'} onClick={() => handleSolicitudPruebas(i)} />
                               {r._solicitud?.estado === 'creando' && <span className="save-hint">Armando solicitud de pruebas…</span>}

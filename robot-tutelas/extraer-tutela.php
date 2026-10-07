@@ -16,7 +16,7 @@
 // PDF pesados puede tardar más de los 30 s que suele traer PHP por defecto, y
 // decodificar/reenviar tantos adjuntos en base64 gasta mucha memoria — en
 // cualquiera de los dos casos el servidor cortaba la conexión sin avisar.
-@set_time_limit(190);
+@set_time_limit(340);
 @ini_set('memory_limit', '512M');
 
 header('Content-Type: application/json; charset=utf-8');
@@ -106,7 +106,7 @@ $camposEsperados = <<<TXT
 - Correo (texto, correo del juzgado que envía la notificación)
 - Solicita (texto largo, resumen en tus propias palabras de qué pide la tutela)
 - Tema (categoría de la tutela — ver instrucciones)
-- Analisis (OBJETO con tu lectura como abogada especialista; NUNCA inventes — solo lo que se desprenda del correo y los documentos; cada valor es texto breve y concreto, y "" si no aplica. Claves: "Accionante" (quién presenta la tutela y en qué calidad: el propio paciente, agente oficioso, representante legal, apoderado), "DerechosInvocados" (derechos que el accionante dice vulnerados), "Hechos" (resumen cronológico en máximo 5 frases), "Pretensiones" (lo que concretamente pide, separado por " | "), "OrdenesDelJuez" (qué le ordena o pide el despacho a la entidad: informe, documentos, medida provisional con su plazo; "Ninguna" si no hay), "PruebasPorReunir" (soportes que la entidad necesita conseguir para contestar, cada uno con el área interna sugerida entre paréntesis, separados por " | " — específicos, nada genérico), "Defensas" (máximo 3 líneas de defensa posibles, separadas por " | "), "Alerta" (urgencias o riesgos: medida provisional, término muy corto, riesgo de desacato, vinculación o notificación dudosa; "" si no hay))
+- Analisis (OBJETO con tu lectura como abogada especialista; NUNCA inventes — solo lo que se desprenda del correo y los documentos; cada valor es texto breve y concreto (en total el Analisis no pasa de unas 200 palabras), y "" si no aplica. Claves: "Accionante" (quién presenta la tutela y en qué calidad: el propio paciente, agente oficioso, representante legal, apoderado), "DerechosInvocados" (derechos que el accionante dice vulnerados), "Hechos" (resumen cronológico en máximo 5 frases), "Pretensiones" (lo que concretamente pide, separado por " | "), "OrdenesDelJuez" (qué le ordena o pide el despacho a la entidad: informe, documentos, medida provisional con su plazo; "Ninguna" si no hay), "PruebasPorReunir" (soportes que la entidad necesita conseguir para contestar, cada uno con el área interna sugerida entre paréntesis, separados por " | " — específicos, nada genérico), "Defensas" (máximo 3 líneas de defensa posibles, separadas por " | "), "Alerta" (urgencias o riesgos: medida provisional, término muy corto, riesgo de desacato, vinculación o notificación dudosa; "" si no hay))
 TXT;
 
 // 2026-09-24, pedido explícito del usuario: mandó la guía REAL de criterios
@@ -136,7 +136,7 @@ Corresponde a todos los asuntos relacionados con servicios de salud. El tema se 
 - Agendamiento de servicio: cuando el accionante manifiesta que no logra obtener agenda para un servicio y solicita su programación.
 - Entrega de medicamentos: cuando el escrito indica que la EPS ya autorizó los medicamentos, pero existen inconvenientes con su entrega.
 - Portabilidad: cuando el accionante se encuentra en un municipio distinto a Bogotá y solicita que el servicio se le brinde en dicho municipio, o que se le active o renueve la portabilidad.
-- Puerta de entrada / red no adscrita: cuando las órdenes médicas provienen del acceso a través de otra entidad y no de prestadores adscritos a Aliansalud EPS. Caso típico: se acciona contra Colmédica Medicina Prepagada y el juzgado vincula a la EPS, sin que el accionante mencione ni se evidencien órdenes de prestadores adscritos a esta, sino que provienen de CMP.
+- Puerta de entrada / red no adscrita: cuando las órdenes médicas provienen del acceso a través de otra entidad y no de prestadores adscritos a Aliansalud EPS. Caso típico: se acciona contra Colmédica Medicina Prepagada y el juzgado vincula a la EPS, sin que el accionante mencione ni se evidencien órdenes de prestadores adscritos a esta, sino que provienen de CMP. IMPORTANTE (corrección del abogado a cargo, 2026-10-07, tutela 28246): este Tema aplica cuando el reclamo central es justamente que la EPS debe atender lo ordenado por prestadores de otra entidad o no adscritos. NO lo uses cuando Aliansalud EPS ya respondió directamente al accionante — por ejemplo negando por escrito el medicamento por criterios técnicos o INVIMA, o por no ser PBS — y lo que se discute es esa negativa o la entrega: en ese caso el Tema es el que describa la pretensión de fondo (p. ej. Autorización y suministro de servicios de salud, o Entrega de medicamentos si ya estaba autorizado y no se entrega), aunque la orden médica la haya expedido un médico de Colmédica. Las "Exclusión INVIMA" y demás exclusiones contractuales son temas de Colmédica Medicina Prepagada, no de Aliansalud.
 - Servicio no PBS: cuando se solicitan silla de ruedas, medias, plantillas, equinoterapia, acompañamiento terapéutico en contexto escolar o musicoterapia, servicios excluidos del Plan de Beneficios en Salud.
 - Servicio de cuidador o enfermería: cuando esta sea la pretensión.
 - Tratamiento integral: cuando esta sea la pretensión.
@@ -249,7 +249,7 @@ $body = [
     // 4000 -> 8000 (2026-10-06): con varios registros por cliente y los campos
     // nuevos (DiasTermino, fechas, Tema...) la respuesta podía quedar cortada a
     // la mitad y el JSON llegaba incompleto. Solo se paga lo que se genera.
-    'max_tokens' => 8000,
+    'max_tokens' => 16000,
     // 2026-09-23, pedido explícito del usuario ("que la extracción sea más
     // rápida sin perder nada") — cache_control en las instrucciones: son
     // siempre las mismas, así que Claude no tiene que "releerlas" de cero
@@ -384,26 +384,42 @@ if($codigoHttp !== 200){
     exit;
 }
 
-$texto = '';
-foreach(($data['content'] ?? []) as $bloque){
-    if(($bloque['type'] ?? '') === 'text'){ $texto .= $bloque['text']; }
+// Lee el texto de la respuesta de Claude y saca los registros. Claude a veces envuelve el JSON en
+// ```json ... ``` o agrega una frase antes/después aunque se le pida que no lo haga — se toma desde
+// la primera "{" hasta la última "}" antes de decodificar (2026-10-06).
+function leerRespuestaClaude($data){
+    $texto = '';
+    foreach(($data['content'] ?? []) as $bloque){
+        if(($bloque['type'] ?? '') === 'text'){ $texto .= $bloque['text']; }
+    }
+    $texto = trim($texto);
+    $stopReason = (string)($data['stop_reason'] ?? '');
+    $posIni = strpos($texto, '{');
+    $posFin = strrpos($texto, '}');
+    $candidato = ($posIni !== false && $posFin !== false && $posFin > $posIni) ? substr($texto, $posIni, $posFin - $posIni + 1) : $texto;
+    $data2 = json_decode($candidato, true);
+    $registros = is_array($data2) ? ($data2['registros'] ?? null) : null;
+    // Por si devolvió directamente la lista de registros, sin el objeto envolvente.
+    if(!is_array($registros) && is_array($data2) && isset($data2[0]) && is_array($data2[0])) $registros = $data2;
+    if(!is_array($registros) || count($registros) === 0) $registros = null;
+    return [$texto, $stopReason, $registros];
 }
 
-// Claude a veces envuelve el JSON en ```json ... ``` o agrega una frase antes/
-// después aunque se le pida que no lo haga — se toma desde la primera "{" hasta
-// la última "}" antes de decodificar (2026-10-06, antes solo se quitaba la
-// envoltura de markdown y cualquier otro texto hacía fallar la extracción).
-$texto = trim($texto);
-$stopReason = (string)($data['stop_reason'] ?? '');
-$posIni = strpos($texto, '{');
-$posFin = strrpos($texto, '}');
-$candidato = ($posIni !== false && $posFin !== false && $posFin > $posIni) ? substr($texto, $posIni, $posFin - $posIni + 1) : $texto;
+[$texto, $stopReason, $registros] = leerRespuestaClaude($data);
 
-$data2 = json_decode($candidato, true);
-$registros = is_array($data2) ? ($data2['registros'] ?? null) : null;
-// Por si devolvió directamente la lista de registros, sin el objeto envolvente.
-if(!is_array($registros) && is_array($data2) && isset($data2[0]) && is_array($data2[0])) $registros = $data2;
-if(!is_array($registros) || count($registros) === 0){
+// 2026-10-07 (tutela 28248: 14 páginas de tutela + más de 400 de pruebas): la respuesta se cortó por
+// largo ("quedó cortada"). Si pasa, se reintenta UNA vez en versión abreviada (sin el Analisis y con
+// un Solicita corto) para no perder la extracción de los campos del formulario.
+if($registros === null && $stopReason === 'max_tokens'){
+    $body['system'][0]['text'] .= "\n\nRESPUESTA ABREVIADA (el intento anterior se cortó por ser demasiado largo): NO escribas el campo Analisis (déjalo como objeto vacío {}) y escribe Solicita en máximo 60 palabras. Devuelve solo el JSON.";
+    [$respuesta2, $codigoHttp2, $errorCurl2] = llamarClaude($body, $apiKey);
+    if(!$errorCurl2 && $codigoHttp2 === 200){
+        $data = json_decode($respuesta2, true);
+        [$texto, $stopReason, $registros] = leerRespuestaClaude($data);
+    }
+}
+
+if($registros === null){
     http_response_code(502);
     // El mensaje dice POR QUÉ falló (respuesta cortada, rechazo del modelo o
     // texto sin JSON) y trae el comienzo de lo que contestó — antes solo decía

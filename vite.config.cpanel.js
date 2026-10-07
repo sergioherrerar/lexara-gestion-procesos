@@ -20,6 +20,8 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   plugins: [react()],
   base: '/app/',
+  // En cPanel el ícono de la solicitud de pruebas va oculto mientras se sigue probando en GitHub Pages.
+  define: { __ES_CPANEL__: true },
   build: {
     outDir: 'dist-cpanel',
   },

@@ -16,4 +16,7 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   plugins: [react()],
   base: '/lexara-gestion-procesos/',
+  // La solicitud de pruebas (ícono de correo) se prueba solo en este sitio (GitHub Pages) — en el de
+  // cPanel va oculta (pedido del usuario 2026-10-07).
+  define: { __ES_CPANEL__: false },
 });
