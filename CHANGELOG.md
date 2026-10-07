@@ -2,6 +2,12 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-10-07 (6)
+- **SOS Ejecutivo: gráficos de barras por grupo, contratos y valores en desistimientos** — pedido explícito del usuario. Los numerales 1 (Diana Santos), 2 (recobros) y 3 (reintegros) ahora llevan una gráfica de barras de "Naturaleza del Proceso" como la del Dashboard, filtrada solo con los procesos de ese grupo (antes era una torta por etapa). El numeral 2 muestra además una tabla con cada contrato, cuántos procesos tiene y su cartera. La gráfica del numeral 5 (desistimientos) ahora muestra en la leyenda la cantidad y el valor en pesos de cada estado. Se quitó un "Cordial saludo," repetido, porque la imagen de la firma ya lo trae.
+
+## 2026-10-07 (5)
+- **SOS Ejecutivo: resumen consolidado antes del numeral 1** — pedido explícito del usuario. Antes de empezar los numerales, el Word muestra en menos de media hoja la información de TODOS los procesos de SOS: cantidad de procesos vigentes, valor de cartera actual total, cuántos son laborales y cuántos administrativos, y al lado tres tablas pequeñas con la cantidad por Naturaleza del Proceso, por Subclasificación y por Etapa del proceso (las mismas del Dashboard), cada una con su total.
+
 ## 2026-10-07 (4)
 - **Dashboard: nuevo botón "SOS Ejecutivo" — carta formal a SOS EPS lista para enviar** — pedido explícito del usuario, con el informe ejecutivo de enero 2026 como modelo. Genera un Word con el membrete y la firma de siempre y los numerales del modelo: 1) procesos de la abogada Diana Santos, 2) recobros ADRES del contrato con MD Abogados, 3) reintegros Supersalud y ADRES, 4) procesos sin dictámenes periciales (en proceso con ACIEL y pendientes de perito) y 5) desistimientos presentados. Cada numeral lleva su texto, su tabla y su gráfico; las cantidades, los valores y las sumas en letras salen de los datos del portal (solo procesos vigentes de SOS), y los desistimientos dicen la fecha del primer y del último radicado y cuánta cartera se recuperó. Junto al Word se descarga el HTML interactivo de SOS, y el Word trae un enlace a ese archivo (guardarlos en la misma carpeta, o adjuntar los dos al correo). Los grupos se identifican por la Glosa Demandada (Antiguos / Recobros / Reintegros); si algún proceso no cae en ninguno, sale en un apartado "Otros procesos" para que el total cuadre.
 

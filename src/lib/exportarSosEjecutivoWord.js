@@ -2,7 +2,7 @@ import { stripHtml, categoriaSiNoEnProceso, COLORES_SI_NO, parseMonto, fmtMonto,
 import { imagenComoDataUrl } from './informesPDF';
 import { generarDashboardEntidadHTML } from './exportarDashboardHTML';
 import { crearHeaderMembreteWord, MARGEN_SUPERIOR_MEMBRETE_MM, MARGEN_INFERIOR_MEMBRETE_MM } from './membreteWord';
-import { svgPieChart, prepararImagen, dataUrlABytes, VERDE_OSCURO, TEXTO, GRIS_SUAVE } from './exportarDashboardWord';
+import { svgPieChart, svgBarChart, prepararImagen, dataUrlABytes, VERDE_OSCURO, VERDE_TINTE, TEXTO, GRIS_SUAVE } from './exportarDashboardWord';
 import firmaCompleta from '../assets/Firma Monica Completa.png';
 
 // Informe "SOS Ejecutivo" (2026-10-07, pedido explícito del usuario con el
@@ -98,8 +98,10 @@ function fila(p){
   const subclasificacion = stripHtml(p.Subclasificacion || p.TipoProceso) || '';
   return {
     radicado: stripHtml(p.Radicado) || '—',
+    contrato: stripHtml(p.NumeroContrato) || 'Sin contrato',
     despacho: `${stripHtml(p.Despacho) || ''} ${stripHtml(p.NumeroDespacho) || ''}`.trim() || '—',
     naturaleza,
+    subTotal: subclasificacion || 'Sin dato',
     subclasificacion: subclasificacion && sinTildes(subclasificacion) !== sinTildes(naturaleza) ? subclasificacion : '',
     etapa: stripHtml(p.EtapaProcesal) || 'Sin dato',
     admitida: categoriaSiNoEnProceso(p.Admitida),
@@ -164,14 +166,15 @@ export async function generarSosEjecutivoWord(procesos, desistimientos){
   const sinPerito = todos.filter(f => f.pruebaPericial === 'NO').sort(porRadicado);
   const conDictamen = todos.filter(f => f.pruebaPericial === 'SI').length;
 
-  const imagenGrafico = (filas, colores) => prepararImagen(svgPieChart(groupCount(filas, f => f.etapa).map(d => ({ label: d.label, value: d.value })), colores));
+  // Barras de Naturaleza del Proceso, como en el Dashboard (mismo color), filtradas por grupo.
+  const imagenGrafico = (filas) => prepararImagen(svgBarChart(groupCount(filas, f => f.naturaleza), VERDE_OSCURO));
   const [pngDiana, pngRecobros, pngReintegros, pngOtros, pngPrueba, pngDesis, headerMembrete, firma] = await Promise.all([
     imagenGrafico(grupos.diana),
     imagenGrafico(grupos.recobros),
     imagenGrafico(grupos.reintegros),
     grupos.otros.length ? imagenGrafico(grupos.otros) : null,
     prepararImagen(svgPieChart(groupCount(todos, f => f.pruebaPericial), COLORES_SI_NO)),
-    prepararImagen(svgPieChart(groupCount(desis, d => d.estado))),
+    prepararImagen(svgPieChart(groupCount(desis, d => d.estado).map(g => ({ ...g, detalle: '$' + fmtMonto(sumar(desis.filter(d => d.estado === g.label))) })))),
     crearHeaderMembreteWord({ Header, ImageRun, Paragraph, HorizontalPositionAlign, HorizontalPositionRelativeFrom, VerticalPositionAlign, VerticalPositionRelativeFrom, TextWrappingType }),
     imagenComoDataUrl(firmaCompleta, 700),
   ]);
@@ -236,14 +239,21 @@ export async function generarSosEjecutivoWord(procesos, desistimientos){
         celda('$' + fmtMonto(f.valor), A[3], AlignmentType.RIGHT),
       ]));
   }
+  // Contratos del grupo y cuántos procesos (y cuánta cartera) tiene cada uno.
+  function tablaContratos(filas){
+    const A = [5000, 1800, 2838];
+    const mapa = new Map();
+    filas.forEach(f => { const a = mapa.get(f.contrato) || { n: 0, valor: 0 }; mapa.set(f.contrato, { n: a.n + 1, valor: a.valor + f.valor }); });
+    const lista = Array.from(mapa.entries()).sort((a, b) => b[1].n - a[1].n);
+    return tabla(A, ['Contrato', 'Procesos', 'Valor Cartera actual'], lista.map(([c, d]) => [ celda(c, A[0]), celda(String(d.n), A[1]), celda('$' + fmtMonto(d.valor), A[2], AlignmentType.RIGHT) ]));
+  }
   function tablaRadicadoDespacho(filas, tituloTercera, textoTercera){
     const A = [1500, 4100, 4038];
     return tabla(A, ['Radicado', 'Despacho Judicial', tituloTercera],
       filas.map(f => [ celda(f.radicado, A[0]), celda(f.despacho, A[1]), celda(textoTercera(f), A[2]) ]));
   }
-  function grafico(png, titulo){
+  function grafico(png, titulo, ancho = 440){
     if(!png) return [];
-    const ancho = 380;
     return [
       new Paragraph({ spacing: { before: 200, after: 80 }, keepNext: true, alignment: AlignmentType.CENTER, children: [ new TextRun({ text: titulo, bold: true, size: 19, color: VERDE_OSCURO }) ] }),
       new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 160 }, children: [ new ImageRun({ type: 'png', data: png.bytes, transformation: { width: ancho, height: Math.round(ancho * png.alto / png.ancho) } }) ] }),
@@ -276,6 +286,66 @@ export async function generarSosEjecutivoWord(procesos, desistimientos){
     ],
   });
 
+  /* ---- Información consolidada de todos los procesos (antes del numeral 1) ---- */
+  const nLaborales = todos.filter(esLaboral).length;
+  const nAdministrativos = todos.filter(f => sinTildes(f.naturaleza).includes('administrativ')).length;
+  const nOtrosNat = todos.length - nLaborales - nAdministrativos;
+  const SIN_BORDE = { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' };
+  const SIN_BORDES = { top: SIN_BORDE, bottom: SIN_BORDE, left: SIN_BORDE, right: SIN_BORDE };
+  const celdaResumen = (rotulo, valor) => new TableCell({
+    width: { size: 3212, type: WidthType.DXA },
+    shading: { fill: VERDE_TINTE, type: ShadingType.CLEAR, color: 'auto' },
+    borders: SIN_BORDES, margins: { top: 80, bottom: 80, left: 80, right: 80 },
+    children: [
+      new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 20 }, children: [ new TextRun({ text: rotulo.toUpperCase(), size: 14, color: GRIS_SUAVE }) ] }),
+      new Paragraph({ alignment: AlignmentType.CENTER, children: [ new TextRun({ text: valor, bold: true, size: 20, color: VERDE_OSCURO }) ] }),
+    ],
+  });
+  // Mini tabla de conteo (categoría | cantidad) para meter 3 lado a lado en menos de media hoja.
+  function miniTabla(titulo, datos){
+    const A = [2350, 750];
+    const borde = { style: BorderStyle.SINGLE, size: 4, color: 'b8c0bd' };
+    const bordes = { top: borde, bottom: borde, left: borde, right: borde };
+    const m = { top: 20, bottom: 20, left: 60, right: 60 };
+    const cel = (texto, ancho, alinear, extra = {}) => new TableCell({
+      width: { size: ancho, type: WidthType.DXA }, borders: bordes, margins: m, verticalAlign: VerticalAlign.CENTER,
+      ...(extra.fondo ? { shading: { fill: extra.fondo, type: ShadingType.CLEAR, color: 'auto' } } : {}),
+      children: [ new Paragraph({ alignment: alinear, children: [ new TextRun({ text: texto, size: 15, bold: !!extra.negrita, color: extra.color || TEXTO }) ] }) ],
+    });
+    const total = datos.reduce((s, d) => s + d.value, 0);
+    return new Table({
+      width: { size: A[0] + A[1], type: WidthType.DXA }, columnWidths: A,
+      rows: [
+        new TableRow({ tableHeader: true, cantSplit: true, children: [ cel(titulo, A[0], AlignmentType.LEFT, { fondo: VERDE_OSCURO, negrita: true, color: 'FFFFFF' }), cel('Procesos', A[1], AlignmentType.RIGHT, { fondo: VERDE_OSCURO, negrita: true, color: 'FFFFFF' }) ] }),
+        ...datos.map(d => new TableRow({ cantSplit: true, children: [ cel(d.label, A[0], AlignmentType.LEFT), cel(String(d.value), A[1], AlignmentType.RIGHT) ] })),
+        new TableRow({ cantSplit: true, children: [ cel('Total', A[0], AlignmentType.LEFT, { negrita: true, fondo: VERDE_TINTE }), cel(String(total), A[1], AlignmentType.RIGHT, { negrita: true, fondo: VERDE_TINTE }) ] }),
+      ],
+    });
+  }
+  const celdaMini = (titulo, datos) => new TableCell({
+    width: { size: 3212, type: WidthType.DXA }, borders: SIN_BORDES, margins: { top: 0, bottom: 0, left: 40, right: 40 },
+    children: [ miniTabla(titulo, datos), new Paragraph({ spacing: { after: 0 }, children: [] }) ],
+  });
+  hijos.push(
+    new Table({
+      width: { size: 9636, type: WidthType.DXA }, columnWidths: [3212, 3212, 3212], borders: { top: SIN_BORDE, bottom: SIN_BORDE, left: SIN_BORDE, right: SIN_BORDE, insideHorizontal: SIN_BORDE, insideVertical: SIN_BORDE },
+      rows: [ new TableRow({ cantSplit: true, children: [
+        celdaResumen('Procesos vigentes', String(todos.length)),
+        celdaResumen('Valor cartera actual', '$' + fmtMonto(sumar(todos))),
+        celdaResumen('Laborales / Administrativos', `${nLaborales} / ${nAdministrativos}` + (nOtrosNat ? ` (+${nOtrosNat} otros)` : '')),
+      ] }) ],
+    }),
+    new Paragraph({ spacing: { after: 100 }, children: [] }),
+    new Table({
+      width: { size: 9636, type: WidthType.DXA }, columnWidths: [3212, 3212, 3212], borders: { top: SIN_BORDE, bottom: SIN_BORDE, left: SIN_BORDE, right: SIN_BORDE, insideHorizontal: SIN_BORDE, insideVertical: SIN_BORDE },
+      rows: [ new TableRow({ cantSplit: true, children: [
+        celdaMini('Naturaleza del Proceso', groupCount(todos, f => f.naturaleza)),
+        celdaMini('Subclasificación', groupCount(todos, f => f.subTotal)),
+        celdaMini('Etapa del proceso', groupCount(todos, f => f.etapa)),
+      ] }) ],
+    }),
+    new Paragraph({ spacing: { after: 160 }, children: [] }),
+  );
   hijos.push(enlaceHtml);
 
   /* ---- 1. Diana Santos ---- */
@@ -293,7 +363,7 @@ export async function generarSosEjecutivoWord(procesos, desistimientos){
     hijos.push(
       parrafo(`El total de la cartera demandada en los procesos judiciales que devienen del contrato suscrito con DIANA PATRICIA SANTOS es de ${valorEnLetras(sumar(grupos.diana))}`),
       parrafo('Dado que de estos procesos se habían causado honorarios de manera inicial en la jurisdicción laboral a nombre de DIANA PATRICIA SANTOS, el seguimiento a los mismos se pactó de manera verbal por parte de MD ABOGADOS SAS, pero los honorarios pactados en los contratos con la abogada inicial se causan y ella los cobra a su nombre. Inclusive en las disponibilidades presupuestales que hace la entidad son tenidos en cuenta de esa forma.'),
-      ...grafico(pngDiana, 'Procesos de Diana Santos por etapa del proceso'),
+      ...grafico(pngDiana, 'Naturaleza del Proceso — procesos de Diana Santos'),
     );
   }
 
@@ -310,9 +380,11 @@ export async function generarSosEjecutivoWord(procesos, desistimientos){
   } else {
     hijos.push(
       parrafo(`A la fecha, en virtud de este contrato, están vigentes ${cantidadEnLetras(grupos.recobros.length)} proceso${grupos.recobros.length === 1 ? '' : 's'} judicial${grupos.recobros.length === 1 ? '' : 'es'}, a saber:`),
+      parrafo('Por contrato, los procesos se distribuyen así:', { despues: 100 }),
+      tablaContratos(grupos.recobros), espacio(),
       tablaProcesos(grupos.recobros), espacio(),
       parrafo(`En total la cartera demandada por recobros en el contrato con MD ABOGADOS SAS a la fecha asciende a ${valorEnLetras(sumar(grupos.recobros))}`),
-      ...grafico(pngRecobros, 'Procesos de recobros ADRES por etapa del proceso'),
+      ...grafico(pngRecobros, 'Naturaleza del Proceso — procesos de recobros ADRES'),
     );
   }
 
@@ -325,7 +397,7 @@ export async function generarSosEjecutivoWord(procesos, desistimientos){
       parrafo(`Durante los años 2020 a 2022, se suscribieron contratos entre SOS EPS S.A. y MD ABOGADOS SAS para la representación judicial en procesos de reintegros ordenados por la Supersalud, y con posterioridad la ADRES contra la EPS, de los cuales a la fecha cursan ${cantidadEnLetras(grupos.reintegros.length)} proceso${grupos.reintegros.length === 1 ? '' : 's'}, cuyas cuantías son las siguientes:`),
       tablaProcesos(grupos.reintegros), espacio(),
       parrafo(`Para un total demandado de ${valorEnLetras(sumar(grupos.reintegros))}.`),
-      ...grafico(pngReintegros, 'Procesos de reintegros por etapa del proceso'),
+      ...grafico(pngReintegros, 'Naturaleza del Proceso — procesos de reintegros'),
     );
   }
 
@@ -336,7 +408,7 @@ export async function generarSosEjecutivoWord(procesos, desistimientos){
       parrafo(`Adicionalmente, ${cantidadEnLetras(grupos.otros.length)} proceso${grupos.otros.length === 1 ? '' : 's'} no tiene${grupos.otros.length === 1 ? '' : 'n'} Glosa Demandada que permita ubicarlo${grupos.otros.length === 1 ? '' : 's'} en los grupos anteriores:`),
       tablaProcesos(grupos.otros), espacio(),
       parrafo(`Cartera de estos procesos: ${valorEnLetras(sumar(grupos.otros))}`),
-      ...grafico(pngOtros, 'Otros procesos por etapa del proceso'),
+      ...grafico(pngOtros, 'Naturaleza del Proceso — otros procesos'),
     );
   }
 
@@ -383,7 +455,7 @@ export async function generarSosEjecutivoWord(procesos, desistimientos){
           ]));
       })(),
       espacio(),
-      ...grafico(pngDesis, 'Desistimientos presentados por estado de aprobación'),
+      ...grafico(pngDesis, 'Desistimientos presentados por estado de aprobación (cantidad · valor)', 480),
     );
   }
 
@@ -392,7 +464,6 @@ export async function generarSosEjecutivoWord(procesos, desistimientos){
   hijos.push(
     parrafo('De conformidad con lo expuesto, se presenta informe de gestión frente a la representación judicial de EPS SOS S.A. en los procesos encomendados.', { despues: 200 }),
     new Paragraph({ keepNext: true, spacing: { after: 160 }, children: [ new TextRun({ text: 'Quedamos pendientes de sus inquietudes y recomendaciones.', size: T, color: TEXTO }) ] }),
-    new Paragraph({ keepNext: true, spacing: { after: 120 }, children: [ new TextRun({ text: 'Cordial saludo,', size: T, color: TEXTO }) ] }),
     new Paragraph({ children: [ new ImageRun({ type: 'png', data: firmaBytes, transformation: { width: anchoFirma, height: Math.round(anchoFirma * firma.alto / firma.ancho) } }) ] }),
   );
 

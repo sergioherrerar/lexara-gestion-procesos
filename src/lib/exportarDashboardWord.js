@@ -129,7 +129,7 @@ export function svgPieChart(data, colores){
     anguloActual = fin;
     return { ...d, color: ((colores && colores[d.label]) || "").replace("#", "") || PALETA[i % PALETA.length], path: barrido >= 359.99 ? null : describirArco(cx, cy, r, inicio, fin) };
   });
-  const pad = 14, filaAlto = 20, legendAncho = 230;
+  const pad = 14, filaAlto = 20, legendAncho = conValor.some(d => d.detalle) ? 330 : 230;
   const alto = Math.max(size, porciones.length*filaAlto) + pad*2;
   const ancho = size + legendAncho + pad*2;
   const offY = (alto - size) / 2;
@@ -147,7 +147,7 @@ export function svgPieChart(data, colores){
     const y = legendY0 + i*filaAlto;
     svg += `<circle cx="${legendX+4}" cy="${y+7}" r="5" fill="#${p.color}"/>`;
     svg += `<text x="${legendX+16}" y="${y+11}" font-family="Arial, sans-serif" font-size="12" fill="#${TEXTO}">${escXml(truncar(p.label, 26))}</text>`;
-    svg += `<text x="${legendAncho-6+legendX-pad}" y="${y+11}" font-family="Arial, sans-serif" font-size="11" fill="#${GRIS_SUAVE}" text-anchor="end">${p.value}</text>`;
+    svg += `<text x="${legendAncho-6+legendX-pad}" y="${y+11}" font-family="Arial, sans-serif" font-size="${p.detalle ? 12 : 11}" ${p.detalle ? 'font-weight="bold" ' : ''}fill="#${p.detalle ? TEXTO : GRIS_SUAVE}" text-anchor="end">${p.value}${p.detalle ? ' · ' + escXml(p.detalle) : ''}</text>`;
   });
   svg += '</svg>';
   return { svg, ancho, alto };
