@@ -520,6 +520,49 @@ export function tablaDatosTutelaHtml(campos, pretensiones){
   return `<table style="border-collapse:collapse;font-family:Aptos,Calibri,Arial,sans-serif;font-size:14px;margin:0 0 14px;">${cuerpo}</table>`;
 }
 
+// Nombre corto del cliente tal como el robot lo pone al final del asunto de la solicitud.
+export function nombreCortoClienteSolicitud(cliente){
+  const c = normalize(cliente || '');
+  if(c.includes('aliansalud')) return 'ALIANSALUD';
+  if(c.includes('colm')) return 'COLMÉDICA';
+  if(c.includes('unidad')) return 'UMD';
+  return '';
+}
+
+// ¿Ya existe una solicitud de pruebas de esta tutela (y de este cliente) en Borradores o en
+// Enviados del buzón de Tutelas? Se busca por el asunto estándar ("TUTELA No. N - SOLICITUD DE
+// PRUEBAS ... - CLIENTE") para no crear el mismo borrador una y otra vez. Devuelve la más
+// reciente { enviado, fecha, enlace, asunto } o null. Si la consulta falla, devuelve null (no
+// bloquea la creación).
+export async function buscarSolicitudPruebasExistente(correoBuzon, noTutela, cliente){
+  if(!correoBuzon || !noTutela) return null;
+  const token = await getMailToken();
+  const corto = nombreCortoClienteSolicitud(cliente);
+  const encontrados = [];
+  for(const carpeta of ['drafts', 'sentitems']){
+    try{
+      const params = new URLSearchParams({
+        $select: 'id,subject,createdDateTime,sentDateTime,webLink',
+        $top: '50',
+        $filter: `contains(subject,'${String(noTutela).replace(/'/g, "''")}')`,
+      });
+      const res = await fetch(`https://graph.microsoft.com/v1.0/users/${encodeURIComponent(correoBuzon)}/mailFolders/${carpeta}/messages?${params.toString()}`, { headers: { Authorization: `Bearer ${token}` } });
+      if(!res.ok) continue;
+      const data = await res.json();
+      (data.value || []).forEach(m => {
+        const asunto = normalize(m.subject || '');
+        if(asunto.includes('solicitud de pruebas') && asunto.includes('no. ' + normalize(String(noTutela))) && (!corto || asunto.includes(normalize(corto)))){
+          encontrados.push({ enviado: carpeta === 'sentitems', fecha: m.sentDateTime || m.createdDateTime || '', enlace: m.webLink || '', asunto: m.subject || '' });
+        }
+      });
+    }catch(err){
+      console.error('No se pudo revisar si ya existe la solicitud de pruebas (' + carpeta + '):', err);
+    }
+  }
+  encontrados.sort((a, b) => String(b.fecha).localeCompare(String(a.fecha)));
+  return encontrados[0] || null;
+}
+
 // Crea el borrador como REENVÍO del correo original (el de los remitentes filtrados) para no
 // perder la traza: el borrador queda en la carpeta Borradores del buzón de Tutelas, con el
 // correo original y sus adjuntos abajo y nuestro contenido arriba.

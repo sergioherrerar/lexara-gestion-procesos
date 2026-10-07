@@ -2,6 +2,12 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-10-07 (17)
+- **Solicitud de pruebas: ya no se crea el mismo borrador una y otra vez** — pedido explícito del usuario. Antes de armar la solicitud, el portal revisa en Borradores y en Enviados del buzón de Tutelas si ya existe una de esa tutela y de ese cliente (por el asunto estándar). Si existe, no gasta otra lectura de LexIA ni crea otro: avisa "Ya había creado una solicitud de pruebas para esta tutela y este cliente" con la fecha, si ya fue enviada o sigue en Borradores y un enlace para abrirla. Si de verdad se quiere otra, aparece el enlace "Crear otra de todos modos". Una tutela con 2 clientes puede tener una solicitud por cada uno.
+
+## 2026-10-07 (16)
+- **Solicitud de pruebas: se corrigió el error "respuesta cortada por ser muy larga"** — caso real tutela 28245 (estabilidad laboral, con varias áreas): el robot de solicitud de pruebas tenía un límite de respuesta muy corto (4.000) y el correo quedaba incompleto. Ahora el límite es 10.000 y el tiempo de espera es mayor; las notas de LexIA se limitan a 3 frases. Solo cambia el robot (`solicitud-pruebas.php`) en cPanel.
+
 ## 2026-10-07 (15)
 - **Solicitud de pruebas: ahora REENVÍA el correo original, con una tabla de datos arriba, y se crea con un botón** — pedido explícito del usuario. (1) El borrador ya no es un correo nuevo: es un **reenvío del primer correo enviado por los remitentes filtrados** (el de Dania), para no perder la traza ni los adjuntos; queda en Borradores del buzón de Tutelas. Si por algún permiso no se pudiera reenviar, se crea un borrador nuevo y la nota de LexIA lo avisa. (2) Antes del formato va una **tabla con los rótulos en verde Lexara y letra blanca**: No Tutela, Entidad, Cliente, Tipo Vinculación Entidad, Tipo Respuesta, Medida Cautelar, Agencia Oficiosa, Usuario, No. Identificación y Tema. (3) En esa tabla, **Tema muestra las 2 a 4 pretensiones más importantes** de la tutela (las saca LexIA), no la categoría del formulario. (4) **Ya no se crea solo**: después de que LexIA lee la tutela, cada tutela del listado muestra un **botón de ícono de correo** para crear el borrador cuando se quiera. El robot (solicitud-pruebas.php) cambió: devuelve las pretensiones y ya no escribe el bloque de datos del caso (lo reemplaza la tabla).
 

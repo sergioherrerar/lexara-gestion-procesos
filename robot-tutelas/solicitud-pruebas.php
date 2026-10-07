@@ -28,7 +28,7 @@ if($_SERVER['REQUEST_METHOD'] !== 'POST'){
     exit;
 }
 
-@set_time_limit(120);
+@set_time_limit(190);
 @ini_set('memory_limit', '256M');
 
 require_once __DIR__ . '/lexia-especialista.php';
@@ -98,7 +98,7 @@ TAREA ACTUAL: armar el CORREO DE SOLICITUD DE PRUEBAS de UNA tutela, usando el d
 9. Destinatarios (para): los correos de la AGENDA del documento para las áreas a las que SÍ se les pide información en este correo — usa solo correos que aparezcan en la agenda, escritos exactamente igual, sin inventar ninguno. Si un área tiene un principal y suplentes, incluye todos los de esa área. Copia (cc): el área jurídica de la entidad (Dania Carolina Pachón), con el correo del dominio que corresponda al Cliente del registro (aliansalud.com.co, colmedica.com o umd.com.co), tal como esté en la agenda. Si no puedes determinar a quién enviar, deja "para" vacío y explícalo en "notas".
 10. Cuerpo en TEXTO PLANO (sin markdown): una frase por línea, los títulos de área y de bloque terminados en dos puntos, las viñetas empezando con "- ". Tono cordial, profesional y directo. Termina con una línea de despedida breve ("Quedo atenta a su respuesta. Cordial saludo,"). No pongas firma ni datos de contacto: el abogado la agrega. El correo debe leerse en un minuto: sin repetir instrucciones ni explicaciones jurídicas largas.
 11. Asunto: arma uno razonable ("TUTELA No. <NoTutela> - SOLICITUD DE PRUEBAS - VENCE <dd/mm/aaaa>"); el sistema lo ajusta si hace falta.
-12. En "notas" (texto breve, para el abogado, NO va en el correo) anota: qué formato(s) usaste y por qué, qué datos quedaron pendientes entre corchetes, qué soportes extra agregaste por criterio propio, y cualquier alerta relevante (vencimiento muy cercano, medida provisional, o algo que el área jurídica deba revisar, como el aviso del formato sobre contraindicaciones).
+12. En "notas" (máximo 3 frases breves, para el abogado, NO va en el correo) anota: qué formato(s) usaste y por qué, qué datos quedaron pendientes entre corchetes, qué soportes extra agregaste por criterio propio, y cualquier alerta relevante (vencimiento muy cercano, medida provisional, o algo que el área jurídica deba revisar, como el aviso del formato sobre contraindicaciones).
 
 Devuelve SOLO un objeto JSON (sin bloques de markdown ni texto adicional) con esta forma exacta:
 {"para": ["correo1", "correo2"], "cc": ["correo"], "asunto": "...", "cuerpo": "...", "notas": "...", "pretensiones": ["...", "..."]}
@@ -120,7 +120,7 @@ $datosTutela = "DATOS DE LA TUTELA (extraídos por LexIA del correo y los docume
 
 $body = [
     'model' => 'claude-sonnet-5',
-    'max_tokens' => 4000,
+    'max_tokens' => 10000,
     'system' => [
         // El documento del formato y las instrucciones cambian poco entre una tutela y otra:
         // van en bloques con caché para que cada tutela nueva no las pague completas.
@@ -144,7 +144,7 @@ for($intento = 1; $intento <= 3; $intento++){
     ]);
     curl_setopt($ch, CURLOPT_POSTFIELDS, $json);
     curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 15);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 100);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 170);
     $respuesta = curl_exec($ch);
     $codigoHttp = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     $errorCurl = curl_error($ch);
