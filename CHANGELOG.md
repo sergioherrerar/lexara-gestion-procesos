@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-10-07 (9)
+- **SOS Ejecutivo, numeral 4: los dictámenes periciales ahora van en tres tablas con su propio texto** — pedido explícito del usuario. Ahora hay una tabla y un párrafo para cada grupo: procesos con dictamen pericial entregado (SI), con dictamen pericial en proceso (En Proceso) y sin dictamen pericial (NO). El numeral abre con un resumen y la gráfica de Prueba Pericial de todos los procesos, y el título pasó de "Procesos sin dictámenes periciales" a "Procesos y dictámenes periciales", porque ahora también incluye los entregados.
+
 ## 2026-10-07 (8)
 - **SOS Ejecutivo: ortografía de las categorías corregida automáticamente** — pedido explícito del usuario (el Word marcaba errores como "Admision", "Apelacion" y "reestablecimiento"). Las categorías de Naturaleza, Subclasificación y Etapa del proceso se limpian al armar el informe: se les pone la tilde que falta (Admisión, Apelación, Ejecución…), "reestablecimiento" pasa a "restablecimiento" y se unifican mayúsculas y espacios, así "Ordinario laboral" y "ordinario laboral" cuentan como una sola. Solo cambia lo que se imprime en el Word; los datos de SharePoint quedan igual.
 

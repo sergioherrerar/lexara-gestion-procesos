@@ -182,7 +182,6 @@ export async function generarSosEjecutivoWord(procesos, desistimientos){
   const dianaAdmin = grupos.diana.filter(f => !esLaboral(f));
   const enProceso = todos.filter(f => f.pruebaPericial === 'En Proceso').sort(porRadicado);
   const sinPerito = todos.filter(f => f.pruebaPericial === 'NO').sort(porRadicado);
-  const conDictamen = todos.filter(f => f.pruebaPericial === 'SI').length;
 
   // Barras de Naturaleza del Proceso, como en el Dashboard (mismo color), filtradas por grupo.
   const imagenGrafico = (filas) => prepararImagen(svgBarChart(groupCount(filas, f => f.naturaleza), VERDE_OSCURO));
@@ -430,26 +429,48 @@ export async function generarSosEjecutivoWord(procesos, desistimientos){
     );
   }
 
-  /* ---- 4. Dictámenes periciales ---- */
-  hijos.push(numeral(4, 'PROCESOS SIN DICTÁMENES PERICIALES'));
-  if(enProceso.length){
-    hijos.push(
-      parrafo(`De los procesos a cargo, están pendientes de entregar dictámenes periciales ya asignados a la empresa ACIEL. A la fecha hay ${cantidadEnLetras(enProceso.length)} proceso${enProceso.length === 1 ? '' : 's'} con programación de entrega que ${enProceso.length === 1 ? 'es el siguiente' : 'son los siguientes'}:`),
-      tablaRadicadoDespacho(enProceso, 'DICTÁMENES PENDIENTES', () => 'Dictamen asignado a ACIEL, en proceso de elaboración'), espacio(),
-    );
-  } else {
-    hijos.push(parrafo('A la fecha no hay procesos con dictamen pericial asignado a la empresa ACIEL pendiente de entrega.'));
-  }
-  if(sinPerito.length){
-    hijos.push(
-      parrafo(`Hay además ${cantidadEnLetras(sinPerito.length)} proceso${sinPerito.length === 1 ? '' : 's'} pendiente${sinPerito.length === 1 ? '' : 's'} de que ${sinPerito.length === 1 ? 'le' : 'les'} sea asignado perito, dado que según lo conversado con la empresa ACIEL, aún no los tienen adjudicados. ${sinPerito.length === 1 ? 'Es' : 'Tales son'}:`),
-      tablaRadicadoDespacho(sinPerito, 'DICTÁMENES PENDIENTES', f => `Pendiente de asignación de perito, ${f.admitida === 'SI' ? 'ya fue admitida' : 'aún no fue admitida'}`), espacio(),
-    );
-  }
+  /* ---- 4. Dictámenes periciales (3 grupos: SI / En Proceso / NO) ---- */
+  const conDictamenFilas = todos.filter(f => f.pruebaPericial === 'SI').sort(porRadicado);
+  const plural = (n, uno, varios) => (n === 1 ? uno : varios);
+  const subtitulo = (texto) => new Paragraph({ keepNext: true, spacing: { before: 200, after: 100 }, children: [ new TextRun({ text: texto, bold: true, size: T, color: VERDE_OSCURO }) ] });
   hijos.push(
-    parrafo(`Del total de ${todos.length} procesos de SOS, ${cantidadEnLetras(conDictamen)} cuenta${conDictamen === 1 ? '' : 'n'} con prueba pericial, ${cantidadEnLetras(enProceso.length)} ${enProceso.length === 1 ? 'está' : 'están'} en proceso y ${cantidadEnLetras(sinPerito.length)} ${sinPerito.length === 1 ? 'está' : 'están'} pendiente${sinPerito.length === 1 ? '' : 's'} de perito, así:`),
+    numeral(4, 'PROCESOS Y DICTÁMENES PERICIALES'),
+    parrafo(`De los ${todos.length} procesos de SOS, ${cantidadEnLetras(conDictamenFilas.length)} ${plural(conDictamenFilas.length, 'cuenta', 'cuentan')} con dictamen pericial entregado, ${cantidadEnLetras(enProceso.length)} ${plural(enProceso.length, 'tiene', 'tienen')} el dictamen en proceso y ${cantidadEnLetras(sinPerito.length)} ${plural(sinPerito.length, 'no tiene', 'no tienen')} dictamen pericial, así:`),
     ...grafico(pngPrueba, 'Prueba pericial — todos los procesos de SOS'),
   );
+
+  // 4.1 Dictamen pericial entregado (SI)
+  hijos.push(subtitulo('Procesos con dictamen pericial entregado (SI)'));
+  if(conDictamenFilas.length){
+    hijos.push(
+      parrafo(`A la fecha ${cantidadEnLetras(conDictamenFilas.length)} proceso${plural(conDictamenFilas.length, '', 's')} ${plural(conDictamenFilas.length, 'cuenta', 'cuentan')} con dictamen pericial entregado, ${plural(conDictamenFilas.length, 'que es el siguiente', 'que son los siguientes')}:`),
+      tablaRadicadoDespacho(conDictamenFilas, 'DICTAMEN PERICIAL', () => 'Dictamen pericial entregado'), espacio(),
+    );
+  } else {
+    hijos.push(parrafo('A la fecha no hay procesos con dictamen pericial entregado.'));
+  }
+
+  // 4.2 Dictamen pericial en proceso (En Proceso)
+  hijos.push(subtitulo('Procesos con dictamen pericial en proceso (En Proceso)'));
+  if(enProceso.length){
+    hijos.push(
+      parrafo(`Están pendientes de entregar dictámenes periciales ya asignados a la empresa ACIEL. A la fecha hay ${cantidadEnLetras(enProceso.length)} proceso${plural(enProceso.length, '', 's')} con programación de entrega que ${plural(enProceso.length, 'es el siguiente', 'son los siguientes')}:`),
+      tablaRadicadoDespacho(enProceso, 'DICTAMEN PERICIAL', () => 'Dictamen asignado a ACIEL, en proceso de elaboración'), espacio(),
+    );
+  } else {
+    hijos.push(parrafo('A la fecha no hay procesos con dictamen pericial en proceso de elaboración.'));
+  }
+
+  // 4.3 Sin dictamen pericial (NO)
+  hijos.push(subtitulo('Procesos sin dictamen pericial (NO)'));
+  if(sinPerito.length){
+    hijos.push(
+      parrafo(`Hay ${cantidadEnLetras(sinPerito.length)} proceso${plural(sinPerito.length, '', 's')} sin dictamen pericial, pendiente${plural(sinPerito.length, '', 's')} de que ${plural(sinPerito.length, 'le', 'les')} sea asignado perito, dado que según lo conversado con la empresa ACIEL, aún no los tienen adjudicados. ${plural(sinPerito.length, 'Es el siguiente', 'Tales son')}:`),
+      tablaRadicadoDespacho(sinPerito, 'DICTAMEN PERICIAL', f => `Pendiente de asignación de perito, ${f.admitida === 'SI' ? 'ya fue admitida' : 'aún no fue admitida'}`), espacio(),
+    );
+  } else {
+    hijos.push(parrafo('A la fecha no hay procesos pendientes de que se les asigne perito.'));
+  }
 
   /* ---- 5. Desistimientos presentados ---- */
   hijos.push(numeral(5, 'DESISTIMIENTOS PRESENTADOS'));
