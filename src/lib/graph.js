@@ -451,14 +451,25 @@ export async function docxATexto(arrayBuffer){
 // subcarpeta esté. Devuelve { texto, nombre, modificado }.
 export async function leerFormatoSolicitudPruebas(config, { forzar = false } = {}){
   if(!forzar && cacheFormatoPruebas && Date.now() - cacheFormatoPruebas.momento < VIGENCIA_CACHE_FORMATO_MS) return cacheFormatoPruebas;
-  const nombreBuscado = (config?.SOLICITUD_PRUEBAS_FORMATO_NOMBRE || 'FORMATO SOLICITU DE PRUEBAS - copia.docx').trim();
-  const base = nombreBuscado.replace(/\.docx$/i, '');
+  const nombreBuscado = (config?.SOLICITUD_PRUEBAS_FORMATO_NOMBRE || 'FORMATO SOLICITUD DE PRUEBAS.docx').trim();
+  // Se busca por el comienzo común del nombre ("FORMATO SOLICITU") para encontrarlo aunque el
+  // archivo se llame "... - copia" o tenga otra variante, y se elige el mejor candidato abajo.
+  const base = 'FORMATO SOLICITU';
   const siteId = await fetchSiteId(config, config?.SP_SITE_PATH_TUTELAS || '/sites/TutelasMDABOGADOS');
   const q = encodeURIComponent(base.replace(/'/g, "''"));
   const res = await graphFetch(`/sites/${siteId}/drive/root/search(q='${q}')?$select=id,name,lastModifiedDateTime,file&$top=25`);
   const archivos = (res.value || []).filter(i => i.file && /\.docx$/i.test(i.name || ''));
-  const exacto = archivos.find(i => (i.name || '').trim().toLowerCase() === nombreBuscado.toLowerCase());
-  const item = exacto || archivos[0];
+  // Orden de preferencia: el nombre configurado, luego el nombre estándar sin "- copia", luego
+  // cualquier otro que empiece igual; a igualdad, el modificado más recientemente.
+  const puntaje = (i) => {
+    const n = (i.name || '').trim().toLowerCase();
+    if(n === nombreBuscado.toLowerCase()) return 3;
+    if(n === 'formato solicitud de pruebas.docx' || n === 'formato solicitu de pruebas.docx') return 2;
+    return n.startsWith('formato solicitu') ? 1 : 0;
+  };
+  const item = archivos
+    .filter(i => puntaje(i) > 0)
+    .sort((a, b) => puntaje(b) - puntaje(a) || String(b.lastModifiedDateTime || '').localeCompare(String(a.lastModifiedDateTime || '')))[0];
   if(!item) throw new Error(`No encontré "${nombreBuscado}" en Documentos del sitio de Tutelas en SharePoint.`);
   const token = await getGraphToken();
   const descarga = await fetch(`https://graph.microsoft.com/v1.0/sites/${siteId}/drive/items/${item.id}/content`, { headers: { Authorization: `Bearer ${token}` } });

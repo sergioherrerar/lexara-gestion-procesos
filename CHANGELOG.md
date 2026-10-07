@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-10-07 (18)
+- **Solicitud de pruebas: el Word del formato ahora se busca como "FORMATO SOLICITUD DE PRUEBAS"** — el usuario dejó el documento definitivo en SharePoint (Documentos del sitio de Tutelas) con ese nombre, sin "- copia" (primero estaba escrito "SOLICITU"; el usuario ya lo corrigió a "SOLICITUD"). El portal lo busca por el comienzo del nombre y prefiere, en este orden, el nombre configurado, "FORMATO SOLICITUD DE PRUEBAS.docx" y cualquier otro que empiece igual; si hay varios con el mismo nombre toma el modificado más recientemente.
+
 ## 2026-10-07 (17)
 - **Solicitud de pruebas: ya no se crea el mismo borrador una y otra vez** — pedido explícito del usuario. Antes de armar la solicitud, el portal revisa en Borradores y en Enviados del buzón de Tutelas si ya existe una de esa tutela y de ese cliente (por el asunto estándar). Si existe, no gasta otra lectura de LexIA ni crea otro: avisa "Ya había creado una solicitud de pruebas para esta tutela y este cliente" con la fecha, si ya fue enviada o sigue en Borradores y un enlace para abrirla. Si de verdad se quiere otra, aparece el enlace "Crear otra de todos modos". Una tutela con 2 clientes puede tener una solicitud por cada uno.
 
