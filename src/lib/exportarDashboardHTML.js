@@ -54,6 +54,7 @@ export function generarDashboardEntidadHTML(procesos, desistimientos, entidad, n
       admitida: campoAdmitida(p),
       pruebaPericial: campoPrueba(p),
       etapa: campoEtapa(p),
+      desistimiento: d.length ? d[0].estado : 'Sin desistimiento',
       valorCartera: parseMonto(p.ValorCarteraActual || p.ValorActualDemanda),
       d,
     };
@@ -153,14 +154,15 @@ function construirHTML(filas, titulo, fechaLarga){
     var FILAS = ${dataJson};
     var PALETA = ${paletaJson};
     var COLORES_SI_NO = ${coloresSiNoJson};
-    var FILTROS = { glosa:new Set(), naturaleza:new Set(), admitida:new Set(), subclasificacion:new Set(), pruebaPericial:new Set(), etapa:new Set() };
+    var FILTROS = { glosa:new Set(), naturaleza:new Set(), admitida:new Set(), subclasificacion:new Set(), pruebaPericial:new Set(), etapa:new Set(), desistimiento:new Set() };
     var CAMPOS_FILTRO = [
       { key:'glosa', titulo:'Glosa demandada' },
       { key:'naturaleza', titulo:'Naturaleza del Proceso' },
       { key:'admitida', titulo:'Admitida' },
       { key:'subclasificacion', titulo:'Subclasificación' },
       { key:'pruebaPericial', titulo:'Prueba Pericial' },
-      { key:'etapa', titulo:'Etapa del proceso' }
+      { key:'etapa', titulo:'Etapa del proceso' },
+      { key:'desistimiento', titulo:'Desistimiento' }
     ];
 
     function esc(s){
@@ -185,7 +187,8 @@ function construirHTML(filas, titulo, fechaLarga){
         (!FILTROS.admitida.size || FILTROS.admitida.has(r.admitida)) &&
         (!FILTROS.subclasificacion.size || FILTROS.subclasificacion.has(r.subclasificacion)) &&
         (!FILTROS.pruebaPericial.size || FILTROS.pruebaPericial.has(r.pruebaPericial)) &&
-        (!FILTROS.etapa.size || FILTROS.etapa.has(r.etapa));
+        (!FILTROS.etapa.size || FILTROS.etapa.has(r.etapa)) &&
+        (!FILTROS.desistimiento.size || FILTROS.desistimiento.has(r.desistimiento));
     }
 
     function renderChecklist(campo, titulo){

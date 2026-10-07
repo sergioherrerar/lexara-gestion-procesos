@@ -93,9 +93,27 @@ function clasificarGlosa(p){
   if(g.includes('recobro')) return 'recobros';
   return 'otros';
 }
+// Corrige la ortografía de las categorías que vienen tal cual de SharePoint
+// ("Admision" → "Admisión", "Apelacion" → "Apelación", "reestablecimiento" →
+// "restablecimiento") y unifica mayúsculas/espacios, para que el informe salga
+// limpio y "Ordinario laboral" / "ordinario laboral" cuenten como una sola.
+// Solo toca las categorías del informe (naturaleza, subclasificación, etapa),
+// no nombres propios ni despachos.
+function limpiarEtiqueta(texto){
+  let s = String(texto || '').split(' ').filter(Boolean).join(' ');
+  if(!s) return s;
+  s = s.replace(/reestablecimiento/gi, m => (m[0] === 'R' ? 'Restablecimiento' : 'restablecimiento'));
+  // Palabras terminadas en -cion / -sion / -ciones / -siones sin tilde → con tilde.
+  // (en plural no lleva tilde: "ciones"; en mayúsculas se respeta: "ADMISIÓN")
+  s = s.replace(/([A-Za-z]*)(c|s)ion(es)?(?![A-Za-z])/gi, (m, raiz, c, pl) => {
+    const corregida = pl ? raiz + c + 'ion' + pl : raiz + c + 'ión';
+    return pl ? m : (m === m.toUpperCase() ? corregida.toUpperCase() : corregida);
+  });
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
 function fila(p){
-  const naturaleza = stripHtml(p.NaturalezaProceso || p.TipoAccion) || 'Sin dato';
-  const subclasificacion = stripHtml(p.Subclasificacion || p.TipoProceso) || '';
+  const naturaleza = limpiarEtiqueta(stripHtml(p.NaturalezaProceso || p.TipoAccion)) || 'Sin dato';
+  const subclasificacion = limpiarEtiqueta(stripHtml(p.Subclasificacion || p.TipoProceso)) || '';
   return {
     radicado: stripHtml(p.Radicado) || '—',
     contrato: stripHtml(p.NumeroContrato) || 'Sin contrato',
@@ -103,7 +121,7 @@ function fila(p){
     naturaleza,
     subTotal: subclasificacion || 'Sin dato',
     subclasificacion: subclasificacion && sinTildes(subclasificacion) !== sinTildes(naturaleza) ? subclasificacion : '',
-    etapa: stripHtml(p.EtapaProcesal) || 'Sin dato',
+    etapa: limpiarEtiqueta(stripHtml(p.EtapaProcesal)) || 'Sin dato',
     admitida: categoriaSiNoEnProceso(p.Admitida),
     pruebaPericial: categoriaSiNoEnProceso(p.PruebaPericial),
     valor: parseMonto(p.ValorCarteraActual || p.ValorActualDemanda),

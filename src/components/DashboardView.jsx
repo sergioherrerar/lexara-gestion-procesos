@@ -35,7 +35,7 @@ function opcionesConConteo(lista, campoFn){
   return Array.from(mapa.entries()).map(([value,count]) => ({value,count})).sort((a,b)=>b.count-a.count);
 }
 
-const FILTROS_VACIOS = { glosa: new Set(), naturaleza: new Set(), admitida: new Set(), subclasificacion: new Set(), pruebaPericial: new Set(), etapa: new Set() };
+const FILTROS_VACIOS = { glosa: new Set(), naturaleza: new Set(), admitida: new Set(), subclasificacion: new Set(), pruebaPericial: new Set(), etapa: new Set(), desistimiento: new Set() };
 
 // Pedido explícito del usuario 2026-09-22: "en el panorama general no debe
 // salir nada administrativo — clientes no, facturación no". El Dashboard es
@@ -75,13 +75,24 @@ export default function DashboardView({ procesos, desistimientos = [], notify })
   const entidades = Array.from(new Set(procesosVigentes.map(p => stripHtml(p.Entidad) || "Sin entidad"))).sort((a,b)=>a.localeCompare(b));
   const procesosPorEntidad = entidadSel === 'todas' ? procesosVigentes : procesosVigentes.filter(p => (stripHtml(p.Entidad)||"Sin entidad") === entidadSel);
 
+  // Filtro "Desistimiento" (pedido explícito del usuario 2026-10-07): el estado de
+  // Aprobación del primer desistimiento del proceso, o "Sin desistimiento" — mismo
+  // criterio de un balde por proceso que usa el gráfico de Desistimientos más abajo.
+  function campoDesistimiento(p){
+    const propios = desistimientosForProceso(desistimientos, p);
+    if(!propios.length) return 'Sin desistimiento';
+    const crudo = stripHtml(propios[0].Aprobacion) || 'Sin dato';
+    return crudo === 'Sin dato' ? crudo : crudo.charAt(0).toUpperCase() + crudo.slice(1).toLowerCase();
+  }
+
   function pasaFiltros(p){
     return (!filtros.glosa.size || filtros.glosa.has(campoGlosa(p))) &&
       (!filtros.naturaleza.size || filtros.naturaleza.has(campoNaturaleza(p))) &&
       (!filtros.admitida.size || filtros.admitida.has(campoAdmitida(p))) &&
       (!filtros.subclasificacion.size || filtros.subclasificacion.has(campoSubclasificacion(p))) &&
       (!filtros.pruebaPericial.size || filtros.pruebaPericial.has(campoPrueba(p))) &&
-      (!filtros.etapa.size || filtros.etapa.has(campoEtapa(p)));
+      (!filtros.etapa.size || filtros.etapa.has(campoEtapa(p))) &&
+      (!filtros.desistimiento.size || filtros.desistimiento.has(campoDesistimiento(p)));
   }
   const procesosFiltrados = procesosPorEntidad.filter(pasaFiltros);
 
@@ -248,6 +259,7 @@ export default function DashboardView({ procesos, desistimientos = [], notify })
             <ChecklistFilter title="Subclasificación" options={opcionesConConteo(procesosPorEntidad, campoSubclasificacion)} selected={filtros.subclasificacion} onToggle={v => toggleFiltro('subclasificacion', v)} onClear={() => limpiarFiltro('subclasificacion')} />
             <ChecklistFilter title="Prueba Pericial" options={opcionesConConteo(procesosPorEntidad, campoPrueba)} selected={filtros.pruebaPericial} onToggle={v => toggleFiltro('pruebaPericial', v)} onClear={() => limpiarFiltro('pruebaPericial')} />
             <ChecklistFilter title="Etapa del proceso" options={opcionesConConteo(procesosPorEntidad, campoEtapa)} selected={filtros.etapa} onToggle={v => toggleFiltro('etapa', v)} onClear={() => limpiarFiltro('etapa')} />
+            <ChecklistFilter title="Desistimiento" options={opcionesConConteo(procesosPorEntidad, campoDesistimiento)} selected={filtros.desistimiento} onToggle={v => toggleFiltro('desistimiento', v)} onClear={() => limpiarFiltro('desistimiento')} />
           </div>
 
           {/* Antes eran 2 paneles separados (uno por cada anillo) — pedido

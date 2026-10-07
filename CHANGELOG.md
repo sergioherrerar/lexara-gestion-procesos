@@ -2,6 +2,12 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-10-07 (8)
+- **SOS Ejecutivo: ortografía de las categorías corregida automáticamente** — pedido explícito del usuario (el Word marcaba errores como "Admision", "Apelacion" y "reestablecimiento"). Las categorías de Naturaleza, Subclasificación y Etapa del proceso se limpian al armar el informe: se les pone la tilde que falta (Admisión, Apelación, Ejecución…), "reestablecimiento" pasa a "restablecimiento" y se unifican mayúsculas y espacios, así "Ordinario laboral" y "ordinario laboral" cuentan como una sola. Solo cambia lo que se imprime en el Word; los datos de SharePoint quedan igual.
+
+## 2026-10-07 (7)
+- **Dashboard: nuevo filtro "Desistimiento"** — pedido explícito del usuario. En el panel "Análisis de procesos por Entidad" aparece una séptima casilla de filtros con "Sin desistimiento" y los estados de aprobación de los desistimientos (Aprobado, No aprobado, etc.), con la cantidad de procesos de cada uno. Filtra igual que los demás: el resumen, las gráficas y el valor de cartera se recalculan solo con los procesos elegidos. El mismo filtro va en el HTML interactivo exportado. Para los procesos con más de un desistimiento cuenta el estado del primero, igual que la gráfica de Desistimientos.
+
 ## 2026-10-07 (6)
 - **SOS Ejecutivo: gráficos de barras por grupo, contratos y valores en desistimientos** — pedido explícito del usuario. Los numerales 1 (Diana Santos), 2 (recobros) y 3 (reintegros) ahora llevan una gráfica de barras de "Naturaleza del Proceso" como la del Dashboard, filtrada solo con los procesos de ese grupo (antes era una torta por etapa). El numeral 2 muestra además una tabla con cada contrato, cuántos procesos tiene y su cartera. La gráfica del numeral 5 (desistimientos) ahora muestra en la leyenda la cantidad y el valor en pesos de cada estado. Se quitó un "Cordial saludo," repetido, porque la imagen de la firma ya lo trae.
 
