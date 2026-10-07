@@ -8,7 +8,7 @@ import {
   generarLinksCarpetaProceso, generarLinkContratoProceso,
   rutaEntidadDeProceso, resolverDriveIdPrincipal, listarContenidoRuta, listarHijos,
   crearLinkCompartidoSoporte, crearLinkEdicionOrganizacion, mensajeError, abogadosDisponibles,
-  htmlHistoricoNuevasLineas,
+  htmlHistoricoNuevasLineas, normalize,
 } from '../lib/graph';
 import IconButton, { IconTextButton } from './IconButton';
 import { FieldCard, RichTextEditor } from './FormFields';
@@ -174,8 +174,11 @@ const TRAZABILIDAD_SECTION = {title:"Fechas del proceso", fields: [
 // Opciones fijas de los selects de esta pestaña — vienen del formulario
 // Access original, confirmadas por el usuario.
 const SELECT_OPTIONS = {
-  Admitida: ["Sí","No"],
-  PruebaPericial: ["Sí","No"],
+  // Pedido explícito del usuario 2026-10-07: tres opciones (SI / NO / En Proceso), escritas así;
+  // antes eran "Sí"/"No" y el dato real "SI" aparecía repetido como una opción más. "En Proceso" debe existir
+  // también como opción de esas columnas en SharePoint.
+  Admitida: ["SI","NO","En Proceso"],
+  PruebaPericial: ["SI","NO","En Proceso"],
   MedidaCautelar: ["Sí","No"],
   CalificacionContingencia: ["POSIBLE","PROBABLE","REMOTO"],
   ParteActuamos: ["Con el Demandante","Con el Demandado"],
@@ -256,9 +259,13 @@ function renderGenericField(key, type, form, setField, canWrite){
     // (mayúsculas distintas, o un valor real que la lista todavía no
     // contempla), se agrega igual como opción — mismo criterio que
     // Cliente/Entidad/Apoderado, para no esconder un dato ya guardado.
-    const conValorActual = form[key] && !options.includes(form[key]) ? [form[key], ...options] : options;
+    // Si solo cambia la forma de escribirlo ("Sí" / "SI" / "si"), se muestra la opción que corresponde en
+    // vez de repetirlo como una opción más; el dato guardado no se toca hasta que se elija otra.
+    const crudo = form[key] ?? "";
+    const coincide = crudo ? options.find(o => normalize(o) === normalize(String(crudo))) : null;
+    const conValorActual = crudo && !coincide ? [crudo, ...options] : options;
     return (
-      <select value={form[key]} onChange={e => setField(key, e.target.value)} disabled={!canWrite}>
+      <select value={coincide || crudo} onChange={e => setField(key, e.target.value)} disabled={!canWrite}>
         <option value="">— seleccionar —</option>
         {conValorActual.map(o => <option value={o} key={o}>{o}</option>)}
       </select>

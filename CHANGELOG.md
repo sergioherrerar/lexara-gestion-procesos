@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-10-07 (2)
+- **Procesos judiciales: "Admitida" y "Prueba Pericial" ahora tienen tres opciones — SI, NO y En Proceso** — pedido explícito del usuario ("solo deja SI, NO, En Proceso"). Antes la lista tenía "Sí" y "No", y como el dato real guardado en SharePoint es "SI", ese valor aparecía repetido como una opción más (SI / Sí / No, como se vio en la captura). Ahora la lista es exactamente SI / NO / En Proceso (más el espacio en blanco "— seleccionar —" para los procesos sin dato); los datos que ya estaban guardados como "Sí", "SI" o "si" se muestran en su opción sin repetirse ni modificarse. **Hay que agregar la opción "En Proceso" a las columnas "Admitida" y "Prueba Pericial" de la lista Procesos Judiciales en SharePoint** (Configuración de la lista → columna → Elecciones), o SharePoint rechazará guardar ese valor. No cambia el Dashboard ni los informes: un proceso con "En Proceso" aparece como una categoría más.
+
 ## 2026-10-07 (1)
 - **Procesos judiciales → pestaña Desistimientos: nuevas columnas "Fecha aprobación" y "Observaciones"** — pedido explícito del usuario (la lista de SharePoint "Desistimientos Tabla" ya tiene esa columna y la pestaña no la mostraba). La tabla ahora trae Valor, Fecha radicación, Aprobación, Fecha aprobación y Observaciones (con "—" si está vacía; la fecha se ve como "02 dic. 2015", igual que Fecha radicación). El campo ya existía dentro del formulario de cada desistimiento y en el mapeo de columnas; solo faltaba en la tabla.
 
