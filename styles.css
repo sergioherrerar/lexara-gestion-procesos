@@ -1538,7 +1538,7 @@
      propia fila, con su botón de crear borrador independiente. */
   .leer-correo-registros{display:flex; flex-direction:column; gap:8px;}
   .leer-correo-registro-item{
-    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
     padding:8px 10px; border:1px solid var(--gris-linea); border-radius:8px; background:var(--gris-claro); font-size:13px;
   }
 

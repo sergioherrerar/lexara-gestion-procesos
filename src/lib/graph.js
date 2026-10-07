@@ -325,7 +325,8 @@ export async function crearBorradorCorreo({ to, cc, subject, htmlBody, adjuntoNo
   const body = {
     subject,
     body: { contentType: "HTML", content: htmlBody },
-    toRecipients: [{ emailAddress: { address: to } }],
+    // `to` puede ser un solo correo o una lista (la solicitud de pruebas va a varias áreas).
+    toRecipients: (Array.isArray(to) ? to : [to]).filter(Boolean).map(correo => ({ emailAddress: { address: correo } })),
     ccRecipients: (cc||[]).map(correo => ({ emailAddress: { address: correo } })),
     attachments: adjuntoBase64 ? [{
       "@odata.type": "#microsoft.graph.fileAttachment",
@@ -381,6 +382,142 @@ export async function crearBorradorCorreo({ to, cc, subject, htmlBody, adjuntoNo
     }
   }catch(err){ /* diagnóstico best-effort — no debe romper la creación del borrador */ }
   return { ...mensaje, carpetaBorradores, carpetaReal };
+}
+
+// ---------------------------------------------------------------------------
+// Solicitud de pruebas (paso 2 de "API Claude", 2026-10-07, pedido explícito
+// del usuario): por cada tutela leída por LexIA se arma un BORRADOR de correo
+// a las áreas de la entidad pidiéndoles las pruebas, usando el documento
+// "FORMATO SOLICITUD DE PRUEBAS" del despacho. Ese Word vive en SharePoint
+// (sitio TutelasMDABOGADOS → Documentos) y se lee de allá CADA VEZ (con una
+// caché corta), así que cualquier cambio que se le haga al documento se
+// refleja en el portal sin tocar código. El robot (solicitud-pruebas.php)
+// recibe su texto y devuelve el correo armado; acá se crea el borrador.
+// ---------------------------------------------------------------------------
+let cacheFormatoPruebas = null; // { texto, nombre, modificado, momento }
+const VIGENCIA_CACHE_FORMATO_MS = 5 * 60 * 1000;
+
+// Texto plano de un .docx conservando el orden: cada párrafo es una línea (los
+// de lista llevan "- " al inicio) y cada fila de tabla es una línea con las
+// celdas separadas por " | " (la agenda de correos del formato es una tabla).
+export async function docxATexto(arrayBuffer){
+  const { default: JSZip } = await import('jszip');
+  const zip = await JSZip.loadAsync(arrayBuffer);
+  const archivo = zip.file('word/document.xml');
+  if(!archivo) throw new Error('El archivo no parece un documento de Word (.docx).');
+  const xml = new DOMParser().parseFromString(await archivo.async('string'), 'application/xml');
+  const cuerpo = xml.getElementsByTagName('w:body')[0];
+  if(!cuerpo) throw new Error('No se pudo leer el contenido del documento de Word.');
+  const textoDeParrafo = (p) => {
+    let t = '';
+    const recorrer = (nodo) => {
+      for(const hijo of Array.from(nodo.childNodes)){
+        const nombre = hijo.nodeName;
+        if(nombre === 'w:t') t += hijo.textContent;
+        else if(nombre === 'w:tab') t += ' ';
+        else if(nombre === 'w:br') t += ' ';
+        else if(hijo.childNodes && hijo.childNodes.length) recorrer(hijo);
+      }
+    };
+    recorrer(p);
+    t = t.replace(/\s+/g, ' ').trim();
+    if(t && p.getElementsByTagName('w:numPr').length) t = '- ' + t;
+    return t;
+  };
+  const lineas = [];
+  const procesarBloque = (nodo) => {
+    for(const hijo of Array.from(nodo.childNodes)){
+      if(hijo.nodeName === 'w:p'){
+        const t = textoDeParrafo(hijo);
+        if(t) lineas.push(t);
+      } else if(hijo.nodeName === 'w:tbl'){
+        for(const fila of Array.from(hijo.childNodes).filter(n => n.nodeName === 'w:tr')){
+          const celdas = Array.from(fila.childNodes).filter(n => n.nodeName === 'w:tc').map(c =>
+            Array.from(c.childNodes).filter(n => n.nodeName === 'w:p').map(textoDeParrafo).filter(Boolean).join(' / '));
+          const linea = celdas.filter(Boolean).join(' | ');
+          if(linea) lineas.push(linea);
+        }
+      } else if(hijo.nodeName === 'w:sdt' || hijo.nodeName === 'w:sdtContent'){
+        procesarBloque(hijo);
+      }
+    }
+  };
+  procesarBloque(cuerpo);
+  return lineas.join(String.fromCharCode(10));
+}
+
+// Lee el documento del formato desde SharePoint (sitio TutelasMDABOGADOS,
+// biblioteca "Documentos"). Lo busca por nombre, así no importa en qué
+// subcarpeta esté. Devuelve { texto, nombre, modificado }.
+export async function leerFormatoSolicitudPruebas(config, { forzar = false } = {}){
+  if(!forzar && cacheFormatoPruebas && Date.now() - cacheFormatoPruebas.momento < VIGENCIA_CACHE_FORMATO_MS) return cacheFormatoPruebas;
+  const nombreBuscado = (config?.SOLICITUD_PRUEBAS_FORMATO_NOMBRE || 'FORMATO SOLICITU DE PRUEBAS - copia.docx').trim();
+  const base = nombreBuscado.replace(/\.docx$/i, '');
+  const siteId = await fetchSiteId(config, config?.SP_SITE_PATH_TUTELAS || '/sites/TutelasMDABOGADOS');
+  const q = encodeURIComponent(base.replace(/'/g, "''"));
+  const res = await graphFetch(`/sites/${siteId}/drive/root/search(q='${q}')?$select=id,name,lastModifiedDateTime,file&$top=25`);
+  const archivos = (res.value || []).filter(i => i.file && /\.docx$/i.test(i.name || ''));
+  const exacto = archivos.find(i => (i.name || '').trim().toLowerCase() === nombreBuscado.toLowerCase());
+  const item = exacto || archivos[0];
+  if(!item) throw new Error(`No encontré "${nombreBuscado}" en Documentos del sitio de Tutelas en SharePoint.`);
+  const token = await getGraphToken();
+  const descarga = await fetch(`https://graph.microsoft.com/v1.0/sites/${siteId}/drive/items/${item.id}/content`, { headers: { Authorization: `Bearer ${token}` } });
+  if(!descarga.ok) throw new Error(`No se pudo descargar el formato de solicitud de pruebas (Graph ${descarga.status}).`);
+  const texto = await docxATexto(await descarga.arrayBuffer());
+  if(texto.length < 200) throw new Error('El formato de solicitud de pruebas se leyó casi vacío — revisa el documento en SharePoint.');
+  cacheFormatoPruebas = { texto, nombre: item.name, modificado: item.lastModifiedDateTime || '', momento: Date.now() };
+  return cacheFormatoPruebas;
+}
+
+function escaparHtml(s){
+  return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+// Cuerpo en texto plano del robot → HTML del correo: una línea por párrafo, las
+// viñetas ("- ") como lista, y los títulos de área (terminan en ":") en negrita.
+function cuerpoSolicitudAHtml(cuerpo){
+  const lineas = String(cuerpo || '').split(/\r?\n/);
+  const salida = [];
+  let enLista = false;
+  const cerrarLista = () => { if(enLista){ salida.push('</ul>'); enLista = false; } };
+  for(const cruda of lineas){
+    const linea = cruda.trim();
+    if(!linea){ cerrarLista(); continue; }
+    const viñeta = /^[-•*]\s+/.exec(linea);
+    if(viñeta){
+      if(!enLista){ salida.push('<ul style="margin:0 0 8px 18px;padding:0;">'); enLista = true; }
+      salida.push(`<li style="margin:0 0 3px;">${escaparHtml(linea.slice(viñeta[0].length))}</li>`);
+      continue;
+    }
+    cerrarLista();
+    const esTitulo = /:$/.test(linea) && linea.length < 90;
+    const esVence = /^(Tutela que VENCE|PRETENSI[OÓ]N:)/i.test(linea);
+    salida.push(`<p style="margin:0 0 8px;">${(esTitulo || esVence) ? `<b>${escaparHtml(linea)}</b>` : escaparHtml(linea)}</p>`);
+  }
+  cerrarLista();
+  return `<div style="font-family:Aptos,Calibri,Arial,sans-serif;font-size:14px;color:#1c2624;">${salida.join('')}</div>`;
+}
+
+// Arma el correo con el robot y lo deja como BORRADOR en Outlook (nunca lo
+// envía). `registro` es el registro de LexIA (campos + Analisis). Devuelve
+// { para, cc, asunto, notas, formato } — `notas` es para el abogado, no va en el correo.
+export async function crearSolicitudPruebasBorrador({ config, robotSolicitudUrl, registro, asuntoCorreo, noTutela, fechaVencimiento }){
+  if(!robotSolicitudUrl) throw new Error('Falta la dirección del robot de solicitud de pruebas (ROBOT_SOLICITUD_PRUEBAS_URL).');
+  const formato = await leerFormatoSolicitudPruebas(config);
+  const res = await fetch(robotSolicitudUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ formato: formato.texto, registro, asuntoCorreo, noTutela, fechaVencimiento }),
+  });
+  let data;
+  try{ data = await res.json(); }catch{ throw new Error(`El robot de solicitud de pruebas no respondió bien (${res.status}). ¿Ya subiste solicitud-pruebas.php a cPanel?`); }
+  if(!res.ok || data.error) throw new Error(data.error || `El robot de solicitud de pruebas falló (${res.status}).`);
+  const borrador = await crearBorradorCorreo({
+    to: data.para || [],
+    cc: data.cc || [],
+    subject: data.asunto || `TUTELA No. ${noTutela || ''} - SOLICITUD DE PRUEBAS`,
+    htmlBody: cuerpoSolicitudAHtml(data.cuerpo),
+  });
+  return { para: data.para || [], cc: data.cc || [], asunto: data.asunto, notas: data.notas || '', formato: formato.nombre, borrador };
 }
 
 // "API Claude" Tarea 1 (2026-09-23, pedido explícito del usuario, ya con

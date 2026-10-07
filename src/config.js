@@ -74,6 +74,11 @@ export const INITIAL_CONFIG = {
   // otro archivo: responde preguntas sobre las tutelas ya cargadas en el
   // portal, sin guardar nada. Ver robot-tutelas/responder-pregunta.php.
   ROBOT_PREGUNTAS_URL: "https://www.lexaraabogados.com/robot-tutelas/responder-pregunta.php",
+  // "Solicitud de pruebas" (2026-10-07, pedido explícito del usuario): robot que arma el correo a
+  // las áreas con el formato del despacho, y nombre del Word de ese formato en SharePoint (sitio
+  // TutelasMDABOGADOS → Documentos — se lee de allá cada vez, así los cambios al Word se reflejan solos).
+  ROBOT_SOLICITUD_PRUEBAS_URL: "https://www.lexaraabogados.com/robot-tutelas/solicitud-pruebas.php",
+  SOLICITUD_PRUEBAS_FORMATO_NOMBRE: "FORMATO SOLICITU DE PRUEBAS - copia.docx",
   // "Guardar lectura de LexIA en OneDrive" (2026-09-29, pedido explícito del
   // usuario: "que si de pronto se cierra el navegador no se pierda lo que
   // leyó la IA") — carpeta real de OneDrive (no una lista de SharePoint)

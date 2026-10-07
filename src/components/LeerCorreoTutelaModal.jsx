@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { normalizarBorradorTutela } from '../lib/borradorTutela';
 import { aplicarVencimientoHabil, fechaLocalISO } from '../lib/vencimientoTutela';
-import { leerCorreosTutelas, primerCorreoDeConversacion, extraerTutelaConLexIA, numeroTutelaDeAsunto, normalize, mensajeError, buscarLecturaLexIAGuardada, guardarLecturaLexIAEnOneDrive, listarTutelasAnalizadasEnOneDrive, asegurarCarpetaTutelaDesdeMensaje } from '../lib/graph';
+import { leerCorreosTutelas, primerCorreoDeConversacion, crearSolicitudPruebasBorrador, extraerTutelaConLexIA, numeroTutelaDeAsunto, normalize, mensajeError, buscarLecturaLexIAGuardada, guardarLecturaLexIAEnOneDrive, listarTutelasAnalizadasEnOneDrive, asegurarCarpetaTutelaDesdeMensaje } from '../lib/graph';
 import IconButton, { IconTextButton } from './IconButton';
 import { EntrenarIAPanel } from './EntrenarIAModal';
 import { useDraggable } from '../hooks/useDraggable';
@@ -23,7 +23,7 @@ import lexiaAvatarSaludo from '../assets/LexIA avatar - saludo.webp';
 // devolver los campos que Claude extrajo para prellenar "Nueva tutela". El
 // usuario SIEMPRE revisa y confirma en el formulario antes de guardar — acá
 // nunca se toca SharePoint, solo se arma el objeto de campos iniciales.
-export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitidos, robotUrl, onedriveCarpetaUrl, tutelas, temas, onAgregarCorreccionIA, robotPreguntasUrl, onExtraido, onClose, notify, lexiaHablando }){
+export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitidos, robotUrl, onedriveCarpetaUrl, tutelas, temas, onAgregarCorreccionIA, robotPreguntasUrl, config, robotSolicitudUrl, onExtraido, onClose, notify, lexiaHablando }){
   const [cargando, setCargando] = useState(true);
   // "Un botón para actualizar la lista de los correos que estén
   // ingresando" (2026-09-29, pedido explícito del usuario) — separado de
@@ -153,6 +153,41 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
     }
   }
 
+  // Solicitud de pruebas (paso 2, 2026-10-07): por cada registro extraído se arma un BORRADOR de
+  // correo a las áreas de la entidad con el formato del despacho que vive en SharePoint. Nunca se
+  // envía solo: queda en Borradores para que el abogado lo revise. El estado de cada intento se
+  // guarda en el propio registro (_solicitud) para mostrarlo en la lista.
+  function marcarSolicitud(mensajeId, indice, solicitud){
+    setResultado(prev => prev && prev.mensajeId === mensajeId
+      ? { ...prev, registros: prev.registros.map((r, i) => i === indice ? { ...r, _solicitud: solicitud } : r) }
+      : prev);
+  }
+  async function generarSolicitudPruebas(mensaje, registro, indice, instante){
+    marcarSolicitud(mensaje.id, indice, { estado: 'creando' });
+    try{
+      const { registro: reg } = aplicarVencimientoHabil(registro, fechaLocalISO(instante), instante, { forzarFechaCorreo: true });
+      const { _creado, _solicitud, ...limpio } = reg;
+      const r = await crearSolicitudPruebasBorrador({
+        config, robotSolicitudUrl, registro: limpio, asuntoCorreo: mensaje.asunto,
+        noTutela: limpio.NoTutela || numeroTutelaDeAsunto(mensaje.asunto), fechaVencimiento: limpio.FechaVencimiento,
+      });
+      marcarSolicitud(mensaje.id, indice, { estado: 'listo', para: r.para, cc: r.cc, notas: r.notas, formato: r.formato });
+    }catch(err){
+      console.error(err);
+      marcarSolicitud(mensaje.id, indice, { estado: 'error', mensaje: mensajeError(err) });
+    }
+  }
+  async function crearSolicitudesAutomaticas(mensaje, registros, instante){
+    if(!robotSolicitudUrl || config?.SOLICITUD_PRUEBAS_AUTOMATICA === false) return;
+    for(let i = 0; i < registros.length; i++) await generarSolicitudPruebas(mensaje, registros[i], i, instante);
+  }
+  function handleSolicitudPruebas(indice){
+    const registro = resultado?.registros?.[indice];
+    const mensaje = mensajes.find(m => m.id === resultado?.mensajeId);
+    if(!registro || !mensaje) return;
+    generarSolicitudPruebas(mensaje, registro, indice, primerCorreoPorMensaje[mensaje.id] || mensaje.fecha);
+  }
+
   async function handleExtraer(mensaje){
     if(!robotUrl){
       notify?.('Falta terminar de instalar LexIA (ROBOT_CLAUDE_URL en config.js) antes de poder usar esto.', 'error');
@@ -215,6 +250,8 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
       if(avisosVencimiento.length) avisosFinales.push('Vencimiento: ' + avisosVencimiento.join(' · '));
       setResultado({ mensajeId: mensaje.id, registros: extraido.registros });
       setCorreoActual({ asunto: extraido.asunto, cuerpo: extraido.cuerpo });
+      // Apenas se extrae una tutela NUEVA, arma sola el borrador de solicitud de pruebas (en segundo plano).
+      crearSolicitudesAutomaticas(mensaje, extraido.registros, instanteNotificacion);
       if(extraido.omitidos?.length){
         avisosFinales.push(`LexIA no leyó ${extraido.omitidos.length} adjunto${extraido.omitidos.length === 1 ? '' : 's'} por ser demasiado largo${extraido.omitidos.length === 1 ? '' : 's'}: ${extraido.omitidos.map(o => `${o.nombre} (${o.motivo})`).join(', ')}. Revisa los datos con cuidado — los adjuntos completos quedan guardados en la carpeta de la tutela en OneDrive.`);
       }
@@ -498,6 +535,25 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
                             <IconTextButton icon="add" variant="primary" onClick={() => handleCrearBorrador(i)}>
                               Crear borrador
                             </IconTextButton>
+                          )}
+                          {robotSolicitudUrl && (r._solicitud?.estado === 'listo' ? (
+                            <span className="badge badge-verde">Pruebas: borrador listo</span>
+                          ) : r._solicitud?.estado === 'creando' ? (
+                            <span className="save-hint">Armando solicitud de pruebas…</span>
+                          ) : (
+                            <IconTextButton icon="mail" variant="secondary" onClick={() => handleSolicitudPruebas(i)}>
+                              {r._solicitud?.estado === 'error' ? 'Reintentar solicitud de pruebas' : 'Solicitud de pruebas'}
+                            </IconTextButton>
+                          ))}
+                          {r._solicitud?.estado === 'listo' && (
+                            <p className="save-hint" style={{margin:'4px 0 0', flexBasis:'100%'}}>
+                              Está en tus Borradores de Outlook — para: {(r._solicitud.para || []).join(', ') || '(sin destinatarios, complétalos)'}{r._solicitud.notas ? ` · Nota de LexIA: ${r._solicitud.notas}` : ''}
+                            </p>
+                          )}
+                          {r._solicitud?.estado === 'error' && (
+                            <p className="save-hint" style={{margin:'4px 0 0', flexBasis:'100%', color:'var(--rojo, #a3281c)'}}>
+                              No se pudo armar la solicitud de pruebas: {r._solicitud.mensaje}
+                            </p>
                           )}
                         </div>
                       ))}
