@@ -653,6 +653,7 @@ export default function ProcesoDrawer({ proceso, clientes, colaboradores, factur
     {key:'valor', label:'Valor', render: d => fmtMonto(parseMonto(d.DesistimientoValor))},
     {key:'fecharadicacion', label:'Fecha radicación', render: d => fmtDate(d.FechaRadicacion)},
     {key:'aprobacion', label:'Aprobación', render: d => d.Aprobacion || "—"},
+    {key:'fechaaprobacion', label:'Fecha aprobación', render: d => fmtDate(d.FechaAprobacion)},
     // Pedido explícito del usuario 2026-10-07: la columna Observaciones de la lista de Desistimientos
     // también se ve en esta pestaña (antes solo estaba dentro del formulario de cada desistimiento).
     {key:'observaciones', label:'Observaciones', render: d => stripHtml(d.Observaciones) || "—"},
