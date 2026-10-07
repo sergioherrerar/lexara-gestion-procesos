@@ -1,4 +1,5 @@
 import { seleccionarAdjuntosParaLexIA } from './adjuntosLexIA';
+import firmaArianaUrl from '../assets/Firma Ariana.jpg';
 
 // Estado de MSAL vive fuera de React (no es UI, solo la sesión del SDK).
 let msalInstance = null;
@@ -485,7 +486,7 @@ function escaparHtml(s){
 }
 // Cuerpo en texto plano del robot → HTML del correo: una línea por párrafo, las
 // viñetas ("- ") como lista, y los títulos de área (terminan en ":") en negrita.
-function cuerpoSolicitudAHtml(cuerpo){
+export function cuerpoSolicitudAHtml(cuerpo){
   const lineas = String(cuerpo || '').split(/\r?\n/);
   const salida = [];
   let enLista = false;
@@ -495,40 +496,88 @@ function cuerpoSolicitudAHtml(cuerpo){
     if(!linea){ cerrarLista(); continue; }
     const viñeta = /^[-•*]\s+/.exec(linea);
     if(viñeta){
-      if(!enLista){ salida.push('<ul style="margin:0 0 8px 18px;padding:0;">'); enLista = true; }
-      salida.push(`<li style="margin:0 0 3px;">${escaparHtml(linea.slice(viñeta[0].length))}</li>`);
+      if(!enLista){ salida.push('<ul style="margin:0 0 6px 0;padding-left:20px;">'); enLista = true; }
+      salida.push(`<li style="margin:0 0 2px;line-height:1.4;">${escaparHtml(linea.slice(viñeta[0].length))}</li>`);
       continue;
     }
     cerrarLista();
-    const esTitulo = /:$/.test(linea) && linea.length < 90;
-    const esVence = /^(Tutela que VENCE|PRETENSI[OÓ]N:)/i.test(linea);
-    salida.push(`<p style="margin:0 0 8px;">${(esTitulo || esVence) ? `<b>${escaparHtml(linea)}</b>` : escaparHtml(linea)}</p>`);
+    const texto = escaparHtml(linea);
+    if(/^(URGENTE|MEDIDA PROVISIONAL)/i.test(linea)){
+      // Alertas: caja roja suave
+      salida.push(`<div style="background:#fdecea;border-left:4px solid #a3281c;padding:6px 10px;margin:8px 0;font-weight:bold;color:#7a1d14;">${texto}</div>`);
+    } else if(/^Tutela que VENCE/i.test(linea)){
+      // Vencimiento: caja naranja suave
+      salida.push(`<div style="background:#fff4e5;border-left:4px solid #ef7d00;padding:6px 10px;margin:8px 0;font-weight:bold;color:#1c2624;">${texto}</div>`);
+    } else if(/^PRETENSI[OÓ]N:/i.test(linea)){
+      // Pretensión: caja verde suave
+      salida.push(`<div style="background:#e6efed;border-left:4px solid #004941;padding:6px 10px;margin:8px 0;font-weight:bold;color:#004941;">${texto}</div>`);
+    } else if(/:$/.test(linea) && linea.length < 90){
+      // Título de área
+      salida.push(`<p style="margin:12px 0 4px;color:#004941;font-weight:bold;border-bottom:1px solid #cfd9d6;padding-bottom:2px;">${texto}</p>`);
+    } else {
+      salida.push(`<p style="margin:0 0 6px;line-height:1.45;">${texto}</p>`);
+    }
   }
   cerrarLista();
-  return `<div style="font-family:Aptos,Calibri,Arial,sans-serif;font-size:14px;color:#1c2624;">${salida.join('')}</div>`;
+  return `<div style="font-family:Aptos,Calibri,Arial,sans-serif;font-size:13.5px;color:#1c2624;max-width:760px;">${salida.join('')}</div>`;
 }
 
 // Tabla de datos de la tutela que va ANTES del formato en el correo (pedido del usuario
-// 2026-10-07): rótulos en verde Lexara con letra blanca, valores al lado. "Tema" muestra las
-// pretensiones más importantes de la tutela (no la categoría del formulario).
+// 2026-10-07): compacta, en 4 columnas (rótulo | valor | rótulo | valor), rótulos en verde Lexara
+// con letra blanca y una franja de título. "Tema" lista las pretensiones más importantes de la
+// tutela (no la categoría del formulario).
 export function tablaDatosTutelaHtml(campos, pretensiones){
+  const c = campos || {};
+  const e = (v) => escaparHtml(v || '');
+  const rot = 'background:#004941;color:#ffffff;font-weight:bold;font-size:12px;padding:4px 9px;border:1px solid #004941;text-align:left;white-space:nowrap;';
+  const val = 'padding:4px 9px;border:1px solid #cfd9d6;color:#1c2624;font-size:13px;';
+  const par = (r1, v1, r2, v2) => `<tr><td style="${rot}">${r1}</td><td style="${val}">${e(v1)}</td><td style="${rot}">${r2}</td><td style="${val}">${e(v2)}</td></tr>`;
+  const ancha = (r1, contenidoHtml) => `<tr><td style="${rot}">${r1}</td><td colspan="3" style="${val}">${contenidoHtml}</td></tr>`;
+  const items = (pretensiones || []).filter(Boolean);
+  const tema = items.length
+    ? `<ul style="margin:0;padding-left:16px;">${items.map(t => `<li style="margin:0 0 1px;line-height:1.35;">${escaparHtml(t)}</li>`).join('')}</ul>`
+    : '';
+  const franja = '<tr><td colspan="4" style="background:#e6efed;color:#004941;font-weight:bold;font-size:12px;letter-spacing:.8px;padding:5px 9px;border:1px solid #cfd9d6;border-top:3px solid #ef7d00;">DATOS DE LA TUTELA</td></tr>';
   const filas = [
-    ['No Tutela', campos.NoTutela],
-    ['Entidad', campos.Entidad],
-    ['Cliente', campos.Cliente],
-    ['Tipo Vinculación Entidad', campos.TipoVinculacionEntidad],
-    ['Tipo Respuesta', campos.TipoRespuesta],
-    ['Medida Cautelar', campos.MedidaCautelar],
-    ['Agencia Oficiosa', campos.AgenciaOficiosa],
-    ['Usuario', campos.Usuario],
-    ['No. Identificación', campos.NoIdentificacion],
-    ['Tema', (pretensiones || []).filter(Boolean).join(' · ')],
-  ];
-  const celdaRotulo = 'background:#004941;color:#ffffff;font-weight:bold;padding:6px 10px;border:1px solid #004941;text-align:left;width:190px;';
-  const celdaValor = 'padding:6px 10px;border:1px solid #c9d3d0;color:#1c2624;';
-  const cuerpo = filas.map(([rotulo, valor]) =>
-    `<tr><td style="${celdaRotulo}">${escaparHtml(rotulo)}</td><td style="${celdaValor}">${escaparHtml(valor || '')}</td></tr>`).join('');
-  return `<table style="border-collapse:collapse;font-family:Aptos,Calibri,Arial,sans-serif;font-size:14px;margin:0 0 14px;">${cuerpo}</table>`;
+    franja,
+    par('No. Tutela', c.NoTutela, 'Tipo Respuesta', c.TipoRespuesta),
+    par('Entidad', c.Entidad, 'Tipo Vinculación Entidad', c.TipoVinculacionEntidad),
+    ancha('Cliente', e(c.Cliente)),
+    par('Medida Cautelar', c.MedidaCautelar, 'Agencia Oficiosa', c.AgenciaOficiosa),
+    par('Usuario', c.Usuario, 'No. Identificación', c.NoIdentificacion),
+    ancha('Tema', tema),
+  ].join('');
+  return `<table style="border-collapse:collapse;font-family:Aptos,Calibri,Arial,sans-serif;width:100%;max-width:760px;margin:0 0 12px;">${filas}</table>`;
+}
+
+// Firma de Ariana (imagen de la firma institucional de Lexara). Va como imagen EN LÍNEA adjunta
+// al borrador (cid) en vez de una imagen incrustada en base64, porque Outlook de escritorio no
+// muestra las imágenes en base64 dentro del cuerpo.
+const FIRMA_CID = 'firma-ariana-lexara';
+export const FIRMA_HTML = `<p style="margin:14px 0 0;"><img src="cid:${FIRMA_CID}" width="520" alt="Ariana Andrea Martin Mendoza — Abogada Junior — Lexara Abogados" style="display:block;border:0;width:520px;max-width:100%;height:auto;"></p>`;
+async function adjuntarFirmaInline(raiz, mensajeId, token){
+  try{
+    const resp = await fetch(firmaArianaUrl);
+    if(!resp.ok) throw new Error('no se pudo leer la imagen de la firma');
+    const contentBytes = arrayBufferABase64(await resp.arrayBuffer());
+    const res = await fetch(`${raiz}/messages/${mensajeId}/attachments`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        '@odata.type': '#microsoft.graph.fileAttachment',
+        name: 'Firma Ariana.jpg',
+        contentType: 'image/jpeg',
+        contentBytes,
+        isInline: true,
+        contentId: FIRMA_CID,
+      }),
+    });
+    if(!res.ok) throw new Error(`Graph ${res.status}`);
+    return true;
+  }catch(err){
+    console.error('No se pudo adjuntar la firma al borrador:', err);
+    return false;
+  }
 }
 
 // Nombre corto del cliente tal como el robot lo pone al final del asunto de la solicitud.
@@ -600,7 +649,9 @@ async function reenviarComoBorrador(correoBuzon, mensajeId, { para, cc, asunto, 
     }),
   });
   if(!r2.ok) throw new Error(`Graph ${r2.status}: ${(await r2.text()).substring(0, 200)}`);
-  return r2.json();
+  const mensajeFinal = await r2.json();
+  const firmaOk = await adjuntarFirmaInline(`https://graph.microsoft.com/v1.0/users/${encodeURIComponent(correoBuzon)}`, borrador.id, token);
+  return { ...mensajeFinal, firmaOk };
 }
 
 // Arma el correo con el robot y lo deja como BORRADOR en Outlook (nunca lo envía).
@@ -620,7 +671,7 @@ export async function crearSolicitudPruebasBorrador({ config, robotSolicitudUrl,
   try{ data = await res.json(); }catch{ throw new Error(`El robot de solicitud de pruebas no respondió bien (${res.status}). ¿Ya subiste solicitud-pruebas.php a cPanel?`); }
   if(!res.ok || data.error) throw new Error(data.error || `El robot de solicitud de pruebas falló (${res.status}).`);
   const asunto = data.asunto || `TUTELA No. ${noTutela || ''} - SOLICITUD DE PRUEBAS`;
-  const htmlAntes = tablaDatosTutelaHtml(campos || {}, data.pretensiones) + cuerpoSolicitudAHtml(data.cuerpo);
+  const htmlAntes = tablaDatosTutelaHtml(campos || {}, data.pretensiones) + cuerpoSolicitudAHtml(data.cuerpo) + FIRMA_HTML;
   let borrador, reenviado = false, notas = data.notas || '';
   if(correoBuzon && mensajeIdReenviar){
     try{
@@ -633,7 +684,9 @@ export async function crearSolicitudPruebasBorrador({ config, robotSolicitudUrl,
   }
   if(!borrador){
     borrador = await crearBorradorCorreo({ to: data.para || [], cc: data.cc || [], subject: asunto, htmlBody: htmlAntes });
+    if(borrador?.id) borrador.firmaOk = await adjuntarFirmaInline('https://graph.microsoft.com/v1.0/me', borrador.id, await getMailToken());
   }
+  if(borrador && borrador.firmaOk === false) notas = 'No se pudo adjuntar la imagen de la firma: agrégala tú en el borrador. ' + notas;
   return { para: data.para || [], cc: data.cc || [], asunto, notas, formato: formato.nombre, reenviado, borrador };
 }
 

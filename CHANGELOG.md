@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-10-07 (19)
+- **Solicitud de pruebas: diseño más compacto y profesional, con la firma de Ariana** — pedido explícito del usuario viendo el primer borrador real (tutela 28246). La tabla de datos pasó de 10 filas a una tabla compacta de 4 columnas con franja de título "DATOS DE LA TUTELA", rótulos en verde Lexara y el Tema como lista de pretensiones. El texto del correo ahora tiene cajas de color: roja para URGENTE o MEDIDA PROVISIONAL, naranja para el vencimiento, verde para la pretensión, y títulos de área en verde con línea inferior. Al final lleva la firma de Ariana Andrea Martin Mendoza (imagen de la firma institucional, nuevo archivo src/assets/Firma Ariana.jpg), adjunta como imagen en línea para que Outlook la muestre; si no se puede adjuntar, la nota de LexIA lo avisa. Solo cambia el portal, no el robot.
+
 ## 2026-10-07 (18)
 - **Solicitud de pruebas: el Word del formato ahora se busca como "FORMATO SOLICITUD DE PRUEBAS"** — el usuario dejó el documento definitivo en SharePoint (Documentos del sitio de Tutelas) con ese nombre, sin "- copia" (primero estaba escrito "SOLICITU"; el usuario ya lo corrigió a "SOLICITUD"). El portal lo busca por el comienzo del nombre y prefiere, en este orden, el nombre configurado, "FORMATO SOLICITUD DE PRUEBAS.docx" y cualquier otro que empiece igual; si hay varios con el mismo nombre toma el modificado más recientemente.
 
