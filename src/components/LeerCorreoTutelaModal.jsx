@@ -146,10 +146,10 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
   async function instantePrimerCorreo(mensaje){
     try{
       const primero = await primerCorreoDeConversacion(correoBuzon, mensaje.conversacionId, remitentesPermitidos);
-      return primero && primero < mensaje.fecha ? primero : mensaje.fecha;
+      return primero && primero.fecha < mensaje.fecha ? primero : { fecha: mensaje.fecha, id: mensaje.id };
     }catch(err){
       console.error('No se pudo buscar el primer correo de la conversación:', err);
-      return mensaje.fecha;
+      return { fecha: mensaje.fecha, id: mensaje.id };
     }
   }
 
@@ -162,30 +162,29 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
       ? { ...prev, registros: prev.registros.map((r, i) => i === indice ? { ...r, _solicitud: solicitud } : r) }
       : prev);
   }
-  async function generarSolicitudPruebas(mensaje, registro, indice, instante){
+  async function generarSolicitudPruebas(mensaje, registro, indice, primerCorreo){
+    const instante = primerCorreo.fecha;
     marcarSolicitud(mensaje.id, indice, { estado: 'creando' });
     try{
       const { registro: reg } = aplicarVencimientoHabil(registro, fechaLocalISO(instante), instante, { forzarFechaCorreo: true });
       const { _creado, _solicitud, ...limpio } = reg;
+      const { campos } = normalizarBorradorTutela(limpio, { temas, numeroAsunto: numeroTutelaDeAsunto(mensaje.asunto) });
       const r = await crearSolicitudPruebasBorrador({
-        config, robotSolicitudUrl, registro: limpio, asuntoCorreo: mensaje.asunto,
+        config, robotSolicitudUrl, registro: limpio, campos, asuntoCorreo: mensaje.asunto,
         noTutela: limpio.NoTutela || numeroTutelaDeAsunto(mensaje.asunto), fechaVencimiento: limpio.FechaVencimiento,
+        correoBuzon, mensajeIdReenviar: primerCorreo.id || mensaje.id,
       });
-      marcarSolicitud(mensaje.id, indice, { estado: 'listo', para: r.para, cc: r.cc, notas: r.notas, formato: r.formato });
+      marcarSolicitud(mensaje.id, indice, { estado: 'listo', para: r.para, cc: r.cc, notas: r.notas, formato: r.formato, reenviado: r.reenviado });
     }catch(err){
       console.error(err);
       marcarSolicitud(mensaje.id, indice, { estado: 'error', mensaje: mensajeError(err) });
     }
   }
-  async function crearSolicitudesAutomaticas(mensaje, registros, instante){
-    if(!robotSolicitudUrl || config?.SOLICITUD_PRUEBAS_AUTOMATICA === false) return;
-    for(let i = 0; i < registros.length; i++) await generarSolicitudPruebas(mensaje, registros[i], i, instante);
-  }
   function handleSolicitudPruebas(indice){
     const registro = resultado?.registros?.[indice];
     const mensaje = mensajes.find(m => m.id === resultado?.mensajeId);
     if(!registro || !mensaje) return;
-    generarSolicitudPruebas(mensaje, registro, indice, primerCorreoPorMensaje[mensaje.id] || mensaje.fecha);
+    generarSolicitudPruebas(mensaje, registro, indice, primerCorreoPorMensaje[mensaje.id] || { fecha: mensaje.fecha, id: mensaje.id });
   }
 
   async function handleExtraer(mensaje){
@@ -195,8 +194,9 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
     }
     const numeroTutela = numeroTutelaDeAsunto(mensaje.asunto);
     setProcesando(true);
-    const instanteNotificacion = await instantePrimerCorreo(mensaje);
-    setPrimerCorreoPorMensaje(prev => ({ ...prev, [mensaje.id]: instanteNotificacion }));
+    const primerCorreo = await instantePrimerCorreo(mensaje);
+    const instanteNotificacion = primerCorreo.fecha;
+    setPrimerCorreoPorMensaje(prev => ({ ...prev, [mensaje.id]: primerCorreo }));
     // "Si se vuelve a consultar esa tutela, que diga que ya fue analizada
     // por LexIA y pregunte qué se necesita de ella" (2026-09-29, pedido
     // explícito del usuario) — memoria PERSISTENTE (sobrevive a cerrar el
@@ -250,8 +250,6 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
       if(avisosVencimiento.length) avisosFinales.push('Vencimiento: ' + avisosVencimiento.join(' · '));
       setResultado({ mensajeId: mensaje.id, registros: extraido.registros });
       setCorreoActual({ asunto: extraido.asunto, cuerpo: extraido.cuerpo });
-      // Apenas se extrae una tutela NUEVA, arma sola el borrador de solicitud de pruebas (en segundo plano).
-      crearSolicitudesAutomaticas(mensaje, extraido.registros, instanteNotificacion);
       if(extraido.omitidos?.length){
         avisosFinales.push(`LexIA no leyó ${extraido.omitidos.length} adjunto${extraido.omitidos.length === 1 ? '' : 's'} por ser demasiado largo${extraido.omitidos.length === 1 ? '' : 's'}: ${extraido.omitidos.map(o => `${o.nombre} (${o.motivo})`).join(', ')}. Revisa los datos con cuidado — los adjuntos completos quedan guardados en la carpeta de la tutela en OneDrive.`);
       }
@@ -306,7 +304,7 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
     const mensajeOrigen = mensajes.find(m => m.id === resultado.mensajeId);
     // Idempotente: cubre también lecturas viejas guardadas en OneDrive, que se
     // hicieron antes de que el vencimiento se calculara con días hábiles.
-    const instanteBase = primerCorreoPorMensaje[resultado.mensajeId] || mensajeOrigen?.fecha;
+    const instanteBase = primerCorreoPorMensaje[resultado.mensajeId]?.fecha || mensajeOrigen?.fecha;
     const vencimiento = aplicarVencimientoHabil(registro, instanteBase ? fechaLocalISO(instanteBase) : '', instanteBase, { forzarFechaCorreo: true });
     const { campos, avisos } = normalizarBorradorTutela(vencimiento.registro, {
       temas,
@@ -536,18 +534,16 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
                               Crear borrador
                             </IconTextButton>
                           )}
-                          {robotSolicitudUrl && (r._solicitud?.estado === 'listo' ? (
-                            <span className="badge badge-verde">Pruebas: borrador listo</span>
-                          ) : r._solicitud?.estado === 'creando' ? (
-                            <span className="save-hint">Armando solicitud de pruebas…</span>
-                          ) : (
-                            <IconTextButton icon="mail" variant="secondary" onClick={() => handleSolicitudPruebas(i)}>
-                              {r._solicitud?.estado === 'error' ? 'Reintentar solicitud de pruebas' : 'Solicitud de pruebas'}
-                            </IconTextButton>
-                          ))}
+                          {robotSolicitudUrl && (
+                            <span style={{display:'inline-flex', alignItems:'center', gap:8}}>
+                              <IconButton icon="mail" variant="mail" label={r._solicitud?.estado === 'listo' ? 'Solicitud de pruebas creada — clic para crear otro borrador' : r._solicitud?.estado === 'error' ? 'Reintentar el borrador de solicitud de pruebas' : 'Crear borrador de solicitud de pruebas (reenvía el correo original a las áreas)'} spinning={r._solicitud?.estado === 'creando'} onClick={() => handleSolicitudPruebas(i)} />
+                              {r._solicitud?.estado === 'creando' && <span className="save-hint">Armando solicitud de pruebas…</span>}
+                              {r._solicitud?.estado === 'listo' && <span className="badge badge-verde">Pruebas: borrador listo</span>}
+                            </span>
+                          )}
                           {r._solicitud?.estado === 'listo' && (
                             <p className="save-hint" style={{margin:'4px 0 0', flexBasis:'100%'}}>
-                              Está en tus Borradores de Outlook — para: {(r._solicitud.para || []).join(', ') || '(sin destinatarios, complétalos)'}{r._solicitud.notas ? ` · Nota de LexIA: ${r._solicitud.notas}` : ''}
+                              {r._solicitud.reenviado ? 'Quedó como reenvío del correo original en los Borradores del buzón de Tutelas' : 'Quedó en tus Borradores de Outlook'} — para: {(r._solicitud.para || []).join(', ') || '(sin destinatarios, complétalos)'}{r._solicitud.notas ? ` · Nota de LexIA: ${r._solicitud.notas}` : ''}
                             </p>
                           )}
                           {r._solicitud?.estado === 'error' && (

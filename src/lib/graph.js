@@ -497,10 +497,64 @@ function cuerpoSolicitudAHtml(cuerpo){
   return `<div style="font-family:Aptos,Calibri,Arial,sans-serif;font-size:14px;color:#1c2624;">${salida.join('')}</div>`;
 }
 
-// Arma el correo con el robot y lo deja como BORRADOR en Outlook (nunca lo
-// envía). `registro` es el registro de LexIA (campos + Analisis). Devuelve
-// { para, cc, asunto, notas, formato } — `notas` es para el abogado, no va en el correo.
-export async function crearSolicitudPruebasBorrador({ config, robotSolicitudUrl, registro, asuntoCorreo, noTutela, fechaVencimiento }){
+// Tabla de datos de la tutela que va ANTES del formato en el correo (pedido del usuario
+// 2026-10-07): rótulos en verde Lexara con letra blanca, valores al lado. "Tema" muestra las
+// pretensiones más importantes de la tutela (no la categoría del formulario).
+export function tablaDatosTutelaHtml(campos, pretensiones){
+  const filas = [
+    ['No Tutela', campos.NoTutela],
+    ['Entidad', campos.Entidad],
+    ['Cliente', campos.Cliente],
+    ['Tipo Vinculación Entidad', campos.TipoVinculacionEntidad],
+    ['Tipo Respuesta', campos.TipoRespuesta],
+    ['Medida Cautelar', campos.MedidaCautelar],
+    ['Agencia Oficiosa', campos.AgenciaOficiosa],
+    ['Usuario', campos.Usuario],
+    ['No. Identificación', campos.NoIdentificacion],
+    ['Tema', (pretensiones || []).filter(Boolean).join(' · ')],
+  ];
+  const celdaRotulo = 'background:#004941;color:#ffffff;font-weight:bold;padding:6px 10px;border:1px solid #004941;text-align:left;width:190px;';
+  const celdaValor = 'padding:6px 10px;border:1px solid #c9d3d0;color:#1c2624;';
+  const cuerpo = filas.map(([rotulo, valor]) =>
+    `<tr><td style="${celdaRotulo}">${escaparHtml(rotulo)}</td><td style="${celdaValor}">${escaparHtml(valor || '')}</td></tr>`).join('');
+  return `<table style="border-collapse:collapse;font-family:Aptos,Calibri,Arial,sans-serif;font-size:14px;margin:0 0 14px;">${cuerpo}</table>`;
+}
+
+// Crea el borrador como REENVÍO del correo original (el de los remitentes filtrados) para no
+// perder la traza: el borrador queda en la carpeta Borradores del buzón de Tutelas, con el
+// correo original y sus adjuntos abajo y nuestro contenido arriba.
+async function reenviarComoBorrador(correoBuzon, mensajeId, { para, cc, asunto, htmlAntes }){
+  const token = await getMailToken();
+  const base = `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(correoBuzon)}/messages/${mensajeId}`;
+  const cabeceras = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
+  const r1 = await fetch(base + '/createForward', { method: 'POST', headers: cabeceras, body: '{}' });
+  if(!r1.ok) throw new Error(`Graph ${r1.status}: ${(await r1.text()).substring(0, 200)}`);
+  const borrador = await r1.json();
+  const original = borrador.body?.content || '';
+  const abreBody = /<body[^>]*>/i.exec(original);
+  const contenido = abreBody
+    ? original.slice(0, abreBody.index + abreBody[0].length) + htmlAntes + '<br>' + original.slice(abreBody.index + abreBody[0].length)
+    : htmlAntes + '<br>' + original;
+  const r2 = await fetch(`https://graph.microsoft.com/v1.0/users/${encodeURIComponent(correoBuzon)}/messages/${borrador.id}`, {
+    method: 'PATCH',
+    headers: cabeceras,
+    body: JSON.stringify({
+      subject: asunto,
+      toRecipients: (para || []).map(c => ({ emailAddress: { address: c } })),
+      ccRecipients: (cc || []).map(c => ({ emailAddress: { address: c } })),
+      body: { contentType: 'HTML', content: contenido },
+    }),
+  });
+  if(!r2.ok) throw new Error(`Graph ${r2.status}: ${(await r2.text()).substring(0, 200)}`);
+  return r2.json();
+}
+
+// Arma el correo con el robot y lo deja como BORRADOR en Outlook (nunca lo envía).
+// `registro` es el registro de LexIA (campos + Analisis) y `campos` el mismo ya normalizado
+// (valores oficiales) para la tabla. Si se da `mensajeIdReenviar`, el borrador es un reenvío de
+// ese correo (conserva la traza); si no se puede reenviar, queda como borrador nuevo y se avisa.
+// Devuelve { para, cc, asunto, notas, formato, reenviado, borrador }.
+export async function crearSolicitudPruebasBorrador({ config, robotSolicitudUrl, registro, campos, asuntoCorreo, noTutela, fechaVencimiento, correoBuzon, mensajeIdReenviar }){
   if(!robotSolicitudUrl) throw new Error('Falta la dirección del robot de solicitud de pruebas (ROBOT_SOLICITUD_PRUEBAS_URL).');
   const formato = await leerFormatoSolicitudPruebas(config);
   const res = await fetch(robotSolicitudUrl, {
@@ -511,13 +565,22 @@ export async function crearSolicitudPruebasBorrador({ config, robotSolicitudUrl,
   let data;
   try{ data = await res.json(); }catch{ throw new Error(`El robot de solicitud de pruebas no respondió bien (${res.status}). ¿Ya subiste solicitud-pruebas.php a cPanel?`); }
   if(!res.ok || data.error) throw new Error(data.error || `El robot de solicitud de pruebas falló (${res.status}).`);
-  const borrador = await crearBorradorCorreo({
-    to: data.para || [],
-    cc: data.cc || [],
-    subject: data.asunto || `TUTELA No. ${noTutela || ''} - SOLICITUD DE PRUEBAS`,
-    htmlBody: cuerpoSolicitudAHtml(data.cuerpo),
-  });
-  return { para: data.para || [], cc: data.cc || [], asunto: data.asunto, notas: data.notas || '', formato: formato.nombre, borrador };
+  const asunto = data.asunto || `TUTELA No. ${noTutela || ''} - SOLICITUD DE PRUEBAS`;
+  const htmlAntes = tablaDatosTutelaHtml(campos || {}, data.pretensiones) + cuerpoSolicitudAHtml(data.cuerpo);
+  let borrador, reenviado = false, notas = data.notas || '';
+  if(correoBuzon && mensajeIdReenviar){
+    try{
+      borrador = await reenviarComoBorrador(correoBuzon, mensajeIdReenviar, { para: data.para, cc: data.cc, asunto, htmlAntes });
+      reenviado = true;
+    }catch(err){
+      console.error('No se pudo reenviar el correo original, se crea un borrador nuevo:', err);
+      notas = 'No se pudo reenviar el correo original (' + (err.message || err) + '): el borrador se creó nuevo, sin la traza — reenvíalo tú desde el correo original si la necesitas. ' + notas;
+    }
+  }
+  if(!borrador){
+    borrador = await crearBorradorCorreo({ to: data.para || [], cc: data.cc || [], subject: asunto, htmlBody: htmlAntes });
+  }
+  return { para: data.para || [], cc: data.cc || [], asunto, notas, formato: formato.nombre, reenviado, borrador };
 }
 
 // "API Claude" Tarea 1 (2026-09-23, pedido explícito del usuario, ya con
@@ -604,7 +667,7 @@ export async function leerCorreosTutelas(correoBuzon, remitentesPermitidos, top 
 // receivedDateTime (ISO, UTC) más antiguo o "" si no se pudo averiguar (quien
 // llama debe usar entonces el correo que eligió el usuario).
 export async function primerCorreoDeConversacion(correoBuzon, conversacionId, remitentesPermitidos){
-  if(!conversacionId) return '';
+  if(!conversacionId) return null;
   const token = await getMailToken();
   const params = new URLSearchParams({
     $select: 'id,from,receivedDateTime',
@@ -615,12 +678,10 @@ export async function primerCorreoDeConversacion(correoBuzon, conversacionId, re
   if(!res.ok) throw new Error(`Graph ${res.status}`);
   const data = await res.json();
   const permitidos = (remitentesPermitidos||[]).filter(Boolean).map(c => c.trim().toLowerCase());
-  const fechas = (data.value || [])
-    .filter(m => !permitidos.length || permitidos.includes((m.from?.emailAddress?.address||'').trim().toLowerCase()))
-    .map(m => m.receivedDateTime)
-    .filter(Boolean)
-    .sort();
-  return fechas[0] || '';
+  const candidatos = (data.value || [])
+    .filter(m => m.receivedDateTime && (!permitidos.length || permitidos.includes((m.from?.emailAddress?.address||'').trim().toLowerCase())))
+    .sort((a, b) => String(a.receivedDateTime).localeCompare(String(b.receivedDateTime)));
+  return candidatos[0] ? { id: candidatos[0].id, fecha: candidatos[0].receivedDateTime } : null;
 }
 
 // Precarga de LexIA (2026-09-25, pedido explícito del usuario) — casi todos

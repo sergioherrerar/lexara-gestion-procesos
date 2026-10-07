@@ -73,19 +73,36 @@ if(preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $vencimiento, $m)){
     $vencimientoLegible = $m[3] . '/' . $m[2] . '/' . $m[1];
 }
 
+// Urgencia (días calendario hasta el vencimiento) — se calcula acá, no se le deja adivinar al modelo.
+$urgenciaTexto = '(sin fecha de vencimiento)';
+$urgente = false;
+if(preg_match('/^([0-9]{4})-([0-9]{2})-([0-9]{2})$/', $vencimiento)){
+    $diasParaVencer = (int)round((strtotime($vencimiento) - strtotime(date('Y-m-d'))) / 86400);
+    if($diasParaVencer < 0){ $urgente = true; $urgenciaTexto = 'YA VENCIÓ hace ' . abs($diasParaVencer) . ' día(s) — URGENTE'; }
+    elseif($diasParaVencer === 0){ $urgente = true; $urgenciaTexto = 'VENCE HOY — URGENTE'; }
+    elseif($diasParaVencer === 1){ $urgente = true; $urgenciaTexto = 'vence MAÑANA — URGENTE'; }
+    else { $urgenciaTexto = 'vence en ' . $diasParaVencer . ' días calendario (no urgente)'; }
+}
+
 $tarea = <<<'TXT'
 
-TAREA ACTUAL: armar el CORREO DE SOLICITUD DE PRUEBAS de UNA tutela, usando el documento "FORMATO SOLICITUD DE PRUEBAS" del despacho que va más abajo (es la fuente oficial y vigente: su agenda de áreas/correos y sus formatos). Reglas:
+TAREA ACTUAL: armar el CORREO DE SOLICITUD DE PRUEBAS de UNA tutela, usando el documento "FORMATO SOLICITUD DE PRUEBAS" del despacho que va más abajo (es la fuente oficial y vigente: su agenda de áreas/correos y sus formatos). Hazlo como lo haría la mejor abogada especialista del despacho: un correo claro, completo y accionable que permita a las áreas reunir en pocas horas exactamente lo que se necesita para contestar y probar la defensa. Reglas:
 1. Elige el o los formatos del documento que correspondan a lo que realmente pide la tutela (usa Prestacion, Tema, Solicita y Analisis del registro). Si la tutela pide varias cosas, combina los bloques que apliquen sin duplicar instrucciones. Si ningún formato encaja del todo, usa el más cercano y agrega solo las solicitudes puntuales que la tutela exija.
-2. Mantén la redacción y el orden de los bloques del formato (saludo, "Tutela que VENCE DÍA ...", "PRETENSIÓN: ...", áreas y sus viñetas). Reemplaza los marcadores por los datos reales: DD/MM/AA = la fecha de vencimiento que se te da (formato dd/mm/aaaa), y los puntos suspensivos o rayas por el diagnóstico, servicio, medicamento, especialidad o valor concretos de ESTA tutela. Si un dato no está en el registro, deja el marcador en corchetes para que el abogado lo complete, por ejemplo [especialidad]. No inventes datos.
-3. Incluye solo las áreas y entidades que aplican al Cliente de este registro y a lo pedido. Respeta lo que dice el documento: p. ej., si la tutela es contra Colmédica y Aliansalud, o contra Aliansalud y el usuario está afiliado a prepagada, se pide la información de las dos entidades al área médica de Colmédica.
-4. Destinatarios (para): los correos de la AGENDA del documento para las áreas a las que SÍ se les pide información en este correo — usa solo correos que aparezcan en la agenda, escritos exactamente igual, sin inventar ninguno. Si un área tiene un principal y suplentes, incluye todos los de esa área. Copia (cc): el área jurídica de la entidad (Dania Carolina Pachón), con el correo del dominio que corresponda al Cliente del registro (aliansalud.com.co, colmedica.com o umd.com.co), tal como esté en la agenda. Si no puedes determinar a quién enviar, deja "para" vacío y explícalo en "notas".
-5. Asunto: "TUTELA No. <NoTutela> - SOLICITUD DE PRUEBAS - VENCE <dd/mm/aaaa>" seguido del nombre corto del Cliente cuando aporte claridad (p. ej. "- ALIANSALUD").
-6. Cuerpo en TEXTO PLANO (sin markdown): una frase por línea, los títulos de área terminados en dos puntos, las viñetas empezando con "- ". Termina con una línea de despedida breve y cordial ("Quedo atenta a su respuesta. Cordial saludo,"). No pongas firma ni datos de contacto: el abogado la agrega.
-7. En "notas" (texto breve, para el abogado, NO va en el correo) anota: qué formato(s) usaste, qué datos quedaron pendientes entre corchetes, y cualquier alerta relevante (por ejemplo, vencimiento muy cercano o algo que el área jurídica deba revisar, como el aviso del formato sobre contraindicaciones).
+2. Mantén la redacción y el orden de los bloques del formato (saludo, "Tutela que VENCE DÍA ...", "PRETENSIÓN: ...", áreas y sus viñetas). Reemplaza los marcadores por los datos reales: DD/MM/AA = la fecha de vencimiento que se te da (dd/mm/aaaa) y los puntos suspensivos o rayas por el diagnóstico, servicio, medicamento, especialidad o valor concretos de ESTA tutela. Ninguna fecha de ejemplo del documento (como "21/04/2025") puede quedar en el correo. Si un dato no está en el registro, deja el marcador en corchetes para que el abogado lo complete, por ejemplo [especialidad]. No inventes datos.
+3. El portal ya pone ARRIBA de tu texto una tabla con los datos de la tutela (No. Tutela, Entidad, Cliente, vinculación, tipo de respuesta, medida cautelar, agencia oficiosa, usuario, identificación y tema): NO repitas esos datos ni escribas un bloque de datos del caso. Empieza directamente con el saludo del formato. Tampoco copies textos largos de la tutela: la PRETENSIÓN del formato basta, en una línea.
+4. Incluye solo las áreas y entidades que aplican al Cliente de este registro y a lo pedido. Respeta lo que dice el documento: p. ej., si la tutela es contra Colmédica y Aliansalud, o contra Aliansalud y el usuario está afiliado a prepagada, se pide la información de las dos entidades al área médica de Colmédica.
+5. Criterio de especialista sobre lo que se pide: cada soporte debe poder usarse para alegar hecho superado o probar la defensa, así que cuando el formato pida listados, autorizaciones, agendamientos, entregas o respuestas, pide que lleguen CON SUS FECHAS y constancias (de autorización, de agendamiento, de entrega, de envío al usuario). Revisa Analisis.PruebasPorReunir y Analisis.Defensas del registro: si hay soportes ahí que el formato no cubre y que están directamente ligados a los hechos de esta tutela, agrégalos como viñetas puntuales en el área que corresponda. No pidas lo que el accionante ya aportó en la tutela ni llenes el correo de solicitudes genéricas que no aportan a la defensa.
+6. Si Analisis.OrdenesDelJuez trae una MEDIDA PROVISIONAL u orden inmediata, ábrela en una línea destacada propia ("MEDIDA PROVISIONAL ORDENADA: ...") con su plazo, y pide que cada área informe con prioridad el estado de cumplimiento y cómo se puede cumplir. Si Analisis.Alerta señala otro riesgo (desacato, vinculación o notificación dudosa), menciónalo en una línea.
+7. Si TipoRespuesta no es TUTELA, adapta el pedido: CUMPLIMIENTO FALLO → soportes de cumplimiento de cada orden del fallo, con fechas y constancias; IMPUGNACION → hechos y soportes nuevos posteriores a la contestación y lo que el fallo ordenó; REQUERIMIENTO, ACLARACION, ALCANCE, MODULACION, NULIDAD, CORRECION, APLAZAMIENTO → pide solo la información puntual que ese trámite exige, tomándola de lo que pide el juzgado.
+8. URGENCIA: si el dato "Urgencia" indica que el término vence hoy, mañana o ya venció, abre el correo con una línea "URGENTE: el término vence ..." y pide la respuesta HOY, antes del cierre del día, y recuerda en una frase que no rendir el informe a tiempo puede llevar al juez a tener por ciertos los hechos. Si no es urgente, mantén el "cuanto antes" del formato.
+9. Destinatarios (para): los correos de la AGENDA del documento para las áreas a las que SÍ se les pide información en este correo — usa solo correos que aparezcan en la agenda, escritos exactamente igual, sin inventar ninguno. Si un área tiene un principal y suplentes, incluye todos los de esa área. Copia (cc): el área jurídica de la entidad (Dania Carolina Pachón), con el correo del dominio que corresponda al Cliente del registro (aliansalud.com.co, colmedica.com o umd.com.co), tal como esté en la agenda. Si no puedes determinar a quién enviar, deja "para" vacío y explícalo en "notas".
+10. Cuerpo en TEXTO PLANO (sin markdown): una frase por línea, los títulos de área y de bloque terminados en dos puntos, las viñetas empezando con "- ". Tono cordial, profesional y directo. Termina con una línea de despedida breve ("Quedo atenta a su respuesta. Cordial saludo,"). No pongas firma ni datos de contacto: el abogado la agrega. El correo debe leerse en un minuto: sin repetir instrucciones ni explicaciones jurídicas largas.
+11. Asunto: arma uno razonable ("TUTELA No. <NoTutela> - SOLICITUD DE PRUEBAS - VENCE <dd/mm/aaaa>"); el sistema lo ajusta si hace falta.
+12. En "notas" (texto breve, para el abogado, NO va en el correo) anota: qué formato(s) usaste y por qué, qué datos quedaron pendientes entre corchetes, qué soportes extra agregaste por criterio propio, y cualquier alerta relevante (vencimiento muy cercano, medida provisional, o algo que el área jurídica deba revisar, como el aviso del formato sobre contraindicaciones).
 
 Devuelve SOLO un objeto JSON (sin bloques de markdown ni texto adicional) con esta forma exacta:
-{"para": ["correo1", "correo2"], "cc": ["correo"], "asunto": "...", "cuerpo": "...", "notas": "..."}
+{"para": ["correo1", "correo2"], "cc": ["correo"], "asunto": "...", "cuerpo": "...", "notas": "...", "pretensiones": ["...", "..."]}
+"pretensiones": las 2 a 4 pretensiones MÁS IMPORTANTES de la tutela, cada una en una frase corta y concreta (por ejemplo "Autorización y entrega del medicamento X", "Tratamiento integral", "Agendamiento de cita con cardiología"), en orden de importancia, tomadas de lo que realmente pide el accionante (campos Solicita y Analisis.Pretensiones del registro). Van en el campo "Tema" de la tabla del correo. Que NO sean una categoría genérica.
 TXT;
 
 $instrucciones = "Eres LexIA, el asistente de inteligencia artificial del despacho de abogados \"md abogados sas\". Si en algún texto necesitas referirte a ti misma, usa SIEMPRE el nombre \"LexIA\".\n\n" . lexiaEspecialista() . "\n" . $tarea;
@@ -98,6 +115,7 @@ $datosTutela = "DATOS DE LA TUTELA (extraídos por LexIA del correo y los docume
     "\nAsunto del correo original: " . $asuntoCorreo .
     "\nFecha de vencimiento (aaaa-mm-dd): " . ($vencimiento !== '' ? $vencimiento : '(sin fecha — deja [fecha de vencimiento] para completar)') .
     ($vencimientoLegible !== '' ? "\nFecha de vencimiento (dd/mm/aaaa) para el correo: " . $vencimientoLegible : '') .
+    "\nUrgencia: " . $urgenciaTexto .
     "\nFecha de hoy: " . date('Y-m-d');
 
 $body = [
@@ -166,21 +184,60 @@ if(!is_array($correo) || !isset($correo['cuerpo']) || trim((string)$correo['cuer
     exit;
 }
 
-// Limpieza mínima de lo que devolvió: solo correos con forma de correo, sin repetidos.
-function soloCorreos($lista){
+// Correos que de verdad aparecen en la agenda del documento (en minúsculas → como están escritos).
+// Es la red de seguridad contra un correo inventado o mal copiado: solo se aceptan esos.
+preg_match_all('/[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+([.][A-Za-z0-9-]+)+/', $formato, $coincidencias);
+$agenda = [];
+foreach($coincidencias[0] as $c){
+    $c = rtrim($c, '.');
+    if(!isset($agenda[strtolower($c)])) $agenda[strtolower($c)] = $c;
+}
+function soloCorreosDeAgenda($lista, $agenda){
     $salida = [];
     foreach((is_array($lista) ? $lista : []) as $c){
-        $c = trim((string)$c);
-        if(filter_var($c, FILTER_VALIDATE_EMAIL) && !in_array(strtolower($c), array_map('strtolower', $salida), true)){
-            $salida[] = $c;
-        }
+        $clave = strtolower(trim((string)$c));
+        if(isset($agenda[$clave]) && !in_array($agenda[$clave], $salida, true)) $salida[] = $agenda[$clave];
     }
     return $salida;
 }
+$para = soloCorreosDeAgenda($correo['para'] ?? [], $agenda);
+$cc = soloCorreosDeAgenda($correo['cc'] ?? [], $agenda);
+
+// Copia obligatoria al área jurídica de la entidad (Dania Carolina Pachón) según el Cliente.
+$clienteTxt = strtolower((string)($registro['Cliente'] ?? ''));
+$dominioJuridica = '';
+$nombreCorto = '';
+if(strpos($clienteTxt, 'aliansalud') !== false){ $dominioJuridica = 'aliansalud.com.co'; $nombreCorto = 'ALIANSALUD'; }
+elseif(strpos($clienteTxt, 'colm') !== false){ $dominioJuridica = 'colmedica.com'; $nombreCorto = 'COLMÉDICA'; }
+elseif(strpos($clienteTxt, 'unidad') !== false){ $dominioJuridica = 'umd.com.co'; $nombreCorto = 'UMD'; }
+if($dominioJuridica !== ''){
+    $clave = 'daniacp@' . $dominioJuridica;
+    if(isset($agenda[$clave]) && !in_array($agenda[$clave], $cc, true) && !in_array($agenda[$clave], $para, true)) $cc[] = $agenda[$clave];
+}
+
+// Asunto estándar armado acá (no depende de lo que escriba el modelo); URGENTE si vence hoy, mañana o ya venció.
+$asuntoFinal = trim((string)($correo['asunto'] ?? ''));
+if($noTutela !== ''){
+    $asuntoFinal = ($urgente ? 'URGENTE - ' : '') . 'TUTELA No. ' . $noTutela . ' - SOLICITUD DE PRUEBAS' .
+        ($vencimientoLegible !== '' ? ' - VENCE ' . $vencimientoLegible : '') .
+        ($nombreCorto !== '' ? ' - ' . $nombreCorto : '');
+}
+
+$pretensiones = [];
+foreach((is_array($correo['pretensiones'] ?? null) ? $correo['pretensiones'] : []) as $pr){
+    $pr = trim((string)$pr);
+    if($pr !== '' && count($pretensiones) < 4) $pretensiones[] = $pr;
+}
+
+$notas = trim((string)($correo['notas'] ?? ''));
+if(!$para) $notas = 'No se pudo determinar a qué áreas enviar (ningún correo de la agenda quedó en "Para") — completa los destinatarios. ' . $notas;
+
 echo json_encode([
-    'para' => soloCorreos($correo['para'] ?? []),
-    'cc' => soloCorreos($correo['cc'] ?? []),
-    'asunto' => trim((string)($correo['asunto'] ?? '')),
+    'para' => $para,
+    'cc' => $cc,
+    'asunto' => $asuntoFinal,
     'cuerpo' => trim((string)$correo['cuerpo']),
-    'notas' => trim((string)($correo['notas'] ?? '')),
+    'notas' => trim($notas),
+    'urgente' => $urgente,
+    'pretensiones' => $pretensiones,
 ], JSON_UNESCAPED_UNICODE);
