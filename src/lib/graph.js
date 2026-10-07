@@ -425,7 +425,7 @@ export async function leerCorreosTutelas(correoBuzon, remitentesPermitidos, top 
   // (ya no va en esta consulta), no por ordenar junto con el filtro de
   // fecha (misma propiedad simple, sí es soportado).
   const params = new URLSearchParams({
-    $select: 'id,subject,from,receivedDateTime,hasAttachments,bodyPreview',
+    $select: 'id,subject,from,receivedDateTime,hasAttachments,bodyPreview,conversationId',
     $top: String(top),
     $filter: partesFiltro.join(' and '),
     $orderby: 'receivedDateTime desc',
@@ -453,9 +453,37 @@ export async function leerCorreosTutelas(correoBuzon, remitentesPermitidos, top 
       remitente: m.from?.emailAddress?.address || '',
       remitenteNombre: m.from?.emailAddress?.name || '',
       fecha: m.receivedDateTime,
+      conversacionId: m.conversationId || '',
       tieneAdjuntos: !!m.hasAttachments,
       resumen: m.bodyPreview || '',
     }));
+}
+
+// Fecha de notificación de una tutela (2026-10-07, pedido explícito del usuario:
+// "la fecha de notificación la tomamos cuando se envíe el primer correo por parte
+// de los correos que ya tienes filtrados"): el instante en que llegó el PRIMER
+// correo de esa conversación enviado por un remitente permitido — no el de un
+// reenvío posterior ni una fecha escrita dentro de los documentos. Devuelve el
+// receivedDateTime (ISO, UTC) más antiguo o "" si no se pudo averiguar (quien
+// llama debe usar entonces el correo que eligió el usuario).
+export async function primerCorreoDeConversacion(correoBuzon, conversacionId, remitentesPermitidos){
+  if(!conversacionId) return '';
+  const token = await getMailToken();
+  const params = new URLSearchParams({
+    $select: 'id,from,receivedDateTime',
+    $top: '100',
+    $filter: `conversationId eq '${String(conversacionId).replace(/'/g, "''")}'`,
+  });
+  const res = await fetch(`https://graph.microsoft.com/v1.0/users/${encodeURIComponent(correoBuzon)}/messages?${params.toString()}`, { headers: { Authorization:`Bearer ${token}` } });
+  if(!res.ok) throw new Error(`Graph ${res.status}`);
+  const data = await res.json();
+  const permitidos = (remitentesPermitidos||[]).filter(Boolean).map(c => c.trim().toLowerCase());
+  const fechas = (data.value || [])
+    .filter(m => !permitidos.length || permitidos.includes((m.from?.emailAddress?.address||'').trim().toLowerCase()))
+    .map(m => m.receivedDateTime)
+    .filter(Boolean)
+    .sort();
+  return fechas[0] || '';
 }
 
 // Precarga de LexIA (2026-09-25, pedido explícito del usuario) — casi todos

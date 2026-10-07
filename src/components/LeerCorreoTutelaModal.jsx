@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { normalizarBorradorTutela } from '../lib/borradorTutela';
 import { aplicarVencimientoHabil, fechaLocalISO } from '../lib/vencimientoTutela';
-import { leerCorreosTutelas, extraerTutelaConLexIA, numeroTutelaDeAsunto, normalize, mensajeError, buscarLecturaLexIAGuardada, guardarLecturaLexIAEnOneDrive, listarTutelasAnalizadasEnOneDrive, asegurarCarpetaTutelaDesdeMensaje } from '../lib/graph';
+import { leerCorreosTutelas, primerCorreoDeConversacion, extraerTutelaConLexIA, numeroTutelaDeAsunto, normalize, mensajeError, buscarLecturaLexIAGuardada, guardarLecturaLexIAEnOneDrive, listarTutelasAnalizadasEnOneDrive, asegurarCarpetaTutelaDesdeMensaje } from '../lib/graph';
 import IconButton, { IconTextButton } from './IconButton';
 import { EntrenarIAPanel } from './EntrenarIAModal';
 import { useDraggable } from '../hooks/useDraggable';
@@ -140,6 +140,19 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
     }
   }
 
+  // Instante del PRIMER correo de la conversación enviado por los remitentes permitidos — es la
+  // fecha/hora de notificación de la tutela (ver primerCorreoDeConversacion en graph.js). Por mensaje.
+  const [primerCorreoPorMensaje, setPrimerCorreoPorMensaje] = useState({});
+  async function instantePrimerCorreo(mensaje){
+    try{
+      const primero = await primerCorreoDeConversacion(correoBuzon, mensaje.conversacionId, remitentesPermitidos);
+      return primero && primero < mensaje.fecha ? primero : mensaje.fecha;
+    }catch(err){
+      console.error('No se pudo buscar el primer correo de la conversación:', err);
+      return mensaje.fecha;
+    }
+  }
+
   async function handleExtraer(mensaje){
     if(!robotUrl){
       notify?.('Falta terminar de instalar LexIA (ROBOT_CLAUDE_URL en config.js) antes de poder usar esto.', 'error');
@@ -147,6 +160,8 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
     }
     const numeroTutela = numeroTutelaDeAsunto(mensaje.asunto);
     setProcesando(true);
+    const instanteNotificacion = await instantePrimerCorreo(mensaje);
+    setPrimerCorreoPorMensaje(prev => ({ ...prev, [mensaje.id]: instanteNotificacion }));
     // "Si se vuelve a consultar esa tutela, que diga que ya fue analizada
     // por LexIA y pregunte qué se necesita de ella" (2026-09-29, pedido
     // explícito del usuario) — memoria PERSISTENTE (sobrevive a cerrar el
@@ -181,7 +196,7 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
       }
     }
     try{
-      const extraido = await extraerTutelaConLexIA(correoBuzon, mensaje.id, tutelas, robotUrl, onedriveCarpetaUrl, fechaLocalISO(mensaje.fecha));
+      const extraido = await extraerTutelaConLexIA(correoBuzon, mensaje.id, tutelas, robotUrl, onedriveCarpetaUrl, fechaLocalISO(instanteNotificacion));
       // Vencimiento en días HÁBILES (sin sábados, domingos ni festivos de
       // Colombia), calculado por el portal con los días que otorga el juez —
       // no con la fecha que haya escrito Claude (ver lib/vencimientoTutela.js).
@@ -189,7 +204,7 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
       // queda en OneDrive y lo que usa "Pregúntame" sea siempre lo mismo.
       const avisosVencimiento = [];
       extraido.registros = extraido.registros.map(r => {
-        const { registro, avisos } = aplicarVencimientoHabil(r, fechaLocalISO(mensaje.fecha), mensaje.fecha);
+        const { registro, avisos } = aplicarVencimientoHabil(r, fechaLocalISO(instanteNotificacion), instanteNotificacion, { forzarFechaCorreo: true });
         avisos.forEach(a => { if(!avisosVencimiento.includes(a)) avisosVencimiento.push(a); });
         return registro;
       });
@@ -254,7 +269,8 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
     const mensajeOrigen = mensajes.find(m => m.id === resultado.mensajeId);
     // Idempotente: cubre también lecturas viejas guardadas en OneDrive, que se
     // hicieron antes de que el vencimiento se calculara con días hábiles.
-    const vencimiento = aplicarVencimientoHabil(registro, mensajeOrigen ? fechaLocalISO(mensajeOrigen.fecha) : '', mensajeOrigen?.fecha);
+    const instanteBase = primerCorreoPorMensaje[resultado.mensajeId] || mensajeOrigen?.fecha;
+    const vencimiento = aplicarVencimientoHabil(registro, instanteBase ? fechaLocalISO(instanteBase) : '', instanteBase, { forzarFechaCorreo: true });
     const { campos, avisos } = normalizarBorradorTutela(vencimiento.registro, {
       temas,
       numeroAsunto: mensajeOrigen ? numeroTutelaDeAsunto(mensajeOrigen.asunto) : null,

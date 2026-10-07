@@ -38,6 +38,7 @@ if($_SERVER['REQUEST_METHOD'] !== 'POST'){
 @set_time_limit(180);
 @ini_set('memory_limit', '512M');
 
+require_once __DIR__ . '/lexia-especialista.php';
 $configPath = __DIR__ . '/config.php';
 if(!file_exists($configPath)){
     http_response_code(500);
@@ -142,12 +143,13 @@ if($casosGuardados){
 // que se identifique siempre con ese nombre, nunca como "la IA" genérica.
 $instrucciones = "Eres LexIA, el asistente de inteligencia artificial del despacho de abogados \"md abogados sas\", integrado al portal Lexara. Cuando te refieras a ti misma en la respuesta, usa SIEMPRE el nombre \"LexIA\" — nunca digas \"la IA\", \"el asistente\" ni nada genérico. " .
     "Ayudas a responder preguntas sobre tutelas reales del despacho que ya fueron leídas/extraídas por LexIA (no tienes acceso a la lista completa de tutelas del portal — solo a las que se muestran abajo)." .
+    "\n\n" . lexiaEspecialista() .
     $casoActualTexto .
     $casosGuardadosTexto .
     ($adjuntos
         ? "\n\nDOCUMENTOS ORIGINALES DE LA CARPETA DE LA TUTELA" . ($tutelaDocumentos ? " {$tutelaDocumentos}" : '') . " EN ONEDRIVE: van adjuntos al mensaje del usuario (el escrito de tutela, autos del juzgado, anexos y el correo impreso). Son la fuente más completa y confiable — búscale la respuesta ahí primero (pretensiones, hechos, accionante, vinculados, órdenes, fechas, pruebas, etc.) y complementa con los datos de arriba. Si la respuesta está en un documento, di de cuál (por su nombre de archivo). Si no la encuentras ni en los documentos ni en los datos, dilo claramente."
         : '') .
-    "\n\nResponde la pregunta del usuario basándote ÚNICAMENTE en estos datos reales — nunca inventes números, nombres, fechas o casos que no estén acá. Si la pregunta se refiere a una tutela que no aparece en ninguno de los bloques de arriba, dilo claramente en vez de adivinar. Responde en español, de forma clara, breve y directa, como si le hablaras a un abogado colega. " .
+    "\n\nResponde la pregunta del usuario basándote ÚNICAMENTE en estos datos reales para los HECHOS del caso — nunca inventes números, nombres, fechas o casos que no estén acá. Cuando la pregunta sea de criterio jurídico o de estrategia (qué defensa plantear, qué pruebas pedir, qué riesgos hay, cómo contestar), responde como la abogada especialista que describe tu perfil, aplicando sus reglas de conducta, y deja claro qué es dato del caso y qué es análisis tuyo. Si la pregunta se refiere a una tutela que no aparece en ninguno de los bloques de arriba, dilo claramente en vez de adivinar. Responde en español, de forma clara, breve y directa, como si le hablaras a un abogado colega. " .
     // 2026-09-25, pedido explícito del usuario: la respuesta se muestra como
     // texto plano (no interpreta markdown) Y se lee en voz alta con síntesis
     // de voz — con "**negrita**" salía el asterisco literal en pantalla y la
@@ -185,7 +187,7 @@ $contenidoUsuario[] = ['type' => 'text', 'text' => $pregunta];
 
 $body = [
     'model' => 'claude-sonnet-5',
-    'max_tokens' => 1500,
+    'max_tokens' => 2500,
     // Caché (2026-09-29, pedido explícito del usuario, por costo de la
     // API) — si se hacen varias preguntas seguidas sobre el mismo caso
     // (casoActual/casosGuardados no cambian entre una pregunta y la

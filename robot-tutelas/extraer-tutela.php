@@ -37,6 +37,7 @@ if($_SERVER['REQUEST_METHOD'] !== 'POST'){
     exit;
 }
 
+require_once __DIR__ . '/lexia-especialista.php';
 $configPath = __DIR__ . '/config.php';
 if(!file_exists($configPath)){
     http_response_code(500);
@@ -99,12 +100,13 @@ $camposEsperados = <<<TXT
 - FechaVencimiento (fecha aaaa-mm-dd. SOLO si el correo o los documentos dicen una fecha límite concreta, como "hasta el 10 de octubre". Si el plazo se expresa en días (DiasTermino), déjala VACÍA y NO la calcules tú: el portal la calcula con días hábiles — sin sábados, domingos ni festivos de Colombia)
 - TipoRespuesta (exactamente uno de: ACLARACION, ALCANCE, APLAZAMIENTO, CUMPLIMIENTO FALLO, CORRECION, IMPUGNACION, MODULACION, NULIDAD, REQUERIMIENTO, TUTELA — la PRIMERA vez que se ve un caso casi siempre es TUTELA, pero léelo del contenido real del correo, no lo asumas siempre)
 - MedidaCautelar (exactamente "Sí" o "No")
-- AgenciaOficiosa (exactamente "Sí" o "No")
-- Usuario (texto, nombre del accionante/paciente)
-- NoIdentificacion (texto, cédula del accionante)
+- AgenciaOficiosa (exactamente "Sí" o "No"). Antes de decidir, identifica QUIÉN presenta/firma la tutela (el accionante) y A NOMBRE DE QUIÉN actúa. Es "Sí" cuando la presenta una persona DISTINTA del paciente/titular de los derechos, actuando en su nombre sin poder de abogado — por ejemplo un hijo, hermano, cónyuge, familiar, vecino o tercero que escribe "en nombre de", "a favor de", "obrando como agente oficioso" o "agencio los derechos de" otra persona adulta (art. 10 del Decreto 2591 de 1991). Es "No" cuando el accionante es el propio paciente, cuando la presenta un abogado con poder o los padres/representantes legales de un menor o de una persona interdicta (eso es representación legal, no agencia oficiosa — salvo que el propio escrito diga que actúa como agente oficioso). Si el accionante y el paciente tienen nombres distintos y no hay un poder ni una representación legal evidente, marca "Sí" y explícalo en Analisis.Alerta.
+- Usuario (texto, nombre completo del PACIENTE/titular de los derechos que se dicen vulnerados — si la tutela la presenta otra persona en su nombre, aquí va el paciente, NO quien firma)
+- NoIdentificacion (texto, cédula del paciente/titular (el del campo Usuario); si solo aparece la del tercero que presenta la tutela, déjala vacía)
 - Correo (texto, correo del juzgado que envía la notificación)
 - Solicita (texto largo, resumen en tus propias palabras de qué pide la tutela)
 - Tema (categoría de la tutela — ver instrucciones)
+- Analisis (OBJETO con tu lectura como abogada especialista; NUNCA inventes — solo lo que se desprenda del correo y los documentos; cada valor es texto breve y concreto, y "" si no aplica. Claves: "Accionante" (quién presenta la tutela y en qué calidad: el propio paciente, agente oficioso, representante legal, apoderado), "DerechosInvocados" (derechos que el accionante dice vulnerados), "Hechos" (resumen cronológico en máximo 5 frases), "Pretensiones" (lo que concretamente pide, separado por " | "), "OrdenesDelJuez" (qué le ordena o pide el despacho a la entidad: informe, documentos, medida provisional con su plazo; "Ninguna" si no hay), "PruebasPorReunir" (soportes que la entidad necesita conseguir para contestar, cada uno con el área interna sugerida entre paréntesis, separados por " | " — específicos, nada genérico), "Defensas" (máximo 3 líneas de defensa posibles, separadas por " | "), "Alerta" (urgencias o riesgos: medida provisional, término muy corto, riesgo de desacato, vinculación o notificación dudosa; "" si no hay))
 TXT;
 
 // 2026-09-24, pedido explícito del usuario: mandó la guía REAL de criterios
@@ -257,7 +259,7 @@ $body = [
     // separados (ver nota arriba de $correccionesTexto) — así agregar una
     // corrección nueva no invalida la caché de la guía de criterios.
     'system' => [
-        ['type' => 'text', 'text' => $instrucciones, 'cache_control' => ['type' => 'ephemeral']],
+        ['type' => 'text', 'text' => $instrucciones . "\n\n" . lexiaEspecialista(), 'cache_control' => ['type' => 'ephemeral']],
         ['type' => 'text', 'text' => $correccionesTexto ?: '(sin correcciones adicionales todavía)', 'cache_control' => ['type' => 'ephemeral']],
     ],
     'messages' => [

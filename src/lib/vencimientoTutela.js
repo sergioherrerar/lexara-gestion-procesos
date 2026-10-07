@@ -84,7 +84,7 @@ export function motivoDiaNoHabil(iso){
  *  - Sin `DiasTermino` (el despacho dio una fecha concreta): se respeta la
  *    fecha, pero se avisa si cae en sábado, domingo o festivo.
  */
-export function aplicarVencimientoHabil(registro, fechaCorreoISO, instanteCorreo){
+export function aplicarVencimientoHabil(registro, fechaCorreoISO, instanteCorreo, opciones = {}){
   const r = { ...(registro || {}) };
   const avisos = [];
   const dias = parseInt(String(r.DiasTermino ?? "").replace(/\D/g, ""), 10);
@@ -96,6 +96,15 @@ export function aplicarVencimientoHabil(registro, fechaCorreoISO, instanteCorreo
   // conoce su hora).
   const horaCorreo = horaLocalHHMM(instanteCorreo);
   const fechaDelCorreo = fechaISO(fechaCorreoISO);
+  // Regla del usuario (2026-10-07): la fecha de notificación es la del PRIMER correo
+  // de los remitentes permitidos, aunque los documentos digan otra fecha.
+  if(opciones.forzarFechaCorreo && fechaDelCorreo){
+    if(notificacion && notificacion !== fechaDelCorreo){
+      avisos.push(`Fecha Notificación: los documentos decían ${notificacion}; se usó la del primer correo de la tutela (${fechaDelCorreo})`);
+    }
+    notificacion = fechaDelCorreo;
+    r.FechaNotificacion = fechaDelCorreo;
+  }
   if(!notificacion && dias >= 1 && fechaISO(fechaCorreoISO)){
     notificacion = fechaISO(fechaCorreoISO);
     avisos.push(`Fecha Notificación: LexIA no la encontró, se usó el día en que llegó el correo (${notificacion})`);
