@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-10-07 (11)
+- **Informes en Word: letra Aptos en todos** — pedido explícito del usuario ("todo el informe en letra Aptos... de hecho todos los informes del portal"). Los tres documentos Word del portal (SOS Ejecutivo, el Análisis de procesos por Entidad y el Formato de Impulso Procesal) ahora usan Aptos como letra de todo el texto y las tablas, y los títulos que antes iban en Georgia pasan a Aptos Display. Aptos es una fuente de Microsoft 365: si el Word se abre en un equipo que no la tiene, Word la reemplaza por otra parecida. Los HTML y los Excel ya usaban Aptos; los PDF siguen con su letra actual porque Aptos no se puede incrustar en ellos.
+
 ## 2026-10-07 (10)
 - **SOS Ejecutivo: lista de contratos también en los numerales 1 (Diana Santos) y 3 (Reintegros)** — pedido explícito del usuario. Igual que en el numeral 2, ahora cada uno muestra una tabla "Contrato | Procesos | Valor Cartera actual" con cuántos procesos y cuánta cartera tiene cada contrato, justo después del total de la cartera del grupo.
 

@@ -205,7 +205,9 @@ export async function generarImpulsoProcesalWord(proceso){
   ];
   const tabsDatos = [ { type: TabStopType.LEFT, position: 1600 }, { type: TabStopType.LEFT, position: 2400 } ];
 
+  // Letra corporativa Aptos (pedido explícito 2026-10-07: todos los informes Word del portal)
   const doc = new Document({
+    styles: { default: { document: { run: { font: 'Aptos' } } } },
     sections: [{
       properties: { page: { margin: { top: convertMillimetersToTwip(MARGEN_SUPERIOR_MEMBRETE_MM), bottom: convertMillimetersToTwip(MARGEN_INFERIOR_MEMBRETE_MM), left: 1100, right: 1100 } } },
       headers: { default: headerMembrete },

@@ -510,7 +510,9 @@ export async function generarSosEjecutivoWord(procesos, desistimientos){
     new Paragraph({ children: [ new ImageRun({ type: 'png', data: firmaBytes, transformation: { width: anchoFirma, height: Math.round(anchoFirma * firma.alto / firma.ancho) } }) ] }),
   );
 
+  // Letra corporativa Aptos (pedido explícito 2026-10-07: todos los informes Word del portal)
   const doc = new Document({
+    styles: { default: { document: { run: { font: 'Aptos' } } } },
     sections: [{
       properties: { page: { margin: { top: convertMillimetersToTwip(MARGEN_SUPERIOR_MEMBRETE_MM), bottom: convertMillimetersToTwip(MARGEN_INFERIOR_MEMBRETE_MM), left: convertMillimetersToTwip(20), right: convertMillimetersToTwip(20) } } },
       headers: { default: headerMembrete },

@@ -241,7 +241,7 @@ export async function generarDashboardEntidadWord(procesos, desistimientos, enti
     return new Paragraph({
       spacing: { before: 260, after: 100 },
       border: { bottom: { style: BorderStyle.SINGLE, size: 4, color: GRIS_LINEA } },
-      children: [ new TextRun({ text: texto, bold: true, size: 24, color: VERDE_OSCURO, font: 'Georgia' }) ],
+      children: [ new TextRun({ text: texto, bold: true, size: 24, color: VERDE_OSCURO, font: 'Aptos Display' }) ],
     });
   }
 
@@ -284,7 +284,9 @@ export async function generarDashboardEntidadWord(procesos, desistimientos, enti
     ],
   }));
 
+  // Letra corporativa Aptos (pedido explícito 2026-10-07: todos los informes Word del portal)
   const doc = new Document({
+    styles: { default: { document: { run: { font: 'Aptos' } } } },
     sections: [{
       properties: {
         page: { margin: { top: convertMillimetersToTwip(MARGEN_SUPERIOR_MEMBRETE_MM), bottom: convertMillimetersToTwip(MARGEN_INFERIOR_MEMBRETE_MM), left: convertMillimetersToTwip(20), right: convertMillimetersToTwip(20) } },
@@ -306,7 +308,7 @@ export async function generarDashboardEntidadWord(procesos, desistimientos, enti
         new Paragraph({ spacing:{after:0}, children: [ new TextRun({ text: 'Doctor(a)', size:21, color:TEXTO }) ] }),
         new Paragraph({ spacing:{after:0}, children: [ new TextRun({ text: 'XXX', bold:true, size:21, color:TEXTO }) ] }),
         new Paragraph({ spacing:{after:220}, children: [ new TextRun({ text: `XXX — ${titulo}`, size:21, color:TEXTO }) ] }),
-        new Paragraph({ spacing:{after:220}, children: [ new TextRun({ text: `Asunto: Informe ejecutivo de gestión legal — ${titulo}`, bold:true, size:23, color:VERDE_OSCURO, font:'Georgia' }) ] }),
+        new Paragraph({ spacing:{after:220}, children: [ new TextRun({ text: `Asunto: Informe ejecutivo de gestión legal — ${titulo}`, bold:true, size:23, color:VERDE_OSCURO, font:'Aptos Display' }) ] }),
         new Paragraph({ spacing:{after:220}, children: [ new TextRun({ text: 'Respetado(a) Doctor(a):', size:21, color:TEXTO }) ] }),
         new Paragraph({ spacing:{after:160}, children: [ new TextRun({ text: `En mi calidad de representante legal de la empresa MD ABOGADOS SAS, me permito informarle que mi representada tiene a la fecha, con corte al ${fechaLarga(hoy)}, la representación judicial en ${filas.length} proceso${filas.length===1?'':'s'} judicial${filas.length===1?'':'es'} correspondiente${filas.length===1?'':'s'} a ${titulo}, según se relaciona en el presente informe, en el que aparece el estado de los procesos y demás asuntos relevantes.`, size:21, color:TEXTO }) ] }),
         new Paragraph({ spacing:{after:200}, children: [ new TextRun({ text: `Los ${filas.length} proceso${filas.length===1?'':'s'} citado${filas.length===1?'':'s'} se discrimina${filas.length===1?'':'n'} así:`, size:21, color:TEXTO }) ] }),
