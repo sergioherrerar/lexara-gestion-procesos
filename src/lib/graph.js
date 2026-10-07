@@ -962,7 +962,7 @@ export async function guardarAdjuntosOriginalesEnOneDrive(urlCarpeta, numeroTute
 // "Correo original.pdf" solo cuenta como "ya está" si se guardó con la versión que incluye las capturas
 // del cuerpo del correo (2026-10-05). Los guardados antes de esa fecha se vuelven a imprimir la próxima
 // vez que se dé "Extraer con LexIA" (ya no existe un botón aparte para eso).
-const CORREO_IMPRESO_CON_IMAGENES_DESDE = '2026-10-05T23:30:00Z';
+const CORREO_IMPRESO_CON_IMAGENES_DESDE = '2026-10-06T00:30:00Z';
 async function correoImpresoAlDia(driveId, folderId, ruta){
   try{
     const item = await graphFetch(`/drives/${driveId}/items/${folderId}:/${encodeURIComponent(ruta).replace(/%2F/g,'/')}?$select=id,lastModifiedDateTime`);
