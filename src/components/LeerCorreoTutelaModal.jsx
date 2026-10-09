@@ -23,6 +23,29 @@ import lexiaAvatarSaludo from '../assets/LexIA avatar - saludo.webp';
 // devolver los campos que Claude extrajo para prellenar "Nueva tutela". El
 // usuario SIEMPRE revisa y confirma en el formulario antes de guardar — acá
 // nunca se toca SharePoint, solo se arma el objeto de campos iniciales.
+// Otras tutelas que ya tiene registradas en el portal el MISMO usuario (misma cédula, o mismo nombre si no hay cédula),
+// agrupadas por número de tutela (una tutela con 3 clientes son 3 filas). Sirve de comentario para evaluar temeridad o cosa juzgada.
+function otrasTutelasDelUsuario(tutelas, registro){
+  if(!registro) return [];
+  const soloDigitos = v => String(v || '').replace(/[^0-9]/g, '');
+  const cedula = soloDigitos(registro.NoIdentificacion);
+  const nombre = normalize(String(registro.Usuario || '').trim());
+  const propia = String(registro.NoTutela || '');
+  const porNumero = new Map();
+  (tutelas || []).forEach(t => {
+    const numero = String(t.NoTutela ?? '');
+    if(!numero || numero === propia) return;
+    const mismaCedula = cedula.length >= 6 && soloDigitos(t.NoIdentificacion) === cedula;
+    const mismoNombre = !cedula && nombre.length > 5 && normalize(String(t.Usuario || '').trim()) === nombre;
+    if(!mismaCedula && !mismoNombre) return;
+    const actual = porNumero.get(numero) || { numero, filas: [] };
+    actual.filas.push(t);
+    porNumero.set(numero, actual);
+  });
+  return Array.from(porNumero.values()).sort((a, b) => Number(b.numero) - Number(a.numero));
+}
+const fechaCorta = v => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(v || '')); return m ? m[3] + '/' + m[2] + '/' + m[1] : ''; };
+
 export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitidos, robotUrl, onedriveCarpetaUrl, tutelas, temas, onAgregarCorreccionIA, robotPreguntasUrl, config, robotSolicitudUrl, onExtraido, onClose, notify, lexiaHablando }){
   const [cargando, setCargando] = useState(true);
   // "Un botón para actualizar la lista de los correos que estén
@@ -606,6 +629,32 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
                           {bloqueSolicitud(resultado.registros[0], 0, true)}
                         </div>
                       )}
+                      {(() => {
+                        const otras = otrasTutelasDelUsuario(tutelas, resultado.registros[0]);
+                        const antecedentesLexIA = String(resultado.registros[0]?.Analisis?.Antecedentes || '').trim();
+                        if(!otras.length && !antecedentesLexIA) return null;
+                        return (
+                          <div className="leer-correo-registro-item" style={{flexDirection:'column', alignItems:'flex-start', gap:4, background:'var(--naranja-suave, #fff4e5)'}}>
+                            <strong style={{fontSize:13}}>Comentario: otras tutelas de este mismo usuario</strong>
+                            {otras.length > 0 ? (
+                              <>
+                                <span className="save-hint" style={{margin:0}}>Ya hay {otras.length} tutela{otras.length === 1 ? '' : 's'} registrada{otras.length === 1 ? '' : 's'} en el portal con la misma identificación{resultado.registros[0]?.Usuario ? ` (${resultado.registros[0].Usuario})` : ''}:</span>
+                                <ul style={{margin:0, paddingLeft:18, fontSize:12}}>
+                                  {otras.slice(0, 12).map(o => {
+                                    const t = o.filas[0];
+                                    return <li key={o.numero}>{o.numero} · {t.TipoRespuesta || 'TUTELA'}{fechaCorta(t.FechaNotificacion) ? ' · ' + fechaCorta(t.FechaNotificacion) : ''}{t.Tema ? ' · ' + t.Tema : ''}{o.filas.length > 1 ? ` · ${o.filas.length} clientes` : ''}</li>;
+                                  })}
+                                </ul>
+                                {otras.length > 12 && <span className="save-hint" style={{margin:0}}>…y {otras.length - 12} más.</span>}
+                                <span className="save-hint" style={{margin:0}}>Revisa si piden lo mismo (posible temeridad o cosa juzgada) y qué se decidió en cada una.</span>
+                              </>
+                            ) : (
+                              <span className="save-hint" style={{margin:0}}>En el portal no hay otras tutelas con esa identificación.</span>
+                            )}
+                            {antecedentesLexIA && <span className="save-hint" style={{margin:0}}>Lo que LexIA vio mencionado en esta tutela: {antecedentesLexIA}</span>}
+                          </div>
+                        );
+                      })()}
                     </div>
                   )}
                   {robotSolicitudUrl && !__ES_CPANEL__ && onedriveCarpetaUrl && numeroDeEsteMensaje && (yaAnalizadaEnOneDrive || resultado?.mensajeId === m.id) && (
