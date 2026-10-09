@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { normalizarBorradorTutela } from '../lib/borradorTutela';
 import { aplicarVencimientoHabil, fechaLocalISO } from '../lib/vencimientoTutela';
-import { leerCorreosTutelas, primerCorreoDeConversacion, crearSolicitudPruebasBorrador, buscarSolicitudPruebasExistente, revisarRespuestasAreas, extraerTutelaConLexIA, numeroTutelaDeAsunto, normalize, mensajeError, buscarLecturaLexIAGuardada, guardarLecturaLexIAEnOneDrive, listarTutelasAnalizadasEnOneDrive, asegurarCarpetaTutelaDesdeMensaje } from '../lib/graph';
+import { leerCorreosTutelas, primerCorreoDeConversacion, crearSolicitudPruebasBorrador, buscarSolicitudPruebasExistente, revisarRespuestasAreas, uriLecturaLexIAParaArtefacto, extraerTutelaConLexIA, numeroTutelaDeAsunto, normalize, mensajeError, buscarLecturaLexIAGuardada, guardarLecturaLexIAEnOneDrive, listarTutelasAnalizadasEnOneDrive, asegurarCarpetaTutelaDesdeMensaje } from '../lib/graph';
 import IconButton, { IconTextButton } from './IconButton';
 import { EntrenarIAPanel } from './EntrenarIAModal';
 import { useDraggable } from '../hooks/useDraggable';
@@ -221,6 +221,20 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
   // Respuestas de las áreas a la solicitud de pruebas (2026-10-09): verifica qué áreas respondieron y cuáles
   // no, y guarda las respuestas nuevas (correo + adjuntos) en la carpeta de la tutela en OneDrive.
   const [respuestasAreas, setRespuestasAreas] = useState({}); // { [mensajeId]: { estado, datos?, error? } }
+  // Copia al portapapeles el enlace directo al archivo "Lectura LexIA.txt" de esta tutela, para pegarlo en el artefacto Plan B.
+  async function handleCopiarEnlaceArtefacto(mensaje){
+    const numero = numeroTutelaDeAsunto(mensaje.asunto);
+    if(!numero) return;
+    try{
+      const enlace = await uriLecturaLexIAParaArtefacto(onedriveCarpetaUrl, numero);
+      if(!enlace){ notify?.('Esta tutela todavía no tiene archivo de lectura de LexIA: extráela primero.', 'error'); return; }
+      await navigator.clipboard.writeText(enlace);
+      notify?.('Enlace copiado: pégalo en el cuadro de número de tutela del artefacto Plan B.', 'success');
+    }catch(err){
+      console.error(err);
+      notify?.('No se pudo copiar el enlace: ' + mensajeError(err), 'error');
+    }
+  }
   async function handleRevisarRespuestas(mensaje){
     const numero = numeroTutelaDeAsunto(mensaje.asunto);
     if(!numero) return;
@@ -655,6 +669,12 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
                           </div>
                         );
                       })()}
+                    </div>
+                  )}
+                  {onedriveCarpetaUrl && numeroDeEsteMensaje && (yaAnalizadaEnOneDrive || resultado?.mensajeId === m.id) && (
+                    <div style={{marginTop:10, display:'flex', alignItems:'center', gap:10, flexWrap:'wrap'}}>
+                      <IconTextButton icon="mail" variant="secondary" onClick={() => handleCopiarEnlaceArtefacto(m)}>Copiar enlace para el artefacto</IconTextButton>
+                      <span className="save-hint" style={{margin:0}}>Pégalo en el artefacto Plan B para que lea la lectura al instante.</span>
                     </div>
                   )}
                   {robotSolicitudUrl && !__ES_CPANEL__ && onedriveCarpetaUrl && numeroDeEsteMensaje && (yaAnalizadaEnOneDrive || resultado?.mensajeId === m.id) && (

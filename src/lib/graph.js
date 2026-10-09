@@ -3594,3 +3594,17 @@ export async function revisarRespuestasAreas({ config, correoBuzon, urlCarpeta, 
   }
   return salida;
 }
+
+// Enlace directo ("file:///<unidad>/<id>") al archivo "Lectura LexIA.txt" de una tutela, para pegarlo en el artefacto Plan B.
+// El buscador de SharePoint que usa el artefacto tarda horas en conocer las carpetas nuevas; este enlace funciona al instante
+// porque apunta al archivo por su identificador. Devuelve "" si la tutela todavía no tiene archivo de lectura.
+export async function uriLecturaLexIAParaArtefacto(urlCarpeta, numeroTutela){
+  const { driveId, folderId } = await resolverCarpetaLexIAOneDrive(urlCarpeta);
+  for(const ruta of [rutaLexIA(numeroTutela), rutaLexIAVieja(numeroTutela)]){
+    try{
+      const item = await graphFetch(`/drives/${driveId}/items/${folderId}:/${encodeURIComponent(ruta).replace(/%2F/g, '/')}?$select=id`);
+      if(item?.id) return `file:///${driveId}/${item.id}`;
+    }catch{ /* se prueba con el nombre viejo */ }
+  }
+  return '';
+}
