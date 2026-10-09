@@ -586,6 +586,30 @@ async function adjuntarFirmaInline(raiz, mensajeId, token){
   }
 }
 
+
+// Últimos mensajes de una carpeta del buzón de Tutelas, del más reciente al más antiguo. La búsqueda por asunto se hace en el
+// portal (no con $filter contains, que en Graph falla según la carpeta). Lanza si Graph responde con error.
+async function ultimosMensajesDeCarpeta(correoBuzon, carpeta, campoOrden, top = 150, filtro = ''){
+  const token = await getMailToken();
+  const params = new URLSearchParams({
+    $select: 'id,subject,from,toRecipients,ccRecipients,createdDateTime,sentDateTime,receivedDateTime,conversationId,webLink,hasAttachments',
+    $top: String(top),
+    $orderby: campoOrden + ' desc',
+  });
+  if(filtro) params.set('$filter', filtro);
+  const res = await fetch(`https://graph.microsoft.com/v1.0/users/${encodeURIComponent(correoBuzon)}/mailFolders/${carpeta}/messages?${params.toString()}`, { headers: { Authorization: `Bearer ${token}` } });
+  if(!res.ok){
+    const cuerpo = await res.text();
+    console.error('Graph', res.status, 'al leer', carpeta, cuerpo.substring(0, 200));
+    throw new Error(`Graph ${res.status} al leer ${carpeta}`);
+  }
+  return (await res.json()).value || [];
+}
+function esSolicitudPruebasDeTutela(asunto, noTutela){
+  const a = normalize(asunto || '');
+  return a.includes('solicitud de pruebas') && a.includes('no. ' + normalize(String(noTutela)));
+}
+
 // Nombre corto del cliente tal como el robot lo pone al final del asunto de la solicitud.
 export function nombreCortoClienteSolicitud(cliente){
   const c = normalize(cliente || '');
@@ -602,28 +626,16 @@ export function nombreCortoClienteSolicitud(cliente){
 // bloquea la creación).
 export async function buscarSolicitudPruebasExistente(correoBuzon, noTutela, cliente){
   if(!correoBuzon || !noTutela) return null;
-  const token = await getMailToken();
   const corto = nombreCortoClienteSolicitud(cliente);
   const encontrados = [];
-  for(const carpeta of ['drafts', 'sentitems']){
+  for(const [carpeta, orden] of [['drafts', 'createdDateTime'], ['sentitems', 'sentDateTime']]){
     try{
-      const params = new URLSearchParams({
-        $select: 'id,subject,createdDateTime,sentDateTime,webLink',
-        $top: '50',
-        $filter: `contains(subject,'${String(noTutela).replace(/'/g, "''")}')`,
+      (await ultimosMensajesDeCarpeta(correoBuzon, carpeta, orden)).forEach(m => {
+        if(!esSolicitudPruebasDeTutela(m.subject, noTutela)) return;
+        if(corto && !normalize(m.subject || '').includes(normalize(corto))) return;
+        encontrados.push({ enviado: carpeta === 'sentitems', fecha: m.sentDateTime || m.createdDateTime || '', enlace: m.webLink || '', asunto: m.subject || '' });
       });
-      const res = await fetch(`https://graph.microsoft.com/v1.0/users/${encodeURIComponent(correoBuzon)}/mailFolders/${carpeta}/messages?${params.toString()}`, { headers: { Authorization: `Bearer ${token}` } });
-      if(!res.ok) continue;
-      const data = await res.json();
-      (data.value || []).forEach(m => {
-        const asunto = normalize(m.subject || '');
-        if(asunto.includes('solicitud de pruebas') && asunto.includes('no. ' + normalize(String(noTutela))) && (!corto || asunto.includes(normalize(corto)))){
-          encontrados.push({ enviado: carpeta === 'sentitems', fecha: m.sentDateTime || m.createdDateTime || '', enlace: m.webLink || '', asunto: m.subject || '' });
-        }
-      });
-    }catch(err){
-      console.error('No se pudo revisar si ya existe la solicitud de pruebas (' + carpeta + '):', err);
-    }
+    }catch(err){ console.error('No se pudo revisar si ya existe la solicitud de pruebas (' + carpeta + '):', err); }
   }
   encontrados.sort((a, b) => String(b.fecha).localeCompare(String(a.fecha)));
   return encontrados[0] || null;
@@ -3422,20 +3434,12 @@ function nombreArchivoSeguroOneDrive(texto){
 
 // Solicitudes de pruebas de esta tutela (borradores y enviadas) en el buzón de Tutelas.
 async function buscarSolicitudesPruebasDeTutela(correoBuzon, noTutela){
-  const token = await getMailToken();
   const encontradas = [];
-  for(const carpeta of ['drafts', 'sentitems']){
+  let fallos = 0;
+  for(const [carpeta, orden] of [['drafts', 'createdDateTime'], ['sentitems', 'sentDateTime']]){
     try{
-      const params = new URLSearchParams({
-        $select: 'id,subject,toRecipients,ccRecipients,createdDateTime,sentDateTime,conversationId,webLink',
-        $top: '50',
-        $filter: `contains(subject,'${String(noTutela).replace(/'/g, "''")}')`,
-      });
-      const res = await fetch(`https://graph.microsoft.com/v1.0/users/${encodeURIComponent(correoBuzon)}/mailFolders/${carpeta}/messages?${params.toString()}`, { headers: { Authorization: `Bearer ${token}` } });
-      if(!res.ok) continue;
-      ((await res.json()).value || []).forEach(m => {
-        const asunto = normalize(m.subject || '');
-        if(!asunto.includes('solicitud de pruebas') || !asunto.includes('no. ' + normalize(String(noTutela)))) return;
+      (await ultimosMensajesDeCarpeta(correoBuzon, carpeta, orden)).forEach(m => {
+        if(!esSolicitudPruebasDeTutela(m.subject, noTutela)) return;
         encontradas.push({
           id: m.id, asunto: m.subject || '', enviado: carpeta === 'sentitems',
           fecha: m.sentDateTime || m.createdDateTime || '',
@@ -3444,32 +3448,24 @@ async function buscarSolicitudesPruebasDeTutela(correoBuzon, noTutela){
           conversationId: m.conversationId || '', enlace: m.webLink || '',
         });
       });
-    }catch(err){ console.error('No se pudo buscar solicitudes de pruebas en ' + carpeta + ':', err); }
+    }catch(err){ fallos++; console.error('No se pudo buscar solicitudes de pruebas en ' + carpeta + ':', err); }
   }
+  // Si no se pudo leer NINGUNA carpeta, es un error de permisos o de red — no "no hay solicitud".
+  if(fallos === 2) throw new Error('No se pudieron leer los Borradores ni los Enviados del buzón de Tutelas (revisa el acceso a ese buzón).');
   return encontradas.sort((a, b) => String(a.fecha).localeCompare(String(b.fecha)));
 }
 
 // Respuestas que llegaron a la bandeja de entrada del buzón a esa solicitud (misma conversación, o mismo asunto).
 async function buscarRespuestasDeSolicitud(correoBuzon, noTutela, solicitud){
-  const token = await getMailToken();
-  const vistos = new Map();
-  const consultar = async (filtro, soloAsuntoPruebas) => {
-    const params = new URLSearchParams({ $select: 'id,subject,from,receivedDateTime,hasAttachments,conversationId', $top: '100', $filter: filtro });
-    const res = await fetch(`https://graph.microsoft.com/v1.0/users/${encodeURIComponent(correoBuzon)}/mailFolders/inbox/messages?${params.toString()}`, { headers: { Authorization: `Bearer ${token}` } });
-    if(!res.ok) return;
-    ((await res.json()).value || []).forEach(m => {
-      if(soloAsuntoPruebas && !normalize(m.subject || '').includes('solicitud de pruebas')) return;
-      vistos.set(m.id, m);
-    });
-  };
-  try{
-    if(solicitud.conversationId) await consultar(`conversationId eq '${String(solicitud.conversationId).replace(/'/g, "''")}'`, false);
-    await consultar(`contains(subject,'${String(noTutela).replace(/'/g, "''")}')`, true);
-  }catch(err){ console.error('No se pudieron buscar las respuestas de las áreas:', err); }
+  // Bandeja de entrada desde el día de la solicitud, la más reciente primero (misma forma de consulta que ya usa la lista de correos).
+  const desde = solicitud.fecha ? new Date(solicitud.fecha).toISOString() : new Date(Date.now() - 30 * 86400000).toISOString();
+  let mensajes = [];
+  try{ mensajes = await ultimosMensajesDeCarpeta(correoBuzon, 'inbox', 'receivedDateTime', 300, `receivedDateTime ge ${desde}`); }
+  catch(err){ console.error('No se pudieron buscar las respuestas de las áreas:', err); throw err; }
   const propio = String(correoBuzon || '').toLowerCase();
-  return Array.from(vistos.values())
+  return mensajes
+    .filter(m => (solicitud.conversationId && m.conversationId === solicitud.conversationId) || esSolicitudPruebasDeTutela(m.subject, noTutela))
     .filter(m => String(m.from?.emailAddress?.address || '').toLowerCase() !== propio)
-    .filter(m => !solicitud.fecha || String(m.receivedDateTime || '') >= String(solicitud.fecha))
     .sort((a, b) => String(a.receivedDateTime).localeCompare(String(b.receivedDateTime)));
 }
 

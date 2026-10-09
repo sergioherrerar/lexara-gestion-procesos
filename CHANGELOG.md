@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-10-09 (10)
+- **Corregido: "No hay una solicitud de pruebas en Borradores" aunque el borrador existía** — caso real tutela 28248. La búsqueda de la solicitud (para el botón "Revisar respuestas de las áreas" y para el aviso de "ya existe") usaba un filtro de Graph por asunto que, según la carpeta, falla sin avisar, y entonces parecía que no había nada. Ahora lee los últimos mensajes de Borradores (150) y de Enviados (150) del buzón de Tutelas y compara el asunto en el portal; las respuestas se buscan en la bandeja de entrada desde el día de la solicitud con la misma consulta que ya usa la lista de correos. Si Graph no deja leer ninguna de las dos carpetas, ahora muestra un error claro (permisos del buzón) en vez de decir que no hay solicitud.
+
 ## 2026-10-09 (9)
 - **Otras tutelas del mismo usuario: ahora es un comentario del portal, no un área del correo** — pedido explícito del usuario (en la 28258 LexIA le pedía al área jurídica el estado de tutelas anteriores). Después de leer una tutela, al final de la lista de registros aparece el recuadro "Comentario: otras tutelas de este mismo usuario": el portal busca en las tutelas YA registradas las que tienen la misma identificación (o el mismo nombre si no hay cédula), agrupadas por número, y muestra número, tipo de respuesta, fecha de notificación y Tema (si una tutela tiene varios clientes dice cuántos), con el recordatorio de revisar temeridad o cosa juzgada. Debajo, como referencia, lo que LexIA vio mencionado en el escrito (campo Antecedentes, que puede traer errores de lectura). Es información real del portal, no una lectura de LexIA. El correo de solicitud de pruebas no cambia (el área jurídica ya no recibe bloque).
 
