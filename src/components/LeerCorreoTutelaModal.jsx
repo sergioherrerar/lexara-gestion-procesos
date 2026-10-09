@@ -218,6 +218,39 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
     generarSolicitudPruebas(mensaje, registro, indice, primerCorreoPorMensaje[mensaje.id] || { fecha: mensaje.fecha, id: mensaje.id }, forzar);
   }
 
+  // Solicitud de pruebas: con UN cliente va en su fila; con varios clientes es UN solo correo para todos, así que se muestra
+  // una sola vez debajo de la lista (pedido del usuario 2026-10-09).
+  const bloqueSolicitud = (r, i, unico = false) => (
+    <>
+      {unico && <strong style={{fontSize:13, flexBasis:'100%'}}>Solicitud de pruebas — un solo correo para las {resultado.registros.length} entidades</strong>}
+        {robotSolicitudUrl && !__ES_CPANEL__ && (
+          <span style={{display:'inline-flex', alignItems:'center', gap:8}}>
+            <IconButton icon="mail" variant="mail" label={r._solicitud?.estado === 'listo' ? 'Solicitud de pruebas creada — si pulsas de nuevo te avisa que ya existe' : r._solicitud?.estado === 'error' ? 'Reintentar el borrador de solicitud de pruebas' : 'Crear borrador de solicitud de pruebas (reenvía el correo original a las áreas)'} spinning={r._solicitud?.estado === 'creando'} onClick={() => handleSolicitudPruebas(i)} />
+            {r._solicitud?.estado === 'creando' && <span className="save-hint">Armando solicitud de pruebas…</span>}
+            {r._solicitud?.estado === 'listo' && <span className="badge badge-verde">Pruebas: borrador listo</span>}
+          </span>
+        )}
+        {r._solicitud?.estado === 'listo' && (
+          <p className="save-hint" style={{margin:'4px 0 0', flexBasis:'100%'}}>
+            {r._solicitud.reenviado ? 'Quedó como reenvío del correo original en los Borradores del buzón de Tutelas' : 'Quedó en tus Borradores de Outlook'} — para: {(r._solicitud.para || []).join(', ') || '(sin destinatarios, complétalos)'}{r._solicitud.notas ? ` · Nota de LexIA: ${r._solicitud.notas}` : ''}
+          </p>
+        )}
+        {r._solicitud?.estado === 'existente' && (
+          <p className="save-hint" style={{margin:'4px 0 0', flexBasis:'100%'}}>
+            Ya había creado una solicitud de pruebas para esta tutela y este cliente{r._solicitud.fecha ? ` (${new Date(r._solicitud.fecha).toLocaleString('es-CO')})` : ''}: {r._solicitud.enviado ? 'ya fue ENVIADA — búscala en Enviados del buzón de Tutelas.' : 'búscala en Borradores del buzón de Tutelas.'}{' '}
+            {r._solicitud.enlace && <a href={r._solicitud.enlace} target="_blank" rel="noopener noreferrer">Abrirla</a>}{' '}
+            <button type="button" className="clear-filters-link" onClick={() => handleSolicitudPruebas(i, true)}>Crear otra de todos modos</button>
+          </p>
+        )}
+        {r._solicitud?.estado === 'error' && (
+          <p className="save-hint" style={{margin:'4px 0 0', flexBasis:'100%', color:'var(--rojo, #a3281c)'}}>
+            No se pudo armar la solicitud de pruebas: {r._solicitud.mensaje}
+          </p>
+        )}
+    
+    </>
+  );
+
   async function handleExtraer(mensaje){
     if(!robotUrl){
       notify?.('Falta terminar de instalar LexIA (ROBOT_CLAUDE_URL en config.js) antes de poder usar esto.', 'error');
@@ -565,32 +598,14 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
                               Crear borrador
                             </IconTextButton>
                           )}
-                          {robotSolicitudUrl && !__ES_CPANEL__ && (
-                            <span style={{display:'inline-flex', alignItems:'center', gap:8}}>
-                              <IconButton icon="mail" variant="mail" label={r._solicitud?.estado === 'listo' ? 'Solicitud de pruebas creada — si pulsas de nuevo te avisa que ya existe' : r._solicitud?.estado === 'error' ? 'Reintentar el borrador de solicitud de pruebas' : 'Crear borrador de solicitud de pruebas (reenvía el correo original a las áreas)'} spinning={r._solicitud?.estado === 'creando'} onClick={() => handleSolicitudPruebas(i)} />
-                              {r._solicitud?.estado === 'creando' && <span className="save-hint">Armando solicitud de pruebas…</span>}
-                              {r._solicitud?.estado === 'listo' && <span className="badge badge-verde">Pruebas: borrador listo</span>}
-                            </span>
-                          )}
-                          {r._solicitud?.estado === 'listo' && (
-                            <p className="save-hint" style={{margin:'4px 0 0', flexBasis:'100%'}}>
-                              {r._solicitud.reenviado ? 'Quedó como reenvío del correo original en los Borradores del buzón de Tutelas' : 'Quedó en tus Borradores de Outlook'} — para: {(r._solicitud.para || []).join(', ') || '(sin destinatarios, complétalos)'}{r._solicitud.notas ? ` · Nota de LexIA: ${r._solicitud.notas}` : ''}
-                            </p>
-                          )}
-                          {r._solicitud?.estado === 'existente' && (
-                            <p className="save-hint" style={{margin:'4px 0 0', flexBasis:'100%'}}>
-                              Ya había creado una solicitud de pruebas para esta tutela y este cliente{r._solicitud.fecha ? ` (${new Date(r._solicitud.fecha).toLocaleString('es-CO')})` : ''}: {r._solicitud.enviado ? 'ya fue ENVIADA — búscala en Enviados del buzón de Tutelas.' : 'búscala en Borradores del buzón de Tutelas.'}{' '}
-                              {r._solicitud.enlace && <a href={r._solicitud.enlace} target="_blank" rel="noopener noreferrer">Abrirla</a>}{' '}
-                              <button type="button" className="clear-filters-link" onClick={() => handleSolicitudPruebas(i, true)}>Crear otra de todos modos</button>
-                            </p>
-                          )}
-                          {r._solicitud?.estado === 'error' && (
-                            <p className="save-hint" style={{margin:'4px 0 0', flexBasis:'100%', color:'var(--rojo, #a3281c)'}}>
-                              No se pudo armar la solicitud de pruebas: {r._solicitud.mensaje}
-                            </p>
-                          )}
+                          {resultado.registros.length === 1 && bloqueSolicitud(r, i)}
                         </div>
                       ))}
+                      {resultado.registros.length > 1 && (
+                        <div className="leer-correo-registro-item">
+                          {bloqueSolicitud(resultado.registros[0], 0, true)}
+                        </div>
+                      )}
                     </div>
                   )}
                   {robotSolicitudUrl && !__ES_CPANEL__ && onedriveCarpetaUrl && numeroDeEsteMensaje && (yaAnalizadaEnOneDrive || resultado?.mensajeId === m.id) && (
