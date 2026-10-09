@@ -106,7 +106,7 @@ $camposEsperados = <<<TXT
 - Correo (texto, correo del juzgado que envía la notificación)
 - Solicita (texto largo, resumen en tus propias palabras de qué pide la tutela)
 - Tema (categoría de la tutela — ver instrucciones)
-- Analisis (OBJETO con tu lectura como abogada especialista; NUNCA inventes — solo lo que se desprenda del correo y los documentos; cada valor es texto breve y concreto (en total el Analisis no pasa de unas 200 palabras), y "" si no aplica. Claves: "Accionante" (quién presenta la tutela y en qué calidad: el propio paciente, agente oficioso, representante legal, apoderado), "DerechosInvocados" (derechos que el accionante dice vulnerados), "Hechos" (resumen cronológico en máximo 5 frases), "Pretensiones" (lo que concretamente pide, separado por " | "), "OrdenesDelJuez" (qué le ordena o pide el despacho a la entidad: informe, documentos, medida provisional con su plazo; "Ninguna" si no hay), "PruebasPorReunir" (soportes que la entidad necesita conseguir para contestar, cada uno con el área interna sugerida entre paréntesis, separados por " | " — específicos, nada genérico), "Defensas" (máximo 3 líneas de defensa posibles, separadas por " | "), "Alerta" (urgencias o riesgos: medida provisional, término muy corto, riesgo de desacato, vinculación o notificación dudosa; "" si no hay))
+- Analisis (OBJETO con tu lectura como abogado especialista. La idea es que quien lea esta lectura tenga TODO lo necesario para contestar la tutela sin volver a abrir los documentos; NUNCA inventes — solo lo que se desprenda del correo y los documentos; cada valor es texto concreto, "" si no aplica; en total no pases de unas 500 palabras. Claves: "Accionante" (quién presenta la tutela y en qué calidad: el propio paciente, agente oficioso, representante legal, apoderado), "DerechosInvocados" (derechos que dice vulnerados), "Hechos" (cronología con las fechas que aparezcan, máximo 10 frases), "Pretensiones" (lo que concretamente pide, separado por " | "), "FundamentosDelAccionante" (sus argumentos centrales, máximo 4 frases), "PruebasAportadasPorElAccionante" (lista corta separada por " | "), "Antecedentes" (tutelas previas, fallos, incidentes de desacato o radicados que mencione; "" si no hay), "OrdenesDelJuez" (qué le ordena o pide el despacho a la entidad: informe, documentos, medida provisional con su plazo; "Ninguna" si no hay), "PruebasPorReunir" (soportes que la entidad necesita conseguir para contestar, cada uno con el área interna sugerida entre paréntesis, separados por " | " — específicos, nada genérico), "Defensas" (máximo 3 líneas de defensa posibles, separadas por " | "), "Alerta" (urgencias o riesgos: medida provisional, término muy corto, riesgo de desacato, vinculación o notificación dudosa; "" si no hay))
 TXT;
 
 // 2026-09-24, pedido explícito del usuario: mandó la guía REAL de criterios
@@ -193,7 +193,9 @@ $instrucciones = "Eres LexIA, el asistente de inteligencia artificial del despac
     // con una opción real de la lista, no hace match con ninguna y queda
     // como un valor huérfano que el usuario tiene que corregir a mano.
     "IMPORTANTE sobre el formato del Tema: la guía de arriba está redactada en minúscula/mayúscula normal SOLO para que se entienda fácil el criterio — pero el valor que debes escribir en el campo Tema va SIEMPRE completo EN MAYÚSCULAS (ej. la guía dice \"Entrega de medicamentos\", pero tú escribes \"ENTREGA DE MEDICAMENTOS\"), sin importar cómo esté escrito arriba, porque es un desplegable de una lista fija real y así es como están guardadas esas opciones:\n{$criteriosClasificacion}\n\n" .
-    "Devuelve SOLO un objeto JSON (sin texto adicional antes o después, sin bloques de markdown) con esta forma exacta: {\"registros\": [ {...un registro...}, {...otro registro si aplica...} ]}. Cada registro debe tener EXACTAMENTE estas claves, dejando \"\" (cadena vacía) en lo que no puedas determinar con certeza — nunca inventes un dato que no esté en el correo:\n\n" . $camposEsperados;
+    "Devuelve SOLO un objeto JSON (sin texto adicional antes o después, sin bloques de markdown) con esta forma exacta: {\"registros\": [ {...un registro...}, {...otro registro si aplica...} ]}. Cada registro debe tener EXACTAMENTE estas claves, dejando \"\" (cadena vacía) en lo que no puedas determinar con certeza — nunca inventes un dato que no esté en el correo:\n\n" . $camposEsperados . "
+
+Además de la clave registros, devuelve en el MISMO objeto JSON la clave \"documentos\": un arreglo con UN elemento por cada documento adjunto que recibiste (usa el nombre EXACTO de la línea \"Documento adjunto: ...\" que va antes de cada uno), con esta forma: {\"nombre\": \"...\", \"tipo\": \"escrito de tutela | auto admisorio | auto o fallo | oficio | historia clínica | orden médica | respuesta de la entidad | pruebas | otro\", \"resumen\": \"qué es y lo importante que trae para contestar, en máximo 60 palabras\"}. Si un adjunto no se pudo leer, igual lista su nombre con el resumen \"No se pudo leer\". Forma final: {\"registros\": [ ... ], \"documentos\": [ ... ]}.";
 // Correcciones (2026-09-29, pedido explícito del usuario, por costo de la
 // API) — se saca del bloque estable de arriba y se manda como SU PROPIO
 // bloque de sistema, al final: antes, agregar UNA corrección nueva en
@@ -232,9 +234,13 @@ foreach($adjuntos as $adj){
     // La API solo acepta estas 4 imágenes — un TIFF/BMP/HEIC (escáneres,
     // celulares) hacía que rechazara TODA la solicitud, no solo ese archivo.
     if(in_array($tipo, ['image/jpeg', 'image/png', 'image/gif', 'image/webp'], true)){
+        $contenido[] = ['type' => 'text', 'text' => 'Documento adjunto: ' . $nombreAdj];
+        $nombresPorIndice[] = $nombreAdj;
         $contenido[] = ['type' => 'image', 'source' => ['type' => 'base64', 'media_type' => $tipo, 'data' => $base64]];
         $nombresPorIndice[] = $nombreAdj;
     } elseif($tipo === 'application/pdf'){
+        $contenido[] = ['type' => 'text', 'text' => 'Documento adjunto: ' . $nombreAdj];
+        $nombresPorIndice[] = $nombreAdj;
         $contenido[] = ['type' => 'document', 'source' => ['type' => 'base64', 'media_type' => $tipo, 'data' => $base64]];
         $nombresPorIndice[] = $nombreAdj;
     }
@@ -402,20 +408,21 @@ function leerRespuestaClaude($data){
     // Por si devolvió directamente la lista de registros, sin el objeto envolvente.
     if(!is_array($registros) && is_array($data2) && isset($data2[0]) && is_array($data2[0])) $registros = $data2;
     if(!is_array($registros) || count($registros) === 0) $registros = null;
-    return [$texto, $stopReason, $registros];
+    $documentos = (is_array($data2) && is_array($data2['documentos'] ?? null)) ? $data2['documentos'] : [];
+    return [$texto, $stopReason, $registros, $documentos];
 }
 
-[$texto, $stopReason, $registros] = leerRespuestaClaude($data);
+[$texto, $stopReason, $registros, $documentos] = leerRespuestaClaude($data);
 
 // 2026-10-07 (tutela 28248: 14 páginas de tutela + más de 400 de pruebas): la respuesta se cortó por
 // largo ("quedó cortada"). Si pasa, se reintenta UNA vez en versión abreviada (sin el Analisis y con
 // un Solicita corto) para no perder la extracción de los campos del formulario.
 if($registros === null && $stopReason === 'max_tokens'){
-    $body['system'][0]['text'] .= "\n\nRESPUESTA ABREVIADA (el intento anterior se cortó por ser demasiado largo): NO escribas el campo Analisis (déjalo como objeto vacío {}) y escribe Solicita en máximo 60 palabras. Devuelve solo el JSON.";
+    $body['system'][0]['text'] .= "\n\nRESPUESTA ABREVIADA (el intento anterior se cortó por ser demasiado largo): NO escribas el campo Analisis (déjalo como objeto vacío {}) y escribe Solicita en máximo 60 palabras y cada resumen de documentos en máximo 20 palabras. Devuelve solo el JSON.";
     [$respuesta2, $codigoHttp2, $errorCurl2] = llamarClaude($body, $apiKey);
     if(!$errorCurl2 && $codigoHttp2 === 200){
         $data = json_decode($respuesta2, true);
-        [$texto, $stopReason, $registros] = leerRespuestaClaude($data);
+        [$texto, $stopReason, $registros, $documentos] = leerRespuestaClaude($data);
     }
 }
 
@@ -438,4 +445,4 @@ if($registros === null){
     exit;
 }
 
-echo json_encode(['registros' => $registros]);
+echo json_encode(['registros' => $registros, 'documentos' => $documentos], JSON_INVALID_UTF8_SUBSTITUTE);

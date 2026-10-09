@@ -1088,7 +1088,7 @@ export async function extraerTutelaConLexIA(correoBuzon, mensajeId, tutelas, rob
     throw new Error(mensajeErrorLexIA(msg));
   }
   const registros = Array.isArray(data.registros) ? data.registros : [data.campos || {}];
-  return { asunto: completo.asunto, cuerpo: completo.cuerpo, registros: registros.map(r => ({ ...r, _creado: false })), omitidos, guardadoAdjuntos };
+  return { asunto: completo.asunto, cuerpo: completo.cuerpo, registros: registros.map(r => ({ ...r, _creado: false })), documentos: Array.isArray(data.documentos) ? data.documentos : [], omitidos, guardadoAdjuntos };
 }
 
 // ============================================================
@@ -1137,50 +1137,228 @@ function rutaLexIAVieja(numeroTutela){
 const MARCADOR_JSON_INICIO = '<<<DATOS_JSON — no borrar, el portal lo usa para releer esta tutela sin llamar de nuevo a la IA>>>';
 const MARCADOR_JSON_FIN = '<<<FIN_DATOS_JSON>>>';
 
-function construirTextoLecturaLexIA(numeroTutela, mensaje, asunto, cuerpo, registros){
-  const lineas = [];
-  lineas.push(`TUTELA No. ${numeroTutela}`);
-  lineas.push(`Analizado por LexIA el ${new Date().toLocaleString('es-CO')}`);
-  lineas.push('');
-  lineas.push('===================== CORREO =====================');
-  lineas.push(`Asunto: ${asunto}`);
-  if(mensaje?.remitenteNombre || mensaje?.remitente){
-    lineas.push(`De: ${mensaje.remitenteNombre || ''} <${mensaje.remitente || ''}>`);
+// ---------------------------------------------------------------------------
+// "Lectura LexIA.txt" — archivo de conocimiento de UNA tutela (2026-10-09, pedido del usuario: que tenga
+// ordenados y completos todos los datos para poder contestar la tutela, y que el artefacto y Pregúntame
+// lean todo de ahí). Se organiza en 5 secciones:
+//   1. DATOS DEL PORTAL     — lo que el abogado guardó en el formulario de Tutelas
+//   2. DATOS DEL CORREO     — asunto, remitente, fecha y cuerpo del correo recibido
+//   3. DATOS DE LA TUTELA   — la lectura de LexIA (campos del formulario + Análisis)
+//   4. DATOS DE LOS ANEXOS  — qué es cada documento adjunto y qué trae de importante
+//   5. SOLICITUD DE PRUEBAS Y RESPUESTAS DE LAS ÁREAS
+// Todo el contenido vive también como JSON al final (el "estado"); el texto se regenera de ese estado cada
+// vez que algo cambia (extracción, guardado en el portal, respuestas de las áreas), así nunca se pisan.
+// ---------------------------------------------------------------------------
+function textoPlanoLectura(valor){
+  if(valor == null) return '';
+  if(typeof valor === 'object') return JSON.stringify(valor);
+  return String(valor);
+}
+function construirTextoDesdeEstado(e){
+  const L = [];
+  const seccion = (n, titulo) => { L.push(''); L.push(`################ ${n}. ${titulo} ################`); L.push(''); };
+  L.push(`TUTELA No. ${e.numero}`);
+  L.push(`Analizado por LexIA el ${e.analizado || new Date().toLocaleString('es-CO')}`);
+  if(e.actualizado) L.push(`Última actualización del archivo: ${e.actualizado}`);
+  L.push('Este archivo reúne lo necesario para contestar la tutela: 1) datos del portal, 2) datos del correo, 3) datos de la tutela (lectura de LexIA), 4) datos de los anexos y 5) solicitud de pruebas y respuestas de las áreas.');
+
+  seccion(1, 'DATOS DEL PORTAL');
+  if(e.portal && e.portal.campos){
+    L.push(`Guardados en el portal el ${e.portal.guardado || ''}`);
+    Object.entries(e.portal.campos).forEach(([clave, valor]) => { if(textoPlanoLectura(valor) !== '') L.push(`${clave}: ${textoPlanoLectura(valor)}`); });
+  } else {
+    L.push('Todavía no se ha guardado esta tutela en el portal (cuando se guarde, sus datos aparecerán aquí).');
   }
-  if(mensaje?.fecha) lineas.push(`Recibido: ${new Date(mensaje.fecha).toLocaleString('es-CO')}`);
-  lineas.push('');
-  lineas.push(cuerpo || '(sin cuerpo)');
-  lineas.push('');
-  lineas.push(`============ DATOS EXTRAÍDOS POR LEXIA (${registros.length} registro${registros.length===1?'':'s'}) ============`);
+
+  seccion(2, 'DATOS DEL CORREO');
+  L.push(`Asunto: ${e.asunto || ''}`);
+  if(e.correo?.de) L.push(`De: ${e.correo.de}`);
+  if(e.correo?.recibido) L.push(`Recibido: ${e.correo.recibido}`);
+  L.push('');
+  L.push(e.cuerpo || '(sin cuerpo)');
+
+  seccion(3, 'DATOS DE LA TUTELA (lectura de LexIA)');
+  const registros = e.registros || [];
+  L.push(`${registros.length} registro${registros.length === 1 ? '' : 's'} (uno por cada cliente señalado en la tutela).`);
   registros.forEach((r, i) => {
-    lineas.push('');
-    lineas.push(`--- Registro ${i+1} ---`);
+    L.push('');
+    L.push(`--- Registro ${i + 1}${r.Cliente ? ' — ' + r.Cliente : ''} ---`);
     Object.entries(r).forEach(([clave, valor]) => {
-      if(clave === '_creado') return;
-      lineas.push(`${clave}: ${valor ?? ''}`);
+      if(clave === '_creado' || clave === '_solicitud' || clave === 'Analisis') return;
+      L.push(`${clave}: ${textoPlanoLectura(valor)}`);
     });
+    if(r.Analisis && typeof r.Analisis === 'object' && Object.keys(r.Analisis).length){
+      L.push('ANÁLISIS DE LEXIA:');
+      Object.entries(r.Analisis).forEach(([clave, valor]) => { if(textoPlanoLectura(valor) !== '') L.push(`  ${clave}: ${textoPlanoLectura(valor)}`); });
+    }
   });
-  lineas.push('');
-  lineas.push(MARCADOR_JSON_INICIO);
-  lineas.push(JSON.stringify({ asunto, cuerpo, registros }));
-  lineas.push(MARCADOR_JSON_FIN);
-  return lineas.join('\n');
+
+  seccion(4, 'DATOS DE LOS ANEXOS');
+  const documentos = e.documentos || [];
+  if(documentos.length){
+    documentos.forEach((d, i) => {
+      L.push(`${i + 1}. ${d.nombre || '(sin nombre)'}${d.tipo ? ' — ' + d.tipo : ''}`);
+      if(d.resumen) L.push(`   ${d.resumen}`);
+    });
+  } else {
+    L.push('(LexIA no dejó resumen de los anexos en esta lectura.)');
+  }
+  if(e.omitidos && e.omitidos.length){
+    L.push('');
+    L.push('Archivos que LexIA NO leyó: ' + e.omitidos.map(o => `${o.nombre}${o.motivo ? ' (' + o.motivo + ')' : ''}`).join('; '));
+  }
+
+  seccion(5, 'SOLICITUD DE PRUEBAS Y RESPUESTAS DE LAS ÁREAS');
+  const solicitudes = e.solicitudes || [];
+  if(solicitudes.length){
+    solicitudes.forEach(sol => {
+      L.push(`Solicitud: ${sol.asunto || ''} — ${sol.enviado ? 'ENVIADA' : 'en borrador (sin enviar)'}${sol.fecha ? ' el ' + sol.fecha : ''}`);
+      (sol.areas || []).forEach(a => {
+        L.push(`  - ${a.entidad} · ${a.area}: ${a.respondio ? 'RESPONDIÓ' + (a.fechaRespuesta ? ' el ' + a.fechaRespuesta : '') : 'sin respuesta todavía'}`);
+      });
+    });
+  } else {
+    L.push('Todavía no hay una solicitud de pruebas registrada para esta tutela.');
+  }
+  const respuestas = e.respuestasAreas || [];
+  respuestas.forEach(rp => {
+    L.push('');
+    L.push(`--- Respuesta de ${rp.entidad} · ${rp.area} — ${rp.fecha || ''} ---`);
+    L.push(`De: ${rp.de || ''}`);
+    if(rp.asunto) L.push(`Asunto: ${rp.asunto}`);
+    if(rp.adjuntos && rp.adjuntos.length) L.push(`Adjuntos (guardados en la carpeta "Respuestas de áreas"): ${rp.adjuntos.join('; ')}`);
+    L.push('');
+    L.push(rp.cuerpo || '(sin texto)');
+  });
+
+  L.push('');
+  L.push(MARCADOR_JSON_INICIO);
+  L.push(JSON.stringify({
+    asunto: e.asunto || '', cuerpo: e.cuerpo || '', registros: (registros || []).map(r => { const { _creado, _solicitud, ...limpio } = r; return limpio; }),
+    documentos, omitidos: e.omitidos || [], correo: e.correo || {}, analizado: e.analizado || '', portal: e.portal || null,
+    solicitudes, respuestasAreas: respuestas,
+  }));
+  L.push(MARCADOR_JSON_FIN);
+  return L.join('\n');
 }
 
-// Se llama justo después de un "Extraer con LexIA" exitoso — sube (o
-// reemplaza) el .txt de esta tutela. Lanza si falla (quien llama decide si
-// avisa al usuario o solo lo registra en consola, sin romper el flujo de
-// extracción que ya tuvo éxito).
-export async function guardarLecturaLexIAEnOneDrive(urlCarpeta, numeroTutela, mensaje, asunto, cuerpo, registros){
-  const { driveId, folderId } = await resolverCarpetaLexIAOneDrive(urlCarpeta);
-  const ruta = rutaLexIA(numeroTutela);
-  const texto = construirTextoLecturaLexIA(numeroTutela, mensaje, asunto, cuerpo, registros);
-  await graphFetch(`/drives/${driveId}/items/${folderId}:/${encodeURIComponent(ruta).replace(/%2F/g,'/')}:/content`, {
+// Lee el estado de un archivo ya existente (nuevo formato o el anterior, que solo traía asunto/cuerpo/registros).
+function leerEstadoDeTexto(texto, numero){
+  const ini = texto.indexOf(MARCADOR_JSON_INICIO), fin = texto.indexOf(MARCADOR_JSON_FIN);
+  if(ini === -1 || fin === -1) return null;
+  let datos;
+  try{ datos = JSON.parse(texto.slice(ini + MARCADOR_JSON_INICIO.length, fin).trim()); }catch{ return null; }
+  const unaLinea = (re) => { const m = re.exec(texto); return m ? m[1].trim() : ''; };
+  const correo = datos.correo && (datos.correo.de || datos.correo.recibido) ? datos.correo : {
+    de: unaLinea(/^De: (.*)$/m),
+    recibido: unaLinea(/^Recibido: (.*)$/m),
+  };
+  return {
+    numero: String(numero),
+    analizado: datos.analizado || unaLinea(/^Analizado por LexIA(?: \(Plan B\))? el (.*)$/m),
+    asunto: datos.asunto || '',
+    cuerpo: datos.cuerpo || '',
+    correo,
+    registros: Array.isArray(datos.registros) ? datos.registros : [],
+    documentos: Array.isArray(datos.documentos) ? datos.documentos : [],
+    omitidos: Array.isArray(datos.omitidos) ? datos.omitidos : [],
+    portal: datos.portal || null,
+    solicitudes: Array.isArray(datos.solicitudes) ? datos.solicitudes : [],
+    respuestasAreas: Array.isArray(datos.respuestasAreas) ? datos.respuestasAreas : [],
+  };
+}
+// { estado, ruta } del archivo de esta tutela (nombre nuevo o viejo), o null si no existe.
+async function leerEstadoLectura(driveId, folderId, numero){
+  for(const ruta of [rutaLexIA(numero), rutaLexIAVieja(numero)]){
+    const texto = await leerArchivoOneDrive(driveId, folderId, ruta);
+    if(texto){
+      const estado = leerEstadoDeTexto(texto, numero);
+      if(estado) return { estado, ruta };
+    }
+  }
+  return null;
+}
+async function escribirEstadoLectura(driveId, folderId, ruta, estado){
+  estado.actualizado = new Date().toLocaleString('es-CO');
+  await graphFetch(`/drives/${driveId}/items/${folderId}:/${encodeURIComponent(ruta).replace(/%2F/g, '/')}:/content`, {
     method: 'PUT',
     headers: { 'Content-Type': 'text/plain; charset=utf-8' },
-    body: texto,
+    body: construirTextoDesdeEstado(estado),
   });
 }
+
+// Se llama justo después de un "Extraer con LexIA" exitoso — sube (o reemplaza) el archivo de esta tutela. Si
+// ya existía, conserva lo que ya tenía del portal, la solicitud de pruebas y las respuestas de las áreas.
+// Lanza si falla (quien llama decide si avisa o solo lo registra, sin romper el flujo de extracción).
+export async function guardarLecturaLexIAEnOneDrive(urlCarpeta, numeroTutela, mensaje, asunto, cuerpo, registros, documentos = [], omitidos = []){
+  const { driveId, folderId } = await resolverCarpetaLexIAOneDrive(urlCarpeta);
+  const previo = await leerEstadoLectura(driveId, folderId, numeroTutela).catch(() => null);
+  const estado = {
+    ...(previo ? { portal: previo.estado.portal, solicitudes: previo.estado.solicitudes, respuestasAreas: previo.estado.respuestasAreas } : {}),
+    numero: String(numeroTutela),
+    analizado: new Date().toLocaleString('es-CO'),
+    asunto, cuerpo,
+    correo: {
+      de: mensaje?.remitenteNombre || mensaje?.remitente ? `${mensaje.remitenteNombre || ''} <${mensaje.remitente || ''}>` : (previo?.estado.correo?.de || ''),
+      recibido: mensaje?.fecha ? new Date(mensaje.fecha).toLocaleString('es-CO') : (previo?.estado.correo?.recibido || ''),
+    },
+    registros, documentos, omitidos: (omitidos || []).map(o => ({ nombre: o.nombre, motivo: o.motivo })),
+  };
+  await escribirEstadoLectura(driveId, folderId, rutaLexIA(numeroTutela), estado);
+}
+
+// Pedido del usuario 2026-10-09: lo que luego se guarda en el portal (juzgado, proceso, fechas, tema...) también
+// debe quedar en este archivo (sección 1) y en el registro de ese cliente, para que Pregúntame y el artefacto
+// vean los datos finales y no los del primer intento de LexIA. Se llama (en segundo plano) cada vez que se
+// guarda una tutela. Solo actualiza un archivo que YA exista. Devuelve true si lo actualizó.
+const CAMPOS_TUTELA_EN_LECTURA = ['NoTutela', 'Entidad', 'Cliente', 'TipoVinculacionEntidad', 'Prestacion', 'Departamento', 'Ciudad', 'Juzgado', 'Proceso', 'FechaNotificacion', 'FechaVencimiento', 'TipoRespuesta', 'MedidaCautelar', 'AgenciaOficiosa', 'Usuario', 'NoIdentificacion', 'Correo', 'Tema'];
+function valorTutelaParaLectura(campo, valor){
+  if(valor == null) return '';
+  if(typeof valor === 'object') valor = valor.Value ?? valor.value ?? valor.LookupValue ?? valor.name ?? '';
+  if(campo === 'MedidaCautelar' || campo === 'AgenciaOficiosa'){
+    if(valor === true || /^s[ií]$/i.test(String(valor).trim())) return 'Sí';
+    if(valor === false || /^no$/i.test(String(valor).trim())) return 'No';
+    return '';
+  }
+  if(campo === 'FechaNotificacion' || campo === 'FechaVencimiento') return String(valor).slice(0, 10);
+  return stripHtml(String(valor)).trim();
+}
+export async function actualizarLecturaLexIAConTutela(urlCarpeta, tutela){
+  const numero = String(tutela?.NoTutela ?? '').trim();
+  if(!urlCarpeta || !numero) return false;
+  const { driveId, folderId } = await resolverCarpetaLexIAOneDrive(urlCarpeta);
+  const leido = await leerEstadoLectura(driveId, folderId, numero);
+  if(!leido) return false;
+  const { estado, ruta } = leido;
+  const clienteGuardado = normalize(valorTutelaParaLectura('Cliente', tutela.Cliente));
+  let indice = estado.registros.findIndex(r => normalize(r.Cliente || '') === clienteGuardado);
+  if(indice === -1 && estado.registros.length === 1 && !clienteGuardado) indice = 0;
+  if(indice === -1){ estado.registros.push({}); indice = estado.registros.length - 1; }
+  const registro = estado.registros[indice];
+  const campos = {};
+  CAMPOS_TUTELA_EN_LECTURA.forEach(campo => {
+    const v = valorTutelaParaLectura(campo, tutela[campo]);
+    if(v !== ''){ registro[campo] = v; campos[campo] = v; } // lo vacío del portal no borra lo que LexIA ya había leído
+  });
+  const solicita = stripHtml(String(tutela.Solicita ?? '')).trim();
+  if(solicita){ registro.Solicita = solicita; campos.Solicita = solicita; }
+  const abogado = valorTutelaParaLectura('AbogadoRespuesta', tutela.AbogadoRespuesta);
+  if(abogado) campos.AbogadoRespuesta = abogado;
+  // Sección 1: una entrada por cliente guardado (una tutela con 2 clientes tiene 2 filas en el portal).
+  const previoPortal = estado.portal && estado.portal.porCliente ? estado.portal.porCliente : {};
+  previoPortal[clienteGuardado || 'sin cliente'] = campos;
+  const guardado = new Date().toLocaleString('es-CO');
+  const todos = Object.values(previoPortal);
+  estado.portal = { guardado, porCliente: previoPortal, campos: todos.length === 1 ? todos[0] : undefined };
+  if(todos.length > 1){
+    // Con varios clientes se muestra cada uno con el cliente como prefijo.
+    estado.portal.campos = {};
+    Object.entries(previoPortal).forEach(([cli, c]) => Object.entries(c).forEach(([k, v]) => { estado.portal.campos[`${k} [${(c.Cliente || cli).slice(0, 18)}]`] = v; }));
+  }
+  await escribirEstadoLectura(driveId, folderId, ruta, estado);
+  return true;
+}
+
 
 function base64ABytes(base64){
   const binario = atob(base64);
@@ -1206,7 +1384,7 @@ function arrayBufferABase64(buffer){
 // depender del portal. Import dinámico de jsPDF (igual que el resto de
 // lib/informes*.js) para no engordar el bundle principal con una librería
 // que casi nadie carga en cada visita.
-export async function construirPdfCorreoBase64(numeroTutela, correo){
+export async function construirPdfCorreoBase64(numeroTutela, correo, titulo){
   const { default: jsPDF } = await import('jspdf');
   const doc = new jsPDF({ unit:'mm', format:'a4' });
   const margen = 18;
@@ -1214,7 +1392,7 @@ export async function construirPdfCorreoBase64(numeroTutela, correo){
   const altoMaximo = doc.internal.pageSize.getHeight() - margen;
   let y = margen;
   doc.setFont('helvetica','bold'); doc.setFontSize(13);
-  doc.text(`TUTELA No. ${numeroTutela || '—'} — Correo original`, margen, y); y += 8;
+  doc.text(`TUTELA No. ${numeroTutela || '—'} — ${titulo || 'Correo original'}`, margen, y); y += 8;
   doc.setFont('helvetica','normal'); doc.setFontSize(10);
   doc.text(`Asunto: ${correo.asunto || ''}`, margen, y); y += 6;
   if(correo.remitente){ doc.text(`De: ${correo.remitente}`, margen, y); y += 6; }
@@ -3176,4 +3354,234 @@ export function facturaForOrdenCompra(facturas, oc){
     indicesFacturaParaOC.set(lista, idx);
   }
   return idx.mapa.get(claveFacturaOC(oc.Contrato, oc.Proceso, oc.EtapaContrato)) || null;
+}
+
+// ---------------------------------------------------------------------------
+// Respuestas de las áreas a la solicitud de pruebas (2026-10-09, pedido del usuario): cuando las áreas
+// contestan el correo de "Solicitud de pruebas", el portal verifica de qué áreas llegó respuesta y de cuáles
+// no, guarda cada respuesta (el correo impreso + sus adjuntos) en la subcarpeta "Respuestas de áreas" de la
+// carpeta de la tutela, y la agrega a "Lectura LexIA.txt" (sección 5) para que el artefacto y Pregúntame
+// puedan leerla. Las áreas y sus correos salen de la agenda del Word del formato (SharePoint), así que si
+// cambia la agenda, cambia aquí sin tocar código.
+// ---------------------------------------------------------------------------
+const RE_CORREO_AGENDA = /[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:[.][A-Za-z0-9-]+)+/g;
+
+// Texto del Word → [{ entidad, area, correos }] (solo la sección 1, la agenda).
+export function parsearAgendaFormato(texto){
+  const filas = [];
+  let entidad = '';
+  for(const linea of String(texto || '').split(/\r?\n/)){
+    const t = linea.trim();
+    if(/^qu[eé] informaci[oó]n se le puede pedir/i.test(t)) break;
+    if(/^COLM[ÉE]DICA/i.test(t)){ entidad = 'COLMÉDICA'; continue; }
+    if(/^ALIANSALUD/i.test(t)){ entidad = 'ALIANSALUD'; continue; }
+    if(/^UNIDAD M[ÉE]DICA/i.test(t)){ entidad = 'UMD'; continue; }
+    if(/^[ÁA]REA JUR[ÍI]DICA/i.test(t)){ entidad = 'JURÍDICA'; continue; }
+    const correos = Array.from(new Set((t.match(RE_CORREO_AGENDA) || []).map(c => c.toLowerCase().replace(/[.]+$/, ''))));
+    if(!correos.length || !entidad) continue;
+    const primera = t.split(' | ')[0].trim();
+    const area = /^[ÁA]rea\b/i.test(primera) ? primera : (entidad === 'JURÍDICA' ? 'Área jurídica' : '');
+    if(!area) continue;
+    filas.push({ entidad, area, correos });
+  }
+  return filas;
+}
+function indiceDeAgenda(filas){
+  const m = new Map();
+  filas.forEach(f => f.correos.forEach(c => { const l = m.get(c) || []; l.push(f); m.set(c, l); }));
+  return m;
+}
+function entidadDeDominio(correo){
+  const c = String(correo || '').toLowerCase();
+  if(c.endsWith('@aliansalud.com.co')) return 'ALIANSALUD';
+  if(c.endsWith('@colmedica.com')) return 'COLMÉDICA';
+  if(c.endsWith('@umd.com.co')) return 'UMD';
+  return '';
+}
+// Un mismo correo puede estar en la agenda de dos entidades (p. ej. servicio al cliente se comparte): se prefiere
+// la entidad del cliente al que va la solicitud (el asunto termina en "- ALIANSALUD" / "- COLMÉDICA" / "- UMD").
+function entidadPreferidaDeAsunto(asunto){
+  const a = normalize(asunto || '');
+  if(a.includes('aliansalud')) return 'ALIANSALUD';
+  if(a.includes('colmedica')) return 'COLMÉDICA';
+  if(/- umd\b/.test(a)) return 'UMD';
+  return '';
+}
+function elegirFilaAgenda(posibles, preferida){
+  return (posibles || []).find(f => f.entidad === preferida) || (posibles || [])[0] || null;
+}
+function nombreArchivoSeguroOneDrive(texto){
+  return String(texto || '').replace(/[\\/:*?"<>|]/g, '-').replace(/\s+/g, ' ').trim();
+}
+
+// Solicitudes de pruebas de esta tutela (borradores y enviadas) en el buzón de Tutelas.
+async function buscarSolicitudesPruebasDeTutela(correoBuzon, noTutela){
+  const token = await getMailToken();
+  const encontradas = [];
+  for(const carpeta of ['drafts', 'sentitems']){
+    try{
+      const params = new URLSearchParams({
+        $select: 'id,subject,toRecipients,ccRecipients,createdDateTime,sentDateTime,conversationId,webLink',
+        $top: '50',
+        $filter: `contains(subject,'${String(noTutela).replace(/'/g, "''")}')`,
+      });
+      const res = await fetch(`https://graph.microsoft.com/v1.0/users/${encodeURIComponent(correoBuzon)}/mailFolders/${carpeta}/messages?${params.toString()}`, { headers: { Authorization: `Bearer ${token}` } });
+      if(!res.ok) continue;
+      ((await res.json()).value || []).forEach(m => {
+        const asunto = normalize(m.subject || '');
+        if(!asunto.includes('solicitud de pruebas') || !asunto.includes('no. ' + normalize(String(noTutela)))) return;
+        encontradas.push({
+          id: m.id, asunto: m.subject || '', enviado: carpeta === 'sentitems',
+          fecha: m.sentDateTime || m.createdDateTime || '',
+          para: (m.toRecipients || []).map(r => String(r.emailAddress?.address || '').toLowerCase()).filter(Boolean),
+          cc: (m.ccRecipients || []).map(r => String(r.emailAddress?.address || '').toLowerCase()).filter(Boolean),
+          conversationId: m.conversationId || '', enlace: m.webLink || '',
+        });
+      });
+    }catch(err){ console.error('No se pudo buscar solicitudes de pruebas en ' + carpeta + ':', err); }
+  }
+  return encontradas.sort((a, b) => String(a.fecha).localeCompare(String(b.fecha)));
+}
+
+// Respuestas que llegaron a la bandeja de entrada del buzón a esa solicitud (misma conversación, o mismo asunto).
+async function buscarRespuestasDeSolicitud(correoBuzon, noTutela, solicitud){
+  const token = await getMailToken();
+  const vistos = new Map();
+  const consultar = async (filtro, soloAsuntoPruebas) => {
+    const params = new URLSearchParams({ $select: 'id,subject,from,receivedDateTime,hasAttachments,conversationId', $top: '100', $filter: filtro });
+    const res = await fetch(`https://graph.microsoft.com/v1.0/users/${encodeURIComponent(correoBuzon)}/mailFolders/inbox/messages?${params.toString()}`, { headers: { Authorization: `Bearer ${token}` } });
+    if(!res.ok) return;
+    ((await res.json()).value || []).forEach(m => {
+      if(soloAsuntoPruebas && !normalize(m.subject || '').includes('solicitud de pruebas')) return;
+      vistos.set(m.id, m);
+    });
+  };
+  try{
+    if(solicitud.conversationId) await consultar(`conversationId eq '${String(solicitud.conversationId).replace(/'/g, "''")}'`, false);
+    await consultar(`contains(subject,'${String(noTutela).replace(/'/g, "''")}')`, true);
+  }catch(err){ console.error('No se pudieron buscar las respuestas de las áreas:', err); }
+  const propio = String(correoBuzon || '').toLowerCase();
+  return Array.from(vistos.values())
+    .filter(m => String(m.from?.emailAddress?.address || '').toLowerCase() !== propio)
+    .filter(m => !solicitud.fecha || String(m.receivedDateTime || '') >= String(solicitud.fecha))
+    .sort((a, b) => String(a.receivedDateTime).localeCompare(String(b.receivedDateTime)));
+}
+
+// Guarda UNA respuesta (correo impreso + adjuntos) en "<N> Tutela/Respuestas de áreas" y devuelve su registro para la sección 5.
+async function guardarRespuestaDeArea({ correoBuzon, driveId, folderId, numero, entidad, area, respuesta }){
+  const completo = await leerCorreoCompleto(correoBuzon, respuesta.id);
+  const cuando = new Date(respuesta.receivedDateTime);
+  const pad = n => String(n).padStart(2, '0');
+  const fechaArchivo = `${cuando.getFullYear()}-${pad(cuando.getMonth() + 1)}-${pad(cuando.getDate())} ${pad(cuando.getHours())}${pad(cuando.getMinutes())}`;
+  const base = nombreArchivoSeguroOneDrive(`${entidad || 'Sin entidad'} - ${area} - ${fechaArchivo}`);
+  const carpeta = `${numero} Tutela/Respuestas de áreas`;
+  const subir = (nombre, bytes, tipo) => graphFetch(`/drives/${driveId}/items/${folderId}:/${encodeURIComponent(carpeta + '/' + nombre).replace(/%2F/g, '/')}:/content`, {
+    method: 'PUT', headers: { 'Content-Type': tipo || 'application/octet-stream' }, body: bytes,
+  });
+  const pdfBase64 = await construirPdfCorreoBase64(numero, completo, `Respuesta de ${entidad || ''} · ${area}`);
+  await subir(`${base} - Respuesta.pdf`, base64ABytes(pdfBase64), 'application/pdf');
+  const nombresAdjuntos = [];
+  for(const adj of (completo.adjuntos || [])){
+    if(!adj.base64) continue;
+    const nombre = `${base} - ${nombreArchivoSeguroOneDrive(adj.nombre || 'adjunto')}`;
+    await subir(nombre, base64ABytes(adj.base64), adj.tipo);
+    nombresAdjuntos.push(nombre);
+  }
+  const cuerpo = String(completo.cuerpo || '');
+  return {
+    id: respuesta.id, entidad: entidad || '', area,
+    fecha: cuando.toLocaleString('es-CO'),
+    de: `${respuesta.from?.emailAddress?.name || ''} <${respuesta.from?.emailAddress?.address || ''}>`,
+    asunto: completo.asunto || respuesta.subject || '',
+    adjuntos: nombresAdjuntos,
+    cuerpo: cuerpo.length > 8000 ? cuerpo.slice(0, 8000) + '…' : cuerpo,
+    archivo: `${base} - Respuesta.pdf`,
+  };
+}
+
+// Revisa qué áreas han respondido la(s) solicitud(es) de pruebas de esta tutela y guarda las respuestas nuevas.
+// Devuelve { sinSolicitud, solicitudes:[{ asunto, enviado, fecha, enlace, areas:[{ entidad, area, respondio, fechaRespuesta,
+// respuestas, noSolicitada }], sinIdentificar }], nuevasGuardadas, errores }.
+export async function revisarRespuestasAreas({ config, correoBuzon, urlCarpeta, noTutela, guardar = true }){
+  const formato = await leerFormatoSolicitudPruebas(config);
+  const indice = indiceDeAgenda(parsearAgendaFormato(formato.texto));
+  const solicitudes = await buscarSolicitudesPruebasDeTutela(correoBuzon, noTutela);
+  const salida = { sinSolicitud: !solicitudes.length, solicitudes: [], nuevasGuardadas: 0, errores: [] };
+
+  let ctx = null;
+  if(urlCarpeta){
+    try{
+      const { driveId, folderId } = await resolverCarpetaLexIAOneDrive(urlCarpeta);
+      ctx = { driveId, folderId, leido: await leerEstadoLectura(driveId, folderId, noTutela) };
+    }catch(err){ salida.errores.push('No se pudo abrir la carpeta de la tutela en OneDrive: ' + (err.message || err)); }
+  }
+  const yaGuardadas = new Set(((ctx?.leido?.estado.respuestasAreas) || []).map(r => r.id));
+  const nuevasRespuestas = [];
+  const resumenSolicitudes = [];
+
+  for(const sol of solicitudes){
+    const areas = new Map();
+    const claveDe = f => `${f.entidad}|${f.area}`;
+    const preferida = entidadPreferidaDeAsunto(sol.asunto);
+    sol.para.forEach(c => {
+      const f = elegirFilaAgenda(indice.get(c), preferida);
+      if(f && !areas.has(claveDe(f))) areas.set(claveDe(f), { entidad: f.entidad, area: f.area, respuestas: [], noSolicitada: false });
+    });
+    const sinIdentificar = [];
+    const respuestas = sol.enviado ? await buscarRespuestasDeSolicitud(correoBuzon, noTutela, sol) : [];
+    for(const rp of respuestas){
+      const email = String(rp.from?.emailAddress?.address || '').toLowerCase();
+      const posibles = indice.get(email) || [];
+      // El área jurídica va en copia: su respuesta no cuenta como respuesta de un área.
+      if(posibles.length && posibles.every(f => f.entidad === 'JURÍDICA')) continue;
+      let destino = null;
+      for(const f of posibles){ if(areas.has(claveDe(f))){ destino = areas.get(claveDe(f)); break; } }
+      const elegida = elegirFilaAgenda(posibles.filter(f => f.entidad !== 'JURÍDICA'), preferida);
+      if(!destino && elegida){
+        destino = { entidad: elegida.entidad, area: elegida.area, respuestas: [], noSolicitada: true };
+        areas.set(claveDe(elegida), destino);
+      }
+      if(!destino){
+        // Respondió alguien que no está en la agenda: se guarda igual, con la entidad que indique su dominio.
+        destino = { entidad: entidadDeDominio(email), area: 'Área sin identificar (' + email + ')', respuestas: [], noSolicitada: true, sinIdentificar: true };
+        sinIdentificar.push(destino);
+      }
+      destino.respuestas.push(rp);
+    }
+    const listaAreas = Array.from(areas.values()).concat(sinIdentificar);
+    for(const a of listaAreas){
+      for(const rp of a.respuestas){
+        if(yaGuardadas.has(rp.id) || !guardar || !ctx) continue;
+        try{
+          nuevasRespuestas.push(await guardarRespuestaDeArea({ correoBuzon, driveId: ctx.driveId, folderId: ctx.folderId, numero: noTutela, entidad: a.entidad, area: a.area, respuesta: rp }));
+          yaGuardadas.add(rp.id);
+          salida.nuevasGuardadas++;
+        }catch(err){
+          console.error('No se pudo guardar la respuesta de ' + a.area + ':', err);
+          salida.errores.push('No se pudo guardar la respuesta de ' + a.entidad + ' · ' + a.area + ': ' + (err.message || err));
+        }
+      }
+    }
+    const resumenAreas = listaAreas.map(a => {
+      const ultima = a.respuestas[a.respuestas.length - 1];
+      return {
+        entidad: a.entidad, area: a.area, respondio: a.respuestas.length > 0, noSolicitada: !!a.noSolicitada,
+        respuestas: a.respuestas.length,
+        fechaRespuesta: ultima ? new Date(ultima.receivedDateTime).toLocaleString('es-CO') : '',
+      };
+    });
+    const resumen = { asunto: sol.asunto, enviado: sol.enviado, fecha: sol.fecha ? new Date(sol.fecha).toLocaleString('es-CO') : '', enlace: sol.enlace, areas: resumenAreas };
+    salida.solicitudes.push(resumen);
+    resumenSolicitudes.push({ asunto: resumen.asunto, enviado: resumen.enviado, fecha: resumen.fecha, areas: resumenAreas });
+  }
+
+  // Sección 5 de "Lectura LexIA.txt": estado de las áreas y el contenido de las respuestas nuevas.
+  if(guardar && ctx?.leido){
+    const estado = ctx.leido.estado;
+    estado.solicitudes = resumenSolicitudes;
+    estado.respuestasAreas = [...(estado.respuestasAreas || []), ...nuevasRespuestas];
+    try{ await escribirEstadoLectura(ctx.driveId, ctx.folderId, ctx.leido.ruta, estado); }
+    catch(err){ salida.errores.push('No se pudo actualizar Lectura LexIA.txt: ' + (err.message || err)); }
+  }
+  return salida;
 }

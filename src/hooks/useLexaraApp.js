@@ -1387,6 +1387,14 @@ export function useLexaraApp(){
       setSaving(false);
     }
   }
+  // Lo que el abogado completa y guarda en el portal también se refleja en "Lectura LexIA.txt" (carpeta de
+  // la tutela en OneDrive) para que Pregúntame y el Plan B vean los datos finales. En segundo plano y sin
+  // avisos: si falla, solo queda en la consola (no debe estorbar el guardado de la tutela).
+  function reflejarTutelaEnLecturaLexIA(tutela){
+    if(!liveMode || !config?.TUTELAS_ONEDRIVE_CARPETA_URL) return;
+    Graph.actualizarLecturaLexIAConTutela(config.TUTELAS_ONEDRIVE_CARPETA_URL, tutela)
+      .catch(err => console.error('No se pudo actualizar la Lectura LexIA con lo guardado en el portal:', err));
+  }
   async function saveTutela(updates){
     if(!activeTutela) return;
 
@@ -1408,6 +1416,7 @@ export function useLexaraApp(){
       setDraftTutela(null);
       setActiveTutelaId(null);
       notify("Creado con éxito en Lexara", 'success');
+      reflejarTutelaEnLecturaLexIA(nuevo);
       return;
     }
 
@@ -1428,6 +1437,7 @@ export function useLexaraApp(){
     }
     setActiveTutelaId(null);
     notify("Guardado con éxito en Lexara", 'success');
+    reflejarTutelaEnLecturaLexIA({ ...activeTutela, ...updates });
   }
   // Corrección masiva puntual 2026-08-28, pedida explícitamente por el
   // usuario: 285 de 322 tutelas (las de agosto) quedaron con "Entidad"

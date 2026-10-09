@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { normalizarBorradorTutela } from '../lib/borradorTutela';
 import { aplicarVencimientoHabil, fechaLocalISO } from '../lib/vencimientoTutela';
-import { leerCorreosTutelas, primerCorreoDeConversacion, crearSolicitudPruebasBorrador, buscarSolicitudPruebasExistente, extraerTutelaConLexIA, numeroTutelaDeAsunto, normalize, mensajeError, buscarLecturaLexIAGuardada, guardarLecturaLexIAEnOneDrive, listarTutelasAnalizadasEnOneDrive, asegurarCarpetaTutelaDesdeMensaje } from '../lib/graph';
+import { leerCorreosTutelas, primerCorreoDeConversacion, crearSolicitudPruebasBorrador, buscarSolicitudPruebasExistente, revisarRespuestasAreas, extraerTutelaConLexIA, numeroTutelaDeAsunto, normalize, mensajeError, buscarLecturaLexIAGuardada, guardarLecturaLexIAEnOneDrive, listarTutelasAnalizadasEnOneDrive, asegurarCarpetaTutelaDesdeMensaje } from '../lib/graph';
 import IconButton, { IconTextButton } from './IconButton';
 import { EntrenarIAPanel } from './EntrenarIAModal';
 import { useDraggable } from '../hooks/useDraggable';
@@ -189,6 +189,22 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
       marcarSolicitud(mensaje.id, indice, { estado: 'error', mensaje: mensajeError(err) });
     }
   }
+  // Respuestas de las áreas a la solicitud de pruebas (2026-10-09): verifica qué áreas respondieron y cuáles
+  // no, y guarda las respuestas nuevas (correo + adjuntos) en la carpeta de la tutela en OneDrive.
+  const [respuestasAreas, setRespuestasAreas] = useState({}); // { [mensajeId]: { estado, datos?, error? } }
+  async function handleRevisarRespuestas(mensaje){
+    const numero = numeroTutelaDeAsunto(mensaje.asunto);
+    if(!numero) return;
+    setRespuestasAreas(prev => ({ ...prev, [mensaje.id]: { estado: 'revisando' } }));
+    try{
+      const datos = await revisarRespuestasAreas({ config, correoBuzon, urlCarpeta: onedriveCarpetaUrl, noTutela: numero });
+      setRespuestasAreas(prev => ({ ...prev, [mensaje.id]: { estado: 'listo', datos } }));
+    }catch(err){
+      console.error(err);
+      setRespuestasAreas(prev => ({ ...prev, [mensaje.id]: { estado: 'error', error: mensajeError(err) } }));
+    }
+  }
+
   function handleSolicitudPruebas(indice, forzar = false){
     const registro = resultado?.registros?.[indice];
     const mensaje = mensajes.find(m => m.id === resultado?.mensajeId);
@@ -270,7 +286,7 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
         // ven en pantalla; el botón sigue girando hasta terminar de guardar.
         setGuardandoOneDrive(true);
         const [lectura, adjuntos] = await Promise.all([
-          guardarLecturaLexIAEnOneDrive(onedriveCarpetaUrl, numeroTutela, mensaje, extraido.asunto, extraido.cuerpo, extraido.registros).then(() => ({ ok: true }), err => ({ error: err })),
+          guardarLecturaLexIAEnOneDrive(onedriveCarpetaUrl, numeroTutela, mensaje, extraido.asunto, extraido.cuerpo, extraido.registros, extraido.documentos, extraido.omitidos).then(() => ({ ok: true }), err => ({ error: err })),
           extraido.guardadoAdjuntos,
         ]);
         setGuardandoOneDrive(false);
@@ -569,6 +585,47 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
                           )}
                         </div>
                       ))}
+                    </div>
+                  )}
+                  {robotSolicitudUrl && !__ES_CPANEL__ && onedriveCarpetaUrl && numeroDeEsteMensaje && (yaAnalizadaEnOneDrive || resultado?.mensajeId === m.id) && (
+                    <div className="respuestas-areas-panel" style={{marginTop:10, paddingTop:8, borderTop:'1px solid var(--gris-linea)'}}>
+                      <div style={{display:'flex', alignItems:'center', gap:10, flexWrap:'wrap'}}>
+                        <strong style={{fontSize:13}}>Pruebas solicitadas a las áreas</strong>
+                        <IconTextButton icon="mail" variant="secondary" disabled={respuestasAreas[m.id]?.estado === 'revisando'} onClick={() => handleRevisarRespuestas(m)}>
+                          {respuestasAreas[m.id]?.estado === 'revisando' ? 'Revisando…' : (respuestasAreas[m.id]?.datos ? 'Volver a revisar respuestas' : 'Revisar respuestas de las áreas')}
+                        </IconTextButton>
+                      </div>
+                      {respuestasAreas[m.id]?.estado === 'error' && (
+                        <p className="save-hint" style={{margin:'6px 0 0', color:'var(--rojo, #a3281c)'}}>No se pudo revisar: {respuestasAreas[m.id].error}</p>
+                      )}
+                      {respuestasAreas[m.id]?.estado === 'listo' && (() => {
+                        const d = respuestasAreas[m.id].datos;
+                        if(d.sinSolicitud) return <p className="save-hint" style={{margin:'6px 0 0'}}>Todavía no hay una solicitud de pruebas de esta tutela en Borradores ni en Enviados del buzón de Tutelas.</p>;
+                        return (
+                          <div style={{marginTop:6, display:'flex', flexDirection:'column', gap:8}}>
+                            {d.solicitudes.map((sol, k) => {
+                              const faltan = sol.areas.filter(a => !a.respondio && !a.noSolicitada);
+                              return (
+                                <div key={k} style={{fontSize:13}}>
+                                  <div><strong>{sol.asunto}</strong> — {sol.enviado ? 'enviada' : 'en borrador (sin enviar)'}{sol.fecha ? ` el ${sol.fecha}` : ''} {sol.enlace && <a href={sol.enlace} target="_blank" rel="noopener noreferrer">Abrir</a>}</div>
+                                  <ul style={{margin:'4px 0 0', paddingLeft:18, listStyle:'none'}}>
+                                    {sol.areas.map((a, j) => (
+                                      <li key={j}>
+                                        {a.respondio ? '✅' : (sol.enviado ? '⏳' : '📝')} {a.entidad} · {a.area} — {a.respondio ? `respondió${a.fechaRespuesta ? ' (' + a.fechaRespuesta + ')' : ''}${a.respuestas > 1 ? ', ' + a.respuestas + ' correos' : ''}${a.noSolicitada ? ' · no se le había pedido' : ''}` : (sol.enviado ? 'sin respuesta todavía' : 'aún no se envía')}
+                                      </li>
+                                    ))}
+                                  </ul>
+                                  {sol.enviado && (faltan.length > 0
+                                    ? <p className="save-hint" style={{margin:'4px 0 0'}}>Faltan por responder: {faltan.map(a => a.entidad + ' · ' + a.area).join('; ')}.</p>
+                                    : <p className="save-hint" style={{margin:'4px 0 0'}}>Todas las áreas solicitadas ya respondieron.</p>)}
+                                </div>
+                              );
+                            })}
+                            {d.nuevasGuardadas > 0 && <p className="save-hint" style={{margin:0}}>Guardé {d.nuevasGuardadas} respuesta{d.nuevasGuardadas === 1 ? '' : 's'} nueva{d.nuevasGuardadas === 1 ? '' : 's'} (correo y adjuntos) en la carpeta «Respuestas de áreas» de la tutela en OneDrive y en «Lectura LexIA.txt».</p>}
+                            {d.errores.length > 0 && <p className="save-hint" style={{margin:0, color:'var(--rojo, #a3281c)'}}>{d.errores.join(' · ')}</p>}
+                          </div>
+                        );
+                      })()}
                     </div>
                   )}
                 </div>
