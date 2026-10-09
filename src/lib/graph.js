@@ -1298,11 +1298,18 @@ async function leerEstadoLectura(driveId, folderId, numero){
 }
 async function escribirEstadoLectura(driveId, folderId, ruta, estado){
   estado.actualizado = new Date().toLocaleString('es-CO');
-  await graphFetch(`/drives/${driveId}/items/${folderId}:/${encodeURIComponent(ruta).replace(/%2F/g, '/')}:/content`, {
+  const texto = construirTextoDesdeEstado(estado);
+  const subir = (rutaArchivo) => graphFetch(`/drives/${driveId}/items/${folderId}:/${encodeURIComponent(rutaArchivo).replace(/%2F/g, '/')}:/content`, {
     method: 'PUT',
     headers: { 'Content-Type': 'text/plain; charset=utf-8' },
-    body: construirTextoDesdeEstado(estado),
+    body: texto,
   });
+  await subir(ruta);
+  // Copia dentro de "Adjuntos originales" (2026-10-09): el artefacto Plan B encuentra esa subcarpeta con el buscador de SharePoint
+  // aunque la carpeta de la tutela (recién creada) todavía no esté indexada, y así puede leer todo desde "Lectura LexIA.txt".
+  // Es solo una copia de consulta: la que manda es la de la carpeta de la tutela. Si falla, no importa.
+  try{ await subir(ruta.replace(/\/Lectura LexIA\.txt$/, '/Adjuntos originales/Lectura LexIA.txt')); }
+  catch(err){ console.error('No se pudo dejar la copia de la lectura en Adjuntos originales:', err); }
 }
 
 // Se llama justo después de un "Extraer con LexIA" exitoso — sube (o reemplaza) el archivo de esta tutela. Si
