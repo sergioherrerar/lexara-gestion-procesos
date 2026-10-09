@@ -526,8 +526,14 @@ export function cuerpoSolicitudAHtml(cuerpo){
 // 2026-10-07): compacta, en 4 columnas (rótulo | valor | rótulo | valor), rótulos en verde Lexara
 // con letra blanca y una franja de título. "Tema" lista las pretensiones más importantes de la
 // tutela (no la categoría del formulario).
-export function tablaDatosTutelaHtml(campos, pretensiones){
-  const c = campos || {};
+export function tablaDatosTutelaHtml(campos, pretensiones, camposTodos){
+  const c = { ...(campos || {}) };
+  // Varios clientes en la misma tutela: un solo correo, con cada cliente y su tipo de vinculación en la tabla.
+  if(Array.isArray(camposTodos) && camposTodos.length > 1){
+    const corto = (cli) => nombreCortoClienteSolicitud(cli) || String(cli || '');
+    c.Cliente = camposTodos.map(x => `${x.Cliente || ''}`).filter(Boolean).join(' · ');
+    c.TipoVinculacionEntidad = camposTodos.map(x => `${corto(x.Cliente)}: ${x.TipoVinculacionEntidad || '—'}`).join(' · ');
+  }
   const e = (v) => escaparHtml(v || '');
   const rot = 'background:#004941;color:#ffffff;font-weight:bold;font-size:12px;padding:4px 9px;border:1px solid #004941;text-align:left;white-space:nowrap;';
   const val = 'padding:4px 9px;border:1px solid #cfd9d6;color:#1c2624;font-size:13px;';
@@ -659,19 +665,19 @@ async function reenviarComoBorrador(correoBuzon, mensajeId, { para, cc, asunto, 
 // (valores oficiales) para la tabla. Si se da `mensajeIdReenviar`, el borrador es un reenvío de
 // ese correo (conserva la traza); si no se puede reenviar, queda como borrador nuevo y se avisa.
 // Devuelve { para, cc, asunto, notas, formato, reenviado, borrador }.
-export async function crearSolicitudPruebasBorrador({ config, robotSolicitudUrl, registro, campos, asuntoCorreo, noTutela, fechaVencimiento, correoBuzon, mensajeIdReenviar }){
+export async function crearSolicitudPruebasBorrador({ config, robotSolicitudUrl, registro, registros, campos, camposTodos, asuntoCorreo, noTutela, fechaVencimiento, correoBuzon, mensajeIdReenviar, clientesSenalados }){
   if(!robotSolicitudUrl) throw new Error('Falta la dirección del robot de solicitud de pruebas (ROBOT_SOLICITUD_PRUEBAS_URL).');
   const formato = await leerFormatoSolicitudPruebas(config);
   const res = await fetch(robotSolicitudUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ formato: formato.texto, registro, asuntoCorreo, noTutela, fechaVencimiento }),
+    body: JSON.stringify({ formato: formato.texto, registro, registros: registros && registros.length ? registros : [registro], asuntoCorreo, noTutela, fechaVencimiento, clientesSenalados: clientesSenalados || [] }),
   });
   let data;
   try{ data = await res.json(); }catch{ throw new Error(`El robot de solicitud de pruebas no respondió bien (${res.status}). ¿Ya subiste solicitud-pruebas.php a cPanel?`); }
   if(!res.ok || data.error) throw new Error(data.error || `El robot de solicitud de pruebas falló (${res.status}).`);
   const asunto = data.asunto || `TUTELA No. ${noTutela || ''} - SOLICITUD DE PRUEBAS`;
-  const htmlAntes = tablaDatosTutelaHtml(campos || {}, data.pretensiones) + cuerpoSolicitudAHtml(data.cuerpo) + FIRMA_HTML;
+  const htmlAntes = tablaDatosTutelaHtml(campos || {}, data.pretensiones, camposTodos) + cuerpoSolicitudAHtml(data.cuerpo) + FIRMA_HTML;
   let borrador, reenviado = false, notas = data.notas || '';
   if(correoBuzon && mensajeIdReenviar){
     try{

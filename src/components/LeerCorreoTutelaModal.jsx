@@ -169,21 +169,27 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
       const { registro: reg } = aplicarVencimientoHabil(registro, fechaLocalISO(instante), instante, { forzarFechaCorreo: true });
       const { _creado, _solicitud, ...limpio } = reg;
       const { campos } = normalizarBorradorTutela(limpio, { temas, numeroAsunto: numeroTutelaDeAsunto(mensaje.asunto) });
+      // Una tutela que señala a varios clientes lleva UN solo correo con todos (un registro por cliente).
+      const todosLosRegistros = (resultado?.registros || [registro]).map(x => { const { _creado: _c, _solicitud: _s, ...l } = aplicarVencimientoHabil(x, fechaLocalISO(instante), instante, { forzarFechaCorreo: true }).registro; return l; });
+      const camposTodos = todosLosRegistros.map(x => normalizarBorradorTutela(x, { temas, numeroAsunto: numeroTutelaDeAsunto(mensaje.asunto) }).campos);
+      const indicesAfectados = todosLosRegistros.length > 1 ? todosLosRegistros.map((_, k) => k) : [indice];
       // Antes de gastar la lectura de LexIA, revisa si ya hay una solicitud de esta tutela y este
       // cliente en Borradores o Enviados (pedido del usuario: que no se cree una y otra vez).
       if(!forzar){
         const existente = await buscarSolicitudPruebasExistente(correoBuzon, limpio.NoTutela || numeroTutelaDeAsunto(mensaje.asunto), campos.Cliente || limpio.Cliente);
         if(existente){
-          marcarSolicitud(mensaje.id, indice, { estado: 'existente', ...existente });
+          indicesAfectados.forEach(k => marcarSolicitud(mensaje.id, k, { estado: 'existente', ...existente }));
           return;
         }
       }
       const r = await crearSolicitudPruebasBorrador({
-        config, robotSolicitudUrl, registro: limpio, campos, asuntoCorreo: mensaje.asunto,
+        config, robotSolicitudUrl, registro: limpio, registros: todosLosRegistros, campos, camposTodos, asuntoCorreo: mensaje.asunto,
         noTutela: limpio.NoTutela || numeroTutelaDeAsunto(mensaje.asunto), fechaVencimiento: limpio.FechaVencimiento,
         correoBuzon, mensajeIdReenviar: primerCorreo.id || mensaje.id,
+        // Todos los clientes que señala esta tutela (un registro por cliente): el robot solo pide a esas entidades.
+        clientesSenalados: (resultado?.registros || []).map(x => x.Cliente).filter(Boolean),
       });
-      marcarSolicitud(mensaje.id, indice, { estado: 'listo', para: r.para, cc: r.cc, notas: r.notas, formato: r.formato, reenviado: r.reenviado });
+      indicesAfectados.forEach(k => marcarSolicitud(mensaje.id, k, { estado: 'listo', para: r.para, cc: r.cc, notas: r.notas, formato: r.formato, reenviado: r.reenviado }));
     }catch(err){
       console.error(err);
       marcarSolicitud(mensaje.id, indice, { estado: 'error', mensaje: mensajeError(err) });
