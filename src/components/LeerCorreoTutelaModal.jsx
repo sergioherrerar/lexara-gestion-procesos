@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { normalizarBorradorTutela } from '../lib/borradorTutela';
 import { aplicarVencimientoHabil, fechaLocalISO } from '../lib/vencimientoTutela';
-import { leerCorreosTutelas, primerCorreoDeConversacion, crearSolicitudPruebasBorrador, buscarSolicitudPruebasExistente, revisarRespuestasAreas, uriLecturaLexIAParaArtefacto, extraerTutelaConLexIA, numeroTutelaDeAsunto, normalize, mensajeError, buscarLecturaLexIAGuardada, guardarLecturaLexIAEnOneDrive, listarTutelasAnalizadasEnOneDrive, asegurarCarpetaTutelaDesdeMensaje } from '../lib/graph';
+import { leerCorreosTutelas, primerCorreoDeConversacion, crearSolicitudPruebasBorrador, buscarSolicitudPruebasExistente, revisarRespuestasAreas, uriLecturaLexIAParaArtefacto, listarEscritosLexIA, generarWordDeEscritoLexIA, extraerTutelaConLexIA, numeroTutelaDeAsunto, normalize, mensajeError, buscarLecturaLexIAGuardada, guardarLecturaLexIAEnOneDrive, listarTutelasAnalizadasEnOneDrive, asegurarCarpetaTutelaDesdeMensaje } from '../lib/graph';
 import IconButton, { IconTextButton } from './IconButton';
 import { EntrenarIAPanel } from './EntrenarIAModal';
 import { useDraggable } from '../hooks/useDraggable';
@@ -233,6 +233,37 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
     }catch(err){
       console.error(err);
       notify?.('No se pudo copiar el enlace: ' + mensajeError(err), 'error');
+    }
+  }
+  // Escritos de LexIA (artefacto Plan B): el Word sale de una copia literal del modelo del despacho (logo, encabezados, tablas).
+  const [escritosLexIA, setEscritosLexIA] = useState({}); // { [mensajeId]: { estado, carpeta?, escritos?, generando?, error? } }
+  async function handleBuscarEscritos(mensaje){
+    const numero = numeroTutelaDeAsunto(mensaje.asunto);
+    if(!numero) return;
+    setEscritosLexIA(prev => ({ ...prev, [mensaje.id]: { estado: 'buscando' } }));
+    try{
+      const { carpeta, escritos } = await listarEscritosLexIA(onedriveCarpetaUrl, numero);
+      setEscritosLexIA(prev => ({ ...prev, [mensaje.id]: { estado: 'listo', carpeta, escritos } }));
+    }catch(err){
+      console.error(err);
+      setEscritosLexIA(prev => ({ ...prev, [mensaje.id]: { estado: 'error', error: mensajeError(err) } }));
+    }
+  }
+  async function handleGenerarWordEscrito(mensaje, escrito){
+    const numero = numeroTutelaDeAsunto(mensaje.asunto);
+    const actual = escritosLexIA[mensaje.id] || {};
+    setEscritosLexIA(prev => ({ ...prev, [mensaje.id]: { ...actual, generando: escrito.nombre, error: '' } }));
+    try{
+      const { nombre, bytes, resumen } = await generarWordDeEscritoLexIA(onedriveCarpetaUrl, numero, actual.carpeta, escrito.nombre);
+      const url = URL.createObjectURL(new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' }));
+      const a = document.createElement('a');
+      a.href = url; a.download = nombre; document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+      notify?.(`Word generado con el formato del modelo (${resumen.cambiados} párrafos ajustados, ${resumen.nuevos} nuevos, ${resumen.quitados} quitados) y guardado en la carpeta de la tutela.`, 'success');
+      setEscritosLexIA(prev => ({ ...prev, [mensaje.id]: { ...actual, generando: '' } }));
+    }catch(err){
+      console.error(err);
+      setEscritosLexIA(prev => ({ ...prev, [mensaje.id]: { ...actual, generando: '', error: mensajeError(err) } }));
     }
   }
   async function handleRevisarRespuestas(mensaje){
@@ -675,6 +706,32 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
                     <div style={{marginTop:10, display:'flex', alignItems:'center', gap:10, flexWrap:'wrap'}}>
                       <IconTextButton icon="mail" variant="secondary" onClick={() => handleCopiarEnlaceArtefacto(m)}>Copiar enlace para el artefacto</IconTextButton>
                       <span className="save-hint" style={{margin:0}}>Pégalo en el artefacto Plan B para que lea la lectura al instante.</span>
+                    </div>
+                  )}
+                  {onedriveCarpetaUrl && numeroDeEsteMensaje && (yaAnalizadaEnOneDrive || resultado?.mensajeId === m.id) && (
+                    <div style={{marginTop:10, paddingTop:8, borderTop:'1px solid var(--gris-linea)'}}>
+                      <div style={{display:'flex', alignItems:'center', gap:10, flexWrap:'wrap'}}>
+                        <strong style={{fontSize:13}}>Escritos de LexIA (Word con el formato del modelo)</strong>
+                        <IconTextButton icon="refresh" variant="secondary" disabled={escritosLexIA[m.id]?.estado === 'buscando'} onClick={() => handleBuscarEscritos(m)}>
+                          {escritosLexIA[m.id]?.estado === 'buscando' ? 'Buscando…' : 'Buscar escritos del artefacto'}
+                        </IconTextButton>
+                      </div>
+                      {escritosLexIA[m.id]?.estado === 'error' && <p className="save-hint" style={{margin:'6px 0 0', color:'var(--rojo, #a3281c)'}}>No se pudo buscar: {escritosLexIA[m.id].error}</p>}
+                      {escritosLexIA[m.id]?.estado === 'listo' && (escritosLexIA[m.id].escritos.length === 0
+                        ? <p className="save-hint" style={{margin:'6px 0 0'}}>Todavía no hay escritos de esta tutela: en el artefacto Plan B redacta uno y pulsa «Enviar al portal para armar el Word».</p>
+                        : (
+                          <div style={{marginTop:6, display:'flex', flexDirection:'column', gap:6}}>
+                            {escritosLexIA[m.id].escritos.map(e => (
+                              <div key={e.nombre} style={{display:'flex', alignItems:'center', gap:10, flexWrap:'wrap', fontSize:13}}>
+                                <span>{e.nombre.replace(/\.json$/i, '')}</span>
+                                <IconTextButton icon="folder" variant="secondary" disabled={!!escritosLexIA[m.id].generando} onClick={() => handleGenerarWordEscrito(m, e)}>
+                                  {escritosLexIA[m.id].generando === e.nombre ? 'Armando el Word…' : 'Generar Word'}
+                                </IconTextButton>
+                              </div>
+                            ))}
+                          </div>
+                        ))}
+                      {escritosLexIA[m.id]?.error && escritosLexIA[m.id]?.estado === 'listo' && <p className="save-hint" style={{margin:'6px 0 0', color:'var(--rojo, #a3281c)'}}>No se pudo generar el Word: {escritosLexIA[m.id].error}</p>}
                     </div>
                   )}
                   {robotSolicitudUrl && !__ES_CPANEL__ && onedriveCarpetaUrl && numeroDeEsteMensaje && (yaAnalizadaEnOneDrive || resultado?.mensajeId === m.id) && (

@@ -3608,3 +3608,47 @@ export async function uriLecturaLexIAParaArtefacto(urlCarpeta, numeroTutela){
   }
   return '';
 }
+
+// ---------------------------------------------------------------------------
+// Escritos de LexIA con el formato del modelo (2026-10-09, pedido del usuario: el Word debe ser una copia literal
+// del modelo del despacho — logos, encabezados, tablas — con solo el texto cambiado). El artefacto Plan B deja en la
+// carpeta de la tutela un archivo "ESCRITO LexIA - ….json" con el texto final y el modelo usado; aquí se baja el .docx
+// del modelo, se le aplica ese texto (escritoDesdeModelo.js) y el resultado se guarda en la misma carpeta.
+const PREFIJO_ESCRITO_LEXIA = 'ESCRITO LexIA';
+export async function listarEscritosLexIA(urlCarpeta, numeroTutela){
+  const { driveId, folderId } = await resolverCarpetaLexIAOneDrive(urlCarpeta);
+  for(const carpeta of [`${numeroTutela} Tutela`, `Tutela ${numeroTutela}`]){
+    try{
+      const res = await graphFetch(`/drives/${driveId}/items/${folderId}:/${encodeURIComponent(carpeta)}:/children?$select=id,name,lastModifiedDateTime&$top=200`);
+      const lista = (res?.value || [])
+        .filter(x => x.name?.startsWith(PREFIJO_ESCRITO_LEXIA) && /\.json$/i.test(x.name))
+        .sort((a, b) => String(b.lastModifiedDateTime).localeCompare(String(a.lastModifiedDateTime)));
+      return { carpeta, escritos: lista.map(x => ({ nombre: x.name, modificado: x.lastModifiedDateTime })) };
+    }catch{ /* se prueba con el otro nombre de carpeta */ }
+  }
+  return { carpeta: '', escritos: [] };
+}
+
+export async function generarWordDeEscritoLexIA(urlCarpeta, numeroTutela, carpeta, nombreJson){
+  const { driveId, folderId } = await resolverCarpetaLexIAOneDrive(urlCarpeta);
+  const textoJson = await leerArchivoOneDrive(driveId, folderId, `${carpeta}/${nombreJson}`);
+  if(!textoJson) throw new Error('No pude leer el archivo del escrito en OneDrive.');
+  const datos = JSON.parse(textoJson);
+  const modelo = datos.modelo || {};
+  if(!modelo.driveId || !modelo.itemId) throw new Error('El escrito no trae la referencia al modelo de Word: vuelve a enviarlo desde el artefacto.');
+  if(!datos.texto) throw new Error('El escrito no trae texto.');
+  const item = await graphFetch(`/drives/${modelo.driveId}/items/${modelo.itemId}?$select=name,@microsoft.graph.downloadUrl`);
+  const url = item?.['@microsoft.graph.downloadUrl'];
+  if(!url) throw new Error('No pude abrir el modelo de Word en SharePoint.');
+  const res = await fetch(url);
+  if(!res.ok) throw new Error(`No pude descargar el modelo (código ${res.status}).`);
+  const { aplicarTextoAModeloDocx } = await import('./escritoDesdeModelo');
+  const { bytes, resumen } = await aplicarTextoAModeloDocx(await res.arrayBuffer(), datos.texto);
+  const nombre = String(nombreJson).replace(/\.json$/i, '').replace(/[\\/:*?"<>|]/g, '_') + '.docx';
+  await graphFetch(`/drives/${driveId}/items/${folderId}:/${encodeURIComponent(`${carpeta}/${nombre}`).replace(/%2F/g, '/')}:/content`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' },
+    body: bytes,
+  });
+  return { nombre, bytes, resumen, modelo: modelo.nombre || item.name };
+}
