@@ -2,6 +2,10 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-10-13 (35)
+- **Secciones reordenadas en cada tarjeta de «Leer correo de Tutelas»** — pedido del usuario. Ahora: Sección 1 «Comentario: otras tutelas de este mismo usuario»; Sección 2 «Todos los correos de esta tutela» (sin el botón «Correo con aplazamiento»); Sección 3 «Clientes de la tutela y borrador» (con el botón de leer correos nuevos en su cabecera); Sección 4 «Pruebas solicitadas a las áreas» (ahora con el botón «Correo con aplazamiento» y su avance); Secciones 5 y 6 igual.
+- **El botón «Volver a leer todos los correos» ahora se llama «Leer correos nuevos de esta tutela»** (en la Sección 2 y en la 3).
+
 ## 2026-10-13 (34)
 - **Cada paso del avance muestra los segundos transcurridos** — para ver dónde se va el tiempo en «Correo con aplazamiento» y en «Escrito con LexIA» (p. ej. «[42 s] Creando el borrador…»). Solo es información; no cambia el funcionamiento.
 

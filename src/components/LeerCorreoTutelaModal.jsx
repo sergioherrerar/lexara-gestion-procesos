@@ -736,26 +736,43 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
                       </IconTextButton>
                     </div>
                   )}
+                  {resultado && resultado.mensajeId === m.id && (() => {
+                        const otras = otrasTutelasDelUsuario(tutelas, resultado.registros[0]);
+                        const antecedentesLexIA = String(resultado.registros[0]?.Analisis?.Antecedentes || '').trim();
+                        if(!otras.length && !antecedentesLexIA) return null;
+                        return (
+                          <div className="tutela-seccion tutela-seccion-aviso">
+                            <div className="tutela-seccion-head"><h4><span className="tutela-seccion-n">Sección 1</span>Comentario: otras tutelas de este mismo usuario</h4></div>
+                            <div className="tutela-seccion-body" style={{gap:6}}>
+                            {otras.length > 0 ? (
+                              <>
+                                <span className="save-hint" style={{margin:0}}>Ya hay {otras.length} tutela{otras.length === 1 ? '' : 's'} registrada{otras.length === 1 ? '' : 's'} en el portal con la misma identificación{resultado.registros[0]?.Usuario ? ` (${resultado.registros[0].Usuario})` : ''}:</span>
+                                <ul style={{margin:0, paddingLeft:18, fontSize:12}}>
+                                  {otras.slice(0, 12).map(o => {
+                                    const t = o.filas[0];
+                                    return <li key={o.numero}>{o.numero} · {t.TipoRespuesta || 'TUTELA'}{fechaCorta(t.FechaNotificacion) ? ' · ' + fechaCorta(t.FechaNotificacion) : ''}{t.Tema ? ' · ' + t.Tema : ''}{o.filas.length > 1 ? ` · ${o.filas.length} clientes` : ''}</li>;
+                                  })}
+                                </ul>
+                                {otras.length > 12 && <span className="save-hint" style={{margin:0}}>…y {otras.length - 12} más.</span>}
+                                <span className="save-hint" style={{margin:0}}>Revisa si piden lo mismo (posible temeridad o cosa juzgada) y qué se decidió en cada una.</span>
+                              </>
+                            ) : (
+                              <span className="save-hint" style={{margin:0}}>En el portal no hay otras tutelas con esa identificación.</span>
+                            )}
+                            {antecedentesLexIA && <span className="save-hint" style={{margin:0}}>Lo que LexIA vio mencionado en esta tutela: {antecedentesLexIA}</span>}
+                            </div>
+                          </div>
+                        );
+                  })()}
                   {onedriveCarpetaUrl && numeroDeEsteMensaje && (yaAnalizadaEnOneDrive || resultado?.mensajeId === m.id) && (
                     <div className="tutela-seccion">
                       <div className="tutela-seccion-head">
-                        <h4><span className="tutela-seccion-n">Sección 1</span>Todos los correos de esta tutela</h4>
+                        <h4><span className="tutela-seccion-n">Sección 2</span>Todos los correos de esta tutela</h4>
                         <IconTextButton icon="refresh" variant="secondary" disabled={todosCorreos[m.id]?.estado === 'leyendo'} onClick={() => handleLeerTodosCorreos(m)}>
-                          {todosCorreos[m.id]?.estado === 'leyendo' ? 'Leyendo…' : (todosCorreos[m.id]?.datos ? 'Volver a leer todos los correos' : 'Leer todos los correos de esta tutela')}
+                          {todosCorreos[m.id]?.estado === 'leyendo' ? 'Leyendo…' : (todosCorreos[m.id]?.datos ? 'Leer correos nuevos de esta tutela' : 'Leer correos nuevos de esta tutela')}
                         </IconTextButton>
-                        {robotEscritoUrl && resultado?.mensajeId === m.id && (
-                          <IconTextButton icon="mail" variant="primary" disabled={aplazamiento[m.id]?.estado === 'creando'} onClick={() => handleCorreoConAplazamiento(m)}>
-                            {aplazamiento[m.id]?.estado === 'creando' ? 'Creando el correo…' : 'Correo con aplazamiento'}
-                          </IconTextButton>
-                        )}
                       </div>
                       <div className="tutela-seccion-body">
-                      {aplazamiento[m.id]?.pasos?.length > 0 && (
-                        <ul className="escrito-pasos">
-                          {aplazamiento[m.id].pasos.map((t, i) => <li key={i} className={aplazamiento[m.id].estado === 'creando' && i === aplazamiento[m.id].pasos.length - 1 ? 'activo' : ''}>{t}</li>)}
-                        </ul>
-                      )}
-                      {aplazamiento[m.id]?.estado === 'error' && <div className="escrito-error">{aplazamiento[m.id].error}</div>}
                       <p className="escrito-intro">Busca en el buzón TODOS los correos con este número (de cualquier remitente), los guarda en la carpeta de la tutela y los deja en la lectura; antes de crear el borrador de la solicitud de pruebas (y antes de redactar el escrito) se vuelven a leer solos, para que ya sepa qué llegó.</p>
                       {todosCorreos[m.id]?.estado === 'error' && <p className="save-hint" style={{margin:'6px 0 0', color:'var(--rojo, #a3281c)'}}>No se pudo leer: {todosCorreos[m.id].error}</p>}
                       {todosCorreos[m.id]?.estado === 'listo' && (() => {
@@ -791,7 +808,14 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
                   {resultado && resultado.mensajeId === m.id && (
                     <>
                     <div className="tutela-seccion">
-                      <div className="tutela-seccion-head"><h4><span className="tutela-seccion-n">Sección 2</span>Clientes de la tutela y borrador</h4></div>
+                      <div className="tutela-seccion-head">
+                        <h4><span className="tutela-seccion-n">Sección 3</span>Clientes de la tutela y borrador</h4>
+                        {onedriveCarpetaUrl && numeroDeEsteMensaje && (
+                          <IconTextButton icon="refresh" variant="secondary" disabled={todosCorreos[m.id]?.estado === 'leyendo'} onClick={() => handleLeerTodosCorreos(m)}>
+                            {todosCorreos[m.id]?.estado === 'leyendo' ? 'Leyendo…' : (todosCorreos[m.id]?.datos ? 'Leer correos nuevos de esta tutela' : 'Leer correos nuevos de esta tutela')}
+                          </IconTextButton>
+                        )}
+                      </div>
                       <div className="tutela-seccion-body leer-correo-registros">
                       {resultado.registros.length > 1 && (
                         <p className="save-hint" style={{margin:'0 0 8px'}}>
@@ -826,45 +850,28 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
                       )}
                       </div>
                     </div>
-                    {(() => {
-                        const otras = otrasTutelasDelUsuario(tutelas, resultado.registros[0]);
-                        const antecedentesLexIA = String(resultado.registros[0]?.Analisis?.Antecedentes || '').trim();
-                        if(!otras.length && !antecedentesLexIA) return null;
-                        return (
-                          <div className="tutela-seccion tutela-seccion-aviso">
-                            <div className="tutela-seccion-head"><h4><span className="tutela-seccion-n">Sección 3</span>Comentario: otras tutelas de este mismo usuario</h4></div>
-                            <div className="tutela-seccion-body" style={{gap:6}}>
-                            {otras.length > 0 ? (
-                              <>
-                                <span className="save-hint" style={{margin:0}}>Ya hay {otras.length} tutela{otras.length === 1 ? '' : 's'} registrada{otras.length === 1 ? '' : 's'} en el portal con la misma identificación{resultado.registros[0]?.Usuario ? ` (${resultado.registros[0].Usuario})` : ''}:</span>
-                                <ul style={{margin:0, paddingLeft:18, fontSize:12}}>
-                                  {otras.slice(0, 12).map(o => {
-                                    const t = o.filas[0];
-                                    return <li key={o.numero}>{o.numero} · {t.TipoRespuesta || 'TUTELA'}{fechaCorta(t.FechaNotificacion) ? ' · ' + fechaCorta(t.FechaNotificacion) : ''}{t.Tema ? ' · ' + t.Tema : ''}{o.filas.length > 1 ? ` · ${o.filas.length} clientes` : ''}</li>;
-                                  })}
-                                </ul>
-                                {otras.length > 12 && <span className="save-hint" style={{margin:0}}>…y {otras.length - 12} más.</span>}
-                                <span className="save-hint" style={{margin:0}}>Revisa si piden lo mismo (posible temeridad o cosa juzgada) y qué se decidió en cada una.</span>
-                              </>
-                            ) : (
-                              <span className="save-hint" style={{margin:0}}>En el portal no hay otras tutelas con esa identificación.</span>
-                            )}
-                            {antecedentesLexIA && <span className="save-hint" style={{margin:0}}>Lo que LexIA vio mencionado en esta tutela: {antecedentesLexIA}</span>}
-                            </div>
-                          </div>
-                        );
-                    })()}
                     </>
                   )}
                   {robotSolicitudUrl && onedriveCarpetaUrl && numeroDeEsteMensaje && (yaAnalizadaEnOneDrive || resultado?.mensajeId === m.id) && (
                     <div className="respuestas-areas-panel tutela-seccion">
                       <div className="tutela-seccion-head">
                         <h4><span className="tutela-seccion-n">Sección 4</span>Pruebas solicitadas a las áreas</h4>
+                        {robotEscritoUrl && resultado?.mensajeId === m.id && (
+                          <IconTextButton icon="mail" variant="primary" disabled={aplazamiento[m.id]?.estado === 'creando'} onClick={() => handleCorreoConAplazamiento(m)}>
+                            {aplazamiento[m.id]?.estado === 'creando' ? 'Creando el correo…' : 'Correo con aplazamiento'}
+                          </IconTextButton>
+                        )}
                         <IconTextButton icon="mail" variant="secondary" disabled={respuestasAreas[m.id]?.estado === 'revisando'} onClick={() => handleRevisarRespuestas(m)}>
                           {respuestasAreas[m.id]?.estado === 'revisando' ? 'Revisando…' : (respuestasAreas[m.id]?.datos ? 'Volver a revisar respuestas' : 'Revisar respuestas de las áreas')}
                         </IconTextButton>
                       </div>
                       <div className="tutela-seccion-body">
+                      {aplazamiento[m.id]?.pasos?.length > 0 && (
+                        <ul className="escrito-pasos">
+                          {aplazamiento[m.id].pasos.map((t, i) => <li key={i} className={aplazamiento[m.id].estado === 'creando' && i === aplazamiento[m.id].pasos.length - 1 ? 'activo' : ''}>{t}</li>)}
+                        </ul>
+                      )}
+                      {aplazamiento[m.id]?.estado === 'error' && <div className="escrito-error">{aplazamiento[m.id].error}</div>}
                       {respuestasAreas[m.id]?.estado === 'error' && (
                         <p className="save-hint" style={{margin:'6px 0 0', color:'var(--rojo, #a3281c)'}}>No se pudo revisar: {respuestasAreas[m.id].error}</p>
                       )}
