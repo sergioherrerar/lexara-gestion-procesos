@@ -706,7 +706,11 @@ export async function crearSolicitudPruebasBorrador({ config, robotSolicitudUrl,
   // Orden (pedido del usuario 2026-10-13): el modelo de la solicitud con todas sus viñetas, LUEGO la tabla de datos de la tutela, y al final la
   // despedida («Agradezco su gestión. Cordial saludo,») con la firma. Si el cuerpo no trae la despedida, la tabla va justo antes de la firma.
   const tablaHtml = tablaDatosTutelaHtml(campos || {}, data.pretensiones, camposTodos);
-  const textoCuerpo = String(data.cuerpo || '');
+  // Saludo según la hora (pedido del usuario 2026-10-13): el formato dice «Cordial saludo, remito para su respectivo análisis de auditoría.»;
+  // en el correo va «Buenos días/Buenas tardes/Buenas noches, remito…». Solo se cambia el saludo de arriba; la despedida «Cordial saludo,» no se toca.
+  const hora = new Date().getHours();
+  const saludoHora = hora < 12 ? 'Buenos días' : (hora < 19 ? 'Buenas tardes' : 'Buenas noches');
+  const textoCuerpo = String(data.cuerpo || '').replace(/^([ 	]*)Cordial saludo[ 	]*,[ 	]*(remito)/im, (_m, sangria, remito) => sangria + saludoHora + ', ' + remito);
   const posDespedida = textoCuerpo.search(/^\s*Agradezco su gesti[oó]n/im);
   const htmlAntes = posDespedida > 0
     ? cuerpoSolicitudAHtml(textoCuerpo.slice(0, posDespedida)) + tablaHtml + cuerpoSolicitudAHtml(textoCuerpo.slice(posDespedida)) + FIRMA_HTML
