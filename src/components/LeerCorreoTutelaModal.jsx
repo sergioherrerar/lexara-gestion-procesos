@@ -47,6 +47,22 @@ function otrasTutelasDelUsuario(tutelas, registro){
 }
 const fechaCorta = v => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(v || '')); return m ? m[3] + '/' + m[2] + '/' + m[1] : ''; };
 
+// ¿Ya existe en el portal esta tutela para este cliente? (2026-10-13, pedido del usuario: en una tutela con varios clientes, el cliente que ya
+// se creó no debe ofrecer «Crear borrador»; solo el que falta.) Se compara por número y por marca (Aliansalud / Colmédica / UMD), porque el
+// nombre del cliente puede venir escrito distinto.
+function claveMarcaCliente(c){
+  const x = normalize(c || '');
+  if(x.includes('aliansalud')) return 'aliansalud';
+  if(x.includes('colm')) return 'colmedica';
+  if(x.includes('unidad') || x.includes('umd')) return 'umd';
+  return x;
+}
+function tutelaYaEnPortal(tutelas, noTutela, cliente){
+  if(!noTutela || !cliente) return null;
+  const k = claveMarcaCliente(cliente);
+  return (tutelas || []).find(t => String(t.NoTutela) === String(noTutela) && claveMarcaCliente(t.Cliente) === k) || null;
+}
+
 export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitidos, robotUrl, robotEscritoUrl, onedriveCarpetaUrl, tutelas, temas, onAgregarCorreccionIA, robotPreguntasUrl, config, robotSolicitudUrl, onExtraido, onClose, notify, lexiaHablando }){
   const [cargando, setCargando] = useState(true);
   // "Un botón para actualizar la lista de los correos que estén
@@ -703,6 +719,8 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
                           </div>
                           {r._creado ? (
                             <span className="badge badge-verde">Creado</span>
+                          ) : tutelaYaEnPortal(tutelas, r.NoTutela || numeroDeEsteMensaje, r.Cliente) ? (
+                            <span className="badge badge-verde" title="Esta tutela ya está registrada en el portal para este cliente: no hace falta crearla de nuevo.">Ya está en el portal</span>
                           ) : (
                             <IconTextButton icon="add" variant="primary" onClick={() => handleCrearBorrador(i)}>
                               Crear borrador

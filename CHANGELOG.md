@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-10-13 (14)
+- **En una tutela con varios clientes, el cliente que ya está en el portal ya no ofrece «Crear borrador»** — pedido del usuario (caso 28270: Aliansalud ya estaba creada y solo faltaba Colmédica). Al leer un correo que señala a varios clientes, cada cliente se compara con las tutelas que ya hay en el portal por número de tutela y por marca (Aliansalud / Colmédica / UMD, aunque el nombre venga escrito distinto); si ya existe, en lugar del botón sale la etiqueta verde «Ya está en el portal» y solo queda habilitado «Crear borrador» para el cliente que falta. Si el cliente ya aparece pero se quiere duplicar a propósito, se puede crear desde el formulario de Nueva tutela. La solicitud de pruebas (un solo correo para todos los clientes) no cambia.
+
 ## 2026-10-13 (13)
 - **Se descarta el correo que genera el portal desde Tutelas → Informes al buscar los correos de una tutela** — pedido del usuario. El correo «Notificación de Tutelas del (fecha) y Vencimiento de las respuestas del (fecha)» (armado en informeTutelas.js; lista TODAS las tutelas del día) y sus respuestas «RE:» ya no cuentan como correo de ninguna tutela aunque mencionen su número: se excluyen de «Todos los correos de esta tutela», del resumen que recibe el robot, de la sección 6 de la lectura y de los correos que lee el artefacto (v36, por el nombre del archivo). Las lecturas guardadas antes que ya lo traían también lo ignoran. Regla única: el asunto contiene «Notificación de Tutelas del» y «Vencimiento de las respuestas del» (misma que ya usaba la lista de correos).
 
