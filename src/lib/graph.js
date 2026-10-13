@@ -321,10 +321,11 @@ export async function eliminarEventoCalendario(config, { tipo, id }){
 // borrador exacto en Outlook en la Web, ya con todo listo para revisar y
 // darle Enviar (mismo criterio que `.Display` en la macro de Access
 // original, que mostraba el borrador en vez de enviarlo directo).
-export async function crearBorradorCorreo({ to, cc, subject, htmlBody, adjuntoNombre, adjuntoBase64 }){
+export async function crearBorradorCorreo({ to, cc, subject, htmlBody, adjuntoNombre, adjuntoBase64, categorias }){
   const token = await getMailToken();
   const body = {
     subject,
+    ...(categorias && categorias.length ? { categories: categorias } : {}),
     body: { contentType: "HTML", content: htmlBody },
     // `to` puede ser un solo correo o una lista (la solicitud de pruebas va a varias áreas).
     toRecipients: (Array.isArray(to) ? to : [to]).filter(Boolean).map(correo => ({ emailAddress: { address: correo } })),
@@ -522,8 +523,9 @@ export function cuerpoSolicitudAHtml(cuerpo){
   return `<div style="font-family:Aptos,Calibri,Arial,sans-serif;font-size:13.5px;color:#1c2624;max-width:760px;">${salida.join('')}</div>`;
 }
 
-// Tabla de datos de la tutela que va ANTES del formato en el correo (pedido del usuario
-// 2026-10-07): compacta, en 4 columnas (rótulo | valor | rótulo | valor), rótulos en verde Lexara
+// Tabla de datos de la tutela. Iba ANTES del formato (pedido 2026-10-07); desde 2026-10-13 (pedido del usuario)
+// va DEBAJO de la solicitud de pruebas y su franja de título dice «SOLICITUD DE PRUEBAS · DATOS DE LA TUTELA».
+// Compacta, en 4 columnas (rótulo | valor | rótulo | valor), rótulos en verde Lexara
 // con letra blanca y una franja de título. "Tema" lista las pretensiones más importantes de la
 // tutela (no la categoría del formulario).
 export function tablaDatosTutelaHtml(campos, pretensiones, camposTodos){
@@ -543,7 +545,7 @@ export function tablaDatosTutelaHtml(campos, pretensiones, camposTodos){
   const tema = items.length
     ? `<ul style="margin:0;padding-left:16px;">${items.map(t => `<li style="margin:0 0 1px;line-height:1.35;">${escaparHtml(t)}</li>`).join('')}</ul>`
     : '';
-  const franja = '<tr><td colspan="4" style="background:#e6efed;color:#004941;font-weight:bold;font-size:12px;letter-spacing:.8px;padding:5px 9px;border:1px solid #cfd9d6;border-top:3px solid #ef7d00;">DATOS DE LA TUTELA</td></tr>';
+  const franja = '<tr><td colspan="4" style="background:#e6efed;color:#004941;font-weight:bold;font-size:12px;letter-spacing:.8px;padding:5px 9px;border:1px solid #cfd9d6;border-top:3px solid #ef7d00;">SOLICITUD DE PRUEBAS · DATOS DE LA TUTELA</td></tr>';
   const filas = [
     franja,
     par('No. Tutela', c.NoTutela, 'Tipo Respuesta', c.TipoRespuesta),
@@ -553,7 +555,7 @@ export function tablaDatosTutelaHtml(campos, pretensiones, camposTodos){
     par('Usuario', c.Usuario, 'No. Identificación', c.NoIdentificacion),
     ancha('Tema', tema),
   ].join('');
-  return `<table style="border-collapse:collapse;font-family:Aptos,Calibri,Arial,sans-serif;width:100%;max-width:760px;margin:0 0 12px;">${filas}</table>`;
+  return `<table style="border-collapse:collapse;font-family:Aptos,Calibri,Arial,sans-serif;width:100%;max-width:760px;margin:16px 0 12px;">${filas}</table>`;
 }
 
 // Firma de Ariana (imagen de la firma institucional de Lexara). Va como imagen EN LÍNEA adjunta
@@ -592,7 +594,7 @@ async function adjuntarFirmaInline(raiz, mensajeId, token){
 async function ultimosMensajesDeCarpeta(correoBuzon, carpeta, campoOrden, top = 150, filtro = ''){
   const token = await getMailToken();
   const params = new URLSearchParams({
-    $select: 'id,subject,from,toRecipients,ccRecipients,createdDateTime,sentDateTime,receivedDateTime,conversationId,webLink,hasAttachments',
+    $select: 'id,subject,from,toRecipients,ccRecipients,createdDateTime,sentDateTime,receivedDateTime,conversationId,webLink,hasAttachments,categories',
     $top: String(top),
     $orderby: campoOrden + ' desc',
   });
@@ -605,8 +607,16 @@ async function ultimosMensajesDeCarpeta(correoBuzon, carpeta, campoOrden, top = 
   }
   return (await res.json()).value || [];
 }
-function esSolicitudPruebasDeTutela(asunto, noTutela){
-  const a = normalize(asunto || '');
+// Etiqueta (categoría de Outlook) que lleva el borrador de la solicitud de pruebas: así se reconoce sin tocar el asunto original.
+const PREFIJO_ETIQUETA_SOLICITUD = 'LexIA Solicitud de pruebas';
+function etiquetaSolicitud(noTutela, clientesCortos){
+  return PREFIJO_ETIQUETA_SOLICITUD + ' ' + noTutela + ((clientesCortos || []).length ? ' · ' + clientesCortos.join(' + ') : '');
+}
+// `m` es el mensaje de Graph (con subject y categories). Los borradores creados antes de este cambio se reconocen por el asunto.
+function esSolicitudPruebasDeTutela(m, noTutela){
+  const etiqueta = normalize(PREFIJO_ETIQUETA_SOLICITUD + ' ' + noTutela);
+  if((m.categories || []).some(c => { const x = normalize(c); return x === etiqueta || x.startsWith(etiqueta + ' '); })) return true;
+  const a = normalize(m.subject || '');
   return a.includes('solicitud de pruebas') && a.includes('no. ' + normalize(String(noTutela)));
 }
 
@@ -631,8 +641,8 @@ export async function buscarSolicitudPruebasExistente(correoBuzon, noTutela, cli
   for(const [carpeta, orden] of [['drafts', 'createdDateTime'], ['sentitems', 'sentDateTime']]){
     try{
       (await ultimosMensajesDeCarpeta(correoBuzon, carpeta, orden)).forEach(m => {
-        if(!esSolicitudPruebasDeTutela(m.subject, noTutela)) return;
-        if(corto && !normalize(m.subject || '').includes(normalize(corto))) return;
+        if(!esSolicitudPruebasDeTutela(m, noTutela)) return;
+        if(corto && !(normalize(m.subject || '').includes(normalize(corto)) || (m.categories || []).some(c => normalize(c).includes(normalize(corto))))) return;
         encontrados.push({ enviado: carpeta === 'sentitems', fecha: m.sentDateTime || m.createdDateTime || '', enlace: m.webLink || '', asunto: m.subject || '' });
       });
     }catch(err){ console.error('No se pudo revisar si ya existe la solicitud de pruebas (' + carpeta + '):', err); }
@@ -644,7 +654,7 @@ export async function buscarSolicitudPruebasExistente(correoBuzon, noTutela, cli
 // Crea el borrador como REENVÍO del correo original (el de los remitentes filtrados) para no
 // perder la traza: el borrador queda en la carpeta Borradores del buzón de Tutelas, con el
 // correo original y sus adjuntos abajo y nuestro contenido arriba.
-async function reenviarComoBorrador(correoBuzon, mensajeId, { para, cc, asunto, htmlAntes }){
+async function reenviarComoBorrador(correoBuzon, mensajeId, { para, cc, categoria, htmlAntes }){
   const token = await getMailToken();
   const base = `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(correoBuzon)}/messages/${mensajeId}`;
   const cabeceras = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
@@ -660,7 +670,8 @@ async function reenviarComoBorrador(correoBuzon, mensajeId, { para, cc, asunto, 
     method: 'PATCH',
     headers: cabeceras,
     body: JSON.stringify({
-      subject: asunto,
+      // Sin `subject`: el borrador conserva el asunto del correo original (pedido del usuario 2026-10-13, para tener la traza).
+      categories: categoria ? [categoria] : [],
       toRecipients: (para || []).map(c => ({ emailAddress: { address: c } })),
       ccRecipients: (cc || []).map(c => ({ emailAddress: { address: c } })),
       body: { contentType: 'HTML', content: contenido },
@@ -677,23 +688,27 @@ async function reenviarComoBorrador(correoBuzon, mensajeId, { para, cc, asunto, 
 // (valores oficiales) para la tabla. Si se da `mensajeIdReenviar`, el borrador es un reenvío de
 // ese correo (conserva la traza); si no se puede reenviar, queda como borrador nuevo y se avisa.
 // Devuelve { para, cc, asunto, notas, formato, reenviado, borrador }.
-export async function crearSolicitudPruebasBorrador({ config, robotSolicitudUrl, registro, registros, campos, camposTodos, asuntoCorreo, noTutela, fechaVencimiento, correoBuzon, mensajeIdReenviar, clientesSenalados }){
+export async function crearSolicitudPruebasBorrador({ config, robotSolicitudUrl, registro, registros, campos, camposTodos, asuntoCorreo, noTutela, fechaVencimiento, correoBuzon, mensajeIdReenviar, clientesSenalados, correosRecibidos }){
   if(!robotSolicitudUrl) throw new Error('Falta la dirección del robot de solicitud de pruebas (ROBOT_SOLICITUD_PRUEBAS_URL).');
   const formato = await leerFormatoSolicitudPruebas(config);
   const res = await fetch(robotSolicitudUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ formato: formato.texto, registro, registros: registros && registros.length ? registros : [registro], asuntoCorreo, noTutela, fechaVencimiento, clientesSenalados: clientesSenalados || [] }),
+    body: JSON.stringify({ formato: formato.texto, registro, registros: registros && registros.length ? registros : [registro], asuntoCorreo, noTutela, fechaVencimiento, clientesSenalados: clientesSenalados || [], correosRecibidos: correosRecibidos || [] }),
   });
   let data;
   try{ data = await res.json(); }catch{ throw new Error(`El robot de solicitud de pruebas no respondió bien (${res.status}). ¿Ya subiste solicitud-pruebas.php a cPanel?`); }
   if(!res.ok || data.error) throw new Error(data.error || `El robot de solicitud de pruebas falló (${res.status}).`);
   const asunto = data.asunto || `TUTELA No. ${noTutela || ''} - SOLICITUD DE PRUEBAS`;
-  const htmlAntes = tablaDatosTutelaHtml(campos || {}, data.pretensiones, camposTodos) + cuerpoSolicitudAHtml(data.cuerpo) + FIRMA_HTML;
+  // 2026-10-13 (pedido del usuario): primero el modelo de la solicitud (con la firma) y DEBAJO la tabla de datos de la tutela;
+  // el asunto no se toca.
+  const cortos = [...new Set((registros && registros.length ? registros : [registro]).map(x => nombreCortoClienteSolicitud(x && x.Cliente)).filter(Boolean))];
+  const categoria = etiquetaSolicitud(noTutela, cortos);
+  const htmlAntes = cuerpoSolicitudAHtml(data.cuerpo) + FIRMA_HTML + tablaDatosTutelaHtml(campos || {}, data.pretensiones, camposTodos);
   let borrador, reenviado = false, notas = data.notas || '';
   if(correoBuzon && mensajeIdReenviar){
     try{
-      borrador = await reenviarComoBorrador(correoBuzon, mensajeIdReenviar, { para: data.para, cc: data.cc, asunto, htmlAntes });
+      borrador = await reenviarComoBorrador(correoBuzon, mensajeIdReenviar, { para: data.para, cc: data.cc, categoria, htmlAntes });
       reenviado = true;
     }catch(err){
       console.error('No se pudo reenviar el correo original, se crea un borrador nuevo:', err);
@@ -701,11 +716,11 @@ export async function crearSolicitudPruebasBorrador({ config, robotSolicitudUrl,
     }
   }
   if(!borrador){
-    borrador = await crearBorradorCorreo({ to: data.para || [], cc: data.cc || [], subject: asunto, htmlBody: htmlAntes });
+    borrador = await crearBorradorCorreo({ to: data.para || [], cc: data.cc || [], subject: asunto, htmlBody: htmlAntes, categorias: [categoria] });
     if(borrador?.id) borrador.firmaOk = await adjuntarFirmaInline('https://graph.microsoft.com/v1.0/me', borrador.id, await getMailToken());
   }
   if(borrador && borrador.firmaOk === false) notas = 'No se pudo adjuntar la imagen de la firma: agrégala tú en el borrador. ' + notas;
-  return { para: data.para || [], cc: data.cc || [], asunto, notas, formato: formato.nombre, reenviado, borrador };
+  return { para: data.para || [], cc: data.cc || [], asunto: (reenviado && borrador && borrador.subject) || asunto, notas, formato: formato.nombre, reenviado, borrador };
 }
 
 // "API Claude" Tarea 1 (2026-09-23, pedido explícito del usuario, ya con
@@ -1178,7 +1193,7 @@ function construirTextoDesdeEstado(e){
   L.push(`TUTELA No. ${e.numero}`);
   L.push(`Analizado por LexIA el ${e.analizado || new Date().toLocaleString('es-CO')}`);
   if(e.actualizado) L.push(`Última actualización del archivo: ${e.actualizado}`);
-  L.push('Este archivo reúne lo necesario para contestar la tutela: 1) datos del portal, 2) datos del correo, 3) datos de la tutela (lectura de LexIA), 4) datos de los anexos y 5) solicitud de pruebas y respuestas de las áreas.');
+  L.push('Este archivo reúne lo necesario para contestar la tutela: 1) datos del portal, 2) datos del correo, 3) datos de la tutela (lectura de LexIA), 4) datos de los anexos, 5) solicitud de pruebas y respuestas de las áreas y 6) todos los correos que mencionan la tutela.');
 
   seccion(1, 'DATOS DEL PORTAL');
   if(e.portal && e.portal.campos){
@@ -1249,12 +1264,29 @@ function construirTextoDesdeEstado(e){
     L.push(rp.cuerpo || '(sin texto)');
   });
 
+  seccion(6, 'TODOS LOS CORREOS DE LA TUTELA (de cualquier remitente)');
+  const correosTutela = e.correosTutela || [];
+  if(correosTutela.length){
+    L.push(`${correosTutela.length} correo${correosTutela.length === 1 ? '' : 's'} que mencionan esta tutela, del más antiguo al más reciente. Sirven para saber qué pruebas o respuestas ya llegaron antes de pedirlas de nuevo.`);
+    correosTutela.forEach((c, i) => {
+      L.push('');
+      L.push(`--- Correo ${i + 1} — ${c.fecha || ''} — ${c.clase || ''} ---`);
+      L.push(`De: ${c.de || ''}`);
+      L.push(`Asunto: ${c.asunto || ''}`);
+      if(c.adjuntos && c.adjuntos.length) L.push(`Adjuntos${c.archivo ? ' (guardados en la carpeta "Correos de la tutela")' : ''}: ${c.adjuntos.join('; ')}`);
+      L.push('');
+      L.push(c.resumen || '(sin texto)');
+    });
+  } else {
+    L.push('Todavía no se han leído todos los correos de esta tutela (botón «Leer todos los correos de esta tutela» en el portal).');
+  }
+
   L.push('');
   L.push(MARCADOR_JSON_INICIO);
   L.push(JSON.stringify({
     asunto: e.asunto || '', cuerpo: e.cuerpo || '', registros: (registros || []).map(r => { const { _creado, _solicitud, ...limpio } = r; return limpio; }),
     documentos, omitidos: e.omitidos || [], correo: e.correo || {}, analizado: e.analizado || '', portal: e.portal || null,
-    solicitudes, respuestasAreas: respuestas,
+    solicitudes, respuestasAreas: respuestas, correosTutela: e.correosTutela || [],
   }));
   L.push(MARCADOR_JSON_FIN);
   return L.join('\n');
@@ -1283,6 +1315,7 @@ function leerEstadoDeTexto(texto, numero){
     portal: datos.portal || null,
     solicitudes: Array.isArray(datos.solicitudes) ? datos.solicitudes : [],
     respuestasAreas: Array.isArray(datos.respuestasAreas) ? datos.respuestasAreas : [],
+    correosTutela: Array.isArray(datos.correosTutela) ? datos.correosTutela : [],
   };
 }
 // { estado, ruta } del archivo de esta tutela (nombre nuevo o viejo), o null si no existe.
@@ -1319,7 +1352,7 @@ export async function guardarLecturaLexIAEnOneDrive(urlCarpeta, numeroTutela, me
   const { driveId, folderId } = await resolverCarpetaLexIAOneDrive(urlCarpeta);
   const previo = await leerEstadoLectura(driveId, folderId, numeroTutela).catch(() => null);
   const estado = {
-    ...(previo ? { portal: previo.estado.portal, solicitudes: previo.estado.solicitudes, respuestasAreas: previo.estado.respuestasAreas } : {}),
+    ...(previo ? { portal: previo.estado.portal, solicitudes: previo.estado.solicitudes, respuestasAreas: previo.estado.respuestasAreas, correosTutela: previo.estado.correosTutela } : {}),
     numero: String(numeroTutela),
     analizado: new Date().toLocaleString('es-CO'),
     asunto, cuerpo,
@@ -3446,7 +3479,7 @@ async function buscarSolicitudesPruebasDeTutela(correoBuzon, noTutela){
   for(const [carpeta, orden] of [['drafts', 'createdDateTime'], ['sentitems', 'sentDateTime']]){
     try{
       (await ultimosMensajesDeCarpeta(correoBuzon, carpeta, orden)).forEach(m => {
-        if(!esSolicitudPruebasDeTutela(m.subject, noTutela)) return;
+        if(!esSolicitudPruebasDeTutela(m, noTutela)) return;
         encontradas.push({
           id: m.id, asunto: m.subject || '', enviado: carpeta === 'sentitems',
           fecha: m.sentDateTime || m.createdDateTime || '',
@@ -3471,7 +3504,14 @@ async function buscarRespuestasDeSolicitud(correoBuzon, noTutela, solicitud){
   catch(err){ console.error('No se pudieron buscar las respuestas de las áreas:', err); throw err; }
   const propio = String(correoBuzon || '').toLowerCase();
   return mensajes
-    .filter(m => (solicitud.conversationId && m.conversationId === solicitud.conversationId) || esSolicitudPruebasDeTutela(m.subject, noTutela))
+    .filter(m => {
+      if(esSolicitudPruebasDeTutela(m, noTutela)) return true;
+      if(!solicitud.conversationId || m.conversationId !== solicitud.conversationId) return false;
+      // Misma conversación que el correo original: puede traer también avisos del juzgado. Se aceptan las respuestas
+      // («RE:», «RV:»…) o lo que escriba alguien a quien se le envió la solicitud.
+      const remitente = String(m.from?.emailAddress?.address || '').toLowerCase();
+      return /^\s*(re|rv|fw|fwd)\s*:/i.test(m.subject || '') || (solicitud.para || []).includes(remitente) || (solicitud.cc || []).includes(remitente);
+    })
     .filter(m => String(m.from?.emailAddress?.address || '').toLowerCase() !== propio)
     .sort((a, b) => String(a.receivedDateTime).localeCompare(String(b.receivedDateTime)));
 }
@@ -3651,4 +3691,141 @@ export async function generarWordDeEscritoLexIA(urlCarpeta, numeroTutela, carpet
     body: bytes,
   });
   return { nombre, bytes, resumen, modelo: modelo.nombre || item.name };
+}
+
+// ---------------------------------------------------------------------------
+// TODOS los correos de una tutela (2026-10-13, pedido del usuario): la lista de «Leer correo de Tutelas» solo muestra los correos de los
+// remitentes permitidos (juzgados). Para tener control total de una tutela se buscan en el buzón TODOS los correos que mencionan su número,
+// de cualquier remitente y carpeta (bandeja de entrada, enviados, otras carpetas; sin los borradores), se leen y se guardan en la carpeta de la
+// tutela, y se dejan resumidos en la sección 6 de «Lectura LexIA.txt». Así, al crear la solicitud de pruebas ya se sabe qué llegó.
+function claseDeCorreoTutela(m, correoBuzon){
+  const de = String(m.from?.emailAddress?.address || '').toLowerCase();
+  if(de && de === String(correoBuzon || '').toLowerCase()) return 'enviado por Tutelas';
+  if(/ramajudicial\.gov\.co$|@.*\.gov\.co$/.test(de)) return 'juzgado';
+  const ent = entidadDeDominio(de);
+  if(ent) return 'entidad (' + ent + ')';
+  return 'otro remitente';
+}
+export async function buscarCorreosDeTutelaEnBuzon(correoBuzon, noTutela){
+  const token = await getMailToken();
+  const n = String(noTutela || '').trim();
+  if(!n) return [];
+  const re = new RegExp('(^|[^0-9])' + n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '([^0-9]|$)');
+  const params = new URLSearchParams({
+    $search: '"' + n + '"',
+    $top: '50',
+    $select: 'id,subject,from,toRecipients,ccRecipients,receivedDateTime,sentDateTime,isDraft,hasAttachments,conversationId,webLink,body',
+  });
+  let url = `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(correoBuzon)}/messages?${params.toString()}`;
+  const salida = [];
+  for(let pagina = 0; pagina < 5 && url; pagina++){
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${token}`, Prefer: 'outlook.body-content-type="text"' } });
+    if(!res.ok) throw new Error(`Graph ${res.status} al buscar los correos de la tutela: ${(await res.text()).substring(0, 200)}`);
+    const data = await res.json();
+    for(const m of (data.value || [])){
+      if(m.isDraft) continue;
+      const cuerpo = m.body?.contentType === 'html' ? cuerpoCorreoComoTexto(m.body?.content || '') : String(m.body?.content || '');
+      // El buscador de Outlook es amplio: se exige que el número aparezca como número completo en el asunto o el texto.
+      if(!re.test((m.subject || '') + '\n' + cuerpo)) continue;
+      salida.push({
+        id: m.id, asunto: m.subject || '(sin asunto)',
+        de: `${m.from?.emailAddress?.name || ''} <${m.from?.emailAddress?.address || ''}>`,
+        fechaISO: m.receivedDateTime || m.sentDateTime || '',
+        fecha: new Date(m.receivedDateTime || m.sentDateTime || Date.now()).toLocaleString('es-CO'),
+        clase: claseDeCorreoTutela(m, correoBuzon),
+        tieneAdjuntos: !!m.hasAttachments, conversationId: m.conversationId || '', enlace: m.webLink || '',
+        resumen: cuerpo.replace(/\s+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim().slice(0, 1500),
+      });
+    }
+    url = data['@odata.nextLink'] || '';
+  }
+  salida.sort((a, b) => String(a.fechaISO).localeCompare(String(b.fechaISO)));
+  return salida;
+}
+// Nombres de los adjuntos de un correo (sin descargarlos).
+async function nombresAdjuntosDeCorreo(correoBuzon, mensajeId){
+  const token = await getMailToken();
+  const res = await fetch(`https://graph.microsoft.com/v1.0/users/${encodeURIComponent(correoBuzon)}/messages/${mensajeId}/attachments?$select=name,size,isInline`, { headers: { Authorization: `Bearer ${token}` } });
+  if(!res.ok) return [];
+  return ((await res.json()).value || []).filter(a => !a.isInline).map(a => a.name).filter(Boolean);
+}
+async function conAdjuntos(correoBuzon, lista){
+  const cola = lista.filter(c => c.tieneAdjuntos && !c.adjuntos);
+  let i = 0;
+  const trabajador = async () => { while(i < cola.length){ const c = cola[i++]; try{ c.adjuntos = await nombresAdjuntosDeCorreo(correoBuzon, c.id); }catch{ c.adjuntos = []; } } };
+  await Promise.all(Array.from({ length: Math.min(4, cola.length) }, trabajador));
+  lista.forEach(c => { if(!c.adjuntos) c.adjuntos = []; });
+  return lista;
+}
+// Guarda UN correo (impreso en PDF + sus adjuntos) en "<N> Tutela/Correos de la tutela". Devuelve el nombre base del archivo.
+async function guardarCorreoDeTutela({ correoBuzon, driveId, folderId, numero, correo }){
+  const completo = await leerCorreoCompleto(correoBuzon, correo.id);
+  const cuando = new Date(correo.fechaISO || Date.now());
+  const pad = x => String(x).padStart(2, '0');
+  const fechaArchivo = `${cuando.getFullYear()}-${pad(cuando.getMonth() + 1)}-${pad(cuando.getDate())} ${pad(cuando.getHours())}${pad(cuando.getMinutes())}`;
+  const remitente = nombreArchivoSeguroOneDrive((correo.de || '').replace(/<.*>/, '').trim() || 'Sin remitente').slice(0, 40);
+  const base = nombreArchivoSeguroOneDrive(`${fechaArchivo} - ${remitente} - ${(correo.asunto || '').slice(0, 50)}`);
+  const carpeta = `${numero} Tutela/Correos de la tutela`;
+  const subir = (nombre, bytes, tipo) => graphFetch(`/drives/${driveId}/items/${folderId}:/${encodeURIComponent(carpeta + '/' + nombre).replace(/%2F/g, '/')}:/content`, {
+    method: 'PUT', headers: { 'Content-Type': tipo || 'application/octet-stream' }, body: bytes,
+  });
+  const pdfBase64 = await construirPdfCorreoBase64(numero, completo, `Correo de la tutela · ${correo.clase}`);
+  await subir(`${base}.pdf`, base64ABytes(pdfBase64), 'application/pdf');
+  const nombres = [];
+  for(const adj of (completo.adjuntos || [])){
+    if(!adj.base64) continue;
+    const nombre = `${base} - ${nombreArchivoSeguroOneDrive(adj.nombre || 'adjunto')}`;
+    await subir(nombre, base64ABytes(adj.base64), adj.tipo);
+    nombres.push(adj.nombre || 'adjunto');
+  }
+  return { archivo: `${base}.pdf`, adjuntos: nombres.length ? nombres : undefined };
+}
+
+// Lee (y guarda) todos los correos que mencionan la tutela. Devuelve { total, nuevos, correos, errores }.
+export async function leerTodosLosCorreosDeTutela({ correoBuzon, urlCarpeta, noTutela, guardar = true }){
+  const salida = { total: 0, nuevos: 0, correos: [], errores: [] };
+  const encontrados = await buscarCorreosDeTutelaEnBuzon(correoBuzon, noTutela);
+  let ctx = null;
+  if(urlCarpeta){
+    try{
+      const { driveId, folderId } = await resolverCarpetaLexIAOneDrive(urlCarpeta);
+      ctx = { driveId, folderId, leido: await leerEstadoLectura(driveId, folderId, noTutela) };
+    }catch(err){ salida.errores.push('No se pudo abrir la carpeta de la tutela en OneDrive: ' + (err.message || err)); }
+  }
+  const previos = new Map(((ctx?.leido?.estado.correosTutela) || []).map(c => [c.id, c]));
+  const lista = await conAdjuntos(correoBuzon, encontrados);
+  const final = [];
+  for(const c of lista){
+    const previo = previos.get(c.id);
+    if(previo){ final.push({ ...c, archivo: previo.archivo, adjuntos: previo.adjuntos || c.adjuntos }); continue; }
+    let extra = {};
+    if(guardar && ctx){
+      try{ extra = await guardarCorreoDeTutela({ correoBuzon, driveId: ctx.driveId, folderId: ctx.folderId, numero: noTutela, correo: c }); }
+      catch(err){ salida.errores.push('No se pudo guardar el correo «' + (c.asunto || '').slice(0, 60) + '»: ' + (err.message || err)); }
+    }
+    final.push({ ...c, ...extra, adjuntos: extra.adjuntos || c.adjuntos });
+    salida.nuevos++;
+  }
+  salida.total = final.length;
+  salida.correos = final;
+  if(guardar && ctx?.leido){
+    const estado = ctx.leido.estado;
+    // Se guardan en la lectura sin los campos que solo sirven en pantalla.
+    estado.correosTutela = final.map(({ id, asunto, de, fecha, clase, adjuntos, resumen, archivo }) => ({ id, asunto, de, fecha, clase, adjuntos, resumen, archivo }));
+    try{ await escribirEstadoLectura(ctx.driveId, ctx.folderId, ctx.leido.ruta, estado); }
+    catch(err){ salida.errores.push('No se pudo actualizar Lectura LexIA.txt: ' + (err.message || err)); }
+  }
+  return salida;
+}
+
+// Resumen breve de lo que ya llegó, para el robot de la solicitud de pruebas. Búsqueda rápida (sin guardar nada ni gastar IA).
+// Nunca lanza: si algo falla, devuelve [] y la solicitud se crea como antes.
+export async function correosRecibidosParaSolicitud(correoBuzon, noTutela){
+  try{
+    const lista = await conAdjuntos(correoBuzon, await buscarCorreosDeTutelaEnBuzon(correoBuzon, noTutela));
+    return lista.map(c => ({ fecha: c.fecha, de: c.de, asunto: c.asunto, clase: c.clase, adjuntos: c.adjuntos || [], extracto: (c.resumen || '').slice(0, 700) }));
+  }catch(err){
+    console.error('No se pudieron revisar los correos ya recibidos de la tutela:', err);
+    return [];
+  }
 }
