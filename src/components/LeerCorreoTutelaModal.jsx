@@ -260,7 +260,7 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
       const numeroSolicitud = limpio.NoTutela || numeroTutelaDeAsunto(mensaje.asunto);
       let correosRecibidos = [];
       try{
-        if(todosCorreos[mensaje.id]?.estado === 'listo'){
+        if(todosCorreos[mensaje.id]?.estado === 'listo' || Date.now() - (correosLeidosEn.current[mensaje.id] || 0) < 180000){
           correosRecibidos = await correosRecibidosParaSolicitud(correoBuzon, numeroSolicitud);
         }else{
           const d = await asegurarCorreosLeidos(mensaje, numeroSolicitud, true);
@@ -306,6 +306,7 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
   const [todosCorreos, setTodosCorreos] = useState({}); // { [mensajeId]: { estado, datos?, error? } }
   // Lee (y guarda) los correos de la tutela. Los que ya se leyeron antes se descartan: solo se procesan los nuevos. Sin «forzar», reutiliza
   // la lectura de esta sesión si ya se hizo.
+  const correosLeidosEn = useRef({});   // mensajeId -> instante en que se leyeron todos los correos (para no repetir la lectura en el mismo flujo)
   async function asegurarCorreosLeidos(mensaje, numero, forzar){
     const previo = todosCorreos[mensaje.id];
     if(!forzar && previo?.estado === 'listo') return previo.datos;
@@ -313,6 +314,7 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
     try{
       const datos = await leerTodosLosCorreosDeTutela({ correoBuzon, urlCarpeta: onedriveCarpetaUrl, noTutela: numero });
       setTodosCorreos(prev => ({ ...prev, [mensaje.id]: { estado: 'listo', datos } }));
+      correosLeidosEn.current[mensaje.id] = Date.now();
       return datos;
     }catch(err){
       setTodosCorreos(prev => ({ ...prev, [mensaje.id]: { estado: 'error', error: mensajeError(err) } }));
@@ -348,18 +350,22 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
     const anotar = (t) => { pasos.push(t); setAplazamiento(prev => ({ ...prev, [mensaje.id]: { estado: 'creando', pasos: [...pasos] } })); };
     setAplazamiento(prev => ({ ...prev, [mensaje.id]: { estado: 'creando', pasos: [] } }));
     try{
-      await asegurarCorreosLeidos(mensaje, numero, true).catch(() => null);
-      const adjuntos = [];
-      for(let i = 0; i < registros.length; i++){
-        anotar('Redactando el aplazamiento de ' + (registros[i].Cliente || ('cliente ' + (i + 1))) + '...');
+      // 1) Los aplazamientos de TODOS los clientes se redactan a la vez (modo estricto: solo datos).
+      const aplazamientosProm = Promise.all(registros.map(async (reg, i) => {
+        anotar('Redactando el aplazamiento de ' + (reg.Cliente || ('cliente ' + (i + 1))) + '...');
         const r = await redactarEscritoConRobot({
           robotUrl: robotEscritoUrl, urlCarpeta: onedriveCarpetaUrl, numero, tipo: 'aplazamiento', indiceRegistro: i,
-          sexo: sexoPorNombre(registros[i].Usuario), nota: '', estricto: true, log: (t) => anotar('   ' + t),
+          sexo: sexoPorNombre(reg.Usuario), nota: '', estricto: true, log: (t) => anotar('   ' + (reg.Cliente ? String(reg.Cliente).split(' ')[0] + ': ' : '') + t),
         });
-        adjuntos.push({ nombre: r.nombre, bytes: r.bytes });
-      }
-      anotar('Creando el borrador (respuesta al correo de notificación, solicitud de pruebas y aplazamiento adjunto)...');
-      await generarSolicitudPruebas(mensaje, registros[0], 0, primerCorreoPorMensaje[mensaje.id] || { fecha: mensaje.fecha, id: mensaje.id }, true, adjuntos, 'Aplazamiento');
+        return { nombre: r.nombre, bytes: r.bytes };
+      }));
+      aplazamientosProm.catch(() => null);   // el error se avisa al adjuntar (abajo); aquí solo se evita un aviso duplicado
+      // 2) Mientras tanto: se leen los correos de la tutela y se arma la solicitud de pruebas (texto + borrador). Los aplazamientos se adjuntan
+      //    cuando estén listos.
+      anotar('Leyendo los correos de la tutela y armando la solicitud de pruebas (a la vez que se redactan los aplazamientos)...');
+      await asegurarCorreosLeidos(mensaje, numero, true).catch(() => null);
+      await generarSolicitudPruebas(mensaje, registros[0], 0, primerCorreoPorMensaje[mensaje.id] || { fecha: mensaje.fecha, id: mensaje.id }, true, aplazamientosProm, 'Aplazamiento');
+      const adjuntos = await aplazamientosProm.catch(err => { throw new Error('El borrador se creó, pero sin los aplazamientos: ' + (err.message || err)); });
       anotar('Listo: el borrador quedó en Borradores del buzón de Tutelas con ' + adjuntos.length + ' aplazamiento' + (adjuntos.length === 1 ? '' : 's') + ' adjunto' + (adjuntos.length === 1 ? '' : 's') + '. Revísalo antes de enviar.');
       setAplazamiento(prev => ({ ...prev, [mensaje.id]: { estado: 'listo', pasos: [...pasos] } }));
     }catch(err){

@@ -128,7 +128,15 @@ export function modelosDelIndice(indice, tipo, sexo, cliente){
 
 // Modelo de aplazamiento del cliente: el archivo ALIANSALUD.docx / COLMEDICA.docx / UMD.docx de «3. OTRAS ACTUACIONES / APLAZAMIENTOS» (se lee la
 // carpeta en vivo, porque estos archivos se renuevan y la lista guardada puede estar vencida).
+const cacheAplazamiento = new Map();   // cliente -> { t, v }
 async function modeloFijoAplazamiento(cliente){
+  const hit = cacheAplazamiento.get(cliente);
+  if(hit && Date.now() - hit.t < 300000) return hit.v;
+  const v = await buscarModeloFijoAplazamiento(cliente);
+  if(v) cacheAplazamiento.set(cliente, { t: Date.now(), v });
+  return v;
+}
+async function buscarModeloFijoAplazamiento(cliente){
   const base = await graphFetch(`/drives/${DRIVE_MODELOS}/root:/${encodeURIComponent(OTRAS)}`).catch(() => null);
   if(!base?.id) return null;
   const hijos = await hijosGraph(DRIVE_MODELOS, base.id, true);
@@ -167,7 +175,7 @@ function nombreCortoCliente(cliente){ return { aliansalud: 'ALIANSALUD', colmedi
  */
 export async function redactarEscritoConRobot({ robotUrl, urlCarpeta, numero, tipo, indiceRegistro = 0, sexo, nota = '', modeloManual = null, lecciones = '', estricto = false, log = () => {} }){
   log('Leyendo la lectura de la tutela...');
-  const caso = await prepararCasoParaEscrito(urlCarpeta, numero);
+  const caso = await prepararCasoParaEscrito(urlCarpeta, numero, { ligero: estricto, indiceRegistro });
   if(!caso) throw new Error('Esta tutela todavía no tiene «Lectura LexIA.txt»: primero extráela con LexIA.');
   const registro = caso.registros[indiceRegistro] || caso.registros[0] || {};
   const cliente = claveCliente(registro.Cliente);
@@ -229,7 +237,8 @@ export async function redactarEscritoConRobot({ robotUrl, urlCarpeta, numero, ti
   const aplicado = await aplicarCambiosADocx(bytes, estricto ? { ...r, eliminar: [], agregar: [] } : { ...r, eliminar: [] });
   const nombre = `${TIPOS_ESCRITO[tipo].etiqueta} - ${nombreCortoCliente(registro.Cliente)} - borrador LexIA.docx`.replace(/[\\/:*?"<>|]/g, ' ');
   log('Guardando en la carpeta de la tutela...');
-  await guardarArchivoEnTutela(urlCarpeta, numero, nombre, aplicado.bytes, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document').catch(err => aplicado.avisos.push('No pude guardar el Word en la carpeta de la tutela: ' + (err.message || err)));
+  // Se guarda en la carpeta de la tutela SIN hacer esperar (el resultado ya está listo en memoria).
+  guardarArchivoEnTutela(urlCarpeta, numero, nombre, aplicado.bytes, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document').catch(err => console.error('No pude guardar el Word en la carpeta de la tutela:', err));
   return { bytes: aplicado.bytes, nombre, cliente, lecciones, estricto, alertas: r.alertas || '', usos, avisos: aplicado.avisos, resumen: aplicado.resumen, modelo: elegido.ruta, tipo, numero, urlCarpeta, robotUrl, caso: { textoCaso: caso.textoCaso, correos: caso.correosResumen }, modelos };
 }
 

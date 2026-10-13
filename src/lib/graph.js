@@ -743,10 +743,15 @@ export async function crearSolicitudPruebasBorrador({ config, robotSolicitudUrl,
   }
   if(borrador && borrador.firmaOk === false) notas = 'No se pudo adjuntar la imagen de la firma: agrégala tú en el borrador. ' + notas;
   // Archivos que se adjuntan al borrador (p. ej. el aplazamiento diligenciado): [{ nombre, bytes }]
-  if(adjuntos && adjuntos.length && borrador?.id){
+  let adjuntosListos = [];
+  if(adjuntos){
+    try{ adjuntosListos = await adjuntos; }
+    catch(err){ notas = 'No se pudo preparar el aplazamiento para adjuntarlo (' + (err.message || err) + '): el borrador se creó sin adjuntos. ' + notas; }
+  }
+  if(adjuntosListos && adjuntosListos.length && borrador?.id){
     const raizCorreo = reenviado ? `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(correoBuzon)}` : 'https://graph.microsoft.com/v1.0/me';
     const tokenCorreo = await getMailToken();
-    for(const a of adjuntos){
+    for(const a of adjuntosListos){
       try{
         const res = await fetch(`${raizCorreo}/messages/${borrador.id}/attachments`, {
           method: 'POST',
@@ -1374,6 +1379,7 @@ async function leerEstadoLectura(driveId, folderId, numero){
   return null;
 }
 async function escribirEstadoLectura(driveId, folderId, ruta, estado){
+  cacheCasoEscrito.clear();
   estado.actualizado = new Date().toLocaleString('es-CO');
   // Enlace directo a la carpeta de esta tutela (por su identificador): el artefacto lo usa para encontrar «Correos de la tutela».
   try{
@@ -3898,12 +3904,21 @@ export async function graphDescargarArchivo(driveId, itemId){
 
 // El caso de una tutela tal como se le da al robot: «Lectura LexIA.txt» sin el bloque JSON del final (repite todo), sin la sección 2 (el
 // correo, ya resumido en la 3) y sin la 6 (los demás correos van como resumen aparte). Devuelve null si la tutela no tiene lectura.
-export async function prepararCasoParaEscrito(urlCarpeta, numeroTutela){
+const cacheCasoEscrito = new Map();   // «tutela|ligero» -> { t, v }: la lectura de la tutela se reutiliza unos segundos (se borra al reescribirla)
+export async function prepararCasoParaEscrito(urlCarpeta, numeroTutela, { ligero = false, indiceRegistro = 0 } = {}){
+  const claveCache = numeroTutela + '|' + (ligero ? 'L' + indiceRegistro : 'F');
+  const hit = cacheCasoEscrito.get(claveCache);
+  if(hit && Date.now() - hit.t < 90000) return hit.v;
   const { driveId, folderId } = await resolverCarpetaLexIAOneDrive(urlCarpeta);
   const leido = await leerEstadoLectura(driveId, folderId, numeroTutela);
   if(!leido) return null;
   const e = leido.estado;
-  let t = construirTextoDesdeEstado(e);
+  // Modo LIGERO (modelos fijos como el aplazamiento, que solo piden datos): solo el registro de ESE cliente y los datos del portal; sin anexos,
+  // solicitud de pruebas, respuestas de las áreas ni correos. Los datos que se necesitan están en las secciones 1 y 3.
+  const eTexto = ligero
+    ? { ...e, registros: [(e.registros || [])[indiceRegistro] || (e.registros || [])[0]].filter(Boolean), documentos: [], omitidos: [], solicitudes: [], respuestasAreas: [], correosTutela: [] }
+    : e;
+  let t = construirTextoDesdeEstado(eTexto);
   const j = t.indexOf(MARCADOR_JSON_INICIO);
   if(j >= 0) t = t.slice(0, j);
   const s6 = t.indexOf('################ 6.');
@@ -3914,10 +3929,12 @@ export async function prepararCasoParaEscrito(urlCarpeta, numeroTutela){
   // Los demás correos de la tutela, resumidos (si el abogado ya pulsó «Leer todos los correos de esta tutela»).
   // Los correos de la tutela son FUNDAMENTALES para contestar: los del juzgado y de las entidades entran con más detalle (hasta 2.500 caracteres)
   // que los de otros remitentes (800); del más antiguo al más reciente, con tope total.
-  const correos = (e.correosTutela || []).filter(c => !esCorreoGeneradoPorElPortal(c.asunto)).slice(-25).map(c =>
+  const correos = ligero ? '' : (e.correosTutela || []).filter(c => !esCorreoGeneradoPorElPortal(c.asunto)).slice(-25).map(c =>
     `${c.fecha || ''} | ${c.clase || ''} | De: ${c.de || ''} | Asunto: ${c.asunto || ''}${c.adjuntos && c.adjuntos.length ? ' | Adjuntos: ' + c.adjuntos.join('; ') : ''}\n   ${String(c.resumen || '').replace(/\s+/g, ' ').slice(0, c.clase === 'otro remitente' ? 800 : 2500)}`
   ).join('\n').slice(0, 20000);
-  return { textoCaso: t, registros: e.registros || [], correosResumen: correos, driveId, folderId, ruta: leido.ruta };
+  const resultado = { textoCaso: t, registros: e.registros || [], correosResumen: correos, driveId, folderId, ruta: leido.ruta };
+  cacheCasoEscrito.set(claveCache, { t: Date.now(), v: resultado });
+  return resultado;
 }
 // Guarda un archivo en la carpeta de la tutela ("<N> Tutela/<nombre>"). Devuelve la ruta usada.
 export async function guardarArchivoEnTutela(urlCarpeta, numeroTutela, nombre, bytes, tipoMime){
