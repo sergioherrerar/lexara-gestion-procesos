@@ -594,7 +594,7 @@ async function adjuntarFirmaInline(raiz, mensajeId, token){
 async function ultimosMensajesDeCarpeta(correoBuzon, carpeta, campoOrden, top = 150, filtro = ''){
   const token = await getMailToken();
   const params = new URLSearchParams({
-    $select: 'id,subject,from,toRecipients,ccRecipients,createdDateTime,sentDateTime,receivedDateTime,conversationId,webLink,hasAttachments,categories',
+    $select: 'id,subject,from,toRecipients,ccRecipients,createdDateTime,sentDateTime,receivedDateTime,conversationId,webLink,hasAttachments,categories,bodyPreview',
     $top: String(top),
     $orderby: campoOrden + ' desc',
   });
@@ -3902,10 +3902,12 @@ export async function estadoSeguimientoTutela({ correoBuzon, urlCarpeta, noTutel
         const enviado = carpeta === 'sentitems';
         const paso = { enviado, borrador: !enviado, fecha: fechaDe(m.sentDateTime || m.createdDateTime), _t: String(m.sentDateTime || m.createdDateTime || '') };
         if(esSolicitudPruebasDeTutela(m, n)){ hallados.pruebas.push(paso); return; }
-        if((m.categories || []).some(c => { const x = normalize(c); return x === etiquetaAplazamiento || x.startsWith(etiquetaAplazamiento + ' '); })){ hallados.aplazamiento.push(paso); return; }
-        // Escrito de contestación: correo enviado que menciona la tutela en el asunto y va dirigido a un juzgado (dirección .gov.co).
-        const destinos = [...(m.toRecipients || []), ...(m.ccRecipients || [])].map(r => String(r.emailAddress?.address || '').toLowerCase());
-        if(enviado && re.test(m.subject || '') && destinos.some(d => /\.gov\.co$/.test(d))) hallados.escrito.push(paso);
+        const previo = String(m.bodyPreview || '');
+        // Aplazamiento: por la etiqueta del borrador o por el saludo del correo («Buenas tardes, remito Aplazamiento por COLMÉDICA.»).
+        if((m.categories || []).some(c => { const x = normalize(c); return x === etiquetaAplazamiento || x.startsWith(etiquetaAplazamiento + ' '); }) || (re.test(m.subject || '') && /remito\s+aplazamiento/i.test(previo))){ hallados.aplazamiento.push(paso); return; }
+        // Escrito de contestación (o aclaración, impugnación, alcance…): correo enviado con el número de la tutela en el asunto cuyo texto dice
+        // «Remito contestación por UMD con (1) anexo». Se manda a la entidad cliente, no al juzgado.
+        if(enviado && re.test(m.subject || '') && /remito\s+(la\s+|el\s+)?(contestaci[oó]n|impugnaci[oó]n|aclaraci[oó]n|alcance|nulidad|cumplimiento|requerimiento|modulaci[oó]n|correcci[oó]n)/i.test(previo)) hallados.escrito.push(paso);
       });
     }catch(err){ fallos++; console.error('No se pudo revisar ' + carpeta + ' para el seguimiento:', err); }
   }

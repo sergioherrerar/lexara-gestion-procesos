@@ -2,8 +2,11 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-10-13 (38)
+- **Corrección en la lista de seguimiento: el escrito de contestación se reconoce por su texto, no por el destinatario** — el escrito se envía a la entidad cliente (no al juzgado), así que ahora se busca en Enviados un correo con el número de la tutela en el asunto cuyo texto dice «Remito contestación…» (o aclaración, impugnación, alcance…). El aplazamiento también se reconoce por su saludo («Remito Aplazamiento por…»).
+
 ## 2026-10-13 (37)
-- **Lista de seguimiento de la tutela, debajo de la foto de LexIA** — pedido del usuario. Con check verde (hecho), naranja (borrador sin enviar) o gris (pendiente) y la fecha de cada paso: leído por LexIA, correos nuevos verificados hasta (se guarda cada vez que se leen los correos), correo de pruebas (borrador/enviado), llegaron correos de pruebas (con cuántas áreas respondieron), aplazamiento y escrito de contestación (se reconoce un correo enviado a un juzgado, dirección .gov.co, con el número de la tutela en el asunto). Se actualiza sola al elegir la tutela y al terminar cada acción; también con el botón de actualizar.
+- **Lista de seguimiento de la tutela, debajo de la foto de LexIA** — pedido del usuario. Con check verde (hecho), naranja (borrador sin enviar) o gris (pendiente) y la fecha de cada paso: leído por LexIA, correos nuevos verificados hasta (se guarda cada vez que se leen los correos), correo de pruebas (borrador/enviado), llegaron correos de pruebas (con cuántas áreas respondieron), aplazamiento y escrito de contestación (se reconoce un correo enviado con el número de la tutela en el asunto cuyo texto dice «Remito contestación…», que se manda a la entidad cliente). Se actualiza sola al elegir la tutela y al terminar cada acción; también con el botón de actualizar.
 
 ## 2026-10-13 (36)
 - **Se retira el botón «Leer correos nuevos de esta tutela» de la Sección 3** — pedido del usuario; queda solo en la Sección 2.
