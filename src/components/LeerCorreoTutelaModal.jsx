@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { normalizarBorradorTutela } from '../lib/borradorTutela';
 import { aplicarVencimientoHabil, fechaLocalISO } from '../lib/vencimientoTutela';
 import { leerCorreosTutelas, primerCorreoDeConversacion, crearSolicitudPruebasBorrador, buscarSolicitudPruebasExistente, revisarRespuestasAreas, uriLecturaLexIAParaArtefacto, leerTodosLosCorreosDeTutela, correosRecibidosParaSolicitud, extraerTutelaConLexIA, numeroTutelaDeAsunto, normalize, mensajeError, buscarLecturaLexIAGuardada, guardarLecturaLexIAEnOneDrive, listarTutelasAnalizadasEnOneDrive, asegurarCarpetaTutelaDesdeMensaje } from '../lib/graph';
@@ -133,6 +133,7 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
       .then(async set => {
         if(cancelado) return;
         setAnalizadasOneDrive(set);
+        numerosCargadosRef.current = new Set(Array.from(set).map(String));
         const casos = await Promise.all(
           Array.from(set).map(n => buscarLecturaLexIAGuardada(onedriveCarpetaUrl, n))
         );
@@ -173,7 +174,31 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
     return () => { cancelado = true; };
   }, [correoBuzon, remitentesPermitidos, desde, hasta]);
 
+  // Vuelve a consultar qué tutelas ya tienen su carpeta «N Tutela» (leídas por LexIA) y marca las nuevas; carga solo las lecturas que faltan.
+  async function refrescarAnalizadas(){
+    if(!onedriveCarpetaUrl) return;
+    try{
+      const set = await listarTutelasAnalizadasEnOneDrive(onedriveCarpetaUrl);
+      setAnalizadasOneDrive(set);
+      const nuevas = Array.from(set).filter(n => !numerosCargadosRef.current.has(String(n)));
+      nuevas.forEach(n => numerosCargadosRef.current.add(String(n)));
+      if(nuevas.length){
+        const casos = (await Promise.all(nuevas.map(n => buscarLecturaLexIAGuardada(onedriveCarpetaUrl, n)))).filter(Boolean);
+        if(casos.length) setCasosGuardadosOneDrive(prev => [...prev, ...casos]);
+      }
+    }catch(err){ console.error('No se pudo actualizar la lista de tutelas ya leídas:', err); }
+  }
+  const numerosCargadosRef = useRef(new Set());   // tutelas cuya lectura ya se cargó (para no volver a pedirlas en cada revisión)
+  useEffect(() => {
+    if(!onedriveCarpetaUrl) return;
+    const alVolver = () => { if(document.visibilityState === 'visible') refrescarAnalizadas(); };
+    document.addEventListener('visibilitychange', alVolver);
+    const id = setInterval(alVolver, 60000);
+    return () => { document.removeEventListener('visibilitychange', alVolver); clearInterval(id); };
+  }, [onedriveCarpetaUrl]);
+
   async function handleActualizarCorreos(){
+    refrescarAnalizadas();
     setActualizando(true);
     setErrorCarga('');
     try{
@@ -209,7 +234,7 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
       ? { ...prev, registros: prev.registros.map((r, i) => i === indice ? { ...r, _solicitud: solicitud } : r) }
       : prev);
   }
-  async function generarSolicitudPruebas(mensaje, registro, indice, primerCorreo, forzar = false, adjuntosExtra = []){
+  async function generarSolicitudPruebas(mensaje, registro, indice, primerCorreo, forzar = false, adjuntosExtra = [], etiquetaEnvio = ''){
     const instante = primerCorreo.fecha;
     marcarSolicitud(mensaje.id, indice, { estado: 'creando' });
     try{
@@ -252,6 +277,7 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
         // Todos los clientes que señala esta tutela (un registro por cliente): el robot solo pide a esas entidades.
         clientesSenalados: (resultado?.registros || []).map(x => x.Cliente).filter(Boolean),
         adjuntos: adjuntosExtra,
+        etiquetaEnvio,
       });
       indicesAfectados.forEach(k => marcarSolicitud(mensaje.id, k, { estado: 'listo', para: r.para, cc: r.cc, notas: r.notas, formato: r.formato, reenviado: r.reenviado }));
     }catch(err){
@@ -332,8 +358,8 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
         });
         adjuntos.push({ nombre: r.nombre, bytes: r.bytes });
       }
-      anotar('Creando el borrador (reenvío del correo de notificación, solicitud de pruebas y aplazamiento adjunto)...');
-      await generarSolicitudPruebas(mensaje, registros[0], 0, primerCorreoPorMensaje[mensaje.id] || { fecha: mensaje.fecha, id: mensaje.id }, true, adjuntos);
+      anotar('Creando el borrador (respuesta al correo de notificación, solicitud de pruebas y aplazamiento adjunto)...');
+      await generarSolicitudPruebas(mensaje, registros[0], 0, primerCorreoPorMensaje[mensaje.id] || { fecha: mensaje.fecha, id: mensaje.id }, true, adjuntos, 'Aplazamiento');
       anotar('Listo: el borrador quedó en Borradores del buzón de Tutelas con ' + adjuntos.length + ' aplazamiento' + (adjuntos.length === 1 ? '' : 's') + ' adjunto' + (adjuntos.length === 1 ? '' : 's') + '. Revísalo antes de enviar.');
       setAplazamiento(prev => ({ ...prev, [mensaje.id]: { estado: 'listo', pasos: [...pasos] } }));
     }catch(err){
@@ -460,6 +486,7 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
           extraido.guardadoAdjuntos,
         ]);
         setGuardandoOneDrive(false);
+        if(!lectura.error) setAnalizadasOneDrive(prev => new Set(prev).add(String(numeroTutela)));
         if(lectura.error){
           console.error(lectura.error);
           notify?.(conAvisos('Se extrajeron los datos, pero no se pudo guardar la lectura en OneDrive: ' + mensajeError(lectura.error)), 'error');

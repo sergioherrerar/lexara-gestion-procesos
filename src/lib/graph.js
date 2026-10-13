@@ -658,7 +658,9 @@ async function reenviarComoBorrador(correoBuzon, mensajeId, { para, cc, categori
   const token = await getMailToken();
   const base = `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(correoBuzon)}/messages/${mensajeId}`;
   const cabeceras = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
-  const r1 = await fetch(base + '/createForward', { method: 'POST', headers: cabeceras, body: '{}' });
+  // Pedido del usuario 2026-10-13: el borrador es una RESPUESTA al correo de notificación (conserva el hilo y el asunto «RE: …»); los destinatarios
+  // se reemplazan por las áreas (para) y la copia (cc), así la respuesta nunca queda dirigida al juzgado por defecto.
+  const r1 = await fetch(base + '/createReply', { method: 'POST', headers: cabeceras, body: '{}' });
   if(!r1.ok) throw new Error(`Graph ${r1.status}: ${(await r1.text()).substring(0, 200)}`);
   const borrador = await r1.json();
   const original = borrador.body?.content || '';
@@ -673,7 +675,7 @@ async function reenviarComoBorrador(correoBuzon, mensajeId, { para, cc, categori
       // Sin `subject`: el borrador conserva el asunto del correo original (pedido del usuario 2026-10-13, para tener la traza).
       categories: categoria ? [categoria] : [],
       toRecipients: (para || []).map(c => ({ emailAddress: { address: c } })),
-      ccRecipients: (cc || []).map(c => ({ emailAddress: { address: c } })),
+      ccRecipients: (cc || []).filter(c => String(c).toLowerCase() !== String(correoBuzon || '').toLowerCase()).map(c => ({ emailAddress: { address: c } })),
       body: { contentType: 'HTML', content: contenido },
     }),
   });
@@ -688,7 +690,7 @@ async function reenviarComoBorrador(correoBuzon, mensajeId, { para, cc, categori
 // (valores oficiales) para la tabla. Si se da `mensajeIdReenviar`, el borrador es un reenvío de
 // ese correo (conserva la traza); si no se puede reenviar, queda como borrador nuevo y se avisa.
 // Devuelve { para, cc, asunto, notas, formato, reenviado, borrador }.
-export async function crearSolicitudPruebasBorrador({ config, robotSolicitudUrl, registro, registros, campos, camposTodos, asuntoCorreo, noTutela, fechaVencimiento, correoBuzon, mensajeIdReenviar, clientesSenalados, correosRecibidos, adjuntos }){
+export async function crearSolicitudPruebasBorrador({ config, robotSolicitudUrl, registro, registros, campos, camposTodos, asuntoCorreo, noTutela, fechaVencimiento, correoBuzon, mensajeIdReenviar, clientesSenalados, correosRecibidos, adjuntos, etiquetaEnvio }){
   if(!robotSolicitudUrl) throw new Error('Falta la dirección del robot de solicitud de pruebas (ROBOT_SOLICITUD_PRUEBAS_URL).');
   const formato = await leerFormatoSolicitudPruebas(config);
   const res = await fetch(robotSolicitudUrl, {
@@ -703,14 +705,24 @@ export async function crearSolicitudPruebasBorrador({ config, robotSolicitudUrl,
   // 2026-10-13: el asunto no se toca (conserva el del correo original).
   const cortos = [...new Set((registros && registros.length ? registros : [registro]).map(x => nombreCortoClienteSolicitud(x && x.Cliente)).filter(Boolean))];
   const categoria = etiquetaSolicitud(noTutela, cortos);
+  // Copia: el área jurídica (Dania) de cada cliente de la tutela, con las direcciones de la agenda del formato (se unen a las que traiga el robot).
+  const DANIA_POR_CLIENTE = { 'ALIANSALUD': 'daniacp@aliansalud.com.co', 'COLMÉDICA': 'daniacp@colmedica.com', 'UMD': 'daniacp@umd.com.co' };
+  const ccFinal = [...new Set([...(data.cc || []), ...cortos.map(c => DANIA_POR_CLIENTE[c]).filter(Boolean)].map(c => String(c)))];
   // Orden (pedido del usuario 2026-10-13): el modelo de la solicitud con todas sus viñetas, LUEGO la tabla de datos de la tutela, y al final la
   // despedida («Agradezco su gestión. Cordial saludo,») con la firma. Si el cuerpo no trae la despedida, la tabla va justo antes de la firma.
   const tablaHtml = tablaDatosTutelaHtml(campos || {}, data.pretensiones, camposTodos);
   // Saludo según la hora (pedido del usuario 2026-10-13): el formato dice «Cordial saludo, remito para su respectivo análisis de auditoría.»;
-  // en el correo va «Buenos días/Buenas tardes/Buenas noches, remito…». Solo se cambia el saludo de arriba; la despedida «Cordial saludo,» no se toca.
+  // en el correo va «Buenos días/Buenas tardes/Buenas noches, remito…». Después de «remito» va lo que se envía cuando es un escrito
+  // («remito Aplazamiento para su respectivo análisis de auditoría.», «remito Impugnación…»); en la solicitud de pruebas queda igual.
+  // Solo se cambia el saludo de arriba; la despedida «Cordial saludo,» no se toca.
   const hora = new Date().getHours();
   const saludoHora = hora < 12 ? 'Buenos días' : (hora < 19 ? 'Buenas tardes' : 'Buenas noches');
-  const textoCuerpo = String(data.cuerpo || '').replace(/^([ 	]*)Cordial saludo[ 	]*,[ 	]*(remito)/im, (_m, sangria, remito) => sangria + saludoHora + ', ' + remito);
+  const clientesTexto = cortos.length > 1 ? cortos.slice(0, -1).join(', ') + ' y ' + cortos[cortos.length - 1] : (cortos[0] || '');
+  const textoCuerpo = etiquetaEnvio
+    // Escrito enviado: «Buenas tardes, remito Aplazamiento por COLMÉDICA y ALIANSALUD.» (reemplaza toda la frase del formato)
+    ? String(data.cuerpo || '').replace(/^([ \t]*)Cordial saludo[ \t]*,[ \t]*remito[^\n]*$/im, (_m, sangria) => sangria + saludoHora + ', remito ' + etiquetaEnvio + (clientesTexto ? ' por ' + clientesTexto : '') + '.')
+    // Solicitud de pruebas: solo cambia el saludo («Buenas tardes, remito para su respectivo análisis de auditoría.»)
+    : String(data.cuerpo || '').replace(/^([ \t]*)Cordial saludo[ \t]*,[ \t]*(remito)/im, (_m, sangria, remito) => sangria + saludoHora + ', ' + remito);
   const posDespedida = textoCuerpo.search(/^\s*Agradezco su gesti[oó]n/im);
   const htmlAntes = posDespedida > 0
     ? cuerpoSolicitudAHtml(textoCuerpo.slice(0, posDespedida)) + tablaHtml + cuerpoSolicitudAHtml(textoCuerpo.slice(posDespedida)) + FIRMA_HTML
@@ -718,7 +730,7 @@ export async function crearSolicitudPruebasBorrador({ config, robotSolicitudUrl,
   let borrador, reenviado = false, notas = data.notas || '';
   if(correoBuzon && mensajeIdReenviar){
     try{
-      borrador = await reenviarComoBorrador(correoBuzon, mensajeIdReenviar, { para: data.para, cc: data.cc, categoria, htmlAntes });
+      borrador = await reenviarComoBorrador(correoBuzon, mensajeIdReenviar, { para: data.para, cc: ccFinal, categoria, htmlAntes });
       reenviado = true;
     }catch(err){
       console.error('No se pudo reenviar el correo original, se crea un borrador nuevo:', err);
@@ -726,7 +738,7 @@ export async function crearSolicitudPruebasBorrador({ config, robotSolicitudUrl,
     }
   }
   if(!borrador){
-    borrador = await crearBorradorCorreo({ to: data.para || [], cc: data.cc || [], subject: asunto, htmlBody: htmlAntes, categorias: [categoria] });
+    borrador = await crearBorradorCorreo({ to: data.para || [], cc: ccFinal, subject: asunto, htmlBody: htmlAntes, categorias: [categoria] });
     if(borrador?.id) borrador.firmaOk = await adjuntarFirmaInline('https://graph.microsoft.com/v1.0/me', borrador.id, await getMailToken());
   }
   if(borrador && borrador.firmaOk === false) notas = 'No se pudo adjuntar la imagen de la firma: agrégala tú en el borrador. ' + notas;
@@ -751,7 +763,7 @@ export async function crearSolicitudPruebasBorrador({ config, robotSolicitudUrl,
       }
     }
   }
-  return { para: data.para || [], cc: data.cc || [], asunto: (reenviado && borrador && borrador.subject) || asunto, notas, formato: formato.nombre, reenviado, borrador };
+  return { para: data.para || [], cc: ccFinal, asunto: (reenviado && borrador && borrador.subject) || asunto, notas, formato: formato.nombre, reenviado, borrador };
 }
 
 // "API Claude" Tarea 1 (2026-09-23, pedido explícito del usuario, ya con
