@@ -670,14 +670,15 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
                     </div>
                   )}
                   {onedriveCarpetaUrl && numeroDeEsteMensaje && (yaAnalizadaEnOneDrive || resultado?.mensajeId === m.id) && (
-                    <div style={{marginTop:8, marginBottom:10, paddingBottom:8, borderBottom:'1px solid var(--gris-linea)'}}>
-                      <div style={{display:'flex', alignItems:'center', gap:10, flexWrap:'wrap'}}>
-                        <strong style={{fontSize:13}}>Todos los correos de esta tutela</strong>
+                    <div className="tutela-seccion">
+                      <div className="tutela-seccion-head">
+                        <h4><span className="tutela-seccion-n">Sección 1</span>Todos los correos de esta tutela</h4>
                         <IconTextButton icon="refresh" variant="secondary" disabled={todosCorreos[m.id]?.estado === 'leyendo'} onClick={() => handleLeerTodosCorreos(m)}>
                           {todosCorreos[m.id]?.estado === 'leyendo' ? 'Leyendo…' : (todosCorreos[m.id]?.datos ? 'Volver a leer todos los correos' : 'Leer todos los correos de esta tutela')}
                         </IconTextButton>
-                        <span className="save-hint" style={{margin:0}}>Busca en el buzón TODOS los correos con este número (de cualquier remitente), los guarda en la carpeta de la tutela y los deja en la lectura; antes de crear el borrador de la solicitud de pruebas (y antes de redactar el escrito) se vuelven a leer solos, para que ya sepa qué llegó.</span>
                       </div>
+                      <div className="tutela-seccion-body">
+                      <p className="escrito-intro">Busca en el buzón TODOS los correos con este número (de cualquier remitente), los guarda en la carpeta de la tutela y los deja en la lectura; antes de crear el borrador de la solicitud de pruebas (y antes de redactar el escrito) se vuelven a leer solos, para que ya sepa qué llegó.</p>
                       {todosCorreos[m.id]?.estado === 'error' && <p className="save-hint" style={{margin:'6px 0 0', color:'var(--rojo, #a3281c)'}}>No se pudo leer: {todosCorreos[m.id].error}</p>}
                       {todosCorreos[m.id]?.estado === 'listo' && (() => {
                         const d = todosCorreos[m.id].datos;
@@ -702,6 +703,7 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
                           </div>
                         );
                       })()}
+                      </div>
                     </div>
                   )}
                   {/* Uno o varios registros detectados (2026-09-23, ver nota
@@ -709,7 +711,10 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
                       propio botón, para poder crear varios borradores del
                       mismo correo sin tener que volver a extraer. */}
                   {resultado && resultado.mensajeId === m.id && (
-                    <div className="leer-correo-registros">
+                    <>
+                    <div className="tutela-seccion">
+                      <div className="tutela-seccion-head"><h4><span className="tutela-seccion-n">Sección 2</span>Clientes de la tutela y borrador</h4></div>
+                      <div className="tutela-seccion-body leer-correo-registros">
                       {resultado.registros.length > 1 && (
                         <p className="save-hint" style={{margin:'0 0 8px'}}>
                           Este correo señala a {resultado.registros.length} clientes distintos. Los botones «Crear borrador» de cada cliente abren el formulario de la tutela de ese cliente (en el portal cada cliente lleva su propio registro). La solicitud de pruebas, en cambio, es UN SOLO correo borrador para todos, con una sección separada por cada cliente.
@@ -741,13 +746,16 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
                           {bloqueSolicitud(resultado.registros[0], 0, true)}
                         </div>
                       )}
-                      {(() => {
+                      </div>
+                    </div>
+                    {(() => {
                         const otras = otrasTutelasDelUsuario(tutelas, resultado.registros[0]);
                         const antecedentesLexIA = String(resultado.registros[0]?.Analisis?.Antecedentes || '').trim();
                         if(!otras.length && !antecedentesLexIA) return null;
                         return (
-                          <div className="leer-correo-registro-item" style={{flexDirection:'column', alignItems:'flex-start', gap:4, background:'var(--naranja-suave, #fff4e5)'}}>
-                            <strong style={{fontSize:13}}>Comentario: otras tutelas de este mismo usuario</strong>
+                          <div className="tutela-seccion tutela-seccion-aviso">
+                            <div className="tutela-seccion-head"><h4><span className="tutela-seccion-n">Sección 3</span>Comentario: otras tutelas de este mismo usuario</h4></div>
+                            <div className="tutela-seccion-body" style={{gap:6}}>
                             {otras.length > 0 ? (
                               <>
                                 <span className="save-hint" style={{margin:0}}>Ya hay {otras.length} tutela{otras.length === 1 ? '' : 's'} registrada{otras.length === 1 ? '' : 's'} en el portal con la misma identificación{resultado.registros[0]?.Usuario ? ` (${resultado.registros[0].Usuario})` : ''}:</span>
@@ -764,25 +772,21 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
                               <span className="save-hint" style={{margin:0}}>En el portal no hay otras tutelas con esa identificación.</span>
                             )}
                             {antecedentesLexIA && <span className="save-hint" style={{margin:0}}>Lo que LexIA vio mencionado en esta tutela: {antecedentesLexIA}</span>}
+                            </div>
                           </div>
                         );
-                      })()}
-                    </div>
-                  )}
-                  {onedriveCarpetaUrl && numeroDeEsteMensaje && (yaAnalizadaEnOneDrive || resultado?.mensajeId === m.id) && (
-                    <div style={{marginTop:10, display:'flex', alignItems:'center', gap:10, flexWrap:'wrap'}}>
-                      <IconTextButton icon="mail" variant="secondary" onClick={() => handleCopiarEnlaceArtefacto(m)}>Copiar enlace para el artefacto</IconTextButton>
-                      <span className="save-hint" style={{margin:0}}>Pégalo en el artefacto Plan B para que lea la lectura al instante.</span>
-                    </div>
+                    })()}
+                    </>
                   )}
                   {robotSolicitudUrl && onedriveCarpetaUrl && numeroDeEsteMensaje && (yaAnalizadaEnOneDrive || resultado?.mensajeId === m.id) && (
-                    <div className="respuestas-areas-panel" style={{marginTop:10, paddingTop:8, borderTop:'1px solid var(--gris-linea)'}}>
-                      <div style={{display:'flex', alignItems:'center', gap:10, flexWrap:'wrap'}}>
-                        <strong style={{fontSize:13}}>Pruebas solicitadas a las áreas</strong>
+                    <div className="respuestas-areas-panel tutela-seccion">
+                      <div className="tutela-seccion-head">
+                        <h4><span className="tutela-seccion-n">Sección 4</span>Pruebas solicitadas a las áreas</h4>
                         <IconTextButton icon="mail" variant="secondary" disabled={respuestasAreas[m.id]?.estado === 'revisando'} onClick={() => handleRevisarRespuestas(m)}>
                           {respuestasAreas[m.id]?.estado === 'revisando' ? 'Revisando…' : (respuestasAreas[m.id]?.datos ? 'Volver a revisar respuestas' : 'Revisar respuestas de las áreas')}
                         </IconTextButton>
                       </div>
+                      <div className="tutela-seccion-body">
                       {respuestasAreas[m.id]?.estado === 'error' && (
                         <p className="save-hint" style={{margin:'6px 0 0', color:'var(--rojo, #a3281c)'}}>No se pudo revisar: {respuestasAreas[m.id].error}</p>
                       )}
@@ -814,6 +818,18 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
                           </div>
                         );
                       })()}
+                      </div>
+                    </div>
+                  )}
+                  {onedriveCarpetaUrl && numeroDeEsteMensaje && (yaAnalizadaEnOneDrive || resultado?.mensajeId === m.id) && (
+                    <div className="tutela-seccion">
+                      <div className="tutela-seccion-head">
+                        <h4><span className="tutela-seccion-n">Sección 5</span>Enlace para el artefacto (Plan B)</h4>
+                        <IconTextButton icon="mail" variant="secondary" onClick={() => handleCopiarEnlaceArtefacto(m)}>Copiar enlace para el artefacto</IconTextButton>
+                      </div>
+                      <div className="tutela-seccion-body">
+                        <p className="escrito-intro">Pégalo en el artefacto Plan B para que lea la lectura al instante.</p>
+                      </div>
                     </div>
                   )}
                   {robotEscritoUrl && onedriveCarpetaUrl && numeroDeEsteMensaje && (yaAnalizadaEnOneDrive || resultado?.mensajeId === m.id) && (

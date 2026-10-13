@@ -142,7 +142,7 @@ export default function EscritoRobotPanel({ numero, onedriveCarpetaUrl, robotUrl
   return (
     <div className="escrito-panel">
       <div className="escrito-head">
-        <h4>Escrito con LexIA</h4>
+        <h4><span className="tutela-seccion-n">Sección 6</span>Escrito con LexIA</h4>
         <span className="escrito-chip">Plan A · robot</span>
       </div>
       <div className="escrito-body">

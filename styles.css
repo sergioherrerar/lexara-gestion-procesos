@@ -1910,3 +1910,17 @@
   .correos-tutela-lista li.correo-enviado::marker{color:var(--verde-claro);}
   .correos-tutela-lista li.correo-otro::marker{color:var(--texto-suave);}
   .correos-tutela-lista .icon-btn{display:inline-flex; vertical-align:middle; margin-left:8px;}
+
+  /* Secciones dentro de cada tutela de «Leer correo de Tutelas» (2026-10-13, pedido del usuario: todas con el aspecto de «Escrito con LexIA»). */
+  .tutela-seccion{margin:12px 0 4px; background:#fff; border:1px solid var(--gris-linea); border-top:3px solid var(--verde-oscuro); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden;}
+  .tutela-seccion-head{display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:space-between; padding:10px 16px; background:linear-gradient(180deg,#f1f7f5,#e6efed); border-bottom:1px solid var(--gris-linea);}
+  .tutela-seccion-head h4{margin:0; display:flex; align-items:center; gap:9px; font-family:var(--font-display); font-size:14px; font-weight:700; color:var(--verde-oscuro);}
+  .tutela-seccion-head h4::before{content:''; width:4px; height:17px; border-radius:2px; background:var(--naranja); flex-shrink:0;}
+  .tutela-seccion-body{padding:12px 16px 14px; display:flex; flex-direction:column; gap:10px;}
+  .tutela-seccion-body.leer-correo-registros{border:none; background:none; box-shadow:none; margin:0;}
+  .tutela-seccion-aviso{border-top-color:var(--amarillo);}
+  .tutela-seccion-aviso .tutela-seccion-head{background:linear-gradient(180deg,#fffaf0,#fff4e0);}
+  .tutela-seccion-aviso .tutela-seccion-body{background:#fffdf8;}
+
+  /* Etiqueta «Sección N» antes del título de cada sección de la tutela. */
+  .tutela-seccion-n{font-family:var(--font-body); font-size:10px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:#b3590a; background:#fdece0; padding:2px 8px; border-radius:20px; margin-right:2px; white-space:nowrap;}
