@@ -298,6 +298,7 @@ REGLAS:
 (6) Español jurídico formal, mismo tono del modelo, sin markdown. Cada párrafo nuevo o cambiado va como TEXTO PLANO completo de ese párrafo.
 (7) Los párrafos marcados como abreviados (muy largos) casi siempre son citas o argumentos que no cambian: déjalos igual (no los menciones), elimínalos si no aplican, o cambia un dato puntual con "reemplazos" {"p":N,"buscar":"texto exacto y corto que aparece en el párrafo","reemplazar":"texto nuevo"}.
 (8) Si un párrafo está vacío o es un título que sigue sirviendo, déjalo igual (no lo menciones). Solo aparece en tu respuesta lo que cambia.
+(8b) AHORRA SALIDA (la respuesta tiene un tope de tamaño): para cambiar un dato DENTRO de un párrafo (nombre, cédula, fecha, diagnóstico, plan, servicio) usa SIEMPRE «reemplazos» con textos exactos y cortos; usa «cambios» (párrafo completo) solo cuando reescribes casi todo el párrafo. Una misma frase repetida en varios párrafos se cambia con un reemplazo por párrafo. «alertas»: máximo 8 líneas cortas.
 (9) Si una corrección del abogado o una lección del despacho contradicen al modelo, mandan ellas.
 
 Devuelve SOLO un objeto JSON, sin markdown, con esta forma exacta:
@@ -327,13 +328,27 @@ $usuario .= "\n\n" . ($modo === 'redactar' ? 'PÁRRAFOS DEL MODELO (numerados):'
 
 $cuerpo = [
     'model' => $modeloRedactar,
-    'max_tokens' => 12000,
+    'max_tokens' => 16000,
     'system' => $sistema,
     'messages' => [['role' => 'user', 'content' => $usuario]],
 ];
 list($data, $usado) = llamarConRespaldo($apiKey, $cuerpo, null, true);
 $texto = textoDe($data);
 $o = objetoJsonDe($texto);
+// Si la respuesta quedó cortada (o con el JSON dañado) se recuperan los cambios COMPLETOS que alcanzaron a salir; lo demás se descarta.
+if(!$o){
+    $rec = ['cambios' => [], 'reemplazos' => [], 'eliminar' => []];
+    if(preg_match_all('/{\s*"p"\s*:\s*([0-9]+)\s*,\s*"texto"\s*:\s*("(?:[^"\\\\]|\\\\.)*")\s*}/su', $texto, $mm, PREG_SET_ORDER)){
+        foreach($mm as $m){ $t = json_decode($m[2]); if(is_string($t)) $rec['cambios'][] = ['p' => (int)$m[1], 'texto' => $t]; }
+    }
+    if(preg_match_all('/{\s*"p"\s*:\s*([0-9]+)\s*,\s*"buscar"\s*:\s*("(?:[^"\\\\]|\\\\.)*")\s*,\s*"reemplazar"\s*:\s*("(?:[^"\\\\]|\\\\.)*")\s*}/su', $texto, $mm, PREG_SET_ORDER)){
+        foreach($mm as $m){ $b = json_decode($m[2]); $n = json_decode($m[3]); if(is_string($b) && is_string($n)) $rec['reemplazos'][] = ['p' => (int)$m[1], 'buscar' => $b, 'reemplazar' => $n]; }
+    }
+    if(preg_match('/"eliminar"\s*:\s*\[([0-9, ]*)\]/u', $texto, $mm)){ foreach(preg_split('/\s*,\s*/', trim($mm[1])) as $x){ if($x !== '' && is_numeric($x)) $rec['eliminar'][] = (int)$x; } }
+    if($rec['cambios'] || $rec['reemplazos'] || $rec['eliminar']){
+        $o = $rec + ['agregar' => [], 'alertas' => 'La respuesta de LexIA quedó cortada: se aplicaron los cambios completos que alcanzaron a salir; revisa el escrito con cuidado y, si falta algo, usa «Enséñame».'];
+    }
+}
 if(!$o){
     $stop = (string)($data['stop_reason'] ?? '');
     $vista = trim(preg_replace('/\s+/u', ' ', function_exists('mb_substr') ? mb_substr($texto, 0, 240) : substr($texto, 0, 240)));

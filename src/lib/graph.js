@@ -3573,6 +3573,25 @@ export async function revisarRespuestasAreas({ config, correoBuzon, urlCarpeta, 
   const indice = indiceDeAgenda(parsearAgendaFormato(formato.texto));
   const solicitudes = await buscarSolicitudesPruebasDeTutela(correoBuzon, noTutela);
   const salida = { sinSolicitud: !solicitudes.length, solicitudes: [], nuevasGuardadas: 0, errores: [] };
+  // APORTES (pedido del usuario 2026-10-13): además de las respuestas a la solicitud, cuentan los correos que las áreas (o las entidades) enviaron
+  // APORTANDO pruebas de esta tutela, aunque no sean respuesta a nuestro correo: se buscan en todo el buzón por el número de la tutela y se dejan
+  // los que vienen de una dirección de la agenda del formato o del dominio de Aliansalud, Colmédica o UMD.
+  let aportes = [];
+  try{
+    const todos = await buscarCorreosDeTutelaEnBuzon(correoBuzon, noTutela);
+    const propio = String(correoBuzon || '').toLowerCase();
+    aportes = todos.filter(c => c.clase !== 'enviado por Tutelas' && c.clase !== 'juzgado').map(c => {
+      const mm = /<([^>]+)>/.exec(c.de || '');
+      const email = String((mm ? mm[1] : c.de) || '').trim().toLowerCase();
+      return { c, email, nombre: String(c.de || '').replace(/<[^>]*>/g, '').trim() };
+    }).filter(x => x.email && x.email !== propio && (indice.get(x.email) || entidadDeDominio(x.email)))
+      .map(x => ({ id: x.c.id, from: { emailAddress: { name: x.nombre, address: x.email } }, receivedDateTime: x.c.fechaISO, subject: x.c.asunto }));
+  }catch(err){ console.error('No se pudieron buscar los correos con aportes de las áreas:', err); }
+  if(!solicitudes.length && aportes.length){
+    // Hay aportes pero todavía no hay solicitud: se muestran igual, bajo una solicitud «virtual».
+    solicitudes.push({ id: '', asunto: '(todavía no hay solicitud de pruebas) — aportes recibidos de las áreas', enviado: true, fecha: '', para: [], cc: [], conversationId: '', enlace: '' });
+    salida.sinSolicitud = false;
+  }
 
   let ctx = null;
   if(urlCarpeta){
@@ -3594,7 +3613,10 @@ export async function revisarRespuestasAreas({ config, correoBuzon, urlCarpeta, 
       if(f && !areas.has(claveDe(f))) areas.set(claveDe(f), { entidad: f.entidad, area: f.area, respuestas: [], noSolicitada: false });
     });
     const sinIdentificar = [];
-    const respuestas = sol.enviado ? await buscarRespuestasDeSolicitud(correoBuzon, noTutela, sol) : [];
+    let respuestas = sol.enviado ? await buscarRespuestasDeSolicitud(correoBuzon, noTutela, sol) : [];
+    const idsYa = new Set(respuestas.map(x => x.id));
+    respuestas = respuestas.concat(aportes.filter(a => !idsYa.has(a.id)))
+      .sort((a, b) => String(a.receivedDateTime).localeCompare(String(b.receivedDateTime)));
     for(const rp of respuestas){
       const email = String(rp.from?.emailAddress?.address || '').toLowerCase();
       const posibles = indice.get(email) || [];

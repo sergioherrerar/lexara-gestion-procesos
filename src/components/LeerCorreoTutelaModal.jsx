@@ -775,9 +775,6 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
                       <span className="save-hint" style={{margin:0}}>Pégalo en el artefacto Plan B para que lea la lectura al instante.</span>
                     </div>
                   )}
-                  {robotEscritoUrl && onedriveCarpetaUrl && numeroDeEsteMensaje && (yaAnalizadaEnOneDrive || resultado?.mensajeId === m.id) && (
-                    <EscritoRobotPanel numero={numeroDeEsteMensaje} onedriveCarpetaUrl={onedriveCarpetaUrl} robotUrl={robotEscritoUrl} notify={notify} antesDeRedactar={() => asegurarCorreosLeidos(m, numeroDeEsteMensaje, true)} />
-                  )}
                   {robotSolicitudUrl && onedriveCarpetaUrl && numeroDeEsteMensaje && (yaAnalizadaEnOneDrive || resultado?.mensajeId === m.id) && (
                     <div className="respuestas-areas-panel" style={{marginTop:10, paddingTop:8, borderTop:'1px solid var(--gris-linea)'}}>
                       <div style={{display:'flex', alignItems:'center', gap:10, flexWrap:'wrap'}}>
@@ -818,6 +815,9 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
                         );
                       })()}
                     </div>
+                  )}
+                  {robotEscritoUrl && onedriveCarpetaUrl && numeroDeEsteMensaje && (yaAnalizadaEnOneDrive || resultado?.mensajeId === m.id) && (
+                    <EscritoRobotPanel numero={numeroDeEsteMensaje} onedriveCarpetaUrl={onedriveCarpetaUrl} robotUrl={robotEscritoUrl} notify={notify} antesDeRedactar={async () => { const d = await asegurarCorreosLeidos(m, numeroDeEsteMensaje, true); try{ await handleRevisarRespuestas(m); }catch(err){ console.error(err); } return d; }} />
                   )}
                 </div>
               )}
