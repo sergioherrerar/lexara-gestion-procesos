@@ -700,11 +700,17 @@ export async function crearSolicitudPruebasBorrador({ config, robotSolicitudUrl,
   try{ data = await res.json(); }catch{ throw new Error(`El robot de solicitud de pruebas no respondió bien (${res.status}). ¿Ya subiste solicitud-pruebas.php a cPanel?`); }
   if(!res.ok || data.error) throw new Error(data.error || `El robot de solicitud de pruebas falló (${res.status}).`);
   const asunto = data.asunto || `TUTELA No. ${noTutela || ''} - SOLICITUD DE PRUEBAS`;
-  // 2026-10-13 (pedido del usuario): primero el modelo de la solicitud (con la firma) y DEBAJO la tabla de datos de la tutela;
-  // el asunto no se toca.
+  // 2026-10-13: el asunto no se toca (conserva el del correo original).
   const cortos = [...new Set((registros && registros.length ? registros : [registro]).map(x => nombreCortoClienteSolicitud(x && x.Cliente)).filter(Boolean))];
   const categoria = etiquetaSolicitud(noTutela, cortos);
-  const htmlAntes = cuerpoSolicitudAHtml(data.cuerpo) + FIRMA_HTML + tablaDatosTutelaHtml(campos || {}, data.pretensiones, camposTodos);
+  // Orden (pedido del usuario 2026-10-13): el modelo de la solicitud con todas sus viñetas, LUEGO la tabla de datos de la tutela, y al final la
+  // despedida («Agradezco su gestión. Cordial saludo,») con la firma. Si el cuerpo no trae la despedida, la tabla va justo antes de la firma.
+  const tablaHtml = tablaDatosTutelaHtml(campos || {}, data.pretensiones, camposTodos);
+  const textoCuerpo = String(data.cuerpo || '');
+  const posDespedida = textoCuerpo.search(/^\s*Agradezco su gesti[oó]n/im);
+  const htmlAntes = posDespedida > 0
+    ? cuerpoSolicitudAHtml(textoCuerpo.slice(0, posDespedida)) + tablaHtml + cuerpoSolicitudAHtml(textoCuerpo.slice(posDespedida)) + FIRMA_HTML
+    : cuerpoSolicitudAHtml(textoCuerpo) + tablaHtml + FIRMA_HTML;
   let borrador, reenviado = false, notas = data.notas || '';
   if(correoBuzon && mensajeIdReenviar){
     try{

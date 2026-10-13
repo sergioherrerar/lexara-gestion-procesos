@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-10-13 (15)
+- **Borrador de la solicitud de pruebas: la tabla va ANTES de la despedida y la firma** — pedido del usuario (señalando en una captura la línea entre la última viñeta y «Agradezco su gestión»). Orden final del borrador: (1) el modelo de la solicitud con todas sus áreas y viñetas, (2) la tabla «SOLICITUD DE PRUEBAS · DATOS DE LA TUTELA», (3) «Agradezco su gestión. Cordial saludo,», (4) la firma de Ariana y abajo el correo original. Si el cuerpo no trae la despedida, la tabla queda justo antes de la firma. Aplica a los borradores que se creen desde ahora.
+
 ## 2026-10-13 (14)
 - **En una tutela con varios clientes, el cliente que ya está en el portal ya no ofrece «Crear borrador»** — pedido del usuario (caso 28270: Aliansalud ya estaba creada y solo faltaba Colmédica). Al leer un correo que señala a varios clientes, cada cliente se compara con las tutelas que ya hay en el portal por número de tutela y por marca (Aliansalud / Colmédica / UMD, aunque el nombre venga escrito distinto); si ya existe, en lugar del botón sale la etiqueta verde «Ya está en el portal» y solo queda habilitado «Crear borrador» para el cliente que falta. Si el cliente ya aparece pero se quiere duplicar a propósito, se puede crear desde el formulario de Nueva tutela. La solicitud de pruebas (un solo correo para todos los clientes) no cambia.
 
