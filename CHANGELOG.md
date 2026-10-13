@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-10-14 (40)
+- **El correo de pruebas también se coordina con el artefacto** — el artefacto ahora tiene su botón «Crear correo de pruebas» (queda como borrador en el Outlook de quien lo usa) y anota en la lectura que lo hizo. El portal, al pulsar «Crear solicitud de pruebas», avisa si el artefacto ya la redactó y ofrece «Crear otra de todos modos»; lo que crea el portal también se anota, para que el artefacto no lo repita. La lista de seguimiento muestra «Borrador de pruebas redactado» por el portal o el artefacto.
+
 ## 2026-10-14 (39)
 - **El portal y el artefacto ya no se pisan** — pedido del usuario. Cuando uno de los dos redacta un aplazamiento o un escrito, lo anota en «Lectura LexIA.txt» (campo «actuaciones»: qué, de qué cliente, quién y cuándo). Antes de rehacerlo, el otro lo revisa (esa anotación y también el buzón: borrador o correo ya enviado) y, si ya está hecho, avisa y pide confirmar («Crear otro de todas formas» / «Redactar de todas formas»). Vale para «Correo con aplazamiento» y «Escrito con LexIA» del portal, y para el aplazamiento por cliente y el paso de escritos del artefacto. La lista de seguimiento muestra «Aplazamiento redactado» o «Escrito redactado» (por el portal o por el artefacto) aunque todavía no haya correo.
 

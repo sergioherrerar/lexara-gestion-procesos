@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { normalizarBorradorTutela } from '../lib/borradorTutela';
 import { aplicarVencimientoHabil, fechaLocalISO } from '../lib/vencimientoTutela';
-import { leerCorreosTutelas, primerCorreoDeConversacion, crearSolicitudPruebasBorrador, buscarSolicitudPruebasExistente, revisarRespuestasAreas, uriLecturaLexIAParaArtefacto, leerTodosLosCorreosDeTutela, correosRecibidosParaSolicitud, estadoSeguimientoTutela, extraerTutelaConLexIA, numeroTutelaDeAsunto, normalize, mensajeError, buscarLecturaLexIAGuardada, guardarLecturaLexIAEnOneDrive, listarTutelasAnalizadasEnOneDrive, asegurarCarpetaTutelaDesdeMensaje, hayActuacionPrevia, registrarActuacion } from '../lib/graph';
+import { leerCorreosTutelas, primerCorreoDeConversacion, crearSolicitudPruebasBorrador, buscarSolicitudPruebasExistente, revisarRespuestasAreas, uriLecturaLexIAParaArtefacto, leerTodosLosCorreosDeTutela, correosRecibidosParaSolicitud, estadoSeguimientoTutela, extraerTutelaConLexIA, numeroTutelaDeAsunto, normalize, mensajeError, buscarLecturaLexIAGuardada, guardarLecturaLexIAEnOneDrive, listarTutelasAnalizadasEnOneDrive, asegurarCarpetaTutelaDesdeMensaje, hayActuacionPrevia, registrarActuacion, buscarActuacionRegistrada } from '../lib/graph';
 import IconButton, { IconTextButton } from './IconButton';
 import EscritoRobotPanel from './EscritoRobotPanel';
 import { redactarEscritoConRobot, sexoPorNombre } from '../lib/escritoRobot';
@@ -79,7 +79,7 @@ function SeguimientoTutela({ numero, estado, onActualizar }){
     const p = d.pruebas;
     pasos.push(p
       ? { texto: p.enviado ? 'Correo de pruebas enviado' : 'Borrador de pruebas creado', fecha: p.fecha, extra: p.enviado ? '' : 'Todavía sin enviar', nivel: p.enviado ? 'ok' : 'parcial' }
-      : paso('Correo de pruebas', false, '', 'Aún no se crea el borrador'));
+      : (ultimaActuacion(d, 'pruebas') ? { texto: 'Borrador de pruebas redactado', nivel: 'parcial', fecha: ultimaActuacion(d, 'pruebas').fecha, extra: 'Por ' + (ultimaActuacion(d, 'pruebas').por === 'artefacto' ? 'el artefacto' : 'el portal') + ' · sin enviar todavía' } : paso('Correo de pruebas', false, '', 'Aún no se crea el borrador')));
     const r = d.respuestas;
     pasos.push(r
       ? paso('Llegaron correos de pruebas', true, r.fecha, '', (r.cantidad + ' correo' + (r.cantidad === 1 ? '' : 's')) + (r.areasTotal ? ' · ' + r.areasRespondieron + ' de ' + r.areasTotal + ' áreas' : ''))
@@ -319,6 +319,12 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
           indicesAfectados.forEach(k => marcarSolicitud(mensaje.id, k, { estado: 'existente', ...existente }));
           return;
         }
+        // Si el artefacto (Plan B) ya la redactó, queda en el Outlook de quien lo usó y el portal no la ve en el buzón: se sabe por la lectura.
+        const anotada = await buscarActuacionRegistrada(onedriveCarpetaUrl, limpio.NoTutela || numeroTutelaDeAsunto(mensaje.asunto), 'pruebas').catch(() => null);
+        if(anotada){
+          indicesAfectados.forEach(k => marcarSolicitud(mensaje.id, k, { estado: 'existente', enviado: false, fecha: '', fechaTexto: anotada.fecha, por: anotada.por, enlace: '' }));
+          return;
+        }
       }
       // Todo lo que ya llegó al buzón sobre esta tutela (de cualquier remitente): el robot no debe pedir lo que ya está.
       // Antes de crear el borrador se LEEN todos los correos de la tutela (si aún no se habían leído en esta sesión; si ya se leyeron, solo se
@@ -346,6 +352,8 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
         etiquetaEnvio,
       });
       indicesAfectados.forEach(k => marcarSolicitud(mensaje.id, k, { estado: 'listo', para: r.para, cc: r.cc, notas: r.notas, formato: r.formato, reenviado: r.reenviado }));
+      // Se anota en la lectura para que el artefacto no la repita (solo la solicitud de pruebas; el correo con aplazamiento se anota aparte).
+      if(!etiquetaEnvio) registrarActuacion(onedriveCarpetaUrl, numeroSolicitud, { tipo: 'pruebas', cliente: '', por: 'portal' }).catch(err => console.error('No se pudo anotar la solicitud de pruebas en la lectura:', err));
     }catch(err){
       console.error(err);
       marcarSolicitud(mensaje.id, indice, { estado: 'error', mensaje: mensajeError(err) });
@@ -498,7 +506,9 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
         )}
         {r._solicitud?.estado === 'existente' && (
           <p className="save-hint" style={{margin:'4px 0 0', flexBasis:'100%'}}>
-            Ya había creado una solicitud de pruebas para esta tutela y este cliente{r._solicitud.fecha ? ` (${new Date(r._solicitud.fecha).toLocaleString('es-CO')})` : ''}: {r._solicitud.enviado ? 'ya fue ENVIADA — búscala en Enviados del buzón de Tutelas.' : 'búscala en Borradores del buzón de Tutelas.'}{' '}
+            {r._solicitud.por
+              ? <>Ya la redactó {r._solicitud.por === 'artefacto' ? 'el artefacto (Plan B)' : 'el portal'}{r._solicitud.fechaTexto ? ` el ${r._solicitud.fechaTexto}` : ''}: búscala en los Borradores de Outlook de quien la creó (el artefacto la deja en el buzón de quien lo usa).{' '}</>
+              : <>Ya había creado una solicitud de pruebas para esta tutela y este cliente{r._solicitud.fecha ? ` (${new Date(r._solicitud.fecha).toLocaleString('es-CO')})` : ''}: {r._solicitud.enviado ? 'ya fue ENVIADA — búscala en Enviados del buzón de Tutelas.' : 'búscala en Borradores del buzón de Tutelas.'}{' '}</>}
             {r._solicitud.enlace && <a href={r._solicitud.enlace} target="_blank" rel="noopener noreferrer">Abrirla</a>}{' '}
             <button type="button" className="clear-filters-link" onClick={() => handleSolicitudPruebas(i, true)}>Crear otra de todos modos</button>
           </p>

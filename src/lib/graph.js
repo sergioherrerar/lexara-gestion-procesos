@@ -3948,13 +3948,19 @@ export async function registrarActuacion(urlCarpeta, numero, act){
   if(!leido) return false;
   const estado = leido.estado;
   const nueva = { ...act, por: act.por || 'portal', fecha: act.fecha || new Date().toLocaleString('es-CO') };
-  const misma = a => a.tipo === nueva.tipo && claveClienteActuacion(a.cliente) === claveClienteActuacion(nueva.cliente) && (nueva.tipo === 'aplazamiento' || normalize(a.detalle || '').slice(0, 6) === normalize(nueva.detalle || '').slice(0, 6));
+  const misma = a => a.tipo === nueva.tipo && claveClienteActuacion(a.cliente) === claveClienteActuacion(nueva.cliente) && (nueva.tipo === 'aplazamiento' || nueva.tipo === 'pruebas' || normalize(a.detalle || '').slice(0, 6) === normalize(nueva.detalle || '').slice(0, 6));
   estado.actuaciones = [...(estado.actuaciones || []).filter(a => !misma(a)), nueva].slice(-40);
   await escribirEstadoLectura(driveId, folderId, leido.ruta, estado);
   return true;
 }
 // tipo: 'aplazamiento' o 'escrito'; detalle (solo escritos): contestacion, impugnacion, aclaracion, alcance…; cliente: nombre completo o vacío (cualquiera).
 // Devuelve { existe, mensaje }.
+// La última actuación anotada en la lectura (sin mirar el buzón): { tipo, cliente, por, fecha, ... } o null.
+export async function buscarActuacionRegistrada(urlCarpeta, numero, tipo){
+  const { driveId, folderId } = await resolverCarpetaLexIAOneDrive(urlCarpeta);
+  const leido = await leerEstadoLectura(driveId, folderId, numero);
+  return ((leido && leido.estado.actuaciones) || []).filter(a => a.tipo === tipo).pop() || null;
+}
 export async function hayActuacionPrevia({ correoBuzon, urlCarpeta, noTutela, tipo, cliente, detalle }){
   const s = await estadoSeguimientoTutela({ correoBuzon, urlCarpeta, noTutela });
   const ck = claveClienteActuacion(cliente);
@@ -3968,7 +3974,7 @@ export async function hayActuacionPrevia({ correoBuzon, urlCarpeta, noTutela, ti
   }
   if(correo && correo.enviado) return { existe: true, mensaje: 'El correo con ' + nombre + ' ya se envió el ' + correo.fecha + '.' };
   if(correo) return { existe: true, mensaje: 'Ya hay un borrador de correo con ' + nombre + ' (' + correo.fecha + ').' };
-  const act = (s.actuaciones || []).filter(a => a.tipo === tipo && (!ck || !a.cliente || claveClienteActuacion(a.cliente) === ck) && (tipo === 'aplazamiento' || !palabra || !a.detalle || normalize(a.detalle).slice(0, 6) === palabra)).pop();
+  const act = (s.actuaciones || []).filter(a => a.tipo === tipo && (!ck || !a.cliente || claveClienteActuacion(a.cliente) === ck) && (tipo === 'aplazamiento' || tipo === 'pruebas' || !palabra || !a.detalle || normalize(a.detalle).slice(0, 6) === palabra)).pop();
   if(act) return { existe: true, mensaje: 'Ya lo redactó ' + (act.por === 'artefacto' ? 'el artefacto (Plan B)' : 'el portal') + ' el ' + act.fecha + (act.cliente ? ' (' + act.cliente + ')' : '') + '.' };
   return { existe: false, mensaje: '' };
 }
