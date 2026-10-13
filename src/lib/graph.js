@@ -1265,7 +1265,7 @@ function construirTextoDesdeEstado(e){
   });
 
   seccion(6, 'TODOS LOS CORREOS DE LA TUTELA (de cualquier remitente)');
-  const correosTutela = e.correosTutela || [];
+  const correosTutela = (e.correosTutela || []).filter(c => !esCorreoGeneradoPorElPortal(c.asunto));
   if(correosTutela.length){
     L.push(`${correosTutela.length} correo${correosTutela.length === 1 ? '' : 's'} que mencionan esta tutela, del más antiguo al más reciente. Sirven para saber qué pruebas o respuestas ya llegaron antes de pedirlas de nuevo.`);
     correosTutela.forEach((c, i) => {
@@ -3661,6 +3661,11 @@ export async function uriLecturaLexIAParaArtefacto(urlCarpeta, numeroTutela){
 // remitentes permitidos (juzgados). Para tener control total de una tutela se buscan en el buzón TODOS los correos que mencionan su número,
 // de cualquier remitente y carpeta (bandeja de entrada, enviados, otras carpetas; sin los borradores), se leen y se guardan en la carpeta de la
 // tutela, y se dejan resumidos en la sección 6 de «Lectura LexIA.txt». Así, al crear la solicitud de pruebas ya se sabe qué llegó.
+// Correo generado por el portal desde Tutelas → Informes (también sus respuestas «RE:»): lista TODAS las tutelas del día, así que nunca es
+// un correo de una tutela en particular aunque mencione su número.
+function esCorreoGeneradoPorElPortal(asunto){
+  return /notificaci[oó]n de tutelas del/i.test(asunto || '') && /vencimiento de las respuestas del/i.test(asunto || '');
+}
 function claseDeCorreoTutela(m, correoBuzon){
   const de = String(m.from?.emailAddress?.address || '').toLowerCase();
   if(de && de === String(correoBuzon || '').toLowerCase()) return 'enviado por Tutelas';
@@ -3687,6 +3692,7 @@ export async function buscarCorreosDeTutelaEnBuzon(correoBuzon, noTutela){
     const data = await res.json();
     for(const m of (data.value || [])){
       if(m.isDraft) continue;
+      if(esCorreoGeneradoPorElPortal(m.subject)) continue;
       const cuerpo = m.body?.contentType === 'html' ? cuerpoCorreoComoTexto(m.body?.content || '') : String(m.body?.content || '');
       // El buscador de Outlook es amplio: se exige que el número aparezca como número completo en el asunto o el texto.
       if(!re.test((m.subject || '') + '\n' + cuerpo)) continue;
@@ -3756,7 +3762,7 @@ export async function leerTodosLosCorreosDeTutela({ correoBuzon, urlCarpeta, noT
       ctx = { driveId, folderId, leido: await leerEstadoLectura(driveId, folderId, noTutela) };
     }catch(err){ salida.errores.push('No se pudo abrir la carpeta de la tutela en OneDrive: ' + (err.message || err)); }
   }
-  const previos = new Map(((ctx?.leido?.estado.correosTutela) || []).map(c => [c.id, c]));
+  const previos = new Map(((ctx?.leido?.estado.correosTutela) || []).filter(c => !esCorreoGeneradoPorElPortal(c.asunto)).map(c => [c.id, c]));
   // Los correos que ya se leyeron antes se descartan: no se vuelven a pedir sus adjuntos ni a guardar; solo se procesan los nuevos.
   encontrados.forEach(c => { const pv = previos.get(c.id); if(pv && pv.adjuntos) c.adjuntos = pv.adjuntos; });
   const lista = await conAdjuntos(correoBuzon, encontrados);
@@ -3843,7 +3849,7 @@ export async function prepararCasoParaEscrito(urlCarpeta, numeroTutela){
   // Los demás correos de la tutela, resumidos (si el abogado ya pulsó «Leer todos los correos de esta tutela»).
   // Los correos de la tutela son FUNDAMENTALES para contestar: los del juzgado y de las entidades entran con más detalle (hasta 2.500 caracteres)
   // que los de otros remitentes (800); del más antiguo al más reciente, con tope total.
-  const correos = (e.correosTutela || []).slice(-25).map(c =>
+  const correos = (e.correosTutela || []).filter(c => !esCorreoGeneradoPorElPortal(c.asunto)).slice(-25).map(c =>
     `${c.fecha || ''} | ${c.clase || ''} | De: ${c.de || ''} | Asunto: ${c.asunto || ''}${c.adjuntos && c.adjuntos.length ? ' | Adjuntos: ' + c.adjuntos.join('; ') : ''}\n   ${String(c.resumen || '').replace(/\s+/g, ' ').slice(0, c.clase === 'otro remitente' ? 800 : 2500)}`
   ).join('\n').slice(0, 20000);
   return { textoCaso: t, registros: e.registros || [], correosResumen: correos, driveId, folderId, ruta: leido.ruta };
