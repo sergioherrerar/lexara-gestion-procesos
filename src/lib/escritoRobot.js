@@ -129,7 +129,9 @@ export function modelosDelIndice(indice, tipo, sexo, cliente){
 // ---------------------------------------------------------------- robot
 async function llamarRobot(url, cuerpo){
   if(!url) throw new Error('Falta la dirección del robot (ROBOT_ESCRITO_URL en config.js).');
-  const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cuerpo) });
+  let res;
+  try{ res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cuerpo) }); }
+  catch(err){ throw new Error('No hubo respuesta del robot (la conexión se cortó o no llegó). Si redactar-escrito.php no está actualizado en cPanel, súbelo de nuevo; si tarda demasiado, vuelve a intentar. Detalle: ' + (err.message || err)); }
   let data;
   try{ data = await res.json(); }catch{ throw new Error(`El robot de escritos no respondió bien (${res.status}). ¿Ya subiste redactar-escrito.php a cPanel?`); }
   if(!res.ok || data.error) throw new Error(data.error || `El robot de escritos falló (${res.status}).`);
@@ -293,7 +295,9 @@ export async function generarFichasDeModelos({ robotUrl, modelos, log = () => {}
     }));
     const validos = textos.filter(Boolean);
     if(!validos.length) continue;
-    const r = await llamarRobot(robotUrl, { modo: 'fichas', modelos: validos });
+    let r;
+    try{ r = await llamarRobot(robotUrl, { modo: 'fichas', modelos: validos }); }
+    catch(err){ log('Este grupo no se pudo describir (' + String(err.message || err).slice(0, 160) + '); sigo con los siguientes.'); continue; }
     uso.entrada += r.uso?.entrada || 0; uso.salida += r.uso?.salida || 0;
     for(const f of r.fichas || []){
       const m = lote[f.i];

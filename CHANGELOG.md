@@ -2,6 +2,12 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-10-13 (21)
+- **Fichas de los modelos: un grupo con respuesta inválida ya no detiene el proceso** — error real del usuario («LexIA no pudo describir los modelos (respuesta no válida)» en el grupo 13 a 18 de 36; los dos primeros grupos sí quedaron guardados). En redactar-escrito.php (modo fichas): si el JSON viene mal formado se recuperan las fichas una por una con una expresión regular; si aun así no hay fichas se reintenta UNA vez con el modelo principal (más tokens de salida); y si falla, el error muestra lo que respondió el modelo. En el portal, si un grupo no se puede describir, se avisa en el registro y se SIGUE con los siguientes (el avance ya se guarda cada grupo, así que al volver a pulsar «Crear fichas de estos modelos» solo se hacen las que faltan). Requiere subir el robot actualizado y publicar el portal.
+
+## 2026-10-13 (20)
+- **Plan A: «Failed to fetch» al redactar — la conexión con el robot ya no se corta por inactividad** — error real del usuario (salía después de «Redactando (LexIA devuelve solo los cambios)…»; elegir el modelo sí funcionaba). Redactar es la llamada más larga (Claude escribe varios miles de palabras de cambios) y el hosting cortaba la conexión por inactividad. En redactar-escrito.php, redactar y corregir ahora usan la API de Claude en modo streaming y mandan un espacio al navegador cada pocos segundos mientras Claude escribe (un espacio antes del JSON no lo estorba), así ningún proxy corta la conexión; los reintentos por saturación también mantienen el latido. Si el robot falla, el portal ahora explica que la conexión se cortó o no llegó y qué revisar, en vez de solo «Failed to fetch». Requiere subir el robot actualizado.
+
 ## 2026-10-13 (19)
 - **Borrador de la solicitud de pruebas: saludo según la hora** — pedido del usuario. La primera línea ya no dice «Cordial saludo, remito para su respectivo análisis de auditoría.» sino «Buenos días, …» (antes de las 12:00), «Buenas tardes, …» (de 12:00 a 6:59 p. m.) o «Buenas noches, …» (desde las 7:00 p. m.), según la hora a la que se crea el borrador. Solo se cambia el saludo de arriba; la despedida «Agradezco su gestión. Cordial saludo,» no se toca. Aplica a los borradores que se creen desde ahora.
 

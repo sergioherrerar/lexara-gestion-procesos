@@ -35,7 +35,7 @@ if($_SERVER['REQUEST_METHOD'] !== 'POST'){
 @ini_set('memory_limit', '256M');
 
 function fallar($codigo, $mensaje){
-    http_response_code($codigo);
+    if(!headers_sent()) http_response_code($codigo);
     echo json_encode(['error' => $mensaje], JSON_UNESCAPED_UNICODE);
     exit;
 }
@@ -81,13 +81,65 @@ function llamarClaude($apiKey, $cuerpo){
     return [json_decode($respuesta, true), $codigoHttp, $errorCurl, $respuesta];
 }
 
+// Llamada en streaming con «latido»: mientras Claude escribe, se manda un espacio cada pocos segundos para mantener viva la conexión.
+function llamarClaudeStream($apiKey, $cuerpo){
+    $cuerpo['stream'] = true;
+    $json = json_encode($cuerpo, JSON_UNESCAPED_UNICODE);
+    @ini_set('zlib.output_compression', '0');
+    while(ob_get_level() > 0){ @ob_end_flush(); }
+    if(!headers_sent()) header('X-Accel-Buffering: no');
+    $latido = function(){ echo ' '; @ob_flush(); @flush(); };
+    $latido();
+    $texto = ''; $uso = []; $stop = ''; $errorEvento = ''; $crudo = ''; $codigoHttp = 0; $errorCurl = '';
+    for($intento = 1; $intento <= 3; $intento++){
+        $texto = ''; $uso = []; $stop = ''; $errorEvento = ''; $crudo = ''; $codigoHttp = 0; $buffer = ''; $ultimo = time();
+        $ch = curl_init('https://api.anthropic.com/v1/messages');
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, ['content-type: application/json', 'x-api-key: ' . $apiKey, 'anthropic-version: 2023-06-01']);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $json);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 15);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 175);
+        curl_setopt($ch, CURLOPT_HEADERFUNCTION, function($c, $h) use (&$codigoHttp){
+            if(preg_match('#^HTTP/[0-9.]+ +([0-9]+)#', $h, $m)) $codigoHttp = (int)$m[1];
+            return strlen($h);
+        });
+        curl_setopt($ch, CURLOPT_WRITEFUNCTION, function($c, $trozo) use (&$buffer, &$texto, &$uso, &$stop, &$errorEvento, &$crudo, &$codigoHttp, &$ultimo, $latido){
+            if($codigoHttp !== 200){ $crudo .= $trozo; return strlen($trozo); }
+            $buffer .= $trozo;
+            while(($pos = strpos($buffer, "\n")) !== false){
+                $linea = rtrim(substr($buffer, 0, $pos), "\r");
+                $buffer = substr($buffer, $pos + 1);
+                if(strpos($linea, 'data:') !== 0) continue;
+                $ev = json_decode(trim(substr($linea, 5)), true);
+                if(!is_array($ev)) continue;
+                $tipo = $ev['type'] ?? '';
+                if($tipo === 'content_block_delta' && (($ev['delta']['type'] ?? '') === 'text_delta')) $texto .= (string)($ev['delta']['text'] ?? '');
+                elseif($tipo === 'message_start') $uso = array_merge($uso, is_array($ev['message']['usage'] ?? null) ? $ev['message']['usage'] : []);
+                elseif($tipo === 'message_delta'){ $uso = array_merge($uso, is_array($ev['usage'] ?? null) ? $ev['usage'] : []); $stop = (string)($ev['delta']['stop_reason'] ?? $stop); }
+                elseif($tipo === 'error') $errorEvento = (string)($ev['error']['message'] ?? 'error de la API');
+            }
+            if(time() - $ultimo >= 5){ $latido(); $ultimo = time(); }
+            return strlen($trozo);
+        });
+        curl_exec($ch);
+        $errorCurl = curl_error($ch);
+        curl_close($ch);
+        $pasajero = !$errorCurl && ($codigoHttp === 429 || $codigoHttp === 529 || $codigoHttp >= 500);
+        if(!$pasajero || $intento === 3) break;
+        for($k = 0; $k < 3 * $intento; $k++){ sleep(1); $latido(); }
+    }
+    if($errorCurl) return [null, 0, $errorCurl, ''];
+    if($codigoHttp !== 200) return [json_decode($crudo, true), $codigoHttp, '', $crudo];
+    if($errorEvento !== '') return [['error' => ['message' => $errorEvento]], 500, '', $errorEvento];
+    return [['content' => [['type' => 'text', 'text' => $texto]], 'usage' => $uso, 'stop_reason' => $stop], 200, '', ''];
+}
 // Llama con el modelo pedido; si la API dice que ese modelo no existe, reintenta con el de respaldo.
-function llamarConRespaldo($apiKey, $cuerpo, $respaldo){
-    list($data, $codigo, $errorCurl, $crudo) = llamarClaude($apiKey, $cuerpo);
+function llamarConRespaldo($apiKey, $cuerpo, $respaldo, $largo = false){
+    list($data, $codigo, $errorCurl, $crudo) = $largo ? llamarClaudeStream($apiKey, $cuerpo) : llamarClaude($apiKey, $cuerpo);
     if($codigo === 404 || ($codigo === 400 && stripos((string)($data['error']['message'] ?? ''), 'model') !== false)){
         if($respaldo && $respaldo !== $cuerpo['model']){
             $cuerpo['model'] = $respaldo;
-            list($data, $codigo, $errorCurl, $crudo) = llamarClaude($apiKey, $cuerpo);
+            list($data, $codigo, $errorCurl, $crudo) = $largo ? llamarClaudeStream($apiKey, $cuerpo) : llamarClaude($apiKey, $cuerpo);
         }
     }
     if($errorCurl) fallar(502, 'No se pudo conectar con la API de Claude: ' . $errorCurl);
@@ -189,14 +241,35 @@ if($modo === 'fichas'){
     if(!$lista) fallar(400, 'No llegaron modelos para describir.');
     $sistema = "Eres LexIA, abogada del despacho \"md abogados sas\". Te doy el comienzo y los títulos de varios MODELOS de escritos de tutela del despacho. Para CADA modelo escribe una ficha de máximo 35 palabras que diga: qué tema o servicio trata (por ejemplo preexistencia, exclusión de medicamento, agendamiento, tratamiento integral), a qué cliente o plan de medicina prepagada va dirigido si se nota, y cuál es su argumento de defensa principal. No inventes: si algo no se ve, no lo digas. Devuelve SOLO JSON: {\"fichas\":[{\"i\":0,\"ficha\":\"...\"}]} usando los mismos números i que te doy.";
     $cuerpo = ['model' => $modeloBarato, 'max_tokens' => 2500, 'system' => $sistema, 'messages' => [['role' => 'user', 'content' => implode("\n\n", $lista)]]];
-    list($data, $usado) = llamarConRespaldo($apiKey, $cuerpo, $modeloRedactar);
-    $o = objetoJsonDe(textoDe($data));
-    $fichas = [];
-    foreach((is_array($o['fichas'] ?? null) ? $o['fichas'] : []) as $x){
-        if(is_array($x) && isset($x['i']) && is_numeric($x['i']) && trim((string)($x['ficha'] ?? '')) !== '') $fichas[] = ['i' => (int)$x['i'], 'ficha' => trim((string)$x['ficha'])];
+    // Intenta con el modelo barato; si no trae fichas válidas, reintenta UNA vez con el modelo principal. Si el JSON viene mal formado, se
+    // recuperan las fichas una por una con una expresión regular.
+    $fichas = []; $ultimoTexto = ''; $uso = null;
+    foreach([$modeloBarato, $modeloRedactar] as $k => $modeloIntento){
+        if($k === 1 && $modeloIntento === $modeloBarato) break;
+        $cuerpo['model'] = $modeloIntento;
+        $cuerpo['max_tokens'] = $k === 0 ? 3000 : 4000;
+        list($data, $usado) = llamarConRespaldo($apiKey, $cuerpo, $modeloRedactar);
+        $texto = textoDe($data);
+        $ultimoTexto = $texto;
+        $fichas = [];
+        $o = objetoJsonDe($texto);
+        foreach((is_array($o['fichas'] ?? null) ? $o['fichas'] : []) as $x){
+            if(is_array($x) && isset($x['i']) && is_numeric($x['i']) && trim((string)($x['ficha'] ?? '')) !== '') $fichas[] = ['i' => (int)$x['i'], 'ficha' => trim((string)$x['ficha'])];
+        }
+        if(!$fichas && preg_match_all('/"i"\s*:\s*([0-9]+)\s*,\s*"ficha"\s*:\s*"((?:[^"\\\\]|\\\\.)*)"/su', $texto, $mm, PREG_SET_ORDER)){
+            foreach($mm as $m){
+                $f = json_decode('"' . $m[2] . '"');
+                if(is_string($f) && trim($f) !== '') $fichas[] = ['i' => (int)$m[1], 'ficha' => trim($f)];
+            }
+        }
+        $uso = usoDe($data, $usado);
+        if($fichas) break;
     }
-    if(!$fichas) fallar(502, 'LexIA no pudo describir los modelos (respuesta no válida).');
-    echo json_encode(['fichas' => $fichas, 'uso' => usoDe($data, $usado)], JSON_UNESCAPED_UNICODE);
+    if(!$fichas){
+        $vista = trim(preg_replace('/\s+/u', ' ', function_exists('mb_substr') ? mb_substr($ultimoTexto, 0, 200) : substr($ultimoTexto, 0, 200)));
+        fallar(502, 'LexIA no pudo describir los modelos (respuesta no válida)' . ($vista !== '' ? ': respondió «' . $vista . '»' : '.'));
+    }
+    echo json_encode(['fichas' => $fichas, 'uso' => $uso], JSON_UNESCAPED_UNICODE);
     exit;
 }
 if($modo !== 'redactar' && $modo !== 'corregir') fallar(400, 'Modo desconocido (usa elegir, redactar o corregir).');
@@ -258,7 +331,7 @@ $cuerpo = [
     'system' => $sistema,
     'messages' => [['role' => 'user', 'content' => $usuario]],
 ];
-list($data, $usado) = llamarConRespaldo($apiKey, $cuerpo, null);
+list($data, $usado) = llamarConRespaldo($apiKey, $cuerpo, null, true);
 $texto = textoDe($data);
 $o = objetoJsonDe($texto);
 if(!$o){
