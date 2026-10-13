@@ -663,7 +663,7 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
                     <div className="leer-correo-registros">
                       {resultado.registros.length > 1 && (
                         <p className="save-hint" style={{margin:'0 0 8px'}}>
-                          Este correo señala a {resultado.registros.length} clientes distintos — crea un borrador por cada uno.
+                          Este correo señala a {resultado.registros.length} clientes distintos. Los botones «Crear borrador» de cada cliente abren el formulario de la tutela de ese cliente (en el portal cada cliente lleva su propio registro). La solicitud de pruebas, en cambio, es UN SOLO correo borrador para todos, con una sección separada por cada cliente.
                         </p>
                       )}
                       {resultado.registros.map((r, i) => (
