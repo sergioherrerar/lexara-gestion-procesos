@@ -50,6 +50,12 @@ const fechaCorta = v => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(v || 
 // ¿Ya existe en el portal esta tutela para este cliente? (2026-10-13, pedido del usuario: en una tutela con varios clientes, el cliente que ya
 // se creó no debe ofrecer «Crear borrador»; solo el que falta.) Se compara por número y por marca (Aliansalud / Colmédica / UMD), porque el
 // nombre del cliente puede venir escrito distinto.
+// «Maria Gabriela Charris Conde <correo@dominio>» → solo el nombre (si no hay nombre, el correo).
+function nombreDeRemitente(de){
+  const texto = String(de || '');
+  const nombre = texto.replace(/<[^>]*>/g, '').trim();
+  return nombre || texto.replace(/[<>]/g, '').trim();
+}
 function claveMarcaCliente(c){
   const x = normalize(c || '');
   if(x.includes('aliansalud')) return 'aliansalud';
@@ -683,11 +689,12 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
                             {d.errores.length > 0 && <p className="save-hint" style={{margin:'4px 0', color:'var(--rojo, #a3281c)'}}>{d.errores.join(' · ')}</p>}
                             <details style={{marginTop:4}}>
                               <summary style={{cursor:'pointer'}}>Ver la lista</summary>
-                              <ul style={{margin:'6px 0 0', paddingLeft:18}}>
+                              <ul className="correos-tutela-lista">
                                 {d.correos.map(c => (
-                                  <li key={c.id} style={{marginBottom:3}}>
-                                    {c.fecha} · <em>{c.clase}</em> · {c.de} — {c.asunto}
+                                  <li key={c.id} className={'correo-' + (c.clase === 'juzgado' ? 'juzgado' : String(c.clase || '').startsWith('entidad') ? 'entidad' : String(c.clase || '').startsWith('enviado') ? 'enviado' : 'otro')}>
+                                    {c.fecha} · <em>{c.clase}</em> · <strong>{nombreDeRemitente(c.de)}</strong> — {c.asunto}
                                     {c.adjuntos && c.adjuntos.length > 0 && <span> · 📎 {c.adjuntos.join(', ')}</span>}
+                                    {c.enlace && <IconButton icon="open" variant="mail" label="Abrir este correo en Outlook" href={c.enlace} />}
                                   </li>
                                 ))}
                               </ul>

@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { prepararCasoParaEscrito } from '../lib/graph';
 import {
   TIPOS_ESCRITO, tipoEscritoDeRegistro, sexoPorNombre, claveCliente, obtenerIndiceModelos, modelosDelIndice,
-  redactarEscritoConRobot, corregirEscritoConRobot, guardarLeccion, leerLecciones, leccionesParaPrompt,
+  redactarEscritoConRobot, corregirEscritoConRobot, guardarLeccion, leerLecciones, leccionesParaPrompt, generarFichasDeModelos,
 } from '../lib/escritoRobot';
 import { IconTextButton } from './IconButton';
 
@@ -47,6 +47,23 @@ export default function EscritoRobotPanel({ numero, onedriveCarpetaUrl, robotUrl
   const [aviso, setAviso] = useState('');
 
   const anotar = (t) => setLog(prev => [...prev, t]);
+
+  // Fichas: una descripción corta de cada modelo para que LexIA elija mejor que solo por el nombre (se crean una vez y se comparten).
+  async function crearFichas(){
+    setTrabajando(true); setError(''); setLog([]);
+    try{
+      const ind = await obtenerIndiceModelos(false, anotar);
+      const cliente = claveCliente((datos.registros[indiceRegistro] || {}).Cliente);
+      const modelos = modelosDelIndice(ind, tipo, sexo, cliente);
+      const sin = modelos.filter(m => !m.ficha).length;
+      if(!sin){ anotar('Los ' + modelos.length + ' modelos de este escrito y cliente ya tienen ficha.'); return; }
+      anotar('Creando la ficha de ' + sin + ' modelo' + (sin === 1 ? '' : 's') + ' (una sola vez; después elegir es más preciso y no cuesta más)...');
+      const r = await generarFichasDeModelos({ robotUrl, modelos, log: anotar });
+      anotar('Listo: ' + r.nuevas + ' fichas nuevas' + (r.pendientes ? ' (' + r.pendientes + ' no se pudieron leer)' : '') + ' · tokens: ' + fmt(r.uso.entrada) + ' entrada, ' + fmt(r.uso.salida) + ' salida.');
+      setListaModelos(modelosDelIndice(await obtenerIndiceModelos(false), tipo, sexo, cliente));
+    }catch(err){ console.error(err); setError(err.message || String(err)); }
+    finally{ setTrabajando(false); }
+  }
 
   async function abrir(){
     setAbierto(true);
@@ -174,6 +191,7 @@ export default function EscritoRobotPanel({ numero, onedriveCarpetaUrl, robotUrl
                 {trabajando && !escrito ? 'Redactando…' : (modeloManual ? 'Redactar con este modelo' : 'Elegir el mejor modelo y redactar')}
               </IconTextButton>
               <IconTextButton icon="refresh" variant="secondary" disabled={trabajando} onClick={() => cargarModelos(true)}>Actualizar la lista de modelos</IconTextButton>
+              <IconTextButton icon="view" variant="secondary" disabled={trabajando} onClick={crearFichas}>Crear fichas de estos modelos (una vez)</IconTextButton>
             </div>
           </>
         )}

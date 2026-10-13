@@ -150,13 +150,55 @@ if($modo === 'elegir'){
         'system' => $sistema,
         'messages' => [['role' => 'user', 'content' => "CASO:\n" . json_encode($caso, JSON_UNESCAPED_UNICODE) . "\n\nMODELOS:\n" . implode("\n", $lista)]],
     ];
-    list($data, $usado) = llamarConRespaldo($apiKey, $cuerpo, $modeloRedactar);
-    $o = objetoJsonDe(textoDe($data));
-    if(!$o || !isset($o['indice']) || !is_numeric($o['indice']) || !isset($modelos[(int)$o['indice']])) fallar(502, 'LexIA no pudo elegir un modelo de la lista.');
-    echo json_encode(['indice' => (int)$o['indice'], 'motivo' => trim((string)($o['motivo'] ?? '')), 'uso' => usoDe($data, $usado)], JSON_UNESCAPED_UNICODE);
+    // Intenta con el modelo barato; si su respuesta no trae un índice válido, reintenta UNA vez con el modelo principal.
+    $intentos = [$modeloBarato, $modeloRedactar];
+    $indice = null; $motivo = ''; $uso = null; $ultimoTexto = ''; $ultimoStop = '';
+    foreach($intentos as $k => $modeloIntento){
+        if($k === 1 && $modeloIntento === $modeloBarato) break;
+        $cuerpo['model'] = $modeloIntento;
+        list($data, $usado) = llamarConRespaldo($apiKey, $cuerpo, $modeloRedactar);
+        $texto = textoDe($data);
+        $ultimoTexto = $texto; $ultimoStop = (string)($data['stop_reason'] ?? '');
+        $o = objetoJsonDe($texto);
+        $cand = ($o && isset($o['indice']) && is_numeric($o['indice'])) ? (int)$o['indice'] : null;
+        // Tolerancia: «indice: 12» o un número suelto, aunque no venga como JSON válido.
+        if($cand === null && preg_match('/"?indice"?\s*[:=]\s*(\d+)/iu', $texto, $mm)) $cand = (int)$mm[1];
+        if($cand === null && preg_match('/^\s*(\d+)\b/', $texto, $mm)) $cand = (int)$mm[1];
+        if($cand !== null && isset($modelos[$cand])){
+            $indice = $cand; $motivo = trim((string)($o['motivo'] ?? '')); $uso = usoDe($data, $usado);
+            break;
+        }
+    }
+    if($indice === null){
+        $vista = trim(preg_replace('/\s+/u', ' ', function_exists('mb_substr') ? mb_substr($ultimoTexto, 0, 200) : substr($ultimoTexto, 0, 200)));
+        fallar(502, 'LexIA no pudo elegir un modelo de la lista' . ($ultimoStop === 'max_tokens' ? ' (respuesta cortada)' : '') . ($vista !== '' ? ': respondió «' . $vista . '»' : ' (la respuesta llegó vacía).') . ' Usa la lista de modelos y elige uno a mano.');
+    }
+    echo json_encode(['indice' => $indice, 'motivo' => $motivo, 'uso' => $uso], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
+// ---------------------------------------------------------------- fichas
+// Una ficha corta por modelo (tema, cliente/plan, argumento principal) para elegir mejor que solo por el nombre del archivo. Se pide UNA vez por
+// modelo (con el modelo barato) y el portal la guarda en la lista de modelos; elegir después no cuesta más.
+if($modo === 'fichas'){
+    $lista = [];
+    foreach(array_slice(is_array($entrada['modelos'] ?? null) ? $entrada['modelos'] : [], 0, 12) as $m){
+        if(!is_array($m) || !isset($m['i'])) continue;
+        $lista[] = '### MODELO ' . (int)$m['i'] . ' — ' . trim((string)($m['ruta'] ?? '')) . "\n" . mb_substr(trim((string)($m['texto'] ?? '')), 0, 2000);
+    }
+    if(!$lista) fallar(400, 'No llegaron modelos para describir.');
+    $sistema = "Eres LexIA, abogada del despacho \"md abogados sas\". Te doy el comienzo y los títulos de varios MODELOS de escritos de tutela del despacho. Para CADA modelo escribe una ficha de máximo 35 palabras que diga: qué tema o servicio trata (por ejemplo preexistencia, exclusión de medicamento, agendamiento, tratamiento integral), a qué cliente o plan de medicina prepagada va dirigido si se nota, y cuál es su argumento de defensa principal. No inventes: si algo no se ve, no lo digas. Devuelve SOLO JSON: {\"fichas\":[{\"i\":0,\"ficha\":\"...\"}]} usando los mismos números i que te doy.";
+    $cuerpo = ['model' => $modeloBarato, 'max_tokens' => 2500, 'system' => $sistema, 'messages' => [['role' => 'user', 'content' => implode("\n\n", $lista)]]];
+    list($data, $usado) = llamarConRespaldo($apiKey, $cuerpo, $modeloRedactar);
+    $o = objetoJsonDe(textoDe($data));
+    $fichas = [];
+    foreach((is_array($o['fichas'] ?? null) ? $o['fichas'] : []) as $x){
+        if(is_array($x) && isset($x['i']) && is_numeric($x['i']) && trim((string)($x['ficha'] ?? '')) !== '') $fichas[] = ['i' => (int)$x['i'], 'ficha' => trim((string)$x['ficha'])];
+    }
+    if(!$fichas) fallar(502, 'LexIA no pudo describir los modelos (respuesta no válida).');
+    echo json_encode(['fichas' => $fichas, 'uso' => usoDe($data, $usado)], JSON_UNESCAPED_UNICODE);
+    exit;
+}
 if($modo !== 'redactar' && $modo !== 'corregir') fallar(400, 'Modo desconocido (usa elegir, redactar o corregir).');
 
 // ---------------------------------------------------------------- redactar / corregir

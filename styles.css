@@ -1900,3 +1900,13 @@
   .escrito-tokens .table-wrap{margin-top:8px;}
   .escrito-tokens th, .escrito-tokens td{white-space:nowrap;}
   .escrito-tokens td.num, .escrito-tokens th.num{text-align:right;}
+
+  /* Lista de «Todos los correos de esta tutela»: viñetas de color según quién escribió, y botón para abrir el correo. */
+  .correos-tutela-lista{margin:8px 0 0; padding-left:22px; list-style:disc;}
+  .correos-tutela-lista li{margin:0 0 9px; padding-left:2px; line-height:1.55;}
+  .correos-tutela-lista li::marker{font-size:1.3em;}
+  .correos-tutela-lista li.correo-juzgado::marker{color:var(--verde-oscuro);}
+  .correos-tutela-lista li.correo-entidad::marker{color:var(--naranja);}
+  .correos-tutela-lista li.correo-enviado::marker{color:var(--verde-claro);}
+  .correos-tutela-lista li.correo-otro::marker{color:var(--texto-suave);}
+  .correos-tutela-lista .icon-btn{display:inline-flex; vertical-align:middle; margin-left:8px;}

@@ -123,7 +123,7 @@ export function modelosDelIndice(indice, tipo, sexo, cliente){
   }else{
     sel = indice.entradas.filter(e => e.c === OTRAS && (!e.s || normalizar(e.s.split('/')[0]).includes(info.carpeta)));
   }
-  return sel.map(e => ({ nombre: e.n, ruta: (e.s ? e.s + '/' : '') + e.n, uri: e.u }));
+  return sel.map(e => ({ nombre: e.n, ruta: (e.s ? e.s + '/' : '') + e.n, uri: e.u, ficha: e.f || '' }));
 }
 
 // ---------------------------------------------------------------- robot
@@ -164,10 +164,19 @@ export async function redactarEscritoConRobot({ robotUrl, urlCarpeta, numero, ti
   if(!modelos.length) throw new Error('No encontré modelos para ese escrito, cliente y sexo en la lista (prueba «Actualizar la lista de modelos»).');
 
   let elegido = modeloManual && modelos.find(m => m.ruta === modeloManual);
+  if(elegido){
+    // Lo elegido a mano se recuerda para este cliente + Tema + escrito: la próxima vez se usa sin preguntarle a Claude.
+    guardarPreferenciaModelo({ cliente, tipo, tema: registro.Tema, modelo: elegido }).then(() => log('Anotado: la próxima vez, para este cliente y Tema, usaré este modelo sin preguntarle a LexIA.')).catch(() => {});
+  }else{
+    const prefs = await leerPreferencias();
+    const p = prefs[clavePreferencia(cliente, tipo, registro.Tema)];
+    const habitual = p && modelos.find(m => m.ruta === p.ruta);
+    if(habitual){ elegido = habitual; log('Uso tu modelo habitual para este cliente y Tema: ' + habitual.ruta + ' (lo elegiste a mano antes; si prefieres otro, escógelo en la lista «Modelo del despacho»).'); }
+  }
   if(!elegido){
     log('Eligiendo el mejor modelo entre ' + modelos.length + '...');
     const r = await llamarRobot(robotUrl, {
-      modo: 'elegir', modelos: modelos.map(m => m.ruta),
+      modo: 'elegir', modelos: modelos.map(m => m.ficha ? m.ruta + ' — ' + m.ficha : m.ruta),
       caso: { cliente: registro.Cliente, tipoRespuesta: registro.TipoRespuesta, prestacion: registro.Prestacion, tema: registro.Tema, solicita: registro.Solicita, analisis: registro.Analisis || {}, escritoNecesario: TIPOS_ESCRITO[tipo].etiqueta, nota: String(nota).slice(0, 2000), accionante: sexo },
     });
     usos.push({ paso: 'Elegir el modelo', ...r.uso });
@@ -227,4 +236,72 @@ export function leccionesParaPrompt(lecciones, tipo, cliente){
   return (lecciones || [])
     .filter(l => (l.alcance || 'todos') === 'todos' || (l.alcance === 'tipo' && l.tipo === tipo) || (l.alcance === 'cliente' && l.cliente === cliente))
     .slice(-40).map((l, i) => `${i + 1}. ${l.texto}`).join('\n').slice(0, 6000);
+}
+
+// ---------------------------------------------------------------- modelo habitual (cliente + Tema + escrito)
+const NOMBRE_PREFERENCIAS = 'PREFERENCIAS DE MODELO LexIA.json';
+export function clavePreferencia(cliente, tipo, tema){
+  return (String(cliente || '') + '_' + String(tipo || '') + '_' + normalizar(tema || '').replace(/[^a-z0-9]+/g, '_')).slice(0, 140);
+}
+export async function leerPreferencias(){
+  try{
+    const txt = await graphLeerTexto(`/drives/${DRIVE_MODELOS}/root:/${encodeURIComponent(NOMBRE_PREFERENCIAS)}:/content`);
+    const d = txt ? JSON.parse(txt) : null;
+    return d && d.preferencias && typeof d.preferencias === 'object' ? d.preferencias : {};
+  }catch{ return {}; }
+}
+export async function guardarPreferenciaModelo({ cliente, tipo, tema, modelo }){
+  const prefs = await leerPreferencias();
+  prefs[clavePreferencia(cliente, tipo, tema)] = { ruta: modelo.ruta, nombre: modelo.nombre, uri: modelo.uri, cliente, tipo, tema: String(tema || ''), fecha: new Date().toISOString() };
+  await graphFetch(`/drives/${DRIVE_MODELOS}/root:/${encodeURIComponent(NOMBRE_PREFERENCIAS)}:/content`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ version: 1, preferencias: prefs }) });
+}
+
+// ---------------------------------------------------------------- fichas de los modelos (una vez por modelo)
+// Para elegir mejor que solo por el nombre del archivo: un modelo barato lee el comienzo y los títulos de cada modelo y escribe una ficha de
+// 2 líneas, que se guarda en la lista de modelos compartida (campo «f»). Cuesta una sola vez por modelo.
+function resumenParaFicha(parrafos){
+  const titulos = parrafos.filter(p => p.t.length < 130 && !/^(REF|RAD|ACCIONANTE|ACCIONADA)\s*:/i.test(p.t) && (/^\d+(\.\d+)*\.?\s+\S/.test(p.t) || (p.t === p.t.toUpperCase() && /[A-ZÁÉÍÓÚÑ]{4,}/.test(p.t)))).map(p => p.t);
+  // Después de «2. SOBRE LAS PRETENSIONES» empieza la defensa (antes hay una introducción igual en todos los modelos): de ahí se toman los primeros argumentos.
+  const iDefensa = parrafos.findIndex(p => /^2\.?\s*sobre las pretensiones/i.test(p.t));
+  const desde = iDefensa >= 0 ? iDefensa + 1 : Math.max(0, parrafos.findIndex(p => /^respetado/i.test(p.t)) + 1);
+  const cuerpo = parrafos.slice(desde).filter(p => p.t.length > 150).slice(0, 3).map(p => p.t.slice(0, 380));
+  return ('TÍTULOS: ' + titulos.slice(0, 24).join(' | ') + '\nARGUMENTOS: ' + cuerpo.join('\n')).slice(0, 1900);
+}
+async function guardarIndice(ind){
+  await graphFetch(`/drives/${DRIVE_MODELOS}/root:/${encodeURIComponent(NOMBRE_INDICE)}:/content`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(ind) });
+}
+/**
+ * Crea la ficha de los modelos que todavía no la tienen (de la lista dada). Guarda el avance cada lote, así se puede interrumpir y seguir.
+ * @returns {{ nuevas:number, pendientes:number, uso:{entrada,salida} }}
+ */
+export async function generarFichasDeModelos({ robotUrl, modelos, log = () => {} }){
+  const ind = await obtenerIndiceModelos(false, log);
+  const porUri = new Map(ind.entradas.map(e => [e.u, e]));
+  const pendientes = modelos.filter(m => { const e = porUri.get(m.uri); return e && !e.f; });
+  const uso = { entrada: 0, salida: 0 };
+  let nuevas = 0;
+  const TAM_LOTE = 6;
+  for(let i = 0; i < pendientes.length; i += TAM_LOTE){
+    const lote = pendientes.slice(i, i + TAM_LOTE);
+    log('Leyendo y describiendo los modelos ' + (i + 1) + ' a ' + (i + lote.length) + ' de ' + pendientes.length + '...');
+    const textos = await Promise.all(lote.map(async (m, k) => {
+      try{
+        const x = /^file:\/\/\/([^/]+)\/(.+)$/.exec(m.uri);
+        const { bytes } = await graphDescargarArchivo(x[1], x[2]);
+        return { i: k, ruta: m.ruta, texto: resumenParaFicha(await listarParrafosDeDocx(bytes)) };
+      }catch(err){ return null; }
+    }));
+    const validos = textos.filter(Boolean);
+    if(!validos.length) continue;
+    const r = await llamarRobot(robotUrl, { modo: 'fichas', modelos: validos });
+    uso.entrada += r.uso?.entrada || 0; uso.salida += r.uso?.salida || 0;
+    for(const f of r.fichas || []){
+      const m = lote[f.i];
+      const e = m && porUri.get(m.uri);
+      if(e){ e.f = String(f.ficha).slice(0, 400); nuevas++; }
+    }
+    await guardarIndice(ind);
+  }
+  indiceMemoria = ind;
+  return { nuevas, pendientes: pendientes.length - nuevas, uso };
 }
