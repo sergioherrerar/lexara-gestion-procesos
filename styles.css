@@ -1868,3 +1868,35 @@
     *{ -webkit-print-color-adjust:exact; print-color-adjust:exact; color-adjust:exact; }
     .print-sheet{ position:relative !important; top:auto !important; left:auto !important; z-index:auto !important; }
   }
+
+  /* ---------- «Escrito con LexIA (robot · Plan A)» (2026-10-13, pedido del usuario: diseño acorde al portal) ----------
+     Misma familia visual que .panel / .field-card: tarjeta elevada con acento verde arriba, encabezado verde claro con la marca naranja,
+     campos en tarjetas de etiqueta oscura y avisos con los colores de Lexara. */
+  .escrito-panel{margin:12px 0 4px; background:#fff; border:1px solid var(--gris-linea); border-top:3px solid var(--verde-oscuro); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden;}
+  .escrito-head{display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:11px 16px; background:linear-gradient(180deg,#f1f7f5,#e6efed); border-bottom:1px solid var(--gris-linea);}
+  .escrito-head h4{margin:0; display:flex; align-items:center; gap:9px; font-family:var(--font-display); font-size:14.5px; font-weight:700; color:var(--verde-oscuro);}
+  .escrito-head h4::before{content:''; width:4px; height:18px; border-radius:2px; background:var(--naranja); flex-shrink:0;}
+  .escrito-chip{margin-left:auto; font-size:10.5px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; background:#fdece0; color:#b3590a; padding:3px 10px; border-radius:20px;}
+  .escrito-body{padding:14px 16px 16px; display:flex; flex-direction:column; gap:12px;}
+  .escrito-intro{margin:0; font-size:12.5px; line-height:1.55; color:var(--texto-suave);}
+  .escrito-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:12px;}
+  .escrito-acciones{display:flex; gap:10px; flex-wrap:wrap; align-items:center;}
+  .escrito-pasos{list-style:none; margin:0; padding:10px 12px; display:flex; flex-direction:column; gap:5px; background:var(--gris-claro); border:1px solid var(--gris-linea); border-radius:8px;}
+  .escrito-pasos li{position:relative; padding-left:22px; font-size:12.5px; color:var(--texto);}
+  .escrito-pasos li::before{content:'✓'; position:absolute; left:2px; top:0; font-weight:700; color:var(--verde-claro);}
+  .escrito-pasos li.activo::before{content:''; top:3px; width:11px; height:11px; border:2px solid var(--verde-claro); border-right-color:transparent; border-radius:50%; animation:escrito-giro .8s linear infinite;}
+  @keyframes escrito-giro{to{transform:rotate(360deg);}}
+  .escrito-error{padding:9px 12px; border:1px solid #f1c4bf; background:#fbe4e2; color:#a3281c; border-radius:8px; font-size:12.5px; line-height:1.5;}
+  .escrito-alertas{padding:10px 12px; border:1px solid #f3d78e; border-left:4px solid var(--amarillo); background:#fff7e8; border-radius:8px; font-size:12.5px; color:#6b5115; line-height:1.55;}
+  .escrito-alertas strong{display:block; margin-bottom:4px; color:#6b5115;}
+  .escrito-nota{margin:0; font-size:12px; color:var(--texto-suave); line-height:1.5;}
+  .escrito-resultado{border:1px solid var(--verde-oscuro); border-radius:10px; overflow:hidden; box-shadow:0 1px 3px rgba(0,30,26,.10), 0 6px 14px rgba(0,30,26,.08);}
+  .escrito-resultado-head{display:flex; align-items:center; gap:10px; flex-wrap:wrap; background:var(--verde-oscuro); color:#fff; padding:9px 14px; font-size:12.5px;}
+  .escrito-resultado-head strong{font-size:11px; letter-spacing:.05em; text-transform:uppercase; color:#bfe6e2;}
+  .escrito-resultado-body{padding:12px 14px; display:flex; flex-direction:column; gap:10px; background:rgba(82,187,181,.07);}
+  .escrito-leccion{padding:10px 12px; border:1px solid var(--verde-claro); background:#fff; border-radius:8px; font-size:12.5px; line-height:1.55;}
+  .escrito-leccion em{color:var(--texto-suave);}
+  .escrito-tokens summary{cursor:pointer; font-size:12.5px; font-weight:600; color:var(--verde-oscuro);}
+  .escrito-tokens .table-wrap{margin-top:8px;}
+  .escrito-tokens th, .escrito-tokens td{white-space:nowrap;}
+  .escrito-tokens td.num, .escrito-tokens th.num{text-align:right;}

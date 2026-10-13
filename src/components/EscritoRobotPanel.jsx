@@ -1,6 +1,6 @@
 // Escrito con LexIA desde el portal (Plan A, 2026-10-13): elegir el modelo del despacho y redactar la contestación u otro escrito de la tutela con
 // el robot, pensando en gastar los menos créditos posibles (ver src/lib/escritoRobot.js). Muestra los tokens usados para compararlo con el
-// artefacto Plan B.
+// artefacto Plan B. Diseño con los componentes del portal (tarjeta elevada, tarjetas de campo, avisos de Lexara).
 import { useState } from 'react';
 import { prepararCasoParaEscrito } from '../lib/graph';
 import {
@@ -16,6 +16,16 @@ function descargar(bytes, nombre){
   setTimeout(() => URL.revokeObjectURL(url), 5000);
 }
 const fmt = n => Number(n || 0).toLocaleString('es-CO');
+
+// Tarjeta de campo: etiqueta verde oscura arriba y valor abajo (mismo formato de las fichas del portal).
+function Campo({ etiqueta, completo, children }){
+  return (
+    <div className={'field-card' + (completo ? ' full' : '')}>
+      <div className="field-card-label">{etiqueta}</div>
+      <div className="field-card-value">{children}</div>
+    </div>
+  );
+}
 
 export default function EscritoRobotPanel({ numero, onedriveCarpetaUrl, robotUrl, notify, antesDeRedactar }){
   const [abierto, setAbierto] = useState(false);
@@ -107,98 +117,127 @@ export default function EscritoRobotPanel({ numero, onedriveCarpetaUrl, robotUrl
     }catch(err){ setError('No se pudo guardar la lección: ' + (err.message || err)); }
   }
 
-  const totalEntrada = usos.reduce((s, u) => s + (u.entrada || 0), 0);
-  const totalSalida = usos.reduce((s, u) => s + (u.salida || 0), 0);
-  const totalCacheEscrito = usos.reduce((s, u) => s + (u.cacheEscrito || 0), 0);
-  const totalCacheLeido = usos.reduce((s, u) => s + (u.cacheLeido || 0), 0);
+  const totales = usos.reduce((t, u) => ({
+    entrada: t.entrada + (u.entrada || 0), salida: t.salida + (u.salida || 0),
+    cacheEscrito: t.cacheEscrito + (u.cacheEscrito || 0), cacheLeido: t.cacheLeido + (u.cacheLeido || 0),
+  }), { entrada: 0, salida: 0, cacheEscrito: 0, cacheLeido: 0 });
 
   return (
-    <div style={{marginTop:10, paddingTop:8, borderTop:'1px solid var(--gris-linea)'}}>
-      <div style={{display:'flex', alignItems:'center', gap:10, flexWrap:'wrap'}}>
-        <strong style={{fontSize:13}}>Escrito con LexIA (robot · Plan A)</strong>
-        {!abierto && <IconTextButton icon="mail" variant="secondary" onClick={abrir}>Redactar un escrito de esta tutela</IconTextButton>}
-        <span className="save-hint" style={{margin:0}}>Elige el modelo del despacho y arma el Word sobre el archivo original (logo y formato), con el menor gasto posible de créditos.</span>
+    <div className="escrito-panel">
+      <div className="escrito-head">
+        <h4>Escrito con LexIA</h4>
+        <span className="escrito-chip">Plan A · robot</span>
       </div>
-      {abierto && cargando && <p className="save-hint" style={{margin:'6px 0 0'}}>Leyendo la lectura de la tutela…</p>}
-      {abierto && datos && (
-        <div style={{marginTop:8, display:'flex', flexDirection:'column', gap:8}}>
-          <div style={{display:'flex', gap:10, flexWrap:'wrap', alignItems:'center'}}>
-            <label style={{fontSize:13}}>Escrito{' '}
-              <select value={tipo} onChange={e => { setTipo(e.target.value); setModeloManual(''); setListaModelos([]); }}>
-                {Object.entries(TIPOS_ESCRITO).map(([k, v]) => <option key={k} value={k}>{v.etiqueta}</option>)}
-              </select>
-            </label>
-            {datos.registros.length > 1 && (
-              <label style={{fontSize:13}}>Cliente{' '}
+      <div className="escrito-body">
+        <p className="escrito-intro">
+          Elige el modelo del despacho y arma el Word sobre el archivo original (con su logo y formato), gastando los menos créditos posibles.
+          Antes de redactar se leen de nuevo todos los correos de la tutela.
+        </p>
+
+        {!abierto && (
+          <div className="escrito-acciones">
+            <IconTextButton icon="add" variant="primary" onClick={abrir}>Redactar un escrito de esta tutela</IconTextButton>
+          </div>
+        )}
+        {abierto && cargando && <p className="escrito-nota">Leyendo la lectura de la tutela…</p>}
+
+        {abierto && datos && (
+          <>
+            <div className="escrito-grid">
+              <Campo etiqueta="Escrito">
+                <select value={tipo} onChange={e => { setTipo(e.target.value); setModeloManual(''); setListaModelos([]); }}>
+                  {Object.entries(TIPOS_ESCRITO).map(([k, v]) => <option key={k} value={k}>{v.etiqueta}</option>)}
+                </select>
+              </Campo>
+              <Campo etiqueta="Cliente">
                 <select value={indiceRegistro} onChange={e => cambiarCliente(Number(e.target.value))}>
                   {datos.registros.map((r, i) => <option key={i} value={i}>{r.Cliente || ('Cliente ' + (i + 1))}</option>)}
                 </select>
-              </label>
-            )}
-            <label style={{fontSize:13}}>Quien acciona{' '}
-              <select value={sexo} onChange={e => { setSexo(e.target.value); setModeloManual(''); setListaModelos([]); }}>
-                <option>Mujer</option><option>Hombre</option>
-              </select>
-            </label>
-          </div>
-          <label style={{fontSize:13}}>Para aclaración, impugnación, alcance…: pega lo que dijo el juez o lo que se pide (para la contestación puede ir vacío)
-            <textarea value={nota} onChange={e => setNota(e.target.value)} rows={3} style={{width:'100%', marginTop:4}} />
-          </label>
-          <div style={{display:'flex', gap:10, flexWrap:'wrap', alignItems:'center'}}>
-            <label style={{fontSize:13}}>Modelo{' '}
-              <select value={modeloManual} onChange={e => setModeloManual(e.target.value)} onFocus={() => { if(!listaModelos.length) cargarModelos(false); }} style={{maxWidth:360}}>
-                <option value="">Que LexIA elija el mejor</option>
+              </Campo>
+              <Campo etiqueta="Quien acciona">
+                <select value={sexo} onChange={e => { setSexo(e.target.value); setModeloManual(''); setListaModelos([]); }}>
+                  <option>Mujer</option><option>Hombre</option>
+                </select>
+              </Campo>
+            </div>
+            <Campo etiqueta="Modelo del despacho" completo>
+              <select value={modeloManual} onChange={e => setModeloManual(e.target.value)} onFocus={() => { if(!listaModelos.length) cargarModelos(false); }}>
+                <option value="">Que LexIA elija el mejor modelo</option>
                 {listaModelos.map(m => <option key={m.ruta} value={m.ruta}>{m.ruta.replace(/\.docx?$/i, '')}</option>)}
               </select>
-            </label>
-            <IconTextButton icon="refresh" variant="secondary" disabled={trabajando} onClick={() => cargarModelos(true)}>Actualizar la lista de modelos</IconTextButton>
-            <IconTextButton icon="add" disabled={trabajando} onClick={redactar}>{trabajando && !escrito ? 'Redactando…' : (modeloManual ? 'Redactar con este modelo' : 'Elegir el mejor modelo y redactar')}</IconTextButton>
-          </div>
-        </div>
-      )}
-      {log.length > 0 && <ul style={{margin:'8px 0 0', paddingLeft:18, fontSize:12}}>{log.map((l, i) => <li key={i}>{l}</li>)}</ul>}
-      {error && <p className="save-hint" style={{margin:'6px 0 0', color:'var(--rojo, #a3281c)'}}>{error}</p>}
-      {escrito && (
-        <div style={{marginTop:8, fontSize:13, display:'flex', flexDirection:'column', gap:8}}>
-          <div><strong>Modelo usado:</strong> {escrito.modelo.replace(/\.docx?$/i, '')}</div>
-          {escrito.alertas && (
-            <div style={{background:'var(--crema, #fff7e8)', border:'1px solid #f0d9a8', borderRadius:6, padding:'8px 10px'}}>
-              <strong>Alertas de LexIA para el abogado (no van en el escrito)</strong>
-              <div style={{whiteSpace:'pre-wrap', marginTop:4}}>{escrito.alertas}</div>
+            </Campo>
+            <Campo etiqueta="Lo que dijo el juez o lo que se pide (aclaración, impugnación, alcance…; en la contestación puede ir vacío)" completo>
+              <textarea value={nota} onChange={e => setNota(e.target.value)} rows={3} placeholder="Ej. el fallo ordena a la EPS… / el juez pide aclarar…" />
+            </Campo>
+            <div className="escrito-acciones">
+              <IconTextButton icon="add" variant="primary" disabled={trabajando} onClick={redactar}>
+                {trabajando && !escrito ? 'Redactando…' : (modeloManual ? 'Redactar con este modelo' : 'Elegir el mejor modelo y redactar')}
+              </IconTextButton>
+              <IconTextButton icon="refresh" variant="secondary" disabled={trabajando} onClick={() => cargarModelos(true)}>Actualizar la lista de modelos</IconTextButton>
             </div>
-          )}
-          {escrito.avisos.length > 0 && <div className="save-hint" style={{margin:0}}>Avisos: {escrito.avisos.join(' · ')}</div>}
-          <div style={{display:'flex', gap:10, flexWrap:'wrap', alignItems:'center'}}>
-            <IconTextButton icon="folder" onClick={() => descargar(escrito.bytes, escrito.nombre)}>Descargar el Word</IconTextButton>
-            <span className="save-hint" style={{margin:0}}>También quedó guardado en la carpeta de la tutela. Las imágenes propias del caso (por ejemplo la tabla de afiliación) vienen del modelo: revísalas.</span>
-          </div>
-          <label>Enséñame: dile qué está mal o cómo debe quedar (corrijo el borrador y aprendo para los próximos)
-            <textarea value={correccion} onChange={e => setCorreccion(e.target.value)} rows={3} style={{width:'100%', marginTop:4}} placeholder="Ej. el petitorio debe pedir la desvinculación y no solo el archivo..." />
-          </label>
-          <div><IconTextButton icon="add" disabled={trabajando || !correccion.trim()} onClick={enseñame}>{trabajando ? 'Aplicando…' : 'Enséñame'}</IconTextButton></div>
-          {aviso && <div className="save-hint" style={{margin:0}}>{aviso}</div>}
-          {leccion && (
-            <div style={{border:'1px solid var(--gris-linea)', borderRadius:6, padding:'8px 10px'}}>
-              <strong>¿Le enseño esto para los próximos escritos?</strong>
-              <div style={{margin:'4px 0'}}>{leccion.regla} <em>(aplica a: {leccion.alcance === 'tipo' ? 'este tipo de escrito' : leccion.alcance === 'cliente' ? 'este cliente' : 'todos los escritos'})</em></div>
-              <div style={{display:'flex', gap:8}}>
-                <IconTextButton icon="add" onClick={guardarLec}>Sí, guardar la lección</IconTextButton>
-                <IconTextButton icon="refresh" variant="secondary" onClick={() => setLeccion(null)}>No, era solo para este caso</IconTextButton>
+          </>
+        )}
+
+        {log.length > 0 && (
+          <ul className="escrito-pasos">
+            {log.map((l, i) => <li key={i} className={trabajando && i === log.length - 1 ? 'activo' : ''}>{l}</li>)}
+          </ul>
+        )}
+        {error && <div className="escrito-error">{error}</div>}
+
+        {escrito && (
+          <div className="escrito-resultado">
+            <div className="escrito-resultado-head">
+              <strong>Modelo usado</strong>
+              <span>{escrito.modelo.replace(/\.docx?$/i, '')}</span>
+            </div>
+            <div className="escrito-resultado-body">
+              {escrito.alertas && (
+                <div className="escrito-alertas">
+                  <strong>Alertas de LexIA para el abogado (no van en el escrito)</strong>
+                  <div style={{whiteSpace:'pre-wrap'}}>{escrito.alertas}</div>
+                </div>
+              )}
+              {escrito.avisos.length > 0 && <div className="field-info">Avisos: {escrito.avisos.join(' · ')}</div>}
+              <div className="escrito-acciones">
+                <IconTextButton icon="pdf" variant="primary" onClick={() => descargar(escrito.bytes, escrito.nombre)}>Descargar el Word</IconTextButton>
+                <span className="escrito-nota">También quedó guardado en la carpeta de la tutela. Las imágenes propias del caso (por ejemplo la tabla de afiliación) vienen del modelo: revísalas.</span>
               </div>
+
+              <Campo etiqueta="Enséñame: qué está mal o cómo debe quedar (corrijo el borrador y aprendo para los próximos)" completo>
+                <textarea value={correccion} onChange={e => setCorreccion(e.target.value)} rows={3} placeholder="Ej. el petitorio debe pedir la desvinculación y no solo el archivo…" />
+              </Campo>
+              <div className="escrito-acciones">
+                <IconTextButton icon="edit" variant="primary" disabled={trabajando || !correccion.trim()} onClick={enseñame}>{trabajando ? 'Aplicando…' : 'Enséñame'}</IconTextButton>
+              </div>
+              {aviso && <div className="field-info">{aviso}</div>}
+              {leccion && (
+                <div className="escrito-leccion">
+                  <strong>¿Le enseño esto para los próximos escritos?</strong>
+                  <div style={{margin:'4px 0 8px'}}>{leccion.regla} <em>(aplica a: {leccion.alcance === 'tipo' ? 'este tipo de escrito' : leccion.alcance === 'cliente' ? 'este cliente' : 'todos los escritos'})</em></div>
+                  <div className="escrito-acciones">
+                    <IconTextButton icon="add" variant="primary" onClick={guardarLec}>Sí, guardar la lección</IconTextButton>
+                    <IconTextButton icon="delete" variant="secondary" onClick={() => setLeccion(null)}>No, era solo para este caso</IconTextButton>
+                  </div>
+                </div>
+              )}
+
+              <details className="escrito-tokens">
+                <summary>Tokens usados (para comparar créditos con el artefacto)</summary>
+                <div className="table-wrap">
+                  <table>
+                    <thead><tr><th>Paso</th><th>Modelo</th><th className="num">Entrada</th><th className="num">Salida</th><th className="num">Caché escrita</th><th className="num">Caché leída</th></tr></thead>
+                    <tbody>
+                      {usos.map((u, i) => <tr key={i}><td>{u.paso}</td><td>{u.modelo}</td><td className="num">{fmt(u.entrada)}</td><td className="num">{fmt(u.salida)}</td><td className="num">{fmt(u.cacheEscrito)}</td><td className="num">{fmt(u.cacheLeido)}</td></tr>)}
+                      <tr style={{fontWeight:700}}><td colSpan={2}>Total</td><td className="num">{fmt(totales.entrada)}</td><td className="num">{fmt(totales.salida)}</td><td className="num">{fmt(totales.cacheEscrito)}</td><td className="num">{fmt(totales.cacheLeido)}</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </details>
             </div>
-          )}
-          <details>
-            <summary style={{cursor:'pointer'}}>Tokens usados (para comparar créditos con el artefacto)</summary>
-            <table style={{borderCollapse:'collapse', marginTop:6, fontSize:12}}>
-              <thead><tr>{['Paso', 'Modelo', 'Entrada', 'Salida', 'Caché escrita', 'Caché leída'].map(h => <th key={h} style={{textAlign:'right', padding:'2px 8px', borderBottom:'1px solid var(--gris-linea)'}}>{h}</th>)}</tr></thead>
-              <tbody>
-                {usos.map((u, i) => <tr key={i}><td style={{padding:'2px 8px'}}>{u.paso}</td><td style={{padding:'2px 8px'}}>{u.modelo}</td><td style={{textAlign:'right', padding:'2px 8px'}}>{fmt(u.entrada)}</td><td style={{textAlign:'right', padding:'2px 8px'}}>{fmt(u.salida)}</td><td style={{textAlign:'right', padding:'2px 8px'}}>{fmt(u.cacheEscrito)}</td><td style={{textAlign:'right', padding:'2px 8px'}}>{fmt(u.cacheLeido)}</td></tr>)}
-                <tr style={{fontWeight:'bold'}}><td style={{padding:'2px 8px'}} colSpan={2}>Total</td><td style={{textAlign:'right', padding:'2px 8px'}}>{fmt(totalEntrada)}</td><td style={{textAlign:'right', padding:'2px 8px'}}>{fmt(totalSalida)}</td><td style={{textAlign:'right', padding:'2px 8px'}}>{fmt(totalCacheEscrito)}</td><td style={{textAlign:'right', padding:'2px 8px'}}>{fmt(totalCacheLeido)}</td></tr>
-              </tbody>
-            </table>
-          </details>
-        </div>
-      )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
