@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { normalizarBorradorTutela } from '../lib/borradorTutela';
 import { aplicarVencimientoHabil, fechaLocalISO } from '../lib/vencimientoTutela';
-import { leerCorreosTutelas, primerCorreoDeConversacion, crearSolicitudPruebasBorrador, buscarSolicitudPruebasExistente, revisarRespuestasAreas, uriLecturaLexIAParaArtefacto, leerTodosLosCorreosDeTutela, correosRecibidosParaSolicitud, extraerTutelaConLexIA, numeroTutelaDeAsunto, normalize, mensajeError, buscarLecturaLexIAGuardada, guardarLecturaLexIAEnOneDrive, listarTutelasAnalizadasEnOneDrive, asegurarCarpetaTutelaDesdeMensaje } from '../lib/graph';
+import { leerCorreosTutelas, primerCorreoDeConversacion, crearSolicitudPruebasBorrador, buscarSolicitudPruebasExistente, revisarRespuestasAreas, uriLecturaLexIAParaArtefacto, leerTodosLosCorreosDeTutela, correosRecibidosParaSolicitud, estadoSeguimientoTutela, extraerTutelaConLexIA, numeroTutelaDeAsunto, normalize, mensajeError, buscarLecturaLexIAGuardada, guardarLecturaLexIAEnOneDrive, listarTutelasAnalizadasEnOneDrive, asegurarCarpetaTutelaDesdeMensaje } from '../lib/graph';
 import IconButton, { IconTextButton } from './IconButton';
 import EscritoRobotPanel from './EscritoRobotPanel';
 import { redactarEscritoConRobot, sexoPorNombre } from '../lib/escritoRobot';
@@ -64,6 +64,71 @@ function claveMarcaCliente(c){
   if(x.includes('unidad') || x.includes('umd')) return 'umd';
   return x;
 }
+
+// Lista de seguimiento de la tutela (2026-10-13, pedido del usuario): debajo de la foto de LexIA, qué pasos ya se hicieron y cuándo.
+// Colores como los correos del portal: verde = hecho, naranja = a medias (borrador), gris = pendiente.
+function SeguimientoTutela({ numero, estado, onActualizar }){
+  const d = estado?.datos;
+  const cargando = !estado || estado.estado === 'cargando';
+  const paso = (texto, hecho, fecha, pendiente, extra) => ({ texto, fecha, extra, pendiente, nivel: hecho ? 'ok' : 'pendiente' });
+  const pasos = [];
+  if(d){
+    pasos.push(paso('Leído por LexIA', !!d.leido, d.leido, 'Aún sin leer'));
+    pasos.push(paso('Correos nuevos verificados hasta', !!d.correosVerificadoHasta, d.correosVerificadoHasta, 'Aún no se han verificado'));
+    const p = d.pruebas;
+    pasos.push(p
+      ? { texto: p.enviado ? 'Correo de pruebas enviado' : 'Borrador de pruebas creado', fecha: p.fecha, extra: p.enviado ? '' : 'Todavía sin enviar', nivel: p.enviado ? 'ok' : 'parcial' }
+      : paso('Correo de pruebas', false, '', 'Aún no se crea el borrador'));
+    const r = d.respuestas;
+    pasos.push(r
+      ? paso('Llegaron correos de pruebas', true, r.fecha, '', (r.cantidad + ' correo' + (r.cantidad === 1 ? '' : 's')) + (r.areasTotal ? ' · ' + r.areasRespondieron + ' de ' + r.areasTotal + ' áreas' : ''))
+      : paso('Llegaron correos de pruebas', false, '', 'Aún no llegan (se actualiza al revisar respuestas)'));
+    const a = d.aplazamiento;
+    pasos.push(a
+      ? { texto: a.enviado ? 'Aplazamiento enviado' : 'Borrador de aplazamiento creado', fecha: a.fecha, extra: a.enviado ? '' : 'Todavía sin enviar', nivel: a.enviado ? 'ok' : 'parcial' }
+      : paso('Aplazamiento', false, '', 'Aún no se envía'));
+    const e = d.escrito;
+    pasos.push(e
+      ? paso('Escrito de contestación enviado', true, e.fecha, '')
+      : paso('Escrito de contestación', false, '', 'Aún no se envía'));
+  }
+  const hechos = pasos.filter(x => x.nivel === 'ok').length;
+  return (
+    <div className="seguimiento-panel">
+      <div className="seguimiento-head">
+        <h4>Seguimiento · tutela {numero}</h4>
+        <IconButton icon="refresh" label="Actualizar el seguimiento" onClick={onActualizar} spinning={cargando} />
+      </div>
+      {cargando && !d && <p className="seguimiento-nota">Revisando…</p>}
+      {estado?.estado === 'error' && <p className="seguimiento-nota seguimiento-error">No se pudo revisar: {estado.error}</p>}
+      {d && (
+        <>
+          <p className="seguimiento-avance"><strong>{hechos}</strong> de {pasos.length} pasos listos</p>
+          <ul className="seguimiento-lista">
+            {pasos.map((x, i) => (
+              <li key={i} className={'seguimiento-item seguimiento-' + x.nivel}>
+                <span className="seguimiento-marca" aria-hidden="true">
+                  {x.nivel === 'ok' ? (
+                    <svg viewBox="0 0 16 16" width="12" height="12"><path d="M3.5 8.5l3 3 6-6.5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                  ) : x.nivel === 'parcial' ? (
+                    <svg viewBox="0 0 16 16" width="12" height="12"><path d="M4 8h8" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" /></svg>
+                  ) : null}
+                </span>
+                <span className="seguimiento-texto">
+                  <span className="seguimiento-titulo">{x.texto}</span>
+                  <span className="seguimiento-fecha">{x.fecha || x.pendiente}{x.fecha && x.extra ? ' · ' + x.extra : (!x.fecha && x.extra ? ' · ' + x.extra : '')}</span>
+                </span>
+                <span className="sr-only">{x.nivel === 'ok' ? 'Hecho' : x.nivel === 'parcial' ? 'A medias' : 'Pendiente'}</span>
+              </li>
+            ))}
+          </ul>
+          {d.errores?.length > 0 && <p className="seguimiento-nota seguimiento-error">{d.errores.join(' · ')}</p>}
+        </>
+      )}
+    </div>
+  );
+}
+
 function tutelaYaEnPortal(tutelas, noTutela, cliente){
   if(!noTutela || !cliente) return null;
   const k = claveMarcaCliente(cliente);
@@ -339,9 +404,26 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
     }
   }
 
+  const [aplazamiento, setAplazamiento] = useState({}); // { [mensajeId]: { estado, pasos[], error? } }
+  // Lista de seguimiento de la tutela seleccionada (debajo de la foto de LexIA). Se actualiza sola al seleccionar la tutela y cada vez que
+  // termina una acción (leer correos, revisar respuestas, crear el correo con aplazamiento); también con el botón de actualizar.
+  const [seguimiento, setSeguimiento] = useState({});   // { [numero]: { estado, datos?, error? } }
+  const [tickSeguimiento, setTickSeguimiento] = useState(0);
+  const mensajeSel = mensajes.find(x => x.id === seleccionadoId) || null;
+  const numeroSel = mensajeSel ? numeroTutelaDeAsunto(mensajeSel.asunto) : null;
+  const seguimientoVisible = !!(numeroSel && onedriveCarpetaUrl && (analizadasOneDrive.has(String(numeroSel)) || resultado?.mensajeId === seleccionadoId));
+  useEffect(() => {
+    if(!seguimientoVisible) return;
+    let vigente = true;
+    setSeguimiento(prev => ({ ...prev, [numeroSel]: { ...(prev[numeroSel] || {}), estado: 'cargando' } }));
+    estadoSeguimientoTutela({ correoBuzon, urlCarpeta: onedriveCarpetaUrl, noTutela: numeroSel })
+      .then(datos => { if(vigente) setSeguimiento(prev => ({ ...prev, [numeroSel]: { estado: 'listo', datos } })); })
+      .catch(err => { if(vigente){ console.error(err); setSeguimiento(prev => ({ ...prev, [numeroSel]: { estado: 'error', error: mensajeError(err) } })); } });
+    return () => { vigente = false; };
+  }, [seguimientoVisible, numeroSel, tickSeguimiento, todosCorreos[seleccionadoId]?.estado, respuestasAreas[seleccionadoId]?.estado, aplazamiento[seleccionadoId]?.estado, procesando]);
+
   // «Correo con aplazamiento» (Sección 1): redacta el modelo de aplazamiento de cada cliente de la tutela con los datos del caso y crea el
   // borrador de la solicitud de pruebas (reenvío del correo de notificación) con esos Word adjuntos.
-  const [aplazamiento, setAplazamiento] = useState({}); // { [mensajeId]: { estado, pasos[], error? } }
   async function handleCorreoConAplazamiento(mensaje){
     const numero = numeroTutelaDeAsunto(mensaje.asunto);
     const registros = resultado?.mensajeId === mensaje.id ? (resultado.registros || []) : [];
@@ -810,11 +892,6 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
                     <div className="tutela-seccion">
                       <div className="tutela-seccion-head">
                         <h4><span className="tutela-seccion-n">Sección 3</span>Clientes de la tutela y borrador</h4>
-                        {onedriveCarpetaUrl && numeroDeEsteMensaje && (
-                          <IconTextButton icon="refresh" variant="secondary" disabled={todosCorreos[m.id]?.estado === 'leyendo'} onClick={() => handleLeerTodosCorreos(m)}>
-                            {todosCorreos[m.id]?.estado === 'leyendo' ? 'Leyendo…' : (todosCorreos[m.id]?.datos ? 'Leer correos nuevos de esta tutela' : 'Leer correos nuevos de esta tutela')}
-                          </IconTextButton>
-                        )}
                       </div>
                       <div className="tutela-seccion-body leer-correo-registros">
                       {resultado.registros.length > 1 && (
@@ -955,6 +1032,9 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
           </div>
           {mensajeAvatar && (
             <p key={mensajeAvatar} className="avatar-mensaje">{mensajeAvatar}</p>
+          )}
+          {seguimientoVisible && (
+            <SeguimientoTutela numero={numeroSel} estado={seguimiento[numeroSel]} onActualizar={() => setTickSeguimiento(t => t + 1)} />
           )}
         </div>
         </div>

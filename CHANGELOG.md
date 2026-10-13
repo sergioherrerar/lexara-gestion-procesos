@@ -2,6 +2,12 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-10-13 (37)
+- **Lista de seguimiento de la tutela, debajo de la foto de LexIA** — pedido del usuario. Con check verde (hecho), naranja (borrador sin enviar) o gris (pendiente) y la fecha de cada paso: leído por LexIA, correos nuevos verificados hasta (se guarda cada vez que se leen los correos), correo de pruebas (borrador/enviado), llegaron correos de pruebas (con cuántas áreas respondieron), aplazamiento y escrito de contestación (se reconoce un correo enviado a un juzgado, dirección .gov.co, con el número de la tutela en el asunto). Se actualiza sola al elegir la tutela y al terminar cada acción; también con el botón de actualizar.
+
+## 2026-10-13 (36)
+- **Se retira el botón «Leer correos nuevos de esta tutela» de la Sección 3** — pedido del usuario; queda solo en la Sección 2.
+
 ## 2026-10-13 (35)
 - **Secciones reordenadas en cada tarjeta de «Leer correo de Tutelas»** — pedido del usuario. Ahora: Sección 1 «Comentario: otras tutelas de este mismo usuario»; Sección 2 «Todos los correos de esta tutela» (sin el botón «Correo con aplazamiento»); Sección 3 «Clientes de la tutela y borrador» (con el botón de leer correos nuevos en su cabecera); Sección 4 «Pruebas solicitadas a las áreas» (ahora con el botón «Correo con aplazamiento» y su avance); Secciones 5 y 6 igual.
 - **El botón «Volver a leer todos los correos» ahora se llama «Leer correos nuevos de esta tutela»** (en la Sección 2 y en la 3).

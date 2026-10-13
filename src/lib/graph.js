@@ -1337,7 +1337,7 @@ function construirTextoDesdeEstado(e){
   L.push(JSON.stringify({
     asunto: e.asunto || '', cuerpo: e.cuerpo || '', registros: (registros || []).map(r => { const { _creado, _solicitud, ...limpio } = r; return limpio; }),
     documentos, omitidos: e.omitidos || [], correo: e.correo || {}, analizado: e.analizado || '', portal: e.portal || null,
-    solicitudes, respuestasAreas: respuestas, correosTutela: e.correosTutela || [], carpetaTutelaUri: e.carpetaTutelaUri || '',
+    solicitudes, respuestasAreas: respuestas, correosTutela: e.correosTutela || [], carpetaTutelaUri: e.carpetaTutelaUri || '', correosVerificado: e.correosVerificado || '',
   }));
   L.push(MARCADOR_JSON_FIN);
   return L.join('\n');
@@ -1368,6 +1368,7 @@ function leerEstadoDeTexto(texto, numero){
     respuestasAreas: Array.isArray(datos.respuestasAreas) ? datos.respuestasAreas : [],
     correosTutela: Array.isArray(datos.correosTutela) ? datos.correosTutela : [],
     carpetaTutelaUri: datos.carpetaTutelaUri || '',
+    correosVerificado: datos.correosVerificado || '',
   };
 }
 // { estado, ruta } del archivo de esta tutela (nombre nuevo o viejo), o null si no existe.
@@ -1411,7 +1412,7 @@ export async function guardarLecturaLexIAEnOneDrive(urlCarpeta, numeroTutela, me
   const { driveId, folderId } = await resolverCarpetaLexIAOneDrive(urlCarpeta);
   const previo = await leerEstadoLectura(driveId, folderId, numeroTutela).catch(() => null);
   const estado = {
-    ...(previo ? { portal: previo.estado.portal, solicitudes: previo.estado.solicitudes, respuestasAreas: previo.estado.respuestasAreas, correosTutela: previo.estado.correosTutela } : {}),
+    ...(previo ? { portal: previo.estado.portal, solicitudes: previo.estado.solicitudes, respuestasAreas: previo.estado.respuestasAreas, correosTutela: previo.estado.correosTutela, correosVerificado: previo.estado.correosVerificado } : {}),
     numero: String(numeroTutela),
     analizado: new Date().toLocaleString('es-CO'),
     asunto, cuerpo,
@@ -3858,9 +3859,67 @@ export async function leerTodosLosCorreosDeTutela({ correoBuzon, urlCarpeta, noT
     const estado = ctx.leido.estado;
     // Se guardan en la lectura sin los campos que solo sirven en pantalla.
     estado.correosTutela = final.map(({ id, asunto, de, fecha, clase, adjuntos, resumen, archivo }) => ({ id, asunto, de, fecha, clase, adjuntos, resumen, archivo }));
+    estado.correosVerificado = new Date().toLocaleString('es-CO');   // hasta cuándo se revisaron los correos nuevos (lista de seguimiento)
     try{ await escribirEstadoLectura(ctx.driveId, ctx.folderId, ctx.leido.ruta, estado); }
     catch(err){ salida.errores.push('No se pudo actualizar Lectura LexIA.txt: ' + (err.message || err)); }
   }
+  return salida;
+}
+
+// Lista de seguimiento de una tutela (2026-10-13, pedido del usuario): qué pasos ya se hicieron y cuándo. Combina lo guardado en «Lectura LexIA.txt»
+// (lectura, última revisión de correos, respuestas de las áreas) con lo que hay en Borradores y Enviados del buzón de Tutelas (solicitud de pruebas,
+// aplazamiento y escrito de contestación). Nunca lanza: lo que no se pudo averiguar queda vacío y se anota en `errores`.
+// Cada paso es { enviado: bool, fecha, borrador?: bool } o null si todavía no existe.
+export async function estadoSeguimientoTutela({ correoBuzon, urlCarpeta, noTutela }){
+  const salida = { leido: '', correosVerificadoHasta: '', respuestas: null, pruebas: null, aplazamiento: null, escrito: null, errores: [] };
+  const n = String(noTutela || '').trim();
+  if(!n) return salida;
+  const fechaDe = iso => iso ? new Date(iso).toLocaleString('es-CO') : '';
+  if(urlCarpeta){
+    try{
+      const { driveId, folderId } = await resolverCarpetaLexIAOneDrive(urlCarpeta);
+      const leido = await leerEstadoLectura(driveId, folderId, n);
+      if(leido){
+        const e = leido.estado;
+        salida.leido = e.analizado || '';
+        salida.correosVerificadoHasta = e.correosVerificado || '';
+        const recibidas = e.respuestasAreas || [];
+        if(recibidas.length){
+          const sols = e.solicitudes || [];
+          const areas = (sols[sols.length - 1]?.areas || []).filter(a => !a.noSolicitada);
+          salida.respuestas = { cantidad: recibidas.length, fecha: recibidas[recibidas.length - 1].fecha || '', areasRespondieron: areas.filter(a => a.respondio).length, areasTotal: areas.length };
+        }
+      }
+    }catch(err){ salida.errores.push('No se pudo leer la lectura de la tutela: ' + (err.message || err)); }
+  }
+  const re = new RegExp('(^|[^0-9])' + n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '([^0-9]|$)');
+  const etiquetaAplazamiento = normalize('LexIA Solicitud de aplazamiento ' + n);
+  const hallados = { pruebas: [], aplazamiento: [], escrito: [] };
+  let fallos = 0;
+  for(const [carpeta, orden, top] of [['drafts', 'createdDateTime', 150], ['sentitems', 'sentDateTime', 300]]){
+    try{
+      (await ultimosMensajesDeCarpeta(correoBuzon, carpeta, orden, top)).forEach(m => {
+        const enviado = carpeta === 'sentitems';
+        const paso = { enviado, borrador: !enviado, fecha: fechaDe(m.sentDateTime || m.createdDateTime), _t: String(m.sentDateTime || m.createdDateTime || '') };
+        if(esSolicitudPruebasDeTutela(m, n)){ hallados.pruebas.push(paso); return; }
+        if((m.categories || []).some(c => { const x = normalize(c); return x === etiquetaAplazamiento || x.startsWith(etiquetaAplazamiento + ' '); })){ hallados.aplazamiento.push(paso); return; }
+        // Escrito de contestación: correo enviado que menciona la tutela en el asunto y va dirigido a un juzgado (dirección .gov.co).
+        const destinos = [...(m.toRecipients || []), ...(m.ccRecipients || [])].map(r => String(r.emailAddress?.address || '').toLowerCase());
+        if(enviado && re.test(m.subject || '') && destinos.some(d => /\.gov\.co$/.test(d))) hallados.escrito.push(paso);
+      });
+    }catch(err){ fallos++; console.error('No se pudo revisar ' + carpeta + ' para el seguimiento:', err); }
+  }
+  if(fallos === 2) salida.errores.push('No se pudieron leer los Borradores ni los Enviados del buzón de Tutelas.');
+  // De cada tipo se toma el más importante: uno enviado (el más reciente) antes que un borrador.
+  const mejor = lista => {
+    if(!lista.length) return null;
+    const enviados = lista.filter(p => p.enviado).sort((a, b) => b._t.localeCompare(a._t));
+    const p = enviados[0] || lista.sort((a, b) => b._t.localeCompare(a._t))[0];
+    return { enviado: p.enviado, borrador: p.borrador, fecha: p.fecha };
+  };
+  salida.pruebas = mejor(hallados.pruebas);
+  salida.aplazamiento = mejor(hallados.aplazamiento);
+  salida.escrito = mejor(hallados.escrito);
   return salida;
 }
 
