@@ -609,8 +609,11 @@ async function ultimosMensajesDeCarpeta(correoBuzon, carpeta, campoOrden, top = 
 }
 // Etiqueta (categoría de Outlook) que lleva el borrador de la solicitud de pruebas: así se reconoce sin tocar el asunto original.
 const PREFIJO_ETIQUETA_SOLICITUD = 'LexIA Solicitud de pruebas';
-function etiquetaSolicitud(noTutela, clientesCortos){
-  return PREFIJO_ETIQUETA_SOLICITUD + ' ' + noTutela + ((clientesCortos || []).length ? ' · ' + clientesCortos.join(' + ') : '');
+// La marca depende de lo que se envía: «LexIA Solicitud de pruebas 28272 · COLMÉDICA» o, si lleva un escrito, «LexIA Solicitud de aplazamiento 28272 · …»
+// (así el portal no confunde un borrador de aplazamiento con la solicitud de pruebas de esa tutela).
+function etiquetaSolicitud(noTutela, clientesCortos, etiquetaEnvio){
+  const base = etiquetaEnvio ? 'LexIA ' + (/aplazamiento/i.test(etiquetaEnvio) ? 'Solicitud de aplazamiento' : etiquetaEnvio) : PREFIJO_ETIQUETA_SOLICITUD;
+  return base + ' ' + noTutela + ((clientesCortos || []).length ? ' · ' + clientesCortos.join(' + ') : '');
 }
 // `m` es el mensaje de Graph (con subject y categories). Los borradores creados antes de este cambio se reconocen por el asunto.
 function esSolicitudPruebasDeTutela(m, noTutela){
@@ -704,7 +707,7 @@ export async function crearSolicitudPruebasBorrador({ config, robotSolicitudUrl,
   const asunto = data.asunto || `TUTELA No. ${noTutela || ''} - SOLICITUD DE PRUEBAS`;
   // 2026-10-13: el asunto no se toca (conserva el del correo original).
   const cortos = [...new Set((registros && registros.length ? registros : [registro]).map(x => nombreCortoClienteSolicitud(x && x.Cliente)).filter(Boolean))];
-  const categoria = etiquetaSolicitud(noTutela, cortos);
+  const categoria = etiquetaSolicitud(noTutela, cortos, etiquetaEnvio);
   // Copia: el área jurídica (Dania) de cada cliente de la tutela, con las direcciones de la agenda del formato (se unen a las que traiga el robot).
   const DANIA_POR_CLIENTE = { 'ALIANSALUD': 'daniacp@aliansalud.com.co', 'COLMÉDICA': 'daniacp@colmedica.com', 'UMD': 'daniacp@umd.com.co' };
   const ccFinal = [...new Set([...(data.cc || []), ...cortos.map(c => DANIA_POR_CLIENTE[c]).filter(Boolean)].map(c => String(c)))];
