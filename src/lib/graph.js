@@ -3836,3 +3836,53 @@ export async function correosRecibidosParaSolicitud(correoBuzon, noTutela){
     return [];
   }
 }
+
+// ---------------------------------------------------------------------------
+// Escrito con LexIA desde el portal (Plan A, 2026-10-13). Piezas de Graph que usa src/lib/escritoRobot.js.
+
+// Texto de un archivo por ruta o por id (null si no existe). Ej.: "/drives/<id>/root:/ARCHIVO.json:/content"
+export async function graphLeerTexto(path){
+  const token = await getGraphToken();
+  const res = await fetch(`https://graph.microsoft.com/v1.0${path}`, { headers: { Authorization: `Bearer ${token}` } });
+  return res.ok ? res.text() : null;
+}
+// Descarga un archivo (bytes) de SharePoint por unidad e id.
+export async function graphDescargarArchivo(driveId, itemId){
+  const item = await graphFetch(`/drives/${driveId}/items/${itemId}?$select=name,@microsoft.graph.downloadUrl`);
+  const url = item?.['@microsoft.graph.downloadUrl'];
+  if(!url) throw new Error('No pude abrir el archivo en SharePoint.');
+  const res = await fetch(url);
+  if(!res.ok) throw new Error(`No pude descargar el archivo (código ${res.status}).`);
+  return { nombre: item.name, bytes: await res.arrayBuffer() };
+}
+
+// El caso de una tutela tal como se le da al robot: «Lectura LexIA.txt» sin el bloque JSON del final (repite todo), sin la sección 2 (el
+// correo, ya resumido en la 3) y sin la 6 (los demás correos van como resumen aparte). Devuelve null si la tutela no tiene lectura.
+export async function prepararCasoParaEscrito(urlCarpeta, numeroTutela){
+  const { driveId, folderId } = await resolverCarpetaLexIAOneDrive(urlCarpeta);
+  const leido = await leerEstadoLectura(driveId, folderId, numeroTutela);
+  if(!leido) return null;
+  const e = leido.estado;
+  let t = construirTextoDesdeEstado(e);
+  const j = t.indexOf(MARCADOR_JSON_INICIO);
+  if(j >= 0) t = t.slice(0, j);
+  const s6 = t.indexOf('################ 6.');
+  if(s6 >= 0) t = t.slice(0, s6);
+  const a = t.indexOf('################ 2.'), b = t.indexOf('################ 3.');
+  if(a >= 0 && b > a) t = t.slice(0, a) + t.slice(b);
+  if(t.length > 30000) t = t.slice(0, 30000) + '…';
+  // Los demás correos de la tutela, resumidos (si el abogado ya pulsó «Leer todos los correos de esta tutela»).
+  const correos = (e.correosTutela || []).slice(-15).map(c =>
+    `${c.fecha || ''} | ${c.clase || ''} | De: ${c.de || ''} | Asunto: ${c.asunto || ''}${c.adjuntos && c.adjuntos.length ? ' | Adjuntos: ' + c.adjuntos.join('; ') : ''}\n   ${String(c.resumen || '').replace(/\s+/g, ' ').slice(0, 500)}`
+  ).join('\n').slice(0, 7000);
+  return { textoCaso: t, registros: e.registros || [], correosResumen: correos, driveId, folderId, ruta: leido.ruta };
+}
+// Guarda un archivo en la carpeta de la tutela ("<N> Tutela/<nombre>"). Devuelve la ruta usada.
+export async function guardarArchivoEnTutela(urlCarpeta, numeroTutela, nombre, bytes, tipoMime){
+  const { driveId, folderId } = await resolverCarpetaLexIAOneDrive(urlCarpeta);
+  const ruta = `${numeroTutela} Tutela/${nombre}`;
+  await graphFetch(`/drives/${driveId}/items/${folderId}:/${encodeURIComponent(ruta).replace(/%2F/g, '/')}:/content`, {
+    method: 'PUT', headers: { 'Content-Type': tipoMime || 'application/octet-stream' }, body: bytes,
+  });
+  return ruta;
+}

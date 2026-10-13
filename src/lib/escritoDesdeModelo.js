@@ -256,3 +256,92 @@ export async function aplicarTextoAModeloDocx(bytesModelo, textoFinal, deps = {}
   const bytes = await zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE' });
   return { bytes, resumen };
 }
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Plan A (portal + robot, 2026-10-13): en vez de mandarle a Claude el escrito completo para que lo reescriba (caro), el portal le manda la
+// lista numerada de párrafos del modelo y Claude devuelve SOLO los cambios; aquí se aplican sobre el .docx original.
+async function abrirDocx(bytesModelo, deps = {}){
+  const Parser = deps.DOMParser || globalThis.DOMParser;
+  const Serializer = deps.XMLSerializer || globalThis.XMLSerializer;
+  const zip = await JSZip.loadAsync(bytesModelo);
+  const archivo = zip.file('word/document.xml');
+  if(!archivo) throw new Error('El modelo no parece un Word válido (falta word/document.xml).');
+  const doc = new Parser().parseFromString(await archivo.async('string'), 'application/xml');
+  const cuerpo = doc.getElementsByTagNameNS(NS, 'body')[0];
+  if(!cuerpo) throw new Error('No encontré el cuerpo del documento.');
+  const parrafos = [...doc.getElementsByTagNameNS(NS, 'p')]
+    .map(el => ({ el, texto: colapsar(textoDeParrafo(el)) }))
+    .filter(x => x.texto)
+    .map((x, n) => ({ ...x, n }));
+  return { zip, doc, cuerpo, parrafos, Serializer };
+}
+
+/** Lista de párrafos con texto del .docx: [{ n, t }] (n = posición entre los párrafos con texto). */
+export async function listarParrafosDeDocx(bytes, deps = {}){
+  const { parrafos } = await abrirDocx(bytes, deps);
+  return parrafos.map(p => ({ n: p.n, t: p.texto }));
+}
+
+/**
+ * Aplica los cambios que devolvió el robot sobre el .docx.
+ * cambios: [{p, texto}] · reemplazos: [{p, buscar, reemplazar}] · eliminar: [p] · agregar: [{despues, textos[]}]
+ * Devuelve { bytes, resumen, avisos } — avisos: lo que no se pudo aplicar (párrafo inexistente, texto a reemplazar no encontrado…).
+ */
+export async function aplicarCambiosADocx(bytes, { cambios = [], reemplazos = [], eliminar = [], agregar = [] }, deps = {}){
+  const { zip, doc, cuerpo, parrafos, Serializer } = await abrirDocx(bytes, deps);
+  const porN = new Map(parrafos.map(p => [p.n, p]));
+  const avisos = [];
+  const resumen = { cambiados: 0, reemplazos: 0, quitados: 0, nuevos: 0 };
+  // texto actual de cada párrafo (por si se cambia y además se reemplaza)
+  const actual = new Map(parrafos.map(p => [p.n, p.texto]));
+
+  for(const c of cambios){
+    const p = porN.get(c.p);
+    if(!p){ avisos.push('Cambio para un párrafo que no existe (' + c.p + ').'); continue; }
+    const nuevo = colapsar(c.texto);
+    if(!nuevo){ continue; }
+    if(clave(nuevo) !== clave(actual.get(c.p))){ editarParrafo(p.el, nuevo); actual.set(c.p, nuevo); resumen.cambiados++; }
+  }
+  for(const rp of reemplazos){
+    const p = porN.get(rp.p);
+    if(!p){ avisos.push('Reemplazo en un párrafo que no existe (' + rp.p + ').'); continue; }
+    const base = actual.get(rp.p);
+    const buscar = colapsar(rp.buscar);
+    if(!buscar || !base.includes(buscar)){ avisos.push('No encontré «' + String(rp.buscar).slice(0, 50) + '» en el párrafo ' + rp.p + ' (queda sin cambiar).'); continue; }
+    const nuevo = base.replace(buscar, () => colapsar(rp.reemplazar));
+    editarParrafo(p.el, nuevo); actual.set(rp.p, nuevo); resumen.reemplazos++;
+  }
+  // formato de un párrafo de cuerpo (largo) cercano para los párrafos nuevos
+  const plantillaPara = (n) => {
+    for(let k = n; k >= 0; k--){ const q = porN.get(k); if(q && q.texto.length > 80) return q.el; }
+    const cualquiera = parrafos.find(q => q.texto.length > 80);
+    return (cualquiera || porN.get(n) || parrafos[0]).el;
+  };
+  for(const a of agregar){
+    const p = porN.get(a.despues);
+    if(!p){ avisos.push('No encontré el párrafo ' + a.despues + ' para agregar después de él.'); continue; }
+    let ref = nivelCuerpo(p.el, cuerpo);
+    const plantilla = plantillaPara(a.despues);
+    for(const t of a.textos || []){
+      const texto = colapsar(t);
+      if(!texto) continue;
+      const nuevo = parrafoNuevo(doc, plantilla, texto);
+      cuerpo.insertBefore(nuevo, ref.nextSibling);
+      ref = nuevo;
+      resumen.nuevos++;
+    }
+  }
+  for(const n of eliminar){
+    const p = porN.get(n);
+    if(!p){ continue; }
+    const padre = p.el.parentNode;
+    if(padre && padre.localName === 'tc' && hijosElemento(padre, 'p').length <= 1){
+      trozosDe(p.el).forEach(t => t.tipo === 't' ? (t.el.textContent = '') : (t.el.parentNode && t.el.parentNode.removeChild(t.el)));
+    }else if(padre){
+      padre.removeChild(p.el);
+    }
+    resumen.quitados++;
+  }
+  zip.file('word/document.xml', new Serializer().serializeToString(doc));
+  return { bytes: await zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE' }), resumen, avisos };
+}

@@ -3,6 +3,7 @@ import { normalizarBorradorTutela } from '../lib/borradorTutela';
 import { aplicarVencimientoHabil, fechaLocalISO } from '../lib/vencimientoTutela';
 import { leerCorreosTutelas, primerCorreoDeConversacion, crearSolicitudPruebasBorrador, buscarSolicitudPruebasExistente, revisarRespuestasAreas, uriLecturaLexIAParaArtefacto, leerTodosLosCorreosDeTutela, correosRecibidosParaSolicitud, listarEscritosLexIA, generarWordDeEscritoLexIA, extraerTutelaConLexIA, numeroTutelaDeAsunto, normalize, mensajeError, buscarLecturaLexIAGuardada, guardarLecturaLexIAEnOneDrive, listarTutelasAnalizadasEnOneDrive, asegurarCarpetaTutelaDesdeMensaje } from '../lib/graph';
 import IconButton, { IconTextButton } from './IconButton';
+import EscritoRobotPanel from './EscritoRobotPanel';
 import { EntrenarIAPanel } from './EntrenarIAModal';
 import { useDraggable } from '../hooks/useDraggable';
 import lexiaAvatar from '../assets/LexIA avatar.png';
@@ -46,7 +47,7 @@ function otrasTutelasDelUsuario(tutelas, registro){
 }
 const fechaCorta = v => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(v || '')); return m ? m[3] + '/' + m[2] + '/' + m[1] : ''; };
 
-export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitidos, robotUrl, onedriveCarpetaUrl, tutelas, temas, onAgregarCorreccionIA, robotPreguntasUrl, config, robotSolicitudUrl, onExtraido, onClose, notify, lexiaHablando }){
+export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitidos, robotUrl, robotEscritoUrl, onedriveCarpetaUrl, tutelas, temas, onAgregarCorreccionIA, robotPreguntasUrl, config, robotSolicitudUrl, onExtraido, onClose, notify, lexiaHablando }){
   const [cargando, setCargando] = useState(true);
   // "Un botón para actualizar la lista de los correos que estén
   // ingresando" (2026-09-29, pedido explícito del usuario) — separado de
@@ -783,6 +784,9 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
                         ))}
                       {escritosLexIA[m.id]?.error && escritosLexIA[m.id]?.estado === 'listo' && <p className="save-hint" style={{margin:'6px 0 0', color:'var(--rojo, #a3281c)'}}>No se pudo generar el Word: {escritosLexIA[m.id].error}</p>}
                     </div>
+                  )}
+                  {robotEscritoUrl && onedriveCarpetaUrl && numeroDeEsteMensaje && (yaAnalizadaEnOneDrive || resultado?.mensajeId === m.id) && (
+                    <EscritoRobotPanel numero={numeroDeEsteMensaje} onedriveCarpetaUrl={onedriveCarpetaUrl} robotUrl={robotEscritoUrl} notify={notify} />
                   )}
                   {robotSolicitudUrl && onedriveCarpetaUrl && numeroDeEsteMensaje && (yaAnalizadaEnOneDrive || resultado?.mensajeId === m.id) && (
                     <div className="respuestas-areas-panel" style={{marginTop:10, paddingTop:8, borderTop:'1px solid var(--gris-linea)'}}>

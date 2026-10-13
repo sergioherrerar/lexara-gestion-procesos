@@ -77,6 +77,8 @@ export const INITIAL_CONFIG = {
   // "Solicitud de pruebas" (2026-10-07, pedido explícito del usuario): robot que arma el correo a
   // las áreas con el formato del despacho, y nombre del Word de ese formato en SharePoint (sitio
   // TutelasMDABOGADOS → Documentos — se lee de allá cada vez, así los cambios al Word se reflejan solos).
+  // "Escrito con LexIA" desde el portal (Plan A, 2026-10-13): elegir el modelo y redactar la contestación u otros escritos con el menor gasto de créditos.
+  ROBOT_ESCRITO_URL: "https://www.lexaraabogados.com/robot-tutelas/redactar-escrito.php",
   ROBOT_SOLICITUD_PRUEBAS_URL: "https://www.lexaraabogados.com/robot-tutelas/solicitud-pruebas.php",
   SOLICITUD_PRUEBAS_FORMATO_NOMBRE: "FORMATO SOLICITUD DE PRUEBAS.docx",
   // "Guardar lectura de LexIA en OneDrive" (2026-09-29, pedido explícito del

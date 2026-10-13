@@ -135,6 +135,7 @@ export default function TutelasView({ tutelas, temas, searchQuery, onOpenTutela,
           temas={temas}
           onAgregarCorreccionIA={onAgregarCorreccionIA}
           robotPreguntasUrl={config?.ROBOT_PREGUNTAS_URL}
+          robotEscritoUrl={config?.ROBOT_ESCRITO_URL || (config?.ROBOT_CLAUDE_URL || '').replace('extraer-tutela.php', 'redactar-escrito.php')}
           config={config}
           robotSolicitudUrl={config?.ROBOT_SOLICITUD_PRUEBAS_URL || (config?.ROBOT_CLAUDE_URL || '').replace('extraer-tutela.php', 'solicitud-pruebas.php')}
           notify={notify}
