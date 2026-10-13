@@ -307,7 +307,7 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
   const bloqueSolicitud = (r, i, unico = false) => (
     <>
       {unico && <strong style={{fontSize:13, flexBasis:'100%'}}>Solicitud de pruebas — un solo correo para las {resultado.registros.length} entidades</strong>}
-        {robotSolicitudUrl && !__ES_CPANEL__ && (
+        {robotSolicitudUrl && (
           <span style={{display:'inline-flex', alignItems:'center', gap:8}}>
             <IconButton icon="mail" variant="mail" label={r._solicitud?.estado === 'listo' ? 'Solicitud de pruebas creada — si pulsas de nuevo te avisa que ya existe' : r._solicitud?.estado === 'error' ? 'Reintentar el borrador de solicitud de pruebas' : 'Crear borrador de solicitud de pruebas (reenvía el correo original a las áreas)'} spinning={r._solicitud?.estado === 'creando'} onClick={() => handleSolicitudPruebas(i)} />
             {r._solicitud?.estado === 'creando' && <span className="save-hint">Armando solicitud de pruebas…</span>}
@@ -784,7 +784,7 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
                       {escritosLexIA[m.id]?.error && escritosLexIA[m.id]?.estado === 'listo' && <p className="save-hint" style={{margin:'6px 0 0', color:'var(--rojo, #a3281c)'}}>No se pudo generar el Word: {escritosLexIA[m.id].error}</p>}
                     </div>
                   )}
-                  {robotSolicitudUrl && !__ES_CPANEL__ && onedriveCarpetaUrl && numeroDeEsteMensaje && (yaAnalizadaEnOneDrive || resultado?.mensajeId === m.id) && (
+                  {robotSolicitudUrl && onedriveCarpetaUrl && numeroDeEsteMensaje && (yaAnalizadaEnOneDrive || resultado?.mensajeId === m.id) && (
                     <div className="respuestas-areas-panel" style={{marginTop:10, paddingTop:8, borderTop:'1px solid var(--gris-linea)'}}>
                       <div style={{display:'flex', alignItems:'center', gap:10, flexWrap:'wrap'}}>
                         <strong style={{fontSize:13}}>Pruebas solicitadas a las áreas</strong>

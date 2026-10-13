@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-10-13 (5)
+- **El botón del sobre (solicitud de pruebas) ya se muestra también en la versión de cPanel** — pedido del usuario: debe verse igual que en GitHub Pages. Se quitó la condición que lo ocultaba en el build de cPanel (el robot de la solicitud de pruebas está en el mismo dominio, www.lexaraabogados.com/robot-tutelas). Solo afecta al build de cPanel: GitHub Pages ya lo mostraba.
+
 ## 2026-10-13 (4)
 - **Aviso de tutelas con varios clientes, más claro** — el aviso decía «crea un borrador por cada uno», lo que parecía contradecir que la solicitud de pruebas es un solo correo. Ahora dice que los botones «Crear borrador» de cada cliente abren el formulario de la tutela de ese cliente (en el portal cada cliente lleva su propio registro), y que la solicitud de pruebas es UN SOLO correo borrador para todos, con una sección separada por cada cliente (el robot ya lo hacía así). Solo cambia el texto.
 
