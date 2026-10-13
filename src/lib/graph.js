@@ -688,7 +688,7 @@ async function reenviarComoBorrador(correoBuzon, mensajeId, { para, cc, categori
 // (valores oficiales) para la tabla. Si se da `mensajeIdReenviar`, el borrador es un reenvío de
 // ese correo (conserva la traza); si no se puede reenviar, queda como borrador nuevo y se avisa.
 // Devuelve { para, cc, asunto, notas, formato, reenviado, borrador }.
-export async function crearSolicitudPruebasBorrador({ config, robotSolicitudUrl, registro, registros, campos, camposTodos, asuntoCorreo, noTutela, fechaVencimiento, correoBuzon, mensajeIdReenviar, clientesSenalados, correosRecibidos }){
+export async function crearSolicitudPruebasBorrador({ config, robotSolicitudUrl, registro, registros, campos, camposTodos, asuntoCorreo, noTutela, fechaVencimiento, correoBuzon, mensajeIdReenviar, clientesSenalados, correosRecibidos, adjuntos }){
   if(!robotSolicitudUrl) throw new Error('Falta la dirección del robot de solicitud de pruebas (ROBOT_SOLICITUD_PRUEBAS_URL).');
   const formato = await leerFormatoSolicitudPruebas(config);
   const res = await fetch(robotSolicitudUrl, {
@@ -730,6 +730,27 @@ export async function crearSolicitudPruebasBorrador({ config, robotSolicitudUrl,
     if(borrador?.id) borrador.firmaOk = await adjuntarFirmaInline('https://graph.microsoft.com/v1.0/me', borrador.id, await getMailToken());
   }
   if(borrador && borrador.firmaOk === false) notas = 'No se pudo adjuntar la imagen de la firma: agrégala tú en el borrador. ' + notas;
+  // Archivos que se adjuntan al borrador (p. ej. el aplazamiento diligenciado): [{ nombre, bytes }]
+  if(adjuntos && adjuntos.length && borrador?.id){
+    const raizCorreo = reenviado ? `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(correoBuzon)}` : 'https://graph.microsoft.com/v1.0/me';
+    const tokenCorreo = await getMailToken();
+    for(const a of adjuntos){
+      try{
+        const res = await fetch(`${raizCorreo}/messages/${borrador.id}/attachments`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${tokenCorreo}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            '@odata.type': '#microsoft.graph.fileAttachment', name: a.nombre,
+            contentType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            contentBytes: arrayBufferABase64(a.bytes instanceof Uint8Array ? a.bytes.buffer.slice(a.bytes.byteOffset, a.bytes.byteOffset + a.bytes.byteLength) : a.bytes),
+          }),
+        });
+        if(!res.ok) throw new Error('Graph ' + res.status + ': ' + (await res.text()).substring(0, 160));
+      }catch(err){
+        notas = 'No se pudo adjuntar «' + a.nombre + '» al borrador (' + (err.message || err) + '): quedó guardado en la carpeta de la tutela, adjúntalo tú. ' + notas;
+      }
+    }
+  }
   return { para: data.para || [], cc: data.cc || [], asunto: (reenviado && borrador && borrador.subject) || asunto, notas, formato: formato.nombre, reenviado, borrador };
 }
 

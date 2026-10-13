@@ -2,6 +2,12 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-10-13 (26)
+- **Aplazamiento: se usa el modelo propio de cada cliente** — aviso del usuario (la carpeta «3. OTRAS ACTUACIONES / APLAZAMIENTOS» ahora tiene un archivo por cliente: ALIANSALUD.docx, COLMEDICA.docx y UMD.docx). Al redactar un aplazamiento (botón «Correo con aplazamiento» o el bloque «Escrito con LexIA» con el escrito Aplazamiento) el portal lee esa carpeta EN VIVO, toma el archivo del cliente de la tutela y lo diligencia, sin usar la lista guardada de modelos ni llamar a Claude para elegir (se ahorra esa llamada y no hay riesgo de elegir otro modelo). Si no encuentra el archivo del cliente, sigue como antes (elige entre los modelos de la carpeta). En una tutela con varios clientes se diligencia el modelo de cada uno.
+
+## 2026-10-13 (25)
+- **Botón «Correo con aplazamiento» en la Sección 1 (Todos los correos de esta tutela)** — pedido del usuario. Al pulsarlo, el portal (1) relee los correos de la tutela, (2) redacta con el robot el modelo de APLAZAMIENTO de cada cliente que señala la tutela (elige el modelo de la carpeta «3. OTRAS ACTUACIONES / APLAZAMIENTOS», lo diligencia con los datos del caso y lo guarda también en la carpeta de la tutela) y (3) crea el borrador que es el REENVÍO del correo de notificación de la tutela (asunto original), con la solicitud de pruebas arriba —igual que el borrador de siempre, con la tabla antes de la despedida— y los aplazamientos diligenciados como archivos adjuntos (uno por cliente). Muestra el avance paso a paso y, si algún adjunto no se puede añadir, lo avisa y queda en la carpeta de la tutela. El botón aparece cuando la tutela está cargada en la pantalla (la misma condición que los botones de crear borrador). Requiere el robot actualizado (redactar-escrito.php) y las fichas/lista de modelos ya creadas.
+
 ## 2026-10-13 (24)
 - **Cada sección de la tutela lleva su nombre numerado** — pedido del usuario. Antes del título de cada tarjeta hay una etiqueta naranja: Sección 1 · Todos los correos de esta tutela, Sección 2 · Clientes de la tutela y borrador, Sección 3 · Comentario: otras tutelas de este mismo usuario, Sección 4 · Pruebas solicitadas a las áreas, Sección 5 · Enlace para el artefacto (Plan B), Sección 6 · Escrito con LexIA.
 

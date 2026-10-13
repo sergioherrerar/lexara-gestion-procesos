@@ -126,6 +126,21 @@ export function modelosDelIndice(indice, tipo, sexo, cliente){
   return sel.map(e => ({ nombre: e.n, ruta: (e.s ? e.s + '/' : '') + e.n, uri: e.u, ficha: e.f || '' }));
 }
 
+// Modelo de aplazamiento del cliente: el archivo ALIANSALUD.docx / COLMEDICA.docx / UMD.docx de «3. OTRAS ACTUACIONES / APLAZAMIENTOS» (se lee la
+// carpeta en vivo, porque estos archivos se renuevan y la lista guardada puede estar vencida).
+async function modeloFijoAplazamiento(cliente){
+  const base = await graphFetch(`/drives/${DRIVE_MODELOS}/root:/${encodeURIComponent(OTRAS)}`).catch(() => null);
+  if(!base?.id) return null;
+  const hijos = await hijosGraph(DRIVE_MODELOS, base.id, true);
+  const carpeta = hijos.find(h => h.folder && normalizar(h.name).includes('aplazamiento'));
+  if(!carpeta) return null;
+  const archivos = (await hijosGraph(DRIVE_MODELOS, carpeta.id, true)).filter(esDocx);
+  const clave = { aliansalud: 'aliansalud', colmedica: 'colmedica', umd: 'umd' }[cliente];
+  const sinExt = a => normalizar(a.name).replace(/\.docx?$/, '').trim();
+  const f = archivos.find(a => sinExt(a) === clave) || archivos.find(a => sinExt(a).includes(clave));
+  return f ? { nombre: f.name, ruta: carpeta.name + '/' + f.name, uri: `file:///${DRIVE_MODELOS}/${f.id}`, ficha: '' } : null;
+}
+
 // ---------------------------------------------------------------- robot
 async function llamarRobot(url, cuerpo){
   if(!url) throw new Error('Falta la dirección del robot (ROBOT_ESCRITO_URL en config.js).');
@@ -160,13 +175,24 @@ export async function redactarEscritoConRobot({ robotUrl, urlCarpeta, numero, ti
   const usos = [];
 
   if(!lecciones){ lecciones = leccionesParaPrompt(await leerLecciones(), tipo, cliente); if(lecciones) log('Aplico las lecciones que el despacho le ha enseñado.'); }
-  log('Cargando la lista de modelos...');
-  const indice = await obtenerIndiceModelos(false, log);
-  const modelos = modelosDelIndice(indice, tipo, sexo, cliente);
-  if(!modelos.length) throw new Error('No encontré modelos para ese escrito, cliente y sexo en la lista (prueba «Actualizar la lista de modelos»).');
+  // Aplazamiento: hay UN modelo por cliente en la carpeta APLAZAMIENTOS (ALIANSALUD / COLMEDICA / UMD): se usa ese, sin elegir.
+  let fijo = null;
+  if(tipo === 'aplazamiento' && !modeloManual){
+    fijo = await modeloFijoAplazamiento(cliente).catch(() => null);
+    if(fijo) log('Modelo de aplazamiento del cliente: ' + fijo.ruta);
+  }
+  let modelos = [];
+  if(!fijo){
+    log('Cargando la lista de modelos...');
+    const indice = await obtenerIndiceModelos(false, log);
+    modelos = modelosDelIndice(indice, tipo, sexo, cliente);
+    if(!modelos.length) throw new Error('No encontré modelos para ese escrito, cliente y sexo en la lista (prueba «Actualizar la lista de modelos»).');
+  }
 
-  let elegido = modeloManual && modelos.find(m => m.ruta === modeloManual);
-  if(elegido){
+  let elegido = fijo || (modeloManual && modelos.find(m => m.ruta === modeloManual));
+  if(fijo){
+    /* modelo único del cliente: no se elige ni se recuerda */
+  }else if(elegido){
     // Lo elegido a mano se recuerda para este cliente + Tema + escrito: la próxima vez se usa sin preguntarle a Claude.
     guardarPreferenciaModelo({ cliente, tipo, tema: registro.Tema, modelo: elegido }).then(() => log('Anotado: la próxima vez, para este cliente y Tema, usaré este modelo sin preguntarle a LexIA.')).catch(() => {});
   }else{

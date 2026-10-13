@@ -4,6 +4,7 @@ import { aplicarVencimientoHabil, fechaLocalISO } from '../lib/vencimientoTutela
 import { leerCorreosTutelas, primerCorreoDeConversacion, crearSolicitudPruebasBorrador, buscarSolicitudPruebasExistente, revisarRespuestasAreas, uriLecturaLexIAParaArtefacto, leerTodosLosCorreosDeTutela, correosRecibidosParaSolicitud, extraerTutelaConLexIA, numeroTutelaDeAsunto, normalize, mensajeError, buscarLecturaLexIAGuardada, guardarLecturaLexIAEnOneDrive, listarTutelasAnalizadasEnOneDrive, asegurarCarpetaTutelaDesdeMensaje } from '../lib/graph';
 import IconButton, { IconTextButton } from './IconButton';
 import EscritoRobotPanel from './EscritoRobotPanel';
+import { redactarEscritoConRobot, sexoPorNombre } from '../lib/escritoRobot';
 import { EntrenarIAPanel } from './EntrenarIAModal';
 import { useDraggable } from '../hooks/useDraggable';
 import lexiaAvatar from '../assets/LexIA avatar.png';
@@ -208,7 +209,7 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
       ? { ...prev, registros: prev.registros.map((r, i) => i === indice ? { ...r, _solicitud: solicitud } : r) }
       : prev);
   }
-  async function generarSolicitudPruebas(mensaje, registro, indice, primerCorreo, forzar = false){
+  async function generarSolicitudPruebas(mensaje, registro, indice, primerCorreo, forzar = false, adjuntosExtra = []){
     const instante = primerCorreo.fecha;
     marcarSolicitud(mensaje.id, indice, { estado: 'creando' });
     try{
@@ -250,6 +251,7 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
         correoBuzon, mensajeIdReenviar: primerCorreo.id || mensaje.id,
         // Todos los clientes que señala esta tutela (un registro por cliente): el robot solo pide a esas entidades.
         clientesSenalados: (resultado?.registros || []).map(x => x.Cliente).filter(Boolean),
+        adjuntos: adjuntosExtra,
       });
       indicesAfectados.forEach(k => marcarSolicitud(mensaje.id, k, { estado: 'listo', para: r.para, cc: r.cc, notas: r.notas, formato: r.formato, reenviado: r.reenviado }));
     }catch(err){
@@ -306,6 +308,37 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
     }catch(err){
       console.error(err);
       setRespuestasAreas(prev => ({ ...prev, [mensaje.id]: { estado: 'error', error: mensajeError(err) } }));
+    }
+  }
+
+  // «Correo con aplazamiento» (Sección 1): redacta el modelo de aplazamiento de cada cliente de la tutela con los datos del caso y crea el
+  // borrador de la solicitud de pruebas (reenvío del correo de notificación) con esos Word adjuntos.
+  const [aplazamiento, setAplazamiento] = useState({}); // { [mensajeId]: { estado, pasos[], error? } }
+  async function handleCorreoConAplazamiento(mensaje){
+    const numero = numeroTutelaDeAsunto(mensaje.asunto);
+    const registros = resultado?.mensajeId === mensaje.id ? (resultado.registros || []) : [];
+    if(!numero || !registros.length || !robotEscritoUrl) return;
+    const pasos = [];
+    const anotar = (t) => { pasos.push(t); setAplazamiento(prev => ({ ...prev, [mensaje.id]: { estado: 'creando', pasos: [...pasos] } })); };
+    setAplazamiento(prev => ({ ...prev, [mensaje.id]: { estado: 'creando', pasos: [] } }));
+    try{
+      await asegurarCorreosLeidos(mensaje, numero, true).catch(() => null);
+      const adjuntos = [];
+      for(let i = 0; i < registros.length; i++){
+        anotar('Redactando el aplazamiento de ' + (registros[i].Cliente || ('cliente ' + (i + 1))) + '...');
+        const r = await redactarEscritoConRobot({
+          robotUrl: robotEscritoUrl, urlCarpeta: onedriveCarpetaUrl, numero, tipo: 'aplazamiento', indiceRegistro: i,
+          sexo: sexoPorNombre(registros[i].Usuario), nota: '', log: (t) => anotar('   ' + t),
+        });
+        adjuntos.push({ nombre: r.nombre, bytes: r.bytes });
+      }
+      anotar('Creando el borrador (reenvío del correo de notificación, solicitud de pruebas y aplazamiento adjunto)...');
+      await generarSolicitudPruebas(mensaje, registros[0], 0, primerCorreoPorMensaje[mensaje.id] || { fecha: mensaje.fecha, id: mensaje.id }, true, adjuntos);
+      anotar('Listo: el borrador quedó en Borradores del buzón de Tutelas con ' + adjuntos.length + ' aplazamiento' + (adjuntos.length === 1 ? '' : 's') + ' adjunto' + (adjuntos.length === 1 ? '' : 's') + '. Revísalo antes de enviar.');
+      setAplazamiento(prev => ({ ...prev, [mensaje.id]: { estado: 'listo', pasos: [...pasos] } }));
+    }catch(err){
+      console.error(err);
+      setAplazamiento(prev => ({ ...prev, [mensaje.id]: { estado: 'error', pasos: [...pasos], error: mensajeError(err) } }));
     }
   }
 
@@ -676,8 +709,19 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
                         <IconTextButton icon="refresh" variant="secondary" disabled={todosCorreos[m.id]?.estado === 'leyendo'} onClick={() => handleLeerTodosCorreos(m)}>
                           {todosCorreos[m.id]?.estado === 'leyendo' ? 'Leyendo…' : (todosCorreos[m.id]?.datos ? 'Volver a leer todos los correos' : 'Leer todos los correos de esta tutela')}
                         </IconTextButton>
+                        {robotEscritoUrl && resultado?.mensajeId === m.id && (
+                          <IconTextButton icon="mail" variant="primary" disabled={aplazamiento[m.id]?.estado === 'creando'} onClick={() => handleCorreoConAplazamiento(m)}>
+                            {aplazamiento[m.id]?.estado === 'creando' ? 'Creando el correo…' : 'Correo con aplazamiento'}
+                          </IconTextButton>
+                        )}
                       </div>
                       <div className="tutela-seccion-body">
+                      {aplazamiento[m.id]?.pasos?.length > 0 && (
+                        <ul className="escrito-pasos">
+                          {aplazamiento[m.id].pasos.map((t, i) => <li key={i} className={aplazamiento[m.id].estado === 'creando' && i === aplazamiento[m.id].pasos.length - 1 ? 'activo' : ''}>{t}</li>)}
+                        </ul>
+                      )}
+                      {aplazamiento[m.id]?.estado === 'error' && <div className="escrito-error">{aplazamiento[m.id].error}</div>}
                       <p className="escrito-intro">Busca en el buzón TODOS los correos con este número (de cualquier remitente), los guarda en la carpeta de la tutela y los deja en la lectura; antes de crear el borrador de la solicitud de pruebas (y antes de redactar el escrito) se vuelven a leer solos, para que ya sepa qué llegó.</p>
                       {todosCorreos[m.id]?.estado === 'error' && <p className="save-hint" style={{margin:'6px 0 0', color:'var(--rojo, #a3281c)'}}>No se pudo leer: {todosCorreos[m.id].error}</p>}
                       {todosCorreos[m.id]?.estado === 'listo' && (() => {
