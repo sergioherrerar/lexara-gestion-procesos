@@ -177,7 +177,7 @@ TAREA: eres LexIA, abogada del despacho "md abogados sas". Vas a adaptar a UNA t
 REGLAS:
 (1) Conserva la estructura, los argumentos jurídicos y las citas de normas y jurisprudencia del modelo tal cual: NO inventes normas, artículos ni sentencias, ni cambies sus números.
 (2) Cambia SOLO los datos del caso (radicado, juzgado y su correo, accionante, cédula, diagnóstico, servicio o medicamento, fechas, estado de afiliación, entidad accionada) por los de la lectura; si el modelo trata otro servicio o medicamento, ajústalo al del caso. El encabezado lleva: código de la tutela con la letra T- y el número, ciudad y fecha de hoy, juzgado y su correo, REF, RAD (número del proceso), ACCIONANTE, ACCIONADA.
-(3) Usa las respuestas de las áreas y los demás correos de la tutela como fuente de los hechos y de las pruebas ya recibidas, cuando existan.
+(3) LOS CORREOS DE LA TUTELA SON FUNDAMENTALES (bloque «TODOS LOS CORREOS DE LA TUTELA»): tómalos como fuente principal de los hechos posteriores a la tutela, de las pruebas y respuestas que ya llegaron de las áreas, y de las decisiones del juzgado (auto admisorio, medida provisional, nuevos términos, vinculaciones, fallo). Si un correo más reciente contradice la lectura inicial, manda el más reciente y dilo en «alertas». Usa lo que dicen las áreas (estado del paciente, autorizaciones, agendamientos, soportes) para redactar los hechos y la defensa; no repitas lo que ya esté superado.
 (4) Elimina (lista "eliminar") los párrafos que no apliquen a este caso y NO agregues hechos que la lectura no traiga.
 (5) Donde falte un dato escribe [COMPLETAR: qué dato].
 (6) Español jurídico formal, mismo tono del modelo, sin markdown. Cada párrafo nuevo o cambiado va como TEXTO PLANO completo de ese párrafo.
@@ -194,7 +194,7 @@ $sistema = [
     // Instrucciones + criterios de LexIA: iguales en todas las tutelas → caché.
     ['type' => 'text', 'text' => lexiaEspecialista() . "\n\n" . $instrucciones, 'cache_control' => ['type' => 'ephemeral']],
     // La lectura de ESTA tutela: igual en la redacción y en cada corrección → caché.
-    ['type' => 'text', 'text' => "LECTURA DE LA TUTELA (datos del portal, del correo, de los anexos, solicitud de pruebas y respuestas de las áreas):\n" . $caso, 'cache_control' => ['type' => 'ephemeral']],
+    ['type' => 'text', 'text' => "LECTURA DE LA TUTELA (datos del portal, del correo, de los anexos, solicitud de pruebas y respuestas de las áreas):\n" . $caso . ($otrosCorreos !== '' ? "\n\n################ TODOS LOS CORREOS DE LA TUTELA (de cualquier remitente, del más antiguo al más reciente; son FUNDAMENTALES para contestar) ################\n" . $otrosCorreos : ''), 'cache_control' => ['type' => 'ephemeral']],
 ];
 
 $usuario = ($modo === 'redactar' ? 'MODO: REDACTAR sobre un modelo del despacho.' : 'MODO: CORREGIR el borrador actual según la corrección del abogado.') .
@@ -207,7 +207,6 @@ if($modo === 'corregir'){
     $usuario .= "\n\nCORRECCIÓN DEL ABOGADO:\n" . $corr;
 }
 if($lecciones !== '') $usuario .= "\n\nLECCIONES DEL DESPACHO (correcciones anteriores del abogado; aplícalas siempre):\n" . $lecciones;
-if($otrosCorreos !== '') $usuario .= "\n\nOTROS CORREOS DE LA TUTELA (resumen; tenlos en cuenta como hechos y pruebas ya recibidas):\n" . $otrosCorreos;
 if($clausulas !== '') $usuario .= "\n\nCLÁUSULAS DEL PLAN DE MEDICINA PREPAGADA (úsalas para fundamentar cobertura o exclusión citando el número de cláusula tal como aparece):\n" . $clausulas;
 $usuario .= "\n\n" . ($modo === 'redactar' ? 'PÁRRAFOS DEL MODELO (numerados):' : 'PÁRRAFOS DEL BORRADOR ACTUAL (numerados):') . "\n" . $parrafos;
 

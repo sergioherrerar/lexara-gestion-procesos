@@ -17,7 +17,7 @@ function descargar(bytes, nombre){
 }
 const fmt = n => Number(n || 0).toLocaleString('es-CO');
 
-export default function EscritoRobotPanel({ numero, onedriveCarpetaUrl, robotUrl, notify }){
+export default function EscritoRobotPanel({ numero, onedriveCarpetaUrl, robotUrl, notify, antesDeRedactar }){
   const [abierto, setAbierto] = useState(false);
   const [cargando, setCargando] = useState(false);
   const [datos, setDatos] = useState(null);          // { registros }
@@ -71,6 +71,12 @@ export default function EscritoRobotPanel({ numero, onedriveCarpetaUrl, robotUrl
   async function redactar(){
     setTrabajando(true); setError(''); setLog([]); setEscrito(null); setUsos([]); setLeccion(null); setAviso('');
     try{
+      // Para redactar hay que volver a leer TODOS los correos de la tutela (pueden haber llegado pruebas o decisiones nuevas).
+      if(antesDeRedactar){
+        anotar('Releyendo todos los correos de la tutela...');
+        const d = await antesDeRedactar();
+        anotar('Correos de la tutela al día: ' + d.total + (d.nuevos ? ' (' + d.nuevos + ' nuevo' + (d.nuevos === 1 ? '' : 's') + ')' : ' (ninguno nuevo)') + '.');
+      }
       const r = await redactarEscritoConRobot({ robotUrl, urlCarpeta: onedriveCarpetaUrl, numero, tipo, indiceRegistro, sexo, nota, modeloManual: modeloManual || null, log: anotar });
       setEscrito(r); setUsos(r.usos);
       anotar('Listo: ' + r.resumen.cambiados + ' párrafos cambiados, ' + r.resumen.reemplazos + ' reemplazos, ' + r.resumen.nuevos + ' nuevos, ' + r.resumen.quitados + ' quitados.');

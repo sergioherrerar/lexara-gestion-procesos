@@ -3657,50 +3657,6 @@ export async function uriLecturaLexIAParaArtefacto(urlCarpeta, numeroTutela){
 }
 
 // ---------------------------------------------------------------------------
-// Escritos de LexIA con el formato del modelo (2026-10-09, pedido del usuario: el Word debe ser una copia literal
-// del modelo del despacho — logos, encabezados, tablas — con solo el texto cambiado). El artefacto Plan B deja en la
-// carpeta de la tutela un archivo "ESCRITO LexIA - ….json" con el texto final y el modelo usado; aquí se baja el .docx
-// del modelo, se le aplica ese texto (escritoDesdeModelo.js) y el resultado se guarda en la misma carpeta.
-const PREFIJO_ESCRITO_LEXIA = 'ESCRITO LexIA';
-export async function listarEscritosLexIA(urlCarpeta, numeroTutela){
-  const { driveId, folderId } = await resolverCarpetaLexIAOneDrive(urlCarpeta);
-  for(const carpeta of [`${numeroTutela} Tutela`, `Tutela ${numeroTutela}`]){
-    try{
-      const res = await graphFetch(`/drives/${driveId}/items/${folderId}:/${encodeURIComponent(carpeta)}:/children?$select=id,name,lastModifiedDateTime&$top=200`);
-      const lista = (res?.value || [])
-        .filter(x => x.name?.startsWith(PREFIJO_ESCRITO_LEXIA) && /\.json$/i.test(x.name))
-        .sort((a, b) => String(b.lastModifiedDateTime).localeCompare(String(a.lastModifiedDateTime)));
-      return { carpeta, escritos: lista.map(x => ({ nombre: x.name, modificado: x.lastModifiedDateTime })) };
-    }catch{ /* se prueba con el otro nombre de carpeta */ }
-  }
-  return { carpeta: '', escritos: [] };
-}
-
-export async function generarWordDeEscritoLexIA(urlCarpeta, numeroTutela, carpeta, nombreJson){
-  const { driveId, folderId } = await resolverCarpetaLexIAOneDrive(urlCarpeta);
-  const textoJson = await leerArchivoOneDrive(driveId, folderId, `${carpeta}/${nombreJson}`);
-  if(!textoJson) throw new Error('No pude leer el archivo del escrito en OneDrive.');
-  const datos = JSON.parse(textoJson);
-  const modelo = datos.modelo || {};
-  if(!modelo.driveId || !modelo.itemId) throw new Error('El escrito no trae la referencia al modelo de Word: vuelve a enviarlo desde el artefacto.');
-  if(!datos.texto) throw new Error('El escrito no trae texto.');
-  const item = await graphFetch(`/drives/${modelo.driveId}/items/${modelo.itemId}?$select=name,@microsoft.graph.downloadUrl`);
-  const url = item?.['@microsoft.graph.downloadUrl'];
-  if(!url) throw new Error('No pude abrir el modelo de Word en SharePoint.');
-  const res = await fetch(url);
-  if(!res.ok) throw new Error(`No pude descargar el modelo (código ${res.status}).`);
-  const { aplicarTextoAModeloDocx } = await import('./escritoDesdeModelo');
-  const { bytes, resumen } = await aplicarTextoAModeloDocx(await res.arrayBuffer(), datos.texto);
-  const nombre = String(nombreJson).replace(/\.json$/i, '').replace(/[\\/:*?"<>|]/g, '_') + '.docx';
-  await graphFetch(`/drives/${driveId}/items/${folderId}:/${encodeURIComponent(`${carpeta}/${nombre}`).replace(/%2F/g, '/')}:/content`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' },
-    body: bytes,
-  });
-  return { nombre, bytes, resumen, modelo: modelo.nombre || item.name };
-}
-
-// ---------------------------------------------------------------------------
 // TODOS los correos de una tutela (2026-10-13, pedido del usuario): la lista de «Leer correo de Tutelas» solo muestra los correos de los
 // remitentes permitidos (juzgados). Para tener control total de una tutela se buscan en el buzón TODOS los correos que mencionan su número,
 // de cualquier remitente y carpeta (bandeja de entrada, enviados, otras carpetas; sin los borradores), se leen y se guardan en la carpeta de la
@@ -3741,7 +3697,8 @@ export async function buscarCorreosDeTutelaEnBuzon(correoBuzon, noTutela){
         fecha: new Date(m.receivedDateTime || m.sentDateTime || Date.now()).toLocaleString('es-CO'),
         clase: claseDeCorreoTutela(m, correoBuzon),
         tieneAdjuntos: !!m.hasAttachments, conversationId: m.conversationId || '', enlace: m.webLink || '',
-        resumen: cuerpo.replace(/\s+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim().slice(0, 1500),
+        // Los correos del juzgado, de las entidades y del usuario son los que más sirven para contestar: se guarda más texto de ellos.
+        resumen: cuerpo.replace(/\s+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim().slice(0, claseDeCorreoTutela(m, correoBuzon) === 'otro remitente' ? 1200 : 3500),
       });
     }
     url = data['@odata.nextLink'] || '';
@@ -3790,7 +3747,7 @@ async function guardarCorreoDeTutela({ correoBuzon, driveId, folderId, numero, c
 
 // Lee (y guarda) todos los correos que mencionan la tutela. Devuelve { total, nuevos, correos, errores }.
 export async function leerTodosLosCorreosDeTutela({ correoBuzon, urlCarpeta, noTutela, guardar = true }){
-  const salida = { total: 0, nuevos: 0, correos: [], errores: [] };
+  const salida = { total: 0, nuevos: 0, yaLeidos: 0, correos: [], errores: [] };
   const encontrados = await buscarCorreosDeTutelaEnBuzon(correoBuzon, noTutela);
   let ctx = null;
   if(urlCarpeta){
@@ -3800,11 +3757,13 @@ export async function leerTodosLosCorreosDeTutela({ correoBuzon, urlCarpeta, noT
     }catch(err){ salida.errores.push('No se pudo abrir la carpeta de la tutela en OneDrive: ' + (err.message || err)); }
   }
   const previos = new Map(((ctx?.leido?.estado.correosTutela) || []).map(c => [c.id, c]));
+  // Los correos que ya se leyeron antes se descartan: no se vuelven a pedir sus adjuntos ni a guardar; solo se procesan los nuevos.
+  encontrados.forEach(c => { const pv = previos.get(c.id); if(pv && pv.adjuntos) c.adjuntos = pv.adjuntos; });
   const lista = await conAdjuntos(correoBuzon, encontrados);
   const final = [];
   for(const c of lista){
     const previo = previos.get(c.id);
-    if(previo){ final.push({ ...c, archivo: previo.archivo, adjuntos: previo.adjuntos || c.adjuntos }); continue; }
+    if(previo){ final.push({ ...c, archivo: previo.archivo, adjuntos: previo.adjuntos || c.adjuntos }); salida.yaLeidos++; continue; }
     let extra = {};
     if(guardar && ctx){
       try{ extra = await guardarCorreoDeTutela({ correoBuzon, driveId: ctx.driveId, folderId: ctx.folderId, numero: noTutela, correo: c }); }
@@ -3848,12 +3807,22 @@ export async function graphLeerTexto(path){
 }
 // Descarga un archivo (bytes) de SharePoint por unidad e id.
 export async function graphDescargarArchivo(driveId, itemId){
-  const item = await graphFetch(`/drives/${driveId}/items/${itemId}?$select=name,@microsoft.graph.downloadUrl`);
-  const url = item?.['@microsoft.graph.downloadUrl'];
-  if(!url) throw new Error('No pude abrir el archivo en SharePoint.');
-  const res = await fetch(url);
-  if(!res.ok) throw new Error(`No pude descargar el archivo (código ${res.status}).`);
-  return { nombre: item.name, bytes: await res.arrayBuffer() };
+  // 1) enlace de descarga temporal (el mismo mecanismo que ya usa el resto del portal); 2) respaldo: /content con el token.
+  let url = '';
+  let detalle = '';
+  try{
+    const item = await graphFetch(`/drives/${driveId}/items/${itemId}?$select=@microsoft.graph.downloadUrl`);
+    url = item?.['@microsoft.graph.downloadUrl'] || '';
+  }catch(err){ detalle = String(err.message || err).slice(0, 160); }
+  if(url){
+    const res = await fetch(url);
+    if(res.ok) return { bytes: await res.arrayBuffer() };
+    detalle = `enlace temporal: código ${res.status}`;
+  }
+  const token = await getGraphToken();
+  const res2 = await fetch(`https://graph.microsoft.com/v1.0/drives/${driveId}/items/${itemId}/content`, { headers: { Authorization: `Bearer ${token}` } });
+  if(!res2.ok) throw new Error(`No pude descargar el modelo de SharePoint (código ${res2.status}${detalle ? '; ' + detalle : ''}).`);
+  return { bytes: await res2.arrayBuffer() };
 }
 
 // El caso de una tutela tal como se le da al robot: «Lectura LexIA.txt» sin el bloque JSON del final (repite todo), sin la sección 2 (el
@@ -3872,9 +3841,11 @@ export async function prepararCasoParaEscrito(urlCarpeta, numeroTutela){
   if(a >= 0 && b > a) t = t.slice(0, a) + t.slice(b);
   if(t.length > 30000) t = t.slice(0, 30000) + '…';
   // Los demás correos de la tutela, resumidos (si el abogado ya pulsó «Leer todos los correos de esta tutela»).
-  const correos = (e.correosTutela || []).slice(-15).map(c =>
-    `${c.fecha || ''} | ${c.clase || ''} | De: ${c.de || ''} | Asunto: ${c.asunto || ''}${c.adjuntos && c.adjuntos.length ? ' | Adjuntos: ' + c.adjuntos.join('; ') : ''}\n   ${String(c.resumen || '').replace(/\s+/g, ' ').slice(0, 500)}`
-  ).join('\n').slice(0, 7000);
+  // Los correos de la tutela son FUNDAMENTALES para contestar: los del juzgado y de las entidades entran con más detalle (hasta 2.500 caracteres)
+  // que los de otros remitentes (800); del más antiguo al más reciente, con tope total.
+  const correos = (e.correosTutela || []).slice(-25).map(c =>
+    `${c.fecha || ''} | ${c.clase || ''} | De: ${c.de || ''} | Asunto: ${c.asunto || ''}${c.adjuntos && c.adjuntos.length ? ' | Adjuntos: ' + c.adjuntos.join('; ') : ''}\n   ${String(c.resumen || '').replace(/\s+/g, ' ').slice(0, c.clase === 'otro remitente' ? 800 : 2500)}`
+  ).join('\n').slice(0, 20000);
   return { textoCaso: t, registros: e.registros || [], correosResumen: correos, driveId, folderId, ruta: leido.ruta };
 }
 // Guarda un archivo en la carpeta de la tutela ("<N> Tutela/<nombre>"). Devuelve la ruta usada.

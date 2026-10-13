@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { normalizarBorradorTutela } from '../lib/borradorTutela';
 import { aplicarVencimientoHabil, fechaLocalISO } from '../lib/vencimientoTutela';
-import { leerCorreosTutelas, primerCorreoDeConversacion, crearSolicitudPruebasBorrador, buscarSolicitudPruebasExistente, revisarRespuestasAreas, uriLecturaLexIAParaArtefacto, leerTodosLosCorreosDeTutela, correosRecibidosParaSolicitud, listarEscritosLexIA, generarWordDeEscritoLexIA, extraerTutelaConLexIA, numeroTutelaDeAsunto, normalize, mensajeError, buscarLecturaLexIAGuardada, guardarLecturaLexIAEnOneDrive, listarTutelasAnalizadasEnOneDrive, asegurarCarpetaTutelaDesdeMensaje } from '../lib/graph';
+import { leerCorreosTutelas, primerCorreoDeConversacion, crearSolicitudPruebasBorrador, buscarSolicitudPruebasExistente, revisarRespuestasAreas, uriLecturaLexIAParaArtefacto, leerTodosLosCorreosDeTutela, correosRecibidosParaSolicitud, extraerTutelaConLexIA, numeroTutelaDeAsunto, normalize, mensajeError, buscarLecturaLexIAGuardada, guardarLecturaLexIAEnOneDrive, listarTutelasAnalizadasEnOneDrive, asegurarCarpetaTutelaDesdeMensaje } from '../lib/graph';
 import IconButton, { IconTextButton } from './IconButton';
 import EscritoRobotPanel from './EscritoRobotPanel';
 import { EntrenarIAPanel } from './EntrenarIAModal';
@@ -207,7 +207,21 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
         }
       }
       // Todo lo que ya llegó al buzón sobre esta tutela (de cualquier remitente): el robot no debe pedir lo que ya está.
-      const correosRecibidos = await correosRecibidosParaSolicitud(correoBuzon, limpio.NoTutela || numeroTutelaDeAsunto(mensaje.asunto));
+      // Antes de crear el borrador se LEEN todos los correos de la tutela (si aún no se habían leído en esta sesión; si ya se leyeron, solo se
+      // revisa si llegó algo nuevo, sin gastar IA).
+      const numeroSolicitud = limpio.NoTutela || numeroTutelaDeAsunto(mensaje.asunto);
+      let correosRecibidos = [];
+      try{
+        if(todosCorreos[mensaje.id]?.estado === 'listo'){
+          correosRecibidos = await correosRecibidosParaSolicitud(correoBuzon, numeroSolicitud);
+        }else{
+          const d = await asegurarCorreosLeidos(mensaje, numeroSolicitud, true);
+          correosRecibidos = d.correos.map(c => ({ fecha: c.fecha, de: c.de, asunto: c.asunto, clase: c.clase, adjuntos: c.adjuntos || [], extracto: String(c.resumen || '').slice(0, 700) }));
+        }
+      }catch(err){
+        console.error('No se pudieron leer todos los correos de la tutela antes del borrador:', err);
+        correosRecibidos = await correosRecibidosParaSolicitud(correoBuzon, numeroSolicitud);
+      }
       const r = await crearSolicitudPruebasBorrador({
         correosRecibidos, config, robotSolicitudUrl, registro: limpio, registros: todosLosRegistros, campos, camposTodos, asuntoCorreo: mensaje.asunto,
         noTutela: limpio.NoTutela || numeroTutelaDeAsunto(mensaje.asunto), fechaVencimiento: limpio.FechaVencimiento,
@@ -238,50 +252,27 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
       notify?.('No se pudo copiar el enlace: ' + mensajeError(err), 'error');
     }
   }
-  // Escritos de LexIA (artefacto Plan B): el Word sale de una copia literal del modelo del despacho (logo, encabezados, tablas).
-  const [escritosLexIA, setEscritosLexIA] = useState({}); // { [mensajeId]: { estado, carpeta?, escritos?, generando?, error? } }
   // Todos los correos del buzón que mencionan la tutela (de cualquier remitente), leídos y guardados en su carpeta.
   const [todosCorreos, setTodosCorreos] = useState({}); // { [mensajeId]: { estado, datos?, error? } }
-  async function handleLeerTodosCorreos(mensaje){
-    const numero = numeroTutelaDeAsunto(mensaje.asunto);
-    if(!numero) return;
+  // Lee (y guarda) los correos de la tutela. Los que ya se leyeron antes se descartan: solo se procesan los nuevos. Sin «forzar», reutiliza
+  // la lectura de esta sesión si ya se hizo.
+  async function asegurarCorreosLeidos(mensaje, numero, forzar){
+    const previo = todosCorreos[mensaje.id];
+    if(!forzar && previo?.estado === 'listo') return previo.datos;
     setTodosCorreos(prev => ({ ...prev, [mensaje.id]: { estado: 'leyendo' } }));
     try{
       const datos = await leerTodosLosCorreosDeTutela({ correoBuzon, urlCarpeta: onedriveCarpetaUrl, noTutela: numero });
       setTodosCorreos(prev => ({ ...prev, [mensaje.id]: { estado: 'listo', datos } }));
+      return datos;
     }catch(err){
-      console.error(err);
       setTodosCorreos(prev => ({ ...prev, [mensaje.id]: { estado: 'error', error: mensajeError(err) } }));
+      throw err;
     }
   }
-  async function handleBuscarEscritos(mensaje){
+  async function handleLeerTodosCorreos(mensaje){
     const numero = numeroTutelaDeAsunto(mensaje.asunto);
     if(!numero) return;
-    setEscritosLexIA(prev => ({ ...prev, [mensaje.id]: { estado: 'buscando' } }));
-    try{
-      const { carpeta, escritos } = await listarEscritosLexIA(onedriveCarpetaUrl, numero);
-      setEscritosLexIA(prev => ({ ...prev, [mensaje.id]: { estado: 'listo', carpeta, escritos } }));
-    }catch(err){
-      console.error(err);
-      setEscritosLexIA(prev => ({ ...prev, [mensaje.id]: { estado: 'error', error: mensajeError(err) } }));
-    }
-  }
-  async function handleGenerarWordEscrito(mensaje, escrito){
-    const numero = numeroTutelaDeAsunto(mensaje.asunto);
-    const actual = escritosLexIA[mensaje.id] || {};
-    setEscritosLexIA(prev => ({ ...prev, [mensaje.id]: { ...actual, generando: escrito.nombre, error: '' } }));
-    try{
-      const { nombre, bytes, resumen } = await generarWordDeEscritoLexIA(onedriveCarpetaUrl, numero, actual.carpeta, escrito.nombre);
-      const url = URL.createObjectURL(new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' }));
-      const a = document.createElement('a');
-      a.href = url; a.download = nombre; document.body.appendChild(a); a.click(); a.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 5000);
-      notify?.(`Word generado con el formato del modelo (${resumen.cambiados} párrafos ajustados, ${resumen.nuevos} nuevos, ${resumen.quitados} quitados) y guardado en la carpeta de la tutela.`, 'success');
-      setEscritosLexIA(prev => ({ ...prev, [mensaje.id]: { ...actual, generando: '' } }));
-    }catch(err){
-      console.error(err);
-      setEscritosLexIA(prev => ({ ...prev, [mensaje.id]: { ...actual, generando: '', error: mensajeError(err) } }));
-    }
+    try{ await asegurarCorreosLeidos(mensaje, numero, true); }catch(err){ console.error(err); }
   }
   async function handleRevisarRespuestas(mensaje){
     const numero = numeroTutelaDeAsunto(mensaje.asunto);
@@ -656,6 +647,40 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
                       </IconTextButton>
                     </div>
                   )}
+                  {onedriveCarpetaUrl && numeroDeEsteMensaje && (yaAnalizadaEnOneDrive || resultado?.mensajeId === m.id) && (
+                    <div style={{marginTop:8, marginBottom:10, paddingBottom:8, borderBottom:'1px solid var(--gris-linea)'}}>
+                      <div style={{display:'flex', alignItems:'center', gap:10, flexWrap:'wrap'}}>
+                        <strong style={{fontSize:13}}>Todos los correos de esta tutela</strong>
+                        <IconTextButton icon="refresh" variant="secondary" disabled={todosCorreos[m.id]?.estado === 'leyendo'} onClick={() => handleLeerTodosCorreos(m)}>
+                          {todosCorreos[m.id]?.estado === 'leyendo' ? 'Leyendo…' : (todosCorreos[m.id]?.datos ? 'Volver a leer todos los correos' : 'Leer todos los correos de esta tutela')}
+                        </IconTextButton>
+                        <span className="save-hint" style={{margin:0}}>Busca en el buzón TODOS los correos con este número (de cualquier remitente), los guarda en la carpeta de la tutela y los deja en la lectura; antes de crear el borrador de la solicitud de pruebas (y antes de redactar el escrito) se vuelven a leer solos, para que ya sepa qué llegó.</span>
+                      </div>
+                      {todosCorreos[m.id]?.estado === 'error' && <p className="save-hint" style={{margin:'6px 0 0', color:'var(--rojo, #a3281c)'}}>No se pudo leer: {todosCorreos[m.id].error}</p>}
+                      {todosCorreos[m.id]?.estado === 'listo' && (() => {
+                        const d = todosCorreos[m.id].datos;
+                        const porClase = {};
+                        d.correos.forEach(c => { porClase[c.clase] = (porClase[c.clase] || 0) + 1; });
+                        return (
+                          <div style={{marginTop:6, fontSize:13}}>
+                            <div><strong>{d.total}</strong> correo{d.total === 1 ? '' : 's'} con el número de esta tutela ({d.nuevos ? `${d.nuevos} nuevo${d.nuevos === 1 ? '' : 's'} leído${d.nuevos === 1 ? '' : 's'} y guardado${d.nuevos === 1 ? '' : 's'}` : 'ninguno nuevo'}{d.yaLeidos ? `; ${d.yaLeidos} ya leído${d.yaLeidos === 1 ? '' : 's'} antes, descartado${d.yaLeidos === 1 ? '' : 's'}` : ''}): {Object.entries(porClase).map(([k, v]) => `${v} ${k}`).join(' · ') || '—'}.</div>
+                            {d.errores.length > 0 && <p className="save-hint" style={{margin:'4px 0', color:'var(--rojo, #a3281c)'}}>{d.errores.join(' · ')}</p>}
+                            <details style={{marginTop:4}}>
+                              <summary style={{cursor:'pointer'}}>Ver la lista</summary>
+                              <ul style={{margin:'6px 0 0', paddingLeft:18}}>
+                                {d.correos.map(c => (
+                                  <li key={c.id} style={{marginBottom:3}}>
+                                    {c.fecha} · <em>{c.clase}</em> · {c.de} — {c.asunto}
+                                    {c.adjuntos && c.adjuntos.length > 0 && <span> · 📎 {c.adjuntos.join(', ')}</span>}
+                                  </li>
+                                ))}
+                              </ul>
+                            </details>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  )}
                   {/* Uno o varios registros detectados (2026-09-23, ver nota
                       arriba sobre clientes vinculados) — cada uno con su
                       propio botón, para poder crear varios borradores del
@@ -725,68 +750,8 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
                       <span className="save-hint" style={{margin:0}}>Pégalo en el artefacto Plan B para que lea la lectura al instante.</span>
                     </div>
                   )}
-                  {onedriveCarpetaUrl && numeroDeEsteMensaje && (yaAnalizadaEnOneDrive || resultado?.mensajeId === m.id) && (
-                    <div style={{marginTop:10, paddingTop:8, borderTop:'1px solid var(--gris-linea)'}}>
-                      <div style={{display:'flex', alignItems:'center', gap:10, flexWrap:'wrap'}}>
-                        <strong style={{fontSize:13}}>Todos los correos de esta tutela</strong>
-                        <IconTextButton icon="refresh" variant="secondary" disabled={todosCorreos[m.id]?.estado === 'leyendo'} onClick={() => handleLeerTodosCorreos(m)}>
-                          {todosCorreos[m.id]?.estado === 'leyendo' ? 'Leyendo…' : (todosCorreos[m.id]?.datos ? 'Volver a leer todos los correos' : 'Leer todos los correos de esta tutela')}
-                        </IconTextButton>
-                        <span className="save-hint" style={{margin:0}}>Busca en el buzón TODOS los correos con este número (de cualquier remitente), los guarda en la carpeta de la tutela y los deja en la lectura; al crear el borrador de la solicitud de pruebas ya sabrá qué llegó.</span>
-                      </div>
-                      {todosCorreos[m.id]?.estado === 'error' && <p className="save-hint" style={{margin:'6px 0 0', color:'var(--rojo, #a3281c)'}}>No se pudo leer: {todosCorreos[m.id].error}</p>}
-                      {todosCorreos[m.id]?.estado === 'listo' && (() => {
-                        const d = todosCorreos[m.id].datos;
-                        const porClase = {};
-                        d.correos.forEach(c => { porClase[c.clase] = (porClase[c.clase] || 0) + 1; });
-                        return (
-                          <div style={{marginTop:6, fontSize:13}}>
-                            <div><strong>{d.total}</strong> correo{d.total === 1 ? '' : 's'} con el número de esta tutela{d.nuevos ? ` (${d.nuevos} nuevo${d.nuevos === 1 ? '' : 's'} guardado${d.nuevos === 1 ? '' : 's'})` : ''}: {Object.entries(porClase).map(([k, v]) => `${v} ${k}`).join(' · ') || '—'}.</div>
-                            {d.errores.length > 0 && <p className="save-hint" style={{margin:'4px 0', color:'var(--rojo, #a3281c)'}}>{d.errores.join(' · ')}</p>}
-                            <details style={{marginTop:4}}>
-                              <summary style={{cursor:'pointer'}}>Ver la lista</summary>
-                              <ul style={{margin:'6px 0 0', paddingLeft:18}}>
-                                {d.correos.map(c => (
-                                  <li key={c.id} style={{marginBottom:3}}>
-                                    {c.fecha} · <em>{c.clase}</em> · {c.de} — {c.asunto}
-                                    {c.adjuntos && c.adjuntos.length > 0 && <span> · 📎 {c.adjuntos.join(', ')}</span>}
-                                  </li>
-                                ))}
-                              </ul>
-                            </details>
-                          </div>
-                        );
-                      })()}
-                    </div>
-                  )}
-                  {onedriveCarpetaUrl && numeroDeEsteMensaje && (yaAnalizadaEnOneDrive || resultado?.mensajeId === m.id) && (
-                    <div style={{marginTop:10, paddingTop:8, borderTop:'1px solid var(--gris-linea)'}}>
-                      <div style={{display:'flex', alignItems:'center', gap:10, flexWrap:'wrap'}}>
-                        <strong style={{fontSize:13}}>Escritos de LexIA (Word con el formato del modelo)</strong>
-                        <IconTextButton icon="refresh" variant="secondary" disabled={escritosLexIA[m.id]?.estado === 'buscando'} onClick={() => handleBuscarEscritos(m)}>
-                          {escritosLexIA[m.id]?.estado === 'buscando' ? 'Buscando…' : 'Buscar escritos del artefacto'}
-                        </IconTextButton>
-                      </div>
-                      {escritosLexIA[m.id]?.estado === 'error' && <p className="save-hint" style={{margin:'6px 0 0', color:'var(--rojo, #a3281c)'}}>No se pudo buscar: {escritosLexIA[m.id].error}</p>}
-                      {escritosLexIA[m.id]?.estado === 'listo' && (escritosLexIA[m.id].escritos.length === 0
-                        ? <p className="save-hint" style={{margin:'6px 0 0'}}>Todavía no hay escritos de esta tutela: en el artefacto Plan B redacta uno y pulsa «Enviar al portal para armar el Word».</p>
-                        : (
-                          <div style={{marginTop:6, display:'flex', flexDirection:'column', gap:6}}>
-                            {escritosLexIA[m.id].escritos.map(e => (
-                              <div key={e.nombre} style={{display:'flex', alignItems:'center', gap:10, flexWrap:'wrap', fontSize:13}}>
-                                <span>{e.nombre.replace(/\.json$/i, '')}</span>
-                                <IconTextButton icon="folder" variant="secondary" disabled={!!escritosLexIA[m.id].generando} onClick={() => handleGenerarWordEscrito(m, e)}>
-                                  {escritosLexIA[m.id].generando === e.nombre ? 'Armando el Word…' : 'Generar Word'}
-                                </IconTextButton>
-                              </div>
-                            ))}
-                          </div>
-                        ))}
-                      {escritosLexIA[m.id]?.error && escritosLexIA[m.id]?.estado === 'listo' && <p className="save-hint" style={{margin:'6px 0 0', color:'var(--rojo, #a3281c)'}}>No se pudo generar el Word: {escritosLexIA[m.id].error}</p>}
-                    </div>
-                  )}
                   {robotEscritoUrl && onedriveCarpetaUrl && numeroDeEsteMensaje && (yaAnalizadaEnOneDrive || resultado?.mensajeId === m.id) && (
-                    <EscritoRobotPanel numero={numeroDeEsteMensaje} onedriveCarpetaUrl={onedriveCarpetaUrl} robotUrl={robotEscritoUrl} notify={notify} />
+                    <EscritoRobotPanel numero={numeroDeEsteMensaje} onedriveCarpetaUrl={onedriveCarpetaUrl} robotUrl={robotEscritoUrl} notify={notify} antesDeRedactar={() => asegurarCorreosLeidos(m, numeroDeEsteMensaje, true)} />
                   )}
                   {robotSolicitudUrl && onedriveCarpetaUrl && numeroDeEsteMensaje && (yaAnalizadaEnOneDrive || resultado?.mensajeId === m.id) && (
                     <div className="respuestas-areas-panel" style={{marginTop:10, paddingTop:8, borderTop:'1px solid var(--gris-linea)'}}>
