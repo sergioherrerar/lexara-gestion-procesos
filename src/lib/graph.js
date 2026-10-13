@@ -1286,7 +1286,7 @@ function construirTextoDesdeEstado(e){
   L.push(JSON.stringify({
     asunto: e.asunto || '', cuerpo: e.cuerpo || '', registros: (registros || []).map(r => { const { _creado, _solicitud, ...limpio } = r; return limpio; }),
     documentos, omitidos: e.omitidos || [], correo: e.correo || {}, analizado: e.analizado || '', portal: e.portal || null,
-    solicitudes, respuestasAreas: respuestas, correosTutela: e.correosTutela || [],
+    solicitudes, respuestasAreas: respuestas, correosTutela: e.correosTutela || [], carpetaTutelaUri: e.carpetaTutelaUri || '',
   }));
   L.push(MARCADOR_JSON_FIN);
   return L.join('\n');
@@ -1316,6 +1316,7 @@ function leerEstadoDeTexto(texto, numero){
     solicitudes: Array.isArray(datos.solicitudes) ? datos.solicitudes : [],
     respuestasAreas: Array.isArray(datos.respuestasAreas) ? datos.respuestasAreas : [],
     correosTutela: Array.isArray(datos.correosTutela) ? datos.correosTutela : [],
+    carpetaTutelaUri: datos.carpetaTutelaUri || '',
   };
 }
 // { estado, ruta } del archivo de esta tutela (nombre nuevo o viejo), o null si no existe.
@@ -1331,6 +1332,12 @@ async function leerEstadoLectura(driveId, folderId, numero){
 }
 async function escribirEstadoLectura(driveId, folderId, ruta, estado){
   estado.actualizado = new Date().toLocaleString('es-CO');
+  // Enlace directo a la carpeta de esta tutela (por su identificador): el artefacto lo usa para encontrar «Correos de la tutela».
+  try{
+    const carpetaTutela = ruta.replace(/\/[^\/]*$/, '');
+    const it = await graphFetch(`/drives/${driveId}/items/${folderId}:/${encodeURIComponent(carpetaTutela).replace(/%2F/g, '/')}?$select=id`);
+    if(it?.id) estado.carpetaTutelaUri = `file:///${driveId}/${it.id}`;
+  }catch(err){ /* sin enlace: el artefacto la busca por su nombre */ }
   const texto = construirTextoDesdeEstado(estado);
   const subir = (rutaArchivo) => graphFetch(`/drives/${driveId}/items/${folderId}:/${encodeURIComponent(rutaArchivo).replace(/%2F/g, '/')}:/content`, {
     method: 'PUT',
