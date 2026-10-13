@@ -2,7 +2,7 @@
 // el robot, pensando en gastar los menos créditos posibles (ver src/lib/escritoRobot.js). Muestra los tokens usados para compararlo con el
 // artefacto Plan B. Diseño con los componentes del portal (tarjeta elevada, tarjetas de campo, avisos de Lexara).
 import { useState, useRef } from 'react';
-import { prepararCasoParaEscrito } from '../lib/graph';
+import { prepararCasoParaEscrito, hayActuacionPrevia, registrarActuacion } from '../lib/graph';
 import {
   TIPOS_ESCRITO, tipoEscritoDeRegistro, sexoPorNombre, claveCliente, obtenerIndiceModelos, modelosDelIndice,
   redactarEscritoConRobot, corregirEscritoConRobot, guardarLeccion, leerLecciones, leccionesParaPrompt, generarFichasDeModelos,
@@ -27,7 +27,7 @@ function Campo({ etiqueta, completo, children }){
   );
 }
 
-export default function EscritoRobotPanel({ numero, onedriveCarpetaUrl, robotUrl, notify, antesDeRedactar }){
+export default function EscritoRobotPanel({ numero, onedriveCarpetaUrl, robotUrl, notify, antesDeRedactar, correoBuzon }){
   const [abierto, setAbierto] = useState(false);
   const [cargando, setCargando] = useState(false);
   const [datos, setDatos] = useState(null);          // { registros }
@@ -45,6 +45,7 @@ export default function EscritoRobotPanel({ numero, onedriveCarpetaUrl, robotUrl
   const [correccion, setCorreccion] = useState('');
   const [leccion, setLeccion] = useState(null);      // { regla, alcance }
   const [aviso, setAviso] = useState('');
+  const [repetido, setRepetido] = useState('');   // aviso de que este escrito ya se hizo (portal, artefacto o correo ya enviado)
   const [soloDatos, setSoloDatos] = useState(false);   // modo estricto: el modelo no se toca, solo se completan datos
 
   const t0Ref = useRef(Date.now());   // segundos desde que se pulsó «redactar», en cada paso
@@ -97,10 +98,17 @@ export default function EscritoRobotPanel({ numero, onedriveCarpetaUrl, robotUrl
       if(forzar) notify?.('Lista de modelos al día (' + ind.entradas.length + ' modelos).', 'success');
     }catch(err){ setError(err.message || String(err)); }
   }
-  async function redactar(){
+  async function redactar(forzar = false){
     t0Ref.current = Date.now();
     setTrabajando(true); setError(''); setLog([]); setEscrito(null); setUsos([]); setLeccion(null); setAviso('');
     try{
+      // Que no se repita: si este escrito ya lo hizo el portal o el artefacto, o ya hay un correo enviado con él, se avisa y se pide confirmar.
+      if(forzar !== true && correoBuzon){
+        anotar('Revisando que este escrito no esté ya hecho...');
+        const dup = await hayActuacionPrevia({ correoBuzon, urlCarpeta: onedriveCarpetaUrl, noTutela: numero, tipo: tipo === 'aplazamiento' ? 'aplazamiento' : 'escrito', cliente: (datos.registros[indiceRegistro] || {}).Cliente, detalle: tipo }).catch(() => ({ existe: false }));
+        if(dup.existe){ setRepetido(dup.mensaje); setLog([]); return; }
+      }
+      setRepetido('');
       // Para redactar hay que volver a leer TODOS los correos de la tutela (pueden haber llegado pruebas o decisiones nuevas).
       if(antesDeRedactar){
         anotar('Releyendo todos los correos de la tutela...');
@@ -109,6 +117,7 @@ export default function EscritoRobotPanel({ numero, onedriveCarpetaUrl, robotUrl
       }
       const r = await redactarEscritoConRobot({ robotUrl, urlCarpeta: onedriveCarpetaUrl, numero, tipo, indiceRegistro, sexo, nota, modeloManual: modeloManual || null, estricto: soloDatos || tipo === 'aplazamiento', log: anotar });
       setEscrito(r); setUsos(r.usos);
+      registrarActuacion(onedriveCarpetaUrl, numero, { tipo: tipo === 'aplazamiento' ? 'aplazamiento' : 'escrito', detalle: tipo, cliente: (datos.registros[indiceRegistro] || {}).Cliente || '', por: 'portal', archivo: r.nombre || '' }).catch(err => console.error('No se pudo anotar el escrito en la lectura:', err));
       anotar('Listo: ' + r.resumen.cambiados + ' párrafos cambiados, ' + r.resumen.reemplazos + ' reemplazos, ' + r.resumen.nuevos + ' nuevos, ' + r.resumen.quitados + ' quitados.');
     }catch(err){ console.error(err); setError(err.message || String(err)); }
     finally{ setTrabajando(false); }
@@ -194,7 +203,7 @@ export default function EscritoRobotPanel({ numero, onedriveCarpetaUrl, robotUrl
               <span>Modo estricto: solo reemplazar datos, sin agregar ningún párrafo{tipo === 'aplazamiento' ? ' (siempre así en el aplazamiento)' : ''}. En todos los modelos se respeta el texto y el formato: no se elimina ni se reescribe nada, y solo se añade lo que salga de las pruebas o de los datos del portal.</span>
             </label>
             <div className="escrito-acciones">
-              <IconTextButton icon="add" variant="primary" disabled={trabajando} onClick={redactar}>
+              <IconTextButton icon="add" variant="primary" disabled={trabajando} onClick={() => redactar()}>
                 {trabajando && !escrito ? 'Redactando…' : (modeloManual ? 'Redactar con este modelo' : 'Elegir el mejor modelo y redactar')}
               </IconTextButton>
               <IconTextButton icon="refresh" variant="secondary" disabled={trabajando} onClick={() => cargarModelos(true)}>Actualizar la lista de modelos</IconTextButton>
@@ -203,6 +212,15 @@ export default function EscritoRobotPanel({ numero, onedriveCarpetaUrl, robotUrl
           </>
         )}
 
+        {repetido && (
+          <div style={{background:'#fff4e0', border:'1px solid var(--amarillo, #e0a93b)', borderRadius:8, padding:'10px 12px', display:'flex', flexDirection:'column', gap:8, fontSize:13}}>
+            <span><strong>Ya está hecho.</strong> {repetido} ¿Redactarlo de todas formas?</span>
+            <span style={{display:'flex', gap:8, flexWrap:'wrap'}}>
+              <IconTextButton icon="add" variant="primary" onClick={() => redactar(true)}>Redactar de todas formas</IconTextButton>
+              <IconTextButton icon="delete" variant="secondary" onClick={() => setRepetido('')}>Cancelar</IconTextButton>
+            </span>
+          </div>
+        )}
         {log.length > 0 && (
           <ul className="escrito-pasos">
             {log.map((l, i) => <li key={i} className={trabajando && i === log.length - 1 ? 'activo' : ''}>{l}</li>)}

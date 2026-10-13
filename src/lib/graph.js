@@ -1244,6 +1244,7 @@ function construirTextoDesdeEstado(e){
   L.push(`TUTELA No. ${e.numero}`);
   L.push(`Analizado por LexIA el ${e.analizado || new Date().toLocaleString('es-CO')}`);
   if(e.actualizado) L.push(`Última actualización del archivo: ${e.actualizado}`);
+  (e.actuaciones || []).forEach(a => L.push('Actuación registrada: ' + a.tipo + (a.detalle ? ' (' + a.detalle + ')' : '') + (a.cliente ? ' · ' + a.cliente : '') + ' — hecha por ' + (a.por === 'artefacto' ? 'el artefacto (Plan B)' : 'el portal') + ' el ' + a.fecha + (a.archivo ? ' · ' + a.archivo : '') + '.'));
   L.push('Este archivo reúne lo necesario para contestar la tutela: 1) datos del portal, 2) datos del correo, 3) datos de la tutela (lectura de LexIA), 4) datos de los anexos, 5) solicitud de pruebas y respuestas de las áreas y 6) todos los correos que mencionan la tutela.');
 
   seccion(1, 'DATOS DEL PORTAL');
@@ -1337,7 +1338,7 @@ function construirTextoDesdeEstado(e){
   L.push(JSON.stringify({
     asunto: e.asunto || '', cuerpo: e.cuerpo || '', registros: (registros || []).map(r => { const { _creado, _solicitud, ...limpio } = r; return limpio; }),
     documentos, omitidos: e.omitidos || [], correo: e.correo || {}, analizado: e.analizado || '', portal: e.portal || null,
-    solicitudes, respuestasAreas: respuestas, correosTutela: e.correosTutela || [], carpetaTutelaUri: e.carpetaTutelaUri || '', correosVerificado: e.correosVerificado || '',
+    solicitudes, respuestasAreas: respuestas, correosTutela: e.correosTutela || [], carpetaTutelaUri: e.carpetaTutelaUri || '', correosVerificado: e.correosVerificado || '', actuaciones: e.actuaciones || [],
   }));
   L.push(MARCADOR_JSON_FIN);
   return L.join('\n');
@@ -1369,6 +1370,7 @@ function leerEstadoDeTexto(texto, numero){
     correosTutela: Array.isArray(datos.correosTutela) ? datos.correosTutela : [],
     carpetaTutelaUri: datos.carpetaTutelaUri || '',
     correosVerificado: datos.correosVerificado || '',
+    actuaciones: Array.isArray(datos.actuaciones) ? datos.actuaciones : [],
   };
 }
 // { estado, ruta } del archivo de esta tutela (nombre nuevo o viejo), o null si no existe.
@@ -1412,7 +1414,7 @@ export async function guardarLecturaLexIAEnOneDrive(urlCarpeta, numeroTutela, me
   const { driveId, folderId } = await resolverCarpetaLexIAOneDrive(urlCarpeta);
   const previo = await leerEstadoLectura(driveId, folderId, numeroTutela).catch(() => null);
   const estado = {
-    ...(previo ? { portal: previo.estado.portal, solicitudes: previo.estado.solicitudes, respuestasAreas: previo.estado.respuestasAreas, correosTutela: previo.estado.correosTutela, correosVerificado: previo.estado.correosVerificado } : {}),
+    ...(previo ? { portal: previo.estado.portal, solicitudes: previo.estado.solicitudes, respuestasAreas: previo.estado.respuestasAreas, correosTutela: previo.estado.correosTutela, correosVerificado: previo.estado.correosVerificado, actuaciones: previo.estado.actuaciones } : {}),
     numero: String(numeroTutela),
     analizado: new Date().toLocaleString('es-CO'),
     asunto, cuerpo,
@@ -3870,8 +3872,9 @@ export async function leerTodosLosCorreosDeTutela({ correoBuzon, urlCarpeta, noT
 // (lectura, última revisión de correos, respuestas de las áreas) con lo que hay en Borradores y Enviados del buzón de Tutelas (solicitud de pruebas,
 // aplazamiento y escrito de contestación). Nunca lanza: lo que no se pudo averiguar queda vacío y se anota en `errores`.
 // Cada paso es { enviado: bool, fecha, borrador?: bool } o null si todavía no existe.
+const RE_ESCRITO_ENVIADO = /remito\s+(la\s+|el\s+)?(contestaci[oó]n|impugnaci[oó]n|aclaraci[oó]n|alcance|nulidad|cumplimiento|requerimiento|modulaci[oó]n|correcci[oó]n)/i;
 export async function estadoSeguimientoTutela({ correoBuzon, urlCarpeta, noTutela }){
-  const salida = { leido: '', correosVerificadoHasta: '', respuestas: null, pruebas: null, aplazamiento: null, escrito: null, errores: [] };
+  const salida = { leido: '', correosVerificadoHasta: '', respuestas: null, pruebas: null, aplazamiento: null, escrito: null, escritos: [], actuaciones: [], errores: [] };
   const n = String(noTutela || '').trim();
   if(!n) return salida;
   const fechaDe = iso => iso ? new Date(iso).toLocaleString('es-CO') : '';
@@ -3883,6 +3886,7 @@ export async function estadoSeguimientoTutela({ correoBuzon, urlCarpeta, noTutel
         const e = leido.estado;
         salida.leido = e.analizado || '';
         salida.correosVerificadoHasta = e.correosVerificado || '';
+        salida.actuaciones = e.actuaciones || [];
         const recibidas = e.respuestasAreas || [];
         if(recibidas.length){
           const sols = e.solicitudes || [];
@@ -3906,8 +3910,9 @@ export async function estadoSeguimientoTutela({ correoBuzon, urlCarpeta, noTutel
         // Aplazamiento: por la etiqueta del borrador o por el saludo del correo («Buenas tardes, remito Aplazamiento por COLMÉDICA.»).
         if((m.categories || []).some(c => { const x = normalize(c); return x === etiquetaAplazamiento || x.startsWith(etiquetaAplazamiento + ' '); }) || (re.test(m.subject || '') && /remito\s+aplazamiento/i.test(previo))){ hallados.aplazamiento.push(paso); return; }
         // Escrito de contestación (o aclaración, impugnación, alcance…): correo enviado con el número de la tutela en el asunto cuyo texto dice
-        // «Remito contestación por UMD con (1) anexo». Se manda a la entidad cliente, no al juzgado.
-        if(enviado && re.test(m.subject || '') && /remito\s+(la\s+|el\s+)?(contestaci[oó]n|impugnaci[oó]n|aclaraci[oó]n|alcance|nulidad|cumplimiento|requerimiento|modulaci[oó]n|correcci[oó]n)/i.test(previo)) hallados.escrito.push(paso);
+        // «Remito contestación por UMD con (1) anexo». Se manda a la entidad cliente, no al juzgado. `palabra` = de qué escrito se trata.
+        const esc = enviado && re.test(m.subject || '') ? RE_ESCRITO_ENVIADO.exec(previo) : null;
+        if(esc){ paso.palabra = normalize(esc[2]).slice(0, 6); hallados.escrito.push(paso); }
       });
     }catch(err){ fallos++; console.error('No se pudo revisar ' + carpeta + ' para el seguimiento:', err); }
   }
@@ -3922,7 +3927,50 @@ export async function estadoSeguimientoTutela({ correoBuzon, urlCarpeta, noTutel
   salida.pruebas = mejor(hallados.pruebas);
   salida.aplazamiento = mejor(hallados.aplazamiento);
   salida.escrito = mejor(hallados.escrito);
+  salida.escritos = hallados.escrito.map(p => ({ enviado: p.enviado, fecha: p.fecha, palabra: p.palabra }));
   return salida;
+}
+
+// ---------------------------------------------------------------------------
+// Actuaciones ya hechas (2026-10-14, pedido del usuario: que el portal y el artefacto no se pisen). Cuando uno de los dos redacta un aplazamiento o un
+// escrito lo anota en «Lectura LexIA.txt» (campo «actuaciones»); antes de rehacerlo, el otro lo ve y pide confirmar. Además se reconoce el correo
+// ya creado o enviado en el buzón de Tutelas.
+function claveClienteActuacion(c){
+  const x = normalize(c || '');
+  if(x.includes('aliansalud')) return 'aliansalud';
+  if(x.includes('colm')) return 'colmedica';
+  if(x.includes('umd') || x.includes('unidad')) return 'umd';
+  return '';
+}
+export async function registrarActuacion(urlCarpeta, numero, act){
+  const { driveId, folderId } = await resolverCarpetaLexIAOneDrive(urlCarpeta);
+  const leido = await leerEstadoLectura(driveId, folderId, numero);
+  if(!leido) return false;
+  const estado = leido.estado;
+  const nueva = { ...act, por: act.por || 'portal', fecha: act.fecha || new Date().toLocaleString('es-CO') };
+  const misma = a => a.tipo === nueva.tipo && claveClienteActuacion(a.cliente) === claveClienteActuacion(nueva.cliente) && (nueva.tipo === 'aplazamiento' || normalize(a.detalle || '').slice(0, 6) === normalize(nueva.detalle || '').slice(0, 6));
+  estado.actuaciones = [...(estado.actuaciones || []).filter(a => !misma(a)), nueva].slice(-40);
+  await escribirEstadoLectura(driveId, folderId, leido.ruta, estado);
+  return true;
+}
+// tipo: 'aplazamiento' o 'escrito'; detalle (solo escritos): contestacion, impugnacion, aclaracion, alcance…; cliente: nombre completo o vacío (cualquiera).
+// Devuelve { existe, mensaje }.
+export async function hayActuacionPrevia({ correoBuzon, urlCarpeta, noTutela, tipo, cliente, detalle }){
+  const s = await estadoSeguimientoTutela({ correoBuzon, urlCarpeta, noTutela });
+  const ck = claveClienteActuacion(cliente);
+  const nombre = tipo === 'aplazamiento' ? 'el aplazamiento' : 'el escrito' + (detalle ? ' («' + detalle + '»)' : '');
+  const palabra = normalize(detalle || '').slice(0, 6);
+  let correo = null;
+  if(tipo === 'aplazamiento') correo = s.aplazamiento;
+  else{
+    const lista = (s.escritos || []).filter(x => !palabra || !x.palabra || x.palabra === palabra);
+    correo = lista.length ? lista[lista.length - 1] : null;
+  }
+  if(correo && correo.enviado) return { existe: true, mensaje: 'El correo con ' + nombre + ' ya se envió el ' + correo.fecha + '.' };
+  if(correo) return { existe: true, mensaje: 'Ya hay un borrador de correo con ' + nombre + ' (' + correo.fecha + ').' };
+  const act = (s.actuaciones || []).filter(a => a.tipo === tipo && (!ck || !a.cliente || claveClienteActuacion(a.cliente) === ck) && (tipo === 'aplazamiento' || !palabra || !a.detalle || normalize(a.detalle).slice(0, 6) === palabra)).pop();
+  if(act) return { existe: true, mensaje: 'Ya lo redactó ' + (act.por === 'artefacto' ? 'el artefacto (Plan B)' : 'el portal') + ' el ' + act.fecha + (act.cliente ? ' (' + act.cliente + ')' : '') + '.' };
+  return { existe: false, mensaje: '' };
 }
 
 // Resumen breve de lo que ya llegó, para el robot de la solicitud de pruebas. Búsqueda rápida (sin guardar nada ni gastar IA).

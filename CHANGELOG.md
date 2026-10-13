@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-10-14 (39)
+- **El portal y el artefacto ya no se pisan** — pedido del usuario. Cuando uno de los dos redacta un aplazamiento o un escrito, lo anota en «Lectura LexIA.txt» (campo «actuaciones»: qué, de qué cliente, quién y cuándo). Antes de rehacerlo, el otro lo revisa (esa anotación y también el buzón: borrador o correo ya enviado) y, si ya está hecho, avisa y pide confirmar («Crear otro de todas formas» / «Redactar de todas formas»). Vale para «Correo con aplazamiento» y «Escrito con LexIA» del portal, y para el aplazamiento por cliente y el paso de escritos del artefacto. La lista de seguimiento muestra «Aplazamiento redactado» o «Escrito redactado» (por el portal o por el artefacto) aunque todavía no haya correo.
+
 ## 2026-10-13 (38)
 - **Corrección en la lista de seguimiento: el escrito de contestación se reconoce por su texto, no por el destinatario** — el escrito se envía a la entidad cliente (no al juzgado), así que ahora se busca en Enviados un correo con el número de la tutela en el asunto cuyo texto dice «Remito contestación…» (o aclaración, impugnación, alcance…). El aplazamiento también se reconoce por su saludo («Remito Aplazamiento por…»).
 

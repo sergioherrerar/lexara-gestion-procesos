@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { normalizarBorradorTutela } from '../lib/borradorTutela';
 import { aplicarVencimientoHabil, fechaLocalISO } from '../lib/vencimientoTutela';
-import { leerCorreosTutelas, primerCorreoDeConversacion, crearSolicitudPruebasBorrador, buscarSolicitudPruebasExistente, revisarRespuestasAreas, uriLecturaLexIAParaArtefacto, leerTodosLosCorreosDeTutela, correosRecibidosParaSolicitud, estadoSeguimientoTutela, extraerTutelaConLexIA, numeroTutelaDeAsunto, normalize, mensajeError, buscarLecturaLexIAGuardada, guardarLecturaLexIAEnOneDrive, listarTutelasAnalizadasEnOneDrive, asegurarCarpetaTutelaDesdeMensaje } from '../lib/graph';
+import { leerCorreosTutelas, primerCorreoDeConversacion, crearSolicitudPruebasBorrador, buscarSolicitudPruebasExistente, revisarRespuestasAreas, uriLecturaLexIAParaArtefacto, leerTodosLosCorreosDeTutela, correosRecibidosParaSolicitud, estadoSeguimientoTutela, extraerTutelaConLexIA, numeroTutelaDeAsunto, normalize, mensajeError, buscarLecturaLexIAGuardada, guardarLecturaLexIAEnOneDrive, listarTutelasAnalizadasEnOneDrive, asegurarCarpetaTutelaDesdeMensaje, hayActuacionPrevia, registrarActuacion } from '../lib/graph';
 import IconButton, { IconTextButton } from './IconButton';
 import EscritoRobotPanel from './EscritoRobotPanel';
 import { redactarEscritoConRobot, sexoPorNombre } from '../lib/escritoRobot';
@@ -67,6 +67,7 @@ function claveMarcaCliente(c){
 
 // Lista de seguimiento de la tutela (2026-10-13, pedido del usuario): debajo de la foto de LexIA, qué pasos ya se hicieron y cuándo.
 // Colores como los correos del portal: verde = hecho, naranja = a medias (borrador), gris = pendiente.
+function ultimaActuacion(d, tipo){ return ((d && d.actuaciones) || []).filter(a => a.tipo === tipo).pop() || null; }
 function SeguimientoTutela({ numero, estado, onActualizar }){
   const d = estado?.datos;
   const cargando = !estado || estado.estado === 'cargando';
@@ -86,11 +87,11 @@ function SeguimientoTutela({ numero, estado, onActualizar }){
     const a = d.aplazamiento;
     pasos.push(a
       ? { texto: a.enviado ? 'Aplazamiento enviado' : 'Borrador de aplazamiento creado', fecha: a.fecha, extra: a.enviado ? '' : 'Todavía sin enviar', nivel: a.enviado ? 'ok' : 'parcial' }
-      : paso('Aplazamiento', false, '', 'Aún no se envía'));
+      : (ultimaActuacion(d, 'aplazamiento') ? { texto: 'Aplazamiento redactado', nivel: 'parcial', fecha: ultimaActuacion(d, 'aplazamiento').fecha, extra: 'Por ' + (ultimaActuacion(d, 'aplazamiento').por === 'artefacto' ? 'el artefacto' : 'el portal') + ' · sin correo todavía' } : paso('Aplazamiento', false, '', 'Aún no se envía')));
     const e = d.escrito;
     pasos.push(e
       ? paso('Escrito de contestación enviado', true, e.fecha, '')
-      : paso('Escrito de contestación', false, '', 'Aún no se envía'));
+      : (ultimaActuacion(d, 'escrito') ? { texto: 'Escrito redactado', nivel: 'parcial', fecha: ultimaActuacion(d, 'escrito').fecha, extra: 'Por ' + (ultimaActuacion(d, 'escrito').por === 'artefacto' ? 'el artefacto' : 'el portal') + ' · sin enviar todavía' } : paso('Escrito de contestación', false, '', 'Aún no se envía')));
   }
   const hechos = pasos.filter(x => x.nivel === 'ok').length;
   return (
@@ -405,6 +406,7 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
   }
 
   const [aplazamiento, setAplazamiento] = useState({}); // { [mensajeId]: { estado, pasos[], error? } }
+  const [repetido, setRepetido] = useState({});   // { [mensajeId]: texto } — aviso de que el aplazamiento ya se hizo (portal, artefacto o correo ya creado)
   // Lista de seguimiento de la tutela seleccionada (debajo de la foto de LexIA). Se actualiza sola al seleccionar la tutela y cada vez que
   // termina una acción (leer correos, revisar respuestas, crear el correo con aplazamiento); también con el botón de actualizar.
   const [seguimiento, setSeguimiento] = useState({});   // { [numero]: { estado, datos?, error? } }
@@ -424,7 +426,7 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
 
   // «Correo con aplazamiento» (Sección 1): redacta el modelo de aplazamiento de cada cliente de la tutela con los datos del caso y crea el
   // borrador de la solicitud de pruebas (reenvío del correo de notificación) con esos Word adjuntos.
-  async function handleCorreoConAplazamiento(mensaje){
+  async function handleCorreoConAplazamiento(mensaje, forzar = false){
     const numero = numeroTutelaDeAsunto(mensaje.asunto);
     const registros = resultado?.mensajeId === mensaje.id ? (resultado.registros || []) : [];
     if(!numero || !registros.length || !robotEscritoUrl) return;
@@ -433,6 +435,17 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
     const anotar = (t) => { pasos.push('[' + Math.round((Date.now() - t0) / 1000) + ' s] ' + t); setAplazamiento(prev => ({ ...prev, [mensaje.id]: { estado: 'creando', pasos: [...pasos] } })); };
     setAplazamiento(prev => ({ ...prev, [mensaje.id]: { estado: 'creando', pasos: [] } }));
     try{
+      // 0) Que no se repita: si el aplazamiento ya lo hizo el portal o el artefacto, o ya hay un correo con él, se avisa y se pide confirmar.
+      if(!forzar){
+        anotar('Revisando que el aplazamiento no esté ya hecho...');
+        const dup = await hayActuacionPrevia({ correoBuzon, urlCarpeta: onedriveCarpetaUrl, noTutela: numero, tipo: 'aplazamiento', cliente: '' }).catch(() => ({ existe: false }));
+        if(dup.existe){
+          setRepetido(prev => ({ ...prev, [mensaje.id]: dup.mensaje }));
+          setAplazamiento(prev => ({ ...prev, [mensaje.id]: { estado: 'idle', pasos: [] } }));
+          return;
+        }
+      }
+      setRepetido(prev => ({ ...prev, [mensaje.id]: '' }));
       // 1) Los aplazamientos de TODOS los clientes se redactan a la vez (modo estricto: solo datos).
       const aplazamientosProm = Promise.all(registros.map(async (reg, i) => {
         anotar('Redactando el aplazamiento de ' + (reg.Cliente || ('cliente ' + (i + 1))) + '...');
@@ -451,6 +464,8 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
       const adjuntos = await aplazamientosProm.catch(err => { throw new Error('El borrador se creó, pero sin los aplazamientos: ' + (err.message || err)); });
       anotar('Listo: el borrador quedó en Borradores del buzón de Tutelas con ' + adjuntos.length + ' aplazamiento' + (adjuntos.length === 1 ? '' : 's') + ' adjunto' + (adjuntos.length === 1 ? '' : 's') + '. Revísalo antes de enviar.');
       setAplazamiento(prev => ({ ...prev, [mensaje.id]: { estado: 'listo', pasos: [...pasos] } }));
+      // Se anota en la lectura (uno por cliente, en fila para no pisarse) para que el artefacto no lo repita.
+      registros.reduce((p, reg, i) => p.then(() => registrarActuacion(onedriveCarpetaUrl, numero, { tipo: 'aplazamiento', cliente: reg.Cliente || '', por: 'portal', archivo: (adjuntos[i] || {}).nombre || '' })), Promise.resolve()).catch(err => console.error('No se pudo anotar el aplazamiento en la lectura:', err));
     }catch(err){
       console.error(err);
       setAplazamiento(prev => ({ ...prev, [mensaje.id]: { estado: 'error', pasos: [...pasos], error: mensajeError(err) } }));
@@ -943,6 +958,15 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
                         </IconTextButton>
                       </div>
                       <div className="tutela-seccion-body">
+                      {repetido[m.id] && (
+                        <div style={{background:'#fff4e0', border:'1px solid var(--amarillo, #e0a93b)', borderRadius:8, padding:'10px 12px', display:'flex', flexDirection:'column', gap:8, fontSize:13}}>
+                          <span><strong>Ya está hecho.</strong> {repetido[m.id]} ¿Crear otro de todas formas?</span>
+                          <span style={{display:'flex', gap:8, flexWrap:'wrap'}}>
+                            <IconTextButton icon="mail" variant="primary" onClick={() => handleCorreoConAplazamiento(m, true)}>Crear otro de todas formas</IconTextButton>
+                            <IconTextButton icon="delete" variant="secondary" onClick={() => setRepetido(prev => ({ ...prev, [m.id]: '' }))}>Cancelar</IconTextButton>
+                          </span>
+                        </div>
+                      )}
                       {aplazamiento[m.id]?.pasos?.length > 0 && (
                         <ul className="escrito-pasos">
                           {aplazamiento[m.id].pasos.map((t, i) => <li key={i} className={aplazamiento[m.id].estado === 'creando' && i === aplazamiento[m.id].pasos.length - 1 ? 'activo' : ''}>{t}</li>)}
@@ -995,7 +1019,7 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
                     </div>
                   )}
                   {robotEscritoUrl && onedriveCarpetaUrl && numeroDeEsteMensaje && (yaAnalizadaEnOneDrive || resultado?.mensajeId === m.id) && (
-                    <EscritoRobotPanel numero={numeroDeEsteMensaje} onedriveCarpetaUrl={onedriveCarpetaUrl} robotUrl={robotEscritoUrl} notify={notify} antesDeRedactar={async () => { const d = await asegurarCorreosLeidos(m, numeroDeEsteMensaje, true); try{ await handleRevisarRespuestas(m); }catch(err){ console.error(err); } return d; }} />
+                    <EscritoRobotPanel correoBuzon={correoBuzon} numero={numeroDeEsteMensaje} onedriveCarpetaUrl={onedriveCarpetaUrl} robotUrl={robotEscritoUrl} notify={notify} antesDeRedactar={async () => { const d = await asegurarCorreosLeidos(m, numeroDeEsteMensaje, true); try{ await handleRevisarRespuestas(m); }catch(err){ console.error(err); } return d; }} />
                   )}
                 </div>
               )}
