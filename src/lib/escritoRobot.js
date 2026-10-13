@@ -165,7 +165,7 @@ function nombreCortoCliente(cliente){ return { aliansalud: 'ALIANSALUD', colmedi
  * Elige el modelo (o usa el manual) y redacta el escrito sobre el .docx original.
  * @returns {{ bytes, nombre, alertas, usos, avisos, resumen, modelo, caso }}
  */
-export async function redactarEscritoConRobot({ robotUrl, urlCarpeta, numero, tipo, indiceRegistro = 0, sexo, nota = '', modeloManual = null, lecciones = '', log = () => {} }){
+export async function redactarEscritoConRobot({ robotUrl, urlCarpeta, numero, tipo, indiceRegistro = 0, sexo, nota = '', modeloManual = null, lecciones = '', estricto = false, log = () => {} }){
   log('Leyendo la lectura de la tutela...');
   const caso = await prepararCasoParaEscrito(urlCarpeta, numero);
   if(!caso) throw new Error('Esta tutela todavía no tiene «Lectura LexIA.txt»: primero extráela con LexIA.');
@@ -221,14 +221,16 @@ export async function redactarEscritoConRobot({ robotUrl, urlCarpeta, numero, ti
   log('Redactando (LexIA devuelve solo los cambios)...');
   const r = await llamarRobot(robotUrl, {
     modo: 'redactar', tipoEscrito: TIPOS_ESCRITO[tipo].etiqueta, hoy: fechaLarga(), caso: caso.textoCaso, correos: caso.correosResumen,
-    nota, lecciones, parrafos: parrafosParaRobot(parrafos),
+    nota, lecciones, estricto, parrafos: parrafosParaRobot(parrafos),
   });
   usos.push({ paso: 'Redactar', ...r.uso });
-  const aplicado = await aplicarCambiosADocx(bytes, r);
+  // Modo estricto: el modelo no se toca salvo reemplazar datos (sin eliminar ni agregar párrafos), aunque el robot devolviera algo más.
+  // Respeto al modelo: nunca se elimina nada (aunque el robot lo devolviera); en modo estricto tampoco se agrega nada.
+  const aplicado = await aplicarCambiosADocx(bytes, estricto ? { ...r, eliminar: [], agregar: [] } : { ...r, eliminar: [] });
   const nombre = `${TIPOS_ESCRITO[tipo].etiqueta} - ${nombreCortoCliente(registro.Cliente)} - borrador LexIA.docx`.replace(/[\\/:*?"<>|]/g, ' ');
   log('Guardando en la carpeta de la tutela...');
   await guardarArchivoEnTutela(urlCarpeta, numero, nombre, aplicado.bytes, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document').catch(err => aplicado.avisos.push('No pude guardar el Word en la carpeta de la tutela: ' + (err.message || err)));
-  return { bytes: aplicado.bytes, nombre, cliente, lecciones, alertas: r.alertas || '', usos, avisos: aplicado.avisos, resumen: aplicado.resumen, modelo: elegido.ruta, tipo, numero, urlCarpeta, robotUrl, caso: { textoCaso: caso.textoCaso, correos: caso.correosResumen }, modelos };
+  return { bytes: aplicado.bytes, nombre, cliente, lecciones, estricto, alertas: r.alertas || '', usos, avisos: aplicado.avisos, resumen: aplicado.resumen, modelo: elegido.ruta, tipo, numero, urlCarpeta, robotUrl, caso: { textoCaso: caso.textoCaso, correos: caso.correosResumen }, modelos };
 }
 
 /** Corrige el borrador actual con una instrucción del abogado («Enséñame»). Reusa el caché del robot (el caso es el mismo). */
@@ -237,9 +239,9 @@ export async function corregirEscritoConRobot({ estado, instruccion, nota = '', 
   const parrafos = await listarParrafosDeDocx(estado.bytes);
   const r = await llamarRobot(estado.robotUrl, {
     modo: 'corregir', tipoEscrito: TIPOS_ESCRITO[estado.tipo].etiqueta, hoy: fechaLarga(), caso: estado.caso.textoCaso, correos: estado.caso.correos,
-    nota, lecciones, instruccion, parrafos: parrafosParaRobot(parrafos),
+    nota, lecciones, instruccion, estricto: !!estado.estricto, parrafos: parrafosParaRobot(parrafos),
   });
-  const aplicado = await aplicarCambiosADocx(estado.bytes, r);
+  const aplicado = await aplicarCambiosADocx(estado.bytes, estado.estricto ? { ...r, eliminar: [], agregar: [] } : { ...r, eliminar: [] });
   await guardarArchivoEnTutela(estado.urlCarpeta, estado.numero, estado.nombre, aplicado.bytes, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document').catch(() => {});
   return { bytes: aplicado.bytes, alertas: r.alertas || '', leccion: r.leccion || null, uso: { paso: 'Corrección', ...r.uso }, avisos: aplicado.avisos, resumen: aplicado.resumen };
 }

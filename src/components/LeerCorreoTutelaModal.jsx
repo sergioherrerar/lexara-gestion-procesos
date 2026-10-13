@@ -328,7 +328,7 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
         anotar('Redactando el aplazamiento de ' + (registros[i].Cliente || ('cliente ' + (i + 1))) + '...');
         const r = await redactarEscritoConRobot({
           robotUrl: robotEscritoUrl, urlCarpeta: onedriveCarpetaUrl, numero, tipo: 'aplazamiento', indiceRegistro: i,
-          sexo: sexoPorNombre(registros[i].Usuario), nota: '', log: (t) => anotar('   ' + t),
+          sexo: sexoPorNombre(registros[i].Usuario), nota: '', estricto: true, log: (t) => anotar('   ' + t),
         });
         adjuntos.push({ nombre: r.nombre, bytes: r.bytes });
       }

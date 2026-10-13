@@ -45,6 +45,7 @@ export default function EscritoRobotPanel({ numero, onedriveCarpetaUrl, robotUrl
   const [correccion, setCorreccion] = useState('');
   const [leccion, setLeccion] = useState(null);      // { regla, alcance }
   const [aviso, setAviso] = useState('');
+  const [soloDatos, setSoloDatos] = useState(false);   // modo estricto: el modelo no se toca, solo se completan datos
 
   const anotar = (t) => setLog(prev => [...prev, t]);
 
@@ -104,7 +105,7 @@ export default function EscritoRobotPanel({ numero, onedriveCarpetaUrl, robotUrl
         const d = await antesDeRedactar();
         anotar('Correos de la tutela al día: ' + d.total + (d.nuevos ? ' (' + d.nuevos + ' nuevo' + (d.nuevos === 1 ? '' : 's') + ')' : ' (ninguno nuevo)') + '.');
       }
-      const r = await redactarEscritoConRobot({ robotUrl, urlCarpeta: onedriveCarpetaUrl, numero, tipo, indiceRegistro, sexo, nota, modeloManual: modeloManual || null, log: anotar });
+      const r = await redactarEscritoConRobot({ robotUrl, urlCarpeta: onedriveCarpetaUrl, numero, tipo, indiceRegistro, sexo, nota, modeloManual: modeloManual || null, estricto: soloDatos || tipo === 'aplazamiento', log: anotar });
       setEscrito(r); setUsos(r.usos);
       anotar('Listo: ' + r.resumen.cambiados + ' párrafos cambiados, ' + r.resumen.reemplazos + ' reemplazos, ' + r.resumen.nuevos + ' nuevos, ' + r.resumen.quitados + ' quitados.');
     }catch(err){ console.error(err); setError(err.message || String(err)); }
@@ -186,6 +187,10 @@ export default function EscritoRobotPanel({ numero, onedriveCarpetaUrl, robotUrl
             <Campo etiqueta="Lo que dijo el juez o lo que se pide (aclaración, impugnación, alcance…; en la contestación puede ir vacío)" completo>
               <textarea value={nota} onChange={e => setNota(e.target.value)} rows={3} placeholder="Ej. el fallo ordena a la EPS… / el juez pide aclarar…" />
             </Campo>
+            <label className="checkbox-field" style={{fontSize:12.5}}>
+              <input type="checkbox" checked={soloDatos || tipo === 'aplazamiento'} disabled={tipo === 'aplazamiento'} onChange={e => setSoloDatos(e.target.checked)} />
+              <span>Modo estricto: solo reemplazar datos, sin agregar ningún párrafo{tipo === 'aplazamiento' ? ' (siempre así en el aplazamiento)' : ''}. En todos los modelos se respeta el texto y el formato: no se elimina ni se reescribe nada, y solo se añade lo que salga de las pruebas o de los datos del portal.</span>
+            </label>
             <div className="escrito-acciones">
               <IconTextButton icon="add" variant="primary" disabled={trabajando} onClick={redactar}>
                 {trabajando && !escrito ? 'Redactando…' : (modeloManual ? 'Redactar con este modelo' : 'Elegir el mejor modelo y redactar')}

@@ -284,6 +284,7 @@ $lecciones = trim((string)($entrada['lecciones'] ?? ''));
 $otrosCorreos = trim((string)($entrada['correos'] ?? ''));
 $clausulas = trim((string)($entrada['clausulas'] ?? ''));
 $parrafos = listarParrafos($entrada['parrafos'] ?? []);
+$estricto = !empty($entrada['estricto']);
 if($parrafos === '') fallar(400, 'No llegaron los párrafos del documento.');
 
 $instrucciones = <<<'TXT'
@@ -293,7 +294,7 @@ REGLAS:
 (1) Conserva la estructura, los argumentos jurídicos y las citas de normas y jurisprudencia del modelo tal cual: NO inventes normas, artículos ni sentencias, ni cambies sus números.
 (2) Cambia SOLO los datos del caso (radicado, juzgado y su correo, accionante, cédula, diagnóstico, servicio o medicamento, fechas, estado de afiliación, entidad accionada) por los de la lectura; si el modelo trata otro servicio o medicamento, ajústalo al del caso. El encabezado lleva: código de la tutela con la letra T- y el número, ciudad y fecha de hoy, juzgado y su correo, REF, RAD (número del proceso), ACCIONANTE, ACCIONADA.
 (3) LOS CORREOS DE LA TUTELA SON FUNDAMENTALES (bloque «TODOS LOS CORREOS DE LA TUTELA»): tómalos como fuente principal de los hechos posteriores a la tutela, de las pruebas y respuestas que ya llegaron de las áreas, y de las decisiones del juzgado (auto admisorio, medida provisional, nuevos términos, vinculaciones, fallo). Si un correo más reciente contradice la lectura inicial, manda el más reciente y dilo en «alertas». Usa lo que dicen las áreas (estado del paciente, autorizaciones, agendamientos, soportes) para redactar los hechos y la defensa; no repitas lo que ya esté superado.
-(4) Elimina (lista "eliminar") los párrafos que no apliquen a este caso y NO agregues hechos que la lectura no traiga.
+(4) RESPETO AL MODELO (regla del despacho, obligatoria en la contestación y en CUALQUIER modelo): del modelo NO se puede cambiar nada —ni la redacción, ni los argumentos, ni el orden, ni el formato (tipo de letra, negritas, tamaños)—. NO elimines ningún párrafo (la lista «eliminar» debe ir siempre vacía) y no reescribas párrafos: solo reemplazas los datos variables del caso. Lo único que puedes AÑADIR («agregar») son párrafos que incluyan hechos o pruebas que aparezcan en la lectura de la tutela, en los correos de la tutela o en las pruebas ya recibidas, citando la fuente (por ejemplo «según la respuesta del área médica del 13/10/2026…»); nunca argumentos, normas ni explicaciones de tu cosecha. Si un párrafo del modelo no aplica al caso, déjalo igual y avísalo en «alertas» para que el abogado decida.
 (5) Donde falte un dato escribe [COMPLETAR: qué dato].
 (6) Español jurídico formal, mismo tono del modelo, sin markdown. Cada párrafo nuevo o cambiado va como TEXTO PLANO completo de ese párrafo.
 (7) Los párrafos marcados como abreviados (muy largos) casi siempre son citas o argumentos que no cambian: déjalos igual (no los menciones), elimínalos si no aplican, o cambia un dato puntual con "reemplazos" {"p":N,"buscar":"texto exacto y corto que aparece en el párrafo","reemplazar":"texto nuevo"}.
@@ -324,6 +325,9 @@ if($modo === 'corregir'){
 }
 if($lecciones !== '') $usuario .= "\n\nLECCIONES DEL DESPACHO (correcciones anteriores del abogado; aplícalas siempre):\n" . $lecciones;
 if($clausulas !== '') $usuario .= "\n\nCLÁUSULAS DEL PLAN DE MEDICINA PREPAGADA (úsalas para fundamentar cobertura o exclusión citando el número de cláusula tal como aparece):\n" . $clausulas;
+if($estricto){
+    $usuario .= "\n\nMODO ESTRICTO (obligatorio): este es un MODELO FIJO del despacho. NO puedes cambiar su redacción, sus argumentos, su estructura ni su formato. Solo puedes REEMPLAZAR los datos variables del caso (juzgado, radicado, accionante, cédula, fechas, diagnóstico, servicio, entidad, número de la tutela, etc.) por los que aparecen en la lectura de la tutela, en los correos o en las pruebas ya recibidas. Usa SOLO «reemplazos» cortos con el texto exacto que aparece en el párrafo. NO uses «eliminar» ni «agregar» y no reescribas párrafos. No escribas nada de tu propia cosecha: ni argumentos, ni normas, ni explicaciones; si un dato no está en lo que te di, deja [COMPLETAR: qué dato].";
+}
 $usuario .= "\n\n" . ($modo === 'redactar' ? 'PÁRRAFOS DEL MODELO (numerados):' : 'PÁRRAFOS DEL BORRADOR ACTUAL (numerados):') . "\n" . $parrafos;
 
 $cuerpo = [
@@ -353,6 +357,20 @@ if(!$o){
     $stop = (string)($data['stop_reason'] ?? '');
     $vista = trim(preg_replace('/\s+/u', ' ', function_exists('mb_substr') ? mb_substr($texto, 0, 240) : substr($texto, 0, 240)));
     fallar(502, 'No se pudo leer la respuesta de LexIA' . ($stop === 'max_tokens' ? ' (quedó cortada por ser muy larga)' : '') . ($vista !== '' ? ': ' . $vista : '.'));
+}
+// Respeto al modelo (SIEMPRE): no se elimina nada y solo se aceptan reescrituras de líneas cortas de datos; en modo estricto tampoco se agrega nada.
+if(true){
+    $o['eliminar'] = [];
+    if($estricto) $o['agregar'] = [];
+    $textosOriginales = [];
+    foreach((is_array($entrada['parrafos'] ?? null) ? $entrada['parrafos'] : []) as $pp){ if(is_array($pp) && isset($pp['n'])) $textosOriginales[(int)$pp['n']] = ['t' => (string)($pp['t'] ?? ''), 'largo' => !empty($pp['largo'])]; }
+    $cortos = [];
+    foreach((is_array($o['cambios'] ?? null) ? $o['cambios'] : []) as $c){
+        $n = is_array($c) && isset($c['p']) ? (int)$c['p'] : -1;
+        // solo líneas cortas de datos (encabezado, fecha, REF/RAD…); los párrafos de redacción no se reescriben
+        if(isset($textosOriginales[$n]) && !$textosOriginales[$n]['largo'] && mb_strlen($textosOriginales[$n]['t']) <= 250) $cortos[] = $c;
+    }
+    $o['cambios'] = $cortos;
 }
 $cambios = [];
 foreach((is_array($o['cambios'] ?? null) ? $o['cambios'] : []) as $c){
