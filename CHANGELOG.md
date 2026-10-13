@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-10-13 (34)
+- **Cada paso del avance muestra los segundos transcurridos** — para ver dónde se va el tiempo en «Correo con aplazamiento» y en «Escrito con LexIA» (p. ej. «[42 s] Creando el borrador…»). Solo es información; no cambia el funcionamiento.
+
 ## 2026-10-13 (33)
 - **La marca del borrador cambia según lo que se envía** — pedido del usuario. El borrador de aplazamiento lleva la categoría de Outlook «LexIA Solicitud de aplazamiento <N> · <CLIENTES>» (antes llevaba «LexIA Solicitud de pruebas …»); la solicitud de pruebas conserva la suya. Así el portal no confunde un borrador de aplazamiento con la solicitud de pruebas de esa tutela (para saber si ya existe el borrador y para revisar las respuestas de las áreas). Para otros escritos (impugnación, etc.) la marca será «LexIA <Escrito> <N> · <CLIENTES>». Los borradores de aplazamiento creados antes de este cambio (p. ej. el de la 28272) siguen con la marca anterior: conviene borrarlos y volver a crearlos.
 

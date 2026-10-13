@@ -347,7 +347,8 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
     const registros = resultado?.mensajeId === mensaje.id ? (resultado.registros || []) : [];
     if(!numero || !registros.length || !robotEscritoUrl) return;
     const pasos = [];
-    const anotar = (t) => { pasos.push(t); setAplazamiento(prev => ({ ...prev, [mensaje.id]: { estado: 'creando', pasos: [...pasos] } })); };
+    const t0 = Date.now();   // cada paso lleva los segundos transcurridos, para ver cuál tarda
+    const anotar = (t) => { pasos.push('[' + Math.round((Date.now() - t0) / 1000) + ' s] ' + t); setAplazamiento(prev => ({ ...prev, [mensaje.id]: { estado: 'creando', pasos: [...pasos] } })); };
     setAplazamiento(prev => ({ ...prev, [mensaje.id]: { estado: 'creando', pasos: [] } }));
     try{
       // 1) Los aplazamientos de TODOS los clientes se redactan a la vez (modo estricto: solo datos).

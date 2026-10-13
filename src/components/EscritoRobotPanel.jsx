@@ -1,7 +1,7 @@
 // Escrito con LexIA desde el portal (Plan A, 2026-10-13): elegir el modelo del despacho y redactar la contestación u otro escrito de la tutela con
 // el robot, pensando en gastar los menos créditos posibles (ver src/lib/escritoRobot.js). Muestra los tokens usados para compararlo con el
 // artefacto Plan B. Diseño con los componentes del portal (tarjeta elevada, tarjetas de campo, avisos de Lexara).
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { prepararCasoParaEscrito } from '../lib/graph';
 import {
   TIPOS_ESCRITO, tipoEscritoDeRegistro, sexoPorNombre, claveCliente, obtenerIndiceModelos, modelosDelIndice,
@@ -47,7 +47,8 @@ export default function EscritoRobotPanel({ numero, onedriveCarpetaUrl, robotUrl
   const [aviso, setAviso] = useState('');
   const [soloDatos, setSoloDatos] = useState(false);   // modo estricto: el modelo no se toca, solo se completan datos
 
-  const anotar = (t) => setLog(prev => [...prev, t]);
+  const t0Ref = useRef(Date.now());   // segundos desde que se pulsó «redactar», en cada paso
+  const anotar = (t) => setLog(prev => [...prev, '[' + Math.round((Date.now() - t0Ref.current) / 1000) + ' s] ' + t]);
 
   // Fichas: una descripción corta de cada modelo para que LexIA elija mejor que solo por el nombre (se crean una vez y se comparten).
   async function crearFichas(){
@@ -97,6 +98,7 @@ export default function EscritoRobotPanel({ numero, onedriveCarpetaUrl, robotUrl
     }catch(err){ setError(err.message || String(err)); }
   }
   async function redactar(){
+    t0Ref.current = Date.now();
     setTrabajando(true); setError(''); setLog([]); setEscrito(null); setUsos([]); setLeccion(null); setAviso('');
     try{
       // Para redactar hay que volver a leer TODOS los correos de la tutela (pueden haber llegado pruebas o decisiones nuevas).
