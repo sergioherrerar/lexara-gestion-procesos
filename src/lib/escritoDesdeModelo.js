@@ -129,6 +129,24 @@ function nivelCuerpo(el, cuerpo){
   return n;
 }
 
+// Un párrafo con formato de cita (sangrado a ambos lados, en cursiva o con letra menor) no sirve de plantilla para los párrafos nuevos del cuerpo:
+// los párrafos que se agregan deben quedar con la letra normal del modelo, no con la de una cita.
+function esFormatoDeCita(p){
+  const ppr = hijosElemento(p, 'pPr')[0];
+  const ind = ppr ? hijosElemento(ppr, 'ind')[0] : null;
+  const num = (el, a, b) => Number((el && (el.getAttributeNS(NS, a) || el.getAttributeNS(NS, b))) || 0);
+  if(ind && num(ind, 'left', 'start') >= 500 && num(ind, 'right', 'end') >= 300) return true;
+  const corridas = [...p.getElementsByTagNameNS(NS, 'r')].filter(x => hijosElemento(x, 't').length);
+  const r0 = corridas.sort((x, y) => y.textContent.length - x.textContent.length)[0];
+  const rpr = r0 ? hijosElemento(r0, 'rPr')[0] : null;
+  if(rpr){
+    const it = hijosElemento(rpr, 'i')[0];
+    if(it && !['0', 'false'].includes(it.getAttributeNS(NS, 'val'))) return true;
+    const sz = hijosElemento(rpr, 'sz')[0];
+    if(sz && Number(sz.getAttributeNS(NS, 'val')) > 0 && Number(sz.getAttributeNS(NS, 'val')) <= 19) return true;
+  }
+  return false;
+}
 function parrafoNuevo(doc, plantilla, texto){
   const p = doc.createElementNS(NS, 'w:p');
   if(plantilla){
@@ -244,6 +262,8 @@ export async function aplicarTextoAModeloDocx(bytesModelo, textoFinal, deps = {}
       resumen.nuevos++;
     }
   }
+  // Respeto al modelo: con «conservarTodo» no se quita ningún párrafo del modelo aunque el texto final no lo traiga.
+  if(deps.conservarTodo){ resumen.conservados = quitar.length; resumen.quitados = 0; quitar.length = 0; }
   for(const p of quitar){
     const padre = p.parentNode;
     if(padre && padre.localName === 'tc' && hijosElemento(padre, 'p').length <= 1){
@@ -313,8 +333,8 @@ export async function aplicarCambiosADocx(bytes, { cambios = [], reemplazos = []
   }
   // formato de un párrafo de cuerpo (largo) cercano para los párrafos nuevos
   const plantillaPara = (n) => {
-    for(let k = n; k >= 0; k--){ const q = porN.get(k); if(q && q.texto.length > 80) return q.el; }
-    const cualquiera = parrafos.find(q => q.texto.length > 80);
+    for(let k = n; k >= 0; k--){ const q = porN.get(k); if(q && q.texto.length > 80 && !esFormatoDeCita(q.el)) return q.el; }
+    const cualquiera = parrafos.find(q => q.texto.length > 80 && !esFormatoDeCita(q.el)) || parrafos.find(q => q.texto.length > 80);
     return (cualquiera || porN.get(n) || parrafos[0]).el;
   };
   for(const a of agregar){

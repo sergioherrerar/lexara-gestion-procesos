@@ -2,7 +2,8 @@
 // el robot, pensando en gastar los menos créditos posibles (ver src/lib/escritoRobot.js). Muestra los tokens usados para compararlo con el
 // artefacto Plan B. Diseño con los componentes del portal (tarjeta elevada, tarjetas de campo, avisos de Lexara).
 import { useState, useRef } from 'react';
-import { prepararCasoParaEscrito, hayActuacionPrevia, registrarActuacion } from '../lib/graph';
+import { prepararCasoParaEscrito, hayActuacionPrevia, registrarActuacion, graphDescargarArchivo, guardarArchivoEnTutela } from '../lib/graph';
+import { aplicarTextoAModeloDocx } from '../lib/escritoDesdeModelo';
 import {
   TIPOS_ESCRITO, tipoEscritoDeRegistro, sexoPorNombre, claveCliente, obtenerIndiceModelos, modelosDelIndice,
   redactarEscritoConRobot, corregirEscritoConRobot, guardarLeccion, leerLecciones, leccionesParaPrompt, generarFichasDeModelos,
@@ -45,6 +46,7 @@ export default function EscritoRobotPanel({ numero, onedriveCarpetaUrl, robotUrl
   const [correccion, setCorreccion] = useState('');
   const [leccion, setLeccion] = useState(null);      // { regla, alcance }
   const [aviso, setAviso] = useState('');
+  const [pegado, setPegado] = useState('');         // paquete copiado desde el artefacto (Plan B)
   const [repetido, setRepetido] = useState('');   // aviso de que este escrito ya se hizo (portal, artefacto o correo ya enviado)
   const [soloDatos, setSoloDatos] = useState(false);   // modo estricto: el modelo no se toca, solo se completan datos
 
@@ -119,6 +121,36 @@ export default function EscritoRobotPanel({ numero, onedriveCarpetaUrl, robotUrl
       setEscrito(r); setUsos(r.usos);
       registrarActuacion(onedriveCarpetaUrl, numero, { tipo: tipo === 'aplazamiento' ? 'aplazamiento' : 'escrito', detalle: tipo, cliente: (datos.registros[indiceRegistro] || {}).Cliente || '', por: 'portal', archivo: r.nombre || '' }).catch(err => console.error('No se pudo anotar el escrito en la lectura:', err));
       anotar('Listo: ' + r.resumen.cambiados + ' párrafos cambiados, ' + r.resumen.reemplazos + ' reemplazos, ' + r.resumen.nuevos + ' nuevos, ' + r.resumen.quitados + ' quitados.');
+    }catch(err){ console.error(err); setError(err.message || String(err)); }
+    finally{ setTrabajando(false); }
+  }
+// Escrito redactado en el artefacto (con la cuenta de Claude de quien lo usa, sin gastar créditos del robot): se pasa al Word ORIGINAL del modelo,
+  // así queda con su letra, citas, negritas y logos; no se quita ningún párrafo del modelo.
+  async function armarDesdeArtefacto(){
+    t0Ref.current = Date.now();
+    setTrabajando(true); setError(''); setLog([]); setEscrito(null); setUsos([]); setLeccion(null); setAviso(''); setRepetido('');
+    try{
+      let p;
+      try{ p = JSON.parse(String(pegado || '').trim().replace(/^LEXIA-ESCRITO\s*/, '')); }
+      catch{ throw new Error('Lo pegado no es un escrito del artefacto: en el artefacto pulsa «Copiar para el portal» y pega aquí lo que se copió.'); }
+      if(!p || !p.texto || !p.modelo || !p.modelo.uri) throw new Error('Al paquete del artefacto le falta el texto o el modelo. Vuelve a copiarlo desde el artefacto.');
+      if(p.numero && String(p.numero) !== String(numero)) throw new Error('Ese escrito es de la tutela ' + p.numero + ' y aquí estás en la ' + numero + '.');
+      const m = /^file:\/\/\/([^/]+)\/(.+)$/.exec(p.modelo.uri);
+      if(!m) throw new Error('No pude identificar el archivo del modelo en lo pegado.');
+      anotar('Bajando el modelo original de SharePoint (' + (p.modelo.ruta || p.modelo.nombre || '') + ')...');
+      const { bytes } = await graphDescargarArchivo(m[1], m[2]);
+      anotar('Pasando el texto del artefacto al Word del modelo (sin tocar su letra ni quitar párrafos)...');
+      const aplicado = await aplicarTextoAModeloDocx(bytes, p.texto, { conservarTodo: true });
+      const corto = { aliansalud: 'ALIANSALUD', colmedica: 'COLMEDICA', umd: 'UMD' }[claveCliente(p.cliente)] || String(p.cliente || '').slice(0, 20);
+      const etiqueta = (TIPOS_ESCRITO[p.tipo] || {}).etiqueta || p.tipo || 'escrito';
+      const nombre = (etiqueta + ' - ' + corto + ' - borrador del artefacto.docx').replace(/[\\/:*?"<>|]/g, ' ');
+      anotar('Guardando en la carpeta de la tutela...');
+      guardarArchivoEnTutela(onedriveCarpetaUrl, numero, nombre, aplicado.bytes, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document').catch(err => console.error('No pude guardar el Word en la carpeta de la tutela:', err));
+      registrarActuacion(onedriveCarpetaUrl, numero, { tipo: p.tipo === 'aplazamiento' ? 'aplazamiento' : 'escrito', detalle: p.tipo, cliente: p.cliente || '', por: 'artefacto', archivo: nombre }).catch(err => console.error('No se pudo anotar el escrito en la lectura:', err));
+      const avisos = [];
+      if(aplicado.resumen.conservados) avisos.push('Se conservaron ' + aplicado.resumen.conservados + ' párrafo' + (aplicado.resumen.conservados === 1 ? '' : 's') + ' del modelo que el texto del artefacto no traía (el modelo no se recorta).');
+      setEscrito({ bytes: aplicado.bytes, nombre, modelo: p.modelo.ruta || p.modelo.nombre || '', modeloRuta: p.modelo.ruta || p.modelo.nombre || '', alertas: '', avisos, resumen: { cambiados: aplicado.resumen.cambiados, reemplazos: 0, nuevos: aplicado.resumen.nuevos, quitados: 0 }, delArtefacto: true, tipo: p.tipo, cliente: p.cliente || '', numero, urlCarpeta: onedriveCarpetaUrl, lecciones: '' });
+      anotar('Listo: ' + aplicado.resumen.cambiados + ' párrafos cambiados, ' + aplicado.resumen.nuevos + ' nuevos, ' + aplicado.resumen.iguales + ' iguales al modelo. No gastó créditos.');
     }catch(err){ console.error(err); setError(err.message || String(err)); }
     finally{ setTrabajando(false); }
   }
@@ -202,6 +234,16 @@ export default function EscritoRobotPanel({ numero, onedriveCarpetaUrl, robotUrl
               <input type="checkbox" checked={soloDatos || tipo === 'aplazamiento'} disabled={tipo === 'aplazamiento'} onChange={e => setSoloDatos(e.target.checked)} />
               <span>Modo estricto: solo reemplazar datos, sin agregar ningún párrafo{tipo === 'aplazamiento' ? ' (siempre así en el aplazamiento)' : ''}. En todos los modelos se respeta el texto y el formato: no se elimina ni se reescribe nada, y solo se añade lo que salga de las pruebas o de los datos del portal.</span>
             </label>
+            <details className="escrito-tokens">
+              <summary>Traer un escrito redactado en el artefacto (sin gastar créditos, con la letra exacta del modelo)</summary>
+              <div style={{display:'flex', flexDirection:'column', gap:8, padding:'8px 0'}}>
+                <span className="escrito-nota">En el artefacto redacta el escrito y pulsa «Copiar para el portal»; pégalo aquí. El portal lo pasa al Word original del modelo (sin quitar párrafos) y lo guarda en la carpeta de la tutela.</span>
+                <textarea value={pegado} onChange={e => setPegado(e.target.value)} rows={3} placeholder="Pega aquí lo que copiaste del artefacto (empieza con LEXIA-ESCRITO)" />
+                <div className="escrito-acciones">
+                  <IconTextButton icon="pdf" variant="primary" disabled={trabajando || !pegado.trim()} onClick={armarDesdeArtefacto}>Armar el Word con el modelo original</IconTextButton>
+                </div>
+              </div>
+            </details>
             <div className="escrito-acciones">
               <IconTextButton icon="add" variant="primary" disabled={trabajando} onClick={() => redactar()}>
                 {trabajando && !escrito ? 'Redactando…' : (modeloManual ? 'Redactar con este modelo' : 'Elegir el mejor modelo y redactar')}
@@ -247,6 +289,7 @@ export default function EscritoRobotPanel({ numero, onedriveCarpetaUrl, robotUrl
                 <span className="escrito-nota">También quedó guardado en la carpeta de la tutela. Las imágenes propias del caso (por ejemplo la tabla de afiliación) vienen del modelo: revísalas.</span>
               </div>
 
+              {!escrito.delArtefacto && (<>
               <Campo etiqueta="Enséñame: qué está mal o cómo debe quedar (corrijo el borrador y aprendo para los próximos)" completo>
                 <textarea value={correccion} onChange={e => setCorreccion(e.target.value)} rows={3} placeholder="Ej. el petitorio debe pedir la desvinculación y no solo el archivo…" />
               </Campo>
@@ -277,6 +320,7 @@ export default function EscritoRobotPanel({ numero, onedriveCarpetaUrl, robotUrl
                   </table>
                 </div>
               </details>
+              </>)}
             </div>
           </div>
         )}

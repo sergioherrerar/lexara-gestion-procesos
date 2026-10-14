@@ -2,6 +2,12 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-10-14 (44)
+- **Puente artefacto → portal para un Word con la letra exacta del modelo** — pedido del usuario. El artefacto redacta con la cuenta de Claude de quien lo usa (sin gastar créditos) y tiene el botón «Copiar para el portal». En «Escrito con LexIA» del portal hay un bloque nuevo, «Traer un escrito redactado en el artefacto»: se pega lo copiado y el portal pasa el texto al Word ORIGINAL del modelo (conserva su letra, citas, negritas, tablas y logos), sin quitar ningún párrafo del modelo, lo guarda en la carpeta de la tutela y lo anota en la lectura para que no se repita. Probado con un Word que tiene una cita en cursiva y letra menor: queda igual y el párrafo que el texto no traía se conserva.
+
+## 2026-10-14 (43)
+- **La letra del modelo se respeta mejor** — pedido del usuario (una cita de la Corte perdía su sangría, cursiva y tamaño menor). Portal: los párrafos nuevos que se agregan ya no toman el formato de una cita, sino el del cuerpo normal del modelo (los demás párrafos siempre se editan sobre el Word original, sin tocar su letra). Artefacto: el Word que arma ahora pone las citas textuales sangradas, en cursiva y en letra menor (con su título en negrita), pone en negrita los subtítulos numerados cortos aunque terminen en punto y las sentencias citadas («la T-1015 de 2006»).
+
 ## 2026-10-14 (42)
 - **Se muestra la ruta completa del modelo que se usó** — pedido del usuario. En «Escrito con LexIA» (portal) el encabezado del resultado y el avance dicen, por ejemplo, «1. MUJER / COLMEDICA / ELR.docx», tanto cuando lo elige LexIA (con el motivo) como cuando es el modelo habitual, el fijo del aplazamiento o el que se escoge a mano. Lo mismo en el artefacto.
 
