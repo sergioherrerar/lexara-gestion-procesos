@@ -451,6 +451,7 @@ export async function docxATexto(arrayBuffer){
 // Lee el documento del formato desde SharePoint (sitio TutelasMDABOGADOS,
 // biblioteca "Documentos"). Lo busca por nombre, así no importa en qué
 // subcarpeta esté. Devuelve { texto, nombre, modificado }.
+const NOMBRE_COPIA_FORMATO_PRUEBAS = 'FORMATO SOLICITUD DE PRUEBAS (texto para LexIA).txt';
 export async function leerFormatoSolicitudPruebas(config, { forzar = false } = {}){
   if(!forzar && cacheFormatoPruebas && Date.now() - cacheFormatoPruebas.momento < VIGENCIA_CACHE_FORMATO_MS) return cacheFormatoPruebas;
   const nombreBuscado = (config?.SOLICITUD_PRUEBAS_FORMATO_NOMBRE || 'FORMATO SOLICITUD DE PRUEBAS.docx').trim();
@@ -479,6 +480,12 @@ export async function leerFormatoSolicitudPruebas(config, { forzar = false } = {
   const texto = await docxATexto(await descarga.arrayBuffer());
   if(texto.length < 200) throw new Error('El formato de solicitud de pruebas se leyó casi vacío — revisa el documento en SharePoint.');
   cacheFormatoPruebas = { texto, nombre: item.name, modificado: item.lastModifiedDateTime || '', momento: Date.now() };
+  // Copia en texto para el artefacto Plan B (2026-10-14): el buscador del conector no encuentra el .docx, pero sí un .txt por su contenido. Se deja junto a la
+  // lista de modelos (raíz de Documentos) y se renueva cada vez que se lee el formato. Si falla, no importa.
+  graphFetch(`/sites/${siteId}/drive/root:/${encodeURIComponent(NOMBRE_COPIA_FORMATO_PRUEBAS)}:/content`, {
+    method: 'PUT', headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+    body: 'FORMATO SOLICITUD DE PRUEBAS (copia en texto para el artefacto Plan B; la genera el portal, no la edites)\n\n' + texto,
+  }).catch(err => console.error('No se pudo dejar la copia en texto del formato de solicitud de pruebas:', err));
   return cacheFormatoPruebas;
 }
 

@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-10-14 (41)
+- **El portal deja una copia en texto del formato de solicitud de pruebas para el artefacto** — el buscador del conector de Microsoft 365 no encuentra el .docx «FORMATO SOLICITUD DE PRUEBAS» del sitio de Tutelas, así que el artefacto no podía armar el correo de pruebas. Al abrir «Leer correo de Tutelas» (y cada vez que se lee el formato) el portal guarda «FORMATO SOLICITUD DE PRUEBAS (texto para LexIA).txt» en la raíz de Documentos, junto a la lista de modelos, y el artefacto la usa.
+
 ## 2026-10-14 (40)
 - **El correo de pruebas también se coordina con el artefacto** — el artefacto ahora tiene su botón «Crear correo de pruebas» (queda como borrador en el Outlook de quien lo usa) y anota en la lectura que lo hizo. El portal, al pulsar «Crear solicitud de pruebas», avisa si el artefacto ya la redactó y ofrece «Crear otra de todos modos»; lo que crea el portal también se anota, para que el artefacto no lo repita. La lista de seguimiento muestra «Borrador de pruebas redactado» por el portal o el artefacto.
 

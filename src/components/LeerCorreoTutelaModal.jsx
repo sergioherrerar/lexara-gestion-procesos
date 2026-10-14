@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { normalizarBorradorTutela } from '../lib/borradorTutela';
 import { aplicarVencimientoHabil, fechaLocalISO } from '../lib/vencimientoTutela';
-import { leerCorreosTutelas, primerCorreoDeConversacion, crearSolicitudPruebasBorrador, buscarSolicitudPruebasExistente, revisarRespuestasAreas, uriLecturaLexIAParaArtefacto, leerTodosLosCorreosDeTutela, correosRecibidosParaSolicitud, estadoSeguimientoTutela, extraerTutelaConLexIA, numeroTutelaDeAsunto, normalize, mensajeError, buscarLecturaLexIAGuardada, guardarLecturaLexIAEnOneDrive, listarTutelasAnalizadasEnOneDrive, asegurarCarpetaTutelaDesdeMensaje, hayActuacionPrevia, registrarActuacion, buscarActuacionRegistrada } from '../lib/graph';
+import { leerCorreosTutelas, primerCorreoDeConversacion, crearSolicitudPruebasBorrador, buscarSolicitudPruebasExistente, revisarRespuestasAreas, uriLecturaLexIAParaArtefacto, leerTodosLosCorreosDeTutela, correosRecibidosParaSolicitud, estadoSeguimientoTutela, extraerTutelaConLexIA, numeroTutelaDeAsunto, normalize, mensajeError, buscarLecturaLexIAGuardada, guardarLecturaLexIAEnOneDrive, listarTutelasAnalizadasEnOneDrive, asegurarCarpetaTutelaDesdeMensaje, hayActuacionPrevia, registrarActuacion, buscarActuacionRegistrada, leerFormatoSolicitudPruebas } from '../lib/graph';
 import IconButton, { IconTextButton } from './IconButton';
 import EscritoRobotPanel from './EscritoRobotPanel';
 import { redactarEscritoConRobot, sexoPorNombre } from '../lib/escritoRobot';
@@ -414,6 +414,8 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
   }
 
   const [aplazamiento, setAplazamiento] = useState({}); // { [mensajeId]: { estado, pasos[], error? } }
+  // Al abrir la ventana se lee el formato de solicitud de pruebas (queda en memoria unos minutos): así el portal deja la copia en texto que usa el artefacto.
+  useEffect(() => { if(config) leerFormatoSolicitudPruebas(config).catch(() => null); }, []);
   const [repetido, setRepetido] = useState({});   // { [mensajeId]: texto } — aviso de que el aplazamiento ya se hizo (portal, artefacto o correo ya creado)
   // Lista de seguimiento de la tutela seleccionada (debajo de la foto de LexIA). Se actualiza sola al seleccionar la tutela y cada vez que
   // termina una acción (leer correos, revisar respuestas, crear el correo con aplazamiento); también con el botón de actualizar.
