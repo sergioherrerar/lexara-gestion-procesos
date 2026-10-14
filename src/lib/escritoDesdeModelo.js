@@ -365,3 +365,152 @@ export async function aplicarCambiosADocx(bytes, { cambios = [], reemplazos = []
   zip.file('word/document.xml', new Serializer().serializeToString(doc));
   return { bytes: await zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE' }), resumen, avisos };
 }
+
+// ---------------------------------------------------------------------------------------------------------------------
+// PERFIL DE FORMATO de un modelo (2026-10-14, pedido del usuario: «que el Word se descargue igual desde el artefacto»).
+// El conector de Microsoft 365 solo entrega el TEXTO de un Word, no el archivo: el artefacto no puede editar el modelo original. Para que su Word salga
+// con la misma letra, el portal (que sí baja el .docx por Graph) deja junto a los modelos un perfil con el formato de cada párrafo (alineación, sangría,
+// espaciado y, por tramo de texto, negrita, cursiva, subrayado, tamaño, fuente y color), ya resuelto con los estilos del documento. El artefacto lo lee
+// y arma su Word con ese formato. Se guarda en «PERFILES DE FORMATO LexIA/<id del modelo>.json» (ver escritoRobot.js).
+const aNumero = v => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
+const atributo = (el, n) => (el ? el.getAttributeNS(NS, n) : null);
+const hijo1 = (el, n) => (el ? hijosElemento(el, n)[0] || null : null);
+
+function mapaDeEstilos(docEstilos){
+  const mapa = new Map();
+  let defRpr = null, defPpr = null, estiloBase = null;
+  if(!docEstilos) return { mapa, defRpr, defPpr, estiloBase };
+  const dd = docEstilos.getElementsByTagNameNS(NS, 'docDefaults')[0];
+  if(dd){ defRpr = hijo1(hijo1(dd, 'rPrDefault'), 'rPr'); defPpr = hijo1(hijo1(dd, 'pPrDefault'), 'pPr'); }
+  for(const st of docEstilos.getElementsByTagNameNS(NS, 'style')){
+    const id = atributo(st, 'styleId');
+    if(!id) continue;
+    mapa.set(id, { tipo: atributo(st, 'type'), basadoEn: atributo(hijo1(st, 'basedOn'), 'val'), ppr: hijo1(st, 'pPr'), rpr: hijo1(st, 'rPr') });
+    if(atributo(st, 'type') === 'paragraph' && atributo(st, 'default') === '1') estiloBase = id;
+  }
+  return { mapa, defRpr, defPpr, estiloBase };
+}
+// Cadena de estilos de la base hasta el propio estilo.
+function cadenaDeEstilo(mapa, id){
+  const cadena = [];
+  const vistos = new Set();
+  let actual = id;
+  while(actual && mapa.has(actual) && !vistos.has(actual)){ vistos.add(actual); cadena.push(mapa.get(actual)); actual = mapa.get(actual).basadoEn; }
+  return cadena.reverse();
+}
+function aplicarRpr(f, rpr){
+  if(!rpr) return;
+  const bool = (n) => { const e = hijo1(rpr, n); if(!e) return null; const v = atributo(e, 'val'); return !(v === '0' || v === 'false' || v === 'off'); };
+  const b = bool('b'); if(b !== null) f.b = b;
+  const i = bool('i'); if(i !== null) f.i = i;
+  const u = hijo1(rpr, 'u'); if(u){ const v = atributo(u, 'val'); f.u = !!v && v !== 'none'; }
+  const sz = hijo1(rpr, 'sz'); if(sz && aNumero(atributo(sz, 'val')) > 0) f.sz = aNumero(atributo(sz, 'val'));
+  const rf = hijo1(rpr, 'rFonts'); if(rf){ const fu = atributo(rf, 'ascii') || atributo(rf, 'hAnsi'); if(fu) f.f = fu; }
+  const c = hijo1(rpr, 'color'); if(c){ const v = atributo(c, 'val'); if(v && v !== 'auto') f.c = v; }
+  const hl = hijo1(rpr, 'highlight'); if(hl){ const v = atributo(hl, 'val'); if(v && v !== 'none') f.hl = v; }
+}
+function aplicarPpr(p, ppr){
+  if(!ppr) return;
+  const jc = hijo1(ppr, 'jc'); if(jc) p.al = atributo(jc, 'val');
+  const ind = hijo1(ppr, 'ind');
+  if(ind){
+    const izq = atributo(ind, 'left') ?? atributo(ind, 'start'); if(izq !== null && izq !== '') p.l = aNumero(izq);
+    const der = atributo(ind, 'right') ?? atributo(ind, 'end'); if(der !== null && der !== '') p.r = aNumero(der);
+    const fl = atributo(ind, 'firstLine'); if(fl !== null && fl !== '') { p.fl = aNumero(fl); p.h = 0; }
+    const h = atributo(ind, 'hanging'); if(h !== null && h !== '') { p.h = aNumero(h); p.fl = 0; }
+  }
+  const sp = hijo1(ppr, 'spacing');
+  if(sp){
+    const a = atributo(sp, 'before'); if(a !== null && a !== '') p.sb = aNumero(a);
+    const d = atributo(sp, 'after'); if(d !== null && d !== '') p.sa = aNumero(d);
+    const l = atributo(sp, 'line'); if(l !== null && l !== '') p.ln = aNumero(l);
+    const lr = atributo(sp, 'lineRule'); if(lr) p.lr = lr;
+  }
+}
+const claveFormato = f => [f.b ? 1 : 0, f.i ? 1 : 0, f.u ? 1 : 0, f.sz || 0, f.f || '', f.c || '', f.hl || ''].join('|');
+
+/**
+ * @param {ArrayBuffer|Uint8Array} bytes  el .docx del modelo
+ * @returns {Promise<{v:number, n:number, gen:string, pag:object, ps:Array}>}  ps: un elemento por párrafo del cuerpo (sin tablas), en orden:
+ *   { t, al, l, r, fl, h, sb, sa, ln, lr, img?, k:[{ t, b?, i?, u?, sz?, f?, c?, hl? }] }  (medidas en veintavos de punto, tamaños en medios puntos)
+ */
+export async function perfilFormatoDeDocx(bytes, deps = {}){
+  const Parser = deps.DOMParser || globalThis.DOMParser;
+  const zip = await JSZip.loadAsync(bytes);
+  const archivo = zip.file('word/document.xml');
+  if(!archivo) throw new Error('El modelo no parece un Word válido (falta word/document.xml).');
+  const doc = new Parser().parseFromString(await archivo.async('string'), 'application/xml');
+  const archivoEstilos = zip.file('word/styles.xml');
+  const docEstilos = archivoEstilos ? new Parser().parseFromString(await archivoEstilos.async('string'), 'application/xml') : null;
+  const { mapa, defRpr, defPpr, estiloBase } = mapaDeEstilos(docEstilos);
+  const cuerpo = doc.getElementsByTagNameNS(NS, 'body')[0];
+  if(!cuerpo) throw new Error('No encontré el cuerpo del documento del modelo.');
+
+  const ps = [];
+  for(const p of hijosElemento(cuerpo, 'p')){
+    const ppr = hijo1(p, 'pPr');
+    const idEstilo = atributo(hijo1(ppr, 'pStyle'), 'val') || estiloBase;
+    const cadena = cadenaDeEstilo(mapa, idEstilo);
+    const fp = { al: 'left', l: 0, r: 0, fl: 0, h: 0, sb: 0, sa: 0, ln: 240, lr: 'auto' };
+    aplicarPpr(fp, defPpr);
+    cadenaDeEstilo(mapa, estiloBase).forEach(e => aplicarPpr(fp, e.ppr));
+    cadena.forEach(e => aplicarPpr(fp, e.ppr));
+    aplicarPpr(fp, ppr);
+    const base = { sz: 22 };
+    aplicarRpr(base, defRpr);
+    cadenaDeEstilo(mapa, estiloBase).forEach(e => aplicarRpr(base, e.rpr));
+    cadena.forEach(e => aplicarRpr(base, e.rpr));
+
+    const tramos = [];
+    let imagen = false;
+    const recorrer = (nodo) => {
+      for(let n = nodo.firstChild; n; n = n.nextSibling){
+        if(n.nodeType !== 1 || n.namespaceURI !== NS) continue;
+        if(n.localName === 'r'){
+          const f = { ...base };
+          const rpr = hijo1(n, 'rPr');
+          const idChar = atributo(hijo1(rpr, 'rStyle'), 'val');
+          if(idChar) cadenaDeEstilo(mapa, idChar).forEach(e => aplicarRpr(f, e.rpr));
+          aplicarRpr(f, rpr);
+          let texto = '';
+          for(let h = n.firstChild; h; h = h.nextSibling){
+            if(h.nodeType !== 1 || h.namespaceURI !== NS) continue;
+            if(h.localName === 't') texto += h.textContent;
+            else if(h.localName === 'tab') texto += '\t';
+            else if(h.localName === 'br' && atributo(h, 'type') !== 'page') texto += '\n';
+            else if(h.localName === 'drawing' || h.localName === 'pict' || h.localName === 'object') imagen = true;
+          }
+          if(texto) tramos.push({ texto, f });
+        }else if(['hyperlink', 'smartTag', 'ins', 'sdt', 'sdtContent', 'fldSimple'].includes(n.localName)){
+          recorrer(n);
+        }
+      }
+    };
+    recorrer(p);
+    // une tramos vecinos con el mismo formato
+    const k = [];
+    for(const tr of tramos){
+      const prev = k[k.length - 1];
+      if(prev && claveFormato(prev._f) === claveFormato(tr.f)) prev.t += tr.texto;
+      else k.push({ t: tr.texto, _f: tr.f });
+    }
+    const salida = { t: k.map(x => x.t).join(''), al: fp.al, l: fp.l, r: fp.r, fl: fp.fl, h: fp.h, sb: fp.sb, sa: fp.sa, ln: fp.ln, lr: fp.lr, k: k.map(x => {
+      const o = { t: x.t };
+      if(x._f.b) o.b = 1; if(x._f.i) o.i = 1; if(x._f.u) o.u = 1;
+      o.sz = x._f.sz || base.sz; if(x._f.f) o.f = x._f.f; if(x._f.c) o.c = x._f.c; if(x._f.hl) o.hl = x._f.hl;
+      return o;
+    }) };
+    if(imagen) salida.img = 1;
+    if(!k.length) salida.sz = base.sz;   // párrafo vacío: tamaño de la marca de párrafo
+    if(!k.length && base.f) salida.f = base.f;
+    ps.push(salida);
+  }
+  const sect = hijosElemento(cuerpo, 'sectPr').pop();
+  const sz = hijo1(sect, 'pgSz'), mar = hijo1(sect, 'pgMar');
+  const pag = {
+    w: aNumero(atributo(sz, 'w')) || 12240, h: aNumero(atributo(sz, 'h')) || 15840,
+    t: aNumero(atributo(mar, 'top')) || 1440, r: aNumero(atributo(mar, 'right')) || 1440, b: aNumero(atributo(mar, 'bottom')) || 1440, l: aNumero(atributo(mar, 'left')) || 1440,
+    hd: aNumero(atributo(mar, 'header')) || 709, ft: aNumero(atributo(mar, 'footer')) || 709,
+  };
+  return { v: 1, n: bytes.byteLength || bytes.length || 0, gen: new Date().toISOString(), pag, ps };
+}

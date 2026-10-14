@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-10-14 (45)
+- **El Word del artefacto sale con la letra del modelo (perfil de formato)** — pedido del usuario: «se descarga igual desde el artefacto». El conector solo entrega el texto de un Word, no el archivo, así que el portal (que sí baja el .docx) deja el formato de cada modelo —alineación, sangrías, espaciado y, por tramo, negrita, cursiva, tamaño y fuente— en «PERFILES DE FORMATO LexIA/<id del modelo>.json», junto a los modelos. El artefacto lo lee y arma su Word con ese formato (también los márgenes del modelo, el logo y el número de página). El perfil se crea solo cada vez que el portal baja un modelo para redactar, y hay un botón nuevo en «Escrito con LexIA»: «Crear perfiles de formato de todos los modelos» (una sola vez). Si un modelo no tiene perfil, el artefacto usa el formato aproximado de antes y lo avisa.
+
 ## 2026-10-14 (44)
 - **Puente artefacto → portal para un Word con la letra exacta del modelo** — pedido del usuario. El artefacto redacta con la cuenta de Claude de quien lo usa (sin gastar créditos) y tiene el botón «Copiar para el portal». En «Escrito con LexIA» del portal hay un bloque nuevo, «Traer un escrito redactado en el artefacto»: se pega lo copiado y el portal pasa el texto al Word ORIGINAL del modelo (conserva su letra, citas, negritas, tablas y logos), sin quitar ningún párrafo del modelo, lo guarda en la carpeta de la tutela y lo anota en la lectura para que no se repita. Probado con un Word que tiene una cita en cursiva y letra menor: queda igual y el párrafo que el texto no traía se conserva.
 

@@ -6,7 +6,7 @@ import { prepararCasoParaEscrito, hayActuacionPrevia, registrarActuacion, graphD
 import { aplicarTextoAModeloDocx } from '../lib/escritoDesdeModelo';
 import {
   TIPOS_ESCRITO, tipoEscritoDeRegistro, sexoPorNombre, claveCliente, obtenerIndiceModelos, modelosDelIndice,
-  redactarEscritoConRobot, corregirEscritoConRobot, guardarLeccion, leerLecciones, leccionesParaPrompt, generarFichasDeModelos,
+  redactarEscritoConRobot, corregirEscritoConRobot, guardarLeccion, leerLecciones, leccionesParaPrompt, generarFichasDeModelos, generarPerfilesDeModelos, guardarPerfilDeModelo,
 } from '../lib/escritoRobot';
 import { IconTextButton } from './IconButton';
 
@@ -66,6 +66,19 @@ export default function EscritoRobotPanel({ numero, onedriveCarpetaUrl, robotUrl
       const r = await generarFichasDeModelos({ robotUrl, modelos, log: anotar });
       anotar('Listo: ' + r.nuevas + ' fichas nuevas' + (r.pendientes ? ' (' + r.pendientes + ' no se pudieron leer)' : '') + ' · tokens: ' + fmt(r.uso.entrada) + ' entrada, ' + fmt(r.uso.salida) + ' salida.');
       setListaModelos(modelosDelIndice(await obtenerIndiceModelos(false), tipo, sexo, cliente));
+    }catch(err){ console.error(err); setError(err.message || String(err)); }
+    finally{ setTrabajando(false); }
+  }
+
+// Perfil de formato de TODOS los modelos de la lista (una vez): así el artefacto arma su Word con la misma letra del modelo.
+  async function crearPerfiles(){
+    setTrabajando(true); setError(''); setLog([]);
+    try{
+      const ind = await obtenerIndiceModelos(false, anotar);
+      const modelos = ind.entradas.map(e => ({ uri: e.u, ruta: (e.s ? e.s + '/' : '') + e.n }));
+      anotar('Creando el perfil de formato de ' + modelos.length + ' modelos (una sola vez; después se renueva solo cuando redactas con cada uno)...');
+      const r = await generarPerfilesDeModelos({ modelos, log: anotar });
+      anotar('Listo: ' + r.listos + ' perfiles' + (r.fallidos ? ' (' + r.fallidos + ' no se pudieron leer)' : '') + '. El artefacto ya puede armar el Word con la letra del modelo.');
     }catch(err){ console.error(err); setError(err.message || String(err)); }
     finally{ setTrabajando(false); }
   }
@@ -139,6 +152,7 @@ export default function EscritoRobotPanel({ numero, onedriveCarpetaUrl, robotUrl
       if(!m) throw new Error('No pude identificar el archivo del modelo en lo pegado.');
       anotar('Bajando el modelo original de SharePoint (' + (p.modelo.ruta || p.modelo.nombre || '') + ')...');
       const { bytes } = await graphDescargarArchivo(m[1], m[2]);
+      guardarPerfilDeModelo(p.modelo.uri, bytes).catch(() => null);
       anotar('Pasando el texto del artefacto al Word del modelo (sin tocar su letra ni quitar párrafos)...');
       const aplicado = await aplicarTextoAModeloDocx(bytes, p.texto, { conservarTodo: true });
       const corto = { aliansalud: 'ALIANSALUD', colmedica: 'COLMEDICA', umd: 'UMD' }[claveCliente(p.cliente)] || String(p.cliente || '').slice(0, 20);
@@ -250,6 +264,7 @@ export default function EscritoRobotPanel({ numero, onedriveCarpetaUrl, robotUrl
               </IconTextButton>
               <IconTextButton icon="refresh" variant="secondary" disabled={trabajando} onClick={() => cargarModelos(true)}>Actualizar la lista de modelos</IconTextButton>
               <IconTextButton icon="view" variant="secondary" disabled={trabajando} onClick={crearFichas}>Crear fichas de estos modelos (una vez)</IconTextButton>
+              <IconTextButton icon="pdf" variant="secondary" disabled={trabajando} onClick={crearPerfiles}>Crear perfiles de formato de todos los modelos (una vez, para el artefacto)</IconTextButton>
             </div>
           </>
         )}

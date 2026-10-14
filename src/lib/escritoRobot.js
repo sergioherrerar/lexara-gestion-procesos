@@ -7,7 +7,7 @@
 //   · cada respuesta trae los tokens usados, para comparar con el artefacto.
 // La lista de modelos es el mismo archivo que usa el artefacto («ÍNDICE DE MODELOS LexIA.json», en la raíz de Tutelas → Documentos).
 import { graphFetch, graphLeerTexto, graphDescargarArchivo, prepararCasoParaEscrito, guardarArchivoEnTutela } from './graph';
-import { listarParrafosDeDocx, aplicarCambiosADocx } from './escritoDesdeModelo';
+import { listarParrafosDeDocx, aplicarCambiosADocx, perfilFormatoDeDocx } from './escritoDesdeModelo';
 
 const DRIVE_MODELOS = 'b!ivuoBtvWBUW5XBsduyi1FAbmAArhk-NKj1sduiYR1cEzo_DP-TsFTYaX024lyb3L';
 const NOMBRE_INDICE = 'ÍNDICE DE MODELOS LexIA.json';
@@ -226,6 +226,7 @@ export async function redactarEscritoConRobot({ robotUrl, urlCarpeta, numero, ti
   const m = /^file:\/\/\/([^/]+)\/(.+)$/.exec(elegido.uri);
   if(!m) throw new Error('No pude identificar el archivo del modelo.');
   const { bytes } = await graphDescargarArchivo(m[1], m[2]);
+  guardarPerfilDeModelo(elegido.uri, bytes).catch(err => console.error('No se pudo dejar el perfil de formato del modelo:', err));
   const parrafos = await listarParrafosDeDocx(bytes);
 
   log('Redactando (LexIA devuelve solo los cambios)...');
@@ -295,6 +296,38 @@ export async function guardarPreferenciaModelo({ cliente, tipo, tema, modelo }){
   const prefs = await leerPreferencias();
   prefs[clavePreferencia(cliente, tipo, tema)] = { ruta: modelo.ruta, nombre: modelo.nombre, uri: modelo.uri, cliente, tipo, tema: String(tema || ''), fecha: new Date().toISOString() };
   await graphFetch(`/drives/${DRIVE_MODELOS}/root:/${encodeURIComponent(NOMBRE_PREFERENCIAS)}:/content`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ version: 1, preferencias: prefs }) });
+}
+
+// ---------------------------------------------------------------- perfiles de formato de los modelos
+// El conector del artefacto solo entrega el TEXTO de un Word; para que el Word del artefacto salga con la misma letra, el portal deja el formato de cada
+// modelo en «PERFILES DE FORMATO LexIA/<id del modelo>.json» (ver perfilFormatoDeDocx). Se actualiza cada vez que el portal baja el modelo.
+const CARPETA_PERFILES = 'PERFILES DE FORMATO LexIA';
+export async function guardarPerfilDeModelo(uri, bytes){
+  const m = /^file:\/\/\/([^/]+)\/([^/]+)$/.exec(uri || '');
+  if(!m) return false;
+  const perfil = await perfilFormatoDeDocx(bytes);
+  await graphFetch(`/drives/${DRIVE_MODELOS}/root:/${encodeURIComponent(CARPETA_PERFILES)}/${m[2]}.json:/content`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(perfil) });
+  return true;
+}
+/** Crea el perfil de formato de cada modelo de la lista (3 a la vez). Devuelve { listos, fallidos }. */
+export async function generarPerfilesDeModelos({ modelos, log = () => {} }){
+  let listos = 0, fallidos = 0, hechos = 0;
+  const cola = modelos.slice();
+  const trabajador = async () => {
+    while(cola.length){
+      const m = cola.shift();
+      try{
+        const x = /^file:\/\/\/([^/]+)\/(.+)$/.exec(m.uri);
+        const { bytes } = await graphDescargarArchivo(x[1], x[2]);
+        await guardarPerfilDeModelo(m.uri, bytes);
+        listos++;
+      }catch(err){ fallidos++; console.error('No se pudo crear el perfil de formato de ' + m.ruta + ':', err); }
+      hechos++;
+      if(hechos % 10 === 0 || hechos === modelos.length) log('Perfiles de formato: ' + hechos + ' de ' + modelos.length + '...');
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(3, modelos.length) }, trabajador));
+  return { listos, fallidos };
 }
 
 // ---------------------------------------------------------------- fichas de los modelos (una vez por modelo)
