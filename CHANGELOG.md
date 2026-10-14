@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-10-14 (42)
+- **Se muestra la ruta completa del modelo que se usó** — pedido del usuario. En «Escrito con LexIA» (portal) el encabezado del resultado y el avance dicen, por ejemplo, «1. MUJER / COLMEDICA / ELR.docx», tanto cuando lo elige LexIA (con el motivo) como cuando es el modelo habitual, el fijo del aplazamiento o el que se escoge a mano. Lo mismo en el artefacto.
+
 ## 2026-10-14 (41)
 - **El portal deja una copia en texto del formato de solicitud de pruebas para el artefacto** — el buscador del conector de Microsoft 365 no encuentra el .docx «FORMATO SOLICITUD DE PRUEBAS» del sitio de Tutelas, así que el artefacto no podía armar el correo de pruebas. Al abrir «Leer correo de Tutelas» (y cada vez que se lee el formato) el portal guarda «FORMATO SOLICITUD DE PRUEBAS (texto para LexIA).txt» en la raíz de Documentos, junto a la lista de modelos, y el artefacto la usa.
 

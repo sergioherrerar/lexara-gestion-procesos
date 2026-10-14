@@ -123,7 +123,7 @@ export function modelosDelIndice(indice, tipo, sexo, cliente){
   }else{
     sel = indice.entradas.filter(e => e.c === OTRAS && (!e.s || normalizar(e.s.split('/')[0]).includes(info.carpeta)));
   }
-  return sel.map(e => ({ nombre: e.n, ruta: (e.s ? e.s + '/' : '') + e.n, uri: e.u, ficha: e.f || '' }));
+  return sel.map(e => ({ nombre: e.n, ruta: (e.s ? e.s + '/' : '') + e.n, raiz: e.c || '', uri: e.u, ficha: e.f || '' }));
 }
 
 // Modelo de aplazamiento del cliente: el archivo ALIANSALUD.docx / COLMEDICA.docx / UMD.docx de «3. OTRAS ACTUACIONES / APLAZAMIENTOS» (se lee la
@@ -136,6 +136,8 @@ async function modeloFijoAplazamiento(cliente){
   if(v) cacheAplazamiento.set(cliente, { t: Date.now(), v });
   return v;
 }
+// Ruta completa del modelo, tal como está en SharePoint (Tutelas → Documentos): «1. MUJER / COLMEDICA / ELR.docx».
+export function rutaCompleta(m){ return [m && m.raiz].concat(String((m && m.ruta) || '').split('/')).map(x => String(x || '').trim()).filter(Boolean).join(' / '); }
 async function buscarModeloFijoAplazamiento(cliente){
   const base = await graphFetch(`/drives/${DRIVE_MODELOS}/root:/${encodeURIComponent(OTRAS)}`).catch(() => null);
   if(!base?.id) return null;
@@ -146,7 +148,7 @@ async function buscarModeloFijoAplazamiento(cliente){
   const clave = { aliansalud: 'aliansalud', colmedica: 'colmedica', umd: 'umd' }[cliente];
   const sinExt = a => normalizar(a.name).replace(/\.docx?$/, '').trim();
   const f = archivos.find(a => sinExt(a) === clave) || archivos.find(a => sinExt(a).includes(clave));
-  return f ? { nombre: f.name, ruta: carpeta.name + '/' + f.name, uri: `file:///${DRIVE_MODELOS}/${f.id}`, ficha: '' } : null;
+  return f ? { nombre: f.name, ruta: carpeta.name + '/' + f.name, uri: `file:///${DRIVE_MODELOS}/${f.id}`, raiz: OTRAS, ficha: '' } : null;
 }
 
 // ---------------------------------------------------------------- robot
@@ -187,7 +189,7 @@ export async function redactarEscritoConRobot({ robotUrl, urlCarpeta, numero, ti
   let fijo = null;
   if(tipo === 'aplazamiento' && !modeloManual){
     fijo = await modeloFijoAplazamiento(cliente).catch(() => null);
-    if(fijo) log('Modelo de aplazamiento del cliente: ' + fijo.ruta);
+    if(fijo) log('Modelo de aplazamiento del cliente: ' + rutaCompleta(fijo));
   }
   let modelos = [];
   if(!fijo){
@@ -207,7 +209,7 @@ export async function redactarEscritoConRobot({ robotUrl, urlCarpeta, numero, ti
     const prefs = await leerPreferencias();
     const p = prefs[clavePreferencia(cliente, tipo, registro.Tema)];
     const habitual = p && modelos.find(m => m.ruta === p.ruta);
-    if(habitual){ elegido = habitual; log('Uso tu modelo habitual para este cliente y Tema: ' + habitual.ruta + ' (lo elegiste a mano antes; si prefieres otro, escógelo en la lista «Modelo del despacho»).'); }
+    if(habitual){ elegido = habitual; log('Uso tu modelo habitual para este cliente y Tema: ' + rutaCompleta(habitual) + ' (lo elegiste a mano antes; si prefieres otro, escógelo en la lista «Modelo del despacho»).'); }
   }
   if(!elegido){
     log('Eligiendo el mejor modelo entre ' + modelos.length + '...');
@@ -217,7 +219,7 @@ export async function redactarEscritoConRobot({ robotUrl, urlCarpeta, numero, ti
     });
     usos.push({ paso: 'Elegir el modelo', ...r.uso });
     elegido = modelos[r.indice];
-    log('Modelo elegido: ' + elegido.ruta + (r.motivo ? ' — ' + r.motivo : ''));
+    log('Modelo elegido: ' + rutaCompleta(elegido) + (r.motivo ? ' — ' + r.motivo : ''));
   }
 
   log('Bajando el modelo de SharePoint...');
@@ -239,7 +241,7 @@ export async function redactarEscritoConRobot({ robotUrl, urlCarpeta, numero, ti
   log('Guardando en la carpeta de la tutela...');
   // Se guarda en la carpeta de la tutela SIN hacer esperar (el resultado ya está listo en memoria).
   guardarArchivoEnTutela(urlCarpeta, numero, nombre, aplicado.bytes, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document').catch(err => console.error('No pude guardar el Word en la carpeta de la tutela:', err));
-  return { bytes: aplicado.bytes, nombre, cliente, lecciones, estricto, alertas: r.alertas || '', usos, avisos: aplicado.avisos, resumen: aplicado.resumen, modelo: elegido.ruta, tipo, numero, urlCarpeta, robotUrl, caso: { textoCaso: caso.textoCaso, correos: caso.correosResumen }, modelos };
+  return { bytes: aplicado.bytes, nombre, cliente, lecciones, estricto, alertas: r.alertas || '', usos, avisos: aplicado.avisos, resumen: aplicado.resumen, modelo: elegido.ruta, modeloRuta: rutaCompleta(elegido), tipo, numero, urlCarpeta, robotUrl, caso: { textoCaso: caso.textoCaso, correos: caso.correosResumen }, modelos };
 }
 
 /** Corrige el borrador actual con una instrucción del abogado («Enséñame»). Reusa el caché del robot (el caso es el mismo). */

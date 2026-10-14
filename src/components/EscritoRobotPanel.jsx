@@ -232,7 +232,7 @@ export default function EscritoRobotPanel({ numero, onedriveCarpetaUrl, robotUrl
           <div className="escrito-resultado">
             <div className="escrito-resultado-head">
               <strong>Modelo usado</strong>
-              <span>{escrito.modelo.replace(/\.docx?$/i, '')}</span>
+              <span title="Ruta del modelo en SharePoint (Tutelas → Documentos)" style={{wordBreak:'break-word'}}>{escrito.modeloRuta || escrito.modelo}</span>
             </div>
             <div className="escrito-resultado-body">
               {escrito.alertas && (
