@@ -8,6 +8,7 @@
 // La lista de modelos es el mismo archivo que usa el artefacto («ÍNDICE DE MODELOS LexIA.json», en la raíz de Tutelas → Documentos).
 import { graphFetch, graphLeerTexto, graphDescargarArchivo, prepararCasoParaEscrito, guardarArchivoEnTutela } from './graph';
 import { listarParrafosDeDocx, aplicarCambiosADocx, perfilFormatoDeDocx } from './escritoDesdeModelo';
+import { textoDePdf } from './adjuntosLexIA';
 
 const DRIVE_MODELOS = 'b!ivuoBtvWBUW5XBsduyi1FAbmAArhk-NKj1sduiYR1cEzo_DP-TsFTYaX024lyb3L';
 const NOMBRE_INDICE = 'ÍNDICE DE MODELOS LexIA.json';
@@ -229,10 +230,14 @@ export async function redactarEscritoConRobot({ robotUrl, urlCarpeta, numero, ti
   guardarPerfilDeModelo(elegido.uri, bytes).catch(err => console.error('No se pudo dejar el perfil de formato del modelo:', err));
   const parrafos = await listarParrafosDeDocx(bytes);
 
+  // Colmédica: se fundamenta con las cláusulas de SU plan de medicina prepagada (no en el aplazamiento ni en modo estricto, que solo cambian datos).
+  let clausulas = '';
+  if(cliente === 'colmedica' && !estricto && tipo !== 'aplazamiento') clausulas = await clausulasDelPlanDeColmedica({ robotUrl, caso, registro, log, usos });
+
   log('Redactando (LexIA devuelve solo los cambios)...');
   const r = await llamarRobot(robotUrl, {
     modo: 'redactar', tipoEscrito: TIPOS_ESCRITO[tipo].etiqueta, hoy: fechaLarga(), caso: caso.textoCaso, correos: caso.correosResumen,
-    nota, lecciones, estricto, parrafos: parrafosParaRobot(parrafos),
+    nota, lecciones, clausulas, estricto, parrafos: parrafosParaRobot(parrafos),
   });
   usos.push({ paso: 'Redactar', ...r.uso });
   // Modo estricto: el modelo no se toca salvo reemplazar datos (sin eliminar ni agregar párrafos), aunque el robot devolviera algo más.
@@ -296,6 +301,82 @@ export async function guardarPreferenciaModelo({ cliente, tipo, tema, modelo }){
   const prefs = await leerPreferencias();
   prefs[clavePreferencia(cliente, tipo, tema)] = { ruta: modelo.ruta, nombre: modelo.nombre, uri: modelo.uri, cliente, tipo, tema: String(tema || ''), fecha: new Date().toISOString() };
   await graphFetch(`/drives/${DRIVE_MODELOS}/root:/${encodeURIComponent(NOMBRE_PREFERENCIAS)}:/content`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ version: 1, preferencias: prefs }) });
+}
+
+// ---------------------------------------------------------------- cláusulas del plan de Colmédica (Plan A)
+const CARPETA_PLANES = '4. PLANES MEDICINA PREPAGADA';
+const NOMBRE_CLAUSULAS = 'CLAUSULAS DE PLANES LexIA.json';
+const PLANES_COLMEDICA = ['Esmeralda Guía Premium', 'Esmeralda', 'Zafiro Elite', 'Zafiro', 'Rubí Integral', 'Rubí', 'Diamante', 'Azul', 'Océano', 'Humana Plus', 'Piedras', 'Colina'];
+// Plan de medicina prepagada que menciona la lectura (sin IA): el nombre más largo que aparezca como palabra completa, o '' si no se nombra ninguno.
+export function planDelCaso(textoCaso){
+  const t = ' ' + normalizar(textoCaso).replace(/[^a-z0-9ñ]+/g, ' ') + ' ';
+  const hallados = PLANES_COLMEDICA.filter(p => t.includes(' ' + normalizar(p).replace(/[^a-z0-9ñ]+/g, ' ') + ' '));
+  hallados.sort((a, b) => b.length - a.length);
+  return hallados[0] || '';
+}
+async function pdfsDePlanes(driveId, id, prefijo, nivel, salida){
+  const hijos = await hijosGraph(driveId, id, true);
+  const subs = [];
+  for(const h of hijos){
+    if(h.file && /\.pdf$/i.test(h.name || '')) salida.push({ nombre: h.name, ruta: prefijo ? prefijo + '/' + h.name : h.name, id: h.id });
+    else if(h.folder && nivel < 3) subs.push(pdfsDePlanes(driveId, h.id, prefijo ? prefijo + '/' + h.name : h.name, nivel + 1, salida));
+  }
+  await Promise.all(subs);
+}
+// El PDF del clausulado cuyo nombre (o carpeta) trae más palabras del plan.
+async function clausuladoDelPlan(plan){
+  const base = await graphFetch('/drives/' + DRIVE_MODELOS + '/root:/' + encodeURIComponent(CARPETA_PLANES)).catch(() => null);
+  if(!base?.id) throw new Error('No encontré la carpeta «' + CARPETA_PLANES + '» en Tutelas → Documentos.');
+  const pdfs = [];
+  await pdfsDePlanes(DRIVE_MODELOS, base.id, '', 0, pdfs);
+  if(!pdfs.length) throw new Error('No hay clausulados (.pdf) en «' + CARPETA_PLANES + '».');
+  const palabras = normalizar(plan).split(/[^a-z0-9ñ]+/).filter(w => w.length > 2 && w !== 'plan');
+  const puntaje = p => { const r = normalizar(p.ruta); return palabras.filter(w => r.includes(w)).length; };
+  const mejor = pdfs.map(p => ({ ...p, pts: puntaje(p) })).filter(p => p.pts > 0).sort((a, b) => b.pts - a.pts || b.ruta.localeCompare(a.ruta))[0];
+  return mejor || null;
+}
+async function leerClausulasGuardadas(){
+  try{
+    const txt = await graphLeerTexto('/drives/' + DRIVE_MODELOS + '/root:/' + encodeURIComponent(NOMBRE_CLAUSULAS) + ':/content');
+    const o = txt ? JSON.parse(txt) : null;
+    return (o && o.items) || {};
+  }catch(err){ return {}; }
+}
+async function guardarClausulas(items){
+  await graphFetch('/drives/' + DRIVE_MODELOS + '/root:/' + encodeURIComponent(NOMBRE_CLAUSULAS) + ':/content', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ version: 1, items }) });
+}
+/**
+ * Cláusulas del plan útiles para este caso (texto con su numeración) o '' si no aplica / no se pudo. Nunca lanza: lo que falle se avisa en el log y se sigue sin cláusulas.
+ * Se guardan por plan + Tema («CLAUSULAS DE PLANES LexIA.json»): la segunda tutela del mismo plan y Tema no paga la lectura ni la IA.
+ */
+export async function clausulasDelPlanDeColmedica({ robotUrl, caso, registro, log = () => {}, usos = [] }){
+  try{
+    const plan = planDelCaso(caso.textoCaso);
+    if(!plan){ log('Colmédica: la lectura no nombra el plan de medicina prepagada; sigo sin cláusulas del plan.'); return ''; }
+    log('Plan del usuario: ' + plan + '.');
+    const clave = normalizar(plan) + '|' + normalizar(registro.Tema || '');
+    const guardadas = await leerClausulasGuardadas();
+    if(guardadas[clave] && guardadas[clave].clausulas){ log('Cláusulas del plan ' + plan + ' (guardadas el ' + new Date(guardadas[clave].fecha).toLocaleDateString('es-CO') + '; no se gastó IA).'); return guardadas[clave].clausulas; }
+    const pdf = await clausuladoDelPlan(plan);
+    if(!pdf){ log('No encontré el clausulado del plan ' + plan + ' en «' + CARPETA_PLANES + '»; sigo sin cláusulas del plan.'); return ''; }
+    log('Clausulado: ' + CARPETA_PLANES + ' / ' + pdf.ruta);
+    const { bytes } = await graphDescargarArchivo(DRIVE_MODELOS, pdf.id);
+    const texto = await textoDePdf(bytes, { maxCaracteres: 150000 });
+    if(texto.replace(/\s/g, '').length < 800){ log('El clausulado se leyó casi vacío (¿escaneado?); sigo sin cláusulas del plan.'); return ''; }
+    log('Extrayendo las cláusulas que sirven para este caso (' + texto.length.toLocaleString('es-CO') + ' caracteres)...');
+    const r = await llamarRobot(robotUrl, { modo: 'clausulas', plan, texto, caso: { tema: registro.Tema, solicita: registro.Solicita, analisis: registro.Analisis || {} } });
+    usos.push({ paso: 'Cláusulas del plan', ...r.uso });
+    const clausulas = String(r.clausulas || '').trim();
+    if(!clausulas){ log('El clausulado no tiene cláusulas aplicables a este caso.'); return ''; }
+    guardadas[clave] = { plan, tema: String(registro.Tema || ''), clausulas, pdf: pdf.ruta, fecha: new Date().toISOString() };
+    guardarClausulas(guardadas).catch(err => console.error('No se pudo guardar las cláusulas del plan:', err));
+    log('Cláusulas del plan extraídas.');
+    return clausulas;
+  }catch(err){
+    console.error(err);
+    log('No pude revisar el plan de medicina prepagada (' + String(err.message || err).slice(0, 160) + '); sigo sin cláusulas del plan.');
+    return '';
+  }
 }
 
 // ---------------------------------------------------------------- perfiles de formato de los modelos

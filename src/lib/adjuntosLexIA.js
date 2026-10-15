@@ -89,6 +89,20 @@ async function cargarPdfjs(){
   return pdfjsListo;
 }
 
+// Texto de un PDF (para leer clausulados, etc.): se lee en el navegador con pdf.js, sin gastar IA. Se detiene al pasar maxCaracteres.
+export async function textoDePdf(bytes, { maxCaracteres = 150000 } = {}){
+  const pdfjsLib = await cargarPdfjs();
+  const pdf = await pdfjsLib.getDocument({ data: bytes }).promise;
+  let texto = '';
+  for(let i = 1; i <= pdf.numPages && texto.length < maxCaracteres; i++){
+    const pagina = await pdf.getPage(i);
+    const contenido = await pagina.getTextContent();
+    texto += contenido.items.map(it => it.str + (it.hasEOL ? '\n' : ' ')).join('') + '\n';
+  }
+  pdf.destroy?.();
+  return texto.replace(/[ \t]+/g, ' ').trim();
+}
+
 // Páginas reales del PDF. Si está protegido con contraseña se estima por el
 // tamaño (~50 KB por página) y se deja pasar — el robot sabe desprotegerlo
 // con la cédula. Si el archivo está dañado (la API rechazaría TODA la

@@ -2009,6 +2009,13 @@ async function resolverOCrearLookupId(siteId, lookupInfo, valor){
 // solo `{<Columna>LookupId: <id>}` — de ahí el 400 genérico. Por cada
 // columna que `list.columns` marque como `.lookup`, se busca (o crea) el
 // elemento real en la lista de origen del Lookup y se arma su LookupId.
+// "1.234,56" -> 1234.56 (formato colombiano); un texto sin coma y con un solo punto ("1.5") se toma como decimal normal.
+function numeroDeTextoColombiano(v){
+  const t = String(v == null ? '' : v).trim();
+  if(!t) return NaN;
+  const colombiano = t.indexOf(',') >= 0 || t.split('.').length > 2;
+  return Number(colombiano ? t.split('.').join('').replace(',', '.') : t);
+}
 async function separarCamposYLookups(siteId, list, updates){
   const fields = {};
   const lookupsPendientes = [];
@@ -2028,6 +2035,13 @@ async function separarCamposYLookups(siteId, list, updates){
       // error interno, no de validación como el 400 de un Choice) — mucho
       // más difícil de ubicar porque no nombra el campo ni el motivo.
       fields[internalName] = (updates[key] === "Sí" || updates[key] === true);
+    } else if(col && col.text && typeof updates[key] !== 'string' && typeof updates[key] !== 'object'){
+      // Columna de texto: Graph quiere texto; un número crudo (p. ej. Honorarios 3) puede dar el 500 genérico "General exception while processing".
+      fields[internalName] = String(updates[key]);
+    } else if(col && (col.number || col.currency) && typeof updates[key] === 'string'){
+      // Columna numérica: el texto con coma decimal o separadores se pasa a número real.
+      const n = numeroDeTextoColombiano(updates[key]);
+      fields[internalName] = Number.isFinite(n) ? n : updates[key];
     } else if(updates[key] && typeof updates[key] === 'object' && !Array.isArray(updates[key]) && 'Url' in updates[key]){
       // Nota histórica 2026-09-01/02: se intentó guardar Soporte
       // Factura/Pago (Gastos) en una columna real de "Hipervínculo o
@@ -2082,11 +2096,36 @@ export async function graphFieldsFromUpdates(siteId, list, updates){
 // id definitivo). Reemplaza el patrón anterior de "graphFieldsFromUpdates +
 // POST directo" en todos los `crear...` — mismo criterio de "un solo lugar
 // compartido" que el resto de este archivo.
+// Campos de `updates` cuyo valor no coincide con el tipo de su columna en SharePoint (Sí/No, número, texto, opciones). Sirve para el mensaje cuando Graph
+// responde el 500 genérico «General exception while processing», que no dice cuál columna falló.
+export function camposSospechosos(list, updates){
+  const salida = [];
+  Object.keys(updates || {}).forEach(key => {
+    const nombre = list.mapping && list.mapping[key];
+    if(!nombre || updates[key] === "") return;
+    const col = (list.columns || []).find(c => c.name === nombre);
+    if(!col) { salida.push(nombre + ' (la columna no existe en la lista)'); return; }
+    const v = updates[key];
+    if(col.boolean && typeof v !== 'boolean' && v !== 'Sí' && v !== 'No') salida.push(nombre + ' es Sí/No y se envió «' + v + '»');
+    else if((col.number || col.currency) && typeof v !== 'number' && !Number.isFinite(numeroDeTextoColombiano(v))) salida.push(nombre + ' es numérica y se envió «' + v + '»');
+    else if(col.choice && Array.isArray(col.choice.choices) && !col.choice.allowTextEntry && typeof v === 'string' && v.trim() && !col.choice.choices.includes(v.trim())) salida.push(nombre + ' solo admite ' + col.choice.choices.slice(0, 6).join(' / ') + ' y se envió «' + v + '»');
+    else if(col.dateTime && typeof v === 'string' && v && !/^[0-9]{4}-[0-9]{2}-[0-9]{2}/.test(v)) salida.push(nombre + ' es fecha y se envió «' + v + '»');
+  });
+  return salida;
+}
 export async function crearItemConLookups(siteId, list, updates){
   const { fields, lookupFields } = await separarCamposYLookups(siteId, list, updates);
-  const creado = await graphFetch(`/sites/${siteId}/lists/${list.listId}/items`, {
-    method:"POST", body: JSON.stringify({ fields })
-  });
+  let creado;
+  try{
+    creado = await graphFetch(`/sites/${siteId}/lists/${list.listId}/items`, {
+      method:"POST", body: JSON.stringify({ fields })
+    });
+  }catch(err){
+    const sospechosos = camposSospechosos(list, updates);
+    console.error('Falló la creación en «' + list.listName + '». Campos enviados:', fields, 'Sospechosos:', sospechosos);
+    err.message = (err.message || String(err)) + (sospechosos.length ? ' — Revisa: ' + sospechosos.join('; ') : ' — Campos enviados: ' + Object.keys(fields).join(', '));
+    throw err;
+  }
   if(Object.keys(lookupFields).length){
     await graphFetch(`/sites/${siteId}/lists/${list.listId}/items/${creado.id}/fields`, {
       method:"PATCH", body: JSON.stringify(lookupFields)

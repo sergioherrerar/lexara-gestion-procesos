@@ -2,6 +2,12 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-10-15 (55)
+- **Crear una forma de pago (y cualquier registro) ya no tumba con el 500 genérico por tipos de columna** — pedido del usuario (error «500 General exception while processing» al crear una Forma de pago). Al crear, el valor se ajusta al tipo real de la columna de SharePoint: una columna de texto recibe texto (p. ej. Honorarios 3 → «3») y una numérica recibe número. Si Graph igual rechaza la creación, el mensaje ahora dice qué campo no coincide con el tipo de su columna (Sí/No, número, opciones, fecha) o, si no hay diferencias, qué campos se enviaron.
+
+## 2026-10-15 (54)
+- **Escrito con LexIA (portal): cláusulas del plan de medicina prepagada de Colmédica** — igual que ya hacía el artefacto. En los escritos de Colmédica (menos el aplazamiento y el modo estricto) el portal detecta en la lectura el plan del usuario (Esmeralda Guía Premium, Zafiro Elite, Rubí Integral, Diamante, Azul, Océano, Humana Plus, Piedras, Colina) sin gastar IA, busca su clausulado en «4. PLANES MEDICINA PREPAGADA», lo lee en el navegador y una sola llamada del robot extrae las cláusulas que sirven para el caso, que se usan al redactar. Lo extraído se guarda por plan + Tema en «CLAUSULAS DE PLANES LexIA.json», así la siguiente tutela del mismo plan y Tema no gasta nada. Si algo falla (no hay plan, no hay clausulado, PDF escaneado, robot sin actualizar) se avisa en el avance y se redacta igual, sin cláusulas. Requiere subir redactar-escrito.php a cPanel (nuevo modo «clausulas»).
+
 ## 2026-10-15 (53)
 - **Número corto al editar un proceso, calculado desde el No. completo** — pedido del usuario. El panel de Proceso judicial ahora muestra el campo «Número corto» en Identificación (antes no aparecía al editar). Se llena solo con el año y los 5 dígitos siguientes del No. completo (11001333380720260011700 → 2026-00117) y se vuelve a calcular cada vez que se cambia el No. completo; también sirve al crear un proceso nuevo. Si el No. completo está vacío o incompleto, el Número corto no se toca.
 

@@ -272,7 +272,36 @@ if($modo === 'fichas'){
     echo json_encode(['fichas' => $fichas, 'uso' => $uso], JSON_UNESCAPED_UNICODE);
     exit;
 }
-if($modo !== 'redactar' && $modo !== 'corregir') fallar(400, 'Modo desconocido (usa elegir, redactar o corregir).');
+// ---------------------------------------------------------------- clausulas
+// Del clausulado de un plan de medicina prepagada de Colmédica extrae TEXTUALMENTE las cláusulas que sirven para contestar una tutela (cobertura,
+// exclusiones, preexistencias, requisitos de autorización y topes), con su numeración. Se pide una vez por plan + Tema y el portal guarda el resultado.
+if($modo === 'clausulas'){
+    $plan = trim((string)($entrada['plan'] ?? ''));
+    $textoClausulado = trim((string)($entrada['texto'] ?? ''));
+    $casoClausulas = $entrada['caso'] ?? [];
+    if($textoClausulado === '') fallar(400, 'No llegó el texto del clausulado.');
+    if(function_exists('mb_substr')) $textoClausulado = mb_substr($textoClausulado, 0, 160000);
+    $sistema = "Eres LexIA, abogada del despacho \"md abogados sas\", que defiende a COLMÉDICA MEDICINA PREPAGADA. Del CLAUSULADO del plan de medicina prepagada «" . $plan . "» extrae TEXTUALMENTE (con su número de cláusula o numeral tal como aparece) las cláusulas que sirven para contestar esta tutela: cobertura del servicio o medicamento pedido, exclusiones y limitaciones aplicables, preexistencias, requisitos de autorización y topes. Máximo 1.200 palabras. No inventes nada: si una cláusula no aparece en el texto, no la incluyas, y no cambies su redacción. Devuelve SOLO JSON: {\"clausulas\":\"texto con las cláusulas\"}; si ninguna aplica, {\"clausulas\":\"\"}.";
+    $cuerpo = [
+        'model' => $modeloRedactar,
+        'max_tokens' => 3500,
+        'system' => $sistema,
+        'messages' => [['role' => 'user', 'content' => "CASO (pretensión y tema):\n" . json_encode($casoClausulas, JSON_UNESCAPED_UNICODE) . "\n\nCLAUSULADO:\n" . $textoClausulado]],
+    ];
+    list($data, $usado) = llamarConRespaldo($apiKey, $cuerpo, $modeloBarato);
+    $textoRespuesta = textoDe($data);
+    $o = objetoJsonDe($textoRespuesta);
+    $clausulasExtraidas = is_array($o) ? trim((string)($o['clausulas'] ?? '')) : '';
+    // Tolerancia: si el JSON vino mal formado pero trae el campo, se recupera con una expresión regular.
+    if($clausulasExtraidas === '' && !is_array($o) && preg_match('/"clausulas"\s*:\s*"((?:[^"\\\\]|\\\\.)*)"/su', $textoRespuesta, $mm)){
+        $dec = json_decode('"' . $mm[1] . '"');
+        if(is_string($dec)) $clausulasExtraidas = trim($dec);
+    }
+    if($clausulasExtraidas === '' && !is_array($o)) fallar(502, 'LexIA no pudo leer las cláusulas del plan (respuesta no válida).');
+    echo json_encode(['clausulas' => $clausulasExtraidas, 'uso' => usoDe($data, $usado)], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+if($modo !== 'redactar' && $modo !== 'corregir') fallar(400, 'Modo desconocido (usa elegir, fichas, clausulas, redactar o corregir).');
 
 // ---------------------------------------------------------------- redactar / corregir
 $caso = trim((string)($entrada['caso'] ?? ''));
