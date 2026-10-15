@@ -131,8 +131,18 @@ export default function ProcesosView({ procesos, currentFilter, setFilter, searc
   const totalTerminados = procesos.filter(isTerminado).length;
 
   const query = (searchQuery||"").trim().toLowerCase();
+  // Búsqueda (2026-10-15, pedido del usuario): además de Radicado/Cliente/Apoderado ahora también mira «Histórico números completos» y «No. completo». Si lo
+  // escrito es un número, se compara también sin guiones ni espacios (11001310501220260011700 encuentra 11001-31-05-012-2026-00117-00).
+  const consultaNumerica = /^[0-9\s.\-–]+$/.test(query) ? query.replace(/[^0-9]/g, "") : "";
+  const coincideTexto = (valor) => {
+    const t = String(valor||"").toLowerCase();
+    if(!t) return false;
+    return t.includes(query) || (consultaNumerica.length >= 4 && t.replace(/[^0-9]/g, "").includes(consultaNumerica));
+  };
   const rows = procesos.filter(p => matchesFilter(p, currentFilter) && (showTerminados ? isTerminado(p) : !isTerminado(p)) && (!query ||
-    (p.Radicado||"").toLowerCase().includes(query) ||
+    coincideTexto(p.Radicado) ||
+    coincideTexto(p.NoCompleto) ||
+    coincideTexto(p.HistoricoNumerosCompletos) ||
     (p.Cliente||"").toLowerCase().includes(query) ||
     (p.Apoderado||"").toLowerCase().includes(query)) && rowMatches(p, COLUMNS))
     .sort((a,b) => (a.Radicado||"").localeCompare(b.Radicado||""));

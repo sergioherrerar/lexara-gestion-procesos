@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-10-15 (52)
+- **El buscador de Procesos judiciales también busca en «Histórico números completos»** — pedido del usuario. Además de Radicado, Cliente y Apoderado, ahora encuentra el proceso por cualquiera de los números del Histórico y por el No. completo. Si escribes un número, se compara también sin guiones ni espacios: 11001310501220260011700 encuentra 11001-31-05-012-2026-00117-00.
+
 ## 2026-10-15 (51)
 - **Informe ejecutivo de SOS: link del contrato, número corto, orden por radicado y audiencias** — pedido del usuario. (1) En las tablas «Por contrato» el contrato ahora es un enlace a su documento (campo Link Contrato) y la columna «Procesos» pasó a «Número corto» (los números cortos de los procesos de ese contrato). (2) Todas las tablas van ordenadas por número de radicado (las de contratos por su primer número corto, y la de desistimientos también). (3) Al final del informe hay una tabla nueva, «Audiencias vigentes», con las audiencias programadas de los procesos vigentes de SOS, de la más cercana a la más lejana: número corto, tipo de audiencia y fecha. (4) Los informes en PDF por entidad ahora traen el resumen de la tabla «Detalle de Procesos judiciales por Entidad»: procesos activos/total, valor actual demanda y el semáforo de Estado (verde, naranja, rojo, gris).
 
