@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-10-15 (47)
+- **Entidad sin repetidos en Procesos judiciales** — pedido del usuario: «GRUPO COLMEDICA» salía dos veces al desplegar la lista. Las opciones se juntan por su texto normalizado (sin espacios de más ni diferencias de mayúsculas o tildes), y si el proceso trae el valor con un espacio de más, se muestra seleccionado igual.
+
 ## 2026-10-15 (46)
 - **Tipo de proceso: más opciones en Procesos judiciales** — pedido del usuario. Al elegir el Tipo de Acción, el Tipo de proceso solo mostraba lo que tenía la columna «tipo Proceso» llena en la lista de SharePoint (en Administrativo, solo «Reparación directa»). Ahora se suman los tipos de proceso habituales de cada acción (Administrativo: nulidad y restablecimiento del derecho, controversias contractuales, ejecutivo, repetición, acción popular…; Civil: verbal, ejecutivo, monitorio, pertenencia…; Laboral: ordinario de primera y única instancia, ejecutivo laboral, fuero sindical, reintegro…). Lo que se agregue en SharePoint sigue apareciendo y no se duplica. La lista base vive en graph.js (TIPOS_PROCESO_BASE).
 

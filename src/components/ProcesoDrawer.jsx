@@ -596,8 +596,15 @@ export default function ProcesoDrawer({ proceso, clientes, colaboradores, factur
   // casos, si el valor ya guardado no está en esa lista, se agrega igual
   // para no perderlo de vista (mismo criterio que Cliente/Tipo de Acción
   // arriba).
-  const entidadOpciones = Array.from(new Set(clientes.map(c => c.Entidad).filter(Boolean))).sort((a,b)=>a.localeCompare(b));
-  if(form.Entidad && !entidadOpciones.includes(form.Entidad)) entidadOpciones.unshift(form.Entidad);
+  // Sin repetidos (2026-10-15): «GRUPO COLMEDICA» salía dos veces porque en la lista de Clientes unas filas traen un espacio de más (o de otra forma, con
+  // mayúsculas o tildes distintas). Se juntan por su texto normalizado y se muestra la primera forma.
+  const limpiarEntidad = v => String(v || '').split(/\s+/).filter(Boolean).join(' ');
+  const claveEntidad = v => limpiarEntidad(v).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  const entidadPorClave = new Map();
+  clientes.forEach(c => { const v = limpiarEntidad(c.Entidad); if(v && !entidadPorClave.has(claveEntidad(v))) entidadPorClave.set(claveEntidad(v), v); });
+  const entidadOpciones = Array.from(entidadPorClave.values()).sort((a,b)=>a.localeCompare(b));
+  if(form.Entidad && !entidadPorClave.has(claveEntidad(form.Entidad))) entidadOpciones.unshift(limpiarEntidad(form.Entidad));
+  const entidadActual = form.Entidad ? (entidadPorClave.get(claveEntidad(form.Entidad)) || limpiarEntidad(form.Entidad)) : '';
   const nombresAbogados = Array.from(new Set(abogadosDisponibles(colaboradores).map(c => c.Nombre).filter(Boolean))).sort((a,b)=>a.localeCompare(b));
   const apoderadoOpciones = [...nombresAbogados];
   if(form.Apoderado && !apoderadoOpciones.includes(form.Apoderado)) apoderadoOpciones.unshift(form.Apoderado);
@@ -904,7 +911,7 @@ export default function ProcesoDrawer({ proceso, clientes, colaboradores, factur
                   if(key==='Entidad'){
                     return (
                       <FieldCard label={LABELS[key]} key={key}>
-                        <select value={form.Entidad} onChange={e => setField('Entidad', e.target.value)} disabled={!canWrite}>
+                        <select value={entidadActual} onChange={e => setField('Entidad', e.target.value)} disabled={!canWrite}>
                           <option value="">— seleccionar —</option>
                           {entidadOpciones.map(n => <option value={n} key={n}>{n}</option>)}
                         </select>
