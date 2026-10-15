@@ -2471,11 +2471,28 @@ export function terminosForProceso(terminos, proceso){
 export function tiposAccionDistinct(tiposAccion){
   return Array.from(new Set((tiposAccion||[]).map(t => t.NombreIdTipoProceso).filter(Boolean))).sort((a,b)=>a.localeCompare(b));
 }
+// Tipos de proceso habituales por Tipo de Acción (2026-10-15, pedido del usuario: «faltan opciones» en Tipo de proceso). La lista de SharePoint
+// «tipos de Accion» solo traía los que tenían la columna «tipo Proceso» llena (p. ej. Administrativo solo mostraba «Reparación directa»). Estos se SUMAN a
+// los de la lista: lo que se agregue en SharePoint sigue apareciendo, y un valor de SharePoint con el mismo nombre no se duplica. Para agregar uno más, basta
+// una línea aquí o una fila en la lista.
+const TIPOS_PROCESO_BASE = {
+  administrativo: ['Nulidad y restablecimiento del derecho', 'Reparación directa', 'Controversias contractuales', 'Nulidad simple', 'Ejecutivo', 'Repetición',
+    'Protección de los derechos e intereses colectivos (acción popular)', 'Reparación de los perjuicios causados a un grupo (acción de grupo)',
+    'Cumplimiento de normas con fuerza material de ley', 'Nulidad electoral', 'Nulidad por inconstitucionalidad', 'Control inmediato de legalidad'],
+  civil: ['Verbal', 'Verbal sumario', 'Ejecutivo singular', 'Ejecutivo con garantía real', 'Declarativo de responsabilidad civil contractual',
+    'Declarativo de responsabilidad civil extracontractual', 'Monitorio', 'Restitución de inmueble arrendado', 'Pertenencia', 'Divisorio', 'Sucesión',
+    'Liquidación de sociedad conyugal', 'Insolvencia de persona natural no comerciante', 'Jurisdicción voluntaria'],
+  laboral: ['Ordinario laboral de primera instancia', 'Ordinario laboral de única instancia', 'Ejecutivo laboral', 'Fuero sindical', 'Reintegro laboral',
+    'Pensiones y seguridad social', 'Pago de aportes a seguridad social', 'Calificación de pérdida de capacidad laboral', 'Prestaciones sociales y salarios',
+    'Acoso laboral', 'Recurso de homologación'],
+};
 export function tiposProcesoParaAccion(tiposAccion, tipoAccion){
   if(!tipoAccion) return [];
   const target = normalize(tipoAccion);
   const set = new Set();
   (tiposAccion||[]).forEach(t => { if(t.TipoProceso && normalize(t.NombreIdTipoProceso||"")===target) set.add(t.TipoProceso); });
+  const yaEsta = new Set(Array.from(set).map(x => normalize(x)));
+  (TIPOS_PROCESO_BASE[target] || []).forEach(n => { if(!yaEsta.has(normalize(n))){ set.add(n); yaEsta.add(normalize(n)); } });
   return Array.from(set).sort((a,b)=>a.localeCompare(b));
 }
 export function despachosParaAccion(tiposAccion, tipoAccion){

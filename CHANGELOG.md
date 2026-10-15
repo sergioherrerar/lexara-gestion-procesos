@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-10-15 (46)
+- **Tipo de proceso: más opciones en Procesos judiciales** — pedido del usuario. Al elegir el Tipo de Acción, el Tipo de proceso solo mostraba lo que tenía la columna «tipo Proceso» llena en la lista de SharePoint (en Administrativo, solo «Reparación directa»). Ahora se suman los tipos de proceso habituales de cada acción (Administrativo: nulidad y restablecimiento del derecho, controversias contractuales, ejecutivo, repetición, acción popular…; Civil: verbal, ejecutivo, monitorio, pertenencia…; Laboral: ordinario de primera y única instancia, ejecutivo laboral, fuero sindical, reintegro…). Lo que se agregue en SharePoint sigue apareciendo y no se duplica. La lista base vive en graph.js (TIPOS_PROCESO_BASE).
+
 ## 2026-10-14 (45)
 - **El Word del artefacto sale con la letra del modelo (perfil de formato)** — pedido del usuario: «se descarga igual desde el artefacto». El conector solo entrega el texto de un Word, no el archivo, así que el portal (que sí baja el .docx) deja el formato de cada modelo —alineación, sangrías, espaciado y, por tramo, negrita, cursiva, tamaño y fuente— en «PERFILES DE FORMATO LexIA/<id del modelo>.json», junto a los modelos. El artefacto lo lee y arma su Word con ese formato (también los márgenes del modelo, el logo y el número de página). El perfil se crea solo cada vez que el portal baja un modelo para redactar, y hay un botón nuevo en «Escrito con LexIA»: «Crear perfiles de formato de todos los modelos» (una sola vez). Si un modelo no tiene perfil, el artefacto usa el formato aproximado de antes y lo avisa.
 
