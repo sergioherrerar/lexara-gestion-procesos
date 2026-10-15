@@ -4,7 +4,7 @@ import ColumnHeaderMenu from './ColumnHeaderMenu';
 import { useColumnFilters } from '../hooks/useColumnFilters';
 import { useColumnSort } from '../hooks/useColumnSort';
 import { esColaboradorVigente } from '../lib/permissions';
-import { opcionesNumeroCorto, buscarPorNumeroCorto } from '../lib/procesosPorNumeroCorto';
+import { opcionesNumeroCorto, procesosConNumeroCorto, etiquetaProceso } from '../lib/procesosPorNumeroCorto';
 
 // Módulo "Pendientes" (2026-09-17, pedido explícito del usuario: "ayúdame a
 // mirar si puedo hacer con mismo TO DO visualizar las tareas y asignarlas").
@@ -34,11 +34,11 @@ export function PendienteForm({ inicial, colaboradores, procesos, onGuardar, onC
     };
   });
   function setField(key, value){ setForm(prev => ({...prev, [key]: value})); }
-  const [numeroRepetido, setNumeroRepetido] = useState(false);   // el número escrito está en varios procesos: hay que elegir uno de la lista
+  const [candidatos, setCandidatos] = useState([]);   // procesos con el número corto escrito, cuando hay más de uno hay que elegir cuál
   function buscarProceso(val){
-    const { proceso: matched, ambiguo } = buscarPorNumeroCorto(procesos, val);
-    setNumeroRepetido(ambiguo);
-    setForm(prev => ({ ...prev, numeroCorto: val, ProcesoMD: matched ? matched.id : null }));
+    const iguales = procesosConNumeroCorto(procesos, val);
+    setCandidatos(iguales.length > 1 ? iguales : []);
+    setForm(prev => ({ ...prev, numeroCorto: val, ProcesoMD: iguales.length === 1 ? iguales[0].id : null }));
   }
   const procesoEncontrado = form.ProcesoMD ? (procesos||[]).find(p => String(p.id) === String(form.ProcesoMD)) : null;
   // Solo trabajadores activos (pedido explícito del usuario 2026-09-17) —
@@ -97,12 +97,15 @@ export function PendienteForm({ inicial, colaboradores, procesos, onGuardar, onC
           <label>Proceso vinculado (opcional)</label>
           <input type="text" list="pendientes-procesos-datalist" value={form.numeroCorto} onChange={e => buscarProceso(e.target.value)} placeholder="Escribe el Número Corto…" />
           <datalist id="pendientes-procesos-datalist">
-            {opcionesNumeroCorto(procesos).map(o => <option value={o.value} key={o.id} />)}
+            {opcionesNumeroCorto(procesos).map(o => <option value={o.value} label={o.label} key={o.id} />)}
           </datalist>
-          {form.numeroCorto && !procesoEncontrado && numeroRepetido && (
-            <div className="field-warning">Ese número corto está en varios procesos: elige uno de la lista (se distinguen por la entidad y el ID).</div>
+          {candidatos.length > 1 && (
+            <select value={form.ProcesoMD ?? ''} onChange={e => setForm(prev => ({ ...prev, ProcesoMD: (candidatos.find(c => String(c.id) === e.target.value) || {}).id ?? null }))} style={{marginTop:6}}>
+              <option value="">Hay {candidatos.length} procesos con este número: elige cuál…</option>
+              {candidatos.map(p => <option value={p.id} key={p.id}>{etiquetaProceso(p)}</option>)}
+            </select>
           )}
-          {form.numeroCorto && !procesoEncontrado && !numeroRepetido && (
+          {form.numeroCorto && !procesoEncontrado && candidatos.length === 0 && (
             <div className="field-warning">Ese número corto no coincide con ningún proceso — se guardará como tarea suelta.</div>
           )}
           {procesoEncontrado && <div className="field-info">Cliente: {procesoEncontrado.Cliente || "—"}</div>}
