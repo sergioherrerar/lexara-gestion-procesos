@@ -5,6 +5,7 @@ import {
 } from '../lib/graph';
 import IconButton, { IconTextButton } from './IconButton';
 import { esColaboradorVigente } from '../lib/permissions';
+import { fijarResumenEntidadParaPDF } from '../lib/informesPDF';
 import { generarInformeClienteHTML } from '../lib/exportarInformeCliente';
 import { generarInformeSOSExcel, generarInformeSOSPDF, generarDesistimientosSOSExcel } from '../lib/informeSOS';
 import { generarInformeFamisanarExcel, generarInformeFamisanarPDF } from '../lib/informeFamisanar';
@@ -397,9 +398,12 @@ export default function InformesView({ procesos, clientes, facturas, desistimien
     setGenerandoPDF(entidad);
     try{
       const vigentes = procesos.filter(p => p.Entidad === entidad && esProcesoActivo(p));
+      const filaEntidad = filas.find(f => f.entidad === entidad);
+      fijarResumenEntidadParaPDF(filaEntidad ? { activos: filaEntidad.activos, total: filaEntidad.total, valorTexto: fmtMonto(filaEntidad.valorEnDisputa), semaforo: filaEntidad.semaforo } : null);
       await formato.pdf(entidad, vigentes);
     } catch(err){ console.error(err); notify?.("No se pudo generar el PDF de " + entidad + ": " + mensajeError(err), 'error'); }
     finally {
+      fijarResumenEntidadParaPDF(null);
       setGenerandoPDF(null);
     }
   }

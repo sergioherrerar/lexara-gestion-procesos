@@ -117,6 +117,8 @@ function fila(p){
   return {
     radicado: stripHtml(p.Radicado) || '—',
     contrato: stripHtml(p.NumeroContrato) || 'Sin contrato',
+    linkContrato: stripHtml(p.LinkContrato) || '',
+    idProceso: p.id,
     despacho: `${stripHtml(p.Despacho) || ''} ${stripHtml(p.NumeroDespacho) || ''}`.trim() || '—',
     naturaleza,
     subTotal: subclasificacion || 'Sin dato',
@@ -136,6 +138,9 @@ function fechaIsoACorta(iso){
   const m = /^([0-9]{4})-([0-9]{2})-([0-9]{2})/.exec(String(iso || ''));
   return m ? `${m[3]}/${m[2]}/${m[1]}` : '—';
 }
+function fechaLocalIso(d){
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
 function porRadicado(a, b){
   return a.radicado.localeCompare(b.radicado, 'es', { numeric: true });
 }
@@ -144,7 +149,7 @@ function sumar(filas){ return filas.reduce((s, f) => s + f.valor, 0); }
 
 /* ---------------- Documento ---------------- */
 
-export async function generarSosEjecutivoWord(procesos, desistimientos){
+export async function generarSosEjecutivoWord(procesos, desistimientos, audiencias = []){
   const { Document, Packer, Paragraph, TextRun, ExternalHyperlink, ImageRun, Table, TableRow, TableCell, WidthType, AlignmentType, BorderStyle, ShadingType, VerticalAlign, Header, convertMillimetersToTwip, HorizontalPositionAlign, HorizontalPositionRelativeFrom, VerticalPositionAlign, VerticalPositionRelativeFrom, TextWrappingType } = await import('docx');
 
   // Solo procesos VIGENTES de SOS (mismo criterio que el Dashboard).
@@ -174,7 +179,7 @@ export async function generarSosEjecutivoWord(procesos, desistimientos){
       });
     });
   });
-  desis.sort((a, b) => (a.fechaRad || '9999').localeCompare(b.fechaRad || '9999') || porRadicado(a, b));
+  desis.sort(porRadicado);   // por número corto (radicado), como todas las tablas del informe
   const fechasRad = desis.map(d => d.fechaRad).filter(Boolean).sort();
   const valorDesis = sumar(desis);
 
@@ -256,13 +261,29 @@ export async function generarSosEjecutivoWord(procesos, desistimientos){
         celda('$' + fmtMonto(f.valor), A[3], AlignmentType.RIGHT),
       ]));
   }
-  // Contratos del grupo y cuántos procesos (y cuánta cartera) tiene cada uno.
+  // Contratos del grupo: el contrato lleva el link de su documento (si lo tiene), la columna «Número corto» lista los números cortos de sus procesos
+  // (pedido del usuario 2026-10-15; antes decía cuántos procesos) y las filas van ordenadas por número corto.
+  function celdaContrato(texto, link, ancho){
+    const url = /^https?:\/\//i.test(link || '') ? link : '';
+    const hijo = url
+      ? new ExternalHyperlink({ link: url, children: [ new TextRun({ text: texto, size: 19, color: '1d5fa3', underline: {} }) ] })
+      : new TextRun({ text: texto, size: 19, color: TEXTO });
+    return new TableCell({ width: { size: ancho, type: WidthType.DXA }, verticalAlign: VerticalAlign.CENTER, borders: BORDES, margins: MARGENES, children: [ new Paragraph({ alignment: AlignmentType.CENTER, children: [ hijo ] }) ] });
+  }
   function tablaContratos(filas){
-    const A = [5000, 1800, 2838];
+    const A = [4200, 2600, 2838];
     const mapa = new Map();
-    filas.forEach(f => { const a = mapa.get(f.contrato) || { n: 0, valor: 0 }; mapa.set(f.contrato, { n: a.n + 1, valor: a.valor + f.valor }); });
-    const lista = Array.from(mapa.entries()).sort((a, b) => b[1].n - a[1].n);
-    return tabla(A, ['Contrato', 'Procesos', 'Valor Cartera actual'], lista.map(([c, d]) => [ celda(c, A[0]), celda(String(d.n), A[1]), celda('$' + fmtMonto(d.valor), A[2], AlignmentType.RIGHT) ]));
+    filas.forEach(f => {
+      const a = mapa.get(f.contrato) || { numeros: [], valor: 0, link: '' };
+      a.numeros.push(f.radicado);
+      a.valor += f.valor;
+      if(!a.link && f.linkContrato) a.link = f.linkContrato;
+      mapa.set(f.contrato, a);
+    });
+    const lista = Array.from(mapa.entries());
+    lista.forEach(([, d]) => d.numeros.sort((x, y) => x.localeCompare(y, 'es', { numeric: true })));
+    lista.sort((a, b) => a[1].numeros[0].localeCompare(b[1].numeros[0], 'es', { numeric: true }));
+    return tabla(A, ['Contrato', 'Número corto', 'Valor Cartera actual'], lista.map(([c, d]) => [ celdaContrato(c, d.link, A[0]), celda(d.numeros.join(', '), A[1]), celda('$' + fmtMonto(d.valor), A[2], AlignmentType.RIGHT) ]));
   }
   function tablaRadicadoDespacho(filas, tituloTercera, textoTercera){
     const A = [1500, 4100, 4038];
@@ -499,6 +520,28 @@ export async function generarSosEjecutivoWord(procesos, desistimientos){
       })(),
       espacio(),
       ...grafico(pngDesis, 'Desistimientos presentados por estado de aprobación (cantidad · valor)', 480),
+    );
+  }
+
+  /* ---- 6. Audiencias vigentes de SOS (de la más cercana a la más lejana) ---- */
+  const hoyIso = fechaLocalIso(hoy);
+  const idsVigentes = new Map(todos.map(f => [String(f.idProceso), f]));
+  const audVigentes = (audiencias || [])
+    .map(a => ({ proceso: idsVigentes.get(String(a.Proceso)), tipo: stripHtml(a.Descripcion) || 'Sin dato', fecha: String(a.FechaAudiencia || '').slice(0, 10), hora: stripHtml(a.HoraAudiencia) || '' }))
+    .filter(a => a.proceso && /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(a.fecha) && a.fecha >= hoyIso)
+    .sort((a, b) => a.fecha.localeCompare(b.fecha) || (a.hora || '').localeCompare(b.hora || '') || porRadicado(a.proceso, b.proceso));
+  hijos.push(numeral(6, 'AUDIENCIAS VIGENTES'));
+  if(!audVigentes.length){
+    hijos.push(parrafo('A la fecha no hay audiencias programadas para los procesos de SOS.'));
+  } else {
+    hijos.push(
+      parrafo('A la fecha están programadas ' + cantidadEnLetras(audVigentes.length) + ' audiencia' + (audVigentes.length === 1 ? '' : 's') + ' de los procesos de SOS, ordenadas de la más cercana a la más lejana:'),
+      (() => {
+        const A = [2400, 4300, 2938];
+        return tabla(A, ['Número corto', 'Tipo de audiencia', 'Fecha'],
+          audVigentes.map(a => [ celda(a.proceso.radicado, A[0]), celda(a.tipo, A[1]), celda(fechaIsoACorta(a.fecha) + (a.hora ? ' ' + a.hora : ''), A[2]) ]));
+      })(),
+      espacio(),
     );
   }
 

@@ -103,6 +103,29 @@ export const QR_MEMBRETE = { x: 181, y: 276.5, lado: 18 };
 export const CONTENIDO_Y_INICIAL = 76;
 export const CONTENIDO_Y_MAXIMO = 268;
 
+// Resumen por Entidad de la tabla «Detalle de Procesos judiciales por Entidad» de Informes (2026-10-15, pedido del usuario: incluirlo en los PDF): lo fija
+// InformesView justo antes de generar el PDF de una Entidad y generarCartaInformePDF lo dibuja y lo limpia.
+// { activos, total, valorTexto, semaforo:{verde,naranja,rojo,gris} }
+let resumenEntidadPendiente = null;
+export function fijarResumenEntidadParaPDF(resumen){ resumenEntidadPendiente = resumen || null; }
+const COLORES_SEMAFORO = [['verde', [217, 240, 230], [0, 100, 70]], ['naranja', [253, 236, 220], [179, 89, 10]], ['rojo', [250, 224, 220], [163, 40, 28]], ['gris', [236, 238, 237], [92, 107, 104]]];
+function dibujarSemaforoPDF(doc, x, y, semaforo){
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.setTextColor(...GRIS_SUAVE);
+  doc.text('SEMÁFORO DE ESTADO', x, y + 3.6);
+  let cx = x + 40;
+  for(const [nombre, fondo, texto] of COLORES_SEMAFORO){
+    const n = (semaforo && semaforo[nombre]) || 0;
+    if(!n) continue;
+    const t = n + ' ' + nombre;
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(8);
+    const w = doc.getTextWidth(t) + 6;
+    doc.setFillColor(...fondo); doc.roundedRect(cx, y, w, 6, 3, 3, 'F');
+    doc.setTextColor(...texto); doc.text(t, cx + 3, y + 4.1);
+    cx += w + 3;
+  }
+  return y + 8;
+}
+
 // Caja de resumen ("stat cards" en fila) — pensada para que una carta con
 // pocos procesos igual se vea completa y profesional en vez de vacía: un
 // bloque destacado con 2-3 datos clave (fecha de corte, cantidad, etc.) justo
@@ -339,7 +362,18 @@ export async function generarCartaInformePDF(opts){
   y = dibujarResumenBox(doc, MARGEN, y, pageWidth - MARGEN*2, [
     { label:'Fecha de corte', value: fecha },
     { label:'Cantidad de procesos', value: cantidadProcesos },
-  ]) + 9;
+  ]);
+  // Resumen de la Entidad (procesos activos/total, valor actual demanda y semáforo de Estado), igual al de Informes.
+  const resumenEntidad = resumenEntidadPendiente; resumenEntidadPendiente = null;
+  if(resumenEntidad){
+    y += 3;
+    y = dibujarResumenBox(doc, MARGEN, y, pageWidth - MARGEN*2, [
+      { label:'Procesos (activos / total)', value: resumenEntidad.activos + ' / ' + resumenEntidad.total },
+      { label:'Valor actual demanda', value: '$' + resumenEntidad.valorTexto },
+    ]);
+    y = dibujarSemaforoPDF(doc, MARGEN, y + 4, resumenEntidad.semaforo);
+  }
+  y += 9;
 
   doc.setFont('helvetica','normal'); doc.setFontSize(10.5); doc.setTextColor(...TEXTO);
   doc.text('Cordial saludo,', MARGEN, y); y += 7;

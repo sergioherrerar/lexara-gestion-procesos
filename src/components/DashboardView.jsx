@@ -42,7 +42,7 @@ const FILTROS_VACIOS = { glosa: new Set(), naturaleza: new Set(), admitida: new 
 // el panorama de PROCESOS del despacho, no de la parte administrativa/
 // comercial (esa vive en sus propios módulos) — se quitan esas 2 tarjetas,
 // quedan solo las 2 de procesos.
-export default function DashboardView({ procesos, desistimientos = [], notify }){
+export default function DashboardView({ procesos, desistimientos = [], audiencias = [], notify }){
   const activos = procesos.filter(p => !(p.Estado||"").toLowerCase().includes('termin'));
   const tiposDistintos = new Set(procesos.map(p => stripHtml(p.TipoAccion) || "Sin dato"));
 
@@ -177,7 +177,7 @@ export default function DashboardView({ procesos, desistimientos = [], notify })
   async function handleSosEjecutivo(){
     setGenerandoSos(true);
     try{
-      await generarSosEjecutivoWord(procesos, desistimientos);
+      await generarSosEjecutivoWord(procesos, desistimientos, audiencias);
     } catch(err){
       console.error(err);
       notify?.("No se pudo generar SOS Ejecutivo: " + mensajeError(err), 'error');
