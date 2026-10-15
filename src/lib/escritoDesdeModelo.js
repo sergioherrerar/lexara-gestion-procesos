@@ -299,7 +299,8 @@ async function abrirDocx(bytesModelo, deps = {}){
 /** Lista de párrafos con texto del .docx: [{ n, t }] (n = posición entre los párrafos con texto). */
 export async function listarParrafosDeDocx(bytes, deps = {}){
   const { parrafos } = await abrirDocx(bytes, deps);
-  return parrafos.map(p => ({ n: p.n, t: p.texto }));
+  // Las citas (jurisprudencia y normas transcritas: sangradas, en cursiva o con letra menor) van marcadas: el robot no las modifica.
+  return parrafos.map(p => (esFormatoDeCita(p.el) ? { n: p.n, t: p.texto, cita: true } : { n: p.n, t: p.texto }));
 }
 
 /**
@@ -318,6 +319,7 @@ export async function aplicarCambiosADocx(bytes, { cambios = [], reemplazos = []
   for(const c of cambios){
     const p = porN.get(c.p);
     if(!p){ avisos.push('Cambio para un párrafo que no existe (' + c.p + ').'); continue; }
+    if(esFormatoDeCita(p.el)){ avisos.push('Se respetó el párrafo ' + c.p + ' (cita de jurisprudencia o norma): no se modifica.'); continue; }
     const nuevo = colapsar(c.texto);
     if(!nuevo){ continue; }
     if(clave(nuevo) !== clave(actual.get(c.p))){ editarParrafo(p.el, nuevo); actual.set(c.p, nuevo); resumen.cambiados++; }
@@ -325,6 +327,7 @@ export async function aplicarCambiosADocx(bytes, { cambios = [], reemplazos = []
   for(const rp of reemplazos){
     const p = porN.get(rp.p);
     if(!p){ avisos.push('Reemplazo en un párrafo que no existe (' + rp.p + ').'); continue; }
+    if(esFormatoDeCita(p.el)){ avisos.push('Se respetó el párrafo ' + rp.p + ' (cita de jurisprudencia o norma): no se modifica.'); continue; }
     const base = actual.get(rp.p);
     const buscar = colapsar(rp.buscar);
     if(!buscar || !base.includes(buscar)){ avisos.push('No encontré «' + String(rp.buscar).slice(0, 50) + '» en el párrafo ' + rp.p + ' (queda sin cambiar).'); continue; }

@@ -6,8 +6,10 @@
 //   · el caso y las instrucciones van en caché en el robot, así las correcciones siguientes salen mucho más baratas;
 //   · cada respuesta trae los tokens usados, para comparar con el artefacto.
 // La lista de modelos es el mismo archivo que usa el artefacto («ÍNDICE DE MODELOS LexIA.json», en la raíz de Tutelas → Documentos).
-import { graphFetch, graphLeerTexto, graphDescargarArchivo, prepararCasoParaEscrito, guardarArchivoEnTutela } from './graph';
+import { graphFetch, graphLeerTexto, graphDescargarArchivo, prepararCasoParaEscrito, guardarArchivoEnTutela, numeroCortoDeRadicadoLargo } from './graph';
+import { motivoDiaNoHabil } from './vencimientoTutela';
 import { listarParrafosDeDocx, aplicarCambiosADocx, perfilFormatoDeDocx } from './escritoDesdeModelo';
+import { revisarParrafos, resumenDeCorrecciones } from './revisorEscrito';
 import { textoDePdf } from './adjuntosLexIA';
 
 const DRIVE_MODELOS = 'b!ivuoBtvWBUW5XBsduyi1FAbmAArhk-NKj1sduiYR1cEzo_DP-TsFTYaX024lyb3L';
@@ -166,11 +168,71 @@ async function llamarRobot(url, cuerpo){
 // Los párrafos muy largos (citas, argumentos) se abrevian: Claude casi siempre solo decide si se quedan, se quitan o cambia un dato puntual.
 function parrafosParaRobot(parrafos){
   return parrafos.map(p => p.t.length > 700
-    ? { n: p.n, t: p.t.slice(0, 380) + ' […] ' + p.t.slice(-120), largo: true, total: p.t.length }
-    : { n: p.n, t: p.t });
+    ? { n: p.n, t: p.t.slice(0, 380) + ' […] ' + p.t.slice(-120), largo: true, total: p.t.length, ...(p.cita ? { cita: true } : {}) }
+    : { n: p.n, t: p.t, ...(p.cita ? { cita: true } : {}) });
 }
-function fechaLarga(){ return new Date().toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' }); }
+const MESES_DESPACHO = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+const DIAS_DESPACHO = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+// Formato del despacho (PROMPT MAESTRO): «octubre 2 de 2026», día sin cero a la izquierda.
+function fechaLarga(d = new Date()){ return MESES_DESPACHO[d.getMonth()] + ' ' + d.getDate() + ' de ' + d.getFullYear(); }
+function isoLocal(d){ return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+// Día hábil siguiente (sin sábados, domingos ni festivos de Colombia): el aplazamiento siempre pide UN día, hasta el día hábil siguiente al escrito.
+function siguienteDiaHabil(desde){
+  const d = new Date(desde.getFullYear(), desde.getMonth(), desde.getDate());
+  do{ d.setDate(d.getDate() + 1); }while(motivoDiaNoHabil(isoLocal(d)));
+  return d;
+}
+// Datos que el portal calcula con reglas fijas del PROMPT MAESTRO (el robot los usa tal cual, sin recalcularlos).
+export function datosCalculados({ registro, tipo }){
+  const hoy = new Date();
+  const L = ['FECHA DE HOY (formato del despacho, para la línea de ciudad y fecha: «<ciudad del juzgado>, ' + fechaLarga(hoy) + '»): ' + fechaLarga(hoy)];
+  const rad = numeroCortoDeRadicadoLargo(registro && registro.Proceso);
+  if(rad) L.push('RAD (corto, formato AAAA-NNNNN; nunca el radicado largo): ' + rad);
+  if(registro && registro.NoTutela) L.push('CONSECUTIVO DE LA TUTELA: T-' + registro.NoTutela);
+  if(tipo === 'aplazamiento'){
+    const d = siguienteDiaHabil(hoy);
+    L.push('FECHA DEL APLAZAMIENTO: el aplazamiento es SIEMPRE de 1 (un) día; la fecha que se solicita en el numeral final es el día hábil siguiente al escrito: ' + DIAS_DESPACHO[d.getDay()] + ' ' + d.getDate() + ' de ' + MESES_DESPACHO[d.getMonth()] + ' de ' + d.getFullYear() + '.');
+  }
+  return L.join('\n');
+}
+// Nombre del archivo como lo nombra la abogada (PROMPT MAESTRO, sección 3): «T 28272 Respuesta Colmedica Medicina Prepagada - GARAVITO LONDOÑO.docx».
+export function nombreArchivoAbogada({ tipo, registro, cliente }){
+  const entidad = { aliansalud: 'Aliansalud EPS', colmedica: 'Colmedica Medicina Prepagada', umd: 'UMD' }[cliente] || String(registro.Cliente || '').slice(0, 30);
+  const n = String(registro.NoTutela || '').trim();
+  const palabras = String(registro.Usuario || '').trim().split(/\s+/).filter(Boolean);
+  const apellidos = palabras.length >= 3 ? palabras.slice(-2).join(' ') : (palabras.length === 2 ? palabras[1] : palabras.join(' '));
+  const sufijo = apellidos ? ' - ' + apellidos : '';
+  let nombre;
+  if(tipo === 'aplazamiento') nombre = cliente === 'umd' ? 'T ' + n + ' Solicitud de aplazamiento UMD' : 'Solicitud de aplazamiento ' + entidad + ' T ' + n;
+  else{
+    const palabraTipo = { contestacion: 'Respuesta', alcance: 'Alcance', cumplimiento: 'Cumplimiento', aclaracion: 'Solicitud de aclaración', impugnacion: 'Impugnación' }[tipo] || 'Memorial';
+    nombre = 'T ' + n + ' ' + palabraTipo + ' ' + entidad + sufijo;
+  }
+  return nombre.replace(/[\\/:*?"<>|]/g, ' ').replace(/\s+/g, ' ').trim() + '.docx';
+}
 function nombreCortoCliente(cliente){ return { aliansalud: 'ALIANSALUD', colmedica: 'COLMEDICA', umd: 'UMD' }[claveCliente(cliente)] || String(cliente || '').slice(0, 20); }
+
+// Revisor automático (reglas mecánicas del PROMPT MAESTRO de la abogada): corrige en el Word lo que no cambia el sentido (reemplazos exactos, sin tocar las citas)
+// y devuelve en las alertas lo que exige criterio. Nunca bloquea la entrega: si falla, se entrega el escrito tal cual.
+async function pasarRevisor(bytes, { registro } = {}){
+  try{
+    const rev = revisarParrafos(await listarParrafosDeDocx(bytes), { registro });
+    let salida = bytes, corregido = '';
+    if(rev.reemplazos.length){
+      const ap = await aplicarCambiosADocx(bytes, { reemplazos: rev.reemplazos.map(({ p, buscar, reemplazar }) => ({ p, buscar, reemplazar })) });
+      salida = ap.bytes;
+      corregido = resumenDeCorrecciones(rev.reemplazos);
+    }
+    const lineas = [];
+    if(corregido) lineas.push('- Corregí automáticamente: ' + corregido + '.');
+    rev.alertas.forEach(a => lineas.push('- ' + a));
+    return { bytes: salida, texto: lineas.length ? 'REVISOR AUTOMÁTICO (reglas de la abogada):\n' + lineas.join('\n') : '' };
+  }catch(err){
+    console.error('El revisor automático no pudo revisar el escrito:', err);
+    return { bytes, texto: '' };
+  }
+}
+const juntarAlertas = (...t) => t.filter(x => String(x || '').trim()).join('\n\n');
 
 /**
  * Elige el modelo (o usa el manual) y redacta el escrito sobre el .docx original.
@@ -237,17 +299,20 @@ export async function redactarEscritoConRobot({ robotUrl, urlCarpeta, numero, ti
   log('Redactando (LexIA devuelve solo los cambios)...');
   const r = await llamarRobot(robotUrl, {
     modo: 'redactar', tipoEscrito: TIPOS_ESCRITO[tipo].etiqueta, hoy: fechaLarga(), caso: caso.textoCaso, correos: caso.correosResumen,
-    nota, lecciones, clausulas, estricto, parrafos: parrafosParaRobot(parrafos),
+    nota, lecciones, clausulas, estricto, parrafos: parrafosParaRobot(parrafos), datos: datosCalculados({ registro, tipo }),
   });
   usos.push({ paso: 'Redactar', ...r.uso });
   // Modo estricto: el modelo no se toca salvo reemplazar datos (sin eliminar ni agregar párrafos), aunque el robot devolviera algo más.
   // Respeto al modelo: nunca se elimina nada (aunque el robot lo devolviera); en modo estricto tampoco se agrega nada.
-  const aplicado = await aplicarCambiosADocx(bytes, estricto ? { ...r, eliminar: [], agregar: [] } : { ...r, eliminar: [] });
-  const nombre = `${TIPOS_ESCRITO[tipo].etiqueta} - ${nombreCortoCliente(registro.Cliente)} - borrador LexIA.docx`.replace(/[\\/:*?"<>|]/g, ' ');
+  const aplicado = await aplicarCambiosADocx(bytes, estricto ? { ...r, eliminar: [], agregar: [] } : r);
+  log('Revisando con las reglas de la abogada...');
+  const rev = await pasarRevisor(aplicado.bytes, { registro });
+  aplicado.bytes = rev.bytes;
+  const nombre = nombreArchivoAbogada({ tipo, registro, cliente });
   log('Guardando en la carpeta de la tutela...');
   // Se guarda en la carpeta de la tutela SIN hacer esperar (el resultado ya está listo en memoria).
   guardarArchivoEnTutela(urlCarpeta, numero, nombre, aplicado.bytes, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document').catch(err => console.error('No pude guardar el Word en la carpeta de la tutela:', err));
-  return { bytes: aplicado.bytes, nombre, cliente, lecciones, estricto, alertas: r.alertas || '', usos, avisos: aplicado.avisos, resumen: aplicado.resumen, modelo: elegido.ruta, modeloRuta: rutaCompleta(elegido), tipo, numero, urlCarpeta, robotUrl, caso: { textoCaso: caso.textoCaso, correos: caso.correosResumen }, modelos };
+  return { bytes: aplicado.bytes, nombre, cliente, lecciones, estricto, registro, alertas: juntarAlertas(r.alertas, rev.texto), usos, avisos: aplicado.avisos, resumen: aplicado.resumen, modelo: elegido.ruta, modeloRuta: rutaCompleta(elegido), tipo, numero, urlCarpeta, robotUrl, caso: { textoCaso: caso.textoCaso, correos: caso.correosResumen }, modelos };
 }
 
 /** Corrige el borrador actual con una instrucción del abogado («Enséñame»). Reusa el caché del robot (el caso es el mismo). */
@@ -259,8 +324,10 @@ export async function corregirEscritoConRobot({ estado, instruccion, nota = '', 
     nota, lecciones, instruccion, estricto: !!estado.estricto, parrafos: parrafosParaRobot(parrafos),
   });
   const aplicado = await aplicarCambiosADocx(estado.bytes, estado.estricto ? { ...r, eliminar: [], agregar: [] } : { ...r, eliminar: [] });
+  const rev = await pasarRevisor(aplicado.bytes, { registro: estado.registro });
+  aplicado.bytes = rev.bytes;
   await guardarArchivoEnTutela(estado.urlCarpeta, estado.numero, estado.nombre, aplicado.bytes, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document').catch(() => {});
-  return { bytes: aplicado.bytes, alertas: r.alertas || '', leccion: r.leccion || null, uso: { paso: 'Corrección', ...r.uso }, avisos: aplicado.avisos, resumen: aplicado.resumen };
+  return { bytes: aplicado.bytes, alertas: juntarAlertas(r.alertas, rev.texto), leccion: r.leccion || null, uso: { paso: 'Corrección', ...r.uso }, avisos: aplicado.avisos, resumen: aplicado.resumen };
 }
 
 // ---------------------------------------------------------------- lecciones («Enséñame»)

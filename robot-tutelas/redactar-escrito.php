@@ -183,6 +183,7 @@ function listarParrafos($parrafos){
         if(!is_array($p) || !isset($p['n'])) continue;
         $t = trim((string)($p['t'] ?? ''));
         $marca = !empty($p['largo']) ? ' (…párrafo largo de ' . (int)($p['total'] ?? 0) . ' caracteres, abreviado: solo puedes dejarlo igual, eliminarlo o usar "reemplazos")' : '';
+        if(!empty($p['cita'])) $marca .= ' (PROTEGIDO: cita de jurisprudencia o de norma; no se modifica ni con «cambios» ni con «reemplazos»; solo puede eliminarse junto con todo su bloque si el bloque no aplica)';
         $l[] = '[' . (int)$p['n'] . '] ' . $t . $marca;
     }
     return implode("\n", $l);
@@ -312,27 +313,29 @@ $nota = trim((string)($entrada['nota'] ?? ''));
 $lecciones = trim((string)($entrada['lecciones'] ?? ''));
 $otrosCorreos = trim((string)($entrada['correos'] ?? ''));
 $clausulas = trim((string)($entrada['clausulas'] ?? ''));
+// Datos que el portal ya calculó con reglas fijas (fecha en formato del despacho, RAD corto, fecha del aplazamiento…): se usan tal cual, no se recalculan.
+$datosCalculados = trim((string)($entrada['datos'] ?? ''));
+// PROMPT MAESTRO de la abogada: vive en prompt-maestro.md, junto a este archivo (se reemplaza ese archivo cuando ella publique una ronda nueva; no va al repositorio público).
+$promptMaestro = '';
+$rutaMaestro = __DIR__ . '/prompt-maestro.md';
+if(is_file($rutaMaestro)){ $promptMaestro = trim((string)@file_get_contents($rutaMaestro)); if(function_exists('mb_substr')) $promptMaestro = mb_substr($promptMaestro, 0, 220000); }
 $parrafos = listarParrafos($entrada['parrafos'] ?? []);
 $estricto = !empty($entrada['estricto']);
 if($parrafos === '') fallar(400, 'No llegaron los párrafos del documento.');
 
 $instrucciones = <<<'TXT'
-TAREA: eres LexIA, abogada del despacho "md abogados sas". Vas a adaptar a UNA tutela un escrito (contestación, aclaración, impugnación, alcance, etc.) a partir de un MODELO del despacho, o a corregir un borrador. El portal te da el documento como una lista de párrafos numerados entre corchetes, [0], [1], [2]... y el caso en el bloque de datos. NO reescribas el documento: devuelve SOLO los CAMBIOS, porque el portal los aplica sobre el archivo Word original (con su logo, formato y tablas).
+TAREA: eres LexIA, abogada del despacho "md abogados sas". Vas a adaptar a UNA tutela un escrito (contestación, aclaración, impugnación, alcance, etc.) a partir de un MODELO del despacho, o a corregir un borrador. El portal te da el documento como una lista de párrafos numerados entre corchetes, [0], [1], [2]... y el caso en el bloque de datos. NO reescribas el documento: devuelve SOLO los CAMBIOS, porque el portal los aplica sobre el archivo Word original (con su logo, formato, tablas e imágenes).
 
-REGLAS:
-(1) Conserva la estructura, los argumentos jurídicos y las citas de normas y jurisprudencia del modelo tal cual: NO inventes normas, artículos ni sentencias, ni cambies sus números.
-(2) Cambia SOLO los datos del caso (radicado, juzgado y su correo, accionante, cédula, diagnóstico, servicio o medicamento, fechas, estado de afiliación, entidad accionada) por los de la lectura; si el modelo trata otro servicio o medicamento, ajústalo al del caso. El encabezado lleva: código de la tutela con la letra T- y el número, ciudad y fecha de hoy, juzgado y su correo, REF, RAD (número del proceso), ACCIONANTE, ACCIONADA.
-(3) LOS CORREOS DE LA TUTELA SON FUNDAMENTALES (bloque «TODOS LOS CORREOS DE LA TUTELA»): tómalos como fuente principal de los hechos posteriores a la tutela, de las pruebas y respuestas que ya llegaron de las áreas, y de las decisiones del juzgado (auto admisorio, medida provisional, nuevos términos, vinculaciones, fallo). Si un correo más reciente contradice la lectura inicial, manda el más reciente y dilo en «alertas». Usa lo que dicen las áreas (estado del paciente, autorizaciones, agendamientos, soportes) para redactar los hechos y la defensa; no repitas lo que ya esté superado.
-(4) RESPETO AL MODELO (regla del despacho, obligatoria en la contestación y en CUALQUIER modelo): del modelo NO se puede cambiar nada —ni la redacción, ni los argumentos, ni el orden, ni el formato (tipo de letra, negritas, tamaños)—. NO elimines ningún párrafo (la lista «eliminar» debe ir siempre vacía) y no reescribas párrafos: solo reemplazas los datos variables del caso. Lo único que puedes AÑADIR («agregar») son párrafos que incluyan hechos o pruebas que aparezcan en la lectura de la tutela, en los correos de la tutela o en las pruebas ya recibidas, citando la fuente (por ejemplo «según la respuesta del área médica del 13/10/2026…»); nunca argumentos, normas ni explicaciones de tu cosecha. Si un párrafo del modelo no aplica al caso, déjalo igual y avísalo en «alertas» para que el abogado decida.
-(5) Donde falte un dato escribe [COMPLETAR: qué dato].
+REGLAS (el «PROMPT MAESTRO» de la abogada que firma —bloque aparte— es la fuente de las reglas de fondo, estilo y casos especiales; aplica la parte que corresponde al TIPO DE TUTELA y de escrito de este caso. Si el PROMPT MAESTRO contradice el perfil general o las «líneas de defensa» anteriores, manda el PROMPT MAESTRO):
+(1) SE EDITA EL MODELO, NO SE RECONSTRUYE. Se conservan la estructura, el orden y los numerales del modelo. NO TOCAS NUNCA: (a) la jurisprudencia y la normatividad transcritas (literales, tal cual; los párrafos marcados PROTEGIDO no admiten «cambios» ni «reemplazos»), (b) el formato (lo conserva el portal) y (c) las imágenes (no existen en tu lista y no se mencionan). No inventes normas, artículos ni sentencias, ni cambies sus números.
+(2) Reemplaza los datos del caso (radicado, juzgado y su correo, accionante, cédula, diagnóstico, servicio o medicamento, fechas, estado de afiliación, entidad accionada) por los de la lectura, y reescribe los párrafos que el PROMPT MAESTRO manda reescribir para este tipo de caso (generalidades, estado actual, BDUA, cuestiones previas, cierres, petición…) con sus fórmulas fijas. Usa los «DATOS YA CALCULADOS POR EL PORTAL» tal cual (fecha en el formato del despacho, RAD corto, fecha del aplazamiento). El encabezado se arma con las reglas de la sección ENCABEZADO del PROMPT MAESTRO (ciudad del juzgado, RAD AAAA-NNNNN, ACCIONANTE/ACCIONADA/VINCULADA).
+(3) LOS CORREOS DE LA TUTELA SON FUNDAMENTALES (bloque «TODOS LOS CORREOS DE LA TUTELA»): tómalos como fuente principal de los hechos posteriores a la tutela, de las pruebas y respuestas que ya llegaron de las áreas, y de las decisiones del juzgado (auto admisorio, medida provisional, nuevos términos, vinculaciones, fallo). Si un correo más reciente contradice la lectura inicial, manda el más reciente y dilo en «alertas». No afirmes actuaciones que el área no reportó.
+(4) BLOQUES QUE NO APLICAN: se eliminan completos (lista «eliminar» con los números de TODOS los párrafos de ese bloque, título incluido) y los numerales siguientes se renumeran con «cambios» sobre los títulos (2.3 → 2.2…). No se conserva un acápite «por si acaso». Puedes AÑADIR párrafos («agregar») que cumplan el PROMPT MAESTRO y se apoyen en hechos o pruebas de la lectura, los correos o las respuestas de las áreas, citando la fuente; nunca argumentos, normas ni líneas de defensa que el área no haya suministrado o el modelo no traiga.
+(5) Donde falte un dato escribe [COMPLETAR: qué dato]; nunca entregues corchetes de plantilla del modelo sin llenar ni datos de otro caso que hayan sobrevivido.
 (6) Español jurídico formal, mismo tono del modelo, sin markdown. Cada párrafo nuevo o cambiado va como TEXTO PLANO completo de ese párrafo.
-(7) Los párrafos marcados como abreviados (muy largos) casi siempre son citas o argumentos que no cambian: déjalos igual (no los menciones), elimínalos si no aplican, o cambia un dato puntual con "reemplazos" {"p":N,"buscar":"texto exacto y corto que aparece en el párrafo","reemplazar":"texto nuevo"}.
+(7) Los párrafos marcados como abreviados (muy largos) casi siempre son citas o argumentos que no cambian: déjalos igual (no los menciones), elimínalos con su bloque si no aplican, o cambia un dato puntual con "reemplazos" {"p":N,"buscar":"texto exacto y corto que aparece en el párrafo","reemplazar":"texto nuevo"}.
 (8) Si un párrafo está vacío o es un título que sigue sirviendo, déjalo igual (no lo menciones). Solo aparece en tu respuesta lo que cambia.
-(8b) AHORRA SALIDA (la respuesta tiene un tope de tamaño): para cambiar un dato DENTRO de un párrafo (nombre, cédula, fecha, diagnóstico, plan, servicio) usa SIEMPRE «reemplazos» con textos exactos y cortos; usa «cambios» (párrafo completo) solo cuando reescribes casi todo el párrafo. Una misma frase repetida en varios párrafos se cambia con un reemplazo por párrafo. «alertas»: máximo 8 líneas cortas.
-(9) Si una corrección del abogado o una lección del despacho contradicen al modelo, mandan ellas.
-
-Devuelve SOLO un objeto JSON, sin markdown, con esta forma exacta:
-{"cambios":[{"p":0,"texto":"párrafo completo ya adaptado"}],"reemplazos":[{"p":12,"buscar":"...","reemplazar":"..."}],"eliminar":[7,8],"agregar":[{"despues":20,"textos":["párrafo nuevo 1","párrafo nuevo 2"]}],"alertas":"lista breve (una línea por punto, con guion) de lo que el abogado debe saber o verificar ANTES de firmar: términos urgentes o riesgo de desacato, datos que faltan, normas o sentencias a verificar, si el cliente probablemente tiene la razón y la salida prudente, y qué soportes conviene aportar. NO va dentro del escrito.","leccion":null}
+(9) «alertas» = las líneas finales de la entrega del PROMPT MAESTRO (máximo cinco): datos reemplazados, párrafos sustituidos, agregados o eliminados y por qué, soportes insertados o pendientes, y los faltantes, contradicciones y advertencias de la DETECCIÓN OBLIGATORIA DE CONTRADICCIONES (por ejemplo: término vencido, entidad que no figura por su nombre en el auto, pantallazos o anexos de otro usuario, conductas atribuidas que el área no informó).
 En modo corrección, "leccion" puede ser {"general":true,"regla":"una regla breve en imperativo, reutilizable y sin datos de este caso","alcance":"todos|tipo|cliente"} si la corrección expresa un criterio general; si es propia de este caso, null.
 TXT;
 
@@ -342,10 +345,15 @@ $sistema = [
     // La lectura de ESTA tutela: igual en la redacción y en cada corrección → caché.
     ['type' => 'text', 'text' => "LECTURA DE LA TUTELA (datos del portal, del correo, de los anexos, solicitud de pruebas y respuestas de las áreas):\n" . $caso . ($otrosCorreos !== '' ? "\n\n################ TODOS LOS CORREOS DE LA TUTELA (de cualquier remitente, del más antiguo al más reciente; son FUNDAMENTALES para contestar) ################\n" . $otrosCorreos : ''), 'cache_control' => ['type' => 'ephemeral']],
 ];
+// PROMPT MAESTRO de la abogada (si el archivo existe): igual en todas las tutelas -> caché.
+if($promptMaestro !== ''){
+    array_splice($sistema, 1, 0, [['type' => 'text', 'text' => "PROMPT MAESTRO DE LA ABOGADA (reglas de trabajo, estructura, estilo y casos especiales por tipo de tutela; es la fuente de las reglas de fondo. Tú NO editas el archivo Word ni su XML: el portal conserva formato e imágenes y aplica tus cambios sobre los párrafos numerados; aplica de este documento lo que corresponda al tipo de caso y de escrito):\n\n" . $promptMaestro, 'cache_control' => ['type' => 'ephemeral']]]);
+}
 
 $usuario = ($modo === 'redactar' ? 'MODO: REDACTAR sobre un modelo del despacho.' : 'MODO: CORREGIR el borrador actual según la corrección del abogado.') .
     "\nESCRITO: " . $tipoEscrito .
     "\nFECHA DE HOY: " . $hoy;
+if($datosCalculados !== '') $usuario .= "\n\nDATOS YA CALCULADOS POR EL PORTAL (úsalos tal cual, no los recalcules):\n" . $datosCalculados;
 if($nota !== '') $usuario .= "\n\nACTUACIÓN DEL JUEZ O PETICIÓN QUE SE RESPONDE / NOTA DEL ABOGADO:\n" . $nota;
 if($modo === 'corregir'){
     $corr = trim((string)($entrada['instruccion'] ?? ''));
@@ -387,27 +395,30 @@ if(!$o){
     $vista = trim(preg_replace('/\s+/u', ' ', function_exists('mb_substr') ? mb_substr($texto, 0, 240) : substr($texto, 0, 240)));
     fallar(502, 'No se pudo leer la respuesta de LexIA' . ($stop === 'max_tokens' ? ' (quedó cortada por ser muy larga)' : '') . ($vista !== '' ? ': ' . $vista : '.'));
 }
-// Respeto al modelo (SIEMPRE): no se elimina nada y solo se aceptan reescrituras de líneas cortas de datos; en modo estricto tampoco se agrega nada.
-if(true){
-    $o['eliminar'] = [];
-    if($estricto) $o['agregar'] = [];
-    $textosOriginales = [];
-    foreach((is_array($entrada['parrafos'] ?? null) ? $entrada['parrafos'] : []) as $pp){ if(is_array($pp) && isset($pp['n'])) $textosOriginales[(int)$pp['n']] = ['t' => (string)($pp['t'] ?? ''), 'largo' => !empty($pp['largo'])]; }
-    $cortos = [];
-    foreach((is_array($o['cambios'] ?? null) ? $o['cambios'] : []) as $c){
-        $n = is_array($c) && isset($c['p']) ? (int)$c['p'] : -1;
-        // solo líneas cortas de datos (encabezado, fecha, REF/RAD…); los párrafos de redacción no se reescriben
-        if(isset($textosOriginales[$n]) && !$textosOriginales[$n]['largo'] && mb_strlen($textosOriginales[$n]['t']) <= 250) $cortos[] = $c;
-    }
-    $o['cambios'] = $cortos;
+// Reglas de la abogada (PROMPT MAESTRO) con los límites del usuario: se pueden eliminar bloques que no aplican y reescribir párrafos de redacción, pero NO se tocan
+// la jurisprudencia citada (párrafos «cita»), los formatos ni las imágenes. En modo estricto (modelos fijos como el aplazamiento) solo se reemplazan datos.
+$textosOriginales = [];
+foreach((is_array($entrada['parrafos'] ?? null) ? $entrada['parrafos'] : []) as $pp){
+    if(is_array($pp) && isset($pp['n'])) $textosOriginales[(int)$pp['n']] = ['t' => (string)($pp['t'] ?? ''), 'largo' => !empty($pp['largo']), 'cita' => !empty($pp['cita'])];
 }
+$o['eliminar'] = $estricto ? [] : array_values(array_filter(numeros($o['eliminar'] ?? []), function($n) use ($textosOriginales){ return isset($textosOriginales[$n]); }));
+if($estricto) $o['agregar'] = [];
+$permitidos = [];
+foreach((is_array($o['cambios'] ?? null) ? $o['cambios'] : []) as $c){
+    $n = is_array($c) && isset($c['p']) ? (int)$c['p'] : -1;
+    if(!isset($textosOriginales[$n]) || $textosOriginales[$n]['largo'] || $textosOriginales[$n]['cita']) continue;   // los largos y las citas no se reescriben
+    // en modo estricto solo líneas cortas de datos (encabezado, fecha, REF/RAD…); fuera de él, párrafos de redacción de hasta ~700 caracteres
+    if($estricto && mb_strlen($textosOriginales[$n]['t']) > 250) continue;
+    $permitidos[] = $c;
+}
+$o['cambios'] = $permitidos;
 $cambios = [];
 foreach((is_array($o['cambios'] ?? null) ? $o['cambios'] : []) as $c){
     if(is_array($c) && isset($c['p']) && is_numeric($c['p']) && isset($c['texto'])) $cambios[] = ['p' => (int)$c['p'], 'texto' => (string)$c['texto']];
 }
 $reemplazos = [];
 foreach((is_array($o['reemplazos'] ?? null) ? $o['reemplazos'] : []) as $c){
-    if(is_array($c) && isset($c['p']) && is_numeric($c['p']) && isset($c['buscar']) && (string)$c['buscar'] !== '' && isset($c['reemplazar'])){
+    if(is_array($c) && isset($c['p']) && is_numeric($c['p']) && isset($c['buscar']) && (string)$c['buscar'] !== '' && isset($c['reemplazar']) && empty($textosOriginales[(int)$c['p']]['cita'])){
         $reemplazos[] = ['p' => (int)$c['p'], 'buscar' => (string)$c['buscar'], 'reemplazar' => (string)$c['reemplazar']];
     }
 }

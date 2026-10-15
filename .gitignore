@@ -4,3 +4,6 @@ dist-cpanel/
 # Clave real de la API de Claude — nunca al repo público. Solo vive en el
 # servidor (cPanel), copiada a mano desde config.example.php. Ver [[project_api_claude_tutelas]].
 robot-tutelas/config.php
+
+# PROMPT MAESTRO de la abogada (know-how del despacho): vive solo en el servidor (cPanel) y en la maquina local, nunca en el repo publico.
+robot-tutelas/prompt-maestro.md

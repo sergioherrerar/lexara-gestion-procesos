@@ -73,55 +73,102 @@ export function motivoDiaNoHabil(iso){
   return `festivo (${nombresFestivosColombia(y).get(iso) || "Colombia"})`;
 }
 
+// "aaaa-mm-dd HH:MM" (o solo "aaaa-mm-dd") válido o { fecha: "", hora: "" }.
+function fechaHoraDeTexto(valor){
+  const s = String(valor ?? "").trim();
+  const f = fechaISO(s);
+  if(!f) return { fecha: "", hora: "" };
+  const h = /[T ](\d{1,2}):(\d{2})/.exec(s);
+  return { fecha: f, hora: h ? `${String(+h[1]).padStart(2, "0")}:${h[2]}` : "" };
+}
+
+function sumarDiasCalendario(iso, n){
+  const [y, m, d] = iso.split("-").map(Number);
+  const f = new Date(y, m - 1, d + n);
+  return `${f.getFullYear()}-${String(f.getMonth() + 1).padStart(2, "0")}-${String(f.getDate()).padStart(2, "0")}`;
+}
+
+// Si la fecha cae en día no hábil (sábado, domingo o festivo), el primer día hábil siguiente (Ley de Desconexión Laboral).
+function primerDiaHabilDesde(iso){
+  let f = iso;
+  while(motivoDiaNoHabil(f)) f = sumarDiasCalendario(f, 1);
+  return f;
+}
+
+const esSi = v => /^(s[ií]|si|true|1)$/i.test(String(v ?? "").trim());
+
 /**
- * Corrige el vencimiento de un registro extraído por LexIA. `fechaCorreoISO`
- * (opcional) es el día en que llegó el correo, que se usa como fecha de
- * notificación si LexIA no encontró una. Devuelve `{ registro, avisos }`:
- *  - Con `DiasTermino` (días que otorga el juez) y una fecha de
- *    notificación: FechaVencimiento = esa fecha + N días hábiles (sin
- *    sábados, domingos ni festivos de Colombia), sin importar lo que haya
- *    puesto LexIA.
- *  - Sin `DiasTermino` (el despacho dio una fecha concreta): se respeta la
- *    fecha, pero se avisa si cae en sábado, domingo o festivo.
+ * Notificación y vencimiento de una tutela leída por LexIA — regla del despacho (2026-10-15): son DOS fechas distintas.
+ *  1. FechaNotificacion (la del registro en el portal): el día en que el ÁREA JURÍDICA (Gabriela, Yessica o Dania) notificó la tutela, es decir la del
+ *     primer correo de los remitentes permitidos. NO se le aplica el horario hábil: se toma el día tal cual (un viernes a las 8:00 p. m. queda ese
+ *     viernes; la hora queda en HoraNotificacion).
+ *  2. FechaVencimiento: se cuenta desde el momento en que el JUZGADO de la traza del correo lo remitió (EnvioJuzgado, "aaaa-mm-dd HH:MM"), con el horario
+ *     hábil: si el juzgado lo envió después de las 5:00 p. m. o en día no hábil, la notificación se entiende surtida el día hábil siguiente y el término
+ *     corre desde el día siguiente a esa notificación (viernes 8 p. m. → surtida el lunes; 1 día hábil → vence el martes). Si el juzgado dice expresamente
+ *     que el término es en días calendario (TerminoCalendario = "Sí") se cuentan días calendario, y si el vencimiento cae en día no hábil pasa al primer
+ *     día hábil siguiente. Si no se conoce el envío del juzgado, se usa la hora del correo del área (y se avisa).
+ *
+ * `fechaCorreoISO` / `instanteCorreo` son la fecha y el instante del primer correo del área. `opciones.envioJuzgado` es el envío leído de la traza
+ * ("aaaa-mm-dd HH:MM"); si no viene, se usa el que traiga el registro (leído por LexIA o guardado antes). Devuelve `{ registro, avisos }`.
  */
 export function aplicarVencimientoHabil(registro, fechaCorreoISO, instanteCorreo, opciones = {}){
   const r = { ...(registro || {}) };
   const avisos = [];
   const dias = parseInt(String(r.DiasTermino ?? "").replace(/\D/g, ""), 10);
+  const calendario = esSi(r.TerminoCalendario);
   let notificacion = fechaISO(r.FechaNotificacion);
   const vencimientoActual = fechaISO(r.FechaVencimiento);
-  // Hora de llegada del correo (hora de Colombia): sirve para saber si la
-  // notificación entró fuera del horario hábil. Solo aplica cuando la fecha de
-  // notificación es la del propio correo (si LexIA encontró otra fecha, no se
-  // conoce su hora).
   const horaCorreo = horaLocalHHMM(instanteCorreo);
   const fechaDelCorreo = fechaISO(fechaCorreoISO);
-  // Regla del usuario (2026-10-07): la fecha de notificación es la del PRIMER correo
-  // de los remitentes permitidos, aunque los documentos digan otra fecha.
+  // Regla del usuario (2026-10-07): la fecha de notificación es la del PRIMER correo de los remitentes
+  // permitidos (el área jurídica), aunque los documentos digan otra fecha.
   if(opciones.forzarFechaCorreo && fechaDelCorreo){
     if(notificacion && notificacion !== fechaDelCorreo){
-      avisos.push(`Fecha Notificación: los documentos decían ${notificacion}; se usó la del primer correo de la tutela (${fechaDelCorreo})`);
+      avisos.push(`Fecha Notificación: los documentos decían ${notificacion}; se usó la del primer correo del área (${fechaDelCorreo})`);
     }
     notificacion = fechaDelCorreo;
     r.FechaNotificacion = fechaDelCorreo;
   }
-  if(!notificacion && dias >= 1 && fechaISO(fechaCorreoISO)){
-    notificacion = fechaISO(fechaCorreoISO);
+  if(!notificacion && dias >= 1 && fechaDelCorreo){
+    notificacion = fechaDelCorreo;
     avisos.push(`Fecha Notificación: LexIA no la encontró, se usó el día en que llegó el correo (${notificacion})`);
     r.FechaNotificacion = notificacion;
   }
-  if(notificacion && fechaDelCorreo && notificacion === fechaDelCorreo && horaCorreo){
-    const ef = fechaNotificacionEfectiva(notificacion, horaCorreo);
-    if(ef.ajustada){
-      avisos.push(`Fecha Notificación: el correo ${ef.motivo} (horario hábil lunes a viernes 8:00–17:00), se toma como notificado el ${ef.fecha} en vez del ${notificacion}`);
-      notificacion = ef.fecha;
-      r.FechaNotificacion = ef.fecha;
-    }
+  // La hora de la notificación del área se guarda aparte (no se ajusta al horario hábil).
+  if(notificacion && fechaDelCorreo && notificacion === fechaDelCorreo && horaCorreo) r.HoraNotificacion = horaCorreo;
+
+  // Envío del juzgado: el de la traza (opciones), el que traiga el registro o, a falta de ambos, el correo del área.
+  const envio = fechaHoraDeTexto(opciones.envioJuzgado || r.EnvioJuzgado);
+  let base = { fecha: "", hora: "" };
+  let origenBase = "";
+  if(envio.fecha){
+    base = envio;
+    origenBase = "juzgado";
+    r.EnvioJuzgado = envio.hora ? `${envio.fecha} ${envio.hora}` : envio.fecha;
+  }else if(notificacion){
+    base = { fecha: notificacion, hora: notificacion === fechaDelCorreo ? horaCorreo : "" };
+    origenBase = "area";
   }
-  if(dias >= 1 && dias <= 60 && notificacion){
-    const calculado = sumarDiasHabilesJudiciales(notificacion, dias);
+  let surtida = "";
+  if(base.fecha){
+    const ef = fechaNotificacionEfectiva(base.fecha, base.hora);
+    surtida = ef.fecha || base.fecha;
+    r.NotificacionSurtida = surtida;
+    if(origenBase === "area" && dias >= 1) avisos.push(`Vencimiento: no encontré en la traza del correo la fecha en que el juzgado lo remitió; el término se contó desde el correo del área (${base.fecha}${base.hora ? " " + base.hora : ""}) — revisa la fecha de envío del juzgado`);
+    if(ef.ajustada) avisos.push(`Notificación surtida: ${origenBase === "juzgado" ? "el correo del juzgado" : "el correo"} ${ef.motivo}; se entiende notificada el ${ef.fecha}, y el término corre desde el día siguiente`);
+  }
+  if(dias >= 1 && dias <= 60 && surtida){
+    let calculado;
+    if(calendario){
+      calculado = sumarDiasCalendario(surtida, dias);
+      const habil = primerDiaHabilDesde(calculado);
+      if(habil !== calculado) avisos.push(`Vencimiento: ${calculado} cae en día no hábil (${motivoDiaNoHabil(calculado)}); se pasa al primer día hábil siguiente, ${habil}`);
+      calculado = habil;
+    }else{
+      calculado = sumarDiasHabilesJudiciales(surtida, dias);
+    }
     if(calculado !== vencimientoActual){
-      avisos.push(`Vencimiento: ${dias} día${dias === 1 ? "" : "s"} hábil${dias === 1 ? "" : "es"} desde ${notificacion} = ${calculado} (sin sábados, domingos ni festivos de Colombia)${vencimientoActual ? `; LexIA había puesto ${vencimientoActual}` : ""}`);
+      avisos.push(`Vencimiento: ${dias} día${dias === 1 ? "" : "s"} ${calendario ? "calendario" : "hábil" + (dias === 1 ? "" : "es")} desde la notificación surtida el ${surtida} = ${calculado}${calendario ? "" : " (sin sábados, domingos ni festivos de Colombia)"}${vencimientoActual ? `; LexIA había puesto ${vencimientoActual}` : ""}`);
     }
     r.FechaVencimiento = calculado;
   } else if(vencimientoActual){

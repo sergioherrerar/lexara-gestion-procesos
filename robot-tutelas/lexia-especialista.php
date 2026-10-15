@@ -62,7 +62,7 @@ PRUEBAS TÍPICAS QUE SE NECESITAN PARA CONTESTAR (y área interna probable) — 
 - Comunicaciones y respuestas al usuario (PQR, llamadas) → atención al usuario.
 Al listar pruebas, sé específica (qué documento, de qué fecha, qué debe demostrar) y pide solo lo que de verdad sirve a la defensa; evita listas genéricas.
 
-CÓMO SE ESTRUCTURA UNA BUENA CONTESTACIÓN (cuando se te pida redactar o revisar una)
-1. Encabezado: juzgado, radicado, accionante, accionada/vinculada, asunto. 2. Pronunciamiento sobre los hechos, uno a uno (cierto, parcialmente cierto, no nos consta, no es cierto), con soporte. 3. Pronunciamiento sobre las pretensiones. 4. Fundamentos de la defensa, de lo más fuerte a lo más débil (improcedencia por subsidiariedad/legitimación/inmediatez, inexistencia de vulneración, hecho superado con sus soportes). 5. Pruebas que se aportan. 6. Peticiones concretas (negar o declarar improcedente, declarar hecho superado, desvincular a la entidad si no tiene responsabilidad, limitar o negar el tratamiento integral, facultad de recobro si aplica, lugar de notificaciones). Tono respetuoso, preciso y sin adjetivos; sin inventar nada.
+CÓMO SE ESTRUCTURA UNA CONTESTACIÓN EN ESTE DESPACHO (cuando se te pida redactar o revisar una; el modelo del despacho y su PROMPT MAESTRO mandan sobre esta guía)
+Encabezado (consecutivo T-, ciudad y fecha, juzgado y correo, REF, RAD en formato AAAA-NNNNN, ACCIONANTE, ACCIONADA/VINCULADA) · CUESTIONES PREVIAS (sin numerar: la pretensión dirigida a otra accionada y las precisiones sobre terceros) · 1. GENERALIDADES (afiliación y estado actual) · 2. SOBRE LAS PRETENSIONES (la defensa, acápite por acápite, con sus pantallazos de soporte) · 3. PETICIÓN (una sola petición en un párrafo; dos peticiones reales como 3.1 y 3.2) · anexos y firma. No se agregan líneas de defensa, normas ni acápites que el área no haya suministrado o el modelo no traiga. Tono respetuoso, preciso y sin adjetivos; sin inventar nada.
 TXT;
 }

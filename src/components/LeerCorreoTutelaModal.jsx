@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { normalizarBorradorTutela } from '../lib/borradorTutela';
 import { aplicarVencimientoHabil, fechaLocalISO } from '../lib/vencimientoTutela';
+import { envioDelJuzgadoSegunTraza } from '../lib/trazaCorreo';
 import { leerCorreosTutelas, primerCorreoDeConversacion, crearSolicitudPruebasBorrador, buscarSolicitudPruebasExistente, revisarRespuestasAreas, uriLecturaLexIAParaArtefacto, leerTodosLosCorreosDeTutela, correosRecibidosParaSolicitud, estadoSeguimientoTutela, extraerTutelaConLexIA, numeroTutelaDeAsunto, normalize, mensajeError, buscarLecturaLexIAGuardada, guardarLecturaLexIAEnOneDrive, listarTutelasAnalizadasEnOneDrive, asegurarCarpetaTutelaDesdeMensaje, hayActuacionPrevia, registrarActuacion, buscarActuacionRegistrada, leerFormatoSolicitudPruebas } from '../lib/graph';
 import IconButton, { IconTextButton } from './IconButton';
 import EscritoRobotPanel from './EscritoRobotPanel';
@@ -575,8 +576,10 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
       // Se corrige ANTES de mostrar/guardar, para que lo que se ve, lo que
       // queda en OneDrive y lo que usa "Pregúntame" sea siempre lo mismo.
       const avisosVencimiento = [];
+      // Regla del despacho (2026-10-15): el término se cuenta desde que el JUZGADO remitió el correo (se lee de la traza del cuerpo), no desde que el área lo reenvió.
+      const envioJuzgado = envioDelJuzgadoSegunTraza(extraido.cuerpo);
       extraido.registros = extraido.registros.map(r => {
-        const { registro, avisos } = aplicarVencimientoHabil(r, fechaLocalISO(instanteNotificacion), instanteNotificacion, { forzarFechaCorreo: true });
+        const { registro, avisos } = aplicarVencimientoHabil(r, fechaLocalISO(instanteNotificacion), instanteNotificacion, { forzarFechaCorreo: true, envioJuzgado });
         avisos.forEach(a => { if(!avisosVencimiento.includes(a)) avisosVencimiento.push(a); });
         return registro;
       });
