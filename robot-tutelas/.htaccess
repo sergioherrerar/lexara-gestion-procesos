@@ -4,3 +4,8 @@
 <FilesMatch "^config(\.example)?\.php$">
     Require all denied
 </FilesMatch>
+
+# El prompt maestro de la abogada (prompt-maestro.md) lo lee solo el PHP; nadie debe poder bajarlo por la URL.
+<FilesMatch "\.(md|txt|log)$">
+    Require all denied
+</FilesMatch>

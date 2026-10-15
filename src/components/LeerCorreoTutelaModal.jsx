@@ -282,6 +282,11 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
   // Instante del PRIMER correo de la conversación enviado por los remitentes permitidos — es la
   // fecha/hora de notificación de la tutela (ver primerCorreoDeConversacion en graph.js). Por mensaje.
   const [primerCorreoPorMensaje, setPrimerCorreoPorMensaje] = useState({});
+  // Borrador de la solicitud de pruebas AUTOMÁTICO al terminar una lectura nueva (2026-10-15, pedido del usuario): activado por defecto, se puede apagar; el botón manual de la
+  // Sección 4 sigue estando. Siempre revisa antes que no haya uno en Borradores o Enviados (ni hecho por el artefacto) y lee los demás correos de la tutela.
+  const [autoPruebas, setAutoPruebas] = useState(() => { try{ return localStorage.getItem('lexia_auto_pruebas') !== 'no'; }catch(e){ return true; } });
+  function cambiarAutoPruebas(valor){ setAutoPruebas(valor); try{ localStorage.setItem('lexia_auto_pruebas', valor ? 'si' : 'no'); }catch(e){ /* sin almacenamiento: queda solo en esta sesión */ } }
+  const [autoPruebasPendiente, setAutoPruebasPendiente] = useState(null);   // id del mensaje cuya lectura acaba de terminar
   async function instantePrimerCorreo(mensaje){
     try{
       const primero = await primerCorreoDeConversacion(correoBuzon, mensaje.conversacionId, remitentesPermitidos);
@@ -483,6 +488,13 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
     }
   }
 
+  useEffect(() => {
+    if(!autoPruebasPendiente || resultado?.mensajeId !== autoPruebasPendiente) return;
+    setAutoPruebasPendiente(null);
+    notify?.('Creando el borrador de la solicitud de pruebas: reviso que no exista ya y leo los demás correos de la tutela…', 'info');
+    handleSolicitudPruebas(0, false);
+  }, [autoPruebasPendiente, resultado]);
+
   function handleSolicitudPruebas(indice, forzar = false){
     const registro = resultado?.registros?.[indice];
     const mensaje = mensajes.find(m => m.id === resultado?.mensajeId);
@@ -613,6 +625,7 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
         if(adjuntos?.error){
           notify?.(conAvisos('Se extrajeron los datos, pero no se pudieron guardar los adjuntos en OneDrive: ' + mensajeError(adjuntos.error) + ' — vuelve a darle "Extraer con LexIA".'), 'error');
         }
+        if(!lectura.error && autoPruebas && robotSolicitudUrl) setAutoPruebasPendiente(mensaje.id);
         if(!lectura.error && !adjuntos?.error){
           const n = adjuntos?.cantidad || 0;
           notify?.(conAvisos(`Quedó guardado en la carpeta "${numeroTutela} Tutela" de OneDrive: la lectura de LexIA${adjuntos?.yaEstaban ? ' (el correo y los adjuntos ya estaban allí)' : `, el correo y ${n} adjunto${n === 1 ? '' : 's'}`}.`), 'success');
@@ -846,6 +859,12 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
                       <IconTextButton icon="add" variant="primary" disabled={procesando} onClick={() => handleExtraer(m)}>
                         {procesando ? (guardandoOneDrive ? 'Guardando en OneDrive…' : 'Extrayendo…') : '+ Extraer con LexIA'}
                       </IconTextButton>
+                      {robotSolicitudUrl && (
+                        <label style={{display:'flex', alignItems:'center', gap:6, fontSize:12.5, cursor:'pointer'}} title="Al terminar la lectura crea sola la solicitud de pruebas (solo un borrador, nunca la envía). Antes revisa que no haya una en Borradores o Enviados.">
+                          <input type="checkbox" checked={autoPruebas} onChange={e => cambiarAutoPruebas(e.target.checked)} />
+                          Crear el borrador de pruebas al terminar
+                        </label>
+                      )}
                     </div>
                   )}
                   {resultado && resultado.mensajeId === m.id && (() => {
