@@ -8,7 +8,7 @@ import {
   generarLinksCarpetaProceso, generarLinkContratoProceso,
   rutaEntidadDeProceso, resolverDriveIdPrincipal, listarContenidoRuta, listarHijos,
   crearLinkCompartidoSoporte, crearLinkEdicionOrganizacion, mensajeError, abogadosDisponibles,
-  htmlHistoricoNuevasLineas, normalize,
+  htmlHistoricoNuevasLineas, normalize, numeroCortoDeRadicadoLargo,
 } from '../lib/graph';
 import IconButton, { IconTextButton } from './IconButton';
 import { FieldCard, RichTextEditor } from './FormFields';
@@ -97,7 +97,8 @@ const FIELD_SECTIONS = [
     // ver mapping en config.js) — mostrarlos aparte repetía el mismo valor
     // dos veces. Siguen existiendo como campos para los informes que ya los
     // usan (informeSOS.js).
-    ["NoCompleto","text"],["NumeroContrato","text"],["HistoricoNumerosCompletos","textarea"],
+    // «Número corto» (columna real numero_corto, campo Radicado) ya se muestra al editar y se llena solo desde el No. completo (2026-10-15, pedido del usuario).
+    ["NoCompleto","text"],["Radicado","text"],["NumeroContrato","text"],["HistoricoNumerosCompletos","textarea"],
   ]},
   {title:"Partes", fields:[
     // DemandanteIdentificacion no se muestra acá — es la misma columna real
@@ -196,7 +197,7 @@ const LABELS = {
   FechaAdmision:"Fecha de admisión", FechaContestacion:"Fecha de contestación",
   CalificacionContingencia:"Calificación de contingencia", EstadoVT:"Estado V/T", LinkCarpeta:"Link a la carpeta",
   Observaciones:"Observaciones",
-  NoCompleto:"No. completo", HistoricoNumerosCompletos:"Histórico números completos",
+  NoCompleto:"No. completo", Radicado:"Número corto", HistoricoNumerosCompletos:"Histórico números completos",
   Demandante:"Demandante", Demandado:"Demandado", ParteActuamos:"Parte en que actuamos",
   CCApoderada:"CC Apoderada", AbogadoEncargado:"Abogado encargado",
   LinkDespacho:"Link despacho", CorreoDespacho:"Correo despacho",
@@ -469,7 +470,18 @@ export default function ProcesoDrawer({ proceso, clientes, colaboradores, factur
 
   if(!proceso || !form) return null;
 
-  function setField(key, value){ setForm(prev => ({...prev, [key]: value})); }
+  // Al cambiar el No. completo, el Número corto se recalcula solo: el año y los 5 dígitos siguientes (11001333380720260011700 → 2026-00117). Si el No. completo
+  // no alcanza para sacarlo (está vacío o incompleto), el Número corto no se toca.
+  function setField(key, value){
+    setForm(prev => {
+      const next = {...prev, [key]: value};
+      if(key === 'NoCompleto'){
+        const corto = numeroCortoDeRadicadoLargo(String(value || '').trim().split(/\s+/)[0]);
+        if(corto) next.Radicado = corto;
+      }
+      return next;
+    });
+  }
 
   // Solo se envían los campos que realmente cambiaron respecto a lo que
   // había — antes se reenviaba el formulario completo (36 campos) aunque

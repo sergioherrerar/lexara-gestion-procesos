@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-10-15 (53)
+- **Número corto al editar un proceso, calculado desde el No. completo** — pedido del usuario. El panel de Proceso judicial ahora muestra el campo «Número corto» en Identificación (antes no aparecía al editar). Se llena solo con el año y los 5 dígitos siguientes del No. completo (11001333380720260011700 → 2026-00117) y se vuelve a calcular cada vez que se cambia el No. completo; también sirve al crear un proceso nuevo. Si el No. completo está vacío o incompleto, el Número corto no se toca.
+
 ## 2026-10-15 (52)
 - **El buscador de Procesos judiciales también busca en «Histórico números completos»** — pedido del usuario. Además de Radicado, Cliente y Apoderado, ahora encuentra el proceso por cualquiera de los números del Histórico y por el No. completo. Si escribes un número, se compara también sin guiones ni espacios: 11001310501220260011700 encuentra 11001-31-05-012-2026-00117-00.
 
