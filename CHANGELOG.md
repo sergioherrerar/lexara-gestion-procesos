@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-10-15 (61)
+- **La lista de «correos con el número de esta tutela» reconoce de qué área viene cada correo** — pedido del usuario. Por la dirección del remitente y la agenda de áreas del formato de solicitud de pruebas, cada correo muestra el área y la entidad (p. ej. «Medicina (ALIANSALUD)») en vez de solo «entidad (ALIANSALUD)», y los que vienen de un área llevan la marca verde «✓ Respondida». Los del área jurídica (quien notifica la tutela) se rotulan «área jurídica» sin la marca, y el resumen de arriba cuenta por área. Un remitente que no esté en la agenda se sigue mostrando como antes (entidad u otro remitente): para que se reconozca hay que agregar su correo a la agenda del formato.
+
 ## 2026-10-15 (60)
 - **Número Corto repetido en Términos, Audiencias y Pendientes** — pedido del usuario. Dos procesos pueden tener el mismo número corto (p. ej. 2026-00117 de dos entidades) y la lista desplegable los mostraba iguales, sin poder distinguirlos. El campo sigue siendo siempre el número corto tal cual (año, guion y cinco números). Cuando un número se repite, la lista muestra al lado la entidad y el ID, y debajo del campo aparece un selector «Hay 2 procesos con este número: elige cuál…» con la entidad y el ID de cada uno; hasta elegir uno el registro no queda asociado a ningún proceso (en vez de tomar el primero que encuentre). Los números que no se repiten se comportan igual que antes.
 

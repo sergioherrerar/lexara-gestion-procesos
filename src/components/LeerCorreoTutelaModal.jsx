@@ -392,7 +392,7 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
     if(!forzar && previo?.estado === 'listo') return previo.datos;
     setTodosCorreos(prev => ({ ...prev, [mensaje.id]: { estado: 'leyendo' } }));
     try{
-      const datos = await leerTodosLosCorreosDeTutela({ correoBuzon, urlCarpeta: onedriveCarpetaUrl, noTutela: numero });
+      const datos = await leerTodosLosCorreosDeTutela({ correoBuzon, urlCarpeta: onedriveCarpetaUrl, noTutela: numero, config });
       setTodosCorreos(prev => ({ ...prev, [mensaje.id]: { estado: 'listo', datos } }));
       correosLeidosEn.current[mensaje.id] = Date.now();
       return datos;
@@ -909,7 +909,7 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
                       {todosCorreos[m.id]?.estado === 'listo' && (() => {
                         const d = todosCorreos[m.id].datos;
                         const porClase = {};
-                        d.correos.forEach(c => { porClase[c.clase] = (porClase[c.clase] || 0) + 1; });
+                        d.correos.forEach(c => { const k = c.area ? (c.area.juridica ? 'área jurídica' : 'área ' + c.area.area + ' (' + c.area.entidad + ')') : c.clase; porClase[k] = (porClase[k] || 0) + 1; });
                         return (
                           <div style={{marginTop:6, fontSize:13}}>
                             <div><strong>{d.total}</strong> correo{d.total === 1 ? '' : 's'} con el número de esta tutela ({d.nuevos ? `${d.nuevos} nuevo${d.nuevos === 1 ? '' : 's'} leído${d.nuevos === 1 ? '' : 's'} y guardado${d.nuevos === 1 ? '' : 's'}` : 'ninguno nuevo'}{d.yaLeidos ? `; ${d.yaLeidos} ya leído${d.yaLeidos === 1 ? '' : 's'} antes, descartado${d.yaLeidos === 1 ? '' : 's'}` : ''}): {Object.entries(porClase).map(([k, v]) => `${v} ${k}`).join(' · ') || '—'}.</div>
@@ -919,7 +919,7 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
                               <ul className="correos-tutela-lista">
                                 {d.correos.map(c => (
                                   <li key={c.id} className={'correo-' + (c.clase === 'juzgado' ? 'juzgado' : String(c.clase || '').startsWith('entidad') ? 'entidad' : String(c.clase || '').startsWith('enviado') ? 'enviado' : 'otro')}>
-                                    {c.fecha} · <em>{c.clase}</em> · <strong>{nombreDeRemitente(c.de)}</strong> — {c.asunto}
+                                    {c.fecha} · <em>{c.area ? (c.area.juridica ? 'área jurídica' : c.area.area + ' (' + c.area.entidad + ')') : c.clase}</em>{c.area && !c.area.juridica && <span className="badge badge-verde" style={{marginLeft:6}} title="Este correo viene de un área de la agenda: respondió">✓ Respondida</span>} · <strong>{nombreDeRemitente(c.de)}</strong> — {c.asunto}
                                     {c.adjuntos && c.adjuntos.length > 0 && <span> · 📎 {c.adjuntos.join(', ')}</span>}
                                     {c.enlace && <IconButton icon="open" variant="mail" label="Abrir este correo en Outlook" href={c.enlace} />}
                                   </li>

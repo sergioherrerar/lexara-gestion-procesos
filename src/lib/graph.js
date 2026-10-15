@@ -3892,9 +3892,26 @@ async function guardarCorreoDeTutela({ correoBuzon, driveId, folderId, numero, c
 }
 
 // Lee (y guarda) todos los correos que mencionan la tutela. Devuelve { total, nuevos, correos, errores }.
-export async function leerTodosLosCorreosDeTutela({ correoBuzon, urlCarpeta, noTutela, guardar = true }){
+// De qué ÁREA viene un correo (2026-10-15, pedido del usuario: «reconocía de qué área venía y colocaba un chulo diciendo respondida»): por la dirección del remitente,
+// con la agenda de áreas del formato de solicitud de pruebas. { entidad, area, juridica } o null si el remitente no está en la agenda.
+function areaDeCorreoTutela(c, indice, correoBuzon){
+  const mm = /<([^>]+)>/.exec(c.de || '');
+  const email = String((mm ? mm[1] : c.de) || '').trim().toLowerCase();
+  if(!email || !indice || email === String(correoBuzon || '').toLowerCase()) return null;
+  const posibles = indice.get(email) || [];
+  if(!posibles.length) return null;
+  if(posibles.every(f => f.entidad === 'JURÍDICA')) return { entidad: 'JURÍDICA', area: posibles[0].area, juridica: true };
+  const f = elegirFilaAgenda(posibles.filter(x => x.entidad !== 'JURÍDICA'), entidadPreferidaDeAsunto(c.asunto));
+  return f ? { entidad: f.entidad, area: f.area, juridica: false } : null;
+}
+export async function leerTodosLosCorreosDeTutela({ correoBuzon, urlCarpeta, noTutela, guardar = true, config = null }){
   const salida = { total: 0, nuevos: 0, yaLeidos: 0, correos: [], errores: [] };
   const encontrados = await buscarCorreosDeTutelaEnBuzon(correoBuzon, noTutela);
+  let indiceAreas = null;
+  if(config){
+    try{ indiceAreas = indiceDeAgenda(parsearAgendaFormato((await leerFormatoSolicitudPruebas(config)).texto)); }
+    catch(err){ console.error('No se pudo leer la agenda de áreas para reconocer de qué área viene cada correo:', err); }
+  }
   let ctx = null;
   if(urlCarpeta){
     try{
@@ -3918,6 +3935,7 @@ export async function leerTodosLosCorreosDeTutela({ correoBuzon, urlCarpeta, noT
     final.push({ ...c, ...extra, adjuntos: extra.adjuntos || c.adjuntos });
     salida.nuevos++;
   }
+  final.forEach(c => { const a = areaDeCorreoTutela(c, indiceAreas, correoBuzon); if(a) c.area = a; });
   salida.total = final.length;
   salida.correos = final;
   if(guardar && ctx?.leido){
