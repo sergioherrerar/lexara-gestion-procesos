@@ -916,6 +916,12 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
                             {d.errores.length > 0 && <p className="save-hint" style={{margin:'4px 0', color:'var(--rojo, #a3281c)'}}>{d.errores.join(' · ')}</p>}
                             <details style={{marginTop:4}}>
                               <summary style={{cursor:'pointer'}}>Ver la lista</summary>
+                              <div className="correos-leyenda" aria-label="Código de colores">
+                                <span><i style={{background:'var(--verde-oscuro)'}} />Juzgado</span>
+                                <span><i style={{background:'var(--naranja)'}} />Entidad o área (la que respondió lleva ✓ Respondida)</span>
+                                <span><i style={{background:'var(--verde-claro)'}} />Enviado por Tutelas</span>
+                                <span><i style={{background:'var(--texto-suave)'}} />Otro remitente</span>
+                              </div>
                               <ul className="correos-tutela-lista">
                                 {d.correos.map(c => (
                                   <li key={c.id} className={'correo-' + (c.clase === 'juzgado' ? 'juzgado' : String(c.clase || '').startsWith('entidad') ? 'entidad' : String(c.clase || '').startsWith('enviado') ? 'enviado' : 'otro')}>
