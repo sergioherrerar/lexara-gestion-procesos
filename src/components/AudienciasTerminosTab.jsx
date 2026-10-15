@@ -4,6 +4,7 @@ import { diasHabilesRestantes, colorCuentaRegresiva, etiquetaCuentaRegresiva, su
 import { construirMensajeWhatsAppAudienciasTerminos } from '../lib/whatsappAudienciasTerminos';
 import { generarAudienciasTerminosExcel } from '../lib/informeAudienciasTerminosExcel';
 import IconButton, { IconTextButton } from './IconButton';
+import { opcionesNumeroCorto, buscarPorNumeroCorto } from '../lib/procesosPorNumeroCorto';
 
 // Módulo "Audiencias Términos" (Informes > Procesos Judiciales, 2026-09-12) —
 // pedido explícito del usuario para reemplazar el seguimiento manual que
@@ -56,6 +57,7 @@ export function FormularioNuevo({ tipo, procesos, tiposAccion, colaboradores, no
   const vacio = { numeroCorto:'', proceso: procesoFijo ? procesoFijo.id : null, descripcion:'', fecha: fechaInicial || '', hora:'', diasHabiles:'', abogado:'' };
   const [form, setForm] = useState(vacio);
   const [guardando, setGuardando] = useState(false);
+  const [numeroRepetido, setNumeroRepetido] = useState(false);   // el número escrito está en varios procesos: hay que elegir uno de la lista
   // "Agregar tipo de término personalizado" (2026-09-22, pedido explícito del
   // usuario: "agregar uno personal que yo coloque... que se llene a la lista
   // SharePoint Tipos de Acción... y quede actualizado en las listas
@@ -77,7 +79,8 @@ export function FormularioNuevo({ tipo, procesos, tiposAccion, colaboradores, no
   const mostrandoNuevoTipo = form.descripcion === NUEVO_TIPO_SENTINEL;
 
   function buscarProceso(val){
-    const matched = (procesos||[]).find(p => p.Radicado === val);
+    const { proceso: matched, ambiguo } = buscarPorNumeroCorto(procesos, val);
+    setNumeroRepetido(ambiguo);
     setForm(prev => ({ ...prev, numeroCorto: val, proceso: matched ? matched.id : null, descripcion:'', diasHabiles:'' }));
     setNuevoTipoNombre(''); setNuevoTipoDias('');
   }
@@ -132,9 +135,12 @@ export function FormularioNuevo({ tipo, procesos, tiposAccion, colaboradores, no
           <label>Número Corto (Radicado)</label>
           <input type="text" list="datalist-audiencias-terminos" value={form.numeroCorto} onChange={e => buscarProceso(e.target.value)} placeholder="Escribe para buscar…" />
           <datalist id="datalist-audiencias-terminos">
-            {(procesos||[]).filter(p => p.Radicado).map(p => <option value={p.Radicado} key={p.id} />)}
+            {opcionesNumeroCorto(procesos).map(o => <option value={o.value} key={o.id} />)}
           </datalist>
-          {form.numeroCorto && !procesoEncontrado && (
+          {form.numeroCorto && !procesoEncontrado && numeroRepetido && (
+            <div className="field-warning">Ese número corto está en varios procesos: elige uno de la lista (se distinguen por la entidad y el ID).</div>
+          )}
+          {form.numeroCorto && !procesoEncontrado && !numeroRepetido && (
             <div className="field-warning">Este número corto no coincide con ningún proceso registrado.</div>
           )}
           {procesoEncontrado && (
