@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-10-15 (48)
+- **Cliente depende de la Entidad en Procesos judiciales** — pedido del usuario. Al elegir la Entidad, la lista de Cliente solo muestra los clientes de esa entidad (según la lista Clientes), con un aviso de cuántos son; si no hay Entidad elegida, se ven todos como antes. Si se cambia la Entidad y el Cliente ya elegido es de otra, se limpia (un cliente que no está en la lista Clientes no se toca).
+
 ## 2026-10-15 (47)
 - **Entidad sin repetidos en Procesos judiciales** — pedido del usuario: «GRUPO COLMEDICA» salía dos veces al desplegar la lista. Las opciones se juntan por su texto normalizado (sin espacios de más ni diferencias de mayúsculas o tildes), y si el proceso trae el valor con un espacio de más, se muestra seleccionado igual.
 

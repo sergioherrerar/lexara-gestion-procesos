@@ -513,6 +513,18 @@ export default function ProcesoDrawer({ proceso, clientes, colaboradores, factur
   // elegidos dejan de ser válidos para la nueva categoría (según la lista
   // "tipos de Accion"), se limpian — evita combinaciones inconsistentes
   // (p.ej. un Despacho de "Civil" con Tipo de Acción "Laboral").
+  // Al cambiar la Entidad, si el Cliente ya elegido es de otra entidad (según la lista Clientes), se limpia; si el cliente no está en esa lista, se deja.
+  function setEntidad(value){
+    setForm(prev => {
+      const next = {...prev, Entidad: value};
+      if(prev.Cliente && value){
+        const c = findClienteByNombre(clientes, prev.Cliente);
+        if(c && c.Entidad && claveEntidad(c.Entidad) !== claveEntidad(value)) next.Cliente = "";
+      }
+      return next;
+    });
+  }
+
   function setTipoAccion(value){
     setForm(prev => {
       const next = {...prev, TipoAccion: value};
@@ -605,6 +617,12 @@ export default function ProcesoDrawer({ proceso, clientes, colaboradores, factur
   const entidadOpciones = Array.from(entidadPorClave.values()).sort((a,b)=>a.localeCompare(b));
   if(form.Entidad && !entidadPorClave.has(claveEntidad(form.Entidad))) entidadOpciones.unshift(limpiarEntidad(form.Entidad));
   const entidadActual = form.Entidad ? (entidadPorClave.get(claveEntidad(form.Entidad)) || limpiarEntidad(form.Entidad)) : '';
+  // Cliente depende de la Entidad (2026-10-15, pedido del usuario): con una Entidad elegida solo se ofrecen los clientes de esa entidad (lista Clientes).
+  const clientesDeLaEntidad = form.Entidad
+    ? Array.from(new Set(clientes.filter(c => c.RazonSocial && claveEntidad(c.Entidad) === claveEntidad(form.Entidad)).map(c => c.RazonSocial)))
+    : null;
+  const clienteOpciones = clientesDeLaEntidad ? clientesDeLaEntidad.slice() : clienteNombres.slice();
+  if(form.Cliente && !clienteOpciones.includes(form.Cliente)) clienteOpciones.unshift(form.Cliente);
   const nombresAbogados = Array.from(new Set(abogadosDisponibles(colaboradores).map(c => c.Nombre).filter(Boolean))).sort((a,b)=>a.localeCompare(b));
   const apoderadoOpciones = [...nombresAbogados];
   if(form.Apoderado && !apoderadoOpciones.includes(form.Apoderado)) apoderadoOpciones.unshift(form.Apoderado);
@@ -790,9 +808,10 @@ export default function ProcesoDrawer({ proceso, clientes, colaboradores, factur
                     return (
                       <FieldCard label="Cliente" full key={key}>
                         <select value={form.Cliente} onChange={e => setField('Cliente', e.target.value)} disabled={!canWrite}>
-                          <option value="">— seleccionar cliente —</option>
-                          {clienteNombres.map(n => <option value={n} key={n}>{n}</option>)}
+                          <option value="">{clientesDeLaEntidad && !clientesDeLaEntidad.length ? '— esa entidad no tiene clientes en la lista —' : '— seleccionar cliente —'}</option>
+                          {clienteOpciones.map(n => <option value={n} key={n}>{n}</option>)}
                         </select>
+                        {clientesDeLaEntidad && <div className="field-info" style={{marginTop:6}}>Solo los clientes de la entidad «{entidadActual}» ({clientesDeLaEntidad.length}). Para ver todos, deja la Entidad vacía.</div>}
                         {canWrite && (
                           <IconTextButton icon="add" variant="primary" style={{marginTop:8, alignSelf:'flex-start'}} onClick={() => setShowNewCliente(v => !v)}>Nuevo cliente</IconTextButton>
                         )}
@@ -911,7 +930,7 @@ export default function ProcesoDrawer({ proceso, clientes, colaboradores, factur
                   if(key==='Entidad'){
                     return (
                       <FieldCard label={LABELS[key]} key={key}>
-                        <select value={entidadActual} onChange={e => setField('Entidad', e.target.value)} disabled={!canWrite}>
+                        <select value={entidadActual} onChange={e => setEntidad(e.target.value)} disabled={!canWrite}>
                           <option value="">— seleccionar —</option>
                           {entidadOpciones.map(n => <option value={n} key={n}>{n}</option>)}
                         </select>
