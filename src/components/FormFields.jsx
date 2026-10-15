@@ -4,9 +4,9 @@ import { useRef, useEffect } from 'react';
 // del formulario Access original que se usaba antes, pero con los colores
 // institucionales de Lexara en vez de los verdes/teales de Access. Extraída
 // de ProcesoDrawer.jsx (2026-08-16) al necesitarla también TutelaDrawer.jsx.
-export function FieldCard({ label, full, children }){
+export function FieldCard({ label, full, span2, children }){
   return (
-    <div className={"field-card" + (full ? " full" : "")}>
+    <div className={"field-card" + (full ? " full" : "") + (span2 ? " span2" : "")}>
       <div className="field-card-label">{label}</div>
       <div className="field-card-value">{children}</div>
     </div>

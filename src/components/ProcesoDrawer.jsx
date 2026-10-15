@@ -103,7 +103,8 @@ const FIELD_SECTIONS = [
     // DemandanteIdentificacion no se muestra acá — es la misma columna real
     // que Cliente (ver mapping en config.js); sigue existiendo para el
     // informe SOS.
-    ["Cliente","text"],["Entidad","text"],["Demandante","text"],["Demandado","text"],["ParteActuamos","select"],
+    // Primero Entidad y luego Cliente, en la misma fila (pedido del usuario 2026-10-15; el Cliente depende de la Entidad).
+    ["Entidad","text"],["Cliente","text"],["Demandante","text"],["Demandado","text"],["ParteActuamos","select"],
   ]},
   {title:"Representación", fields:[
     ["Apoderado","select"],["CCApoderada","text"],["AbogadoEncargado","select"],
@@ -806,7 +807,7 @@ export default function ProcesoDrawer({ proceso, clientes, colaboradores, factur
                 {sec.fields.map(([key,type]) => {
                   if(key==='Cliente'){
                     return (
-                      <FieldCard label="Cliente" full key={key}>
+                      <FieldCard label="Cliente" span2 key={key}>
                         <select value={form.Cliente} onChange={e => setField('Cliente', e.target.value)} disabled={!canWrite}>
                           <option value="">{clientesDeLaEntidad && !clientesDeLaEntidad.length ? '— esa entidad no tiene clientes en la lista —' : '— seleccionar cliente —'}</option>
                           {clienteOpciones.map(n => <option value={n} key={n}>{n}</option>)}

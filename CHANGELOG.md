@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-10-15 (49)
+- **Partes del proceso: Entidad y Cliente en la misma fila, Entidad primero** — pedido del usuario. En el panel de Proceso judicial, la sección «Partes» ahora empieza con Entidad (una columna) y Cliente (dos columnas) en una sola fila; debajo siguen Demandante, Demandado y Parte en que actuamos. En celular se apilan.
+
 ## 2026-10-15 (48)
 - **Cliente depende de la Entidad en Procesos judiciales** — pedido del usuario. Al elegir la Entidad, la lista de Cliente solo muestra los clientes de esa entidad (según la lista Clientes), con un aviso de cuántos son; si no hay Entidad elegida, se ven todos como antes. Si se cambia la Entidad y el Cliente ya elegido es de otra, se limpia (un cliente que no está en la lista Clientes no se toca).
 
