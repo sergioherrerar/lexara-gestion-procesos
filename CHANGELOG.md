@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-10-15 (50)
+- **Registrar hora extra: solo colaboradores vigentes** — pedido del usuario. La lista «Colaborador» del formulario (Informes) mostraba a los que ya no están y a los contratistas. Ahora solo salen los colaboradores activos que no son contratistas, con la misma regla de la pestaña Horas Extras de Administración. Al editar una hora extra de alguien que ya no está vigente, su nombre se deja con la marca «(ya no vigente)» para no perder el dato.
+
 ## 2026-10-15 (49)
 - **Partes del proceso: Entidad y Cliente en la misma fila, Entidad primero** — pedido del usuario. En el panel de Proceso judicial, la sección «Partes» ahora empieza con Entidad (una columna) y Cliente (dos columnas) en una sola fila; debajo siguen Demandante, Demandado y Parte en que actuamos. En celular se apilan.
 

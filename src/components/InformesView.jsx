@@ -4,6 +4,7 @@ import {
   esProcesoActivo, mensajeError,
 } from '../lib/graph';
 import IconButton, { IconTextButton } from './IconButton';
+import { esColaboradorVigente } from '../lib/permissions';
 import { generarInformeClienteHTML } from '../lib/exportarInformeCliente';
 import { generarInformeSOSExcel, generarInformeSOSPDF, generarDesistimientosSOSExcel } from '../lib/informeSOS';
 import { generarInformeFamisanarExcel, generarInformeFamisanarPDF } from '../lib/informeFamisanar';
@@ -220,9 +221,14 @@ export default function InformesView({ procesos, clientes, facturas, desistimien
   // lado del hook (ver editarHoraExtra en useLexaraApp.js).
   const [editandoHoraExtraId, setEditandoHoraExtraId] = useState(null);
   const [mesHoraExtra, setMesHoraExtra] = useState(hoyRef.getMonth());
+  // Solo colaboradores VIGENTES (Activo y que no sean Contratista) — pedido del usuario 2026-10-15; el filtro anterior dejaba pasar a los inactivos
+  // (un Activo=false real caía en «Sí») y a los contratistas. Misma regla de la pestaña Horas Extras de Administración (esColaboradorVigente).
   const colaboradoresActivos = [...(colaboradores||[])]
-    .filter(c => (c.Activo||"Sí") !== "No")
+    .filter(esColaboradorVigente)
     .sort((a,b) => (a.Nombre||"").localeCompare(b.Nombre||""));
+  // Al EDITAR una hora extra de alguien que ya no está vigente, su nombre se deja en la lista para no perder el dato.
+  const nombreColaboradorActual = (horaExtraForm.Colaborador||"").trim();
+  const colaboradorActualFueraDeLista = nombreColaboradorActual && !colaboradoresActivos.some(c => (c.Nombre||"").trim() === nombreColaboradorActual);
   const previewHoraExtra = (horaExtraForm.Fecha && horaExtraForm.HoraInicio && horaExtraForm.HoraFin)
     ? clasificarHorasExtra(horaExtraForm.Fecha, horaExtraForm.HoraInicio, horaExtraForm.HoraFin)
     : null;
@@ -593,6 +599,7 @@ export default function InformesView({ procesos, clientes, facturas, desistimien
               <label>Colaborador</label>
               <select value={horaExtraForm.Colaborador} onChange={e => setHoraExtraField('Colaborador', e.target.value)}>
                 <option value="">— Selecciona —</option>
+                {colaboradorActualFueraDeLista && <option value={horaExtraForm.Colaborador}>{horaExtraForm.Colaborador} (ya no vigente)</option>}
                 {colaboradoresActivos.map(c => <option key={c.id} value={c.Nombre}>{c.Nombre}</option>)}
               </select>
             </div>
