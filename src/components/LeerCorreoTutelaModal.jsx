@@ -870,7 +870,7 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
                   {resultado && resultado.mensajeId === m.id && (() => {
                         const otras = otrasTutelasDelUsuario(tutelas, resultado.registros[0]);
                         const antecedentesLexIA = String(resultado.registros[0]?.Analisis?.Antecedentes || '').trim();
-                        if(!otras.length && !antecedentesLexIA) return null;
+                        // La Sección 1 siempre se muestra (aunque no haya otras tutelas del usuario): si no, la numeración arrancaba en la Sección 2.
                         return (
                           <div className="tutela-seccion tutela-seccion-aviso">
                             <div className="tutela-seccion-head"><h4><span className="tutela-seccion-n">Sección 1</span>Comentario: otras tutelas de este mismo usuario</h4></div>

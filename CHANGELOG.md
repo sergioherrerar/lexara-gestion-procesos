@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-10-16 (63)
+- **La «Sección 1» de «Leer correo de Tutelas» vuelve a verse siempre** — reporte del usuario («no se ve la sección uno»). La sección «Comentario: otras tutelas de este mismo usuario» solo aparecía cuando el usuario tenía otras tutelas registradas o LexIA había visto antecedentes; si no, se ocultaba y la numeración arrancaba en la Sección 2. Ahora se muestra siempre y, cuando no hay nada que comentar, dice «En el portal no hay otras tutelas con esa identificación.»
+
 ## 2026-10-16 (62)
 - **«Leer todos los correos de esta tutela» muestra qué áreas respondieron y cuáles faltan** — pedido del usuario. Arriba de «Ver la lista» aparece un recuadro «Áreas a las que se les pidió pruebas» con un ✓ verde para cada área que ya respondió y una ✗ roja para la que falta. Las áreas salen de los destinatarios de la solicitud de pruebas más reciente (la enviada, o la de Borradores, que se rotula «pendiente de enviar» en gris mientras no se envíe) con la agenda del formato, y cuenta como respuesta un correo de esa misma dirección posterior a la solicitud. Se actualiza cada vez que se leen los correos de la tutela.
 
