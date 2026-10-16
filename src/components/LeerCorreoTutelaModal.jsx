@@ -914,6 +914,19 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
                           <div style={{marginTop:6, fontSize:13}}>
                             <div><strong>{d.total}</strong> correo{d.total === 1 ? '' : 's'} con el número de esta tutela ({d.nuevos ? `${d.nuevos} nuevo${d.nuevos === 1 ? '' : 's'} leído${d.nuevos === 1 ? '' : 's'} y guardado${d.nuevos === 1 ? '' : 's'}` : 'ninguno nuevo'}{d.yaLeidos ? `; ${d.yaLeidos} ya leído${d.yaLeidos === 1 ? '' : 's'} antes, descartado${d.yaLeidos === 1 ? '' : 's'}` : ''}): {Object.entries(porClase).map(([k, v]) => `${v} ${k}`).join(' · ') || '—'}.</div>
                             {d.errores.length > 0 && <p className="save-hint" style={{margin:'4px 0', color:'var(--rojo, #a3281c)'}}>{d.errores.join(' · ')}</p>}
+                            {d.areasSolicitud && d.areasSolicitud.areas.length > 0 && (
+                              <div style={{margin:'8px 0 2px', padding:'8px 10px', borderRadius:8, background:'var(--gris-claro)'}}>
+                                <strong style={{fontSize:12.5}}>Áreas a las que se les pidió pruebas{d.areasSolicitud.enviada ? '' : ' (la solicitud aún está en Borradores, no se ha enviado)'}:</strong>
+                                <div style={{display:'flex', flexWrap:'wrap', gap:'4px 14px', marginTop:4}}>
+                                  {d.areasSolicitud.areas.map(a => (
+                                    <span key={a.entidad + a.area} style={{display:'inline-flex', alignItems:'center', gap:5, fontWeight:600, color: a.respondio ? 'var(--verde-oscuro)' : (d.areasSolicitud.enviada ? 'var(--rojo, #a3281c)' : 'var(--texto-suave)')}}>
+                                      <span aria-hidden="true" style={{fontSize:16}}>{a.respondio ? '✓' : (d.areasSolicitud.enviada ? '✗' : '•')}</span>
+                                      {a.area} ({a.entidad}) — {a.respondio ? 'respondió' : (d.areasSolicitud.enviada ? 'falta' : 'pendiente de enviar')}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
                             <details style={{marginTop:4}}>
                               <summary style={{cursor:'pointer'}}>Ver la lista</summary>
                               <div className="correos-leyenda" aria-label="Código de colores">

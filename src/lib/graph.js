@@ -3936,6 +3936,33 @@ export async function leerTodosLosCorreosDeTutela({ correoBuzon, urlCarpeta, noT
     salida.nuevos++;
   }
   final.forEach(c => { const a = areaDeCorreoTutela(c, indiceAreas, correoBuzon); if(a) c.area = a; });
+  // Áreas a las que se les pidió pruebas (la solicitud más reciente: enviada, o en Borradores si todavía no se envía) y cuáles ya respondieron (✓) o faltan (✗).
+  if(indiceAreas){
+    try{
+      const sols = await buscarSolicitudesPruebasDeTutela(correoBuzon, noTutela);
+      const sol = sols.filter(s => s.enviado).pop() || sols[sols.length - 1];
+      if(sol){
+        const clave = a => a.entidad + '|' + a.area;
+        const preferida = entidadPreferidaDeAsunto(sol.asunto);
+        const pedidas = new Map();
+        sol.para.forEach(email => {
+          const f = elegirFilaAgenda((indiceAreas.get(email) || []).filter(x => x.entidad !== 'JURÍDICA'), preferida);
+          if(!f) return;
+          if(!pedidas.has(clave(f))) pedidas.set(clave(f), { entidad: f.entidad, area: f.area, respondio: false, _emails: new Set() });
+          pedidas.get(clave(f))._emails.add(email);
+        });
+        const desde = sol.enviado && sol.fecha ? new Date(sol.fecha).getTime() : 0;
+        final.forEach(c => {
+          if(!c.area || c.area.juridica) return;
+          if(desde && c.fechaISO && new Date(c.fechaISO).getTime() < desde) return;   // solo cuentan las respuestas posteriores a la solicitud
+          const mm = /<([^>]+)>/.exec(c.de || '');
+          const remitente = String((mm ? mm[1] : c.de) || '').trim().toLowerCase();
+          pedidas.forEach(p => { if(p._emails.has(remitente) || clave(c.area) === p.entidad + '|' + p.area) p.respondio = true; });
+        });
+        salida.areasSolicitud = { enviada: !!sol.enviado, fecha: sol.fecha ? new Date(sol.fecha).toLocaleString('es-CO') : '', areas: Array.from(pedidas.values()).map(({ _emails, ...a }) => a) };
+      }
+    }catch(err){ console.error('No se pudo revisar qué áreas respondieron la solicitud de pruebas:', err); }
+  }
   salida.total = final.length;
   salida.correos = final;
   if(guardar && ctx?.leido){

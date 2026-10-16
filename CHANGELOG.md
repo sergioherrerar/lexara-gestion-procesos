@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-10-16 (62)
+- **«Leer todos los correos de esta tutela» muestra qué áreas respondieron y cuáles faltan** — pedido del usuario. Arriba de «Ver la lista» aparece un recuadro «Áreas a las que se les pidió pruebas» con un ✓ verde para cada área que ya respondió y una ✗ roja para la que falta. Las áreas salen de los destinatarios de la solicitud de pruebas más reciente (la enviada, o la de Borradores, que se rotula «pendiente de enviar» en gris mientras no se envíe) con la agenda del formato, y cuenta como respuesta un correo de esa misma dirección posterior a la solicitud. Se actualiza cada vez que se leen los correos de la tutela.
+
 ## 2026-10-15 (61)
 - **La lista de «correos con el número de esta tutela» reconoce de qué área viene cada correo** — pedido del usuario. Por la dirección del remitente y la agenda de áreas del formato de solicitud de pruebas, cada correo muestra el área y la entidad (p. ej. «Medicina (ALIANSALUD)») en vez de solo «entidad (ALIANSALUD)», y los que vienen de un área llevan la marca verde «✓ Respondida». Los del área jurídica (quien notifica la tutela) se rotulan «área jurídica» sin la marca, y el resumen de arriba cuenta por área. Un remitente que no esté en la agenda se sigue mostrando como antes (entidad u otro remitente): para que se reconozca hay que agregar su correo a la agenda del formato. La lista lleva ahora el código de colores arriba (verde oscuro: juzgado; naranja: entidad o área; verde claro: enviado por Tutelas; gris: otro remitente) y los círculos de cada color son más grandes.
 
