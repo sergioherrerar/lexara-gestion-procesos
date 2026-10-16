@@ -3908,9 +3908,16 @@ export async function leerTodosLosCorreosDeTutela({ correoBuzon, urlCarpeta, noT
   const salida = { total: 0, nuevos: 0, yaLeidos: 0, correos: [], errores: [] };
   const encontrados = await buscarCorreosDeTutelaEnBuzon(correoBuzon, noTutela);
   let indiceAreas = null;
+  let motivoSinAreas = config ? '' : 'El portal no pasó la configuración para leer la agenda de áreas.';
   if(config){
-    try{ indiceAreas = indiceDeAgenda(parsearAgendaFormato((await leerFormatoSolicitudPruebas(config)).texto)); }
-    catch(err){ console.error('No se pudo leer la agenda de áreas para reconocer de qué área viene cada correo:', err); }
+    try{
+      const fmt = await leerFormatoSolicitudPruebas(config);
+      indiceAreas = indiceDeAgenda(parsearAgendaFormato(fmt.texto));
+      if(!indiceAreas.size) motivoSinAreas = 'No encontré direcciones de áreas en el formato de solicitud de pruebas (la agenda de áreas está vacía o cambió de forma).';
+    }catch(err){
+      console.error('No se pudo leer la agenda de áreas para reconocer de qué área viene cada correo:', err);
+      motivoSinAreas = 'No pude leer el formato de solicitud de pruebas para conocer las áreas: ' + (err && err.message ? err.message : err);
+    }
   }
   let ctx = null;
   if(urlCarpeta){
@@ -3941,6 +3948,17 @@ export async function leerTodosLosCorreosDeTutela({ correoBuzon, urlCarpeta, noT
     try{
       const sols = await buscarSolicitudesPruebasDeTutela(correoBuzon, noTutela);
       const sol = sols.filter(s => s.enviado).pop() || sols[sols.length - 1];
+      const respondieronSinPedir = () => {
+        const m = new Map();
+        final.forEach(c => { if(c.area && !c.area.juridica){ const k = c.area.entidad + '|' + c.area.area; if(!m.has(k)) m.set(k, { entidad: c.area.entidad, area: c.area.area, respondio: true, noSolicitada: true }); } });
+        return Array.from(m.values());
+      };
+      if(!sol){
+        const ya = respondieronSinPedir();
+        salida.areasSolicitud = ya.length
+          ? { sinSolicitud: true, enviada: false, areas: ya }
+          : { areas: [], mensaje: 'Todavía no hay solicitud de pruebas de esta tutela (ni en Borradores ni en Enviados): no se le ha pedido nada a las áreas.' };
+      }
       if(sol){
         const clave = a => a.entidad + '|' + a.area;
         const preferida = entidadPreferidaDeAsunto(sol.asunto);
@@ -3959,9 +3977,16 @@ export async function leerTodosLosCorreosDeTutela({ correoBuzon, urlCarpeta, noT
           const remitente = String((mm ? mm[1] : c.de) || '').trim().toLowerCase();
           pedidas.forEach(p => { if(p._emails.has(remitente) || clave(c.area) === p.entidad + '|' + p.area) p.respondio = true; });
         });
-        salida.areasSolicitud = { enviada: !!sol.enviado, fecha: sol.fecha ? new Date(sol.fecha).toLocaleString('es-CO') : '', areas: Array.from(pedidas.values()).map(({ _emails, ...a }) => a) };
+        const extras = respondieronSinPedir().filter(x => ![...pedidas.values()].some(p => p.entidad === x.entidad && p.area === x.area));
+        salida.areasSolicitud = { enviada: !!sol.enviado, fecha: sol.fecha ? new Date(sol.fecha).toLocaleString('es-CO') : '', areas: Array.from(pedidas.values()).map(({ _emails, ...a }) => a).concat(extras) };
+        if(!pedidas.size && !extras.length) salida.areasSolicitud.mensaje = 'La solicitud de pruebas no tiene destinatarios que estén en la agenda de áreas, así que no puedo saber qué áreas faltan.';
       }
-    }catch(err){ console.error('No se pudo revisar qué áreas respondieron la solicitud de pruebas:', err); }
+    }catch(err){
+      console.error('No se pudo revisar qué áreas respondieron la solicitud de pruebas:', err);
+      salida.areasSolicitud = { areas: [], mensaje: 'No pude revisar la solicitud de pruebas: ' + (err && err.message ? err.message : err) };
+    }
+  }else{
+    salida.areasSolicitud = { areas: [], mensaje: motivoSinAreas || 'No pude conocer las áreas.' };
   }
   salida.total = final.length;
   salida.correos = final;
@@ -4089,10 +4114,19 @@ export async function hayActuacionPrevia({ correoBuzon, urlCarpeta, noTutela, ti
 
 // Resumen breve de lo que ya llegó, para el robot de la solicitud de pruebas. Búsqueda rápida (sin guardar nada ni gastar IA).
 // Nunca lanza: si algo falla, devuelve [] y la solicitud se crea como antes.
-export async function correosRecibidosParaSolicitud(correoBuzon, noTutela){
+// Cómo se rotula un correo ya recibido para el robot de la solicitud de pruebas: si viene de un área de la agenda, se dice (verificado por la dirección del remitente).
+export function claseDeCorreoParaRobot(c){
+  const a = c && c.area;
+  if(!a) return c ? c.clase : '';
+  return a.juridica ? 'área jurídica (notificó la tutela)' : 'ÁREA ' + a.area + ' (' + a.entidad + ') — YA RESPONDIÓ (verificado por su dirección)';
+}
+export async function correosRecibidosParaSolicitud(correoBuzon, noTutela, config = null){
   try{
     const lista = await conAdjuntos(correoBuzon, await buscarCorreosDeTutelaEnBuzon(correoBuzon, noTutela));
-    return lista.map(c => ({ fecha: c.fecha, de: c.de, asunto: c.asunto, clase: c.clase, adjuntos: c.adjuntos || [], extracto: (c.resumen || '').slice(0, 700) }));
+    let indice = null;
+    if(config){ try{ indice = indiceDeAgenda(parsearAgendaFormato((await leerFormatoSolicitudPruebas(config)).texto)); }catch(err){ console.error('No se pudo leer la agenda de áreas:', err); } }
+    lista.forEach(c => { const a = areaDeCorreoTutela(c, indice, correoBuzon); if(a) c.area = a; });
+    return lista.map(c => ({ fecha: c.fecha, de: c.de, asunto: c.asunto, clase: claseDeCorreoParaRobot(c), area: c.area ? (c.area.area + ' (' + c.area.entidad + ')') : '', adjuntos: c.adjuntos || [], extracto: (c.resumen || '').slice(0, 700) }));
   }catch(err){
     console.error('No se pudieron revisar los correos ya recibidos de la tutela:', err);
     return [];

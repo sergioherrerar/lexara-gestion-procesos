@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { normalizarBorradorTutela } from '../lib/borradorTutela';
 import { aplicarVencimientoHabil, fechaLocalISO } from '../lib/vencimientoTutela';
 import { envioDelJuzgadoSegunTraza } from '../lib/trazaCorreo';
-import { leerCorreosTutelas, primerCorreoDeConversacion, crearSolicitudPruebasBorrador, buscarSolicitudPruebasExistente, revisarRespuestasAreas, uriLecturaLexIAParaArtefacto, leerTodosLosCorreosDeTutela, correosRecibidosParaSolicitud, estadoSeguimientoTutela, extraerTutelaConLexIA, numeroTutelaDeAsunto, normalize, mensajeError, buscarLecturaLexIAGuardada, guardarLecturaLexIAEnOneDrive, listarTutelasAnalizadasEnOneDrive, asegurarCarpetaTutelaDesdeMensaje, hayActuacionPrevia, registrarActuacion, buscarActuacionRegistrada, leerFormatoSolicitudPruebas } from '../lib/graph';
+import { leerCorreosTutelas, primerCorreoDeConversacion, crearSolicitudPruebasBorrador, buscarSolicitudPruebasExistente, revisarRespuestasAreas, uriLecturaLexIAParaArtefacto, leerTodosLosCorreosDeTutela, correosRecibidosParaSolicitud, claseDeCorreoParaRobot, estadoSeguimientoTutela, extraerTutelaConLexIA, numeroTutelaDeAsunto, normalize, mensajeError, buscarLecturaLexIAGuardada, guardarLecturaLexIAEnOneDrive, listarTutelasAnalizadasEnOneDrive, asegurarCarpetaTutelaDesdeMensaje, hayActuacionPrevia, registrarActuacion, buscarActuacionRegistrada, leerFormatoSolicitudPruebas } from '../lib/graph';
 import IconButton, { IconTextButton } from './IconButton';
 import EscritoRobotPanel from './EscritoRobotPanel';
 import { redactarEscritoConRobot, sexoPorNombre } from '../lib/escritoRobot';
@@ -339,15 +339,18 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
       let correosRecibidos = [];
       try{
         if(todosCorreos[mensaje.id]?.estado === 'listo' || Date.now() - (correosLeidosEn.current[mensaje.id] || 0) < 180000){
-          correosRecibidos = await correosRecibidosParaSolicitud(correoBuzon, numeroSolicitud);
+          correosRecibidos = await correosRecibidosParaSolicitud(correoBuzon, numeroSolicitud, config);
         }else{
           const d = await asegurarCorreosLeidos(mensaje, numeroSolicitud, true);
-          correosRecibidos = d.correos.map(c => ({ fecha: c.fecha, de: c.de, asunto: c.asunto, clase: c.clase, adjuntos: c.adjuntos || [], extracto: String(c.resumen || '').slice(0, 700) }));
+          correosRecibidos = d.correos.map(c => ({ fecha: c.fecha, de: c.de, asunto: c.asunto, clase: claseDeCorreoParaRobot(c), area: c.area ? c.area.area + ' (' + c.area.entidad + ')' : '', adjuntos: c.adjuntos || [], extracto: String(c.resumen || '').slice(0, 700) }));
         }
       }catch(err){
         console.error('No se pudieron leer todos los correos de la tutela antes del borrador:', err);
-        correosRecibidos = await correosRecibidosParaSolicitud(correoBuzon, numeroSolicitud);
+        correosRecibidos = await correosRecibidosParaSolicitud(correoBuzon, numeroSolicitud, config);
       }
+      // Antes de armar el correo: qué áreas YA respondieron sin que se les hubiera pedido (se reconocen por la dirección del remitente, con la agenda de áreas).
+      const yaRespondieron = [...new Set(correosRecibidos.filter(c => c.area).map(c => c.area))];
+      if(yaRespondieron.length) notify?.('Antes de armar la solicitud: ya respondieron sin que se les pidiera — ' + yaRespondieron.join(', ') + '. LexIA no les pedirá lo que ya enviaron.', 'info');
       const r = await crearSolicitudPruebasBorrador({
         correosRecibidos, config, robotSolicitudUrl, registro: limpio, registros: todosLosRegistros, campos, camposTodos, asuntoCorreo: mensaje.asunto,
         noTutela: limpio.NoTutela || numeroTutelaDeAsunto(mensaje.asunto), fechaVencimiento: limpio.FechaVencimiento,
@@ -914,14 +917,17 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
                           <div style={{marginTop:6, fontSize:13}}>
                             <div><strong>{d.total}</strong> correo{d.total === 1 ? '' : 's'} con el número de esta tutela ({d.nuevos ? `${d.nuevos} nuevo${d.nuevos === 1 ? '' : 's'} leído${d.nuevos === 1 ? '' : 's'} y guardado${d.nuevos === 1 ? '' : 's'}` : 'ninguno nuevo'}{d.yaLeidos ? `; ${d.yaLeidos} ya leído${d.yaLeidos === 1 ? '' : 's'} antes, descartado${d.yaLeidos === 1 ? '' : 's'}` : ''}): {Object.entries(porClase).map(([k, v]) => `${v} ${k}`).join(' · ') || '—'}.</div>
                             {d.errores.length > 0 && <p className="save-hint" style={{margin:'4px 0', color:'var(--rojo, #a3281c)'}}>{d.errores.join(' · ')}</p>}
+                            {d.areasSolicitud && d.areasSolicitud.areas.length === 0 && d.areasSolicitud.mensaje && (
+                              <div className="save-hint" style={{margin:'8px 0 2px', padding:'8px 10px', borderRadius:8, background:'var(--gris-claro)'}}>Áreas a las que se les pidió pruebas: {d.areasSolicitud.mensaje}</div>
+                            )}
                             {d.areasSolicitud && d.areasSolicitud.areas.length > 0 && (
                               <div style={{margin:'8px 0 2px', padding:'8px 10px', borderRadius:8, background:'var(--gris-claro)'}}>
-                                <strong style={{fontSize:12.5}}>Áreas a las que se les pidió pruebas{d.areasSolicitud.enviada ? '' : ' (la solicitud aún está en Borradores, no se ha enviado)'}:</strong>
+                                <strong style={{fontSize:12.5}}>{d.areasSolicitud.sinSolicitud ? 'Áreas que ya respondieron (todavía no se ha creado la solicitud de pruebas):' : 'Áreas a las que se les pidió pruebas' + (d.areasSolicitud.enviada ? '' : ' (la solicitud aún está en Borradores, no se ha enviado)') + ':'}</strong>
                                 <div style={{display:'flex', flexWrap:'wrap', gap:'4px 14px', marginTop:4}}>
                                   {d.areasSolicitud.areas.map(a => (
                                     <span key={a.entidad + a.area} style={{display:'inline-flex', alignItems:'center', gap:5, fontWeight:600, color: a.respondio ? 'var(--verde-oscuro)' : (d.areasSolicitud.enviada ? 'var(--rojo, #a3281c)' : 'var(--texto-suave)')}}>
                                       <span aria-hidden="true" style={{fontSize:16}}>{a.respondio ? '✓' : (d.areasSolicitud.enviada ? '✗' : '•')}</span>
-                                      {a.area} ({a.entidad}) — {a.respondio ? 'respondió' : (d.areasSolicitud.enviada ? 'falta' : 'pendiente de enviar')}
+                                      {a.area} ({a.entidad}) — {a.respondio ? (a.noSolicitada ? 'respondió sin que se le pidiera' : 'respondió') : (d.areasSolicitud.enviada ? 'falta' : 'pendiente de enviar')}
                                     </span>
                                   ))}
                                 </div>
