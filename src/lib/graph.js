@@ -679,7 +679,7 @@ export async function buscarSolicitudPruebasExistente(correoBuzon, noTutela, cli
 // Crea el borrador como REENVÍO del correo original (el de los remitentes filtrados) para no
 // perder la traza: el borrador queda en la carpeta Borradores del buzón de Tutelas, con el
 // correo original y sus adjuntos abajo y nuestro contenido arriba.
-async function reenviarComoBorrador(correoBuzon, mensajeId, { para, cc, categoria, htmlAntes }){
+async function reenviarComoBorrador(correoBuzon, mensajeId, { para, cc, categoria, htmlAntes, soloRemitente = false }){
   const token = await getMailToken();
   const base = `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(correoBuzon)}/messages/${mensajeId}`;
   const cabeceras = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
@@ -699,8 +699,12 @@ async function reenviarComoBorrador(correoBuzon, mensajeId, { para, cc, categori
     body: JSON.stringify({
       // Sin `subject`: el borrador conserva el asunto del correo original (pedido del usuario 2026-10-13, para tener la traza).
       categories: categoria ? [categoria] : [],
-      toRecipients: (para || []).map(c => ({ emailAddress: { address: c } })),
-      ccRecipients: (cc || []).filter(c => String(c).toLowerCase() !== String(correoBuzon || '').toLowerCase()).map(c => ({ emailAddress: { address: c } })),
+      // soloRemitente (APLAZAMIENTO, regla del usuario 2026-10-20): se responde SOLO a quien mandó el correo de notificación (María Gabriela o Dania) — los destinatarios que trae la
+      // respuesta por defecto — con copia a Dania; si lo mandó Dania, solo a ella (sin copia). Nunca a las áreas.
+      toRecipients: soloRemitente ? (borrador.toRecipients || []) : (para || []).map(c => ({ emailAddress: { address: c } })),
+      ccRecipients: (soloRemitente && (borrador.toRecipients || []).some(x => /^daniacp@/i.test(String(x.emailAddress?.address || '')))
+        ? []
+        : (cc || []).filter(c => String(c).toLowerCase() !== String(correoBuzon || '').toLowerCase()).map(c => ({ emailAddress: { address: c } }))),
       body: { contentType: 'HTML', content: contenido },
     }),
   });
@@ -733,6 +737,8 @@ export async function crearSolicitudPruebasBorrador({ config, robotSolicitudUrl,
   // Copia: el área jurídica (Dania) de cada cliente de la tutela, con las direcciones de la agenda del formato (se unen a las que traiga el robot).
   const DANIA_POR_CLIENTE = { 'ALIANSALUD': 'daniacp@aliansalud.com.co', 'COLMÉDICA': 'daniacp@colmedica.com', 'UMD': 'daniacp@umd.com.co' };
   const ccFinal = [...new Set([...(data.cc || []), ...cortos.map(c => DANIA_POR_CLIENTE[c]).filter(Boolean)].map(c => String(c)))];
+  // Solo Dania (la copia del APLAZAMIENTO): una por cada dominio de los clientes de la tutela.
+  const ccDania = [...new Set(cortos.map(c => DANIA_POR_CLIENTE[c]).filter(Boolean))];
   // Orden (pedido del usuario 2026-10-13): el modelo de la solicitud con todas sus viñetas, LUEGO la tabla de datos de la tutela, y al final la
   // despedida («Agradezco su gestión. Cordial saludo,») con la firma. Si el cuerpo no trae la despedida, la tabla va justo antes de la firma.
   const tablaHtml = tablaDatosTutelaHtml(campos || {}, data.pretensiones, camposTodos);
@@ -755,7 +761,7 @@ export async function crearSolicitudPruebasBorrador({ config, robotSolicitudUrl,
   let borrador, reenviado = false, notas = data.notas || '';
   if(correoBuzon && mensajeIdReenviar){
     try{
-      borrador = await reenviarComoBorrador(correoBuzon, mensajeIdReenviar, { para: data.para, cc: ccFinal, categoria, htmlAntes });
+      borrador = await reenviarComoBorrador(correoBuzon, mensajeIdReenviar, { para: data.para, cc: etiquetaEnvio ? ccDania : ccFinal, categoria, htmlAntes, soloRemitente: !!etiquetaEnvio });
       reenviado = true;
     }catch(err){
       console.error('No se pudo reenviar el correo original, se crea un borrador nuevo:', err);
@@ -763,7 +769,7 @@ export async function crearSolicitudPruebasBorrador({ config, robotSolicitudUrl,
     }
   }
   if(!borrador){
-    borrador = await crearBorradorCorreo({ to: data.para || [], cc: ccFinal, subject: asunto, htmlBody: htmlAntes, categorias: [categoria] });
+    borrador = await crearBorradorCorreo({ to: etiquetaEnvio ? [] : (data.para || []), cc: etiquetaEnvio ? ccDania : ccFinal, subject: asunto, htmlBody: htmlAntes, categorias: [categoria] });
     if(borrador?.id) borrador.firmaOk = await adjuntarFirmaInline('https://graph.microsoft.com/v1.0/me', borrador.id, await getMailToken());
   }
   invalidarCacheCarpetasCorreo();   // el borrador nuevo debe verse en la próxima revisión de duplicados
@@ -794,7 +800,10 @@ export async function crearSolicitudPruebasBorrador({ config, robotSolicitudUrl,
       }
     }));
   }
-  return { para: data.para || [], cc: ccFinal, asunto: (reenviado && borrador && borrador.subject) || asunto, notas, formato: formato.nombre, reenviado, borrador };
+  // Lo que se muestra: para el aplazamiento, los destinatarios reales del borrador (quien mandó la notificación) y la copia a Dania.
+  const paraReal = etiquetaEnvio && borrador && Array.isArray(borrador.toRecipients) && borrador.toRecipients.length ? borrador.toRecipients.map(x => x.emailAddress?.address).filter(Boolean) : (etiquetaEnvio ? [] : (data.para || []));
+  const ccReal = etiquetaEnvio && paraReal.some(c => /^daniacp@/i.test(c)) ? [] : (etiquetaEnvio ? ccDania : ccFinal);
+  return { para: paraReal, cc: ccReal, asunto: (reenviado && borrador && borrador.subject) || asunto, notas, formato: formato.nombre, reenviado, borrador };
 }
 
 // "API Claude" Tarea 1 (2026-09-23, pedido explícito del usuario, ya con

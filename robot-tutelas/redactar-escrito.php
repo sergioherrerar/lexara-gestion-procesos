@@ -389,6 +389,15 @@ $cuerpo = [
 list($data, $usado) = llamarConRespaldo($apiKey, $cuerpo, $estricto ? $modeloRedactar : null, true);
 $texto = textoDe($data);
 $o = objetoJsonDe($texto);
+// Modo estricto con el modelo rápido: si la respuesta quedó cortada o no se pudo leer, se repite UNA vez con el modelo de redactar (más pausado, 16.000 tokens). Así el aplazamiento
+// nunca falla por haber elegido el modelo rápido (2026-10-20: «quedó cortada por ser muy larga» en el aplazamiento de COLMÉDICA).
+if($estricto && $modeloBarato !== $modeloRedactar && (!$o || (string)($data['stop_reason'] ?? '') === 'max_tokens')){
+    $cuerpo['model'] = $modeloRedactar;
+    $cuerpo['max_tokens'] = 16000;
+    list($data, $usado) = llamarConRespaldo($apiKey, $cuerpo, null, true);
+    $texto = textoDe($data);
+    $o = objetoJsonDe($texto);
+}
 // Si la respuesta quedó cortada (o con el JSON dañado) se recuperan los cambios COMPLETOS que alcanzaron a salir; lo demás se descarta.
 if(!$o){
     $rec = ['cambios' => [], 'reemplazos' => [], 'eliminar' => []];
