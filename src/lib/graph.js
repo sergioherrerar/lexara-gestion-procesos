@@ -533,8 +533,7 @@ export function cuerpoSolicitudAHtml(cuerpo){
 // Tabla de datos de la tutela. Iba ANTES del formato (pedido 2026-10-07); desde 2026-10-13 (pedido del usuario)
 // va DEBAJO de la solicitud de pruebas y su franja de título dice «SOLICITUD DE PRUEBAS · DATOS DE LA TUTELA».
 // Compacta, en 4 columnas (rótulo | valor | rótulo | valor), rótulos en verde Lexara
-// con letra blanca y una franja de título. "Tema" lista las pretensiones más importantes de la
-// tutela (no la categoría del formulario).
+// con letra blanca y una franja de título. Sin la fila «Tema» (retirada 2026-10-19, pedido del usuario).
 export function tablaDatosTutelaHtml(campos, pretensiones, camposTodos){
   const c = { ...(campos || {}) };
   // Varios clientes en la misma tutela: un solo correo, con cada cliente y su tipo de vinculación en la tabla.
@@ -548,19 +547,16 @@ export function tablaDatosTutelaHtml(campos, pretensiones, camposTodos){
   const val = 'padding:4px 9px;border:1px solid #cfd9d6;color:#1c2624;font-size:13px;';
   const par = (r1, v1, r2, v2) => `<tr><td style="${rot}">${r1}</td><td style="${val}">${e(v1)}</td><td style="${rot}">${r2}</td><td style="${val}">${e(v2)}</td></tr>`;
   const ancha = (r1, contenidoHtml) => `<tr><td style="${rot}">${r1}</td><td colspan="3" style="${val}">${contenidoHtml}</td></tr>`;
-  const items = (pretensiones || []).filter(Boolean);
-  const tema = items.length
-    ? `<ul style="margin:0;padding-left:16px;">${items.map(t => `<li style="margin:0 0 1px;line-height:1.35;">${escaparHtml(t)}</li>`).join('')}</ul>`
-    : '';
   const franja = '<tr><td colspan="4" style="background:#e6efed;color:#004941;font-weight:bold;font-size:12px;letter-spacing:.8px;padding:5px 9px;border:1px solid #cfd9d6;border-top:3px solid #ef7d00;">SOLICITUD DE PRUEBAS · DATOS DE LA TUTELA</td></tr>';
   const filas = [
     franja,
     par('No. Tutela', c.NoTutela, 'Tipo Respuesta', c.TipoRespuesta),
-    par('Entidad', c.Entidad, 'Tipo Vinculación Entidad', c.TipoVinculacionEntidad),
-    ancha('Cliente', e(c.Cliente)),
+    // La fila se rotula «Entidad» pero su valor es el CLIENTE (no el grupo): pedido del usuario 2026-10-19. Con varios clientes, cada dato va en su propia fila ancha.
+    ...(Array.isArray(camposTodos) && camposTodos.length > 1
+      ? [ancha('Entidad', e(c.Cliente)), ancha('Tipo Vinculación Entidad', e(c.TipoVinculacionEntidad))]
+      : [par('Entidad', c.Cliente, 'Tipo Vinculación Entidad', c.TipoVinculacionEntidad)]),
     par('Medida Cautelar', c.MedidaCautelar, 'Agencia Oficiosa', c.AgenciaOficiosa),
     par('Usuario', c.Usuario, 'No. Identificación', c.NoIdentificacion),
-    ancha('Tema', tema),
   ].join('');
   return `<table style="border-collapse:collapse;font-family:Aptos,Calibri,Arial,sans-serif;width:100%;max-width:760px;margin:16px 0 12px;">${filas}</table>`;
 }

@@ -9,6 +9,7 @@ import {
   redactarEscritoConRobot, corregirEscritoConRobot, guardarLeccion, leerLecciones, leccionesParaPrompt, generarFichasDeModelos, generarPerfilesDeModelos, guardarPerfilDeModelo,
 } from '../lib/escritoRobot';
 import { IconTextButton } from './IconButton';
+import { casosNombradosEnPrompt } from '../lib/casosDelPrompt';
 
 function descargar(bytes, nombre){
   const url = URL.createObjectURL(new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' }));
@@ -155,8 +156,14 @@ export default function EscritoRobotPanel({ numero, onedriveCarpetaUrl, robotUrl
       anotar('Bajando el modelo original de SharePoint (' + (p.modelo.ruta || p.modelo.nombre || '') + ')...');
       const { bytes } = await graphDescargarArchivo(m[1], m[2]);
       guardarPerfilDeModelo(p.modelo.uri, bytes).catch(() => null);
-      anotar('Pasando el texto del artefacto al Word del modelo (sin tocar su letra ni quitar párrafos)...');
-      const aplicado = await aplicarTextoAModeloDocx(bytes, p.texto, { conservarTodo: true });
+      // Solo en los casos NOMBRADOS en el prompt de la abogada se quitan los bloques del modelo que no aplican; en los demás se conserva el modelo completo.
+      const reg = (datos && datos.registros && datos.registros[indiceRegistro]) || {};
+      const nombrados = p.tipo === 'aplazamiento' ? [] : casosNombradosEnPrompt({ tipo: p.tipo, cliente: claveCliente(p.cliente || reg.Cliente), texto: [reg.Tema, reg.Solicita, JSON.stringify(reg.Analisis || {}), p.modelo.ruta || p.modelo.nombre || ''].join(' ') });
+      const quitarNoAplican = nombrados.length > 0;
+      anotar(quitarNoAplican
+        ? 'Caso nombrado en el prompt de la abogada (sección ' + nombrados.join(', ') + '): paso el texto del artefacto al Word del modelo y quito los bloques que no aplican (sin tocar su letra ni la jurisprudencia citada)...'
+        : 'Pasando el texto del artefacto al Word del modelo (sin tocar su letra); este caso no está nombrado en el prompt de la abogada, así que no se quita ningún párrafo...');
+      const aplicado = await aplicarTextoAModeloDocx(bytes, p.texto, quitarNoAplican ? { quitarNoAplican: true } : { conservarTodo: true });
       const corto = { aliansalud: 'ALIANSALUD', colmedica: 'COLMEDICA', umd: 'UMD' }[claveCliente(p.cliente)] || String(p.cliente || '').slice(0, 20);
       const etiqueta = (TIPOS_ESCRITO[p.tipo] || {}).etiqueta || p.tipo || 'escrito';
       const nombre = (etiqueta + ' - ' + corto + ' - borrador del artefacto.docx').replace(/[\\/:*?"<>|]/g, ' ');

@@ -2,6 +2,10 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-10-19 (66)
+- **El correo de solicitud de pruebas ya no lleva la fila «Tema»** — pedido del usuario. En la tabla «SOLICITUD DE PRUEBAS · DATOS DE LA TUTELA» se retiró el campo Tema (las viñetas con las pretensiones); quedan No. Tutela, Tipo Respuesta, Entidad, Tipo Vinculación Entidad, Medida Cautelar, Agencia Oficiosa, Usuario y No. Identificación. Además la fila «Entidad» ahora muestra el CLIENTE (p. ej. «ALIANSALUD ENTIDAD PROMOTORA DE SALUD S.A.») en vez del grupo («GRUPO COLMEDICA»), y la fila «Cliente» se retiró; con varios clientes en la misma tutela, el Entidad y el Tipo de Vinculación van cada uno en su propia fila.
+- **«Traer un escrito redactado en el artefacto» solo quita bloques en los casos que nombra el prompt de la abogada** — pedido del usuario. En los casos nombrados (no adscrito, SOAT, exclusiones, preexistencias, incapacidades, empleador, portabilidad, UMD, no afiliado, agendamiento, INVIMA, petición, alcance, aclaración, impugnación) el portal quita del Word los bloques del modelo que no aplican (nunca la jurisprudencia citada ni párrafos que sí aparecen en el texto) y no deja dos renglones vacíos seguidos; en los demás casos y en el aplazamiento conserva todos los párrafos del modelo.
+
 ## 2026-10-19 (65)
 - **Los perfiles de formato de los modelos se crean UNA sola vez y quedan guardados** — pedido del usuario. El botón «Crear los perfiles de formato que falten» revisa primero cuáles modelos ya tienen su perfil en «PERFILES DE FORMATO LexIA» y solo crea los que faltan (si todos ya lo tienen, lo dice y no hace nada: ya no se recrean los 212 en cada pulsación); y al redactar con un modelo el portal ya no vuelve a escribir su perfil si ya existe.
 

@@ -264,12 +264,33 @@ export async function aplicarTextoAModeloDocx(bytesModelo, textoFinal, deps = {}
   }
   // Respeto al modelo: con «conservarTodo» no se quita ningún párrafo del modelo aunque el texto final no lo traiga.
   if(deps.conservarTodo){ resumen.conservados = quitar.length; resumen.quitados = 0; quitar.length = 0; }
+  else if(deps.quitarNoAplican){
+    // Casos nombrados en el PROMPT MAESTRO: se quitan los bloques del modelo que no aplican, pero nunca una cita de jurisprudencia o norma, ni un párrafo cuyas
+    // palabras sí aparecen en el texto final (probablemente solo cambió de redacción o de lugar).
+    const bolsa = new Set();
+    lineas.forEach(l => l.palabras.forEach(w => bolsa.add(w)));
+    const candidatos = quitar.splice(0, quitar.length);
+    let conservados = 0;
+    for(const el of candidatos){
+      const pal = [...palabras(textoDeParrafo(el))];
+      const sobra = !esFormatoDeCita(el) && pal.length >= 4 && pal.filter(w => bolsa.has(w)).length / pal.length < 0.5;
+      if(sobra) quitar.push(el); else conservados++;
+    }
+    resumen.conservados = conservados;
+    resumen.quitados = quitar.length;
+  }
   for(const p of quitar){
     const padre = p.parentNode;
     if(padre && padre.localName === 'tc' && hijosElemento(padre, 'p').length <= 1){
       trozosDe(p).forEach(t => t.tipo === 't' ? (t.el.textContent = '') : (t.el.parentNode && t.el.parentNode.removeChild(t.el)));
     }else if(padre){
+      // Al quitar un bloque no deben quedar dos renglones vacíos seguidos: si el párrafo quitado queda entre dos vacíos, se quita también el de arriba.
+      const vecino = (n, dir) => { let x = dir < 0 ? n.previousSibling : n.nextSibling; while(x && x.nodeType !== 1) x = dir < 0 ? x.previousSibling : x.nextSibling; return x; };
+      const esVacio = x => !!x && x.localName === 'p' && !colapsar(textoDeParrafo(x)) && x.getElementsByTagNameNS(NS, 'drawing').length === 0 && x.getElementsByTagNameNS(NS, 'pict').length === 0;
+      const ant = deps.quitarNoAplican ? vecino(p, -1) : null;
+      const sig = deps.quitarNoAplican ? vecino(p, 1) : null;
       padre.removeChild(p);
+      if(esVacio(ant) && esVacio(sig)) padre.removeChild(ant);
     }
   }
   zip.file('word/document.xml', new Serializer().serializeToString(doc));
