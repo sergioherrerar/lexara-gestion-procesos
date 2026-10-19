@@ -14,6 +14,7 @@
 // Colmédica/genérico) usaran el mismo bloque de cierre, no solo esta
 // certificación (que fue donde se armó primero).
 import { prepararDocumentoPDF, fechaLarga, VERDE_OSCURO, TEXTO, GRIS_SUAVE, BORDE_SUAVE, MARGEN, CONTENIDO_Y_INICIAL, CONTENIDO_Y_MAXIMO, dibujarResumenBox, FIRMA_DEFECTO, imagenComoDataUrl, ANCHO_FIRMA_COMPLETA_MM } from './informesPDF';
+import { esContratista, tipoContratoCanonico, frasePrincipalContrato } from './tipoContrato';
 import { idCifrado } from './graph';
 import { generarQRDataUrl, LINK_REDES_SOCIALES } from './qr';
 import firmaCompleta from '../assets/Firma Monica Completa.png';
@@ -81,10 +82,11 @@ function segmentosCertificacion(colaborador, esContratista){
   // Colaborador" sea Trabajador (no Contratista) tiene modalidad de contrato
   // a término indefinido — se agrega esa frase a la certificación laboral.
   const verbo = vigente ? 'labora' : 'laboró';
+  // El tipo de contrato sale de «Tipo de contrato» del colaborador (2026-10-19): indefinido, término fijo, obra o labor o aprendizaje.
   return [
     encabezado, { parrafo:true },
     nombreBold, conectorId, idBold,
-    { text: `${verbo} en esta firma, mediante contrato de trabajo a término indefinido, ${rangoFechas}, desempeñando el cargo de ${cargo}.` },
+    { text: `${verbo} en esta firma, mediante ${frasePrincipalContrato(colaborador.TipoColaborador)}, ${rangoFechas}, desempeñando el cargo de ${cargo}.` },
     { parrafo:true }, cierre,
   ];
 }
@@ -113,8 +115,8 @@ function dibujarParrafoConNegritas(doc, segmentos, x, y, maxWidth, lineHeight){
 }
 
 export async function generarCertificacionColaboradorPDF(colaborador){
-  const esContratista = (colaborador.TipoColaborador||"").toLowerCase() === 'contratista';
-  const titulo = esContratista ? 'Certificación de prestación de servicios' : 'Certificación laboral';
+  const esContratistaCol = esContratista(colaborador.TipoColaborador);
+  const titulo = esContratistaCol ? 'Certificación de prestación de servicios' : 'Certificación laboral';
   const { doc, pageWidth, hoy, fecha, dibujarEncabezadoYPie, numerarPaginas } = await prepararDocumentoPDF(titulo);
 
   dibujarEncabezadoYPie();
@@ -129,12 +131,13 @@ export async function generarCertificacionColaboradorPDF(colaborador){
 
   y = dibujarResumenBox(doc, MARGEN, y, pageWidth - MARGEN*2, [
     { label:'Cargo', value: colaborador.Cargo || "—" },
+    { label:'Tipo de contrato', value: tipoContratoCanonico(colaborador.TipoColaborador) || 'Indefinido' },
     { label:'Fecha de ingreso', value: fechaCortaVisible(colaborador.FechaIngreso) },
     { label: colaborador.FechaRetiro ? 'Fecha de retiro' : 'Estado', value: colaborador.FechaRetiro ? fechaCortaVisible(colaborador.FechaRetiro) : 'Vigente' },
   ]) + 9;
 
   doc.setFontSize(10.5); doc.setTextColor(...TEXTO);
-  y = dibujarParrafoConNegritas(doc, segmentosCertificacion(colaborador, esContratista), MARGEN, y, pageWidth - MARGEN*2, 5.4) + 11;
+  y = dibujarParrafoConNegritas(doc, segmentosCertificacion(colaborador, esContratistaCol), MARGEN, y, pageWidth - MARGEN*2, 5.4) + 11;
 
   if(y > CONTENIDO_Y_MAXIMO - 68){
     doc.addPage();
@@ -181,6 +184,7 @@ export async function generarCertificacionColaboradorPDF(colaborador){
     (colaborador.Nombre || '').toUpperCase(),
     `${colaborador.TipoIdentificacion || 'C.C.'} ${colaborador.Identificacion || '—'}`,
     `Cargo: ${colaborador.Cargo || '—'}`,
+    `Tipo de contrato: ${tipoContratoCanonico(colaborador.TipoColaborador) || 'Indefinido'}`,
     `Vinculado desde: ${fechaCortaVisible(colaborador.FechaIngreso)}`,
     colaborador.FechaRetiro ? `Hasta: ${fechaCortaVisible(colaborador.FechaRetiro)}` : 'Vigente',
     `Certificación generada: ${fechaCortaVisible(hoy.toISOString())}`,

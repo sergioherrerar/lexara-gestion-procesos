@@ -14,6 +14,7 @@
 // en vez de columnas fijas de un archivo.
 import { COLOR_ENCABEZADO, fechaISOaExcel } from './informeSOS';
 import { esColaboradorVigente } from './permissions';
+import { esContratista } from './tipoContrato';
 import {
   prepararDocumentoPDF, dibujarResumenBox, fechaCorta,
   VERDE_OSCURO, GRIS_SUAVE, TEXTO, BORDE_SUAVE, GRIS_ZEBRA, VERDE_CLARO, MARGEN, CONTENIDO_Y_INICIAL, CONTENIDO_Y_MAXIMO,
@@ -49,9 +50,18 @@ export function calcularResumen(fechaIngresoISO, periodosDeEsaPersona){
 // visualicen los datos de trabajadores no contratistas y que estén
 // vigentes"): las vacaciones son un concepto laboral, no aplica a quien está
 // vinculado por prestación de servicios.
+// Contratistas que SÍ llevan control de vacaciones (excepción pedida por el usuario 2026-10-19: «para vacaciones también incluye a Miguel»). Se compara por nombre,
+// sin tildes ni mayúsculas; la persona debe estar activa y con Fecha de Ingreso.
+export const CONTRATISTAS_CON_VACACIONES = ['Miguel Angel Torres Ospina'];
+const claveNombre = t => String(t||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim();
+function esExcepcionVacaciones(c){
+  return !!c && c.Activo !== false && c.Activo !== 'No' && CONTRATISTAS_CON_VACACIONES.some(n => claveNombre(n) === claveNombre(c.Nombre));
+}
+const entraEnVacaciones = c => (esColaboradorVigente(c) || esExcepcionVacaciones(c)) && !!soloFecha(c.FechaIngreso);
+
 export function agruparVacacionesPorColaborador(colaboradores, periodos){
   return (colaboradores||[])
-    .filter(c => esColaboradorVigente(c) && soloFecha(c.FechaIngreso))
+    .filter(entraEnVacaciones)
     .map(c => {
       const propios = (periodos||[])
         .filter(p => (p.Colaborador||"").trim() === (c.Nombre||"").trim())
@@ -60,6 +70,18 @@ export function agruparVacacionesPorColaborador(colaboradores, periodos){
       return { id: c.id, nombre: c.Nombre, fechaIngreso: c.FechaIngreso, ...resumen, cantidadPeriodos: propios.length, historial: propios };
     })
     .sort((a,b) => (a.nombre||"").localeCompare(b.nombre||""));
+}
+
+// Personas ACTIVAS que no salen en la tabla de Vacaciones y por qué (2026-10-19, pedido del usuario: «que avise quién falta»): contratistas o sin Fecha de Ingreso.
+// Los inactivos no se listan (son personas que ya no están).
+export function colaboradoresFueraDeVacaciones(colaboradores){
+  return (colaboradores||[])
+    .filter(c => c && c.Activo !== false && c.Activo !== 'No' && !entraEnVacaciones(c))
+    .map(c => ({
+      nombre: (c.Nombre||'').trim() || '(sin nombre)',
+      motivo: esContratista(c.TipoColaborador) ? 'es contratista' : 'no tiene Fecha de Ingreso',
+    }))
+    .sort((a,b) => a.nombre.localeCompare(b.nombre));
 }
 
 // Excel de Vacaciones — pedido explícito del usuario 2026-09-01 ("un botón

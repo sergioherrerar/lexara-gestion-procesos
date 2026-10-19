@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { tipoContratoCanonico } from '../lib/tipoContrato';
 import { mensajeError, idCifrado } from '../lib/graph';
 import { ICON_SVG } from '../config';
 import IconButton, { IconTextButton } from './IconButton';
@@ -13,7 +14,7 @@ const COLUMNS = [
   {key:'telefono', label:'Teléfono', value: c => c.Telefono || ""},
   {key:'direccion', label:'Dirección', value: c => c.Direccion || ""},
   {key:'rol', label:'Rol', value: c => c.Rol || ""},
-  {key:'tipoColaborador', label:'Tipo de colaborador', value: c => c.TipoColaborador || ""},
+  {key:'tipoColaborador', label:'Tipo de contrato', value: c => tipoContratoCanonico(c.TipoColaborador)},
   {key:'activo', label:'Activo', value: c => c.Activo ? "Sí" : "No"},
   {key:'acciones', label:'Acciones', filterable:false},
 ];
@@ -76,7 +77,7 @@ export default function ColaboradoresView({ colaboradores, searchQuery, onOpenCo
                 <td>{c.Telefono || "—"}</td>
                 <td>{c.Direccion || "—"}</td>
                 <td>{c.Rol || "—"}</td>
-                <td>{c.TipoColaborador || "—"}</td>
+                <td>{tipoContratoCanonico(c.TipoColaborador) || "—"}</td>
                 <td>{c.Activo ? "Sí" : "No"}</td>
                 <td style={{whiteSpace:'nowrap'}}>
                   <div className="row-actions">

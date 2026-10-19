@@ -1,3 +1,4 @@
+import { esContratista } from './tipoContrato';
 // Control de acceso — antes se basaba SOLO en el "Rol" (Administrador/Jefe/
 // Colaborador), 3 combinaciones fijas de módulos. Eso no alcanzaba para un
 // caso real (una contadora externa que solo debía ver Facturación y Órdenes
@@ -24,7 +25,7 @@
 // un Activo=false real, porque `false || "Sí"` cae en "Sí" por ser "false"
 // un valor falsy en JS — un colaborador inactivo sí aparecía igual.
 export function esColaboradorVigente(c){
-  return !!c && c.Activo !== false && c.Activo !== 'No' && (c.TipoColaborador||'').toLowerCase() !== 'contratista';
+  return !!c && c.Activo !== false && c.Activo !== 'No' && !esContratista(c.TipoColaborador);
 }
 
 // Todos los módulos que se pueden restringir por casilla. Dashboard e

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { mensajeError } from '../lib/graph';
 import ColaboradoresView from './ColaboradoresView';
 import VacacionesTab from './VacacionesTab';
+import { esContratista, tipoContratoCanonico } from '../lib/tipoContrato';
 import HorasExtrasTab from './HorasExtrasTab';
 import GastosTab from './GastosTab';
 import FacturacionTab from './FacturacionTab';
@@ -42,14 +43,14 @@ function CertificacionesTab({ colaboradores, notify }){
     <div className="table-wrap">
       <table>
         <thead>
-          <tr><th>Nombre</th><th>Cargo</th><th>Tipo de colaborador</th><th>Fecha de ingreso</th><th>Certificación</th></tr>
+          <tr><th>Nombre</th><th>Cargo</th><th>Tipo de contrato</th><th>Fecha de ingreso</th><th>Certificación</th></tr>
         </thead>
         <tbody>
           {activos.length ? activos.map(c => (
             <tr key={c.id}>
               <td className="cliente">{c.Nombre || "—"}</td>
               <td>{c.Cargo || "—"}</td>
-              <td>{c.TipoColaborador || "Trabajador"}</td>
+              <td>{tipoContratoCanonico(c.TipoColaborador) || "Indefinido"}</td>
               <td>{c.FechaIngreso || "—"}</td>
               <td>
                 <IconTextButton
@@ -57,7 +58,7 @@ function CertificacionesTab({ colaboradores, notify }){
                   onClick={() => handleGenerar(c)}
                   disabled={generando===c.id}
                 >
-                  {generando===c.id ? "Generando…" : (((c.TipoColaborador||"").toLowerCase()==='contratista') ? "Certificación de servicios" : "Certificación laboral")}
+                  {generando===c.id ? "Generando…" : ((esContratista(c.TipoColaborador)) ? "Certificación de servicios" : "Certificación laboral")}
                 </IconTextButton>
               </td>
             </tr>
@@ -116,7 +117,7 @@ function DocumentosTab({ colaboradores, config, notify }){
   );
 }
 
-export default function AdministracionView({ colaboradores, searchQuery, onOpenColaborador, onCreateColaborador, onDeleteColaborador, canWrite = true, notify, config, tutelas, valoresEntidad, clientes, procesos, facturas, ordenesCompra, onAbrirBorradorOrdenCompra, onAbrirBorradorFactura, horasExtras, onAprobarHoraExtra, vacacionesPeriodos, onCrearPeriodoVacaciones, onEditarPeriodoVacaciones, onEliminarPeriodoVacaciones,
+export default function AdministracionView({ onActualizarEquipo, colaboradores, searchQuery, onOpenColaborador, onCreateColaborador, onDeleteColaborador, canWrite = true, notify, config, tutelas, valoresEntidad, clientes, procesos, facturas, ordenesCompra, onAbrirBorradorOrdenCompra, onAbrirBorradorFactura, horasExtras, onAprobarHoraExtra, vacacionesPeriodos, onCrearPeriodoVacaciones, onEditarPeriodoVacaciones, onEliminarPeriodoVacaciones,
   proveedoresGastos, cuentasCobroGastos, pagosPorRealizar, gastos,
   onCrearProveedorGastos, onEditarProveedorGastos, onEliminarProveedorGastos,
   onCrearCuentaCobroGastos, onEditarCuentaCobroGastos, onEliminarCuentaCobroGastos,
@@ -155,6 +156,7 @@ export default function AdministracionView({ colaboradores, searchQuery, onOpenC
       )}
       {tab==='vacaciones' && (
         <VacacionesTab
+          onActualizarEquipo={onActualizarEquipo}
           colaboradores={colaboradores}
           vacacionesPeriodos={vacacionesPeriodos}
           onCrearPeriodo={onCrearPeriodoVacaciones}

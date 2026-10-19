@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { TIPOS_CONTRATO, tipoContratoCanonico } from '../lib/tipoContrato';
 import { useEscapeToClose } from '../hooks/useEscapeToClose';
 import { MODULOS_DISPONIBLES, modulosPermitidosDe, parseModulosPermitidos, serializeModulosPermitidos } from '../lib/permissions';
 
@@ -7,7 +8,8 @@ const ROL_OPTIONS = ["Administrador", "Jefe", "Colaborador"];
 // directo en SharePoint con estos 2 valores (Trabajador para el equipo
 // interno, Contratista para externos como una contadora). Si en SharePoint
 // aparece algún valor distinto a estos dos, avisar para agregarlo aquí.
-const TIPO_COLABORADOR_OPTIONS = ["Trabajador", "Contratista"];
+// «Tipo de contrato» (antes «Tipo de colaborador»: Trabajador / Contratista) — ver lib/tipoContrato.js.
+const TIPO_COLABORADOR_OPTIONS = TIPOS_CONTRATO;
 // Lista fija (no texto libre) para poder agrupar/filtrar por Cargo más
 // adelante sin que un typo ("Abogada junior" vs "Abogada Junior") rompa el
 // agrupamiento — pedido explícito del usuario 2026-08-22.
@@ -32,7 +34,7 @@ function emptyForm(colaborador){
     Correo: colaborador.Correo || "",
     Activo: colaborador.Activo != null ? !!colaborador.Activo : true,
     Rol: colaborador.Rol || "",
-    TipoColaborador: colaborador.TipoColaborador || "",
+    TipoColaborador: tipoContratoCanonico(colaborador.TipoColaborador),
     // Cargo real (Gerente, Abogado de Procesos, etc.) — distinto del Rol de
     // permisos de arriba. Se usan en la certificación laboral/de prestación
     // de servicios en PDF (ver informeCertificacion.js).
@@ -111,10 +113,11 @@ export default function ColaboradorDrawer({ colaborador, liveMode, onClose, onSa
                 </select>
               </div>
               <div className="field">
-                <label>Tipo de colaborador</label>
+                <label>Tipo de contrato</label>
                 <select value={form.TipoColaborador} onChange={e => setField('TipoColaborador', e.target.value)} disabled={!canWrite}>
                   <option value="">— seleccionar —</option>
                   {TIPO_COLABORADOR_OPTIONS.map(o => <option value={o} key={o}>{o}</option>)}
+                  {form.TipoColaborador && !TIPO_COLABORADOR_OPTIONS.includes(form.TipoColaborador) && <option value={form.TipoColaborador}>{form.TipoColaborador}</option>}
                 </select>
               </div>
               <div className="field">

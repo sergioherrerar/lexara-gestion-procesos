@@ -238,6 +238,7 @@ export default function App(){
         )}
         {app.view === 'administracion' && canAccessView(app.modulosPermitidos, 'administracion') && (
           <AdministracionView
+            onActualizarEquipo={app.refreshEquipoYVacaciones}
             colaboradores={app.colaboradores}
             searchQuery={app.searchQuery}
             onOpenColaborador={app.openColaborador}

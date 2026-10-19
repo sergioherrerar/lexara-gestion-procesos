@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { agruparVacacionesPorColaborador, generarVacacionesExcel, generarPDFVacacionesColaborador } from '../lib/vacaciones';
+import { agruparVacacionesPorColaborador, generarVacacionesExcel, generarPDFVacacionesColaborador, colaboradoresFueraDeVacaciones } from '../lib/vacaciones';
 import { fmtDate, mensajeError } from '../lib/graph';
 import { FieldCard } from './FormFields';
 import IconButton, { IconTextButton } from './IconButton';
@@ -17,7 +17,7 @@ import IconButton, { IconTextButton } from './IconButton';
 // ahora es una lista de SharePoint normal — SÍ funciona en modo demo.
 const FORM_VACIO = { FechaInicio:"", FechaFin:"", Dias:"", Observaciones:"" };
 
-export default function VacacionesTab({ colaboradores, vacacionesPeriodos, onCrearPeriodo, onEditarPeriodo, onEliminarPeriodo, notify, canWrite }){
+export default function VacacionesTab({ onActualizarEquipo, colaboradores, vacacionesPeriodos, onCrearPeriodo, onEditarPeriodo, onEliminarPeriodo, notify, canWrite }){
   const [abiertoPara, setAbiertoPara] = useState("");
   const [form, setForm] = useState(FORM_VACIO);
   const [guardando, setGuardando] = useState(false);
@@ -46,6 +46,16 @@ export default function VacacionesTab({ colaboradores, vacacionesPeriodos, onCre
   }, [abiertoPara, editandoId]);
 
   const filas = agruparVacacionesPorColaborador(colaboradores, vacacionesPeriodos);
+  const fuera = colaboradoresFueraDeVacaciones(colaboradores);
+  // Al abrir la pestaña se vuelve a leer Equipo MD (una persona nueva aparece sin pulsar «Actualizar datos»).
+  const [actualizandoEquipo, setActualizandoEquipo] = useState(false);
+  useEffect(() => {
+    if(!onActualizarEquipo) return;
+    let vivo = true;
+    setActualizandoEquipo(true);
+    Promise.resolve(onActualizarEquipo()).finally(() => { if(vivo) setActualizandoEquipo(false); });
+    return () => { vivo = false; };
+  }, []);
 
   async function handleDescargarExcel(){
     setGenerandoExcel(true);
@@ -98,8 +108,14 @@ export default function VacacionesTab({ colaboradores, vacacionesPeriodos, onCre
   return (
     <div>
       <p className="save-hint" style={{marginBottom:14}}>
-        Días laborados/generados/pendientes/tomados se calculan en vivo (Fecha de Ingreso + la suma de los períodos de abajo) — no son celdas de ningún Excel. Solo se muestran trabajadores (no contratistas) vigentes.
+        Días laborados/generados/pendientes/tomados se calculan en vivo (Fecha de Ingreso + la suma de los períodos de abajo) — no son celdas de ningún Excel. Solo se muestran trabajadores (no contratistas) vigentes, más las excepciones indicadas por el despacho (Miguel Angel Torres Ospina).
       </p>
+      {actualizandoEquipo && <p className="save-hint" style={{margin:'0 0 8px'}}>Actualizando la lista de personas…</p>}
+      {fuera.length > 0 && (
+        <p className="save-hint" style={{marginBottom:14}}>
+          <strong>No aparecen en esta tabla:</strong> {fuera.map(f => f.nombre + ' (' + f.motivo + ')').join(' · ')}. Para incluir a alguien, corrige su ficha en Equipo MD (tipo Trabajador y Fecha de Ingreso).
+        </p>
+      )}
       <div style={{marginBottom:16}}>
         <IconTextButton icon="excel" variant="secondary" onClick={handleDescargarExcel} disabled={generandoExcel}>
           {generandoExcel ? "Generando…" : "Descargar Excel"}

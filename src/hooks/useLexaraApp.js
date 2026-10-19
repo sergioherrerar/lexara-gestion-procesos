@@ -463,6 +463,21 @@ export function useLexaraApp(){
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Vuelve a leer SOLO Equipo MD y los períodos de Vacaciones (sin aviso, sin tocar las demás listas): se usa al abrir la pestaña Vacaciones para que una
+  // persona nueva aparezca sin tener que pulsar «Actualizar datos».
+  async function refreshEquipoYVacaciones(){
+    if(!liveMode) return;
+    try{
+      const sid = siteId || await Graph.fetchSiteId(config);
+      const subset = lists.filter(l => l.key === 'colaboradores' || l.key === 'vacacionesPeriodos');
+      if(!subset.length) return;
+      const updated = await cargarTodasLasListas(config, subset, sid);
+      const col = updated.find(l => l.key === 'colaboradores');
+      const vac = updated.find(l => l.key === 'vacacionesPeriodos');
+      if(col) setColaboradores(col.items || []);
+      if(vac) setVacacionesPeriodos(vac.items || []);
+    }catch(err){ console.error('No se pudo actualizar Equipo MD y Vacaciones:', err); }
+  }
   async function refreshData(){
     if(!liveMode || refreshing) return;
     setRefreshing(true);
@@ -1970,7 +1985,7 @@ export function useLexaraApp(){
     lists, listByKey, updateListMapping,
     liveMode, account, appActive, view, setView, role, canWrite, modulosPermitidos,
     testStatus, testConnection, applyAllMappings, downloadAllMappings,
-    refreshData, refreshing,
+    refreshData, refreshing, refreshEquipoYVacaciones,
     signIn, enterDemo, goSetup, signOut,
     saving, signingIn,
     toast, closeToast, confirmState, acceptConfirm, cancelConfirm, notify, requestConfirm,
