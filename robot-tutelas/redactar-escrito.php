@@ -199,6 +199,7 @@ if($modo === 'elegir'){
     $sistema = "Eres LexIA, abogada del despacho \"md abogados sas\" (defiende a ALIANSALUD EPS, COLMÉDICA MEDICINA PREPAGADA y UNIDAD MÉDICA Y DE DIAGNÓSTICO). Te doy el caso de una tutela y la lista numerada de modelos de escritos del despacho. Elige el UN modelo que mejor se adecua para redactar el escrito que se necesita (campo escritoNecesario), pensando en el Tema, la pretensión real, el cliente y los antecedentes (negativa por INVIMA/UNIRS, puerta de entrada, preexistencia, etc.), y teniendo en cuenta la nota del abogado. Para Colmédica prefiere los modelos del MISMO plan de medicina prepagada del usuario cuando existan. Devuelve SOLO JSON: {\"indice\":0,\"motivo\":\"una frase de por qué encaja\"}. Usa solo un índice de la lista.";
     $cuerpo = [
         'model' => $modeloBarato,
+        'thinking' => ['type' => 'disabled'],   // sin razonamiento oculto: gastaba el límite de tokens y la respuesta llegaba vacía («cortada por ser muy larga»)
         'max_tokens' => 400,
         'system' => $sistema,
         'messages' => [['role' => 'user', 'content' => "CASO:\n" . json_encode($caso, JSON_UNESCAPED_UNICODE) . "\n\nMODELOS:\n" . implode("\n", $lista)]],
@@ -241,7 +242,7 @@ if($modo === 'fichas'){
     }
     if(!$lista) fallar(400, 'No llegaron modelos para describir.');
     $sistema = "Eres LexIA, abogada del despacho \"md abogados sas\". Te doy el comienzo y los títulos de varios MODELOS de escritos de tutela del despacho. Para CADA modelo escribe una ficha de máximo 35 palabras que diga: qué tema o servicio trata (por ejemplo preexistencia, exclusión de medicamento, agendamiento, tratamiento integral), a qué cliente o plan de medicina prepagada va dirigido si se nota, y cuál es su argumento de defensa principal. No inventes: si algo no se ve, no lo digas. Devuelve SOLO JSON: {\"fichas\":[{\"i\":0,\"ficha\":\"...\"}]} usando los mismos números i que te doy.";
-    $cuerpo = ['model' => $modeloBarato, 'max_tokens' => 2500, 'system' => $sistema, 'messages' => [['role' => 'user', 'content' => implode("\n\n", $lista)]]];
+    $cuerpo = ['model' => $modeloBarato, 'thinking' => ['type' => 'disabled'], 'max_tokens' => 2500, 'system' => $sistema, 'messages' => [['role' => 'user', 'content' => implode("\n\n", $lista)]]];
     // Intenta con el modelo barato; si no trae fichas válidas, reintenta UNA vez con el modelo principal. Si el JSON viene mal formado, se
     // recuperan las fichas una por una con una expresión regular.
     $fichas = []; $ultimoTexto = ''; $uso = null;
@@ -285,6 +286,7 @@ if($modo === 'clausulas'){
     $sistema = "Eres LexIA, abogada del despacho \"md abogados sas\", que defiende a COLMÉDICA MEDICINA PREPAGADA. Del CLAUSULADO del plan de medicina prepagada «" . $plan . "» extrae TEXTUALMENTE (con su número de cláusula o numeral tal como aparece) las cláusulas que sirven para contestar esta tutela: cobertura del servicio o medicamento pedido, exclusiones y limitaciones aplicables, preexistencias, requisitos de autorización y topes. Máximo 1.200 palabras. No inventes nada: si una cláusula no aparece en el texto, no la incluyas, y no cambies su redacción. Devuelve SOLO JSON: {\"clausulas\":\"texto con las cláusulas\"}; si ninguna aplica, {\"clausulas\":\"\"}.";
     $cuerpo = [
         'model' => $modeloRedactar,
+        'thinking' => ['type' => 'disabled'],
         'max_tokens' => 3500,
         'system' => $sistema,
         'messages' => [['role' => 'user', 'content' => "CASO (pretensión y tema):\n" . json_encode($casoClausulas, JSON_UNESCAPED_UNICODE) . "\n\nCLAUSULADO:\n" . $textoClausulado]],
@@ -382,6 +384,7 @@ $usuario .= "\n\n" . ($modo === 'redactar' ? 'PÁRRAFOS DEL MODELO (numerados):'
 // Modo estricto (aplazamiento, solo reemplazar datos): modelo rápido y respuesta corta; si el modelo rápido no está disponible se usa el de redactar.
 $cuerpo = [
     'model' => $estricto ? $modeloBarato : $modeloRedactar,
+    'thinking' => ['type' => 'disabled'],
     'max_tokens' => $estricto ? 6000 : 16000,
     'system' => $sistema,
     'messages' => [['role' => 'user', 'content' => $usuario]],
@@ -415,7 +418,7 @@ if(!$o){
 if(!$o){
     $stop = (string)($data['stop_reason'] ?? '');
     $vista = trim(preg_replace('/\s+/u', ' ', function_exists('mb_substr') ? mb_substr($texto, 0, 240) : substr($texto, 0, 240)));
-    fallar(502, 'No se pudo leer la respuesta de LexIA' . ($stop === 'max_tokens' ? ' (quedó cortada por ser muy larga)' : '') . ($vista !== '' ? ': ' . $vista : '.'));
+    fallar(502, 'No se pudo leer la respuesta de LexIA' . ($stop === 'max_tokens' ? ' (quedó cortada por ser muy larga)' : '') . ' [modelo: ' . $usado . ', tokens de salida: ' . (int)($data['usage']['output_tokens'] ?? 0) . ', texto recibido: ' . strlen($texto) . ' caracteres]' . ($vista !== '' ? ': ' . $vista : '.'));
 }
 // Reglas de la abogada (PROMPT MAESTRO) con los límites del usuario: se pueden eliminar bloques que no aplican y reescribir párrafos de redacción, pero NO se tocan
 // la jurisprudencia citada (párrafos «cita»), los formatos ni las imágenes. En modo estricto (modelos fijos como el aplazamiento) solo se reemplazan datos.

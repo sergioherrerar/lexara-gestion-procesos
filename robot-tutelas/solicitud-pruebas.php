@@ -167,6 +167,7 @@ $datosTutela = "DATOS DE LA TUTELA (extraídos por LexIA del correo y los docume
 
 $body = [
     'model' => 'claude-sonnet-5',
+    'thinking' => ['type' => 'disabled'],   // sin razonamiento oculto (gastaba el límite de tokens)
     'max_tokens' => 16000,   // con varias entidades en un solo correo (ej. 3) el texto es largo: 10000 se quedaba corto («quedó cortada por ser muy larga»)
     'system' => [
         // El documento del formato y las instrucciones cambian poco entre una tutela y otra:

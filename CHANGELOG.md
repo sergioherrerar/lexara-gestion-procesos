@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-10-20 (76)
+- **Robot: la contestación, el aplazamiento y las cláusulas dejaron de fallar por «respuesta cortada por ser muy larga»** — causa: los modelos nuevos gastaban todo el límite de tokens «pensando» (razonamiento oculto) y la respuesta llegaba vacía (en la pantalla: «No pude revisar el plan de medicina prepagada (respuesta no válida)» y luego «quedó cortada por ser muy larga»). Ahora redactar-escrito.php (elegir modelo, fichas, cláusulas, redactar y corregir) y solicitud-pruebas.php piden la respuesta con el razonamiento desactivado. Además, si algo vuelve a cortarse, el error dice el modelo usado, los tokens de salida y cuántos caracteres llegaron.
+
 ## 2026-10-20 (75)
 - **El correo con aplazamiento va SOLO a quien mandó la notificación, con copia a Dania — no a las áreas** — regla del usuario. El borrador de «Correo con aplazamiento» es una respuesta al correo de notificación: ahora queda dirigido únicamente a quien lo mandó (María Gabriela o Dania, los destinatarios que trae la respuesta por defecto) con copia a Dania (una por cada cliente de la tutela); si lo mandó Dania, va solo a ella y sin copia. Antes quedaba dirigido a todas las áreas de la solicitud de pruebas. La solicitud de pruebas normal no cambia (sigue yendo a las áreas).
 - **Robot (redactar-escrito.php): el aplazamiento ya no falla por «quedó cortada por ser muy larga»** — en modo estricto, si el modelo rápido no entrega una respuesta completa, el robot repite una vez con el modelo de redactar (16.000 tokens).
