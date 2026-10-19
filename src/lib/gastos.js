@@ -298,12 +298,16 @@ function palabrasTipoDocumento(tipo){
   return palabrasDe(t).filter(w => w.length >= 3 && w !== 'de');
 }
 // Puntaje de un archivo para un proveedor: fracción de las palabras del proveedor que aparecen en el nombre (0 si ninguna o menos de la mitad).
-function puntajeProveedor(nombreArchivo, palabras){
+// `unicas`: palabras del proveedor que NO están en el nombre de ningún otro proveedor registrado (p. ej. «miguel» en «Soporte pago Miguel»): con una sola de esas basta, aunque el
+// archivo no traiga el nombre completo (las personas suelen aparecer solo con el nombre o el apellido).
+function puntajeProveedor(nombreArchivo, palabras, unicas){
   if(!palabras.length) return 0;
   const enArchivo = new Set(palabrasDe(nombreArchivo));
-  const halladas = palabras.filter(w => enArchivo.has(w)).length;
-  const fraccion = halladas / palabras.length;
-  return halladas >= 1 && fraccion >= 0.5 ? fraccion : 0;
+  const encontradas = palabras.filter(w => enArchivo.has(w));
+  const fraccion = encontradas.length / palabras.length;
+  if(encontradas.length >= 1 && fraccion >= 0.5) return fraccion;
+  if(encontradas.length >= 1 && unicas && encontradas.every(w => unicas.has(w) && w.length >= 4)) return fraccion;
+  return 0;
 }
 /**
  * Propone, para cada gasto, el archivo de la factura y el del pago.
@@ -311,13 +315,17 @@ function puntajeProveedor(nombreArchivo, palabras){
  * @param registros [{ id, PagadoA, TipoDocumento }]
  * @returns { propuestas: Map<id, { factura?: archivo, pago?: archivo }>, ambiguos: number }
  */
-export function emparejarSoportes(archivos, registros){
+export function emparejarSoportes(archivos, registros, proveedores = null){
   const crudas = [];
   let ambiguos = 0;
+  // Cuántos proveedores registrados llevan cada palabra: las que solo lleva uno identifican a ese proveedor.
+  const frecuencia = new Map();
+  (proveedores || []).forEach(p => palabrasProveedor(p.PagadoA).forEach(w => frecuencia.set(w, (frecuencia.get(w) || 0) + 1)));
   for(const r of registros){
     const palabras = palabrasProveedor(r.PagadoA);
+    const unicas = proveedores ? new Set(palabras.filter(w => (frecuencia.get(w) || 0) <= 1)) : null;
     const tipo = palabrasTipoDocumento(r.TipoDocumento);
-    const candidatos = (archivos || []).map(a => ({ a, p: puntajeProveedor(a.nombre, palabras), n: new Set(palabrasDe(a.nombre)) })).filter(c => c.p > 0);
+    const candidatos = (archivos || []).map(a => ({ a, p: puntajeProveedor(a.nombre, palabras, unicas), n: new Set(palabrasDe(a.nombre)) })).filter(c => c.p > 0);
     const elegir = (filtro) => {
       const lista = candidatos.filter(filtro);
       if(!lista.length) return null;

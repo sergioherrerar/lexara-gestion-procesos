@@ -404,7 +404,7 @@ function RegistrosSection({ nombreLista, registros, proveedores, conNumero, conT
       for(const [k, promesa] of porMes){
         const archivos = await promesa;
         const delMes = pendientes.filter(r => String(r.Fecha).slice(0, 7) === k);
-        const { propuestas, ambiguos: amb } = emparejarSoportes(archivos, delMes);
+        const { propuestas, ambiguos: amb } = emparejarSoportes(archivos, delMes, proveedores);
         ambiguos += amb;
         for(const r of delMes){
           const p = propuestas.get(r.id);
