@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-10-20 (72)
+- **Gastos → Proveedores: ya no deja crear un proveedor repetido** — pedido del usuario (el formulario dejó registrar DOS veces a Miguel Angel Torres Ospina). Al guardar un proveedor nuevo (o al editar uno) el portal revisa si ya existe otro con el mismo NOMBRE (sin importar tildes, mayúsculas ni espacios de más) o la misma IDENTIFICACIÓN (solo letras y números; se ignoran las vacías o muy cortas) y, si existe, no guarda y avisa cuál es para editarlo en vez de crear otro. Los duplicados que ya estaban hay que borrarlos a mano (queda el que se prefiera).
+
 ## 2026-10-20 (71)
 - **Gastos → Proveedores: se agrega «CAJA SOCIAL» a la lista de Entidad (bancos)** — pedido del usuario (para registrar la cuenta de Miguel Angel Torres Ospina). Si la columna «Entidad» de la lista Proveedores Gastos MD en SharePoint es de tipo Opción, hay que agregar también «CAJA SOCIAL» ahí para poder guardarla.
 

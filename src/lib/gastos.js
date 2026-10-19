@@ -24,6 +24,21 @@ export const TIPO_DOCUMENTO_OPTIONS = ["Factura", "Soporte de pago", "Cuenta de 
 export const ENTIDAD_BANCARIA_OPTIONS = ["BANCO DE BOGOTA", "BANCOLOMBIA", "BANCO BBVA", "CAJA SOCIAL", "COLPATRIA", "DAVIVIENDA", "FALABELLA", "NEQUI", "NU", "NO APLICA"];
 export const TIPO_CUENTA_OPTIONS = ["AHORROS", "CORRIENTE", "NO APLICA"];
 
+// ¿Ya existe este proveedor? (2026-10-20, pedido del usuario: el formulario dejó crear DOS veces a Miguel Angel Torres Ospina). Se compara por NOMBRE (sin tildes, mayúsculas ni
+// espacios de sobra) y por IDENTIFICACIÓN (solo letras y números; se ignoran las muy cortas o vacías). `idPropio` excluye al registro que se está editando.
+const claveTexto = t => String(t||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim();
+const claveId = t => String(t||'').toLowerCase().replace(/[^a-z0-9]/g, '');
+export function proveedorRepetido(proveedores, datos, idPropio = null){
+  const nombre = claveTexto(datos && datos.PagadoA);
+  const ident = claveId(datos && datos.Identificacion);
+  for(const p of proveedores || []){
+    if(idPropio != null && String(p.id) === String(idPropio)) continue;
+    if(nombre && claveTexto(p.PagadoA) === nombre) return { proveedor: p, por: 'nombre' };
+    if(ident.length >= 5 && claveId(p.Identificacion) === ident) return { proveedor: p, por: 'identificación' };
+  }
+  return null;
+}
+
 // Busca el proveedor por nombre exacto (normalizado: mayúsculas/minúsculas y
 // espacios de sobra no importan) — igual que VLOOKUP(C2,'LISTA DE
 // DATOS'!...,0) en el Excel real. Devuelve null si no hay match (proveedor

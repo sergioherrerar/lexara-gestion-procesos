@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { fmtDate, fmtMonto, parseMonto, listarSoportesGastosDelMes, crearLinkCompartidoSoporte, crearLinkCarpetaMesGastos, renovarLinkSoporteAnonimo, mensajeError } from '../lib/graph';
 import { MESES_NOMBRES } from '../lib/horasExtras';
-import { TIPO_DOCUMENTO_OPTIONS, ENTIDAD_BANCARIA_OPTIONS, TIPO_CUENTA_OPTIONS, datosBancoProveedor, sumaValores, filtrarPorMes, generarRegistrosGastosExcel, generarRegistrosGastosHTML, siguienteNumeroConsecutivo } from '../lib/gastos';
+import { TIPO_DOCUMENTO_OPTIONS, proveedorRepetido, ENTIDAD_BANCARIA_OPTIONS, TIPO_CUENTA_OPTIONS, datosBancoProveedor, sumaValores, filtrarPorMes, generarRegistrosGastosExcel, generarRegistrosGastosHTML, siguienteNumeroConsecutivo } from '../lib/gastos';
 import IconButton, { IconTextButton } from './IconButton';
 import ColumnHeaderMenu from './ColumnHeaderMenu';
 import { useColumnFilters } from '../hooks/useColumnFilters';
@@ -80,7 +80,7 @@ const COLUMNAS_PROVEEDORES = [
   {key:'acciones', label:'Acciones', filterable:false},
 ];
 
-function ProveedoresSection({ proveedores, onCrear, onEditar, onEliminar, canWrite }){
+function ProveedoresSection({ proveedores, onCrear, onEditar, onEliminar, canWrite, notify }){
   const [abierto, setAbierto] = useState(false);
   const [editandoId, setEditandoId] = useState(null);
   const [guardando, setGuardando] = useState(false);
@@ -92,6 +92,12 @@ function ProveedoresSection({ proveedores, onCrear, onEditar, onEliminar, canWri
     columnas
   );
   async function guardar(datos){
+    // No se deja crear (ni editar hasta quedar igual) un proveedor que ya existe, por nombre o por identificación.
+    const repetido = proveedorRepetido(proveedores, datos, editandoId);
+    if(repetido){
+      notify?.('Ya existe un proveedor con ese ' + repetido.por + ': «' + (repetido.proveedor.PagadoA || '') + '» (' + (repetido.proveedor.Identificacion || 'sin identificación') + '). Edita ese registro en lugar de crear otro.', 'error');
+      return;
+    }
     setGuardando(true);
     try{
       if(editandoId) await onEditar(editandoId, datos);
@@ -522,7 +528,7 @@ export default function GastosTab({ config, proveedoresGastos, gastos,
         </div>
       </div>
       {subTab==='proveedores' && (
-        <ProveedoresSection proveedores={proveedoresGastos} onCrear={onCrearProveedorGastos} onEditar={onEditarProveedorGastos} onEliminar={onEliminarProveedorGastos} canWrite={canWrite} />
+        <ProveedoresSection proveedores={proveedoresGastos} onCrear={onCrearProveedorGastos} onEditar={onEditarProveedorGastos} onEliminar={onEliminarProveedorGastos} canWrite={canWrite} notify={notify} />
       )}
       {subTab==='gastos' && (
         <RegistrosSection nombreLista="Gastos" registros={gastos} proveedores={proveedoresGastos} conNumero conTipo conSoportes shareUrl={shareUrl} siguienteNumero={siguienteNumero}
