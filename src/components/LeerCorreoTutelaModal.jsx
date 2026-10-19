@@ -371,6 +371,8 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
         etiquetaEnvio,
       });
       indicesAfectados.forEach(k => marcarSolicitud(mensaje.id, k, { estado: 'listo', para: r.para, cc: r.cc, notas: r.notas, formato: r.formato, reenviado: r.reenviado }));
+      // Aviso visible (pedido del usuario 2026-10-21): el borrador de la solicitud de pruebas quedó creado. El del aplazamiento tiene su propio aviso al terminar.
+      if(!etiquetaEnvio) notify?.('✓ Borrador de la solicitud de pruebas CREADO en Borradores del buzón de Tutelas' + ((r.para || []).length ? ', dirigido a ' + r.para.length + ' dirección' + (r.para.length === 1 ? '' : 'es') + ' de las áreas' : '') + ((r.cc || []).length ? ' con copia a Dania' : '') + '. Revísalo antes de enviar.' + ((r.notas || '').trim() ? ' Hay notas de LexIA para revisar.' : ''), 'success');
       // Se anota en la lectura para que el artefacto no la repita (solo la solicitud de pruebas; el correo con aplazamiento se anota aparte).
       if(!etiquetaEnvio) registrarActuacion(onedriveCarpetaUrl, numeroSolicitud, { tipo: 'pruebas', cliente: '', por: 'portal' }).catch(err => console.error('No se pudo anotar la solicitud de pruebas en la lectura:', err));
     }catch(err){
