@@ -1803,6 +1803,10 @@ async function descargarDocumentosTutela(urlCarpeta, numeroTutela){
 export function mensajeError(err){
   const msg = String(err?.message || err || '').trim();
   if(!msg) return "Ocurrió un error inesperado.";
+  // Una pestaña abierta desde antes de una publicación pide archivos del portal que ya no existen («Failed to fetch dynamically imported module …/jspdf.es.min-XXXX.js»).
+  if(/Failed to fetch dynamically imported module|Importing a module script failed|error loading dynamically imported module/i.test(msg)){
+    return "La página quedó desactualizada (se publicó una versión nueva del portal). Recárgala con Ctrl + F5 y vuelve a intentarlo.";
+  }
   // MSAL: no hay sesión real de Microsoft — pasa seguido en modo demo, o si
   // la sesión expiró/nunca se inició. Siempre llega como "no_account_error:
   // ..." en inglés.
@@ -3969,10 +3973,16 @@ export async function leerTodosLosCorreosDeTutela({ correoBuzon, urlCarpeta, noT
     let extra = {};
     if(guardar && ctx){
       try{ extra = await guardarCorreoDeTutela({ correoBuzon, driveId: ctx.driveId, folderId: ctx.folderId, numero: noTutela, correo: c }); }
-      catch(err){ salida.errores.push('No se pudo guardar el correo «' + (c.asunto || '').slice(0, 60) + '»: ' + (err.message || err)); }
+      catch(err){ salida.errores.push('No se pudo guardar el correo «' + (c.asunto || '').slice(0, 60) + '»: ' + mensajeError(err)); }
     }
     final.push({ ...c, ...extra, adjuntos: extra.adjuntos || c.adjuntos });
     salida.nuevos++;
+  }
+  // Varios correos que fallan por lo mismo (página desactualizada) se resumen en UN solo aviso en vez de repetirlo por cada correo.
+  const desactualizada = salida.errores.filter(e => /desactualizada/.test(e));
+  if(desactualizada.length > 1){
+    salida.errores = salida.errores.filter(e => !/desactualizada/.test(e));
+    salida.errores.unshift('La página quedó desactualizada (se publicó una versión nueva del portal): ' + desactualizada.length + ' correos no se pudieron guardar. Recárgala con Ctrl + F5 y vuelve a pulsar «Leer correos nuevos de esta tutela».');
   }
   final.forEach(c => { const a = areaDeCorreoTutela(c, indiceAreas, correoBuzon); if(a) c.area = a; });
   // Áreas a las que se les pidió pruebas (la solicitud más reciente: enviada, o en Borradores si todavía no se envía) y cuáles ya respondieron (✓) o faltan (✗).

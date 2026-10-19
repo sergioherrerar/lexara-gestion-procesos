@@ -23,6 +23,7 @@ import TutelaDrawer from './components/TutelaDrawer';
 import { Toast, ConfirmDialog } from './components/Feedback';
 import CargaInicialOverlay from './components/CargaInicialOverlay';
 import { cargarModulo, marcarCargaCorrecta } from './lib/cargaModulo';
+import { useAvisoVersionNueva } from './hooks/useAvisoVersionNueva';
 
 // Carga diferida (2026-10-05): Informes y Administración son los módulos más
 // pesados (generadores de PDF/Excel/Word) y no se usan en cada sesión — se
@@ -37,6 +38,7 @@ function CargandoModulo(){
 
 export default function App(){
   const app = useLexaraApp();
+  useAvisoVersionNueva(app.notify);   // avisa si se publicó una versión nueva y esta pestaña sigue con la vieja
   useEffect(() => { marcarCargaCorrecta(); }, []);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   // Ocultar el menú lateral (pedido explícito del usuario 2026-09-01) — se
