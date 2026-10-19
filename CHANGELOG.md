@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-10-20 (71)
+- **Gastos → Proveedores: se agrega «CAJA SOCIAL» a la lista de Entidad (bancos)** — pedido del usuario (para registrar la cuenta de Miguel Angel Torres Ospina). Si la columna «Entidad» de la lista Proveedores Gastos MD en SharePoint es de tipo Opción, hay que agregar también «CAJA SOCIAL» ahí para poder guardarla.
+
 ## 2026-10-20 (70)
 - **La ficha de un colaborador (y de un desistimiento) mostraba las fechas VACÍAS aunque SharePoint las tuviera** — reporte del usuario (Miguel Angel Torres Ospina: la fecha de ingreso estaba en SharePoint pero la ficha salía en blanco). SharePoint entrega las fechas con hora («2026-10-05T05:00:00Z») y el campo de fecha del formulario solo acepta «aaaa-mm-dd», así que quedaba en blanco (y, al guardar la ficha así, la fecha podía borrarse). Ahora Fecha de ingreso y Fecha de retiro (Colaboradores) y Fecha de radicación y de aprobación (Desistimientos) se recortan a «aaaa-mm-dd» al abrir la ficha. Se vio ahora porque desde la actualización de Vacaciones la lista de personas se vuelve a leer de SharePoint al abrir esa pestaña (antes la ficha conservaba el valor que se acababa de escribir).
 

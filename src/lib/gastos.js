@@ -21,7 +21,7 @@ import { COLOR_ENCABEZADO, fechaISOaExcel } from './informeSOS';
 import { fmtDate, fmtMonto } from './graph';
 
 export const TIPO_DOCUMENTO_OPTIONS = ["Factura", "Soporte de pago", "Cuenta de cobro", "Reembolso", "Transporte"];
-export const ENTIDAD_BANCARIA_OPTIONS = ["BANCO DE BOGOTA", "BANCOLOMBIA", "BANCO BBVA", "COLPATRIA", "DAVIVIENDA", "FALABELLA", "NEQUI", "NU", "NO APLICA"];
+export const ENTIDAD_BANCARIA_OPTIONS = ["BANCO DE BOGOTA", "BANCOLOMBIA", "BANCO BBVA", "CAJA SOCIAL", "COLPATRIA", "DAVIVIENDA", "FALABELLA", "NEQUI", "NU", "NO APLICA"];
 export const TIPO_CUENTA_OPTIONS = ["AHORROS", "CORRIENTE", "NO APLICA"];
 
 // Busca el proveedor por nombre exacto (normalizado: mayúsculas/minúsculas y
