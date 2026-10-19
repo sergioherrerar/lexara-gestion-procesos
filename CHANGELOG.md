@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-10-20 (74)
+- **Gastos: en las cuentas de cobro, el Soporte Factura dice «No aplica»** — pedido del usuario (las cuentas de cobro casi nunca tienen documento: las genera Siigo y no se tiene acceso; de unas 10 solo hay una). En los gastos de tipo «Cuenta de cobro» sin soporte de factura, el botón de esa columna muestra «No aplica» (se puede pulsar igual para elegir un archivo en el caso poco común de que sí exista), y «Buscar soportes» solo espera en ellos el soporte de PAGO.
+
 ## 2026-10-20 (73)
 - **Gastos: botón «Buscar soportes»** — pedido del usuario. Junto a «Descargar HTML» hay un botón que busca solo los soportes de los gastos que se ven: lee la carpeta del mes en OneDrive (Soportes de gastos MD / año / mes) y empareja cada gasto con su PDF por el NOMBRE DEL PROVEEDOR y la palabra del tipo de documento: «Factura Claro», «Factura Cendiatra», «Tu Factura ETB Octubre de 2026» para el Soporte Factura, y «Soporte Claro» / «Soporte Cendiatra» (o comprobante / pago, sin la palabra factura) para el Soporte Pago. Solo llena los soportes VACÍOS (nunca pisa uno ya puesto), solo cuando el emparejamiento es claro (un único archivo, que no reclame otro gasto) y al terminar avisa cuántos asignó, cuántos gastos quedaron sin coincidencia y cuántos eran dudosos para elegirlos a mano. Se puede quitar cualquiera con «Quitar». Las personas se reconocen aunque el archivo traiga solo su nombre de pila o su apellido («Soporte pago Miguel» → Miguel Angel Torres Ospina), siempre que esa palabra no esté en el nombre de otro proveedor registrado.
 

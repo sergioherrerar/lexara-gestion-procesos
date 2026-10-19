@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { fmtDate, fmtMonto, parseMonto, listarSoportesGastosDelMes, crearLinkCompartidoSoporte, crearLinkCarpetaMesGastos, renovarLinkSoporteAnonimo, mensajeError } from '../lib/graph';
 import { MESES_NOMBRES } from '../lib/horasExtras';
-import { TIPO_DOCUMENTO_OPTIONS, proveedorRepetido, emparejarSoportes, ENTIDAD_BANCARIA_OPTIONS, TIPO_CUENTA_OPTIONS, datosBancoProveedor, sumaValores, filtrarPorMes, generarRegistrosGastosExcel, generarRegistrosGastosHTML, siguienteNumeroConsecutivo } from '../lib/gastos';
+import { TIPO_DOCUMENTO_OPTIONS, proveedorRepetido, esCuentaDeCobro, emparejarSoportes, ENTIDAD_BANCARIA_OPTIONS, TIPO_CUENTA_OPTIONS, datosBancoProveedor, sumaValores, filtrarPorMes, generarRegistrosGastosExcel, generarRegistrosGastosHTML, siguienteNumeroConsecutivo } from '../lib/gastos';
 import IconButton, { IconTextButton } from './IconButton';
 import ColumnHeaderMenu from './ColumnHeaderMenu';
 import { useColumnFilters } from '../hooks/useColumnFilters';
@@ -211,7 +211,7 @@ function RegistroForm({ inicial, conNumero, conTipo, proveedores, onGuardar, onC
 // (como sí se puede con las facturas Siigo), se listan los archivos de la
 // carpeta del mes que le corresponde a la Fecha del gasto y el usuario elige
 // uno con un clic — ver listarSoportesGastosDelMes en graph.js.
-function SoporteField({ label, url, fecha, shareUrl, onElegir }){
+function SoporteField({ label, url, fecha, shareUrl, onElegir, textoBoton = "Elegir…" }){
   const [buscando, setBuscando] = useState(false);
   const [archivos, setArchivos] = useState(null);
   const [resolviendo, setResolviendo] = useState(false);
@@ -270,7 +270,7 @@ function SoporteField({ label, url, fecha, shareUrl, onElegir }){
   }
   return (
     <button type="button" className="btn-secondary" style={{fontSize:11, padding:'3px 8px'}} disabled={buscando || !fecha} onClick={handleBuscar}>
-      {buscando ? "Buscando…" : "Elegir…"}
+      {buscando ? "Buscando…" : textoBoton}
     </button>
   );
 }
@@ -393,7 +393,8 @@ function RegistrosSection({ nombreLista, registros, proveedores, conNumero, conT
     if(!shareUrl){ notify?.('No está configurado el enlace de la carpeta de soportes.', 'error'); return; }
     setBuscandoSoportes(true);
     try{
-      const pendientes = filas.filter(r => r.Fecha && (!r.SoporteFactura || !r.SoportePago));
+      // Las cuentas de cobro casi nunca tienen documento (las genera Siigo): en ellas solo falta el soporte de PAGO.
+      const pendientes = filas.filter(r => r.Fecha && ((!r.SoporteFactura && !esCuentaDeCobro(r)) || !r.SoportePago));
       if(!pendientes.length){ notify?.('Todos los gastos que se ven ya tienen sus dos soportes.', 'info'); return; }
       const porMes = new Map();
       for(const r of pendientes){
@@ -517,7 +518,7 @@ function RegistrosSection({ nombreLista, registros, proveedores, conNumero, conT
                   {conTipo && <td>{r.TipoDocumento || "—"}</td>}
                   <td>{r.Observacion || "—"}</td>
                   {conSoportes && (
-                    <td><SoporteField label="Soporte Factura" url={r.SoporteFactura} fecha={r.Fecha} shareUrl={shareUrl} onElegir={archivo => onEditar(r.id, { SoporteFactura: archivo ? archivo.url : null })} /></td>
+                    <td><SoporteField label="Soporte Factura" textoBoton={esCuentaDeCobro(r) ? "No aplica" : "Elegir…"} url={r.SoporteFactura} fecha={r.Fecha} shareUrl={shareUrl} onElegir={archivo => onEditar(r.id, { SoporteFactura: archivo ? archivo.url : null })} /></td>
                   )}
                   {conSoportes && (
                     <td><SoporteField label="Soporte Pago" url={r.SoportePago} fecha={r.Fecha} shareUrl={shareUrl} onElegir={archivo => onEditar(r.id, { SoportePago: archivo ? archivo.url : null })} /></td>

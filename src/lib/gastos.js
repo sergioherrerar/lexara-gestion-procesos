@@ -24,6 +24,9 @@ export const TIPO_DOCUMENTO_OPTIONS = ["Factura", "Soporte de pago", "Cuenta de 
 export const ENTIDAD_BANCARIA_OPTIONS = ["BANCO DE BOGOTA", "BANCOLOMBIA", "BANCO BBVA", "CAJA SOCIAL", "COLPATRIA", "DAVIVIENDA", "FALABELLA", "NEQUI", "NU", "NO APLICA"];
 export const TIPO_CUENTA_OPTIONS = ["AHORROS", "CORRIENTE", "NO APLICA"];
 
+// Las cuentas de cobro casi nunca tienen documento (las genera Siigo y no se tiene acceso a ellas): en esos gastos el Soporte Factura se muestra como «No aplica» y solo se espera el soporte de pago.
+export const esCuentaDeCobro = r => String((r && r.TipoDocumento) || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim() === 'cuenta de cobro';
+
 // ¿Ya existe este proveedor? (2026-10-20, pedido del usuario: el formulario dejó crear DOS veces a Miguel Angel Torres Ospina). Se compara por NOMBRE (sin tildes, mayúsculas ni
 // espacios de sobra) y por IDENTIFICACIÓN (solo letras y números; se ignoran las muy cortas o vacías). `idPropio` excluye al registro que se está editando.
 const claveTexto = t => String(t||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim();
