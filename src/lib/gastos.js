@@ -281,3 +281,63 @@ export function generarRegistrosGastosHTML(titulo, filas, proveedores, { conNume
   a.remove();
   URL.revokeObjectURL(url);
 }
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Buscar los soportes de un mes automáticamente (2026-10-20, pedido del usuario): en la carpeta de soportes del mes los PDF suelen llamarse como el documento y el
+// proveedor — «Factura Claro», «Factura Cendiatra», «Tu Factura ETB Octubre de 2026» — y el comprobante de pago «Soporte Claro». Se empareja cada gasto con su
+// archivo por el NOMBRE DEL PROVEEDOR y por la palabra del tipo de documento; solo se asigna si el emparejamiento es claro (un único archivo, que no reclame otro gasto).
+const PALABRAS_VACIAS = new Set(['sas', 's', 'a', 'sa', 'ltda', 'de', 'del', 'la', 'las', 'los', 'el', 'y', 'e', 'en', 'para', 'por', 'con', 'grupo', 'empresa', 'servicios', 'cia', 'co', 'inc', 'pbc']);
+const palabrasDe = t => claveTexto(t).split(/[^a-z0-9ñ]+/).filter(Boolean);
+export function palabrasProveedor(nombre){
+  return [...new Set(palabrasDe(nombre).filter(w => w.length >= 3 && !PALABRAS_VACIAS.has(w)))];
+}
+// Palabras del tipo de documento que debe decir el archivo de la factura (Factura → «factura»; Cuenta de cobro → «cuenta»+«cobro»…).
+function palabrasTipoDocumento(tipo){
+  const t = claveTexto(tipo);
+  if(!t || t === 'soporte de pago') return ['factura'];
+  return palabrasDe(t).filter(w => w.length >= 3 && w !== 'de');
+}
+// Puntaje de un archivo para un proveedor: fracción de las palabras del proveedor que aparecen en el nombre (0 si ninguna o menos de la mitad).
+function puntajeProveedor(nombreArchivo, palabras){
+  if(!palabras.length) return 0;
+  const enArchivo = new Set(palabrasDe(nombreArchivo));
+  const halladas = palabras.filter(w => enArchivo.has(w)).length;
+  const fraccion = halladas / palabras.length;
+  return halladas >= 1 && fraccion >= 0.5 ? fraccion : 0;
+}
+/**
+ * Propone, para cada gasto, el archivo de la factura y el del pago.
+ * @param archivos  [{ nombre, url, driveId, itemId }] de la carpeta del mes
+ * @param registros [{ id, PagadoA, TipoDocumento }]
+ * @returns { propuestas: Map<id, { factura?: archivo, pago?: archivo }>, ambiguos: number }
+ */
+export function emparejarSoportes(archivos, registros){
+  const crudas = [];
+  let ambiguos = 0;
+  for(const r of registros){
+    const palabras = palabrasProveedor(r.PagadoA);
+    const tipo = palabrasTipoDocumento(r.TipoDocumento);
+    const candidatos = (archivos || []).map(a => ({ a, p: puntajeProveedor(a.nombre, palabras), n: new Set(palabrasDe(a.nombre)) })).filter(c => c.p > 0);
+    const elegir = (filtro) => {
+      const lista = candidatos.filter(filtro);
+      if(!lista.length) return null;
+      const mejor = Math.max(...lista.map(c => c.p));
+      const top = lista.filter(c => c.p === mejor);
+      if(top.length > 1){ ambiguos++; return null; }
+      return top[0].a;
+    };
+    const factura = elegir(c => tipo.every(w => c.n.has(w)));
+    const pago = elegir(c => (c.n.has('soporte') || c.n.has('comprobante') || c.n.has('pago')) && !c.n.has('factura'));
+    crudas.push({ id: r.id, factura, pago });
+  }
+  // Un archivo que reclaman dos gastos distintos no se asigna a ninguno (no se sabe cuál es).
+  const usos = new Map();
+  crudas.forEach(c => ['factura', 'pago'].forEach(k => { if(c[k]) usos.set(c[k].itemId || c[k].url, (usos.get(c[k].itemId || c[k].url) || 0) + 1); }));
+  const propuestas = new Map();
+  crudas.forEach(c => {
+    const p = {};
+    ['factura', 'pago'].forEach(k => { if(c[k]){ if(usos.get(c[k].itemId || c[k].url) > 1) ambiguos++; else p[k] = c[k]; } });
+    if(p.factura || p.pago) propuestas.set(c.id, p);
+  });
+  return { propuestas, ambiguos };
+}

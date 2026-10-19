@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { fmtDate, fmtMonto, parseMonto, listarSoportesGastosDelMes, crearLinkCompartidoSoporte, crearLinkCarpetaMesGastos, renovarLinkSoporteAnonimo, mensajeError } from '../lib/graph';
 import { MESES_NOMBRES } from '../lib/horasExtras';
-import { TIPO_DOCUMENTO_OPTIONS, proveedorRepetido, ENTIDAD_BANCARIA_OPTIONS, TIPO_CUENTA_OPTIONS, datosBancoProveedor, sumaValores, filtrarPorMes, generarRegistrosGastosExcel, generarRegistrosGastosHTML, siguienteNumeroConsecutivo } from '../lib/gastos';
+import { TIPO_DOCUMENTO_OPTIONS, proveedorRepetido, emparejarSoportes, ENTIDAD_BANCARIA_OPTIONS, TIPO_CUENTA_OPTIONS, datosBancoProveedor, sumaValores, filtrarPorMes, generarRegistrosGastosExcel, generarRegistrosGastosHTML, siguienteNumeroConsecutivo } from '../lib/gastos';
 import IconButton, { IconTextButton } from './IconButton';
 import ColumnHeaderMenu from './ColumnHeaderMenu';
 import { useColumnFilters } from '../hooks/useColumnFilters';
@@ -386,6 +386,43 @@ function RegistrosSection({ nombreLista, registros, proveedores, conNumero, conT
   // renueva TODOS de una sola vez, sin tener que volver a elegir cada
   // archivo a mano. Recorre TODOS los registros de Gastos (no solo los del
   // mes filtrado) para no dejar ninguno viejo por fuera.
+  // «Buscar soportes»: empareja cada gasto (de los que se ven) con su PDF de la carpeta del mes por el nombre del proveedor y la palabra «Factura» / «Soporte».
+  // Solo llena los soportes VACÍOS y solo cuando el emparejamiento es claro; nunca pisa uno que ya está puesto (se puede quitar con «Quitar»).
+  const [buscandoSoportes, setBuscandoSoportes] = useState(false);
+  async function handleBuscarSoportes(){
+    if(!shareUrl){ notify?.('No está configurado el enlace de la carpeta de soportes.', 'error'); return; }
+    setBuscandoSoportes(true);
+    try{
+      const pendientes = filas.filter(r => r.Fecha && (!r.SoporteFactura || !r.SoportePago));
+      if(!pendientes.length){ notify?.('Todos los gastos que se ven ya tienen sus dos soportes.', 'info'); return; }
+      const porMes = new Map();
+      for(const r of pendientes){
+        const k = String(r.Fecha).slice(0, 7);
+        if(!porMes.has(k)) porMes.set(k, listarSoportesGastosDelMes(shareUrl, r.Fecha).catch(() => []));
+      }
+      let asignados = 0, sinCoincidencia = 0, ambiguos = 0, fallidos = 0;
+      for(const [k, promesa] of porMes){
+        const archivos = await promesa;
+        const delMes = pendientes.filter(r => String(r.Fecha).slice(0, 7) === k);
+        const { propuestas, ambiguos: amb } = emparejarSoportes(archivos, delMes);
+        ambiguos += amb;
+        for(const r of delMes){
+          const p = propuestas.get(r.id);
+          if(!p){ sinCoincidencia++; continue; }
+          const cambios = {};
+          try{
+            if(p.factura && !r.SoporteFactura) cambios.SoporteFactura = await crearLinkCompartidoSoporte(p.factura.driveId, p.factura.itemId);
+            if(p.pago && !r.SoportePago) cambios.SoportePago = await crearLinkCompartidoSoporte(p.pago.driveId, p.pago.itemId);
+            if(Object.keys(cambios).length){ await onEditar(r.id, cambios); asignados += Object.keys(cambios).length; }
+          }catch(err){ console.error(err); fallidos++; }
+        }
+      }
+      notify?.('Soportes: ' + asignados + ' asignado' + (asignados === 1 ? '' : 's') + (sinCoincidencia ? ' · ' + sinCoincidencia + ' gasto' + (sinCoincidencia === 1 ? '' : 's') + ' sin coincidencia clara' : '') + (ambiguos ? ' · ' + ambiguos + ' dudoso' + (ambiguos === 1 ? '' : 's') + ' (más de un archivo posible; elígelo a mano)' : '') + (fallidos ? ' · ' + fallidos + ' con error' : '') + '.', asignados ? 'success' : 'info');
+    }catch(err){
+      console.error(err);
+      notify?.('No se pudieron buscar los soportes: ' + mensajeError(err), 'error');
+    } finally { setBuscandoSoportes(false); }
+  }
   const [migrandoLinks, setMigrandoLinks] = useState(false);
   async function handleActualizarEnlacesPublicos(){
     setMigrandoLinks(true);
@@ -444,6 +481,11 @@ function RegistrosSection({ nombreLista, registros, proveedores, conNumero, conT
           <IconTextButton icon="html" variant="secondary" onClick={handleDescargarHTML} disabled={generandoHTML}>
             {generandoHTML ? "Generando…" : "Descargar HTML"}
           </IconTextButton>
+          {conSoportes && canWrite && (
+            <IconTextButton icon="search" variant="secondary" onClick={handleBuscarSoportes} disabled={buscandoSoportes}>
+              {buscandoSoportes ? "Buscando soportes…" : "Buscar soportes"}
+            </IconTextButton>
+          )}
           {conSoportes && canWrite && (
             <IconTextButton icon="refresh" variant="secondary" onClick={handleActualizarEnlacesPublicos} disabled={migrandoLinks}>
               {migrandoLinks ? "Actualizando…" : "Hacer públicos los enlaces existentes"}
