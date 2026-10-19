@@ -137,6 +137,8 @@ export default function EscritoRobotPanel({ numero, onedriveCarpetaUrl, robotUrl
       setEscrito(r); setUsos(r.usos);
       registrarActuacion(onedriveCarpetaUrl, numero, { tipo: tipo === 'aplazamiento' ? 'aplazamiento' : 'escrito', detalle: tipo, cliente: (datos.registros[indiceRegistro] || {}).Cliente || '', por: 'portal', archivo: r.nombre || '' }).catch(err => console.error('No se pudo anotar el escrito en la lectura:', err));
       anotar('Listo: ' + r.resumen.cambiados + ' párrafos cambiados, ' + r.resumen.reemplazos + ' reemplazos, ' + r.resumen.nuevos + ' nuevos, ' + r.resumen.quitados + ' quitados.');
+      // Aviso visible (pedido del usuario 2026-10-21): que se vea que el escrito quedó creado, con el modelo usado y dónde quedó guardado.
+      notify?.('✓ ' + (tipo === 'aplazamiento' ? 'Aplazamiento' : 'Escrito') + ' CREADO con el modelo «' + String(r.modeloRuta || r.modelo || '').split('/').pop().replace(/\.docx?$/i, '') + '». Quedó guardado en la carpeta de la tutela; revísalo y descárgalo.' + ((r.alertas || '').trim() ? ' Hay alertas para revisar antes de firmar.' : ''), 'success');
     }catch(err){ console.error(err); setError(err.message || String(err)); }
     finally{ setTrabajando(false); }
   }
@@ -174,6 +176,7 @@ export default function EscritoRobotPanel({ numero, onedriveCarpetaUrl, robotUrl
       if(aplicado.resumen.conservados) avisos.push('Se conservaron ' + aplicado.resumen.conservados + ' párrafo' + (aplicado.resumen.conservados === 1 ? '' : 's') + ' del modelo que el texto del artefacto no traía (el modelo no se recorta).');
       setEscrito({ bytes: aplicado.bytes, nombre, modelo: p.modelo.ruta || p.modelo.nombre || '', modeloRuta: p.modelo.ruta || p.modelo.nombre || '', alertas: '', avisos, resumen: { cambiados: aplicado.resumen.cambiados, reemplazos: 0, nuevos: aplicado.resumen.nuevos, quitados: 0 }, delArtefacto: true, tipo: p.tipo, cliente: p.cliente || '', numero, urlCarpeta: onedriveCarpetaUrl, lecciones: '' });
       anotar('Listo: ' + aplicado.resumen.cambiados + ' párrafos cambiados, ' + aplicado.resumen.nuevos + ' nuevos, ' + aplicado.resumen.iguales + ' iguales al modelo. No gastó créditos.');
+      notify?.('✓ Escrito del artefacto CREADO en el Word del modelo. Quedó guardado en la carpeta de la tutela; revísalo y descárgalo.', 'success');
     }catch(err){ console.error(err); setError(err.message || String(err)); }
     finally{ setTrabajando(false); }
   }

@@ -493,6 +493,8 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
       const adjuntos = await aplazamientosProm.catch(err => { throw new Error('El borrador se creó, pero sin los aplazamientos: ' + (err.message || err)); });
       anotar('Listo: el borrador quedó en Borradores del buzón de Tutelas con ' + adjuntos.length + ' aplazamiento' + (adjuntos.length === 1 ? '' : 's') + ' adjunto' + (adjuntos.length === 1 ? '' : 's') + '. Revísalo antes de enviar.');
       setAplazamiento(prev => ({ ...prev, [mensaje.id]: { estado: 'listo', pasos: [...pasos] } }));
+      // Aviso visible (pedido del usuario 2026-10-21): el correo con aplazamiento quedó creado.
+      notify?.('✓ Correo con aplazamiento CREADO en Borradores del buzón de Tutelas, con ' + adjuntos.length + ' aplazamiento' + (adjuntos.length === 1 ? '' : 's') + ' adjunto' + (adjuntos.length === 1 ? '' : 's') + '. Revísalo antes de enviar: va solo a quien mandó la notificación, con copia a Dania.', 'success');
       // Se anota en la lectura (uno por cliente, en fila para no pisarse) para que el artefacto no lo repita.
       registros.reduce((p, reg, i) => p.then(() => registrarActuacion(onedriveCarpetaUrl, numero, { tipo: 'aplazamiento', cliente: reg.Cliente || '', por: 'portal', archivo: (adjuntos[i] || {}).nombre || '' })), Promise.resolve()).catch(err => console.error('No se pudo anotar el aplazamiento en la lectura:', err));
     }catch(err){

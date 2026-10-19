@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-10-21 (78)
+- **Avisos cuando el correo con aplazamiento y el escrito quedan creados** — pedido del usuario («falta mensaje de correo de aplazamiento creado, falta se creó el modelo de contestación»). Al terminar «Correo con aplazamiento» sale un aviso verde «✓ Correo con aplazamiento CREADO en Borradores del buzón de Tutelas, con N aplazamientos adjuntos. Revísalo antes de enviar: va solo a quien mandó la notificación, con copia a Dania». Al terminar de redactar con LexIA sale «✓ Escrito CREADO con el modelo «…». Quedó guardado en la carpeta de la tutela; revísalo y descárgalo» (y avisa si hay alertas para revisar), y lo mismo al armar el Word desde el artefacto.
+
 ## 2026-10-20 (77)
 - **Robot y portal más resistentes: los fallos pasajeros ya no le llegan al abogado** — pedido del usuario («no puede continuar con esos tipos de errores»). **Robot (redactar-escrito.php):** si la respuesta de la contestación o el aplazamiento sale vacía, cortada o con el JSON dañado, se repite sola hasta dos veces más con el modelo de redactar, más margen de tokens y un recordatorio del formato (solo si queda tiempo: el servidor corta las peticiones muy largas); la extracción de cláusulas del plan se repite una vez; los tiempos máximos subieron (420 s de ejecución, 300 s por llamada). **Robot (solicitud-pruebas.php):** una segunda vuelta con recordatorio si la respuesta no se pudo leer. **Portal:** las llamadas al robot (redactar, elegir modelo, fichas, cláusulas, corregir y la solicitud de pruebas) se reintentan solas hasta 2 veces si la conexión se corta, el servidor responde 502/503/504/529 o la respuesta de LexIA no se pudo leer; y si todo falla, el aviso sugiere redactar en el artefacto y traerlo con «Traer un escrito redactado en el artefacto».
 
