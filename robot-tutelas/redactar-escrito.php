@@ -31,7 +31,8 @@ if($_SERVER['REQUEST_METHOD'] !== 'POST'){
     exit;
 }
 
-@set_time_limit(190);
+@set_time_limit(420);
+$inicioScript = microtime(true);   // para decidir si todavía hay tiempo de reintentar
 @ini_set('memory_limit', '256M');
 
 function fallar($codigo, $mensaje){
@@ -98,7 +99,7 @@ function llamarClaudeStream($apiKey, $cuerpo){
         curl_setopt($ch, CURLOPT_HTTPHEADER, ['content-type: application/json', 'x-api-key: ' . $apiKey, 'anthropic-version: 2023-06-01']);
         curl_setopt($ch, CURLOPT_POSTFIELDS, $json);
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 15);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 175);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 300);
         curl_setopt($ch, CURLOPT_HEADERFUNCTION, function($c, $h) use (&$codigoHttp){
             if(preg_match('#^HTTP/[0-9.]+ +([0-9]+)#', $h, $m)) $codigoHttp = (int)$m[1];
             return strlen($h);
@@ -291,14 +292,24 @@ if($modo === 'clausulas'){
         'system' => $sistema,
         'messages' => [['role' => 'user', 'content' => "CASO (pretensión y tema):\n" . json_encode($casoClausulas, JSON_UNESCAPED_UNICODE) . "\n\nCLAUSULADO:\n" . $textoClausulado]],
     ];
-    list($data, $usado) = llamarConRespaldo($apiKey, $cuerpo, $modeloBarato);
-    $textoRespuesta = textoDe($data);
-    $o = objetoJsonDe($textoRespuesta);
-    $clausulasExtraidas = is_array($o) ? trim((string)($o['clausulas'] ?? '')) : '';
-    // Tolerancia: si el JSON vino mal formado pero trae el campo, se recupera con una expresión regular.
-    if($clausulasExtraidas === '' && !is_array($o) && preg_match('/"clausulas"\s*:\s*"((?:[^"\\\\]|\\\\.)*)"/su', $textoRespuesta, $mm)){
-        $dec = json_decode('"' . $mm[1] . '"');
-        if(is_string($dec)) $clausulasExtraidas = trim($dec);
+    $clausulasExtraidas = '';
+    $o = null;
+    for($intento = 1; $intento <= 2; $intento++){
+        list($data, $usado) = llamarConRespaldo($apiKey, $cuerpo, $modeloBarato);
+        $textoRespuesta = textoDe($data);
+        $o = objetoJsonDe($textoRespuesta);
+        $clausulasExtraidas = is_array($o) ? trim((string)($o['clausulas'] ?? '')) : '';
+        // Tolerancia: si el JSON vino mal formado pero trae el campo, se recupera con una expresión regular.
+        if($clausulasExtraidas === '' && !is_array($o) && preg_match('/"clausulas"\s*:\s*"((?:[^"\\\\]|\\\\.)*)"/su', $textoRespuesta, $mm)){
+            $dec = json_decode('"' . $mm[1] . '"');
+            if(is_string($dec)) $clausulasExtraidas = trim($dec);
+        }
+        if($clausulasExtraidas !== '' || is_array($o)) break;
+        // Segundo intento: respuesta sin leer → se pide de nuevo, con más margen y un recordatorio del formato.
+        $cuerpo['max_tokens'] = 8000;
+        $cuerpo['messages'][0]['content'] .= "
+
+REINTENTO: tu respuesta anterior no se pudo leer. Responde SOLO con el objeto JSON pedido, sin texto antes ni después.";
     }
     if($clausulasExtraidas === '' && !is_array($o)) fallar(502, 'LexIA no pudo leer las cláusulas del plan (respuesta no válida).');
     echo json_encode(['clausulas' => $clausulasExtraidas, 'uso' => usoDe($data, $usado)], JSON_UNESCAPED_UNICODE);
@@ -394,9 +405,13 @@ $texto = textoDe($data);
 $o = objetoJsonDe($texto);
 // Modo estricto con el modelo rápido: si la respuesta quedó cortada o no se pudo leer, se repite UNA vez con el modelo de redactar (más pausado, 16.000 tokens). Así el aplazamiento
 // nunca falla por haber elegido el modelo rápido (2026-10-20: «quedó cortada por ser muy larga» en el aplazamiento de COLMÉDICA).
-if($estricto && $modeloBarato !== $modeloRedactar && (!$o || (string)($data['stop_reason'] ?? '') === 'max_tokens')){
+// Reintentos (el abogado no puede quedarse sin escrito por una respuesta mal formada o cortada): hasta DOS intentos más con el modelo de redactar, más margen de tokens y un
+// recordatorio del formato. Solo se reintenta si todavía queda tiempo (el servidor corta las peticiones muy largas).
+$recordatorioFormato = "\n\nREINTENTO: tu respuesta anterior no se pudo leer (quedó vacía, cortada o con el JSON dañado). Responde SOLO con el objeto JSON pedido, sin texto antes ni después, lo más COMPACTO posible: usa «reemplazos» para cambios puntuales de datos, «cambios» solo para los párrafos que de verdad se reescriben, no repitas párrafos que no cambian y deja «alertas» en máximo cinco líneas cortas.";
+for($reintento = 1; $reintento <= 2 && (!$o || (string)($data['stop_reason'] ?? '') === 'max_tokens') && (microtime(true) - $inicioScript) < 150; $reintento++){
     $cuerpo['model'] = $modeloRedactar;
-    $cuerpo['max_tokens'] = 16000;
+    $cuerpo['max_tokens'] = $reintento === 1 ? 24000 : 32000;
+    $cuerpo['messages'][0]['content'] = $usuario . $recordatorioFormato;
     list($data, $usado) = llamarConRespaldo($apiKey, $cuerpo, null, true);
     $texto = textoDe($data);
     $o = objetoJsonDe($texto);

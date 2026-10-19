@@ -28,7 +28,7 @@ if($_SERVER['REQUEST_METHOD'] !== 'POST'){
     exit;
 }
 
-@set_time_limit(300);
+@set_time_limit(420);
 @ini_set('memory_limit', '256M');
 
 require_once __DIR__ . '/lexia-especialista.php';
@@ -180,6 +180,12 @@ $body = [
     ],
 ];
 
+// Hasta DOS vueltas: si la respuesta no se puede leer (vacía, cortada o con el JSON dañado) se pide de nuevo UNA vez con un recordatorio del formato (solo si queda tiempo).
+$inicioPruebas = microtime(true);
+$recordatorio = "
+
+REINTENTO: tu respuesta anterior no se pudo leer. Responde SOLO con el objeto JSON pedido, sin texto antes ni después, lo más compacto posible (viñetas del formato tal cual, sin comentarios extra).";
+for($vuelta = 1; $vuelta <= 2; $vuelta++){
 $json = json_encode($body);
 for($intento = 1; $intento <= 3; $intento++){
     $ch = curl_init('https://api.anthropic.com/v1/messages');
@@ -192,7 +198,7 @@ for($intento = 1; $intento <= 3; $intento++){
     ]);
     curl_setopt($ch, CURLOPT_POSTFIELDS, $json);
     curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 15);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 285);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 290);
     $respuesta = curl_exec($ch);
     $codigoHttp = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     $errorCurl = curl_error($ch);
@@ -225,11 +231,14 @@ $posFin = strrpos($texto, '}');
 $candidato = ($posIni !== false && $posFin !== false && $posFin > $posIni) ? substr($texto, $posIni, $posFin - $posIni + 1) : $texto;
 $correo = json_decode($candidato, true);
 if(!is_array($correo) || !isset($correo['cuerpo']) || trim((string)$correo['cuerpo']) === ''){
+    if($vuelta < 2 && (microtime(true) - $inicioPruebas) < 150){ $body['messages'][0]['content'][0]['text'] = $datosTutela . $recordatorio; continue; }
     http_response_code(502);
     $stopReason = (string)($data['stop_reason'] ?? '');
     $vista = trim(preg_replace('/\s+/u', ' ', function_exists('mb_substr') ? mb_substr($texto, 0, 240) : substr($texto, 0, 240)));
     echo json_encode(['error' => 'No se pudo leer la respuesta de LexIA para el correo de solicitud de pruebas' . ($stopReason === 'max_tokens' ? ' (quedó cortada por ser muy larga)' : '') . ($vista !== '' ? ': "' . $vista . '"' : '.')], JSON_INVALID_UTF8_SUBSTITUTE);
     exit;
+}
+break;
 }
 
 // Correos que de verdad aparecen en la agenda del documento (en minúsculas → como están escritos).

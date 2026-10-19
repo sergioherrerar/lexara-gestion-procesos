@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-10-20 (77)
+- **Robot y portal más resistentes: los fallos pasajeros ya no le llegan al abogado** — pedido del usuario («no puede continuar con esos tipos de errores»). **Robot (redactar-escrito.php):** si la respuesta de la contestación o el aplazamiento sale vacía, cortada o con el JSON dañado, se repite sola hasta dos veces más con el modelo de redactar, más margen de tokens y un recordatorio del formato (solo si queda tiempo: el servidor corta las peticiones muy largas); la extracción de cláusulas del plan se repite una vez; los tiempos máximos subieron (420 s de ejecución, 300 s por llamada). **Robot (solicitud-pruebas.php):** una segunda vuelta con recordatorio si la respuesta no se pudo leer. **Portal:** las llamadas al robot (redactar, elegir modelo, fichas, cláusulas, corregir y la solicitud de pruebas) se reintentan solas hasta 2 veces si la conexión se corta, el servidor responde 502/503/504/529 o la respuesta de LexIA no se pudo leer; y si todo falla, el aviso sugiere redactar en el artefacto y traerlo con «Traer un escrito redactado en el artefacto».
+
 ## 2026-10-20 (76)
 - **Robot: la contestación, el aplazamiento y las cláusulas dejaron de fallar por «respuesta cortada por ser muy larga»** — causa: los modelos nuevos gastaban todo el límite de tokens «pensando» (razonamiento oculto) y la respuesta llegaba vacía (en la pantalla: «No pude revisar el plan de medicina prepagada (respuesta no válida)» y luego «quedó cortada por ser muy larga»). Ahora redactar-escrito.php (elegir modelo, fichas, cláusulas, redactar y corregir) y solicitud-pruebas.php piden la respuesta con el razonamiento desactivado. Además, si algo vuelve a cortarse, el error dice el modelo usado, los tokens de salida y cuántos caracteres llegaron.
 

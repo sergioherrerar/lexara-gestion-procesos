@@ -722,14 +722,21 @@ async function reenviarComoBorrador(correoBuzon, mensajeId, { para, cc, categori
 export async function crearSolicitudPruebasBorrador({ config, robotSolicitudUrl, registro, registros, campos, camposTodos, asuntoCorreo, noTutela, fechaVencimiento, correoBuzon, mensajeIdReenviar, clientesSenalados, correosRecibidos, adjuntos, etiquetaEnvio }){
   if(!robotSolicitudUrl) throw new Error('Falta la dirección del robot de solicitud de pruebas (ROBOT_SOLICITUD_PRUEBAS_URL).');
   const formato = await leerFormatoSolicitudPruebas(config);
-  const res = await fetch(robotSolicitudUrl, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ formato: formato.texto, registro, registros: registros && registros.length ? registros : [registro], asuntoCorreo, noTutela, fechaVencimiento, clientesSenalados: clientesSenalados || [], correosRecibidos: correosRecibidos || [] }),
-  });
-  let data;
-  try{ data = await res.json(); }catch{ throw new Error(`El robot de solicitud de pruebas no respondió bien (${res.status}). ¿Ya subiste solicitud-pruebas.php a cPanel?`); }
-  if(!res.ok || data.error) throw new Error(data.error || `El robot de solicitud de pruebas falló (${res.status}).`);
+  // Se reintenta solo (hasta 2 veces más) si la conexión se corta, el servidor responde con un error pasajero o la respuesta de LexIA no se pudo leer.
+  const cuerpoPruebas = JSON.stringify({ formato: formato.texto, registro, registros: registros && registros.length ? registros : [registro], asuntoCorreo, noTutela, fechaVencimiento, clientesSenalados: clientesSenalados || [], correosRecibidos: correosRecibidos || [] });
+  let res, data = null, falloPasajero = null;
+  for(let intento = 0; intento <= 2; intento++){
+    if(intento > 0) await new Promise(r => setTimeout(r, 2500 * intento));
+    try{ res = await fetch(robotSolicitudUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: cuerpoPruebas }); }
+    catch(err){ falloPasajero = 'No hubo respuesta del robot de solicitud de pruebas (la conexión se cortó o no llegó): ' + (err.message || err); continue; }
+    try{ data = await res.json(); }catch{ data = null; }
+    if(res.ok && data && !data.error) break;
+    const msj = (data && data.error) || ('El robot de solicitud de pruebas no respondió bien (' + res.status + '). ¿Ya subiste solicitud-pruebas.php a cPanel?');
+    falloPasajero = msj;
+    const pasajero = [429, 502, 503, 504, 524, 529].includes(res.status) && (!data || /no se pudo leer|cortada|sobrecarg|overload|conectar con la API|timeout/i.test(msj));
+    if(!pasajero) break;
+  }
+  if(!res || !res.ok || !data || data.error) throw new Error((data && data.error) || falloPasajero || 'El robot de solicitud de pruebas falló.');
   const asunto = data.asunto || `TUTELA No. ${noTutela || ''} - SOLICITUD DE PRUEBAS`;
   // 2026-10-13: el asunto no se toca (conserva el del correo original).
   const cortos = [...new Set((registros && registros.length ? registros : [registro]).map(x => nombreCortoClienteSolicitud(x && x.Cliente)).filter(Boolean))];

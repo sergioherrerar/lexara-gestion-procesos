@@ -155,15 +155,28 @@ async function buscarModeloFijoAplazamiento(cliente){
 }
 
 // ---------------------------------------------------------------- robot
-async function llamarRobot(url, cuerpo){
+// Llama al robot de cPanel. Si la conexión se corta, el servidor responde con un error pasajero (502, 503, 504, 529) o la respuesta de LexIA no se pudo leer, se REINTENTA solo hasta
+// 2 veces más (el abogado no debe quedarse sin escrito por un tropiezo momentáneo). Los errores que no mejoran repitiendo (datos que faltan, 400…) se muestran al instante.
+async function llamarRobot(url, cuerpo, { reintentos = 2 } = {}){
   if(!url) throw new Error('Falta la dirección del robot (ROBOT_ESCRITO_URL en config.js).');
-  let res;
-  try{ res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cuerpo) }); }
-  catch(err){ throw new Error('No hubo respuesta del robot (la conexión se cortó o no llegó). Si redactar-escrito.php no está actualizado en cPanel, súbelo de nuevo; si tarda demasiado, vuelve a intentar. Detalle: ' + (err.message || err)); }
-  let data;
-  try{ data = await res.json(); }catch{ throw new Error(`El robot de escritos no respondió bien (${res.status}). ¿Ya subiste redactar-escrito.php a cPanel?`); }
-  if(!res.ok || data.error) throw new Error(data.error || `El robot de escritos falló (${res.status}).`);
-  return data;
+  let ultimo = null;
+  for(let intento = 0; intento <= reintentos; intento++){
+    if(intento > 0) await new Promise(res => setTimeout(res, 2500 * intento));
+    let res;
+    try{ res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cuerpo) }); }
+    catch(err){
+      ultimo = new Error('No hubo respuesta del robot (la conexión se cortó o no llegó). Si redactar-escrito.php no está actualizado en cPanel, súbelo de nuevo. Detalle: ' + (err.message || err));
+      continue;   // sin conexión: se reintenta
+    }
+    let data = null;
+    try{ data = await res.json(); }catch{ data = null; }
+    if(res.ok && data && !data.error) return data;
+    const mensaje = (data && data.error) || `El robot de escritos no respondió bien (${res.status}). ¿Ya subiste redactar-escrito.php a cPanel?`;
+    ultimo = new Error(mensaje);
+    const pasajero = [429, 502, 503, 504, 524, 529].includes(res.status) && (!data || /no se pudo leer|cortada|respuesta no v[aá]lida|sobrecarg|overload|conectar con la API|timeout|c[oó]digo (429|5\d\d|529)/i.test(mensaje));
+    if(!pasajero) break;   // un error que repetir no arregla
+  }
+  throw new Error((ultimo && ultimo.message || 'El robot falló.') + ' — Si sigue fallando puedes redactar el escrito en el artefacto y traerlo aquí con «Traer un escrito redactado en el artefacto».');
 }
 // Los párrafos muy largos (citas, argumentos) se abrevian: Claude casi siempre solo decide si se quedan, se quitan o cambia un dato puntual.
 function parrafosParaRobot(parrafos){
