@@ -565,12 +565,17 @@ export function tablaDatosTutelaHtml(campos, pretensiones, camposTodos){
 // al borrador (cid) en vez de una imagen incrustada en base64, porque Outlook de escritorio no
 // muestra las imágenes en base64 dentro del cuerpo.
 const FIRMA_CID = 'firma-ariana-lexara';
+let firmaBase64Cache = null;
 export const FIRMA_HTML = `<p style="margin:14px 0 0;"><img src="cid:${FIRMA_CID}" width="520" alt="Ariana Andrea Martin Mendoza — Abogada Junior — Lexara Abogados" style="display:block;border:0;width:520px;max-width:100%;height:auto;"></p>`;
 async function adjuntarFirmaInline(raiz, mensajeId, token){
   try{
-    const resp = await fetch(firmaArianaUrl);
-    if(!resp.ok) throw new Error('no se pudo leer la imagen de la firma');
-    const contentBytes = arrayBufferABase64(await resp.arrayBuffer());
+    // La imagen de la firma no cambia: se baja y se convierte UNA vez por sesión (antes se repetía en cada borrador).
+    if(!firmaBase64Cache){
+      const resp = await fetch(firmaArianaUrl);
+      if(!resp.ok) throw new Error('no se pudo leer la imagen de la firma');
+      firmaBase64Cache = arrayBufferABase64(await resp.arrayBuffer());
+    }
+    const contentBytes = firmaBase64Cache;
     const res = await fetch(`${raiz}/messages/${mensajeId}/attachments`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -594,7 +599,21 @@ async function adjuntarFirmaInline(raiz, mensajeId, token){
 
 // Últimos mensajes de una carpeta del buzón de Tutelas, del más reciente al más antiguo. La búsqueda por asunto se hace en el
 // portal (no con $filter contains, que en Graph falla según la carpeta). Lanza si Graph responde con error.
+// Las mismas consultas de carpeta (Borradores, Enviados, Bandeja) se repetían varias veces en un mismo flujo (revisar duplicados, seguimiento, áreas que respondieron…). Se
+// reutilizan unos segundos (y las que están en vuelo se comparten); al crear o cambiar un borrador se limpia (invalidarCacheCarpetasCorreo).
+const cacheCarpetas = new Map();
+const VIGENCIA_CARPETAS_MS = 15000;
+export function invalidarCacheCarpetasCorreo(){ cacheCarpetas.clear(); }
 async function ultimosMensajesDeCarpeta(correoBuzon, carpeta, campoOrden, top = 150, filtro = ''){
+  const clave = [correoBuzon, carpeta, campoOrden, top, filtro].join('|');
+  const previo = cacheCarpetas.get(clave);
+  if(previo && Date.now() - previo.t < VIGENCIA_CARPETAS_MS) return previo.p;
+  const p = ultimosMensajesDeCarpetaSinCache(correoBuzon, carpeta, campoOrden, top, filtro);
+  cacheCarpetas.set(clave, { t: Date.now(), p });
+  p.catch(() => { if(cacheCarpetas.get(clave)?.p === p) cacheCarpetas.delete(clave); });   // un fallo no se recuerda
+  return p;
+}
+async function ultimosMensajesDeCarpetaSinCache(correoBuzon, carpeta, campoOrden, top = 150, filtro = ''){
   const token = await getMailToken();
   const params = new URLSearchParams({
     $select: 'id,subject,from,toRecipients,ccRecipients,createdDateTime,sentDateTime,receivedDateTime,conversationId,webLink,hasAttachments,categories,bodyPreview',
@@ -747,6 +766,7 @@ export async function crearSolicitudPruebasBorrador({ config, robotSolicitudUrl,
     borrador = await crearBorradorCorreo({ to: data.para || [], cc: ccFinal, subject: asunto, htmlBody: htmlAntes, categorias: [categoria] });
     if(borrador?.id) borrador.firmaOk = await adjuntarFirmaInline('https://graph.microsoft.com/v1.0/me', borrador.id, await getMailToken());
   }
+  invalidarCacheCarpetasCorreo();   // el borrador nuevo debe verse en la próxima revisión de duplicados
   if(borrador && borrador.firmaOk === false) notas = 'No se pudo adjuntar la imagen de la firma: agrégala tú en el borrador. ' + notas;
   // Archivos que se adjuntan al borrador (p. ej. el aplazamiento diligenciado): [{ nombre, bytes }]
   let adjuntosListos = [];
@@ -757,7 +777,7 @@ export async function crearSolicitudPruebasBorrador({ config, robotSolicitudUrl,
   if(adjuntosListos && adjuntosListos.length && borrador?.id){
     const raizCorreo = reenviado ? `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(correoBuzon)}` : 'https://graph.microsoft.com/v1.0/me';
     const tokenCorreo = await getMailToken();
-    for(const a of adjuntosListos){
+    await Promise.all(adjuntosListos.map(async a => {
       try{
         const res = await fetch(`${raizCorreo}/messages/${borrador.id}/attachments`, {
           method: 'POST',
@@ -772,7 +792,7 @@ export async function crearSolicitudPruebasBorrador({ config, robotSolicitudUrl,
       }catch(err){
         notas = 'No se pudo adjuntar «' + a.nombre + '» al borrador (' + (err.message || err) + '): quedó guardado en la carpeta de la tutela, adjúntalo tú. ' + notas;
       }
-    }
+    }));
   }
   return { para: data.para || [], cc: ccFinal, asunto: (reenviado && borrador && borrador.subject) || asunto, notas, formato: formato.nombre, reenviado, borrador };
 }

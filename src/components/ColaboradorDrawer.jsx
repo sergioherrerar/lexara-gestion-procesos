@@ -39,8 +39,10 @@ function emptyForm(colaborador){
     // permisos de arriba. Se usan en la certificación laboral/de prestación
     // de servicios en PDF (ver informeCertificacion.js).
     Cargo: colaborador.Cargo || "",
-    FechaIngreso: colaborador.FechaIngreso || "",
-    FechaRetiro: colaborador.FechaRetiro || "",
+    // SharePoint entrega las fechas con hora («2026-10-05T05:00:00Z») y un <input type="date"> solo acepta «aaaa-mm-dd»: sin recortarla, la ficha mostraba la fecha vacía
+    // (y al guardar podía borrarla). Reporte del usuario 2026-10-20 con Miguel Angel Torres Ospina.
+    FechaIngreso: String(colaborador.FechaIngreso || "").slice(0, 10),
+    FechaRetiro: String(colaborador.FechaRetiro || "").slice(0, 10),
     // Si "Módulos permitidos" todavía está vacío en SharePoint (colaboradores
     // creados antes de este cambio), las casillas arrancan marcadas con lo
     // que ese Rol ya le daba por defecto (ver modulosPermitidosDe en

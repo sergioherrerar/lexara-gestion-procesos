@@ -319,23 +319,15 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
       const indicesAfectados = todosLosRegistros.length > 1 ? todosLosRegistros.map((_, k) => k) : [indice];
       // Antes de gastar la lectura de LexIA, revisa si ya hay una solicitud de esta tutela y este
       // cliente en Borradores o Enviados (pedido del usuario: que no se cree una y otra vez).
-      if(!forzar){
-        const existente = await buscarSolicitudPruebasExistente(correoBuzon, limpio.NoTutela || numeroTutelaDeAsunto(mensaje.asunto), campos.Cliente || limpio.Cliente);
-        if(existente){
-          indicesAfectados.forEach(k => marcarSolicitud(mensaje.id, k, { estado: 'existente', ...existente }));
-          return;
-        }
-        // Si el artefacto (Plan B) ya la redactó, queda en el Outlook de quien lo usó y el portal no la ve en el buzón: se sabe por la lectura.
-        const anotada = await buscarActuacionRegistrada(onedriveCarpetaUrl, limpio.NoTutela || numeroTutelaDeAsunto(mensaje.asunto), 'pruebas').catch(() => null);
-        if(anotada){
-          indicesAfectados.forEach(k => marcarSolicitud(mensaje.id, k, { estado: 'existente', enviado: false, fecha: '', fechaTexto: anotada.fecha, por: anotada.por, enlace: '' }));
-          return;
-        }
-      }
+      // Se inician A LA VEZ (antes eran uno detrás de otro): la revisión de duplicados, la anotación del artefacto y la lectura de los correos de la tutela.
+      const numeroSolicitud = limpio.NoTutela || numeroTutelaDeAsunto(mensaje.asunto);
+      const promExistente = forzar ? null : buscarSolicitudPruebasExistente(correoBuzon, numeroSolicitud, campos.Cliente || limpio.Cliente);
+      const promAnotada = forzar ? null : buscarActuacionRegistrada(onedriveCarpetaUrl, numeroSolicitud, 'pruebas').catch(() => null);
+      promExistente?.catch(() => null);
       // Todo lo que ya llegó al buzón sobre esta tutela (de cualquier remitente): el robot no debe pedir lo que ya está.
       // Antes de crear el borrador se LEEN todos los correos de la tutela (si aún no se habían leído en esta sesión; si ya se leyeron, solo se
       // revisa si llegó algo nuevo, sin gastar IA).
-      const numeroSolicitud = limpio.NoTutela || numeroTutelaDeAsunto(mensaje.asunto);
+      const leerCorreosDeLaTutela = async () => {
       let correosRecibidos = [];
       try{
         if(todosCorreos[mensaje.id]?.estado === 'listo' || Date.now() - (correosLeidosEn.current[mensaje.id] || 0) < 180000){
@@ -348,6 +340,24 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
         console.error('No se pudieron leer todos los correos de la tutela antes del borrador:', err);
         correosRecibidos = await correosRecibidosParaSolicitud(correoBuzon, numeroSolicitud, config);
       }
+        return correosRecibidos;
+      };
+      const promCorreos = leerCorreosDeLaTutela();
+      promCorreos.catch(() => null);
+      if(!forzar){
+        const existente = await promExistente;
+        if(existente){
+          indicesAfectados.forEach(k => marcarSolicitud(mensaje.id, k, { estado: 'existente', ...existente }));
+          return;
+        }
+        // Si el artefacto (Plan B) ya la redactó, queda en el Outlook de quien lo usó y el portal no la ve en el buzón: se sabe por la lectura.
+        const anotada = await promAnotada;
+        if(anotada){
+          indicesAfectados.forEach(k => marcarSolicitud(mensaje.id, k, { estado: 'existente', enviado: false, fecha: '', fechaTexto: anotada.fecha, por: anotada.por, enlace: '' }));
+          return;
+        }
+      }
+      const correosRecibidos = await promCorreos;
       // Antes de armar el correo: qué áreas YA respondieron sin que se les hubiera pedido (se reconocen por la dirección del remitente, con la agenda de áreas).
       const yaRespondieron = [...new Set(correosRecibidos.filter(c => c.area).map(c => c.area))];
       if(yaRespondieron.length) notify?.('Antes de armar la solicitud: ya respondieron sin que se les pidiera — ' + yaRespondieron.join(', ') + '. LexIA no les pedirá lo que ya enviaron.', 'info');

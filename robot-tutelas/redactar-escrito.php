@@ -315,12 +315,24 @@ $otrosCorreos = trim((string)($entrada['correos'] ?? ''));
 $clausulas = trim((string)($entrada['clausulas'] ?? ''));
 // Datos que el portal ya calculó con reglas fijas (fecha en formato del despacho, RAD corto, fecha del aplazamiento…): se usan tal cual, no se recalculan.
 $datosCalculados = trim((string)($entrada['datos'] ?? ''));
+// Solo algunas secciones («## 4.», «## 5.», «## 31.»…) del PROMPT MAESTRO: en modo estricto (aplazamiento) el robot solo reemplaza datos y no necesita las ~25.000 palabras completas.
+function seccionesDelMaestro($texto, $numeros){
+    $salida = []; $dentro = false;
+    foreach(preg_split('/\R/u', (string)$texto) as $linea){
+        if(preg_match('/^#{1,2}\s/u', $linea)){
+            $dentro = preg_match('/^##\s+(\d+)\./u', $linea, $m) && in_array((int)$m[1], $numeros, true);
+        }
+        if($dentro) $salida[] = $linea;
+    }
+    return trim(implode("\n", $salida));
+}
 // PROMPT MAESTRO de la abogada: vive en prompt-maestro.md, junto a este archivo (se reemplaza ese archivo cuando ella publique una ronda nueva; no va al repositorio público).
 $promptMaestro = '';
 $rutaMaestro = __DIR__ . '/prompt-maestro.md';
 if(is_file($rutaMaestro)){ $promptMaestro = trim((string)@file_get_contents($rutaMaestro)); if(function_exists('mb_substr')) $promptMaestro = mb_substr($promptMaestro, 0, 220000); }
 $parrafos = listarParrafos($entrada['parrafos'] ?? []);
 $estricto = !empty($entrada['estricto']);
+if($estricto && $promptMaestro !== ''){ $recorte = seccionesDelMaestro($promptMaestro, [3, 4, 5, 31]); if($recorte !== '') $promptMaestro = $recorte; }
 if($parrafos === '') fallar(400, 'No llegaron los párrafos del documento.');
 
 $instrucciones = <<<'TXT'
@@ -341,7 +353,7 @@ TXT;
 
 $sistema = [
     // Instrucciones + criterios de LexIA: iguales en todas las tutelas → caché.
-    ['type' => 'text', 'text' => lexiaEspecialista() . "\n\n" . $instrucciones, 'cache_control' => ['type' => 'ephemeral']],
+    ['type' => 'text', 'text' => ($estricto ? '' : lexiaEspecialista() . "\n\n") . $instrucciones, 'cache_control' => ['type' => 'ephemeral']],
     // La lectura de ESTA tutela: igual en la redacción y en cada corrección → caché.
     ['type' => 'text', 'text' => "LECTURA DE LA TUTELA (datos del portal, del correo, de los anexos, solicitud de pruebas y respuestas de las áreas):\n" . $caso . ($otrosCorreos !== '' ? "\n\n################ TODOS LOS CORREOS DE LA TUTELA (de cualquier remitente, del más antiguo al más reciente; son FUNDAMENTALES para contestar) ################\n" . $otrosCorreos : ''), 'cache_control' => ['type' => 'ephemeral']],
 ];
@@ -367,13 +379,14 @@ if($estricto){
 }
 $usuario .= "\n\n" . ($modo === 'redactar' ? 'PÁRRAFOS DEL MODELO (numerados):' : 'PÁRRAFOS DEL BORRADOR ACTUAL (numerados):') . "\n" . $parrafos;
 
+// Modo estricto (aplazamiento, solo reemplazar datos): modelo rápido y respuesta corta; si el modelo rápido no está disponible se usa el de redactar.
 $cuerpo = [
-    'model' => $modeloRedactar,
-    'max_tokens' => 16000,
+    'model' => $estricto ? $modeloBarato : $modeloRedactar,
+    'max_tokens' => $estricto ? 6000 : 16000,
     'system' => $sistema,
     'messages' => [['role' => 'user', 'content' => $usuario]],
 ];
-list($data, $usado) = llamarConRespaldo($apiKey, $cuerpo, null, true);
+list($data, $usado) = llamarConRespaldo($apiKey, $cuerpo, $estricto ? $modeloRedactar : null, true);
 $texto = textoDe($data);
 $o = objetoJsonDe($texto);
 // Si la respuesta quedó cortada (o con el JSON dañado) se recuperan los cambios COMPLETOS que alcanzaron a salir; lo demás se descarta.

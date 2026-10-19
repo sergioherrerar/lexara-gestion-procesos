@@ -28,7 +28,7 @@ if($_SERVER['REQUEST_METHOD'] !== 'POST'){
     exit;
 }
 
-@set_time_limit(190);
+@set_time_limit(300);
 @ini_set('memory_limit', '256M');
 
 require_once __DIR__ . '/lexia-especialista.php';
@@ -167,7 +167,7 @@ $datosTutela = "DATOS DE LA TUTELA (extraídos por LexIA del correo y los docume
 
 $body = [
     'model' => 'claude-sonnet-5',
-    'max_tokens' => 10000,
+    'max_tokens' => 16000,   // con varias entidades en un solo correo (ej. 3) el texto es largo: 10000 se quedaba corto («quedó cortada por ser muy larga»)
     'system' => [
         // El documento del formato y las instrucciones cambian poco entre una tutela y otra:
         // van en bloques con caché para que cada tutela nueva no las pague completas.
@@ -191,7 +191,7 @@ for($intento = 1; $intento <= 3; $intento++){
     ]);
     curl_setopt($ch, CURLOPT_POSTFIELDS, $json);
     curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 15);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 170);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 285);
     $respuesta = curl_exec($ch);
     $codigoHttp = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     $errorCurl = curl_error($ch);

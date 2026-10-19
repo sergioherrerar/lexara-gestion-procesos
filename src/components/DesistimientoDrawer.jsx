@@ -7,9 +7,9 @@ function emptyForm(desistimiento){
     Proceso: desistimiento.Proceso != null ? desistimiento.Proceso : "",
     NumeroCorto: desistimiento.NumeroCorto || "",
     DesistimientoValor: desistimiento.DesistimientoValor ? fmtMonto(parseMonto(desistimiento.DesistimientoValor)) : "",
-    FechaRadicacion: desistimiento.FechaRadicacion || "",
+    FechaRadicacion: String(desistimiento.FechaRadicacion || "").slice(0, 10),   // el <input type="date"> solo acepta «aaaa-mm-dd» (SharePoint entrega la hora)
     Aprobacion: desistimiento.Aprobacion || "",
-    FechaAprobacion: desistimiento.FechaAprobacion || "",
+    FechaAprobacion: String(desistimiento.FechaAprobacion || "").slice(0, 10),
     Observaciones: desistimiento.Observaciones || "",
   };
 }

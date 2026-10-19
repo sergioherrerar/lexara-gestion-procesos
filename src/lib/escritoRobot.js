@@ -247,17 +247,32 @@ export async function redactarEscritoConRobot({ robotUrl, urlCarpeta, numero, ti
   if(!cliente) throw new Error('No reconozco el cliente de la tutela (' + (registro.Cliente || 'sin cliente') + ').');
   const usos = [];
 
-  if(!lecciones){ lecciones = leccionesParaPrompt(await leerLecciones(), tipo, cliente); if(lecciones) log('Aplico las lecciones que el despacho le ha enseñado.'); }
+  // Velocidad (2026-10-20): todo lo que no depende de lo anterior se pide A LA VEZ (lecciones, modelo fijo o lista de modelos, preferencias y, en Colmédica, las cláusulas del plan).
+  const esAplazFijo = tipo === 'aplazamiento' && !modeloManual;
+  const leccionesPasadas = !!lecciones;
+  const promLecciones = lecciones ? Promise.resolve(lecciones) : leerLecciones().then(ls => leccionesParaPrompt(ls, tipo, cliente));
+  promLecciones.catch(() => null);
+  const promFijo = esAplazFijo ? modeloFijoAplazamiento(cliente).catch(() => null) : Promise.resolve(null);
+  const promIndice = esAplazFijo ? null : obtenerIndiceModelos(false, log);
+  promIndice?.catch(() => null);
+  const promPrefs = (esAplazFijo || modeloManual) ? null : leerPreferencias().catch(() => ({}));
+  const usosClausulas = [];
+  const promClausulas = (cliente === 'colmedica' && !estricto && tipo !== 'aplazamiento')
+    ? clausulasDelPlanDeColmedica({ robotUrl, caso, registro, log, usos: usosClausulas })
+    : Promise.resolve('');
+  promClausulas.catch(() => null);
+  lecciones = await promLecciones;
+  if(lecciones && !leccionesPasadas) log('Aplico las lecciones que el despacho le ha enseñado.');
   // Aplazamiento: hay UN modelo por cliente en la carpeta APLAZAMIENTOS (ALIANSALUD / COLMEDICA / UMD): se usa ese, sin elegir.
   let fijo = null;
-  if(tipo === 'aplazamiento' && !modeloManual){
-    fijo = await modeloFijoAplazamiento(cliente).catch(() => null);
+  if(esAplazFijo){
+    fijo = await promFijo;
     if(fijo) log('Modelo de aplazamiento del cliente: ' + rutaCompleta(fijo));
   }
   let modelos = [];
   if(!fijo){
     log('Cargando la lista de modelos...');
-    const indice = await obtenerIndiceModelos(false, log);
+    const indice = await (promIndice || obtenerIndiceModelos(false, log));
     modelos = modelosDelIndice(indice, tipo, sexo, cliente);
     if(!modelos.length) throw new Error('No encontré modelos para ese escrito, cliente y sexo en la lista (prueba «Actualizar la lista de modelos»).');
   }
@@ -269,7 +284,7 @@ export async function redactarEscritoConRobot({ robotUrl, urlCarpeta, numero, ti
     // Lo elegido a mano se recuerda para este cliente + Tema + escrito: la próxima vez se usa sin preguntarle a Claude.
     guardarPreferenciaModelo({ cliente, tipo, tema: registro.Tema, modelo: elegido }).then(() => log('Anotado: la próxima vez, para este cliente y Tema, usaré este modelo sin preguntarle a LexIA.')).catch(() => {});
   }else{
-    const prefs = await leerPreferencias();
+    const prefs = await (promPrefs || leerPreferencias());
     const p = prefs[clavePreferencia(cliente, tipo, registro.Tema)];
     const habitual = p && modelos.find(m => m.ruta === p.ruta);
     if(habitual){ elegido = habitual; log('Uso tu modelo habitual para este cliente y Tema: ' + rutaCompleta(habitual) + ' (lo elegiste a mano antes; si prefieres otro, escógelo en la lista «Modelo del despacho»).'); }
@@ -293,8 +308,9 @@ export async function redactarEscritoConRobot({ robotUrl, urlCarpeta, numero, ti
   const parrafos = await listarParrafosDeDocx(bytes);
 
   // Colmédica: se fundamenta con las cláusulas de SU plan de medicina prepagada (no en el aplazamiento ni en modo estricto, que solo cambian datos).
-  let clausulas = '';
-  if(cliente === 'colmedica' && !estricto && tipo !== 'aplazamiento') clausulas = await clausulasDelPlanDeColmedica({ robotUrl, caso, registro, log, usos });
+  // (se pidieron al principio, a la vez que la elección del modelo: aquí solo se espera el resultado)
+  const clausulas = await promClausulas;
+  usos.push(...usosClausulas);
 
   log('Redactando (LexIA devuelve solo los cambios)...');
   const r = await llamarRobot(robotUrl, {
@@ -451,7 +467,9 @@ export async function clausulasDelPlanDeColmedica({ robotUrl, caso, registro, lo
 // modelo en «PERFILES DE FORMATO LexIA/<id del modelo>.json» (ver perfilFormatoDeDocx). Se actualiza cada vez que el portal baja el modelo.
 const CARPETA_PERFILES = 'PERFILES DE FORMATO LexIA';
 // Nombres de los perfiles que ya existen en la carpeta de perfiles («<id del modelo>.json»).
-async function perfilesExistentes(){
+let cachePerfiles = null;   // { t, ya } — la lista de perfiles se lee una vez cada 10 minutos, no en cada redacción
+async function perfilesExistentes(fresco = false){
+  if(!fresco && cachePerfiles && Date.now() - cachePerfiles.t < 600000) return cachePerfiles.ya;
   const ya = new Set();
   try{
     let url = `/drives/${DRIVE_MODELOS}/root:/${encodeURIComponent(CARPETA_PERFILES)}:/children?$select=name&$top=999`;
@@ -461,6 +479,7 @@ async function perfilesExistentes(){
       url = r['@odata.nextLink'] ? r['@odata.nextLink'].replace('https://graph.microsoft.com/v1.0', '') : '';
     }
   }catch(err){ /* la carpeta todavía no existe: no hay perfiles */ }
+  cachePerfiles = { t: Date.now(), ya };
   return ya;
 }
 export async function guardarPerfilDeModelo(uri, bytes, { soloSiFalta = false } = {}){
@@ -469,13 +488,14 @@ export async function guardarPerfilDeModelo(uri, bytes, { soloSiFalta = false } 
   if(soloSiFalta && (await perfilesExistentes()).has(m[2] + '.json')) return false;
   const perfil = await perfilFormatoDeDocx(bytes);
   await graphFetch(`/drives/${DRIVE_MODELOS}/root:/${encodeURIComponent(CARPETA_PERFILES)}/${m[2]}.json:/content`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(perfil) });
+  if(cachePerfiles) cachePerfiles.ya.add(m[2] + '.json');
   return true;
 }
 /** Crea el perfil de formato de cada modelo de la lista (3 a la vez). Devuelve { listos, fallidos }. */
 export async function generarPerfilesDeModelos({ modelos, log = () => {}, renovar = false }){
   let listos = 0, fallidos = 0, hechos = 0;
   // Se crea UNA sola vez por modelo: los que ya tienen perfil no se tocan (salvo que se pida «renovar»).
-  const existentes = renovar ? new Set() : await perfilesExistentes();
+  const existentes = renovar ? new Set() : await perfilesExistentes(true);
   const idDe = m => (/^file:\/\/\/([^/]+)\/([^/]+)$/.exec(m.uri || '') || [])[2];
   const cola = modelos.filter(m => renovar || !existentes.has(idDe(m) + '.json'));
   const yaTenian = modelos.length - cola.length;
