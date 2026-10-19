@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-10-19 (65)
+- **Los perfiles de formato de los modelos se crean UNA sola vez y quedan guardados** — pedido del usuario. El botón «Crear los perfiles de formato que falten» revisa primero cuáles modelos ya tienen su perfil en «PERFILES DE FORMATO LexIA» y solo crea los que faltan (si todos ya lo tienen, lo dice y no hace nada: ya no se recrean los 212 en cada pulsación); y al redactar con un modelo el portal ya no vuelve a escribir su perfil si ya existe.
+
 ## 2026-10-16 (64)
 - **El portal detecta, ANTES de armar el correo de solicitud de pruebas, las áreas que ya respondieron sin que se les hubiera pedido** — pedido del usuario. Por la dirección del remitente y la agenda de áreas, los correos que ya llegaron de un área se rotulan «ÁREA … YA RESPONDIÓ» para el robot (que no les pide lo que ya enviaron y omite su bloque si cubrieron todo), el portal avisa «ya respondieron sin que se les pidiera: …» al crear el borrador, y el recuadro de áreas de «Leer todos los correos de esta tutela» muestra con ✓ las que respondieron aunque todavía no exista solicitud (o no se les haya pedido). Requiere subir solicitud-pruebas.php a cPanel; sin subirlo el portal igual rotula los correos.
 

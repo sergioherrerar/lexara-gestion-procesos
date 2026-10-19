@@ -76,9 +76,11 @@ export default function EscritoRobotPanel({ numero, onedriveCarpetaUrl, robotUrl
     try{
       const ind = await obtenerIndiceModelos(false, anotar);
       const modelos = ind.entradas.map(e => ({ uri: e.u, ruta: (e.s ? e.s + '/' : '') + e.n }));
-      anotar('Creando el perfil de formato de ' + modelos.length + ' modelos (una sola vez; después se renueva solo cuando redactas con cada uno)...');
+      anotar('Revisando qué modelos ya tienen su perfil de formato (los que ya lo tienen no se tocan: se crea una sola vez y queda guardado)...');
       const r = await generarPerfilesDeModelos({ modelos, log: anotar });
-      anotar('Listo: ' + r.listos + ' perfiles' + (r.fallidos ? ' (' + r.fallidos + ' no se pudieron leer)' : '') + '. El artefacto ya puede armar el Word con la letra del modelo.');
+      anotar(r.listos === 0 && r.fallidos === 0
+        ? 'Los ' + modelos.length + ' modelos ya tienen su perfil de formato: no había nada que crear.'
+        : 'Listo: ' + r.listos + ' perfiles nuevos' + (r.yaTenian ? ' (' + r.yaTenian + ' ya existían y no se tocaron)' : '') + (r.fallidos ? ' · ' + r.fallidos + ' no se pudieron leer' : '') + '. El artefacto ya puede armar el Word con la letra del modelo.');
     }catch(err){ console.error(err); setError(err.message || String(err)); }
     finally{ setTrabajando(false); }
   }
@@ -264,7 +266,7 @@ export default function EscritoRobotPanel({ numero, onedriveCarpetaUrl, robotUrl
               </IconTextButton>
               <IconTextButton icon="refresh" variant="secondary" disabled={trabajando} onClick={() => cargarModelos(true)}>Actualizar la lista de modelos</IconTextButton>
               <IconTextButton icon="view" variant="secondary" disabled={trabajando} onClick={crearFichas}>Crear fichas de estos modelos (una vez)</IconTextButton>
-              <IconTextButton icon="pdf" variant="secondary" disabled={trabajando} onClick={crearPerfiles}>Crear perfiles de formato de todos los modelos (una vez, para el artefacto)</IconTextButton>
+              <IconTextButton icon="pdf" variant="secondary" disabled={trabajando} onClick={crearPerfiles}>Crear los perfiles de formato que falten (una sola vez, para el artefacto)</IconTextButton>
             </div>
           </>
         )}

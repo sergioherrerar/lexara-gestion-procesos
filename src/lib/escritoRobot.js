@@ -289,7 +289,7 @@ export async function redactarEscritoConRobot({ robotUrl, urlCarpeta, numero, ti
   const m = /^file:\/\/\/([^/]+)\/(.+)$/.exec(elegido.uri);
   if(!m) throw new Error('No pude identificar el archivo del modelo.');
   const { bytes } = await graphDescargarArchivo(m[1], m[2]);
-  guardarPerfilDeModelo(elegido.uri, bytes).catch(err => console.error('No se pudo dejar el perfil de formato del modelo:', err));
+  guardarPerfilDeModelo(elegido.uri, bytes, { soloSiFalta: true }).catch(err => console.error('No se pudo dejar el perfil de formato del modelo:', err));
   const parrafos = await listarParrafosDeDocx(bytes);
 
   // Colmédica: se fundamenta con las cláusulas de SU plan de medicina prepagada (no en el aplazamiento ni en modo estricto, que solo cambian datos).
@@ -450,17 +450,36 @@ export async function clausulasDelPlanDeColmedica({ robotUrl, caso, registro, lo
 // El conector del artefacto solo entrega el TEXTO de un Word; para que el Word del artefacto salga con la misma letra, el portal deja el formato de cada
 // modelo en «PERFILES DE FORMATO LexIA/<id del modelo>.json» (ver perfilFormatoDeDocx). Se actualiza cada vez que el portal baja el modelo.
 const CARPETA_PERFILES = 'PERFILES DE FORMATO LexIA';
-export async function guardarPerfilDeModelo(uri, bytes){
+// Nombres de los perfiles que ya existen en la carpeta de perfiles («<id del modelo>.json»).
+async function perfilesExistentes(){
+  const ya = new Set();
+  try{
+    let url = `/drives/${DRIVE_MODELOS}/root:/${encodeURIComponent(CARPETA_PERFILES)}:/children?$select=name&$top=999`;
+    for(let pagina = 0; pagina < 10 && url; pagina++){
+      const r = await graphFetch(url);
+      (r.value || []).forEach(x => ya.add(x.name));
+      url = r['@odata.nextLink'] ? r['@odata.nextLink'].replace('https://graph.microsoft.com/v1.0', '') : '';
+    }
+  }catch(err){ /* la carpeta todavía no existe: no hay perfiles */ }
+  return ya;
+}
+export async function guardarPerfilDeModelo(uri, bytes, { soloSiFalta = false } = {}){
   const m = /^file:\/\/\/([^/]+)\/([^/]+)$/.exec(uri || '');
   if(!m) return false;
+  if(soloSiFalta && (await perfilesExistentes()).has(m[2] + '.json')) return false;
   const perfil = await perfilFormatoDeDocx(bytes);
   await graphFetch(`/drives/${DRIVE_MODELOS}/root:/${encodeURIComponent(CARPETA_PERFILES)}/${m[2]}.json:/content`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(perfil) });
   return true;
 }
 /** Crea el perfil de formato de cada modelo de la lista (3 a la vez). Devuelve { listos, fallidos }. */
-export async function generarPerfilesDeModelos({ modelos, log = () => {} }){
+export async function generarPerfilesDeModelos({ modelos, log = () => {}, renovar = false }){
   let listos = 0, fallidos = 0, hechos = 0;
-  const cola = modelos.slice();
+  // Se crea UNA sola vez por modelo: los que ya tienen perfil no se tocan (salvo que se pida «renovar»).
+  const existentes = renovar ? new Set() : await perfilesExistentes();
+  const idDe = m => (/^file:\/\/\/([^/]+)\/([^/]+)$/.exec(m.uri || '') || [])[2];
+  const cola = modelos.filter(m => renovar || !existentes.has(idDe(m) + '.json'));
+  const yaTenian = modelos.length - cola.length;
+  const total = cola.length;
   const trabajador = async () => {
     while(cola.length){
       const m = cola.shift();
@@ -471,11 +490,11 @@ export async function generarPerfilesDeModelos({ modelos, log = () => {} }){
         listos++;
       }catch(err){ fallidos++; console.error('No se pudo crear el perfil de formato de ' + m.ruta + ':', err); }
       hechos++;
-      if(hechos % 10 === 0 || hechos === modelos.length) log('Perfiles de formato: ' + hechos + ' de ' + modelos.length + '...');
+      if(hechos % 10 === 0 || hechos === total) log('Perfiles de formato: ' + hechos + ' de ' + total + '...');
     }
   };
-  await Promise.all(Array.from({ length: Math.min(3, modelos.length) }, trabajador));
-  return { listos, fallidos };
+  await Promise.all(Array.from({ length: Math.min(3, total) }, trabajador));
+  return { listos, fallidos, yaTenian };
 }
 
 // ---------------------------------------------------------------- fichas de los modelos (una vez por modelo)
