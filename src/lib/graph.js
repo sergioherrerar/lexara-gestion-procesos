@@ -1914,8 +1914,16 @@ export function normalize(str){
 // filtrar por cargo); pedido explícito del usuario 2026-09-21: "aca solo los
 // cargos que contengan abogado y estén activos", viendo el selector de
 // "Abogado encargado" listando también a gente sin cargo de abogado.
+// Un mismo abogado puede estar escrito de dos maneras en Equipo MD (2026-10-20, pedido del usuario: «hay dos Ariana»). Se deja el nombre COMPLETO y se quita el otro de las listas.
+export const ALIAS_ABOGADOS = { 'ariana martin mendoza': 'Ariana Andrea Martín Mendoza' };
+const claveAbogado = n => String(n || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim();
+/** El nombre completo de un abogado si lo que llega es un alias conocido; si no, el mismo nombre. */
+export function nombreAbogadoCanonico(nombre){
+  const n = String(nombre || '').trim();
+  return ALIAS_ABOGADOS[claveAbogado(n)] || n;
+}
 export function abogadosDisponibles(colaboradores){
-  return (colaboradores||[]).filter(c => c.Activo !== false && /abogad/i.test(c.Cargo || ""));
+  return (colaboradores||[]).filter(c => c.Activo !== false && /abogad/i.test(c.Cargo || "") && !ALIAS_ABOGADOS[claveAbogado(c.Nombre)]);
 }
 
 // Conecta una lista: descubre su listId, columnas y elementos reales.

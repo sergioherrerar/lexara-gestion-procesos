@@ -27,7 +27,7 @@
 // el rango de MARZO (empieza el 29-feb en vez del 1-mar), sin que ningún
 // día quede afuera y sin ningún caso especial escrito a mano.
 import { construirHojaTutelasXlsx, COLOR_ENCABEZADO_XLSX } from './informeTutelas';
-import { parseMonto, buscarValorEntidad, fmtMonto } from './graph';
+import { parseMonto, buscarValorEntidad, fmtMonto, nombreAbogadoCanonico } from './graph';
 import { prepararDocumentoPDF, dibujarResumenBox, VERDE_OSCURO, GRIS_SUAVE, TEXTO, BORDE_SUAVE, GRIS_ZEBRA, MARGEN, CONTENIDO_Y_INICIAL, CONTENIDO_Y_MAXIMO } from './informesPDF';
 
 export const MESES_NOMBRES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
@@ -92,7 +92,7 @@ export function ordenTipoRespuesta(a, b){
 export function agruparPorAbogado(tutelasFiltradas, valoresEntidad){
   const porAbogado = new Map();
   (tutelasFiltradas||[]).forEach(t => {
-    const abogado = (t.AbogadoRespuesta||"").trim() || "Sin abogado";
+    const abogado = nombreAbogadoCanonico(t.AbogadoRespuesta) || "Sin abogado";
     const tipo = (t.TipoRespuesta||"").trim() || "Sin tipo";
     const valorEnt = buscarValorEntidad(valoresEntidad, t.Entidad, t.Cliente, t.TipoRespuesta);
     const valor = valorEnt ? parseMonto(valorEnt.ValorAbogado) : 0;

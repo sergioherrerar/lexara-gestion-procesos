@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-10-20 (80)
+- **Una sola «Ariana» en las listas de abogado, con el nombre completo** — pedido del usuario («en Abogado Respuesta hay dos Ariana»). Equipo MD tiene a la misma abogada escrita de dos maneras; ahora las listas de abogado (Abogado Respuesta de Tutelas y Abogado responsable de Audiencias) muestran solo «Ariana Andrea Martín Mendoza», que además es el abogado que viene puesto en una tutela nueva; «Ariana Martin Mendoza» ya no sale como opción. Las tutelas viejas guardadas con el nombre corto se abren con el nombre completo (al guardar quedan unificadas) y el informe por abogado las cuenta juntas. Si aparece otro nombre repetido, se agrega a la lista ALIAS_ABOGADOS de src/lib/graph.js.
+
 ## 2026-10-21 (79)
 - **«Failed to fetch dynamically imported module …/jspdf.es.min-XXXX.js» al guardar correos: ahora el portal avisa que hay versión nueva y explica qué hacer** — reporte del usuario. Cada publicación cambia los nombres de los archivos del portal; una pestaña abierta desde antes pedía archivos que ya no existen (aquí el del PDF del correo) y cada correo mostraba el error en inglés con la dirección del archivo. Ahora: (1) cada 5 minutos y al volver a la pestaña el portal compara su versión con la publicada y, si hay una nueva, avisa «Hay una versión NUEVA del portal. Recarga la página con Ctrl + F5»; (2) ese error sale en español («La página quedó desactualizada… Recárgala con Ctrl + F5 y vuelve a intentarlo») y, cuando varios correos fallan por lo mismo, se resume en UN solo aviso en vez de repetirlo por cada correo.
 

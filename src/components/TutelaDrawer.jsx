@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { FieldCard, RichTextEditor } from './FormFields';
 import { IconTextButton } from './IconButton';
-import { temasParaPrestacion, abogadosDisponibles } from '../lib/graph';
+import { temasParaPrestacion, abogadosDisponibles, nombreAbogadoCanonico } from '../lib/graph';
 import { DEPARTAMENTOS_COLOMBIA, municipiosDe } from '../lib/colombiaGeo';
 import { useEscapeToClose } from '../hooks/useEscapeToClose';
 import { SI_NO, TIPO_VINCULACION_OPCIONES, PRESTACION_OPCIONES, TIPO_RESPUESTA_OPCIONES, ENTIDAD_DEFECTO, ENTIDAD_OPCIONES_TUTELAS, CLIENTE_OPCIONES_TUTELAS } from '../lib/borradorTutela';
@@ -26,7 +26,7 @@ import { SI_NO, TIPO_VINCULACION_OPCIONES, PRESTACION_OPCIONES, TIPO_RESPUESTA_O
 // Nombre exacto histórico del valor por defecto — se mantiene como
 // respaldo por si "Ariana" todavía no está en la lista dinámica de arriba
 // (ej. en modo demo, donde el Cargo no está confirmado contra SharePoint).
-const ABOGADO_RESPUESTA_DEFECTO = "Ariana Martin Mendoza";
+const ABOGADO_RESPUESTA_DEFECTO = "Ariana Andrea Martín Mendoza";   // nombre completo (la otra forma, «Ariana Martin Mendoza», ya no sale en la lista)
 
 const FIELDS = ["NoTutela", "MedidaCautelar",
   "Departamento", "Ciudad", "Proceso", "FechaNotificacion", "FechaVencimiento", "Prestacion", "TipoRespuesta",
@@ -49,7 +49,7 @@ function emptyForm(tutela){
   // "Abogado Respuesta" arranca en Ariana Martin Mendoza para una tutela
   // nueva (pedido explícito del usuario) — una ya existente respeta lo que
   // tenga guardado, aunque venga vacío.
-  initial.AbogadoRespuesta = tutela.AbogadoRespuesta || (esNuevo ? ABOGADO_RESPUESTA_DEFECTO : "");
+  initial.AbogadoRespuesta = nombreAbogadoCanonico(tutela.AbogadoRespuesta) || (esNuevo ? ABOGADO_RESPUESTA_DEFECTO : "");
   return initial;
 }
 
