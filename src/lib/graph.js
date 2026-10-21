@@ -89,8 +89,18 @@ async function getGraphToken(){
 // permiso adicional). Si el permiso ni siquiera existe todavía en el
 // registro de la app, esto sigue fallando y quien llama debe caer de vuelta
 // al método anterior (mailto + copiar tabla al portapapeles).
+// Buzón COMPARTIDO (Tutelas@): para quien no es el dueño, Microsoft puede exigir el permiso «Mail.ReadWrite.Shared» además de «Mail.ReadWrite» (si no, responde 403 «Access is denied»
+// aunque la persona tenga acceso total al buzón en Exchange: caso de Gerencia@, 2026-10-21). Por eso no se pide siempre (a quien ya funciona no se le cambia nada): solo cuando una
+// lectura del buzón responde 403 se activa este permiso (se recuerda en este navegador) y se reintenta; la primera vez Microsoft muestra una ventanita para aceptarlo.
+const CLAVE_MAIL_COMPARTIDO = 'lexara-mail-compartido';
+let mailCompartido = false;
+try{ mailCompartido = localStorage.getItem(CLAVE_MAIL_COMPARTIDO) === '1'; }catch(e){ /* sin almacenamiento */ }
+function usarPermisoCorreoCompartido(){
+  mailCompartido = true;
+  try{ localStorage.setItem(CLAVE_MAIL_COMPARTIDO, '1'); }catch(e){ /* sin almacenamiento */ }
+}
 async function getMailToken(){
-  const scopes = ["Mail.ReadWrite"];
+  const scopes = mailCompartido ? ["Mail.ReadWrite", "Mail.ReadWrite.Shared"] : ["Mail.ReadWrite"];
   try{
     const res = await msalInstance.acquireTokenSilent({ scopes, account });
     return res.accessToken;
@@ -864,6 +874,11 @@ export async function leerCorreosTutelas(correoBuzon, remitentesPermitidos, top 
   const res = await fetch(url, { headers: { Authorization:`Bearer ${token}` } });
   if(!res.ok){
     const body = await res.text();
+    // 403 en el buzón compartido: se activa el permiso «.Shared» y se reintenta UNA vez (ver getMailToken).
+    if(res.status === 403 && !mailCompartido){
+      usarPermisoCorreoCompartido();
+      return leerCorreosTutelas(correoBuzon, remitentesPermitidos, top, desde, hasta);
+    }
     throw new Error(`Graph ${res.status}: ${body.substring(0,300)}`);
   }
   const data = await res.json();

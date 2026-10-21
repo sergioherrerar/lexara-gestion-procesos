@@ -137,6 +137,15 @@ function tutelaYaEnPortal(tutelas, noTutela, cliente){
   return (tutelas || []).find(t => String(t.NoTutela) === String(noTutela) && claveMarcaCliente(t.Cliente) === k) || null;
 }
 
+// Error 403 al leer el buzón de Tutelas: la cuenta con la que se entró no tiene permiso sobre ese buzón (no es un fallo del portal). Se explica qué pedirle al administrador.
+function mensajeErrorBuzon(err, correoBuzon){
+  const msg = String((err && err.message) || err || '');
+  if(/403|access is denied|ErrorAccessDenied|forbidden/i.test(msg)){
+    return 'Tu cuenta no tiene permiso para leer el buzón de Tutelas (' + (correoBuzon || 'Tutelas') + '). Pídele al administrador de Microsoft 365 que te dé acceso «Leer y administrar» (acceso total) a ese buzón en Exchange; puede tardar hasta una hora en activarse. Después cierra sesión y vuelve a entrar al portal.';
+  }
+  return mensajeError(err);
+}
+
 export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitidos, robotUrl, robotEscritoUrl, onedriveCarpetaUrl, tutelas, temas, onAgregarCorreccionIA, robotPreguntasUrl, config, robotSolicitudUrl, onExtraido, onClose, notify, lexiaHablando }){
   const [cargando, setCargando] = useState(true);
   // "Un botón para actualizar la lista de los correos que estén
@@ -233,7 +242,7 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
         if(!cancelado) setMensajes(r);
       }catch(err){
         console.error(err);
-        if(!cancelado) setErrorCarga(mensajeError(err));
+        if(!cancelado) setErrorCarga(mensajeErrorBuzon(err, correoBuzon));
       }finally{
         if(!cancelado) setCargando(false);
       }
@@ -273,7 +282,7 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
       setMensajes(r);
     }catch(err){
       console.error(err);
-      setErrorCarga(mensajeError(err));
+      setErrorCarga(mensajeErrorBuzon(err, correoBuzon));
     }finally{
       setActualizando(false);
     }
