@@ -151,7 +151,7 @@ En ambos casos, el Tema describe la particularidad puntual del caso (ej. "Reembo
 
 4. PRESTACIÓN ADMINISTRATIVA (igual para cualquier cliente)
 - Derechos de petición: solicitudes de respuesta a derechos de petición.
-- Afiliación: inconvenientes relacionados con la afiliación.
+- Afiliación: inconvenientes relacionados con la afiliación, y toda solicitud de afiliación o desafiliación — por ejemplo una empresa o empleador que pide afiliar (o desafiliar) a sus trabajadores, o un usuario que pide afiliarse a la EPS o a Medicina Prepagada (criterio del abogado a cargo, 2026-10-21, tutela 28328). En la lista oficial de Temas suele llamarse «SOLICITUD DE AFILIACIÓN / DESAFILIACIÓN».
 - Estabilidad laboral reforzada: solicitudes de estabilidad laboral reforzada.
 - Solicitudes a otra entidad: aplica cuando la EPS o CMP no son las entidades accionadas y lo pretendido no las involucra; por ejemplo, cuando se acciona contra una secretaría de salud solicitando certificado de discapacidad, o contra una administración por cuotas de administración.
 TXT;
@@ -165,6 +165,22 @@ TXT;
 // cargo va dejando correcciones reales sobre casos anteriores donde el
 // robot categorizó mal el Tema; se le muestran a Claude como precedentes
 // reales del despacho, con más peso que la lista genérica de arriba.
+// LISTA OFICIAL de Temas (2026-10-21, tutela 28328: LexIA dejó el Tema vacío porque escribió «Afiliación», que no existe tal cual en la lista de SharePoint). El portal manda los Temas reales por Prestación;
+// el Tema que devuelva LexIA debe ser EXACTAMENTE uno de ellos (copiado letra por letra) para que el desplegable quede seleccionado.
+$temasOficialesTexto = '';
+if(is_array($entrada['temasOficiales'] ?? null)){
+    $bloques = [];
+    foreach($entrada['temasOficiales'] as $prestacionTema => $listaTemas){
+        if(!is_array($listaTemas) || !$listaTemas) continue;
+        $limpios = array_values(array_filter(array_map(function($x){ return trim((string)$x); }, $listaTemas)));
+        if($limpios) $bloques[] = 'Prestación ' . trim((string)$prestacionTema) . ": " . implode(' | ', array_slice($limpios, 0, 80));
+    }
+    if($bloques){
+        $temasOficialesTexto = "LISTA OFICIAL DE TEMAS (los que existen hoy en el portal, por Prestación; separados por ' | '). El campo Tema DEBE ser EXACTAMENTE uno de los Temas de la Prestación que elegiste, copiado letra por letra (mayúsculas, tildes y signos como '/' incluidos). La guía de criterios describe el criterio con otras palabras: tradúcelo al Tema oficial que mejor lo exprese (por ejemplo, una solicitud de afiliación o desafiliación es el Tema oficial de afiliación/desafiliación, no 'Afiliación' a secas). Nunca dejes el Tema vacío si hay un Tema oficial que describe la pretensión; deja vacío solo si de verdad ninguno aplica.
+" . implode("
+", $bloques);
+    }
+}
 $correccionesTexto = '';
 if($correcciones){
     $lineas = [];
@@ -268,7 +284,9 @@ $body = [
     // corrección nueva no invalida la caché de la guía de criterios.
     'system' => [
         ['type' => 'text', 'text' => $instrucciones . "\n\n" . lexiaEspecialista(), 'cache_control' => ['type' => 'ephemeral']],
-        ['type' => 'text', 'text' => $correccionesTexto ?: '(sin correcciones adicionales todavía)', 'cache_control' => ['type' => 'ephemeral']],
+        ['type' => 'text', 'text' => trim($temasOficialesTexto . "
+
+" . ($correccionesTexto ?: '(sin correcciones adicionales todavía)')), 'cache_control' => ['type' => 'ephemeral']],
     ],
     'messages' => [
         ['role' => 'user', 'content' => $contenido],

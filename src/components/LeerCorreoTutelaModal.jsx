@@ -620,7 +620,7 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
       }
     }
     try{
-      const extraido = await extraerTutelaConLexIA(correoBuzon, mensaje.id, tutelas, robotUrl, onedriveCarpetaUrl, fechaLocalISO(instanteNotificacion));
+      const extraido = await extraerTutelaConLexIA(correoBuzon, mensaje.id, tutelas, robotUrl, onedriveCarpetaUrl, fechaLocalISO(instanteNotificacion), temas);
       // Vencimiento en días HÁBILES (sin sábados, domingos ni festivos de
       // Colombia), calculado por el portal con los días que otorga el juez —
       // no con la fecha que haya escrito Claude (ver lib/vencimientoTutela.js).

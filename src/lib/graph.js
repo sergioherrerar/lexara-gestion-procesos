@@ -1147,7 +1147,7 @@ function mensajeErrorLexIA(msg){
   return m;
 }
 
-export async function extraerTutelaConLexIA(correoBuzon, mensajeId, tutelas, robotUrl, onedriveCarpetaUrl, fechaCorreoISO){
+export async function extraerTutelaConLexIA(correoBuzon, mensajeId, tutelas, robotUrl, onedriveCarpetaUrl, fechaCorreoISO, temas){
   if(!robotUrl) throw new Error('Falta terminar de instalar LexIA (ROBOT_CLAUDE_URL en config.js).');
   const completo = await leerCorreoCompleto(correoBuzon, mensajeId);
   // Guarda los adjuntos originales en OneDrive para el "plan B" (ver nota de
@@ -1170,6 +1170,14 @@ export async function extraerTutelaConLexIA(correoBuzon, mensajeId, tutelas, rob
         return { error: err };
       });
   }
+  // Temas oficiales por Prestación (los reales de SharePoint): LexIA debe elegir uno tal cual para que el desplegable quede seleccionado.
+  const temasOficiales = {};
+  (temas || []).forEach(t => {
+    const pr = String(t.PrestacionTema || '').trim(), nombre = String(t.Nombre || '').trim();
+    if(!pr || !nombre) return;
+    (temasOficiales[pr] = temasOficiales[pr] || []);
+    if(!temasOficiales[pr].includes(nombre)) temasOficiales[pr].push(nombre);
+  });
   const correcciones = (tutelas || [])
     .filter(t => t.CorreccionIA)
     .sort((a,b) => (Number(b.NoTutela)||0) - (Number(a.NoTutela)||0))
@@ -1205,6 +1213,7 @@ export async function extraerTutelaConLexIA(correoBuzon, mensajeId, tutelas, rob
           fechaCorreo: fechaCorreoISO || '',
           adjuntos: pendientes.map(a => ({ nombre: a.nombre, tipo: a.tipo, base64: a.base64 })),
           correcciones,
+          temasOficiales,
         }),
       });
     }catch{

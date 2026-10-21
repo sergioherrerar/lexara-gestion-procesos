@@ -39,6 +39,31 @@ function opcionOficial(valor, opciones, parcial = false){
   return "";
 }
 
+// Tema aproximado (2026-10-21, tutela 28328: «en varios casos no selecciona el tema»). Si LexIA escribió el Tema con otras palabras
+// («AFILIACIÓN» en vez de «SOLICITUD DE AFILIACIÓN / DESAFILIACIÓN»), se elige la ÚNICA opción oficial que lo contiene o que contiene
+// al menos la mitad de sus palabras clave; si hay empate o duda no se elige ninguna (el aviso le dice al usuario que lo escoja).
+const PALABRAS_VACIAS_TEMA = new Set(["de", "del", "la", "el", "los", "las", "por", "para", "con", "sin", "y", "en", "a", "al"]);
+function palabrasClave(v){
+  return normalize(String(v ?? "")).split(/[^a-z0-9]+/).filter(w => w.length >= 3 && !PALABRAS_VACIAS_TEMA.has(w));
+}
+function temaAproximado(valor, opciones){
+  const k = clave(valor);
+  if(k.length < 5) return "";
+  const contiene = opciones.filter(o => clave(o).includes(k) || (clave(o).length >= 8 && k.includes(clave(o))));
+  if(contiene.length === 1) return contiene[0];
+  const pv = palabrasClave(valor);
+  if(!pv.length) return "";
+  let mejor = null, mejorPuntaje = 0, empate = false;
+  opciones.forEach(o => {
+    const po = new Set(palabrasClave(o));
+    const aciertos = pv.filter(w => po.has(w) || [...po].some(x => x.length >= 5 && (x.startsWith(w) || w.startsWith(x)))).length;
+    const puntaje = aciertos / pv.length;
+    if(puntaje > mejorPuntaje){ mejor = o; mejorPuntaje = puntaje; empate = false; }
+    else if(puntaje === mejorPuntaje && puntaje > 0) empate = true;
+  });
+  return mejor && !empate && mejorPuntaje >= 0.5 ? mejor : "";
+}
+
 function siNo(valor){
   const v = normalize(String(valor ?? "")).trim();
   if(["si", "s", "yes", "true", "1"].includes(v)) return "Sí";
@@ -161,7 +186,14 @@ export function normalizarBorradorTutela(registro, { temas = [], numeroAsunto = 
   // Tema: solo de los que existen para esa Prestación (mismo criterio del
   // desplegable del formulario).
   const temaTexto = limpiarTexto(r.Tema);
-  c.Tema = c.Prestacion ? opcionOficial(temaTexto, temasParaPrestacion(temas, c.Prestacion)) : "";
+  // Si LexIA no dio la Prestación pero el Tema es uno oficial (en una sola Prestación), se toma esa Prestación.
+  if(!c.Prestacion && temaTexto){
+    const dueñas = [...new Set((temas || []).filter(x => x.Nombre && clave(x.Nombre) === clave(temaTexto)).map(x => opcionOficial(x.PrestacionTema, PRESTACION_OPCIONES)).filter(Boolean))];
+    if(dueñas.length === 1){ c.Prestacion = dueñas[0]; avisos.push(`Prestación (LexIA no la dio; se tomó "${c.Prestacion}" porque el Tema "${temaTexto}" pertenece a ella)`); }
+  }
+  const temasDeLaPrestacion = c.Prestacion ? temasParaPrestacion(temas, c.Prestacion) : [];
+  c.Tema = c.Prestacion ? (opcionOficial(temaTexto, temasDeLaPrestacion) || temaAproximado(temaTexto, temasDeLaPrestacion)) : "";
+  if(c.Tema && temaTexto && clave(c.Tema) !== clave(temaTexto)) avisos.push(`Tema (LexIA escribió "${temaTexto}"; se eligió "${c.Tema}" de la lista — revísalo)`);
   if(!c.Tema && temaTexto) avisos.push(`Tema (LexIA sugirió "${temaTexto}", que no está en la lista de ${c.Prestacion || "la Prestación"} — elígelo o créalo con el botón "Tema")`);
 
   let departamento = departamentoOficial(r.Departamento);
