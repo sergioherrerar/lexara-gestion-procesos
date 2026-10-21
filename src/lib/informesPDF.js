@@ -147,7 +147,7 @@ export function dibujarResumenBox(doc, x, y, width, items){
     doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(...GRIS_SUAVE);
     doc.text(item.label.toUpperCase(), cx + anchoCelda/2, y + 6.5, {align:'center'});
     const valor = String(item.value);
-    doc.setFont('helvetica','bold'); doc.setFontSize(valor.length > 16 ? 9.5 : 12.5); doc.setTextColor(...VERDE_OSCURO);
+    doc.setFont('helvetica','bold'); doc.setFontSize(valor.length > 16 || item.pequeno ? 9.5 : 12.5); doc.setTextColor(...VERDE_OSCURO);
     doc.text(valor, cx + anchoCelda/2, y + 13.5, {align:'center'});
   });
   return y + alto;

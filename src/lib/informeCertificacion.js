@@ -16,7 +16,7 @@
 import { prepararDocumentoPDF, fechaLarga, VERDE_OSCURO, TEXTO, GRIS_SUAVE, BORDE_SUAVE, MARGEN, CONTENIDO_Y_INICIAL, CONTENIDO_Y_MAXIMO, dibujarResumenBox, FIRMA_DEFECTO, imagenComoDataUrl, ANCHO_FIRMA_COMPLETA_MM } from './informesPDF';
 import { esContratista, tipoContratoCanonico, frasePrincipalContrato } from './tipoContrato';
 import { idCifrado } from './graph';
-import { generarQRDataUrl, LINK_REDES_SOCIALES } from './qr';
+import { generarQRDataUrl } from './qr';
 import firmaCompleta from '../assets/Firma Monica Completa.png';
 
 const MESES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
@@ -36,6 +36,26 @@ function fechaCortaVisible(iso){
   if(!m) return "—";
   return `${m[3]}/${m[2]}/${m[1]}`;
 }
+// Tiempo de servicio entre el ingreso y el retiro (o hoy si sigue vigente), como en las cartas del despacho: "2 años y 5 meses".
+// Si lleva menos de un mes se da en días. Usa el calendario (no 365/30) para que 2 años y 5 meses sean exactamente eso.
+function tiempoDeServicio(ingresoISO, retiroISO, hoy){
+  const mi = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(ingresoISO || ''));
+  if(!mi) return null;
+  const mr = retiroISO ? /^(\d{4})-(\d{2})-(\d{2})/.exec(String(retiroISO)) : null;
+  const fin = mr ? new Date(Number(mr[1]), Number(mr[2]) - 1, Number(mr[3])) : new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+  const ini = new Date(Number(mi[1]), Number(mi[2]) - 1, Number(mi[3]));
+  if(fin < ini) return null;
+  let meses = (fin.getFullYear() - ini.getFullYear()) * 12 + (fin.getMonth() - ini.getMonth());
+  let base = new Date(ini.getFullYear(), ini.getMonth() + meses, ini.getDate());
+  if(base > fin){ meses--; base = new Date(ini.getFullYear(), ini.getMonth() + meses, ini.getDate()); }
+  const dias = Math.round((fin - base) / 86400000);
+  const anios = Math.floor(meses / 12), m = meses % 12;
+  const partes = [];
+  if(anios) partes.push(anios + (anios === 1 ? ' año' : ' años'));
+  if(m) partes.push(m + (m === 1 ? ' mes' : ' meses'));
+  if(!anios && !m) return (dias + 1) + ((dias + 1) === 1 ? ' día' : ' días');   // el día de ingreso cuenta
+  return partes.join(' y ');
+}
 function nombreArchivoSeguro(s){
   return (s||"").toString().replace(/[\/\\?%*:|"<>]/g, "-");
 }
@@ -49,7 +69,7 @@ function nombreArchivoSeguro(s){
 // según sea Trabajador (relación laboral) o Contratista (prestación de
 // servicios independiente); si no hay Fecha de retiro, certifica como
 // vigente "a la fecha de expedición" en vez de mostrar un rango cerrado.
-function segmentosCertificacion(colaborador, esContratista){
+function segmentosCertificacion(colaborador, esContratista, hoy, { recomendacion } = {}){
   const nombre = (colaborador.Nombre || "").toUpperCase();
   const tipoId = colaborador.TipoIdentificacion || "C.C.";
   const identificacion = colaborador.Identificacion || "—";
@@ -61,20 +81,29 @@ function segmentosCertificacion(colaborador, esContratista){
     ? (hasta ? `desde el ${desde} hasta el ${hasta}` : `desde el ${desde} a la fecha de expedición del presente documento, vinculación que continúa vigente`)
     : `durante el tiempo que se relaciona en los registros del despacho`;
 
-  const encabezado = { text: 'MD ABOGADOS SAS, identificada con Nit. 900.495.788-3, CERTIFICA QUE:' };
+  const tiempo = tiempoDeServicio(colaborador.FechaIngreso, colaborador.FechaRetiro, hoy);
+  const tiempoTxt = tiempo ? `, por un periodo de ${tiempo}` : '';
+  // Quien firma, como en las cartas del despacho: nombre, cédula y calidad de representante legal.
+  const nombreFirmante = FIRMA_DEFECTO.nombre.split(' ').map(w => w.charAt(0) + w.slice(1).toLowerCase()).join(' ');
+  const cedulaFirmante = FIRMA_DEFECTO.cc.split('C.C. No. ').join('cédula de ciudadanía No. ');
+  const encabezado = { text: `${nombreFirmante}, identificada con ${cedulaFirmante}, en calidad de Representante Legal de MD ABOGADOS S.A.S., NIT 900.495.788-3, CERTIFICA QUE:` };
   const nombreBold = { text: nombre + ',', bold: true };
   const conectorId = { text: `identificado(a) con ${tipoId} No.` };
   const idBold = { text: identificacion + ',', bold: true };
   const cierre = { text: 'La presente certificación se expide a solicitud del interesado, para los fines que estime convenientes.' };
+  // Párrafo de recomendación (base: carta de recomendación del despacho). Neutro en género: habla del cargo, no de «abogado/abogada».
+  const textoRecomendacion = { text: `En el desempeño de su cargo demostró excelentes calidades humanas y profesionales, y desarrolló con gran compromiso y calidad las tareas encomendadas, razón por la cual MD ABOGADOS S.A.S. extiende su recomendación.` };
+  const recom = recomendacion ? [{ parrafo:true }, textoRecomendacion] : [];
 
   if(esContratista){
     const verbo = vigente ? 'presta' : 'ha prestado';
     return [
       encabezado, { parrafo:true },
       nombreBold, conectorId, idBold,
-      { text: `${verbo} sus servicios profesionales de forma independiente a esta firma, mediante contrato de prestación de servicios, ${rangoFechas}, desempeñándose como ${cargo}.` },
+      { text: `${verbo} sus servicios profesionales de forma independiente a esta firma, mediante contrato de prestación de servicios, ${rangoFechas}${tiempoTxt}, desempeñándose como ${cargo}.` },
       { parrafo:true },
       { text: 'Se aclara que dicha vinculación NO corresponde a una relación laboral, sino a un contrato de prestación de servicios profesionales, sin subordinación ni dependencia.' },
+      ...recom,
       { parrafo:true }, cierre,
     ];
   }
@@ -86,7 +115,8 @@ function segmentosCertificacion(colaborador, esContratista){
   return [
     encabezado, { parrafo:true },
     nombreBold, conectorId, idBold,
-    { text: `${verbo} en esta firma, mediante ${frasePrincipalContrato(colaborador.TipoColaborador)}, ${rangoFechas}, desempeñando el cargo de ${cargo}.` },
+    { text: `${verbo} en esta firma, mediante ${frasePrincipalContrato(colaborador.TipoColaborador)}, ${rangoFechas}${tiempoTxt}, desempeñando el cargo de ${cargo}.` },
+    ...recom,
     { parrafo:true }, cierre,
   ];
 }
@@ -114,7 +144,8 @@ function dibujarParrafoConNegritas(doc, segmentos, x, y, maxWidth, lineHeight){
   return cursorY + lineHeight;
 }
 
-export async function generarCertificacionColaboradorPDF(colaborador){
+// opciones.recomendacion: agrega el párrafo de recomendación (calidades humanas y profesionales) tomado de las cartas del despacho.
+export async function generarCertificacionColaboradorPDF(colaborador, opciones = {}){
   const esContratistaCol = esContratista(colaborador.TipoColaborador);
   const titulo = esContratistaCol ? 'Certificación de prestación de servicios' : 'Certificación laboral';
   const { doc, pageWidth, hoy, fecha, dibujarEncabezadoYPie, numerarPaginas } = await prepararDocumentoPDF(titulo);
@@ -133,11 +164,15 @@ export async function generarCertificacionColaboradorPDF(colaborador){
     { label:'Cargo', value: colaborador.Cargo || "—" },
     { label:'Tipo de contrato', value: tipoContratoCanonico(colaborador.TipoColaborador) || 'Indefinido' },
     { label:'Fecha de ingreso', value: fechaCortaVisible(colaborador.FechaIngreso) },
+    { label:'Tiempo de servicio', value: tiempoDeServicio(colaborador.FechaIngreso, colaborador.FechaRetiro, hoy) || '—', pequeno: true },
     { label: colaborador.FechaRetiro ? 'Fecha de retiro' : 'Estado', value: colaborador.FechaRetiro ? fechaCortaVisible(colaborador.FechaRetiro) : 'Vigente' },
   ]) + 9;
 
   doc.setFontSize(10.5); doc.setTextColor(...TEXTO);
-  y = dibujarParrafoConNegritas(doc, segmentosCertificacion(colaborador, esContratistaCol), MARGEN, y, pageWidth - MARGEN*2, 5.4) + 11;
+  y = dibujarParrafoConNegritas(doc, segmentosCertificacion(colaborador, esContratistaCol, hoy, { recomendacion: !!opciones.recomendacion }), MARGEN, y, pageWidth - MARGEN*2, 5.4) + 4;
+  // Cierre de cortesía de las cartas del despacho, justo antes de «Cordial saludo,» y la firma.
+  doc.setFont('helvetica','normal'); doc.setFontSize(10.5); doc.setTextColor(...TEXTO);
+  doc.text('Sin otro particular y agradeciendo la atención prestada.', MARGEN, y); y += 9;
 
   if(y > CONTENIDO_Y_MAXIMO - 68){
     doc.addPage();
@@ -150,6 +185,7 @@ export async function generarCertificacionColaboradorPDF(colaborador){
   // persona, esto necesita su propia imagen equivalente. Si la imagen no
   // carga por lo que sea, cae de vuelta al mismo bloque armado con texto
   // (sin la firma real) para no dejar la certificación sin cierre.
+  const yInicioFirma = y;
   try{
     const { dataUrl, ancho, alto } = await imagenComoDataUrl(firmaCompleta);
     const altoBloque = ANCHO_FIRMA_COMPLETA_MM * (alto/ancho);
@@ -176,7 +212,7 @@ export async function generarCertificacionColaboradorPDF(colaborador){
   //   de verificación, el QR trae los datos directo adentro (opción 1 que
   //   confirmó el usuario): quien lo escanea puede comparar a simple vista
   //   los datos del papel contra los del código, sin necesitar internet.
-  // - "Redes sociales": la página de enlaces de Lexara (ver LINK_REDES_SOCIALES en qr.js).
+  // - El QR de redes sociales ya no va aquí: está en el pie de página del membrete (2026-10-21).
   const idCod = idCifrado(colaborador.id);
   const textoQRSeguridad = [
     'MD ABOGADOS SAS - Verificación de certificación',
@@ -190,30 +226,19 @@ export async function generarCertificacionColaboradorPDF(colaborador){
     `Certificación generada: ${fechaCortaVisible(hoy.toISOString())}`,
   ].join('\n');
   try{
-    // Centrados horizontalmente (pedido explícito del usuario 2026-09-15:
-    // "colócalos en el centro de la hoja para que no pisen los contadores de
-    // página") — antes quedaban pegados a la derecha, justo donde
-    // numerarPaginas() (informesPDF.js) imprime "Página X de Y", y se
-    // encimaban.
-    const qrLado = 20;
-    const gapQR = 8;
-    const anchoBloque = qrLado*2 + gapQR;
-    const qrY = y + 3;
-    const xSeguridad = pageWidth/2 - anchoBloque/2;
-    const xRedes = xSeguridad + qrLado + gapQR;
-    const [qrSeguridadUrl, qrRedesUrl] = await Promise.all([
-      generarQRDataUrl(textoQRSeguridad),
-      generarQRDataUrl(LINK_REDES_SOCIALES),
-    ]);
+    // Solo el QR de «Verificación», a la derecha de la firma (pedido del usuario 2026-10-21): el QR de redes sociales ya va en el pie de
+    // página del membrete, así que no se repite. Va junto a la firma, no debajo, para no pisar el pie ni los contadores de página.
+    const qrLado = 24;
+    const qrY = yInicioFirma + 6;
+    const xSeguridad = pageWidth - MARGEN - qrLado - 28;
+    const qrSeguridadUrl = await generarQRDataUrl(textoQRSeguridad);
     doc.addImage(qrSeguridadUrl, 'PNG', xSeguridad, qrY, qrLado, qrLado);
-    doc.addImage(qrRedesUrl, 'PNG', xRedes, qrY, qrLado, qrLado);
     doc.setFont('helvetica','normal'); doc.setFontSize(6.5); doc.setTextColor(...GRIS_SUAVE);
     doc.text('Verificación', xSeguridad + qrLado/2, qrY + qrLado + 4, {align:'center'});
-    doc.text('Síguenos', xRedes + qrLado/2, qrY + qrLado + 4, {align:'center'});
   }catch(err){
-    // Si por lo que sea no se pudo generar algún QR, la certificación se
-    // guarda igual sin ellos — no debe impedir entregar el documento.
-    console.error('No se pudieron generar los QR de la certificación:', err);
+    // Si por lo que sea no se pudo generar el QR, la certificación se
+    // guarda igual sin él — no debe impedir entregar el documento.
+    console.error('No se pudo generar el QR de verificación de la certificación:', err);
   }
 
   numerarPaginas();

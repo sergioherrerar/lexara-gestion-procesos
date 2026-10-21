@@ -28,18 +28,26 @@ const TABS = [
 
 function CertificacionesTab({ colaboradores, notify }){
   const [generando, setGenerando] = useState(null);
+  // Párrafo de recomendación (calidades humanas y profesionales): se recuerda la última elección en este navegador.
+  const [conRecomendacion, setConRecomendacion] = useState(() => { try{ return localStorage.getItem('lexara-cert-recomendacion') !== 'no'; }catch(e){ return true; } });
+  function cambiarRecomendacion(v){ setConRecomendacion(v); try{ localStorage.setItem('lexara-cert-recomendacion', v ? 'si' : 'no'); }catch(e){} }
   async function handleGenerar(c){
     if(!c.Cargo || !c.FechaIngreso){
       notify?.(`Antes de generar la certificación de ${c.Nombre}, completa su Cargo y Fecha de ingreso en la ficha del colaborador (pestaña Colaboradores MD).`, 'error');
       return;
     }
     setGenerando(c.id);
-    try{ await generarCertificacionColaboradorPDF(c); }
+    try{ await generarCertificacionColaboradorPDF(c, { recomendacion: conRecomendacion }); }
     catch(err){ console.error(err); notify?.("No se pudo generar la certificación: " + mensajeError(err), 'error'); }
     finally{ setGenerando(null); }
   }
   const activos = [...colaboradores].sort((a,b) => (a.Nombre||"").localeCompare(b.Nombre||""));
   return (
+    <>
+    <label className="save-hint" style={{display:'inline-flex', alignItems:'center', gap:8, margin:'0 0 10px', cursor:'pointer'}}>
+      <input type="checkbox" checked={conRecomendacion} onChange={e => cambiarRecomendacion(e.target.checked)} />
+      Incluir el párrafo de recomendación (calidades humanas y profesionales) en la certificación
+    </label>
     <div className="table-wrap">
       <table>
         <thead>
@@ -68,6 +76,7 @@ function CertificacionesTab({ colaboradores, notify }){
         </tbody>
       </table>
     </div>
+    </>
   );
 }
 
