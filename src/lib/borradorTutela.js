@@ -125,8 +125,17 @@ function correoLimpio(valor){
   return m ? m[0].toLowerCase() : "";
 }
 
+// Una sola identificación (2026-10-21, tutela 28331: LexIA puso «79723901 - 900.711.448-1», la cédula del usuario Y el NIT de su empresa, y SharePoint
+// rechazó el guardado con un 400 porque la columna espera UNA identificación). Se queda la primera, solo con dígitos si es numérica.
+const SEPARADORES_IDENTIFICACION = [" - ", " – ", " — ", " / ", "/", ";", "|", " y ", " Y ", " e "];
+function primeraIdentificacion(valor){
+  let s = limpiarTexto(valor);
+  let mas = false;
+  SEPARADORES_IDENTIFICACION.forEach(sep => { const i = s.indexOf(sep); if(i > 0){ s = s.slice(0, i).trim(); mas = true; } });
+  return { s, mas };
+}
 function identificacionLimpia(valor){
-  const s = limpiarTexto(valor);
+  const s = primeraIdentificacion(valor).s;
   // Una cédula escrita con puntos/comas/espacios ("51.640.157") se guarda
   // solo con dígitos; cualquier otro texto se deja como vino.
   return /^[\d.,\s]+$/.test(s) ? s.replace(/[^\d]/g, "") : s;
@@ -225,7 +234,18 @@ export function normalizarBorradorTutela(registro, { temas = [], numeroAsunto = 
   if(limpiarTexto(r.Proceso) && !c.Proceso) avisos.push(`Proceso (LexIA puso "${limpiarTexto(r.Proceso)}", no tiene el formato aaaa-nnnnn)`);
 
   c.Juzgado = limpiarTexto(r.Juzgado);
-  c.Usuario = limpiarTexto(r.Usuario);
+  // Un solo usuario: si LexIA juntó a la persona y su empresa («AVILA LOPEZ JORGE DAVID - PHOENIX TOWER INTERNATIONAL COLOMBIA») se deja la primera.
+  let usuario = limpiarTexto(r.Usuario);
+  const PISTAS_EMPRESA = ["s.a.s", "sas", "s.a.", "ltda", "international", "corp", "e.u.", "& cia", "y cia", "colombia s", "inversiones", "grupo"];
+  const corteUsuario = [" - ", " – ", " — ", " / "].map(sep => usuario.indexOf(sep)).filter(n => n > 0);
+  if(corteUsuario.length){
+    const primero = usuario.slice(0, Math.min(...corteUsuario)).trim();
+    const resto = usuario.slice(Math.min(...corteUsuario) + 3).toLowerCase();
+    if(primero && PISTAS_EMPRESA.some(w => resto.includes(w))){ avisos.push(`Usuario (LexIA puso "${usuario}"; se dejó solo "${primero}" — un solo usuario por registro)`); usuario = primero; }
+  }
+  c.Usuario = usuario.slice(0, 255);
+  const idInfo = primeraIdentificacion(r.NoIdentificacion);
+  if(idInfo.mas) avisos.push(`No. Identificación (LexIA puso "${limpiarTexto(r.NoIdentificacion)}"; se dejó solo la primera — un solo usuario por registro)`);
   c.NoIdentificacion = identificacionLimpia(r.NoIdentificacion);
   c.Correo = correoLimpio(r.Correo);
   c.Solicita = textoPlanoAHtml(r.Solicita);

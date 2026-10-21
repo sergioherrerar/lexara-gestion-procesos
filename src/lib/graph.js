@@ -688,6 +688,25 @@ export async function buscarSolicitudPruebasExistente(correoBuzon, noTutela, cli
   return encontrados[0] || null;
 }
 
+// TODAS las solicitudes de pruebas de esta tutela (de cualquier entidad) que ya están en Borradores o Enviados del buzón de Tutelas — 2026-10-21, tutela 28299:
+// una tutela iniciada contra Aliansalud, con las pruebas ya pedidas y la contestación enviada, a la que luego el juez vincula a UMD no debe volver a pedirle
+// lo mismo a Aliansalud. Devuelve [{ cliente, enviado, fecha, asunto }] (cliente = ALIANSALUD / COLMÉDICA / UMD o ''). Si la consulta falla, devuelve [].
+export async function buscarSolicitudesPreviasDeTutela(correoBuzon, noTutela){
+  if(!correoBuzon || !noTutela) return [];
+  const salida = [];
+  for(const [carpeta, orden] of [['drafts', 'createdDateTime'], ['sentitems', 'sentDateTime']]){
+    try{
+      (await ultimosMensajesDeCarpeta(correoBuzon, carpeta, orden)).forEach(m => {
+        if(!esSolicitudPruebasDeTutela(m, noTutela)) return;
+        const texto = normalize([m.subject || '', ...(m.categories || [])].join(' '));
+        const cliente = texto.includes('aliansalud') ? 'ALIANSALUD' : (texto.includes('colmedica') ? 'COLMÉDICA' : (texto.includes('umd') ? 'UMD' : ''));
+        salida.push({ cliente, enviado: carpeta === 'sentitems', fecha: String(m.sentDateTime || m.createdDateTime || '').slice(0, 10), asunto: m.subject || '' });
+      });
+    }catch(err){ console.error('No se pudieron revisar las solicitudes previas de la tutela (' + carpeta + '):', err); }
+  }
+  return salida;
+}
+
 // Crea el borrador como REENVÍO del correo original (el de los remitentes filtrados) para no
 // perder la traza: el borrador queda en la carpeta Borradores del buzón de Tutelas, con el
 // correo original y sus adjuntos abajo y nuestro contenido arriba.
@@ -731,11 +750,11 @@ async function reenviarComoBorrador(correoBuzon, mensajeId, { para, cc, categori
 // (valores oficiales) para la tabla. Si se da `mensajeIdReenviar`, el borrador es un reenvío de
 // ese correo (conserva la traza); si no se puede reenviar, queda como borrador nuevo y se avisa.
 // Devuelve { para, cc, asunto, notas, formato, reenviado, borrador }.
-export async function crearSolicitudPruebasBorrador({ config, robotSolicitudUrl, registro, registros, campos, camposTodos, asuntoCorreo, noTutela, fechaVencimiento, correoBuzon, mensajeIdReenviar, clientesSenalados, correosRecibidos, adjuntos, etiquetaEnvio, forzarPruebas }){
+export async function crearSolicitudPruebasBorrador({ config, robotSolicitudUrl, registro, registros, campos, camposTodos, asuntoCorreo, noTutela, fechaVencimiento, correoBuzon, mensajeIdReenviar, clientesSenalados, correosRecibidos, adjuntos, etiquetaEnvio, forzarPruebas, solicitudesPrevias }){
   if(!robotSolicitudUrl) throw new Error('Falta la dirección del robot de solicitud de pruebas (ROBOT_SOLICITUD_PRUEBAS_URL).');
   const formato = await leerFormatoSolicitudPruebas(config);
   // Se reintenta solo (hasta 2 veces más) si la conexión se corta, el servidor responde con un error pasajero o la respuesta de LexIA no se pudo leer.
-  const cuerpoPruebas = JSON.stringify({ formato: formato.texto, registro, registros: registros && registros.length ? registros : [registro], asuntoCorreo, noTutela, fechaVencimiento, clientesSenalados: clientesSenalados || [], correosRecibidos: correosRecibidos || [], forzarPruebas: !!forzarPruebas });
+  const cuerpoPruebas = JSON.stringify({ formato: formato.texto, registro, registros: registros && registros.length ? registros : [registro], asuntoCorreo, noTutela, fechaVencimiento, clientesSenalados: clientesSenalados || [], correosRecibidos: correosRecibidos || [], forzarPruebas: !!forzarPruebas, solicitudesPrevias: solicitudesPrevias || [] });
   let res, data = null, falloPasajero = null;
   for(let intento = 0; intento <= 2; intento++){
     if(intento > 0) await new Promise(r => setTimeout(r, 2500 * intento));
@@ -940,7 +959,26 @@ export async function primerCorreoDeConversacion(correoBuzon, conversacionId, re
 // palabra "TUTELA" seguida (con o sin "No.") de un número de 4 a 6 dígitos.
 export function numeroTutelaDeAsunto(asunto){
   const m = String(asunto || '').match(/TUTELA\s*(?:No\.?\s*)?(\d{4,6})/i);
-  return m ? Number(m[1]) : null;
+  if(m) return Number(m[1]);
+  // Asuntos como «TUTELA AVILA LOPEZ JORGE DAVID CC 79723901 … NIT 900.711.448-1 T° 28331» (2026-10-21, tutela 28331): el número va después de «T°», «Nº»
+  // o «No.» y no pegado a la palabra TUTELA. Se toma el primer número de 4 a 6 dígitos que sigue a uno de esos marcadores.
+  const texto = String(asunto || '');
+  const bajo = texto.toLowerCase();
+  const marcadores = ['t°', 'tº', 't.°', 'n°', 'nº', 'no.', 'no °', 'n.°'];
+  for(const marcador of marcadores){
+    let desde = 0, i;
+    while((i = bajo.indexOf(marcador, desde)) >= 0){
+      desde = i + marcador.length;
+      if(i > 0 && /[a-záéíóúñ]/.test(bajo[i - 1])) continue;   // dentro de otra palabra (p. ej. «mano.» o «JUAN»)
+      const resto = texto.slice(desde).trimStart();
+      let digitos = '';
+      for(const ch of resto){ if(ch >= '0' && ch <= '9') digitos += ch; else break; }
+      const sig = resto.charAt(digitos.length), sig2 = resto.charAt(digitos.length + 1);
+      const esMiles = (sig === '.' || sig === ',') && sig2 >= '0' && sig2 <= '9';   // «28.331» o «900.711»: un número con separador de miles, no un número corto de tutela
+      if(digitos.length >= 4 && digitos.length <= 6 && !esMiles) return Number(digitos);
+    }
+  }
+  return null;
 }
 
 // Cuerpo completo (texto plano, sin HTML) + adjuntos en base64 de UN correo
@@ -1870,11 +1908,15 @@ export function mensajeError(err){
   const msgSinPrefijo = listadoMatch ? listadoMatch[2] : msg;
   const graphMatch = msgSinPrefijo.match(/^Graph (\d+): (\{[\s\S]*)$/);
   if(graphMatch){
+    // crearItemConLookups le agrega al final « — Revisa: …» (columnas sospechosas) o « — Campos enviados: …»: se separa para que el JSON se pueda leer y se muestre TODO.
+    let jsonTxt = graphMatch[2], sufijo = '';
+    const cortes = [' — Revisa: ', ' — Campos enviados: '].map(s => jsonTxt.indexOf(s)).filter(n => n > 0);
+    if(cortes.length){ const corte = Math.min(...cortes); sufijo = ' · ' + jsonTxt.slice(corte + 3); jsonTxt = jsonTxt.slice(0, corte); }
     try{
-      const detalle = JSON.parse(graphMatch[2])?.error?.message;
-      if(detalle) return `${prefijoLista}Error de SharePoint (${graphMatch[1]}): ${detalle}`;
+      const detalle = JSON.parse(jsonTxt)?.error?.message;
+      if(detalle) return `${prefijoLista}Error de SharePoint (${graphMatch[1]}): ${detalle}${sufijo}`;
     }catch{ /* JSON incompleto/recortado — se cae al genérico */ }
-    return `${prefijoLista}Error de SharePoint (código ${graphMatch[1]}).`;
+    return `${prefijoLista}Error de SharePoint (código ${graphMatch[1]}).${sufijo}`;
   }
   return msg;
 }
@@ -2182,6 +2224,7 @@ export function camposSospechosos(list, updates){
     else if((col.number || col.currency) && typeof v !== 'number' && !Number.isFinite(numeroDeTextoColombiano(v))) salida.push(nombre + ' es numérica y se envió «' + v + '»');
     else if(col.choice && Array.isArray(col.choice.choices) && !col.choice.allowTextEntry && typeof v === 'string' && v.trim() && !col.choice.choices.includes(v.trim())) salida.push(nombre + ' solo admite ' + col.choice.choices.slice(0, 6).join(' / ') + ' y se envió «' + v + '»');
     else if(col.dateTime && typeof v === 'string' && v && !/^[0-9]{4}-[0-9]{2}-[0-9]{2}/.test(v)) salida.push(nombre + ' es fecha y se envió «' + v + '»');
+    else if(col.text && !col.text.allowMultipleLines && typeof v === 'string' && v.length > (col.text.maxLength || 255)) salida.push(nombre + ' admite máximo ' + (col.text.maxLength || 255) + ' caracteres y se enviaron ' + v.length);
   });
   return salida;
 }

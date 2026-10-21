@@ -60,6 +60,20 @@ $registros = is_array($entrada['registros'] ?? null) ? array_values(array_filter
 if(!$registros && $registro) $registros = [$registro];
 $asuntoCorreo = (string)($entrada['asuntoCorreo'] ?? '');
 $vencimiento = (string)($entrada['fechaVencimiento'] ?? '');     // aaaa-mm-dd
+// Solicitudes de pruebas que ya se crearon o enviaron para ESTA tutela (de cualquier entidad). 2026-10-21, tutela 28299.
+$solicitudesPrevias = is_array($entrada['solicitudesPrevias'] ?? null) ? array_values(array_filter($entrada['solicitudesPrevias'], 'is_array')) : [];
+$textoPrevias = '';
+if($solicitudesPrevias){
+    $lp = [];
+    foreach(array_slice($solicitudesPrevias, 0, 12) as $sp){
+        $lp[] = '- ' . (trim((string)($sp['cliente'] ?? '')) !== '' ? $sp['cliente'] : '(entidad no identificada)') . ' — ' . (!empty($sp['enviado']) ? 'ENVIADA' : 'borrador creado') . ' el ' . ($sp['fecha'] ?? '') . ' — asunto: ' . ($sp['asunto'] ?? '');
+    }
+    $textoPrevias = "
+
+SOLICITUDES DE PRUEBAS QUE YA SE HICIERON PARA ESTA TUTELA (por entidad):
+" . implode("
+", $lp);
+}
 $forzarPruebas = !empty($entrada['forzarPruebas']);   // el abogado insistió en pedir pruebas aunque la tutela no sea contra la entidad
 $noTutela = (string)($entrada['noTutela'] ?? ($registro['NoTutela'] ?? ''));
 // Correos que YA llegaron al buzón sobre esta tutela (de cualquier remitente: juzgado, áreas, usuario...). El portal los busca antes de pedir
@@ -146,6 +160,8 @@ TAREA ACTUAL: armar el CORREO DE SOLICITUD DE PRUEBAS de UNA tutela, usando el d
 11. Asunto: arma uno razonable ("TUTELA No. <NoTutela> - SOLICITUD DE PRUEBAS - VENCE <dd/mm/aaaa>"); el sistema lo ajusta si hace falta.
 12. En "notas" (máximo 3 frases breves, para el abogado, NO va en el correo) anota: qué formato(s) usaste y por qué, qué datos quedaron pendientes entre corchetes, qué soportes extra agregaste por criterio propio, y cualquier alerta relevante (vencimiento muy cercano, medida provisional, o algo que el área jurídica deba revisar, como el aviso del formato sobre contraindicaciones).
 13. LO QUE YA LLEGÓ (criterio pedido por el usuario, 2026-10-13): si al final de los datos hay una lista «CORREOS QUE YA LLEGARON AL BUZÓN SOBRE ESTA TUTELA», revísala ANTES de armar el correo. Si en esos correos (por su texto o por el nombre de un adjunto) ya llegó una prueba, un soporte o la respuesta de un área —por ejemplo historia clínica, autorización o negación, agendamiento, formulario de preexistencia, certificado de afiliación, respuesta de farmacia—, NO la pidas de nuevo: omite esa viñeta y, si un área ya respondió todo lo que se le iba a pedir, omite su bloque y sus correos del «para». Solo cuenta como recibido lo que se ve claro; si dudas, pídelo y anótalo. Cuando la columna de clase dice «ÁREA … YA RESPONDIÓ (verificado por su dirección)», esa área YA respondió antes de este correo (aunque no se le hubiera pedido): revisa su texto y adjuntos, no le pidas lo que ya envió y, si cubre todo lo que se le iba a pedir, omite su bloque y sus correos del «para»; el portal lo verificó por la dirección del remitente, así que no lo pongas en duda. Los correos del juzgado (notificaciones, autos, fallos) NO son pruebas de las áreas: sirven para entender el estado del caso (por ejemplo si ya hay fallo, medida provisional o un nuevo término). En «notas» di qué omitiste por ya estar recibido y en qué correo (fecha y remitente), y qué sigue pendiente.
+14. UMD VINCULADA: SOLO HISTORIA CLÍNICA (criterio de la abogada a cargo, 2026-10-21, tutela 28299): cuando la tutela vincula a UNIDAD MÉDICA Y DE DIAGNÓSTICO (UMD), a UMD NO se le piden pruebas como tal (ni las viñetas de servicios, autorizaciones, portabilidad, PBS, etc.): únicamente la HISTORIA CLÍNICA del paciente. Su sección va con el título «UNIDAD MÉDICA Y DE DIAGNÓSTICO (UMD):», dirigida al área que según la agenda atiende a UMD (el área médica de Colmédica si es un centro médico Colmédica, o la de Aliansalud si es la IPS de asignación básica), con UNA sola viñeta como «- Remitir la historia clínica completa del paciente <Usuario> (<tipo y número de identificación>) atendido en UMD.». Nada más en esa sección. Esto reemplaza lo que dice la regla 4.1 sobre UMD cuando UMD es la entidad vinculada.
+15. NO REPETIR LO YA PEDIDO A OTRA ENTIDAD (criterio de la abogada a cargo, 2026-10-21, tutela 28299): si al final de los datos hay una lista «SOLICITUDES DE PRUEBAS QUE YA SE HICIERON PARA ESTA TUTELA», una entidad que ya tiene su solicitud (enviada o en borrador) NO se vuelve a pedir: su sección y los correos de sus áreas se omiten, aunque el formato las traiga. Caso típico: la tutela empezó contra ALIANSALUD, ya se pidieron las pruebas y se contestó, y después el juez vincula a UMD → el correo nuevo lleva SOLO la sección de UMD con la historia clínica (regla 14), sin el bloque de Aliansalud. Si la lista no trae la entidad, o dice que la solicitud aún es un borrador sin enviar, sigue las reglas normales. Si «forzarPruebas» dice SÍ, ignora esta regla. En «notas» di qué entidad omitiste por ya estar solicitada y en qué fecha.
 
 Devuelve SOLO un objeto JSON (sin bloques de markdown ni texto adicional) con esta forma exacta:
 {"para": ["correo1", "correo2"], "cc": ["correo"], "asunto": "...", "cuerpo": "...", "notas": "...", "pretensiones": ["...", "..."]}
@@ -166,7 +182,7 @@ $datosTutela = "DATOS DE LA TUTELA (extraídos por LexIA del correo y los docume
     "\nEntidades que la tutela señala (única fuente para decidir a qué entidades pedir información): " . ($entidadesSenaladas ? implode(', ', $entidadesSenaladas) : '(no se pudo determinar)') .
     "\nforzarPruebas: " . ($forzarPruebas ? 'SÍ (salta la regla 0)' : 'NO') .
     "\nUrgencia: " . $urgenciaTexto .
-    "\nFecha de hoy: " . date('Y-m-d') . $textoCorreosRecibidos;
+    "\nFecha de hoy: " . date('Y-m-d') . $textoCorreosRecibidos . ($forzarPruebas ? '' : $textoPrevias);
 
 $body = [
     'model' => 'claude-sonnet-5',

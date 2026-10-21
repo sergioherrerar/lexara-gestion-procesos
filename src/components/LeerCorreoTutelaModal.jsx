@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { normalizarBorradorTutela } from '../lib/borradorTutela';
 import { aplicarVencimientoHabil, fechaLocalISO } from '../lib/vencimientoTutela';
 import { envioDelJuzgadoSegunTraza } from '../lib/trazaCorreo';
-import { leerCorreosTutelas, primerCorreoDeConversacion, crearSolicitudPruebasBorrador, buscarSolicitudPruebasExistente, revisarRespuestasAreas, uriLecturaLexIAParaArtefacto, leerTodosLosCorreosDeTutela, correosRecibidosParaSolicitud, claseDeCorreoParaRobot, estadoSeguimientoTutela, extraerTutelaConLexIA, numeroTutelaDeAsunto, normalize, mensajeError, buscarLecturaLexIAGuardada, guardarLecturaLexIAEnOneDrive, listarTutelasAnalizadasEnOneDrive, asegurarCarpetaTutelaDesdeMensaje, hayActuacionPrevia, registrarActuacion, buscarActuacionRegistrada, leerFormatoSolicitudPruebas } from '../lib/graph';
+import { leerCorreosTutelas, primerCorreoDeConversacion, crearSolicitudPruebasBorrador, buscarSolicitudPruebasExistente, buscarSolicitudesPreviasDeTutela, revisarRespuestasAreas, uriLecturaLexIAParaArtefacto, leerTodosLosCorreosDeTutela, correosRecibidosParaSolicitud, claseDeCorreoParaRobot, estadoSeguimientoTutela, extraerTutelaConLexIA, numeroTutelaDeAsunto, normalize, mensajeError, buscarLecturaLexIAGuardada, guardarLecturaLexIAEnOneDrive, listarTutelasAnalizadasEnOneDrive, asegurarCarpetaTutelaDesdeMensaje, hayActuacionPrevia, registrarActuacion, buscarActuacionRegistrada, leerFormatoSolicitudPruebas } from '../lib/graph';
 import IconButton, { IconTextButton } from './IconButton';
 import EscritoRobotPanel from './EscritoRobotPanel';
 import { redactarEscritoConRobot, sexoPorNombre } from '../lib/escritoRobot';
@@ -146,7 +146,14 @@ function mensajeErrorBuzon(err, correoBuzon){
   return mensajeError(err);
 }
 
-export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitidos, robotUrl, robotEscritoUrl, onedriveCarpetaUrl, tutelas, temas, onAgregarCorreccionIA, robotPreguntasUrl, config, robotSolicitudUrl, onExtraido, onClose, notify, lexiaHablando }){
+export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitidos, robotUrl, robotEscritoUrl, onedriveCarpetaUrl, tutelas, temas, onAgregarCorreccionIA, robotPreguntasUrl, config, robotSolicitudUrl, onExtraido, onClose, notify: notifyApp, lexiaHablando }){
+  // Los errores quedan también en un recuadro dentro de esta ventana (2026-10-21, «no alcancé a leer el error»): el aviso flotante lo tapa el siguiente
+  // aviso (p. ej. «Borrador de pruebas CREADO») y se pierde. El recuadro se queda hasta que se cierre.
+  const [erroresVisibles, setErroresVisibles] = useState([]);
+  function notify(msg, type){
+    if(type === 'error') setErroresVisibles(prev => [{ msg: String(msg), hora: new Date().toLocaleTimeString('es-CO') }, ...prev].slice(0, 5));
+    notifyApp?.(msg, type);
+  }
   const [cargando, setCargando] = useState(true);
   // "Un botón para actualizar la lista de los correos que estén
   // ingresando" (2026-09-29, pedido explícito del usuario) — separado de
@@ -333,6 +340,8 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
       const promExistente = forzar ? null : buscarSolicitudPruebasExistente(correoBuzon, numeroSolicitud, campos.Cliente || limpio.Cliente);
       const promAnotada = forzar ? null : buscarActuacionRegistrada(onedriveCarpetaUrl, numeroSolicitud, 'pruebas').catch(() => null);
       promExistente?.catch(() => null);
+      // Solicitudes de pruebas que ya se hicieron para esta tutela (de cualquier entidad): el robot no repite lo ya pedido (p. ej. a Aliansalud cuando luego vinculan a UMD).
+      const promPrevias = buscarSolicitudesPreviasDeTutela(correoBuzon, numeroSolicitud).catch(() => []);
       // Todo lo que ya llegó al buzón sobre esta tutela (de cualquier remitente): el robot no debe pedir lo que ya está.
       // Antes de crear el borrador se LEEN todos los correos de la tutela (si aún no se habían leído en esta sesión; si ya se leyeron, solo se
       // revisa si llegó algo nuevo, sin gastar IA).
@@ -367,6 +376,7 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
         }
       }
       const correosRecibidos = await promCorreos;
+      const solicitudesPrevias = await promPrevias;
       // Antes de armar el correo: qué áreas YA respondieron sin que se les hubiera pedido (se reconocen por la dirección del remitente, con la agenda de áreas).
       const yaRespondieron = [...new Set(correosRecibidos.filter(c => c.area).map(c => c.area))];
       if(yaRespondieron.length) notify?.('Antes de armar la solicitud: ya respondieron sin que se les pidiera — ' + yaRespondieron.join(', ') + '. LexIA no les pedirá lo que ya enviaron.', 'info');
@@ -378,6 +388,7 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
         clientesSenalados: (resultado?.registros || []).map(x => x.Cliente).filter(Boolean),
         adjuntos: adjuntosExtra,
         etiquetaEnvio,
+        solicitudesPrevias,
         forzarPruebas: forzar || !!etiquetaEnvio,   // el aplazamiento usa el mismo robot: la regla «no es contra la entidad» no le aplica
       });
       // Tutela que NO va contra la entidad del cliente (p. ej. contra un juzgado): no se piden pruebas (criterio de la abogada, 2026-10-21, tutela 28325).
@@ -582,6 +593,12 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
       return;
     }
     const numeroTutela = numeroTutelaDeAsunto(mensaje.asunto);
+    // Un «Recall:» es el aviso de Outlook de que se retiró un mensaje: no es la tutela y no trae adjuntos.
+    const asuntoMinusculas = String(mensaje.asunto || '').trim().toLowerCase();
+    if(['recall:', 'recuperar:', 'recuperación:', 'recuperacion:'].some(pref => asuntoMinusculas.startsWith(pref))){
+      notify?.('Este correo es un aviso de recuperación («Recall») de Outlook, no la tutela: no trae los adjuntos. Elige el correo original de la misma tutela, el que dice «con adjuntos».', 'error');
+      return;
+    }
     setProcesando(true);
     const primerCorreo = await instantePrimerCorreo(mensaje);
     const instanteNotificacion = primerCorreo.fecha;
@@ -812,6 +829,17 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
             <IconButton icon="refresh" variant="refresh" label="Actualizar lista de correos" spinning={actualizando} onClick={handleActualizarCorreos} />
           </div>
         </div>
+        {erroresVisibles.length > 0 && (
+          <div className="field-warning" style={{marginBottom:12, borderLeft:'4px solid var(--rojo, #a3281c)'}} role="alert">
+            <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', gap:8}}>
+              <strong>Errores recientes (quedan aquí hasta que los cierres)</strong>
+              <button type="button" className="clear-filters-link" onClick={() => setErroresVisibles([])}>Cerrar</button>
+            </div>
+            <ul style={{margin:'6px 0 0', paddingLeft:18}}>
+              {erroresVisibles.map((e, i) => <li key={i} style={{marginBottom:4}}><span className="save-hint">{e.hora}</span> — {e.msg}</li>)}
+            </ul>
+          </div>
+        )}
         {/* Buscador por No. Tutela (2026-09-25, pedido explícito del
             usuario) — filtra la lista de abajo y avisa si esa tutela ya
             está guardada en SharePoint o no. */}
