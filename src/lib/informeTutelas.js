@@ -321,7 +321,8 @@ function arrayBufferABase64(buffer){
 // todavía, sin conexión, lo que sea), lanza para que quien llama (ver
 // InformesView.jsx) caiga de vuelta a abrirCorreoTutelas().
 // Devuelve el mensaje creado por Graph (usar su `webLink` para abrirlo).
-export async function enviarBorradorTutelasGraph(tutelas, fechaNotificacionISO, fechaVencimientoISO){
+// `buzon`: el borrador se crea en el buzón de Tutelas (Tutelas@lexaraabogados.com), no en el de quien inició sesión.
+export async function enviarBorradorTutelasGraph(tutelas, fechaNotificacionISO, fechaVencimientoISO, buzon){
   const { fechaVencimiento, fechaNotificacion } = calcularFechasInforme(fechaNotificacionISO, fechaVencimientoISO);
   const notificadas = filasPorFecha(tutelas, 'FechaNotificacion', fechaNotificacion);
   const vencimiento = filasPorFecha(tutelas, 'FechaVencimiento', fechaVencimiento);
@@ -345,6 +346,7 @@ export async function enviarBorradorTutelasGraph(tutelas, fechaNotificacionISO, 
     htmlBody,
     adjuntoNombre: nombreArchivo,
     adjuntoBase64,
+    buzon: buzon || undefined,
   });
 }
 

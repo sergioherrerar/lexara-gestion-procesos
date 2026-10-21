@@ -331,8 +331,10 @@ export async function eliminarEventoCalendario(config, { tipo, id }){
 // borrador exacto en Outlook en la Web, ya con todo listo para revisar y
 // darle Enviar (mismo criterio que `.Display` en la macro de Access
 // original, que mostraba el borrador en vez de enviarlo directo).
-export async function crearBorradorCorreo({ to, cc, subject, htmlBody, adjuntoNombre, adjuntoBase64, categorias }){
+// `buzon` (2026-10-21, pedido del usuario): el correo en cuyo buzón se crea el borrador (p. ej. Tutelas@lexaraabogados.com para todo lo de Tutelas); sin él, el del usuario que inició sesión.
+export async function crearBorradorCorreo({ to, cc, subject, htmlBody, adjuntoNombre, adjuntoBase64, categorias, buzon }){
   const token = await getMailToken();
+  const raizBuzon = buzon ? `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(buzon)}` : 'https://graph.microsoft.com/v1.0/me';
   const body = {
     subject,
     ...(categorias && categorias.length ? { categories: categorias } : {}),
@@ -355,7 +357,7 @@ export async function crearBorradorCorreo({ to, cc, subject, htmlBody, adjuntoNo
   // aparecía en Borradores después de un F5 — así que se apunta explícito a
   // esa carpeta, sin dejarlo a un comportamiento por defecto que en esta
   // cuenta no se estaba cumpliendo.
-  const res = await fetch('https://graph.microsoft.com/v1.0/me/mailFolders/drafts/messages', {
+  const res = await fetch(`${raizBuzon}/mailFolders/drafts/messages`, {
     method: "POST",
     headers: { Authorization:`Bearer ${token}`, "Content-Type":"application/json" },
     body: JSON.stringify(body),
@@ -379,15 +381,15 @@ export async function crearBorradorCorreo({ to, cc, subject, htmlBody, adjuntoNo
   // REALMENTE el mensaje (`parentFolderId` → nombre real de la carpeta) para
   // poder confirmarlo con datos reales en vez de seguir adivinando.
   let carpetaBorradores = null;
-  try{ carpetaBorradores = new URL(mensaje.webLink).origin + '/mail/drafts'; }catch(err){ /* si el webLink viene raro, se ignora */ }
+  try{ carpetaBorradores = new URL(mensaje.webLink).origin + (buzon ? '/mail/' + encodeURIComponent(buzon) + '/drafts' : '/mail/drafts'); }catch(err){ /* si el webLink viene raro, se ignora */ }
   let carpetaReal = null;
   try{
-    const detalle = await fetch(`https://graph.microsoft.com/v1.0/me/messages/${mensaje.id}?$select=parentFolderId`, {
+    const detalle = await fetch(`${raizBuzon}/messages/${mensaje.id}?$select=parentFolderId`, {
       headers: { Authorization:`Bearer ${token}` },
     });
     if(detalle.ok){
       const { parentFolderId } = await detalle.json();
-      const folderRes = await fetch(`https://graph.microsoft.com/v1.0/me/mailFolders/${parentFolderId}?$select=displayName`, {
+      const folderRes = await fetch(`${raizBuzon}/mailFolders/${parentFolderId}?$select=displayName`, {
         headers: { Authorization:`Bearer ${token}` },
       });
       if(folderRes.ok) carpetaReal = (await folderRes.json()).displayName;
@@ -786,8 +788,8 @@ export async function crearSolicitudPruebasBorrador({ config, robotSolicitudUrl,
     }
   }
   if(!borrador){
-    borrador = await crearBorradorCorreo({ to: etiquetaEnvio ? [] : (data.para || []), cc: etiquetaEnvio ? ccDania : ccFinal, subject: asunto, htmlBody: htmlAntes, categorias: [categoria] });
-    if(borrador?.id) borrador.firmaOk = await adjuntarFirmaInline('https://graph.microsoft.com/v1.0/me', borrador.id, await getMailToken());
+    borrador = await crearBorradorCorreo({ buzon: correoBuzon || undefined, to: etiquetaEnvio ? [] : (data.para || []), cc: etiquetaEnvio ? ccDania : ccFinal, subject: asunto, htmlBody: htmlAntes, categorias: [categoria] });
+    if(borrador?.id) borrador.firmaOk = await adjuntarFirmaInline(correoBuzon ? `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(correoBuzon)}` : 'https://graph.microsoft.com/v1.0/me', borrador.id, await getMailToken());
   }
   invalidarCacheCarpetasCorreo();   // el borrador nuevo debe verse en la próxima revisión de duplicados
   if(borrador && borrador.firmaOk === false) notas = 'No se pudo adjuntar la imagen de la firma: agrégala tú en el borrador. ' + notas;
@@ -798,7 +800,7 @@ export async function crearSolicitudPruebasBorrador({ config, robotSolicitudUrl,
     catch(err){ notas = 'No se pudo preparar el aplazamiento para adjuntarlo (' + (err.message || err) + '): el borrador se creó sin adjuntos. ' + notas; }
   }
   if(adjuntosListos && adjuntosListos.length && borrador?.id){
-    const raizCorreo = reenviado ? `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(correoBuzon)}` : 'https://graph.microsoft.com/v1.0/me';
+    const raizCorreo = (reenviado || correoBuzon) ? `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(correoBuzon)}` : 'https://graph.microsoft.com/v1.0/me';
     const tokenCorreo = await getMailToken();
     await Promise.all(adjuntosListos.map(async a => {
       try{

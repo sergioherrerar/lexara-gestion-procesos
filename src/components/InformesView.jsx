@@ -445,7 +445,7 @@ export default function InformesView({ procesos, clientes, facturas, desistimien
       // (mailto + copiar tabla al portapapeles) — nunca se queda sin abrir nada.
       if(liveMode){
         try{
-          const mensaje = await enviarBorradorTutelasGraph(tutelas, fechaInformeTutelas, fechaVencimientoInforme);
+          const mensaje = await enviarBorradorTutelasGraph(tutelas, fechaInformeTutelas, fechaVencimientoInforme, config?.TUTELAS_BUZON_CORREO);
           // El enlace directo al correo (webLink) resultó no ser confiable
           // para esta cuenta, y tampoco bastaba con abrir la carpeta de
           // Borradores (el usuario confirmó que ni con F5 aparecía ahí) —
@@ -455,7 +455,7 @@ export default function InformesView({ procesos, clientes, facturas, desistimien
           await new Promise(r => setTimeout(r, 4000));
           if(mensaje?.carpetaBorradores) window.open(mensaje.carpetaBorradores, '_blank');
           const carpetaInfo = mensaje?.carpetaReal ? ` (quedó guardado en la carpeta "${mensaje.carpetaReal}")` : '';
-          notify?.(`Se creó el borrador en Outlook con las tablas y el PDF ya adjunto${carpetaInfo} — si no lo ves en Borradores, revisa esa carpeta y avísame el nombre exacto.`, 'info');
+          notify?.(`Se creó el borrador en el buzón de Tutelas (Outlook) con las tablas y el PDF ya adjunto${carpetaInfo} — si no lo ves en Borradores, revisa esa carpeta y avísame el nombre exacto.`, 'info');
           return;
         }catch(err){ console.error('No se pudo crear el borrador por Graph, se usa el método anterior:', err); }
       }

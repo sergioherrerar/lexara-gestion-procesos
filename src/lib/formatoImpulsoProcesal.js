@@ -291,11 +291,22 @@ function asuntoCorreo(d){
 // informeTutelas.js y crearBorradorCorreo en graph.js). Sin adjunto: el
 // cuerpo ya trae todo el texto, y el usuario pidió explícitamente que el
 // correo NO lleve tablas ni imagen, solo texto organizado.
-export async function enviarBorradorImpulsoProcesalGraph(proceso){
+// `buzon` (2026-10-21, pedido del usuario): el memorial se crea en los BORRADORES de ese buzón (Gerencia@). Si la cuenta no tiene acceso a él, se crea en el buzón de quien lo pide y se devuelve
+// `enBuzonPropio: true` para avisarlo (nunca se queda sin crear).
+export async function enviarBorradorImpulsoProcesalGraph(proceso, buzon){
   const { d, lineas } = lineasDocumento(proceso);
   if(!d.correoDespacho) throw new Error('Este proceso no tiene un "Correo despacho" guardado — agrégalo en la pestaña "Detalles del despacho" del proceso antes de generar el correo.');
   const htmlBody = `<html><body style="font-family:Calibri,Arial,sans-serif;font-size:14px;color:#1c2624;">${lineas.map(l => l ? `<p style="margin:0 0 8px;">${escapeHtml(l)}</p>` : `<p style="margin:0 0 8px;">&nbsp;</p>`).join('')}</body></html>`;
-  return crearBorradorCorreo({ to: d.correoDespacho, subject: asuntoCorreo(d), htmlBody });
+  const datos = { to: d.correoDespacho, subject: asuntoCorreo(d), htmlBody };
+  if(buzon){
+    try{ return await crearBorradorCorreo({ ...datos, buzon }); }
+    catch(err){
+      if(!/403|access is denied|ErrorAccessDenied|forbidden/i.test(String((err && err.message) || err))) throw err;
+      const propio = await crearBorradorCorreo(datos);
+      return { ...propio, enBuzonPropio: true };
+    }
+  }
+  return crearBorradorCorreo(datos);
 }
 
 // Respaldo sin permiso de Graph — abre el cliente de correo local con

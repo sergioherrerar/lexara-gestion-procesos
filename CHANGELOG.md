@@ -2,6 +2,12 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-10-21 (83)
+- **El memorial de Impulso Procesal se crea en los Borradores de Gerencia (Gerencia@lexaraabogados.com)** — pedido del usuario. El borrador ya no queda en el buzón de quien pulsa el botón sino en los Borradores de Gerencia. Quien lo use necesita acceso total (delegación) al buzón de Gerencia; si su cuenta no lo tiene, el borrador se crea en su propio buzón y el portal lo avisa, en vez de fallar. El buzón se cambia en GERENCIA_BUZON_CORREO de src/config.js.
+
+## 2026-10-21 (82)
+- **Todos los borradores de Tutelas se crean en el buzón de Tutelas (Tutelas@lexaraabogados.com)** — pedido del usuario. El correo de «Informes → Tutelas» (notificación de tutelas del día, con tablas y PDF adjunto) y el borrador de la solicitud de pruebas cuando no se puede responder el correo original ya no se crean en el buzón de quien inició sesión sino en el de Tutelas (con su firma y adjuntos); la solicitud de pruebas y el correo con aplazamiento ya se creaban ahí. Los borradores de otras secciones (p. ej. el memorial de Impulso Procesal en Procesos) siguen en el buzón de quien los crea. Requiere que quien lo use tenga acceso total al buzón de Tutelas.
+
 ## 2026-10-21 (81)
 - **Cuando otro usuario no puede leer el buzón de Tutelas, el portal explica qué hacer** — reporte del usuario (al entrar otra persona a «Leer correo de Tutelas (LexIA)» salía «Error de SharePoint (403): Access is denied. Check credentials and try again.»). Ese 403 no es un fallo del portal: la cuenta con la que se entró no tiene permiso sobre el buzón Tutelas@lexaraabogados.com en Exchange. Ahora el aviso dice en español «Tu cuenta no tiene permiso para leer el buzón de Tutelas… Pídele al administrador de Microsoft 365 que te dé acceso «Leer y administrar» (acceso total) a ese buzón en Exchange; puede tardar hasta una hora. Después cierra sesión y vuelve a entrar». El permiso se da en Microsoft 365 (Exchange). Además, para quien no es el dueño del buzón compartido (caso de Gerencia@, que ya tenía acceso total y aun así recibía el 403), ahora el portal pide el permiso «Mail.ReadWrite.Shared» SOLO cuando una lectura del buzón responde 403: lo activa, lo recuerda en ese navegador y reintenta una vez (la primera vez Microsoft muestra una ventana para aceptarlo); a quien ya funcionaba no se le cambia nada.
 

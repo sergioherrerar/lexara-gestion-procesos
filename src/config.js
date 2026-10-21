@@ -66,6 +66,8 @@ export const INITIAL_CONFIG = {
   // fábrica — cada cuenta que use el botón necesita acceso delegado
   // ("Acceso completo") a este buzón, dado desde admin.microsoft.com.
   TUTELAS_BUZON_CORREO: "Tutelas@lexaraabogados.com",
+  // Buzón en cuyos BORRADORES se crea el memorial de Impulso Procesal (pedido del usuario 2026-10-21): quien lo use necesita acceso total (delegación) a este buzón.
+  GERENCIA_BUZON_CORREO: "Gerencia@lexaraabogados.com",
   // URL real del robot en cPanel — confirmado subido 2026-09-23 (ver
   // robot-tutelas/ en este mismo repo, sube a public_html/robot-tutelas/,
   // NUNCA dentro de public_html/app/ que se reemplaza en cada publicación).
