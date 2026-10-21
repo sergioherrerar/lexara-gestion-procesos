@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-10-21 (86)
+- **LexIA deja anotados los casos 28325 y 28324 como ejemplos para tutelas parecidas** — pedido del usuario. El robot de solicitud de pruebas trae ahora una lista de «casos de referencia» (tutelas contra un juzgado por embargo o secuestro, contra bancos, superintendencias u otras entidades con Colmédica solo vinculada → no se piden pruebas; pago de incapacidades o licencias, salud, peticiones, reembolsos y copagos → siguen igual). Y la lectura de la tutela (extraer-tutela.php) ahora indica contra quién va cada pretensión y escribe «A la entidad no se le pide nada» cuando es el caso, para que la entidad no quede con una pretensión que el accionante dirige a otra autoridad. Requiere subir solicitud-pruebas.php y extraer-tutela.php al robot en cPanel.
+
 ## 2026-10-21 (85)
 - **El pago de incapacidades o licencias ya no lleva solicitud al área de afiliaciones** — criterio de la abogada a cargo (tutela 28324: se pedía el pago de incapacidades a Aliansalud y LexIA incluía Afiliaciones, aunque la afiliación no se discutía). Prestaciones económicas sí va, y Servicio al Cliente cuando hay peticiones; Afiliaciones solo si en la misma tutela se discute la afiliación (vigencia, mora, retiro, calidad de afiliado, IBC, protección laboral…). Cambia la regla del robot de solicitud de pruebas y la red de seguridad que quita esos correos de «Para». También en el artefacto Plan B (pendiente de publicar). Requiere subir solicitud-pruebas.php al robot en cPanel.
 
