@@ -731,11 +731,11 @@ async function reenviarComoBorrador(correoBuzon, mensajeId, { para, cc, categori
 // (valores oficiales) para la tabla. Si se da `mensajeIdReenviar`, el borrador es un reenvío de
 // ese correo (conserva la traza); si no se puede reenviar, queda como borrador nuevo y se avisa.
 // Devuelve { para, cc, asunto, notas, formato, reenviado, borrador }.
-export async function crearSolicitudPruebasBorrador({ config, robotSolicitudUrl, registro, registros, campos, camposTodos, asuntoCorreo, noTutela, fechaVencimiento, correoBuzon, mensajeIdReenviar, clientesSenalados, correosRecibidos, adjuntos, etiquetaEnvio }){
+export async function crearSolicitudPruebasBorrador({ config, robotSolicitudUrl, registro, registros, campos, camposTodos, asuntoCorreo, noTutela, fechaVencimiento, correoBuzon, mensajeIdReenviar, clientesSenalados, correosRecibidos, adjuntos, etiquetaEnvio, forzarPruebas }){
   if(!robotSolicitudUrl) throw new Error('Falta la dirección del robot de solicitud de pruebas (ROBOT_SOLICITUD_PRUEBAS_URL).');
   const formato = await leerFormatoSolicitudPruebas(config);
   // Se reintenta solo (hasta 2 veces más) si la conexión se corta, el servidor responde con un error pasajero o la respuesta de LexIA no se pudo leer.
-  const cuerpoPruebas = JSON.stringify({ formato: formato.texto, registro, registros: registros && registros.length ? registros : [registro], asuntoCorreo, noTutela, fechaVencimiento, clientesSenalados: clientesSenalados || [], correosRecibidos: correosRecibidos || [] });
+  const cuerpoPruebas = JSON.stringify({ formato: formato.texto, registro, registros: registros && registros.length ? registros : [registro], asuntoCorreo, noTutela, fechaVencimiento, clientesSenalados: clientesSenalados || [], correosRecibidos: correosRecibidos || [], forzarPruebas: !!forzarPruebas });
   let res, data = null, falloPasajero = null;
   for(let intento = 0; intento <= 2; intento++){
     if(intento > 0) await new Promise(r => setTimeout(r, 2500 * intento));
@@ -749,6 +749,8 @@ export async function crearSolicitudPruebasBorrador({ config, robotSolicitudUrl,
     if(!pasajero) break;
   }
   if(!res || !res.ok || !data || data.error) throw new Error((data && data.error) || falloPasajero || 'El robot de solicitud de pruebas falló.');
+  // 2026-10-21 (tutela 28325): si la pretensión no es contra la entidad del cliente (p. ej. va contra un juzgado), LexIA no arma la solicitud.
+  if(data.sinPruebas) return { sinPruebas: true, motivo: data.motivo || '', notas: data.notas || '' };
   const asunto = data.asunto || `TUTELA No. ${noTutela || ''} - SOLICITUD DE PRUEBAS`;
   // 2026-10-13: el asunto no se toca (conserva el del correo original).
   const cortos = [...new Set((registros && registros.length ? registros : [registro]).map(x => nombreCortoClienteSolicitud(x && x.Cliente)).filter(Boolean))];

@@ -2,6 +2,12 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-10-21 (85)
+- **El pago de incapacidades o licencias ya no lleva solicitud al área de afiliaciones** — criterio de la abogada a cargo (tutela 28324: se pedía el pago de incapacidades a Aliansalud y LexIA incluía Afiliaciones, aunque la afiliación no se discutía). Prestaciones económicas sí va, y Servicio al Cliente cuando hay peticiones; Afiliaciones solo si en la misma tutela se discute la afiliación (vigencia, mora, retiro, calidad de afiliado, IBC, protección laboral…). Cambia la regla del robot de solicitud de pruebas y la red de seguridad que quita esos correos de «Para». También en el artefacto Plan B (pendiente de publicar). Requiere subir solicitud-pruebas.php al robot en cPanel.
+
+## 2026-10-21 (84)
+- **LexIA no pide pruebas cuando la tutela no es contra la entidad del cliente** — criterio de la abogada a cargo (tutela 28325: tutela contra un juzgado por un proceso ejecutivo con embargo y secuestro de un vehículo; Colmédica solo figuraba como vinculada y LexIA había armado la solicitud de pruebas con la pretensión equivocada). Ahora el robot de solicitud de pruebas primero mira contra quién va de verdad la pretensión: si va contra otra autoridad (p. ej. un juzgado) y a la entidad no se le pide nada (aunque figure vinculada o accionada), NO arma el correo; el portal muestra «No se piden pruebas: <motivo>» con la nota de LexIA (p. ej. contestar por falta de legitimación en la causa por pasiva) y un enlace «Pedir pruebas de todos modos» por si el abogado decide lo contrario. No afecta al correo de aplazamiento. Requiere subir solicitud-pruebas.php al robot en cPanel.
+
 ## 2026-10-21 (83)
 - **El memorial de Impulso Procesal se crea en los Borradores de Gerencia (Gerencia@lexaraabogados.com)** — pedido del usuario. El borrador ya no queda en el buzón de quien pulsa el botón sino en los Borradores de Gerencia. Quien lo use necesita acceso total (delegación) al buzón de Gerencia; si su cuenta no lo tiene, el borrador se crea en su propio buzón y el portal lo avisa, en vez de fallar. El buzón se cambia en GERENCIA_BUZON_CORREO de src/config.js.
 

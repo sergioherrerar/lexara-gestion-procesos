@@ -378,7 +378,14 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
         clientesSenalados: (resultado?.registros || []).map(x => x.Cliente).filter(Boolean),
         adjuntos: adjuntosExtra,
         etiquetaEnvio,
+        forzarPruebas: forzar || !!etiquetaEnvio,   // el aplazamiento usa el mismo robot: la regla «no es contra la entidad» no le aplica
       });
+      // Tutela que NO va contra la entidad del cliente (p. ej. contra un juzgado): no se piden pruebas (criterio de la abogada, 2026-10-21, tutela 28325).
+      if(r.sinPruebas){
+        indicesAfectados.forEach(k => marcarSolicitud(mensaje.id, k, { estado: 'sinpruebas', motivo: r.motivo, notas: r.notas }));
+        notify?.('LexIA NO armó la solicitud de pruebas: ' + (r.motivo || 'la pretensión no es contra la entidad del cliente.'), 'info');
+        return;
+      }
       indicesAfectados.forEach(k => marcarSolicitud(mensaje.id, k, { estado: 'listo', para: r.para, cc: r.cc, notas: r.notas, formato: r.formato, reenviado: r.reenviado }));
       // Aviso visible (pedido del usuario 2026-10-21): el borrador de la solicitud de pruebas quedó creado. El del aplazamiento tiene su propio aviso al terminar.
       if(!etiquetaEnvio) notify?.('✓ Borrador de la solicitud de pruebas CREADO en Borradores del buzón de Tutelas' + ((r.para || []).length ? ', dirigido a ' + r.para.length + ' dirección' + (r.para.length === 1 ? '' : 'es') + ' de las áreas' : '') + ((r.cc || []).length ? ' con copia a Dania' : '') + '. Revísalo antes de enviar.' + ((r.notas || '').trim() ? ' Hay notas de LexIA para revisar.' : ''), 'success');
@@ -552,6 +559,12 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
               : <>Ya había creado una solicitud de pruebas para esta tutela y este cliente{r._solicitud.fecha ? ` (${new Date(r._solicitud.fecha).toLocaleString('es-CO')})` : ''}: {r._solicitud.enviado ? 'ya fue ENVIADA — búscala en Enviados del buzón de Tutelas.' : 'búscala en Borradores del buzón de Tutelas.'}{' '}</>}
             {r._solicitud.enlace && <a href={r._solicitud.enlace} target="_blank" rel="noopener noreferrer">Abrirla</a>}{' '}
             <button type="button" className="clear-filters-link" onClick={() => handleSolicitudPruebas(i, true)}>Crear otra de todos modos</button>
+          </p>
+        )}
+        {r._solicitud?.estado === 'sinpruebas' && (
+          <p className="save-hint" style={{margin:'4px 0 0', flexBasis:'100%'}}>
+            <strong>No se piden pruebas:</strong> {r._solicitud.motivo || 'la pretensión no es contra la entidad del cliente.'}{r._solicitud.notas ? ` · Nota de LexIA: ${r._solicitud.notas}` : ''}{' '}
+            <button type="button" className="clear-filters-link" onClick={() => handleSolicitudPruebas(i, true)}>Pedir pruebas de todos modos</button>
           </p>
         )}
         {r._solicitud?.estado === 'error' && (
