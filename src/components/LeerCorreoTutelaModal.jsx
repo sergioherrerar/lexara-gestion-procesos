@@ -976,11 +976,22 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
                       {todosCorreos[m.id]?.estado === 'listo' && (() => {
                         const d = todosCorreos[m.id].datos;
                         const porClase = {};
-                        d.correos.forEach(c => { const k = c.area ? (c.area.juridica ? 'área jurídica' : 'área ' + c.area.area + ' (' + c.area.entidad + ')') : c.clase; porClase[k] = (porClase[k] || 0) + 1; });
+                        d.correos.forEach(c => { const k = c.rebote ? 'rebote (no llegó)' : (c.area ? (c.area.juridica ? 'área jurídica' : 'área ' + c.area.area + ' (' + c.area.entidad + ')') : c.clase); porClase[k] = (porClase[k] || 0) + 1; });
                         return (
                           <div style={{marginTop:6, fontSize:13}}>
                             <div><strong>{d.total}</strong> correo{d.total === 1 ? '' : 's'} con el número de esta tutela ({d.nuevos ? `${d.nuevos} nuevo${d.nuevos === 1 ? '' : 's'} leído${d.nuevos === 1 ? '' : 's'} y guardado${d.nuevos === 1 ? '' : 's'}` : 'ninguno nuevo'}{d.yaLeidos ? `; ${d.yaLeidos} ya leído${d.yaLeidos === 1 ? '' : 's'} antes, descartado${d.yaLeidos === 1 ? '' : 's'}` : ''}): {Object.entries(porClase).map(([k, v]) => `${v} ${k}`).join(' · ') || '—'}.</div>
                             {d.errores.length > 0 && <p className="save-hint" style={{margin:'4px 0', color:'var(--rojo, #a3281c)'}}>{d.errores.join(' · ')}</p>}
+                            {d.rebotes && d.rebotes.length > 0 && (
+                              <div className="field-warning" style={{margin:'8px 0', borderLeft:'4px solid var(--rojo, #a3281c)'}} role="alert">
+                                <strong>⚠ {d.rebotes.length} correo{d.rebotes.length === 1 ? '' : 's'} de esta tutela NO llegó a su destino (rebotó):</strong>
+                                <ul style={{margin:'4px 0 0', paddingLeft:18}}>
+                                  {d.rebotes.map((r, i) => (
+                                    <li key={i}>{r.fecha} — {r.direcciones.join(', ') || 'una dirección'}: {r.motivo}{r.enlace && <> · <a href={r.enlace} target="_blank" rel="noopener noreferrer">Abrir el aviso</a></>}</li>
+                                  ))}
+                                </ul>
+                                <span className="save-hint">Esa persona o área no recibió el correo: reenvíalo por otro medio o pide a sistemas de la entidad que revisen el bloqueo.</span>
+                              </div>
+                            )}
                             {d.areasSolicitud && d.areasSolicitud.areas.length === 0 && d.areasSolicitud.mensaje && (
                               <div className="save-hint" style={{margin:'8px 0 2px', padding:'8px 10px', borderRadius:8, background:'var(--gris-claro)'}}>Áreas a las que se les pidió pruebas: {d.areasSolicitud.mensaje}</div>
                             )}
@@ -1007,8 +1018,8 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
                               </div>
                               <ul className="correos-tutela-lista">
                                 {d.correos.map(c => (
-                                  <li key={c.id} className={'correo-' + (c.clase === 'juzgado' ? 'juzgado' : String(c.clase || '').startsWith('entidad') ? 'entidad' : String(c.clase || '').startsWith('enviado') ? 'enviado' : 'otro')}>
-                                    {c.fecha} · <em>{c.area ? (c.area.juridica ? 'área jurídica' : c.area.area + ' (' + c.area.entidad + ')') : c.clase}</em>{c.area && !c.area.juridica && <span className="badge badge-verde" style={{marginLeft:6}} title="Este correo viene de un área de la agenda: respondió">✓ Respondida</span>} · <strong>{nombreDeRemitente(c.de)}</strong> — {c.asunto}
+                                  <li key={c.id} className={'correo-' + (c.rebote ? 'otro' : c.clase === 'juzgado' ? 'juzgado' : String(c.clase || '').startsWith('entidad') ? 'entidad' : String(c.clase || '').startsWith('enviado') ? 'enviado' : 'otro')}>
+                                    {c.rebote && <span className="badge badge-rojo" style={{marginRight:6}} title={'No llegó a ' + c.rebote.direcciones.join(', ')}>REBOTE</span>}{c.fecha} · <em>{c.area ? (c.area.juridica ? 'área jurídica' : c.area.area + ' (' + c.area.entidad + ')') : c.clase}</em>{c.area && !c.area.juridica && <span className="badge badge-verde" style={{marginLeft:6}} title="Este correo viene de un área de la agenda: respondió">✓ Respondida</span>} · <strong>{nombreDeRemitente(c.de)}</strong> — {c.asunto}
                                     {c.adjuntos && c.adjuntos.length > 0 && <span> · 📎 {c.adjuntos.join(', ')}</span>}
                                     {c.enlace && <IconButton icon="open" variant="mail" label="Abrir este correo en Outlook" href={c.enlace} />}
                                   </li>

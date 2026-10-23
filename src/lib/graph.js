@@ -3929,6 +3929,37 @@ function claseDeCorreoTutela(m, correoBuzon){
   if(ent) return 'entidad (' + ent + ')';
   return 'otro remitente';
 }
+// Rebotes (2026-10-23, pedido del usuario): el servidor de correo avisa que un mensaje NO llegó («Mail Delivery Subsystem», «No se puede entregar: …»).
+// Llegan al buzón de Tutelas con el número de la tutela en el asunto y no son una respuesta ni una prueba. Devuelve null si el correo no es un rebote, o
+// { direcciones: [...que no recibieron], motivo: 'texto del servidor', motivoCorto: 'explicación breve' }.
+const ASUNTOS_REBOTE = ['no se puede entregar', 'undeliverable', 'delivery status notification', 'mail delivery failed', 'returned mail', 'no se pudo entregar', 'failure notice'];
+export function datosDeRebote(c){
+  const de = String(c?.de || '').toLowerCase();
+  const asunto = String(c?.asunto || '').trim().toLowerCase();
+  const esRebote = de.includes('mailer-daemon') || de.includes('postmaster') || de.includes('mail delivery subsystem') || ASUNTOS_REBOTE.some(p => asunto.startsWith(p));
+  if(!esRebote) return null;
+  const texto = String(c?.resumen || '');
+  const bajo = texto.toLowerCase();
+  // Las direcciones que fallaron van después de «permanent fatal errors» (Proofpoint/Sendmail) o de «recipients or groups» (Exchange).
+  let desde = Math.max(bajo.indexOf('permanent fatal errors'), bajo.indexOf('recipients or groups'), bajo.indexOf('could not be delivered'));
+  if(desde < 0) desde = 0;
+  const direcciones = [];
+  (texto.slice(desde).match(/[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+([.][A-Za-z0-9-]+)+/g) || []).forEach(d => {
+    const bajoD = d.toLowerCase();
+    if(bajoD.includes('mailer-daemon') || bajoD.includes('postmaster')) return;
+    if(!direcciones.includes(bajoD)) direcciones.push(bajoD);
+  });
+  const filaMotivo = bajo.indexOf('reason:');
+  const motivo = filaMotivo >= 0 ? texto.slice(filaMotivo + 7, filaMotivo + 7 + 160).split(String.fromCharCode(10))[0].trim() : '';
+  const razon = (motivo + ' ' + texto).toLowerCase();
+  const motivoCorto = razon.includes('block list') || razon.includes('blocked using') || razon.includes('5.7.1')
+    ? 'el servidor de destino bloqueó la conexión (lista de bloqueo)'
+    : (razon.includes('user unknown') || razon.includes('5.1.1') || razon.includes('does not exist') || razon.includes('no existe')
+      ? 'la dirección no existe o no está activa'
+      : (razon.includes('mailbox full') || razon.includes('5.2.2') ? 'el buzón de destino está lleno' : 'el correo no se entregó'));
+  return { direcciones: direcciones.slice(0, 6), motivo, motivoCorto };
+}
+
 export async function buscarCorreosDeTutelaEnBuzon(correoBuzon, noTutela){
   const token = await getMailToken();
   const n = String(noTutela || '').trim();
@@ -3964,6 +3995,7 @@ export async function buscarCorreosDeTutelaEnBuzon(correoBuzon, noTutela){
     }
     url = data['@odata.nextLink'] || '';
   }
+  salida.forEach(c => { const r = datosDeRebote(c); if(r){ c.clase = 'rebote'; c.rebote = r; } });
   salida.sort((a, b) => String(a.fechaISO).localeCompare(String(b.fechaISO)));
   return salida;
 }
@@ -4111,6 +4143,7 @@ export async function leerTodosLosCorreosDeTutela({ correoBuzon, urlCarpeta, noT
   }
   salida.total = final.length;
   salida.correos = final;
+  salida.rebotes = final.filter(c => c.rebote).map(c => ({ fecha: c.fecha, direcciones: c.rebote.direcciones, motivo: c.rebote.motivoCorto, asunto: c.asunto, enlace: c.enlace || '' }));
   if(guardar && ctx?.leido){
     const estado = ctx.leido.estado;
     // Se guardan en la lectura sin los campos que solo sirven en pantalla.
@@ -4237,6 +4270,7 @@ export async function hayActuacionPrevia({ correoBuzon, urlCarpeta, noTutela, ti
 // Nunca lanza: si algo falla, devuelve [] y la solicitud se crea como antes.
 // Cómo se rotula un correo ya recibido para el robot de la solicitud de pruebas: si viene de un área de la agenda, se dice (verificado por la dirección del remitente).
 export function claseDeCorreoParaRobot(c){
+  if(c && c.rebote) return 'REBOTE — NO SE ENTREGÓ a ' + (c.rebote.direcciones.join(', ') || 'una dirección') + ' (' + c.rebote.motivoCorto + '): NO es una respuesta ni una prueba recibida';
   const a = c && c.area;
   if(!a) return c ? c.clase : '';
   return a.juridica ? 'área jurídica (notificó la tutela)' : 'ÁREA ' + a.area + ' (' + a.entidad + ') — YA RESPONDIÓ (verificado por su dirección)';
