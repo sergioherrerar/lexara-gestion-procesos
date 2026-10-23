@@ -1,4 +1,14 @@
 <?php
+// Si PHP se cae a mitad de camino (memoria agotada, error fatal), el servidor devolvía un 500 vacío y el portal solo decía «código 500». Este aviso final
+// lo convierte en un JSON con el motivo real (2026-10-23, errores al extraer las tutelas 28342 y 28337). Lo usan todos los robots que cargan este archivo.
+@ini_set('display_errors', '0');
+register_shutdown_function(function(){
+    $e = error_get_last();
+    if($e && in_array($e['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR], true)){
+        if(!headers_sent()){ http_response_code(500); header('Content-Type: application/json; charset=utf-8'); }
+        echo json_encode(['error' => 'Falló el robot en el servidor (PHP): ' . $e['message'] . ' — archivo ' . basename($e['file']) . ', línea ' . $e['line']], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
+    }
+});
 // Conocimiento de "abogada especialista en contestación de tutelas" de LexIA
 // (2026-10-07, pedido explícito del usuario: "necesito que entrenes a LexIA
 // como la mejor abogada especialista en contestación de tutelas"). Es un

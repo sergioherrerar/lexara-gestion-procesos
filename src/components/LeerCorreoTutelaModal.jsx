@@ -692,7 +692,7 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
       }
     }catch(err){
       console.error(err);
-      notify?.('No se pudo extraer los datos con IA: ' + (err.message || mensajeError(err)), 'error');
+      notify?.('No se pudo extraer los datos con IA: ' + mensajeError(err), 'error');
     }finally{
       setProcesando(false);
       setGuardandoOneDrive(false);

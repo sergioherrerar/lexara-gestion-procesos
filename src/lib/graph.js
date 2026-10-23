@@ -707,6 +707,21 @@ export async function buscarSolicitudesPreviasDeTutela(correoBuzon, noTutela){
   return salida;
 }
 
+// Copia a quien envió la notificación de la tutela (2026-10-23, pedido de la abogada: «tampoco selecciona a Gabriela, que es quien envió la tutela»). La respuesta por defecto
+// ya viene dirigida a esa persona; si es del área jurídica de una entidad (no el juzgado ni un correo de Lexara), se deja con copia junto con Dania.
+function copiaConNotificador(cc, para, destinatariosPorDefecto, correoBuzon, soloRemitente){
+  const lista = (cc || []).filter(c => String(c).toLowerCase() !== String(correoBuzon || '').toLowerCase());
+  if(soloRemitente) return lista;
+  const yaEsta = new Set([...(para || []), ...lista].map(c => String(c).toLowerCase()));
+  (destinatariosPorDefecto || []).forEach(x => {
+    const dir = String(x.emailAddress?.address || '').trim();
+    const bajo = dir.toLowerCase();
+    if(!dir || yaEsta.has(bajo) || bajo === String(correoBuzon || '').toLowerCase()) return;
+    if(['@aliansalud.com.co', '@colmedica.com', '@umd.com.co'].some(dom => bajo.endsWith(dom))){ lista.push(dir); yaEsta.add(bajo); }
+  });
+  return lista;
+}
+
 // Crea el borrador como REENVÍO del correo original (el de los remitentes filtrados) para no
 // perder la traza: el borrador queda en la carpeta Borradores del buzón de Tutelas, con el
 // correo original y sus adjuntos abajo y nuestro contenido arriba.
@@ -735,7 +750,7 @@ async function reenviarComoBorrador(correoBuzon, mensajeId, { para, cc, categori
       toRecipients: soloRemitente ? (borrador.toRecipients || []) : (para || []).map(c => ({ emailAddress: { address: c } })),
       ccRecipients: (soloRemitente && (borrador.toRecipients || []).some(x => /^daniacp@/i.test(String(x.emailAddress?.address || '')))
         ? []
-        : (cc || []).filter(c => String(c).toLowerCase() !== String(correoBuzon || '').toLowerCase()).map(c => ({ emailAddress: { address: c } }))),
+        : copiaConNotificador(cc, para, borrador.toRecipients, correoBuzon, soloRemitente).map(c => ({ emailAddress: { address: c } }))),
       body: { contentType: 'HTML', content: contenido },
     }),
   });
