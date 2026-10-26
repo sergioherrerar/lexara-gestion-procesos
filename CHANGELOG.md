@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-10-26 (98)
+- **Agencia oficiosa: cuando un padre instaura la tutela en nombre de su hijo menor, es «Sí»** — corrección de la abogada (tutela 28346: LexIA marcó «No» y era «Sí»). Antes la regla trataba a los padres de un menor como representación legal («No»). Ahora la lectura de la tutela marca «Sí» también cuando la presenta el padre, la madre o el representante de un menor de edad (el paciente tiene registro civil o tarjeta de identidad en vez de cédula), y «No» solo cuando el accionante es el propio paciente adulto o un abogado con poder. Requiere subir extraer-tutela.php al robot en cPanel; la tutela 28346 ya leída se corrige volviendo a extraerla o cambiando el campo a mano.
+
 ## 2026-10-23 (97)
 - **Cuando el robot de LexIA se cae por dentro, el portal ahora dice por qué** — reporte del usuario (al extraer las tutelas 28342 y 28337: «LexIA respondió con error (código 500)» y «Failed to fetch»). Un error fatal de PHP en el servidor (por ejemplo memoria agotada con adjuntos pesados) devolvía un 500 vacío y el portal no podía decir nada más. Ahora todos los robots (lectura de tutelas, solicitud de pruebas, escritos y preguntas) convierten ese fallo en un aviso con el motivo real, el archivo y la línea. Y el mensaje de la ventana usa el texto amable («No hay conexión a internet — revisa tu red e intenta de nuevo») en vez del «Failed to fetch» en inglés. Requiere subir lexia-especialista.php al robot en cPanel (los demás robots lo cargan).
 
