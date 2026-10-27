@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-10-27 (102)
+- **La foto del equipo como fondo de «Reuniones importantes»** — pedido del usuario. La banda del Panorama general usa ahora la foto real del equipo en la sala de reuniones (con el logo de Lexara en la pantalla), con un velo verde que la deja clara arriba y más oscura abajo, donde van las tarjetas de Teams. En el celular la foto ocupa solo la franja de arriba, detrás del título, y las tarjetas van sobre verde liso para que no tapen a las personas.
+
 ## 2026-10-27 (101)
 - **Panorama general: sección «Reuniones importantes» con acceso de un clic a las salas de Teams** — pedido del usuario. Una banda verde con el degradado y el chevron de la marca, justo debajo del título, con tres tarjetas: **Reunión semanal**, **Asesoría Jurídica** y **Universidad Nacional**. Cada una trae su botón amarillo «Unirme →» y abre la reunión de Teams en una pestaña nueva. En el celular las tarjetas se apilan en una columna. Para agregar, quitar o cambiar una reunión se edita la lista REUNIONES_TEAMS de src/config.js (nombre, línea de apoyo y enlace de invitación).
 

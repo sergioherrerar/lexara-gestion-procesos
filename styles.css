@@ -1965,20 +1965,16 @@
 
   /* ---- Reuniones importantes (Panorama general): banda verde con acceso de un clic a las salas de Teams ---- */
   .reuniones-band{
-    position:relative; overflow:hidden; margin:0 0 22px; padding:22px 24px 24px;
+    position:relative; overflow:hidden; margin:0 0 22px; padding:22px 24px 24px; min-height:310px;
+    display:flex; flex-direction:column; justify-content:space-between; gap:18px;
     border-radius:14px; color:#fff; box-shadow:var(--shadow);
+    /* Foto real del equipo (Lexara en la pantalla de la sala) con un velo verde: claro arriba para que se vea la foto y más oscuro abajo, donde van las tarjetas. */
     background:
-      radial-gradient(circle at 92% 8%, rgba(82,187,181,.38), transparent 42%),
-      radial-gradient(circle at 4% 110%, rgba(251,188,51,.16), transparent 38%),
-      linear-gradient(135deg, var(--verde-oscuro-2) 0%, var(--verde-oscuro) 58%, #0a6a5f 100%);
+      linear-gradient(180deg, rgba(0,54,48,.74) 0%, rgba(0,54,48,.34) 38%, rgba(0,54,48,.90) 100%),
+      var(--foto-reuniones) center 26% / cover no-repeat,
+      var(--verde-oscuro);
   }
-  /* Doble chevron de la marca como marca de agua, a la derecha. */
-  .reuniones-band::after{
-    content:""; position:absolute; right:-34px; top:50%; width:170px; height:170px; transform:translateY(-50%) rotate(45deg);
-    border-right:26px solid rgba(255,255,255,.07); border-bottom:26px solid rgba(255,255,255,.07); pointer-events:none;
-    box-shadow:34px 34px 0 -8px rgba(255,255,255,.04);
-  }
-  .reuniones-head{position:relative; z-index:1; margin-bottom:16px;}
+  .reuniones-head{position:relative; z-index:1; text-shadow:0 1px 8px rgba(0,30,26,.45);}
   .reuniones-head h2{margin:0 0 4px; font-family:var(--font-display); font-size:21px; font-weight:700; letter-spacing:.005em; color:#fff;}
   .reuniones-head p{margin:0; font-size:13.5px; color:rgba(255,255,255,.78);}
   .reuniones-grid{position:relative; z-index:1; display:grid; grid-template-columns:repeat(auto-fit, minmax(230px, 1fr)); gap:14px;}
@@ -2000,7 +1996,14 @@
   .reunion-unirme{flex:0 0 auto; font-size:13px; font-weight:700; padding:7px 12px; border-radius:999px; background:var(--amarillo); color:var(--verde-oscuro-2); white-space:nowrap;}
   .reunion-card:hover .reunion-unirme{background:#ffcb57;}
   @media (max-width:760px){
-    .reuniones-band{padding:18px 16px 18px; border-radius:12px;}
+    /* Celular: la foto ocupa solo la franja de arriba (detrás del título) y las tarjetas van sobre verde liso, para que nada tape a las personas ni al logo. */
+    .reuniones-band{
+      padding:18px 16px 18px; border-radius:12px; min-height:0;
+      background:
+        linear-gradient(180deg, rgba(0,54,48,.66) 0, rgba(0,54,48,.26) 90px, rgba(0,54,48,.92) 205px, #003630 206px),
+        var(--foto-reuniones) center -34px / 100% auto no-repeat,
+        #003630;
+    }
     .reuniones-grid{grid-template-columns:1fr;}
     .reunion-card{padding:12px 14px;}
   }
