@@ -4,6 +4,7 @@ import { MESES_NOMBRES } from '../lib/horasExtras';
 import { TIPO_DOCUMENTO_OPTIONS, proveedorRepetido, esCuentaDeCobro, emparejarSoportes, ENTIDAD_BANCARIA_OPTIONS, TIPO_CUENTA_OPTIONS, datosBancoProveedor, sumaValores, filtrarPorMes, generarRegistrosGastosExcel, generarRegistrosGastosHTML, siguienteNumeroConsecutivo } from '../lib/gastos';
 import IconButton, { IconTextButton } from './IconButton';
 import ColumnHeaderMenu from './ColumnHeaderMenu';
+import EnviarGastosModal from './EnviarGastosModal';
 import { useColumnFilters } from '../hooks/useColumnFilters';
 import { useColumnSort } from '../hooks/useColumnSort';
 
@@ -275,8 +276,9 @@ function SoporteField({ label, url, fecha, shareUrl, onElegir, textoBoton = "Ele
   );
 }
 
-function RegistrosSection({ nombreLista, registros, proveedores, conNumero, conTipo, conSoportes, shareUrl, siguienteNumero, onCrear, onEditar, onEliminar, canWrite, notify }){
+function RegistrosSection({ nombreLista, registros, proveedores, conNumero, conTipo, conSoportes, shareUrl, siguienteNumero, onCrear, onEditar, onEliminar, canWrite, notify, colaboradores, liveMode }){
   const hoyRef = new Date();
+  const [enviandoGastos, setEnviandoGastos] = useState(false);
   const [mes, setMes] = useState(hoyRef.getMonth());
   const [anio, setAnio] = useState(hoyRef.getFullYear());
   const [abierto, setAbierto] = useState(false);
@@ -351,7 +353,7 @@ function RegistrosSection({ nombreLista, registros, proveedores, conNumero, conT
   }
   async function handleDescargarExcel(){
     setGenerandoExcel(true);
-    try{ await generarRegistrosGastosExcel(nombreArchivoActual(), filas, proveedores, { conNumero, conTipo }); }
+    try{ await generarRegistrosGastosExcel(nombreArchivoActual(), filas, proveedores, { conNumero, conTipo, conSoportes }); }
     finally { setGenerandoExcel(false); }
   }
   // Descargar HTML — pedido explícito del usuario 2026-09-01, para poder
@@ -482,6 +484,11 @@ function RegistrosSection({ nombreLista, registros, proveedores, conNumero, conT
           <IconTextButton icon="html" variant="secondary" onClick={handleDescargarHTML} disabled={generandoHTML}>
             {generandoHTML ? "Generando…" : "Descargar HTML"}
           </IconTextButton>
+          {conSoportes && (
+            <IconTextButton icon="mail" variant="secondary" onClick={() => { if(verTodos){ notify?.('Elige un mes (quita «Todos») para armar el correo de gastos de ese mes.', 'info'); return; } setEnviandoGastos(true); }}>
+              Enviar gastos del mes
+            </IconTextButton>
+          )}
           {conSoportes && canWrite && (
             <IconTextButton icon="search" variant="secondary" onClick={handleBuscarSoportes} disabled={buscandoSoportes}>
               {buscandoSoportes ? "Buscando soportes…" : "Buscar soportes"}
@@ -494,6 +501,7 @@ function RegistrosSection({ nombreLista, registros, proveedores, conNumero, conT
           )}
         </div>
       </div>
+      {enviandoGastos && <EnviarGastosModal filasMes={filtrarPorMes(registros, anio, mes)} proveedores={proveedores} anio={anio} mes={mes} shareUrl={shareUrl} colaboradores={colaboradores} liveMode={liveMode} notify={notify} onClose={() => setEnviandoGastos(false)} />}
       {abierto && <RegistroForm inicial={formInicialNuevo} conNumero={conNumero} conTipo={conTipo} proveedores={proveedores} onGuardar={guardarNuevo} onCancelar={cerrarNuevo} guardando={guardando} />}
       <div className="table-wrap">
         <table>
@@ -557,7 +565,7 @@ function RegistrosSection({ nombreLista, registros, proveedores, conNumero, conT
 
 export default function GastosTab({ config, proveedoresGastos, gastos,
   onCrearProveedorGastos, onEditarProveedorGastos, onEliminarProveedorGastos,
-  onCrearGasto, onEditarGasto, onEliminarGasto, canWrite, notify }){
+  onCrearGasto, onEditarGasto, onEliminarGasto, canWrite, notify, colaboradores, liveMode }){
   const [subTab, setSubTab] = useState('proveedores');
   const shareUrl = config?.GASTOS_SOPORTES_SHARE_URL;
   const siguienteNumero = siguienteNumeroConsecutivo(gastos);
@@ -575,7 +583,7 @@ export default function GastosTab({ config, proveedoresGastos, gastos,
       )}
       {subTab==='gastos' && (
         <RegistrosSection nombreLista="Gastos" registros={gastos} proveedores={proveedoresGastos} conNumero conTipo conSoportes shareUrl={shareUrl} siguienteNumero={siguienteNumero}
-          onCrear={onCrearGasto} onEditar={onEditarGasto} onEliminar={onEliminarGasto} canWrite={canWrite} notify={notify} />
+          onCrear={onCrearGasto} onEditar={onEditarGasto} onEliminar={onEliminarGasto} canWrite={canWrite} notify={notify} colaboradores={colaboradores} liveMode={liveMode} />
       )}
     </div>
   );

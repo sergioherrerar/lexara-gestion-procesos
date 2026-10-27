@@ -215,6 +215,8 @@ export default function AdministracionView({ listas, liveMode, onActualizarEquip
           onEliminarGasto={onEliminarGasto}
           canWrite={canWrite}
           notify={notify}
+          colaboradores={colaboradores}
+          liveMode={liveMode}
         />
       )}
       {tab==='facturacion' && (

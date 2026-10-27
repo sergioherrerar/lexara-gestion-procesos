@@ -432,7 +432,8 @@ async function getMailSendSharedToken(){
   }
 }
 // `imagenes` (opcional): imágenes en línea [{ nombre, cid, base64, contentType }] (p. ej. la firma), referenciadas en el cuerpo con cid:.
-export async function enviarCorreoDirecto({ to, cc, subject, htmlBody, categorias, desde, imagenes }){
+// `adjuntos` (opcional): archivos adjuntos normales [{ nombre, contentType, base64 }] (p. ej. el Excel y el HTML de gastos).
+export async function enviarCorreoDirecto({ to, cc, subject, htmlBody, categorias, desde, imagenes, adjuntos }){
   const ajeno = !!desde && String(desde).trim().toLowerCase() !== cuentaDelPortal();
   const token = ajeno ? await getMailSendSharedToken() : await getMailSendToken();
   const raiz = ajeno ? `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(String(desde).trim())}` : 'https://graph.microsoft.com/v1.0/me';
@@ -447,7 +448,10 @@ export async function enviarCorreoDirecto({ to, cc, subject, htmlBody, categoria
         ...(categorias && categorias.length ? { categories: categorias } : {}),
         toRecipients: para.map(address => ({ emailAddress: { address } })),
         ccRecipients: copia.map(address => ({ emailAddress: { address } })),
-        ...(imagenes && imagenes.length ? { attachments: imagenes.map(im => ({ '@odata.type': '#microsoft.graph.fileAttachment', name: im.nombre, contentType: im.contentType || 'image/jpeg', contentBytes: im.base64, isInline: true, contentId: im.cid })) } : {}),
+        ...((imagenes && imagenes.length) || (adjuntos && adjuntos.length) ? { attachments: [
+          ...(imagenes || []).map(im => ({ '@odata.type': '#microsoft.graph.fileAttachment', name: im.nombre, contentType: im.contentType || 'image/jpeg', contentBytes: im.base64, isInline: true, contentId: im.cid })),
+          ...(adjuntos || []).map(a => ({ '@odata.type': '#microsoft.graph.fileAttachment', name: a.nombre, contentType: a.contentType || 'application/octet-stream', contentBytes: a.base64 })),
+        ] } : {}),
       },
       saveToSentItems: true,
     }),
@@ -471,11 +475,19 @@ export async function listarEnviadosPorCategoria(categoria, buzon){
   let res = await pedir();
   // Buzón de otra persona: puede exigir Mail.ReadWrite.Shared (ver usarPermisoCorreoCompartido); se activa y se reintenta una vez.
   if(res.status === 403 && ajeno && !mailCompartido){ usarPermisoCorreoCompartido(); res = await pedir(); }
-  if(!res.ok) throw new Error(`Graph ${res.status} al revisar Enviados: ${(await res.text()).substring(0, 200)}`);
+  if(!res.ok){
+    const cuerpo = await res.text();
+    // Un buzón que todavía nunca envió nada puede no tener creada la carpeta «Elementos enviados» («Default folder SentItems not found», 404): entonces no se ha enviado nada desde ahí.
+    if(carpetaPorDefectoInexistente(res.status, cuerpo)) return [];
+    throw new Error(`Graph ${res.status} al revisar Enviados: ${cuerpo.substring(0, 200)}`);
+  }
   const datos = await res.json();
   return (datos.value || [])
     .map(m => ({ asunto: m.subject || '', fecha: m.sentDateTime || '', para: (m.toRecipients || []).map(r => r.emailAddress?.address || '').filter(Boolean) }))
     .sort((a, b) => String(b.fecha).localeCompare(String(a.fecha)));
+}
+function carpetaPorDefectoInexistente(status, cuerpo){
+  return status === 404 && /default folder .* not found/i.test(String(cuerpo || ''));
 }
 
 const CATEGORIA_FELICITACION = 'Felicitación de cumpleaños';
@@ -527,7 +539,11 @@ export async function listarFelicitacionesProgramadas(){
   const expandir = encodeURIComponent(`singleValueExtendedProperties($filter=id eq '${PROP_ENVIO_DIFERIDO}')`);
   for(const carpeta of ['outbox', 'sentitems']){
     const res = await fetch(`https://graph.microsoft.com/v1.0/me/mailFolders/${carpeta}/messages?$filter=${filtro}&$select=subject,toRecipients,sentDateTime&$expand=${expandir}&$top=100`, { headers: { Authorization: `Bearer ${token}` } });
-    if(!res.ok) throw new Error(`Graph ${res.status} al revisar ${carpeta === 'outbox' ? 'la Bandeja de salida' : 'Enviados'}: ${(await res.text()).substring(0, 200)}`);
+    if(!res.ok){
+      const cuerpo = await res.text();
+      if(carpetaPorDefectoInexistente(res.status, cuerpo)) continue;   // la carpeta aún no existe en ese buzón: no hay nada ahí
+      throw new Error(`Graph ${res.status} al revisar ${carpeta === 'outbox' ? 'la Bandeja de salida' : 'Enviados'}: ${cuerpo.substring(0, 200)}`);
+    }
     const datos = await res.json();
     (datos.value || []).forEach(m => {
       const diferida = (m.singleValueExtendedProperties || []).find(p => p.id === PROP_ENVIO_DIFERIDO);
@@ -541,17 +557,21 @@ export async function listarFelicitacionesProgramadas(){
 // Borrador con imágenes en línea (cid:) — p. ej. la felicitación de cumpleaños (2026-10-29): se crea el borrador y luego se adjunta cada imagen como
 // adjunto en línea con su contentId. `imagenes` = [{ nombre, cid, base64, contentType? }]. NUNCA envía: solo deja el borrador. Devuelve el mensaje creado
 // y `imagenesFallidas` (nombres de las que no se pudieron adjuntar).
-export async function crearBorradorConImagenesInline({ to, cc, subject, htmlBody, imagenes, categorias, buzon }){
+// `adjuntos` (opcional, 2026-10-29): además de las imágenes en línea, archivos adjuntos normales [{ nombre, contentType, base64 }]; los que fallen salen en `imagenesFallidas`.
+export async function crearBorradorConImagenesInline({ to, cc, subject, htmlBody, imagenes, adjuntos, categorias, buzon }){
   const mensaje = await crearBorradorCorreo({ to, cc, subject, htmlBody, categorias, buzon });
   const token = await getMailToken();
   const raiz = buzon ? `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(buzon)}` : 'https://graph.microsoft.com/v1.0/me';
   const imagenesFallidas = [];
-  for(const im of (imagenes || [])){
+  const todos = [...(imagenes || []), ...(adjuntos || []).map(a => ({ ...a, normal: true }))];
+  for(const im of todos){
     try{
       const res = await fetch(`${raiz}/messages/${mensaje.id}/attachments`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ '@odata.type': '#microsoft.graph.fileAttachment', name: im.nombre, contentType: im.contentType || 'image/jpeg', contentBytes: im.base64, isInline: true, contentId: im.cid }),
+        body: JSON.stringify(im.normal
+          ? { '@odata.type': '#microsoft.graph.fileAttachment', name: im.nombre, contentType: im.contentType || 'application/octet-stream', contentBytes: im.base64 }
+          : { '@odata.type': '#microsoft.graph.fileAttachment', name: im.nombre, contentType: im.contentType || 'image/jpeg', contentBytes: im.base64, isInline: true, contentId: im.cid }),
       });
       if(!res.ok) throw new Error('Graph ' + res.status + ': ' + (await res.text()).substring(0, 160));
     }catch(err){ console.error('No se pudo adjuntar la imagen «' + im.nombre + '» al borrador:', err); imagenesFallidas.push(im.nombre); }

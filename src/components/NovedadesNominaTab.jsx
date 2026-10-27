@@ -57,10 +57,12 @@ export default function NovedadesNominaTab({ colaboradores, tutelas, valoresEnti
     let vivo = true;
     listarEnviadosPorCategoria(CATEGORIA_NOVEDADES, REMITENTE_SOPORTE)
       .then(l => { if(vivo){ setEnviados(l); setErrorEnviados(''); } })
-      .catch(err => { console.error(err); if(vivo) setErrorEnviados(mensajeError(err)); });
+      .catch(err => { console.error('No se pudo revisar los Enviados de Soporte:', err); if(vivo) setErrorEnviados(mensajeError(err)); });
     return () => { vivo = false; };
   }, [liveMode, accion]);
-  const yaEnviado = enviados.find(e => e.asunto.includes(etiqueta));
+  // Además de Enviados de Soporte, se recuerda en este navegador lo que ya se envió desde aquí (por si no se pudiera leer ese buzón).
+  const [envioLocal, setEnvioLocal] = useState(() => { try{ return JSON.parse(localStorage.getItem('lexara-novedades-enviadas') || '{}'); }catch(e){ return {}; } });
+  const yaEnviado = enviados.find(e => e.asunto.includes(etiqueta)) || (envioLocal[etiqueta] ? { fecha: envioLocal[etiqueta].fecha, para: envioLocal[etiqueta].para } : null);
 
   const esHoy29OMas = hoy.getDate() >= 29 && mes === hoy.getMonth() && anio === hoy.getFullYear();
   const anios = [hoy.getFullYear() - 1, hoy.getFullYear(), hoy.getFullYear() + 1];
@@ -70,6 +72,9 @@ export default function NovedadesNominaTab({ colaboradores, tutelas, valoresEnti
     try{
       if(!firma) throw new Error('La imagen de la firma de Soporte aún no se ha cargado; espera un momento e inténtalo de nuevo.');
       await enviarCorreoDirecto({ to: [destinatario.correo], cc: [CORREO_GERENCIA_NOVEDADES], subject: correoReal.asunto, htmlBody: correoReal.html, categorias: [CATEGORIA_NOVEDADES], desde: REMITENTE_SOPORTE, imagenes: [firma] });
+      const registro = { ...envioLocal, [etiqueta]: { fecha: new Date().toISOString(), para: [destinatario.correo] } };
+      setEnvioLocal(registro);
+      try{ localStorage.setItem('lexara-novedades-enviadas', JSON.stringify(registro)); }catch(e){ /* sin almacenamiento */ }
       notify?.('✓ Novedades de nómina de ' + etiqueta + ' enviadas a ' + destinatario.nombre + ' (' + destinatario.correo + ') con copia a Gerencia, desde ' + REMITENTE_SOPORTE + '.', 'success');
     }catch(err){
       console.error(err); notify?.('No se pudo enviar el correo: ' + mensajeError(err), 'error');
@@ -119,7 +124,11 @@ export default function NovedadesNominaTab({ colaboradores, tutelas, valoresEnti
         ) : esHoy29OMas ? (
           <p className="badge badge-naranja" style={{ display: 'inline-block', marginBottom: 14 }}>Hoy toca enviar las novedades de {etiqueta}: el ciclo ya cerró el 28.</p>
         ) : null}
-        {errorEnviados && <p className="save-hint" style={{ margin: '0 0 12px' }}>No se pudo revisar si ya se envió: {errorEnviados}</p>}
+        {errorEnviados && !yaEnviado && (
+          <p className="save-hint" style={{ margin: '0 0 12px' }}>
+            No pude revisar los Enviados de Soporte para saber si este ciclo ya se mandó (no afecta el envío; antes de enviar te pido confirmación). Detalle: {errorEnviados}
+          </p>
+        )}
         {nv.pendientes > 0 && (
           <p className="save-hint" style={{ margin: '0 0 12px', color: '#b3590a' }}>
             Hay {nv.pendientes} solicitud(es) de vacaciones sin aprobar en este mes. Apruébalas en Administración → Vacaciones antes de enviar, o saldrán marcadas como pendientes.

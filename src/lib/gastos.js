@@ -110,7 +110,21 @@ export function filtrarPorMes(registros, anio, mesIndex0){
 // generarVacacionesExcel en vacaciones.js) — encabezado verde oscuro con
 // texto blanco, columnas numéricas/de fecha alineadas a la derecha (ver
 // [[feedback_alinear_valores_derecha]]).
-export async function generarRegistrosGastosExcel(nombreHoja, filas, proveedores, { conNumero, conTipo } = {}){
+// El Excel se arma en `crearExcelRegistrosGastos` (devuelve los bytes) para poder adjuntarlo a un correo (2026-10-29, correo de gastos del mes a Beatriz);
+// `generarRegistrosGastosExcel` es el mismo Excel como descarga. Con `conSoportes` agrega las columnas «Soporte Factura»/«Soporte Pago» con el enlace real de cada una.
+export async function generarRegistrosGastosExcel(nombreHoja, filas, proveedores, opciones = {}){
+  const buffer = await crearExcelRegistrosGastos(nombreHoja, filas, proveedores, opciones);
+  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${nombreHoja}.xlsx`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+export async function crearExcelRegistrosGastos(nombreHoja, filas, proveedores, { conNumero, conTipo, conSoportes } = {}){
   const { default: ExcelJS } = await import('exceljs');
   const wb = new ExcelJS.Workbook();
   const ws = wb.addWorksheet(nombreHoja.slice(0,31));
@@ -120,12 +134,14 @@ export async function generarRegistrosGastosExcel(nombreHoja, filas, proveedores
     "Pagado a", "Entidad", "Cuenta", "Tipo Cuenta", "Fecha", "Valor a pagar",
     ...(conTipo ? ["Tipo Documento"] : []),
     "Observación",
+    ...(conSoportes ? ["Soporte Factura", "Soporte Pago"] : []),
   ];
   const anchos = [
     ...(conNumero ? [14] : []),
     28, 18, 18, 14, 14, 16,
     ...(conTipo ? [16] : []),
     40,
+    ...(conSoportes ? [16, 16] : []),
   ];
   ws.columns = titulos.map((t,i) => ({ width: anchos[i] || 16 }));
   const headerRow = ws.addRow(titulos);
@@ -143,12 +159,14 @@ export async function generarRegistrosGastosExcel(nombreHoja, filas, proveedores
       fechaISOaExcel(r.Fecha), Number(r.ValorAPagar)||0,
       ...(conTipo ? [r.TipoDocumento || ""] : []),
       r.Observacion || "",
+      ...(conSoportes ? [r.SoporteFactura ? { text: 'Ver factura', hyperlink: r.SoporteFactura } : "", r.SoportePago ? { text: 'Ver pago', hyperlink: r.SoportePago } : ""] : []),
     ];
     const row = ws.addRow(valores);
     const idxFecha = titulos.indexOf("Fecha")+1, idxValor = titulos.indexOf("Valor a pagar")+1;
     row.getCell(idxFecha).numFmt = 'dd/mm/yyyy';
     row.getCell(idxFecha).alignment = { horizontal:'right' };
     row.getCell(idxValor).alignment = { horizontal:'right' };
+    if(conSoportes) ["Soporte Factura", "Soporte Pago"].forEach(t => { const c = row.getCell(titulos.indexOf(t)+1); if(c.value) c.font = { color: { argb: 'FF1D5FA3' }, underline: true }; });
   });
   const idxValor = titulos.indexOf("Valor a pagar")+1;
   const filaTotal = new Array(titulos.length).fill("");
@@ -159,16 +177,7 @@ export async function generarRegistrosGastosExcel(nombreHoja, filas, proveedores
   totalRow.font = { bold:true };
 
   ws.views = [{ state:'frozen', ySplit:1 }];
-  const buffer = await wb.xlsx.writeBuffer();
-  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `${nombreHoja}.xlsx`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
+  return wb.xlsx.writeBuffer();
 }
 
 function escapeHtml(s){
@@ -182,7 +191,20 @@ function escapeHtml(s){
 // enlace en el que puede hacer clic, sin tener que mandarle los PDF sueltos
 // aparte. Mismo estilo institucional que generarInformeClienteHTML.js — un
 // .html autocontenido, sin depender de que siga corriendo la app.
-export function generarRegistrosGastosHTML(titulo, filas, proveedores, { conNumero, conTipo, conSoportes, linkCarpetaMes, mesLabel } = {}){
+export function generarRegistrosGastosHTML(titulo, filas, proveedores, opciones = {}){
+  const html = crearHTMLRegistrosGastos(titulo, filas, proveedores, opciones);
+  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${titulo}.html`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+// Mismo HTML como texto, para adjuntarlo a un correo (2026-10-29).
+export function crearHTMLRegistrosGastos(titulo, filas, proveedores, { conNumero, conTipo, conSoportes, linkCarpetaMes, mesLabel } = {}){
   const total = sumaValores(filas);
   const fechaLarga = new Date().toLocaleDateString('es-CO', { day:'2-digit', month:'long', year:'numeric' });
 
@@ -273,16 +295,7 @@ export function generarRegistrosGastosHTML(titulo, filas, proveedores, { conNume
   <footer>MD Abogados SAS · Generado automáticamente desde Lexara — Gestión de Procesos.</footer>
 </body>
 </html>`;
-
-  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `${titulo}.html`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
+  return html;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
