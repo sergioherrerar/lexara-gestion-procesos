@@ -217,7 +217,19 @@ function TodosVencimientos({ audiencias, terminos, pendientes, procesos, onIrATa
                   <td style={{whiteSpace:'nowrap'}}>{f.fecha ? fmtDate(f.fecha) : "—"}{f.hora ? <div className="save-hint">{f.hora}</div> : null}</td>
                   <td><span className={"badge badge-" + cr.color}>{cr.texto}</span></td>
                   <td>{f.proceso?.Radicado || "—"}{f.proceso?.Cliente ? <div className="save-hint">{f.proceso.Cliente}</div> : null}</td>
-                  <td>{f.texto || "—"}{f.observacion ? <div className="save-hint">{f.observacion}</div> : null}</td>
+                  <td>
+                    <div className="detalle-con-aviso">
+                      {f.observacion ? (
+                        <svg className="icono-aviso-obs" viewBox="0 0 24 24" width="22" height="22" role="img" aria-label="Tiene observación" focusable="false">
+                          <title>Tiene observación</title>
+                          <path d="M12 2.8 22 20.5H2L12 2.8Z" fill="#fbbc33" stroke="#b07a00" strokeWidth="1.5" strokeLinejoin="round"/>
+                          <path d="M12 9.2v5.4" stroke="#3a2a00" strokeWidth="2.2" strokeLinecap="round"/>
+                          <circle cx="12" cy="17.4" r="1.25" fill="#3a2a00"/>
+                        </svg>
+                      ) : null}
+                      <div>{f.texto || "—"}{f.observacion ? <div className="save-hint">{f.observacion}</div> : null}</div>
+                    </div>
+                  </td>
                   <td>{f.responsable || "—"}</td>
                 </tr>
               );

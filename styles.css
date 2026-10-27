@@ -2029,3 +2029,7 @@
         linear-gradient(135deg, var(--verde-oscuro-2) 0%, var(--verde-oscuro) 60%, #0a6a5f 100%);
     }
   }
+
+  /* Aviso amarillo (triángulo de advertencia) en la lista de Vencimientos cuando el registro tiene observación. */
+  .detalle-con-aviso{display:flex; align-items:flex-start; gap:8px;}
+  .icono-aviso-obs{flex:0 0 auto; margin-top:1px; filter:drop-shadow(0 1px 1px rgba(120,80,0,.25));}
