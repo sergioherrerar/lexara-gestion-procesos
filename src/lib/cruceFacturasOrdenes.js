@@ -11,7 +11,12 @@
 //   Por valor   — mismo Contrato y mismo valor (subtotal o total), con el mismo Proceso o sin Proceso en alguno.
 //   Por etapa   — mismo Contrato y misma Etapa, sin comparar el Proceso, solo si hay UNA sola candidata.
 // En «Por valor» y «Por etapa» una factura no se le asigna a dos órdenes distintas.
-import { normalize, facturaNumero, facturaForOrdenCompra, computeFacturaTotals, computeOrdenCompraTotals } from './graph';
+import { normalize, facturaNumero, facturaForOrdenCompra, computeFacturaTotals, computeOrdenCompraTotals, fechaFromPartes } from './graph';
+
+// Fecha de una factura u orden: igual que en las listas del portal, sale de Día / Mes / Año y, si no están, de la columna Fecha (que en SharePoint suele venir vacía).
+export function fechaDeRegistro(r){
+  return (r && (fechaFromPartes(r.Dia, r.Mes, r.Anio) || r.Fecha)) || "";
+}
 
 const ARTICULOS = new Set(['de', 'del', 'la', 'el', 'los', 'las', 'y', 'en', 'a', 'por']);
 

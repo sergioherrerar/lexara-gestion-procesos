@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-10-27 (104)
+- **La fecha de la factura sí aparece en las órdenes de compra** — reporte del usuario (la columna «Fecha factura» del Excel salía vacía aunque la factura sí se encontraba). Causa: la fecha de una factura casi nunca está en la columna Fecha de SharePoint (viene vacía) sino en Día / Mes / Año; el portal ya armaba la fecha así en sus listas, pero el Excel y la nueva columna de factura miraban solo la columna Fecha. Ahora se arma igual que en las listas del portal (Día/Mes/Año y, si faltan, la columna Fecha) en: el Excel de Órdenes de compra (Fecha de la orden y Fecha factura), el Excel de Facturación (que tenía el mismo problema en su columna Fecha), y la fecha que se ve bajo el número de factura en la lista y el detalle de las órdenes.
+
 ## 2026-10-27 (103)
 - **Panorama general: sección «Sitios de SharePoint» con acceso de un clic a los sitios del despacho** — pedido del usuario. Una banda verde igual de cuidada que la de reuniones (sin foto, con luz turquesa y el doble chevron de la marca), con tres tarjetas y su botón «Abrir →», que abren en una pestaña nueva: **Nuevos Procesos MD** (sitio principal), **Tutelas MD Abogados** y **Personal Mónica**. En el celular se apilan en una columna. Para agregar o cambiar un sitio se edita la lista SITIOS_SHAREPOINT de src/config.js.
 

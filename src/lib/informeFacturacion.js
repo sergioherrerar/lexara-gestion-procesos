@@ -8,7 +8,7 @@ import {
   parseMonto, clienteForFactura, clienteForOrdenCompra, facturaNumero, ordenCompraNumero,
   computeFacturaTotals, computeOrdenCompraTotals, facturaForOrdenCompra,
 } from './graph';
-import { buscarFacturasParaOrdenes } from './cruceFacturasOrdenes';
+import { buscarFacturasParaOrdenes, fechaDeRegistro } from './cruceFacturasOrdenes';
 
 const COLOR_ENCABEZADO = "FF004941"; // var(--verde-oscuro), mismo verde institucional de siempre.
 
@@ -66,7 +66,7 @@ export async function generarInformeFacturasExcel(facturas, clientes){
     const totales = computeFacturaTotals(f);
     const valorAPagar = parseMonto(f.ValorAPagar) > 0 ? parseMonto(f.ValorAPagar) : totales.total;
     const row = ws.addRow([
-      facturaNumero(f), f.Contrato || "", f.Proceso || "", cliente?.RazonSocial || "", fechaISOaExcel(f.Fecha),
+      facturaNumero(f), f.Contrato || "", f.Proceso || "", cliente?.RazonSocial || "", fechaISOaExcel(fechaDeRegistro(f)),
       f.EtapaContrato || "", f.EstadoFactura || "", totales.subtotal, totales.iva, totales.total, valorAPagar,
     ]);
     estilizarFila(row);
@@ -104,12 +104,12 @@ export async function generarInformeOrdenesCompraExcel(ordenesCompra, clientes, 
     const facturaRelacionada = hallado ? hallado.factura : facturaForOrdenCompra(facturas, oc);
     const metodo = hallado ? hallado.metodo : (facturaRelacionada ? "Exacto" : "");
     // La orden a veces trae la fecha solo en Día / Mes / Año y la columna Fecha vacía.
-    const fechaOrden = fechaISOaExcel(oc.Fecha) || fechaDeDiaMesAnio(oc);
+    const fechaOrden = fechaISOaExcel(fechaDeRegistro(oc)) || fechaDeDiaMesAnio(oc);
     const row = ws.addRow([
       ordenCompraNumero(oc), oc.Contrato || "", oc.Proceso || "", cliente?.RazonSocial || "", fechaOrden,
       oc.EtapaContrato || "", totales.subtotal, totales.iva, totales.total, valorAPagar,
       facturaRelacionada ? facturaNumero(facturaRelacionada) : "—",
-      facturaRelacionada ? fechaISOaExcel(facturaRelacionada.Fecha) : null,
+      facturaRelacionada ? fechaISOaExcel(fechaDeRegistro(facturaRelacionada)) : null,
       metodo,
     ]);
     estilizarFila(row);

@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { ICON_SVG } from '../config';
 import { clienteForOrdenCompra, procesoForOrdenCompra, ordenCompraNumero, computeOrdenCompraTotals, facturaNumero, fmtMonto, fmtDate, fechaFromPartes } from '../lib/graph';
-import { facturaDeOrden, textoCruce } from '../lib/cruceFacturasOrdenes';
+import { facturaDeOrden, textoCruce, fechaDeRegistro } from '../lib/cruceFacturasOrdenes';
 import IconButton, { IconTextButton } from './IconButton';
 import ColumnHeaderMenu from './ColumnHeaderMenu';
 import { useColumnFilters } from '../hooks/useColumnFilters';
@@ -84,7 +84,7 @@ export default function OrdenesCompraView({ ordenesCompra, clientes, procesos, f
                     <>
                       {facturaNumero(factura)}
                       {metodoFactura && metodoFactura !== 'Exacto' && <span className="badge badge-amarillo" style={{marginLeft:6}} title={textoCruce(metodoFactura) + ' — revísala'}>≈</span>}
-                      {factura.Fecha && <div className="save-hint" style={{margin:0}}>{fmtDate(factura.Fecha)}</div>}
+                      {fechaDeRegistro(factura) && <div className="save-hint" style={{margin:0}}>{fmtDate(fechaDeRegistro(factura))}</div>}
                     </>
                   ) : "—"}</td>
                   <td style={{whiteSpace:'nowrap'}}>

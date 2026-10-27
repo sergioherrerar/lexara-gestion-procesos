@@ -1,4 +1,4 @@
-import { facturaDeOrden, textoCruce } from '../lib/cruceFacturasOrdenes';
+import { facturaDeOrden, textoCruce, fechaDeRegistro } from '../lib/cruceFacturasOrdenes';
 import { useState, useEffect } from 'react';
 import { clienteForOrdenCompra, procesoForOrdenCompra, ordenCompraNumero, facturaForOrdenCompra, facturaNumero, fmtDate, parseMonto, fmtMonto, IVA_RATE_DEFAULT, ETAPA_CONTRATO_OPTIONS, nombreArchivoSeguro, mensajeError } from '../lib/graph';
 import { generarPdfDesdeNodo, precargarImagen, precalentarLibreriasPdf } from '../lib/generarPdfDocumento';
@@ -198,7 +198,7 @@ export default function OrdenCompraDrawer({ ordenCompra, clientes, procesos, fac
               <div className="field">
                 <label>Factura relacionada</label>
                 <div className="field-info" style={{marginTop:0}}>
-                  {linkedFactura ? `No. ${facturaNumero(linkedFactura)}${linkedFactura.Fecha ? ' · ' + fmtDate(linkedFactura.Fecha) : ''}${metodoFactura && metodoFactura !== 'Exacto' ? ' (≈ ' + textoCruce(metodoFactura).toLowerCase() + ' — revísala)' : ''}` : "— sin factura con este contrato —"}
+                  {linkedFactura ? `No. ${facturaNumero(linkedFactura)}${fechaDeRegistro(linkedFactura) ? ' · ' + fmtDate(fechaDeRegistro(linkedFactura)) : ''}${metodoFactura && metodoFactura !== 'Exacto' ? ' (≈ ' + textoCruce(metodoFactura).toLowerCase() + ' — revísala)' : ''}` : "— sin factura con este contrato —"}
                 </div>
               </div>
               <div className="field-grid-3" style={{gridColumn:'1/-1'}}>
