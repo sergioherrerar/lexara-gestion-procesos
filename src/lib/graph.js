@@ -399,6 +399,105 @@ export async function crearBorradorCorreo({ to, cc, subject, htmlBody, adjuntoNo
 }
 
 // ---------------------------------------------------------------------------
+// Envío AUTOMÁTICO y diferido de correos (2026-10-29, felicitaciones de cumpleaños a las 7:00 a. m. desde Soporte@). Exchange guarda el mensaje en la Bandeja de
+// salida y lo entrega a la hora indicada en la propiedad «PidTagDeferredSendTime» (SystemTime 0x3FEF), aunque el portal ya esté cerrado.
+// Pide un permiso APARTE, Mail.Send (delegado), que hay que agregar y aprobar en Azure (Entra): nunca se junta con Mail.ReadWrite.
+// ---------------------------------------------------------------------------
+async function getMailSendToken(){
+  const scopes = ["Mail.Send"];
+  try{
+    const res = await msalInstance.acquireTokenSilent({ scopes, account });
+    return res.accessToken;
+  }catch(err){
+    const res = await msalInstance.acquireTokenPopup({ scopes });
+    return res.accessToken;
+  }
+}
+export function cuentaDelPortal(){ return String(account?.username || '').toLowerCase(); }
+
+const CATEGORIA_FELICITACION = 'Felicitación de cumpleaños';
+const PROP_ENVIO_DIFERIDO = 'SystemTime 0x3FEF';
+
+// Crea el mensaje con la hora de entrega, le adjunta las imágenes en línea y lo envía: queda en la Bandeja de salida hasta `enviarEnIso` (UTC).
+export async function programarCorreoDiferido({ to, cc, subject, htmlBody, imagenes, enviarEnIso, categoria = CATEGORIA_FELICITACION }){
+  const token = await getMailToken();
+  const raiz = 'https://graph.microsoft.com/v1.0/me';
+  const cabeceras = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
+  const res = await fetch(`${raiz}/messages`, {
+    method: 'POST', headers: cabeceras,
+    body: JSON.stringify({
+      subject, categories: [categoria], body: { contentType: 'HTML', content: htmlBody },
+      toRecipients: [{ emailAddress: { address: to } }],
+      ccRecipients: (cc || []).map(address => ({ emailAddress: { address } })),
+      singleValueExtendedProperties: [{ id: PROP_ENVIO_DIFERIDO, value: enviarEnIso }],
+    }),
+  });
+  if(!res.ok) throw new Error(`Graph ${res.status}: ${(await res.text()).substring(0, 300)}`);
+  const mensaje = await res.json();
+  const limpiar = async () => { try{ await fetch(`${raiz}/messages/${mensaje.id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } }); }catch(e){ /* sin importancia */ } };
+  try{
+    for(const im of (imagenes || [])){
+      const r = await fetch(`${raiz}/messages/${mensaje.id}/attachments`, {
+        method: 'POST', headers: cabeceras,
+        body: JSON.stringify({ '@odata.type': '#microsoft.graph.fileAttachment', name: im.nombre, contentType: im.contentType || 'image/jpeg', contentBytes: im.base64, isInline: true, contentId: im.cid }),
+      });
+      if(!r.ok) throw new Error(`No se pudo adjuntar «${im.nombre}» (Graph ${r.status})`);
+    }
+    const tokenEnvio = await getMailSendToken();
+    const env = await fetch(`${raiz}/messages/${mensaje.id}/send`, { method: 'POST', headers: { Authorization: `Bearer ${tokenEnvio}`, 'Content-Length': '0' } });
+    if(!env.ok){
+      const cuerpo = await env.text();
+      if(env.status === 403) throw new Error('Falta el permiso Mail.Send en Azure (Entra): agrégalo con aprobación del administrador y vuelve a intentarlo.');
+      throw new Error(`Graph ${env.status}: ${cuerpo.substring(0, 300)}`);
+    }
+  }catch(err){ await limpiar(); throw err; }
+  invalidarCacheCarpetasCorreo();
+  return { id: mensaje.id, enviarEnIso };
+}
+
+// Felicitaciones ya programadas (Bandeja de salida) o enviadas (Enviados) con la categoría de cumpleaños: [{ para, hora, enviada }]. `hora` es la entrega prevista
+// (UTC, ISO) en la Bandeja de salida y la fecha de envío en Enviados.
+export async function listarFelicitacionesProgramadas(){
+  const token = await getMailToken();
+  const salida = [];
+  const filtro = encodeURIComponent(`categories/any(c:c eq '${CATEGORIA_FELICITACION}')`);
+  const expandir = encodeURIComponent(`singleValueExtendedProperties($filter=id eq '${PROP_ENVIO_DIFERIDO}')`);
+  for(const carpeta of ['outbox', 'sentitems']){
+    const res = await fetch(`https://graph.microsoft.com/v1.0/me/mailFolders/${carpeta}/messages?$filter=${filtro}&$select=subject,toRecipients,sentDateTime&$expand=${expandir}&$top=100`, { headers: { Authorization: `Bearer ${token}` } });
+    if(!res.ok) throw new Error(`Graph ${res.status} al revisar ${carpeta === 'outbox' ? 'la Bandeja de salida' : 'Enviados'}: ${(await res.text()).substring(0, 200)}`);
+    const datos = await res.json();
+    (datos.value || []).forEach(m => {
+      const diferida = (m.singleValueExtendedProperties || []).find(p => p.id === PROP_ENVIO_DIFERIDO);
+      const para = String(m.toRecipients?.[0]?.emailAddress?.address || '').toLowerCase();
+      salida.push({ para, hora: (diferida && diferida.value) || m.sentDateTime || '', enviada: carpeta === 'sentitems', asunto: m.subject || '' });
+    });
+  }
+  return salida;
+}
+
+// Borrador con imágenes en línea (cid:) — p. ej. la felicitación de cumpleaños (2026-10-29): se crea el borrador y luego se adjunta cada imagen como
+// adjunto en línea con su contentId. `imagenes` = [{ nombre, cid, base64, contentType? }]. NUNCA envía: solo deja el borrador. Devuelve el mensaje creado
+// y `imagenesFallidas` (nombres de las que no se pudieron adjuntar).
+export async function crearBorradorConImagenesInline({ to, cc, subject, htmlBody, imagenes, categorias, buzon }){
+  const mensaje = await crearBorradorCorreo({ to, cc, subject, htmlBody, categorias, buzon });
+  const token = await getMailToken();
+  const raiz = buzon ? `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(buzon)}` : 'https://graph.microsoft.com/v1.0/me';
+  const imagenesFallidas = [];
+  for(const im of (imagenes || [])){
+    try{
+      const res = await fetch(`${raiz}/messages/${mensaje.id}/attachments`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ '@odata.type': '#microsoft.graph.fileAttachment', name: im.nombre, contentType: im.contentType || 'image/jpeg', contentBytes: im.base64, isInline: true, contentId: im.cid }),
+      });
+      if(!res.ok) throw new Error('Graph ' + res.status + ': ' + (await res.text()).substring(0, 160));
+    }catch(err){ console.error('No se pudo adjuntar la imagen «' + im.nombre + '» al borrador:', err); imagenesFallidas.push(im.nombre); }
+  }
+  invalidarCacheCarpetasCorreo();
+  return { ...mensaje, imagenesFallidas };
+}
+
+// ---------------------------------------------------------------------------
 // Solicitud de pruebas (paso 2 de "API Claude", 2026-10-07, pedido explícito
 // del usuario): por cada tutela leída por LexIA se arma un BORRADOR de correo
 // a las áreas de la entidad pidiéndoles las pruebas, usando el documento
@@ -2950,6 +3049,27 @@ export async function subirDocumentoCorporativo(config, rutaRelativa, nombreArch
     headers: { "Content-Type": file.type || "application/octet-stream" },
     body: buffer,
   });
+}
+
+// Foto de cada colaborador para su correo de felicitación (2026-10-29, pedido del usuario): viven en SharePoint, en Documentos del sitio principal →
+// «Lexara Abogados/fotos corporativa/fotos con Edicion/Fotos correo», una imagen por persona con su nombre de pila ("Daniel.jpg", "sergio.jpg"...).
+// Se busca la del nombre de pila del colaborador (sin tildes ni mayúsculas); si no hay, devuelve null y el correo sale sin foto, nunca con otra.
+export const RUTA_FOTOS_CORREO = 'Lexara Abogados/fotos corporativa/fotos con Edicion/Fotos correo';
+let cacheFotosCorreo = null;
+export async function descargarFotoColaborador(config, nombreCompleto){
+  const pila = normalize(String(nombreCompleto || '').trim().split(/\s+/)[0] || '');
+  if(!pila) return null;
+  if(!cacheFotosCorreo){
+    const siteId = await fetchSiteId(config);
+    const res = await graphFetch(`/sites/${siteId}/drive/root:/${encodeURIComponent(RUTA_FOTOS_CORREO).replace(/%2F/g, '/')}:/children?$select=id,name,file&$top=200`);
+    cacheFotosCorreo = { siteId, archivos: (res.value || []).filter(f => f.file && /\.(jpe?g|png|webp)$/i.test(f.name || '')) };
+  }
+  const item = cacheFotosCorreo.archivos.find(f => normalize(f.name.replace(/\.[^.]+$/, '')) === pila);
+  if(!item) return null;
+  const token = await getGraphToken();
+  const res = await fetch(`https://graph.microsoft.com/v1.0/sites/${cacheFotosCorreo.siteId}/drive/items/${item.id}/content`, { headers: { Authorization: `Bearer ${token}` } });
+  if(!res.ok) throw new Error(`No se pudo descargar la foto de ${nombreCompleto} (Graph ${res.status}).`);
+  return res.blob();
 }
 
 // Contenido binario real de uno de estos archivos (para armar el ZIP o

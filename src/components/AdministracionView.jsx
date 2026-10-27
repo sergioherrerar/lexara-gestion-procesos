@@ -126,7 +126,7 @@ function DocumentosTab({ colaboradores, config, notify }){
   );
 }
 
-export default function AdministracionView({ onActualizarEquipo, colaboradores, searchQuery, onOpenColaborador, onCreateColaborador, onDeleteColaborador, canWrite = true, notify, config, tutelas, valoresEntidad, clientes, procesos, facturas, ordenesCompra, onAbrirBorradorOrdenCompra, onAbrirBorradorFactura, horasExtras, onAprobarHoraExtra, vacacionesPeriodos, onCrearPeriodoVacaciones, onEditarPeriodoVacaciones, onEliminarPeriodoVacaciones,
+export default function AdministracionView({ listas, liveMode, onActualizarEquipo, colaboradores, searchQuery, onOpenColaborador, onCreateColaborador, onDeleteColaborador, canWrite = true, notify, config, tutelas, valoresEntidad, clientes, procesos, facturas, ordenesCompra, onAbrirBorradorOrdenCompra, onAbrirBorradorFactura, horasExtras, onAprobarHoraExtra, vacacionesPeriodos, onCrearPeriodoVacaciones, onEditarPeriodoVacaciones, onEliminarPeriodoVacaciones,
   proveedoresGastos, cuentasCobroGastos, pagosPorRealizar, gastos,
   onCrearProveedorGastos, onEditarProveedorGastos, onEliminarProveedorGastos,
   onCrearCuentaCobroGastos, onEditarCuentaCobroGastos, onEliminarCuentaCobroGastos,
@@ -152,6 +152,8 @@ export default function AdministracionView({ onActualizarEquipo, colaboradores, 
       </div>
       {tab==='colaboradores' && (
         <ColaboradoresView
+          listas={listas}
+          liveMode={liveMode}
           colaboradores={colaboradores}
           searchQuery={searchQuery}
           onOpenColaborador={onOpenColaborador}
@@ -159,6 +161,7 @@ export default function AdministracionView({ onActualizarEquipo, colaboradores, 
           onDeleteColaborador={onDeleteColaborador}
           canWrite={canWrite}
           notify={notify}
+          config={config}
           embedded
           titulo="Colaboradores MD"
         />

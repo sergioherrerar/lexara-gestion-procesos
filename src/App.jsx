@@ -240,6 +240,8 @@ export default function App(){
         )}
         {app.view === 'administracion' && canAccessView(app.modulosPermitidos, 'administracion') && (
           <AdministracionView
+            listas={app.lists}
+            liveMode={app.liveMode}
             onActualizarEquipo={app.refreshEquipoYVacaciones}
             colaboradores={app.colaboradores}
             searchQuery={app.searchQuery}

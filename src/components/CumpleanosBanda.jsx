@@ -1,7 +1,12 @@
+import { useState } from 'react';
 import { proximoCumpleanos, etiquetaDiasCumple } from '../lib/cumpleanos';
+import FelicitacionCumpleanosModal from './FelicitacionCumpleanosModal';
+import FelicitacionesAutomaticasPanel from './FelicitacionesAutomaticasPanel';
 
 // Banda «Próximos cumpleaños» sobre la tabla de Colaboradores MD: solo los colaboradores ACTIVOS con fecha de nacimiento, el más próximo primero.
-export default function CumpleanosBanda({ colaboradores, canWrite }){
+// Cada uno trae el botón «Vista previa»: abre el correo de felicitación tal como saldrá, y desde ahí se programa su envío automático o se crea el borrador.
+export default function CumpleanosBanda({ colaboradores, canWrite, listas, config, liveMode, notify }){
+  const [felicitando, setFelicitando] = useState(null);
   const hoy = new Date();
   const lista = (colaboradores || [])
     .filter(c => c.Activo)
@@ -29,9 +34,12 @@ export default function CumpleanosBanda({ colaboradores, canWrite }){
               <small>{p.texto} · cumple {p.edad}</small>
             </span>
             <span className="cumple-dias">{etiquetaDiasCumple(p.dias)}</span>
+            <button type="button" className="cumple-felicitar" onClick={() => setFelicitando(c)} aria-label={'Vista previa de la felicitación de ' + (c.Nombre || '')} title="Ver cómo queda el correo de felicitación y programar su envío">👁 Vista previa</button>
           </div>
         ))}
       </div>
+      <FelicitacionesAutomaticasPanel colaboradores={colaboradores} listas={listas} config={config} liveMode={liveMode} notify={notify} onVistaPrevia={setFelicitando} />
+      {felicitando && <FelicitacionCumpleanosModal colaborador={felicitando} colaboradores={colaboradores} listas={listas} config={config} liveMode={liveMode} notify={notify} onClose={() => setFelicitando(null)} />}
     </section>
   );
 }

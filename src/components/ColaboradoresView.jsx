@@ -27,7 +27,7 @@ const COLUMNS = [
 // Administración), solo el contador + botón "Nuevo colaborador" en una
 // franja liviana. Por defecto queda igual que siempre (embedded=false), por
 // si este componente se vuelve a usar solo en algún otro lugar.
-export default function ColaboradoresView({ colaboradores, searchQuery, onOpenColaborador, onCreateColaborador, onDeleteColaborador, canWrite = true, notify, embedded = false, titulo = "Colaborador Lexara" }){
+export default function ColaboradoresView({ listas, liveMode, colaboradores, searchQuery, onOpenColaborador, onCreateColaborador, onDeleteColaborador, canWrite = true, notify, config, embedded = false, titulo = "Colaborador Lexara" }){
   const { filters, setFilter, clearFilters, rowMatches, hasActiveFilters } = useColumnFilters();
   const { sort, setSortKey, sortRows } = useColumnSort();
   const [generandoCertificacion, setGenerandoCertificacion] = useState(null); // id del colaborador mientras genera su certificación
@@ -55,7 +55,7 @@ export default function ColaboradoresView({ colaboradores, searchQuery, onOpenCo
   const contadorYFiltro = (
     <p>{rows.length} de {colaboradores.length} colaboradores{hasActiveFilters && <> · <button type="button" className="clear-filters-link" onClick={clearFilters}>Limpiar filtros de columna</button></>}</p>
   );
-  const cumpleanos = <CumpleanosBanda colaboradores={colaboradores} canWrite={canWrite} />;
+  const cumpleanos = <CumpleanosBanda colaboradores={colaboradores} canWrite={canWrite} listas={listas} config={config} liveMode={liveMode} notify={notify} />;
   const tabla = (
       <div className="table-wrap">
         <table>
