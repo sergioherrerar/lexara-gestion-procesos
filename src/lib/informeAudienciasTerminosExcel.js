@@ -35,6 +35,7 @@ export function agruparAudienciasTerminosPorProceso(audiencias, terminos, proces
         descripcion: r.Descripcion || '',
         fechaObjetivo,
         abogado: r.Abogado || '',
+        observacion: r.Observacion || '',
         restantes: fechaObjetivo ? diasHabilesRestantes(fechaObjetivo) : null,
       });
     });
@@ -49,25 +50,26 @@ export function agruparAudienciasTerminosPorProceso(audiencias, terminos, proces
 
 function construirHojaAudienciasTerminos(wb, grupos){
   const ws = wb.addWorksheet("Audiencias y Términos");
-  ws.columns = [{width:26},{width:14},{width:38},{width:14},{width:22},{width:24}];
+  ws.columns = [{width:26},{width:14},{width:38},{width:14},{width:22},{width:24},{width:44}];
   ws.properties.outlineProperties = { summaryBelow: true, summaryRight: false };
 
-  const headerRow = ws.addRow(["Proceso","Tipo","Descripción","Fecha","Cuenta regresiva","Abogado"]);
+  const headerRow = ws.addRow(["Proceso","Tipo","Descripción","Fecha","Cuenta regresiva","Abogado","Observación"]);
   headerRow.height = 26;
   headerRow.eachCell(cell => {
     cell.fill = { type:'pattern', pattern:'solid', fgColor:{argb: COLOR_ENCABEZADO_XLSX} };
     cell.font = { name:'Aptos Narrow', size:11, bold:true, color:{argb:'FFFFFFFF'} };
     cell.alignment = { horizontal:'center', vertical:'middle' };
   });
-  ws.autoFilter = 'A1:F1';
+  ws.autoFilter = 'A1:G1';
 
   grupos.forEach(g => {
     const encabezado = g.proceso ? `${g.proceso.Radicado || '—'}${g.proceso.Cliente ? ' — ' + g.proceso.Cliente : ''}` : '(sin proceso asociado)';
-    const filaProceso = ws.addRow([encabezado, "", "", "", "", ""]);
+    const filaProceso = ws.addRow([encabezado, "", "", "", "", "", ""]);
     filaProceso.font = { name:'Aptos Narrow', size:11, bold:true, color:{argb:'FF004941'} };
 
     g.filas.forEach(f => {
-      const fila = ws.addRow(["", f.tipo, f.descripcion, fechaCorta(f.fechaObjetivo), etiquetaCuentaRegresiva(f.restantes), f.abogado || "—"]);
+      const fila = ws.addRow(["", f.tipo, f.descripcion, fechaCorta(f.fechaObjetivo), etiquetaCuentaRegresiva(f.restantes), f.abogado || "—", f.observacion || ""]);
+      fila.getCell(7).alignment = { wrapText:true, vertical:'top' };
       fila.outlineLevel = 1;
       fila.getCell(4).alignment = { horizontal:'right' };
     });

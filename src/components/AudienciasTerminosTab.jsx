@@ -54,7 +54,7 @@ const NUEVO_TIPO_SENTINEL = '__nuevo_tipo_termino__';
 // elegido en el mini calendario, se precarga esa fecha en vez de dejarla
 // vacía; el usuario igual puede cambiarla.
 export function FormularioNuevo({ tipo, procesos, tiposAccion, colaboradores, notify, onCrear, procesoFijo, onCreateTipoTermino, fechaInicial }){
-  const vacio = { numeroCorto:'', proceso: procesoFijo ? procesoFijo.id : null, descripcion:'', fecha: fechaInicial || '', hora:'', diasHabiles:'', abogado:'' };
+  const vacio = { numeroCorto:'', proceso: procesoFijo ? procesoFijo.id : null, descripcion:'', fecha: fechaInicial || '', hora:'', diasHabiles:'', abogado:'', observacion:'' };
   const [form, setForm] = useState(vacio);
   const [guardando, setGuardando] = useState(false);
   const [candidatos, setCandidatos] = useState([]);   // procesos con el número corto escrito, cuando hay más de uno hay que elegir cuál
@@ -120,8 +120,8 @@ export function FormularioNuevo({ tipo, procesos, tiposAccion, colaboradores, no
       // SharePoint) — solo "Audiencia" tiene Abogado (y Link, sin UI propia
       // todavía).
       const payload = tipo === 'audiencias'
-        ? { Proceso: form.proceso, Descripcion: form.descripcion, FechaAudiencia: form.fecha, HoraAudiencia: form.hora, Abogado: form.abogado }
-        : { Proceso: form.proceso, Descripcion: form.descripcion, FechaNotificacion: form.fecha, DiasHabiles: form.diasHabiles, VencimientoTermino: vencimientoCalculado };
+        ? { Proceso: form.proceso, Descripcion: form.descripcion, FechaAudiencia: form.fecha, HoraAudiencia: form.hora, Abogado: form.abogado, Observacion: form.observacion }
+        : { Proceso: form.proceso, Descripcion: form.descripcion, FechaNotificacion: form.fecha, DiasHabiles: form.diasHabiles, VencimientoTermino: vencimientoCalculado, Observacion: form.observacion };
       await onCrear?.(payload);
       setForm(vacio);
     }catch(err){ console.error(err); notify?.(mensajeError(err), 'error'); }
@@ -208,6 +208,10 @@ export function FormularioNuevo({ tipo, procesos, tiposAccion, colaboradores, no
           </select>
         </div>
       )}
+      <div className="field" style={{minWidth:260, flex:'1 1 260px'}}>
+        <label>Observación</label>
+        <input type="text" value={form.observacion} onChange={e => setForm({...form, observacion: e.target.value})} placeholder="Opcional" />
+      </div>
       <IconTextButton icon="add" variant="primary" onClick={handleAgregar} disabled={guardando}>
         {guardando ? "Guardando…" : (tipo === 'audiencias' ? "Agregar audiencia" : "Agregar término")}
       </IconTextButton>
@@ -237,9 +241,9 @@ export function TablaRegistros({ tipo, registros, procesos, colaboradores, notif
   function empezarEdicion(r){
     setEditandoId(r.id);
     setEditDraft(tipo === 'audiencias'
-      ? { Descripcion: r.Descripcion||'', FechaAudiencia: soloFechaISO(r.FechaAudiencia), HoraAudiencia: r.HoraAudiencia||'', Abogado: r.Abogado||'' }
+      ? { Descripcion: r.Descripcion||'', FechaAudiencia: soloFechaISO(r.FechaAudiencia), HoraAudiencia: r.HoraAudiencia||'', Abogado: r.Abogado||'', Observacion: r.Observacion||'' }
       // "Terminos" no tiene columna real de Abogado (confirmado 2026-09-15).
-      : { Descripcion: r.Descripcion||'', FechaNotificacion: soloFechaISO(r.FechaNotificacion), DiasHabiles: r.DiasHabiles||'' }
+      : { Descripcion: r.Descripcion||'', FechaNotificacion: soloFechaISO(r.FechaNotificacion), DiasHabiles: r.DiasHabiles||'', Observacion: r.Observacion||'' }
     );
   }
   async function handleGuardarEdicion(id){
@@ -254,7 +258,7 @@ export function TablaRegistros({ tipo, registros, procesos, colaboradores, notif
 
   // "Terminos" no tiene columna real de Abogado (confirmado 2026-09-15) — la
   // columna/celda solo aparece para Audiencias.
-  const colSpanVacio = (ocultarProceso ? 0 : 1) + 6;
+  const colSpanVacio = (ocultarProceso ? 0 : 1) + 7;
 
   return (
     <div className="table-wrap">
@@ -268,6 +272,7 @@ export function TablaRegistros({ tipo, registros, procesos, colaboradores, notif
             {tipo === 'terminos' && <th>Vencimiento</th>}
             <th>Cuenta regresiva</th>
             {tipo === 'audiencias' && <th>Abogado</th>}
+            <th>Observación</th>
             <th>Acciones</th>
           </tr>
         </thead>
@@ -304,6 +309,7 @@ export function TablaRegistros({ tipo, registros, procesos, colaboradores, notif
                     </select>
                   </td>
                 )}
+                <td><input type="text" style={{minWidth:160}} value={editDraft.Observacion} onChange={e => setEditDraft({...editDraft, Observacion: e.target.value})} /></td>
                 <td style={{display:'flex', gap:6}}>
                   <IconButton icon="checklist" variant="edit" label="Guardar" onClick={() => handleGuardarEdicion(r.id)} />
                   <button type="button" className="btn-secondary" onClick={() => setEditandoId(null)}>Cancelar</button>
@@ -327,6 +333,7 @@ export function TablaRegistros({ tipo, registros, procesos, colaboradores, notif
                 )}
                 <td><span className={"badge badge-" + colorCuentaRegresiva(r.restantes)}>{etiquetaCuentaRegresiva(r.restantes)}</span></td>
                 {tipo === 'audiencias' && <td>{r.Abogado || "—"}</td>}
+                <td style={{maxWidth:260, whiteSpace:'normal'}}>{r.Observacion || "—"}</td>
                 <td style={{display:'flex', gap:6}}>
                   <IconButton icon="edit" variant="edit" label="Editar" onClick={() => empezarEdicion(r)} />
                   <IconButton icon="delete" variant="delete" label="Eliminar" onClick={() => onEliminar?.(r.id)} />

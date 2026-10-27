@@ -1147,8 +1147,9 @@ export const SHAREPOINT_LISTS_CONFIG = [
       {key:"HoraAudiencia", label:"Hora de la audiencia", hint:["hora audiencia","hora de audiencia","hora"]},
       {key:"Abogado", label:"Abogado responsable", hint:["abogado audiencia","abogado","responsable"]},
       {key:"Link", label:"Link", hint:["link"]},
-      // "Observaciones" quitado 2026-09-15: confirmado por el usuario contra
-      // la lista real (Configuración) que esa columna no existe en "Audiencia".
+      // 2026-10-27: la lista real "Audiencia" ya tiene la columna «Observación» (antes no existía, por eso se había quitado). Sin mapeo fijo a
+      // propósito: se adivina sola al conectar por el nombre y se puede confirmar en Configuración → mapeo de columnas.
+      {key:"Observacion", label:"Observación", hint:["observacion","observación","observaciones"]},
     ],
     // Mapeo real confirmado por el usuario 2026-09-15 (exportado desde
     // Configuración) — se deja fijo para no depender de que se vuelva a
@@ -1184,6 +1185,8 @@ export const SHAREPOINT_LISTS_CONFIG = [
       {key:"FechaNotificacion", label:"Fecha de notificación", hint:["fecha notificacion","fecha de notificacion","fecha de notificación","fecha"], required:true},
       {key:"DiasHabiles", label:"Días hábiles", hint:["dias habiles","días hábiles","dias"]},
       {key:"VencimientoTermino", label:"Vencimiento", hint:["vencimiento termino","vencimiento del termino","fecha de vencimiento","vencimiento"]},
+      // 2026-10-27: la lista real "Terminos" ya tiene la columna «Observacion» (antes no existía). Sin mapeo fijo: se adivina al conectar y se confirma en Configuración.
+      {key:"Observacion", label:"Observación", hint:["observacion","observación","observaciones"]},
     ],
     // Mapeo real confirmado por el usuario 2026-09-15 (exportado desde
     // Configuración) — a propósito SIN "Abogado" (esa columna no existe de
