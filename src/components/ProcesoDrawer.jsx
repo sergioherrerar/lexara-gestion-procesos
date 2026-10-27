@@ -1,3 +1,4 @@
+import { facturaDeOrden } from '../lib/cruceFacturasOrdenes';
 import { useState, useEffect } from 'react';
 import {
   stripHtml, estadoComoTexto, estadoBadgeClass, findClienteByNombre,
@@ -682,7 +683,7 @@ export default function ProcesoDrawer({ proceso, clientes, colaboradores, factur
     {key:'numero', label:'No. orden', render: oc => ordenCompraNumero(oc)},
     {key:'fecha', label:'Fecha', render: oc => fmtDate(fechaOrdenable(oc))},
     {key:'total', label:'Total', render: oc => fmtMonto(computeOrdenCompraTotals(oc).total)},
-    {key:'factura', label:'Factura', render: oc => { const f = facturaForOrdenCompra(facturas, oc); return f ? facturaNumero(f) : "—"; }},
+    {key:'factura', label:'Factura', render: oc => { const f = facturaDeOrden(facturas, oc, ordenesCompra).factura; return f ? facturaNumero(f) : "—"; }},
   ];
   const FORMA_PAGO_COLUMNS = [
     {key:'honorarios', label:'Honorarios', render: fp => fmtMonto(parseMonto(fp.Honorarios))},

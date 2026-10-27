@@ -8,6 +8,7 @@ import {
   parseMonto, clienteForFactura, clienteForOrdenCompra, facturaNumero, ordenCompraNumero,
   computeFacturaTotals, computeOrdenCompraTotals, facturaForOrdenCompra,
 } from './graph';
+import { buscarFacturasParaOrdenes } from './cruceFacturasOrdenes';
 
 const COLOR_ENCABEZADO = "FF004941"; // var(--verde-oscuro), mismo verde institucional de siempre.
 
@@ -87,6 +88,8 @@ export async function generarInformeOrdenesCompraExcel(ordenesCompra, clientes, 
   const { default: ExcelJS } = await import('exceljs');
   const wb = new ExcelJS.Workbook();
   const ws = wb.addWorksheet("Órdenes de compra");
+  // El Excel y el portal muestran la misma factura: sin un cruce dado, se usa el mismo cruce flexible que ve el portal.
+  cruce = cruce || buscarFacturasParaOrdenes(ordenesCompra, facturas);
 
   const columnas = ["No. Orden","Contrato","Proceso","Cliente","Fecha","Etapa contrato","Subtotal","IVA","Total","Valor a pagar","Factura relacionada","Fecha factura","Cruce"];
   const anchos = [14, 16, 20, 30, 14, 24, 18, 16, 18, 18, 18, 16, 16];

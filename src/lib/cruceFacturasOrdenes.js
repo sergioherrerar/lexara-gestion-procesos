@@ -64,6 +64,28 @@ export function buscarFacturasParaOrdenes(ordenes, facturas){
   return resultado;
 }
 
+// Para el portal (2026-10-27, «así queda en el Excel pero no en el portal»): la factura de UNA orden con el mismo cruce flexible, calculado una sola vez
+// por cada par de listas (facturas, órdenes) y reutilizado fila por fila. Devuelve { factura, metodo } (metodo '' si no hay factura).
+const cachePortal = new WeakMap();
+export function facturaDeOrden(facturas, oc, ordenes){
+  if(!oc) return { factura: null, metodo: '' };
+  const lista = facturas || [];
+  if(ordenes && oc.id != null){
+    let e = cachePortal.get(lista);
+    if(!e || e.ordenes !== ordenes){ e = { ordenes, cruce: buscarFacturasParaOrdenes(ordenes, lista) }; cachePortal.set(lista, e); }
+    const r = e.cruce.get(oc.id);
+    if(r) return r;
+  }
+  const exacta = facturaForOrdenCompra(lista, oc);
+  return { factura: exacta, metodo: exacta ? 'Exacto' : '' };
+}
+export function textoCruce(metodo){
+  return metodo === 'Aproximado' ? 'Cruce aproximado: mismo contrato y proceso, con la etapa escrita distinto'
+    : metodo === 'Por valor' ? 'Cruce por valor: mismo contrato y mismo valor'
+    : metodo === 'Por etapa' ? 'Cruce por etapa: mismo contrato y misma etapa'
+    : '';
+}
+
 // Resumen para avisarle al usuario qué pasó con la búsqueda.
 export function resumenCruce(ordenes, cruce, facturas){
   let exactas = 0, nuevas = 0, sin = 0;

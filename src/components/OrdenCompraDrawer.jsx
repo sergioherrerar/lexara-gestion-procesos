@@ -1,5 +1,6 @@
+import { facturaDeOrden, textoCruce } from '../lib/cruceFacturasOrdenes';
 import { useState, useEffect } from 'react';
-import { clienteForOrdenCompra, procesoForOrdenCompra, ordenCompraNumero, facturaForOrdenCompra, facturaNumero, parseMonto, fmtMonto, IVA_RATE_DEFAULT, ETAPA_CONTRATO_OPTIONS, nombreArchivoSeguro, mensajeError } from '../lib/graph';
+import { clienteForOrdenCompra, procesoForOrdenCompra, ordenCompraNumero, facturaForOrdenCompra, facturaNumero, fmtDate, parseMonto, fmtMonto, IVA_RATE_DEFAULT, ETAPA_CONTRATO_OPTIONS, nombreArchivoSeguro, mensajeError } from '../lib/graph';
 import { generarPdfDesdeNodo, precargarImagen, precalentarLibreriasPdf } from '../lib/generarPdfDocumento';
 import { obtenerQrRedesDataUrl } from '../lib/qr';
 import { useEscapeToClose } from '../hooks/useEscapeToClose';
@@ -40,7 +41,7 @@ function computeLive(form){
   return { subtotal, iva, total: subtotal + iva };
 }
 
-export default function OrdenCompraDrawer({ ordenCompra, clientes, procesos, facturas, liveMode, onClose, onSave, onUpdateCliente, autoPrint, onAutoPrinted, saving, notify }){
+export default function OrdenCompraDrawer({ ordenCompra, clientes, procesos, facturas, ordenesCompra, liveMode, onClose, onSave, onUpdateCliente, autoPrint, onAutoPrinted, saving, notify }){
   const [form, setForm] = useState(null);
   const [generandoPdf, setGenerandoPdf] = useState(false);
 
@@ -120,7 +121,12 @@ export default function OrdenCompraDrawer({ ordenCompra, clientes, procesos, fac
 
   const linkedCliente = clienteForOrdenCompra(clientes, form);
   const linkedProceso = procesoForOrdenCompra(procesos, form);
-  const linkedFactura = facturaForOrdenCompra(facturas, form);
+  // Cruce exacto con lo que se está editando; si no hay, el cruce flexible de la orden guardada (mientras no se haya cambiado Contrato/Proceso/Etapa).
+  const facturaExacta = facturaForOrdenCompra(facturas, form);
+  const sinCambiarClaves = ordenCompra && form.Contrato === ordenCompra.Contrato && form.Proceso === ordenCompra.Proceso && form.EtapaContrato === ordenCompra.EtapaContrato;
+  const cruceFlexible = !facturaExacta && sinCambiarClaves ? facturaDeOrden(facturas, ordenCompra, ordenesCompra) : { factura: null, metodo: '' };
+  const linkedFactura = facturaExacta || cruceFlexible.factura;
+  const metodoFactura = facturaExacta ? 'Exacto' : cruceFlexible.metodo;
   const totals = computeLive(form);
   const numero = ordenCompraNumero(ordenCompra);
   const ahora = new Date();
@@ -192,7 +198,7 @@ export default function OrdenCompraDrawer({ ordenCompra, clientes, procesos, fac
               <div className="field">
                 <label>Factura relacionada</label>
                 <div className="field-info" style={{marginTop:0}}>
-                  {linkedFactura ? `No. ${facturaNumero(linkedFactura)}` : "— sin factura con este contrato —"}
+                  {linkedFactura ? `No. ${facturaNumero(linkedFactura)}${linkedFactura.Fecha ? ' · ' + fmtDate(linkedFactura.Fecha) : ''}${metodoFactura && metodoFactura !== 'Exacto' ? ' (≈ ' + textoCruce(metodoFactura).toLowerCase() + ' — revísala)' : ''}` : "— sin factura con este contrato —"}
                 </div>
               </div>
               <div className="field-grid-3" style={{gridColumn:'1/-1'}}>

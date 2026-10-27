@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { ICON_SVG } from '../config';
-import { clienteForOrdenCompra, procesoForOrdenCompra, ordenCompraNumero, computeOrdenCompraTotals, facturaForOrdenCompra, facturaNumero, fmtMonto, fmtDate, fechaFromPartes } from '../lib/graph';
+import { clienteForOrdenCompra, procesoForOrdenCompra, ordenCompraNumero, computeOrdenCompraTotals, facturaNumero, fmtMonto, fmtDate, fechaFromPartes } from '../lib/graph';
+import { facturaDeOrden, textoCruce } from '../lib/cruceFacturasOrdenes';
 import IconButton, { IconTextButton } from './IconButton';
 import ColumnHeaderMenu from './ColumnHeaderMenu';
 import { useColumnFilters } from '../hooks/useColumnFilters';
@@ -24,9 +25,9 @@ export default function OrdenesCompraView({ ordenesCompra, clientes, procesos, f
     {key:'subtotal', label:'Subtotal', value: oc => fmtMonto(computeOrdenCompraTotals(oc).subtotal)},
     {key:'iva', label:'IVA', value: oc => fmtMonto(computeOrdenCompraTotals(oc).iva)},
     {key:'total', label:'Total', value: oc => fmtMonto(computeOrdenCompraTotals(oc).total)},
-    {key:'factura', label:'Factura', value: oc => { const f = facturaForOrdenCompra(facturas, oc); return f ? facturaNumero(f) : ""; }},
+    {key:'factura', label:'Factura', value: oc => { const f = facturaDeOrden(facturas, oc, ordenesCompra).factura; return f ? facturaNumero(f) : ""; }},
     {key:'acciones', label:'Acciones', filterable:false},
-  ], [clientes, procesos, facturas]);
+  ], [clientes, procesos, facturas, ordenesCompra]);
 
   const query = (searchQuery||"").trim().toLowerCase();
   const rows = ordenesCompra.filter(oc => {
@@ -62,7 +63,7 @@ export default function OrdenesCompraView({ ordenesCompra, clientes, procesos, f
             {sortedRows.length ? sortedRows.map(oc => {
               const cliente = clienteForOrdenCompra(clientes, oc);
               const proceso = procesoForOrdenCompra(procesos, oc);
-              const factura = facturaForOrdenCompra(facturas, oc);
+              const { factura, metodo: metodoFactura } = facturaDeOrden(facturas, oc, ordenesCompra);
               const totals = computeOrdenCompraTotals(oc);
               return (
                 <tr
@@ -79,7 +80,13 @@ export default function OrdenesCompraView({ ordenesCompra, clientes, procesos, f
                   <td>{fmtMonto(totals.subtotal)}</td>
                   <td>{fmtMonto(totals.iva)}</td>
                   <td>{fmtMonto(totals.total)}</td>
-                  <td>{factura ? facturaNumero(factura) : "—"}</td>
+                  <td>{factura ? (
+                    <>
+                      {facturaNumero(factura)}
+                      {metodoFactura && metodoFactura !== 'Exacto' && <span className="badge badge-amarillo" style={{marginLeft:6}} title={textoCruce(metodoFactura) + ' — revísala'}>≈</span>}
+                      {factura.Fecha && <div className="save-hint" style={{margin:0}}>{fmtDate(factura.Fecha)}</div>}
+                    </>
+                  ) : "—"}</td>
                   <td style={{whiteSpace:'nowrap'}}>
                     <div className="row-actions">
                       <IconButton icon="edit" variant="edit" label="Ver / editar orden de compra" onClick={e => { e.stopPropagation(); onOpenOrdenCompra(oc.id); }} />

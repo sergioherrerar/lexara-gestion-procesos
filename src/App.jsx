@@ -362,6 +362,7 @@ export default function App(){
         clientes={app.clientes}
         procesos={app.procesos}
         facturas={app.facturas}
+        ordenesCompra={app.ordenesCompra}
         liveMode={app.liveMode}
         onClose={app.closeOrdenCompraDrawer}
         onSave={app.saveOrdenCompra}
