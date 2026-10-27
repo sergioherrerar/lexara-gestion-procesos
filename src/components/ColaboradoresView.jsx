@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import CumpleanosBanda from './CumpleanosBanda';
 import { tipoContratoCanonico } from '../lib/tipoContrato';
 import { mensajeError, idCifrado } from '../lib/graph';
 import { ICON_SVG } from '../config';
@@ -54,6 +55,7 @@ export default function ColaboradoresView({ colaboradores, searchQuery, onOpenCo
   const contadorYFiltro = (
     <p>{rows.length} de {colaboradores.length} colaboradores{hasActiveFilters && <> · <button type="button" className="clear-filters-link" onClick={clearFilters}>Limpiar filtros de columna</button></>}</p>
   );
+  const cumpleanos = <CumpleanosBanda colaboradores={colaboradores} canWrite={canWrite} />;
   const tabla = (
       <div className="table-wrap">
         <table>
@@ -102,6 +104,7 @@ export default function ColaboradoresView({ colaboradores, searchQuery, onOpenCo
           <div>{contadorYFiltro}</div>
           {canWrite && <IconTextButton icon="add" variant="primary" onClick={onCreateColaborador}>Nuevo colaborador</IconTextButton>}
         </div>
+        {cumpleanos}
         {tabla}
       </div>
     );
@@ -115,6 +118,7 @@ export default function ColaboradoresView({ colaboradores, searchQuery, onOpenCo
         </div>
         {canWrite && <IconTextButton icon="add" variant="primary" onClick={onCreateColaborador}>Nuevo colaborador</IconTextButton>}
       </div>
+      {cumpleanos}
       {tabla}
     </div>
   );

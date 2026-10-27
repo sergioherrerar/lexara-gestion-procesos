@@ -2033,3 +2033,21 @@
   /* Aviso amarillo (triángulo de advertencia) en la lista de Vencimientos cuando el registro tiene observación. */
   .detalle-con-aviso{display:flex; align-items:flex-start; gap:8px;}
   .icono-aviso-obs{flex:0 0 auto; margin-top:1px; filter:drop-shadow(0 1px 1px rgba(120,80,0,.25));}
+
+  /* ---- Próximos cumpleaños (Colaboradores MD) ---- */
+  .cumple-band{
+    margin:0 0 16px; padding:16px 18px 18px; border-radius:12px; color:#fff; box-shadow:var(--shadow);
+    background:
+      radial-gradient(circle at 96% 0%, rgba(251,188,51,.28), transparent 42%),
+      linear-gradient(135deg, var(--verde-oscuro-2) 0%, var(--verde-oscuro) 62%, #0a6a5f 100%);
+  }
+  .cumple-band h2{margin:0 0 12px; font-family:var(--font-display); font-size:17px; font-weight:700; color:#fff;}
+  .cumple-grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:10px;}
+  .cumple-item{display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:10px; background:rgba(255,255,255,.10); border:1px solid rgba(255,255,255,.20);}
+  .cumple-hoy{background:rgba(251,188,51,.22); border-color:rgba(251,188,51,.7);}
+  .cumple-icono{flex:0 0 auto; font-size:22px; line-height:1;}
+  .cumple-texto{flex:1 1 auto; min-width:0; display:flex; flex-direction:column; gap:1px;}
+  .cumple-texto strong{font-size:13.5px; font-weight:700; line-height:1.25; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .cumple-texto small{font-size:12px; color:rgba(255,255,255,.76);}
+  .cumple-dias{flex:0 0 auto; font-size:12px; font-weight:700; padding:5px 10px; border-radius:999px; background:var(--amarillo); color:var(--verde-oscuro-2); white-space:nowrap;}
+  @media (max-width:760px){ .cumple-grid{grid-template-columns:1fr;} }

@@ -665,6 +665,9 @@ export const SHAREPOINT_LISTS_CONFIG = [
       {key:"Cargo", label:"Cargo", hint:["cargo"]},
       {key:"FechaIngreso", label:"Fecha de ingreso", hint:["fecha de ingreso","fecha ingreso"]},
       {key:"FechaRetiro", label:"Fecha de retiro", hint:["fecha de retiro","fecha retiro"]},
+      // 2026-10-28: fecha de nacimiento para la cuenta regresiva de cumpleaños (Colaboradores MD). Sin mapeo fijo: se adivina al conectar por el nombre
+      // de la columna de SharePoint y se confirma en Configuración.
+      {key:"FechaNacimiento", label:"Fecha de nacimiento", hint:["fecha de nacimiento","fecha nacimiento","nacimiento","cumpleanos","cumpleaños"]},
     ],
     mapping: {
       Nombre: "Nombre",
@@ -1365,10 +1368,10 @@ export const DEMO_ORDENES_COMPRA = [
 // Tutelas): sin esto esas listas salían vacías en demo, aunque en producción
 // sí funcionaran. Valores ficticios, no representan el Cargo real de nadie.
 export const DEMO_COLABORADORES = [
-  {id:1, Nombre:"Monica Paola Gómez", TipoIdentificacion:"C.C.", Identificacion:"40.039.240", Telefono:"+57 312 4420026", Direccion:"Carrera 56B", Correo:"Gerencia@lexaraabogados.com", Activo:true, Rol:"Jefe", Cargo:"Contador Publico", FechaIngreso:"2021-01-01"},
-  {id:2, Nombre:"Sergio Alexander Herrera", TipoIdentificacion:"C.C.", Identificacion:"80.728.333", Telefono:"+57 310 4380043", Direccion:"Calle 128 No 87", Correo:"Soporte@lexaraabogados.com", Activo:true, Rol:"Administrador", Cargo:"Analista de Help Desk", FechaIngreso:"2023-01-10"},
+  {id:1, Nombre:"Monica Paola Gómez", TipoIdentificacion:"C.C.", Identificacion:"40.039.240", Telefono:"+57 312 4420026", Direccion:"Carrera 56B", Correo:"Gerencia@lexaraabogados.com", Activo:true, Rol:"Jefe", Cargo:"Contador Publico", FechaIngreso:"2021-01-01", FechaNacimiento:"1984-11-02"},
+  {id:2, Nombre:"Sergio Alexander Herrera", TipoIdentificacion:"C.C.", Identificacion:"80.728.333", Telefono:"+57 310 4380043", Direccion:"Calle 128 No 87", Correo:"Soporte@lexaraabogados.com", Activo:true, Rol:"Administrador", Cargo:"Analista de Help Desk", FechaIngreso:"2023-01-10", FechaNacimiento:"1990-02-29"},
   {id:3, Nombre:"Dahiana Camila Pedraza", TipoIdentificacion:"C.C.", Identificacion:"1.014.300.118", Telefono:"+57 3202751824", Direccion:"Cll 69a #105-35", Correo:"dcpedrazap@lexaraabogados.com", Activo:true, Rol:"Colaborador", Cargo:"Abogado Especialista", FechaIngreso:"2024-01-15"},
-  {id:4, Nombre:"Daniel Santiago Flechas", TipoIdentificacion:"C.C.", Identificacion:"1.032.502.681", Telefono:"+57 310 4112130", Direccion:"Carrera 49B", Correo:"Asesoriajuridica@lexaraabogados.com", Activo:true, Rol:"Colaborador", Cargo:"Abogado Procesos", FechaIngreso:"2023-02-07"},
+  {id:4, Nombre:"Daniel Santiago Flechas", TipoIdentificacion:"C.C.", Identificacion:"1.032.502.681", Telefono:"+57 310 4112130", Direccion:"Carrera 49B", Correo:"Asesoriajuridica@lexaraabogados.com", Activo:true, Rol:"Colaborador", Cargo:"Abogado Procesos", FechaIngreso:"2023-02-07", FechaNacimiento:"1996-10-30"},
   {id:5, Nombre:"Ariana Andrea Torres", TipoIdentificacion:"C.C", Identificacion:"1.006.415.925", Telefono:"+57 3124720", Direccion:"Calle 27a #33-6", Correo:"Tutelas@lexaraabogados.com", Activo:true, Rol:"Colaborador", Cargo:"Abogado Procesos", FechaIngreso:"2024-08-26"},
 ];
 

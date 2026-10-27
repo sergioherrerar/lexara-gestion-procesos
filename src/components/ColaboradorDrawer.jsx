@@ -43,6 +43,7 @@ function emptyForm(colaborador){
     // (y al guardar podía borrarla). Reporte del usuario 2026-10-20 con Miguel Angel Torres Ospina.
     FechaIngreso: String(colaborador.FechaIngreso || "").slice(0, 10),
     FechaRetiro: String(colaborador.FechaRetiro || "").slice(0, 10),
+    FechaNacimiento: String(colaborador.FechaNacimiento || "").slice(0, 10),
     // Si "Módulos permitidos" todavía está vacío en SharePoint (colaboradores
     // creados antes de este cambio), las casillas arrancan marcadas con lo
     // que ese Rol ya le daba por defecto (ver modulosPermitidosDe en
@@ -131,6 +132,7 @@ export default function ColaboradorDrawer({ colaborador, liveMode, onClose, onSa
                 </select>
               </div>
               <div className="field"><label>Fecha de ingreso</label><input type="date" value={form.FechaIngreso} onChange={e => setField('FechaIngreso', e.target.value)} readOnly={!canWrite} /></div>
+              <div className="field"><label>Fecha de nacimiento</label><input type="date" value={form.FechaNacimiento} onChange={e => setField('FechaNacimiento', e.target.value)} readOnly={!canWrite} /></div>
               <div className="field"><label>Fecha de retiro</label><input type="date" value={form.FechaRetiro} onChange={e => setField('FechaRetiro', e.target.value)} readOnly={!canWrite} /></div>
             </div>
           </div>

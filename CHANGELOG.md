@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-10-29 (109)
+- **Fecha de nacimiento en Colaboradores MD y cuenta regresiva de cumpleaños** — pedido del usuario. La ficha de cada colaborador tiene el campo nuevo «Fecha de nacimiento» (mapeable en Configuración; se adivina sola al conectar por el nombre de la columna). Encima de la tabla de Colaboradores MD aparece la banda verde **«Próximos cumpleaños»** con los colaboradores ACTIVOS que tienen fecha, del más próximo al más lejano: nombre, día y mes, la edad que cumple y una etiqueta amarilla («¡Hoy cumple años!», «Mañana» o «Faltan N días»); el cumpleaños de hoy se resalta. Quien nació un 29 de febrero celebra el 28 en los años no bisiestos. Si nadie tiene fecha todavía, se muestra una nota que explica dónde agregarla. Requiere que la lista «Equipo MD» de SharePoint tenga una columna de tipo Fecha llamada «Fecha de nacimiento».
+
 ## 2026-10-28 (108)
 - **Triángulo amarillo de advertencia en los vencimientos que tienen observación** — pedido del usuario. En la lista «Todos» de Vencimientos, cada pendiente, audiencia o término con observación lleva un triángulo amarillo con signo de exclamación a la izquierda del detalle (con el texto «Tiene observación» al pasar el cursor y para lectores de pantalla), para que se note de un vistazo cuáles traen algo que leer. Los que no tienen observación quedan igual.
 
