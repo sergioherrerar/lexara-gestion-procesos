@@ -355,6 +355,19 @@
   .view-header h1{font-family:var(--font-display); font-size:25px; font-weight:600; margin:0 0 4px; color:var(--verde-oscuro);}
   .view-header p{margin:0; color:var(--texto-suave); font-size:13.5px;}
 
+  /* Énfasis al cambiar de sección (2026-10-29, pedido del usuario: «resaltar cuando se cambia entre secciones de forma profesional»). Cada módulo se monta
+     de nuevo al navegar, así que estas animaciones corren una sola vez al entrar (no al actualizarse los datos, p. ej. el contador «112 de 168 procesos»):
+     el título entra con un leve desplazamiento, una línea dorada se dibuja debajo y queda como marca fija de la sección, y el subtítulo aparece después. */
+  .view-header h1{position:relative; padding-bottom:9px; animation:seccion-titulo .42s cubic-bezier(.22,.8,.3,1) both;}
+  .view-header h1::after{content:""; position:absolute; left:0; bottom:0; width:46px; height:3px; border-radius:3px; background:var(--amarillo); transform-origin:left center; animation:seccion-linea .55s cubic-bezier(.22,.8,.3,1) .16s both;}
+  .view-header p{animation:seccion-subtitulo .4s ease .22s both;}
+  @keyframes seccion-titulo{ from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:none;} }
+  @keyframes seccion-linea{ from{transform:scaleX(0);} to{transform:scaleX(1);} }
+  @keyframes seccion-subtitulo{ from{opacity:0;} to{opacity:1;} }
+  @media (prefers-reduced-motion: reduce){
+    .view-header h1, .view-header h1::after, .view-header p{animation:none;}
+  }
+
   /* ---------- Dashboard ---------- */
   /* auto-fit (2026-09-22, tras quitar Clientes/Facturación del Dashboard —
      "no debe salir nada administrativo") — con repeat(4,1fr) a secas, 2
