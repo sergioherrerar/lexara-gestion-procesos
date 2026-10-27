@@ -18,6 +18,7 @@ import { generarInformeGeneralProcesosExcel } from '../lib/informeGeneral';
 import { agruparPorAbogado, filtrarTutelasPorMes, generarInformeAbogadosTutelasExcel, generarPDFAbogadosTutelas, colorDeTipoRespuesta, MESES_NOMBRES } from '../lib/informeAbogadosTutelas';
 import StackedBarChart from './StackedBarChart';
 import { clasificarHorasExtra, soloFecha, redondear, filtrarHorasExtrasPorMes } from '../lib/horasExtras';
+import SolicitudVacacionesTab from './SolicitudVacacionesTab';
 import RevisionProcesosTab from './RevisionProcesosTab';
 import CruceArchivosTab from './CruceArchivosTab';
 import CrearLinkCompartirTab from './CrearLinkCompartirTab';
@@ -69,6 +70,7 @@ const TABS = [
   {key:'tutelas', label:'Tutelas'},
   {key:'procesos', label:'Procesos Judiciales'},
   {key:'horasExtras', label:'Horas Extras'},
+  {key:'vacaciones', label:'Solicitud de vacaciones'},
   {key:'herramientas', label:'Herramientas'},
 ];
 const SUBTABS_CLIENTES_PAGOS = [
@@ -98,7 +100,7 @@ const SUBTABS_HERRAMIENTAS = [
   {key:'diligenciamientoFormatos', label:'Diligenciamiento Formatos Empresas'},
 ];
 
-export default function InformesView({ procesos, clientes, facturas, desistimientos, tutelas, valoresEntidad, notify, liveMode, config, requestConfirm, corregirEntidadFaltanteTutelas, colaboradores, onCreateHoraExtra, onEditarHoraExtra, onEliminarHoraExtra, horasExtras, tasasInteres, ipcMensual, onCrearTasaInteres, onEditarTasaInteres, onEliminarTasaInteres, onCrearIPC, onEditarIPC, onEliminarIPC }){
+export default function InformesView({ procesos, clientes, facturas, desistimientos, tutelas, valoresEntidad, notify, liveMode, config, requestConfirm, corregirEntidadFaltanteTutelas, colaboradores, onCreateHoraExtra, onEditarHoraExtra, onEliminarHoraExtra, horasExtras, vacacionesPeriodos, onSolicitarVacaciones, onEditarPeriodoVacaciones, onEliminarPeriodoVacaciones, onReenviarSolicitudVacaciones, tasasInteres, ipcMensual, onCrearTasaInteres, onEditarTasaInteres, onEliminarTasaInteres, onCrearIPC, onEditarIPC, onEliminarIPC }){
   const [tab, setTab] = useState('clientesPagos');
   const [subTabClientesPagos, setSubTabClientesPagos] = useState('informeCliente');
   const [subTabTutelas, setSubTabTutelas] = useState('informeDiario');
@@ -500,7 +502,7 @@ export default function InformesView({ procesos, clientes, facturas, desistimien
       <div className="view-header">
         <div>
           <h1>Informes</h1>
-          <p>Informes formales por Entidad, Tutelas y registro de Horas Extras.</p>
+          <p>Informes formales por Entidad, Tutelas, registro de Horas Extras y solicitud de vacaciones.</p>
         </div>
       </div>
 
@@ -742,6 +744,14 @@ export default function InformesView({ procesos, clientes, facturas, desistimien
       </div>
       )}
       </div>
+      )}
+
+      {tab==='vacaciones' && (
+        <SolicitudVacacionesTab
+          colaboradores={colaboradores} vacacionesPeriodos={vacacionesPeriodos}
+          onSolicitar={onSolicitarVacaciones} onEditar={onEditarPeriodoVacaciones} onEliminar={onEliminarPeriodoVacaciones} onReenviar={onReenviarSolicitudVacaciones}
+          liveMode={liveMode} notify={notify}
+        />
       )}
 
       {tab==='tutelas' && (

@@ -72,6 +72,31 @@ export function agruparVacacionesPorColaborador(colaboradores, periodos){
     .sort((a,b) => (a.nombre||"").localeCompare(b.nombre||""));
 }
 
+// Solicitudes de vacaciones (2026-10-29, pedido del usuario: «muy parecido a Horas Extras»): el colaborador la pide desde Informes y Administración la aprueba con la
+// casilla «Aprobación» de la lista. Los períodos que ya existían antes de esta fecha (el historial cargado a mano) no son solicitudes: se muestran como «Histórico»
+// aunque la columna nueva quede en «No» por defecto — por eso se compara con la fecha de creación del registro en SharePoint.
+export const FECHA_INICIO_SOLICITUDES = '2026-10-27';
+const APROBADOS = new Set(['si', 'sí', 'true', 'aprobada', 'aprobado']);
+const PENDIENTES = new Set(['no', 'false', 'pendiente']);
+// 'aprobada' | 'pendiente' | 'rechazada' | 'historico'
+export function estadoPeriodo(p){
+  const v = p?.Aprobacion;
+  const t = String(v === true ? 'true' : v === false ? 'false' : (v ?? '')).trim().toLowerCase();
+  if(APROBADOS.has(t)) return 'aprobada';
+  if(t.startsWith('rechazad')) return 'rechazada';
+  if(PENDIENTES.has(t)){
+    const creado = String(p?.createdDateTime || '').slice(0, 10);
+    return creado && creado < FECHA_INICIO_SOLICITUDES ? 'historico' : 'pendiente';
+  }
+  return 'historico';
+}
+export const ETIQUETA_ESTADO_PERIODO = { aprobada: 'Aprobada', pendiente: 'Pendiente de aprobación', rechazada: 'Rechazada', historico: 'Histórico' };
+export const CLASE_ESTADO_PERIODO = { aprobada: 'badge-verde', pendiente: 'badge-naranja', rechazada: 'badge-rojo', historico: 'badge-gris' };
+export function solicitudesDeVacaciones(periodos){
+  return (periodos || []).filter(p => estadoPeriodo(p) !== 'historico')
+    .sort((a, b) => String(b.FechaInicio || '').localeCompare(String(a.FechaInicio || '')));
+}
+
 // Personas ACTIVAS que no salen en la tabla de Vacaciones y por qué (2026-10-19, pedido del usuario: «que avise quién falta»): contratistas o sin Fecha de Ingreso.
 // Los inactivos no se listan (son personas que ya no están).
 export function colaboradoresFueraDeVacaciones(colaboradores){

@@ -2,6 +2,8 @@ import { useState, useCallback, useEffect } from 'react';
 import { INITIAL_CONFIG, SHAREPOINT_LISTS_CONFIG, DEMO_PROCESOS, DEMO_CLIENTES, DEMO_FACTURAS, DEMO_ORDENES_COMPRA, DEMO_COLABORADORES, DEMO_FORMAS_PAGO, DEMO_DESISTIMIENTOS, DEMO_TIPOS_ACCION, DEMO_TUTELAS, DEMO_TEMAS, DEMO_VALORES_ENTIDAD, DEMO_HORAS_EXTRAS, DEMO_VACACIONES_PERIODOS, DEMO_PROVEEDORES_GASTOS, DEMO_CUENTAS_COBRO_GASTOS, DEMO_PAGOS_POR_REALIZAR, DEMO_GASTOS, DEMO_TASAS_INTERES, DEMO_IPC, DEMO_AUDIENCIAS, DEMO_TERMINOS, DEMO_PENDIENTES, CALENDARIO_AUDIENCIAS_TERMINOS, RUTAS_CARPETAS_ENTIDAD } from '../config';
 import * as Graph from '../lib/graph';
 import { canWrite as canWriteForColaborador, modulosPermitidosDe, MODULOS_DISPONIBLES } from '../lib/permissions';
+import { agruparVacacionesPorColaborador } from '../lib/vacaciones';
+import { construirCorreoSolicitudVacaciones, CORREO_GERENCIA, CORREO_SOPORTE } from '../lib/solicitudVacaciones';
 
 // El mapeo de columnas que se confirma en Configuración vivía solo en memoria
 // de React — al recargar la página o volver a iniciar sesión normal (sin
@@ -1718,8 +1720,16 @@ export function useLexaraApp(){
   // Vacaciones — reemplaza el Excel real (2026-08-31). Una fila por período
   // tomado, mismo patrón simple "sin panel propio" que createTema. Ver
   // lib/vacaciones.js (los totales se calculan ahí, no acá).
-  async function crearPeriodoVacaciones(fields){
-    const nuevo = { id: 'tmp-' + Math.random().toString(36).slice(2), ...fields };
+  // Valor de «Aprobación» según el tipo REAL de la columna en SharePoint: Sí/No (como «Aprobado» de Horas Extras) → true/false; texto o elección → «Aprobada»/«Pendiente».
+  function valorAprobacionVacaciones(aprobada){
+    const list = listByKey('vacacionesPeriodos');
+    const col = (list?.columns || []).find(c => c.name === list?.mapping?.Aprobacion);
+    return (col && !col.boolean) ? (aprobada ? 'Aprobada' : 'Pendiente') : !!aprobada;
+  }
+  // Lo que se agrega directo en Administración (botón «Agregar período») queda aprobado: quien lo agrega es quien aprueba. Las solicitudes de Informes entran con
+  // Aprobación pendiente (ver solicitarVacaciones). `createdDateTime` distingue las solicitudes nuevas del historial (ver estadoPeriodo en lib/vacaciones.js).
+  async function crearPeriodoVacaciones(fields, { silencioso = false } = {}){
+    const nuevo = { id: 'tmp-' + Math.random().toString(36).slice(2), createdDateTime: new Date().toISOString(), Aprobacion: valorAprobacionVacaciones(true), ...fields };
     if(liveMode){
       setSaving(true);
       const list = listByKey('vacacionesPeriodos');
@@ -1731,8 +1741,60 @@ export function useLexaraApp(){
       setSaving(false);
     }
     setVacacionesPeriodos(prev => [...prev, nuevo]);
-    notify("Creado con éxito en Lexara", 'success');
+    if(!silencioso) notify("Creado con éxito en Lexara", 'success');
     return nuevo;
+  }
+  // Casilla «Aprobación» (Administración → Vacaciones), igual que aprobarHoraExtra.
+  async function aprobarPeriodoVacaciones(id, aprobada){
+    const periodo = vacacionesPeriodos.find(p => p.id===id);
+    if(!periodo) return;
+    const valor = valorAprobacionVacaciones(aprobada);
+    setVacacionesPeriodos(prev => prev.map(p => p.id===id ? {...p, Aprobacion: valor} : p));
+    if(liveMode){
+      setSaving(true);
+      const list = listByKey('vacacionesPeriodos');
+      try{
+        const fields = await Graph.graphFieldsFromUpdates(list.siteId || siteId, list, { Aprobacion: valor });
+        if(!Object.keys(fields).length) throw new Error('La lista Vacaciones no tiene mapeada la columna «Aprobación» — confírmala en Configuración.');
+        await Graph.graphFetch(`/sites/${list.siteId || siteId}/lists/${list.listId}/items/${periodo._graphId || periodo.id}/fields`, {
+          method:"PATCH", body: JSON.stringify(fields)
+        });
+      }catch(err){
+        console.error(err); notify("No se pudo guardar la aprobación en SharePoint: " + Graph.mensajeError(err), 'error'); setSaving(false);
+        setVacacionesPeriodos(prev => prev.map(p => p.id===id ? {...p, Aprobacion: periodo.Aprobacion} : p));
+        return;
+      }
+      setSaving(false);
+    }
+    notify(aprobada ? "Solicitud de vacaciones aprobada" : "Aprobación retirada", 'success');
+  }
+  // Correo de la solicitud: DESDE quien la crea (su sesión), Para Gerencia, con copia a Soporte. Si falla, la solicitud ya quedó guardada y se puede reenviar desde Informes.
+  async function enviarCorreoSolicitudVacaciones(periodo, diasPendientesAntes){
+    if(!liveMode){ notify("Modo demo: la solicitud quedó registrada, pero el correo a Gerencia solo se envía con la sesión real.", 'info'); return false; }
+    try{
+      const persona = colaboradores.find(c => (c.Nombre||"").trim() === (periodo.Colaborador||"").trim());
+      const resumen = diasPendientesAntes !== undefined
+        ? { diasPendientes: diasPendientesAntes }
+        : agruparVacacionesPorColaborador(colaboradores, vacacionesPeriodos.filter(p => p.id !== periodo.id)).find(f => (f.nombre||"").trim() === (periodo.Colaborador||"").trim());
+      const urlPortal = window.location.origin + (import.meta.env.BASE_URL || '/');
+      const { asunto, html } = construirCorreoSolicitudVacaciones({ periodo, cargo: persona?.Cargo, resumen, urlPortal });
+      await Graph.enviarCorreoDirecto({ to: [CORREO_GERENCIA], cc: [CORREO_SOPORTE], subject: asunto, htmlBody: html });
+      notify("✓ Solicitud enviada por correo a Gerencia (" + CORREO_GERENCIA + ") con copia a Soporte, desde tu cuenta.", 'success');
+      return true;
+    }catch(err){
+      console.error(err);
+      notify("La solicitud quedó registrada, pero NO se pudo enviar el correo a Gerencia: " + Graph.mensajeError(err) + " Puedes reenviarlo desde la lista de solicitudes.", 'error');
+      return false;
+    }
+  }
+  // Solicitud desde Informes → «Solicitud de vacaciones»: guarda el período con Aprobación pendiente y envía el correo.
+  async function solicitarVacaciones(datos){
+    const filas = agruparVacacionesPorColaborador(colaboradores, vacacionesPeriodos);
+    const antes = filas.find(f => (f.nombre||"").trim() === (datos.Colaborador||"").trim())?.diasPendientes;
+    const creado = await crearPeriodoVacaciones({ ...datos, Aprobacion: valorAprobacionVacaciones(false) }, { silencioso: true });
+    if(!creado) return null;
+    await enviarCorreoSolicitudVacaciones(creado, antes);
+    return creado;
   }
   // Editar un período ya guardado — pedido explícito del usuario 2026-09-01,
   // mismo patrón que editarHoraExtra (sin bloqueo de "aprobado": acá no
@@ -2014,7 +2076,7 @@ export function useLexaraApp(){
     activeTutela, openTutela, newTutela, duplicateTutela, closeTutelaDrawer, saveTutela, deleteTutela, corregirEntidadFaltanteTutelas, agregarCorreccionIA,
     createTema, saveTema, createTipoTermino, createValorEntidad, saveValorEntidad,
     createHoraExtra, aprobarHoraExtra, editarHoraExtra, eliminarHoraExtra,
-    crearPeriodoVacaciones, editarPeriodoVacaciones, eliminarPeriodoVacaciones,
+    crearPeriodoVacaciones, editarPeriodoVacaciones, eliminarPeriodoVacaciones, aprobarPeriodoVacaciones, solicitarVacaciones, enviarCorreoSolicitudVacaciones,
     crearProveedorGastos, editarProveedorGastos, eliminarProveedorGastos,
     crearCuentaCobroGastos, editarCuentaCobroGastos, eliminarCuentaCobroGastos,
     crearPagoPorRealizar, editarPagoPorRealizar, eliminarPagoPorRealizar,

@@ -138,7 +138,7 @@ export default function App(){
         <Suspense fallback={<CargandoModulo />}>
         {app.view === 'dashboard' && <DashboardView procesos={app.procesos} desistimientos={app.desistimientos} audiencias={app.audiencias} notify={app.notify} />}
         {app.view === 'informes' && canAccessView(app.modulosPermitidos, 'informes') && (
-          <InformesView procesos={app.procesos} clientes={app.clientes} facturas={app.facturas} ordenesCompra={app.ordenesCompra} desistimientos={app.desistimientos} tutelas={app.tutelas} valoresEntidad={app.valoresEntidad} notify={app.notify} liveMode={app.liveMode} config={app.config} requestConfirm={app.requestConfirm} corregirEntidadFaltanteTutelas={app.corregirEntidadFaltanteTutelas} colaboradores={app.colaboradores} onCreateHoraExtra={app.createHoraExtra} onEditarHoraExtra={app.editarHoraExtra} onEliminarHoraExtra={app.eliminarHoraExtra} horasExtras={app.horasExtras} tasasInteres={app.tasasInteres} ipcMensual={app.ipcMensual} onCrearTasaInteres={app.crearTasaInteres} onEditarTasaInteres={app.editarTasaInteres} onEliminarTasaInteres={app.eliminarTasaInteres} onCrearIPC={app.crearIPC} onEditarIPC={app.editarIPC} onEliminarIPC={app.eliminarIPC} />
+          <InformesView procesos={app.procesos} clientes={app.clientes} facturas={app.facturas} ordenesCompra={app.ordenesCompra} desistimientos={app.desistimientos} tutelas={app.tutelas} valoresEntidad={app.valoresEntidad} notify={app.notify} liveMode={app.liveMode} config={app.config} requestConfirm={app.requestConfirm} corregirEntidadFaltanteTutelas={app.corregirEntidadFaltanteTutelas} colaboradores={app.colaboradores} onCreateHoraExtra={app.createHoraExtra} onEditarHoraExtra={app.editarHoraExtra} onEliminarHoraExtra={app.eliminarHoraExtra} horasExtras={app.horasExtras} vacacionesPeriodos={app.vacacionesPeriodos} onSolicitarVacaciones={app.solicitarVacaciones} onEditarPeriodoVacaciones={app.editarPeriodoVacaciones} onEliminarPeriodoVacaciones={app.eliminarPeriodoVacaciones} onReenviarSolicitudVacaciones={app.enviarCorreoSolicitudVacaciones} tasasInteres={app.tasasInteres} ipcMensual={app.ipcMensual} onCrearTasaInteres={app.crearTasaInteres} onEditarTasaInteres={app.editarTasaInteres} onEliminarTasaInteres={app.eliminarTasaInteres} onCrearIPC={app.crearIPC} onEditarIPC={app.editarIPC} onEliminarIPC={app.eliminarIPC} />
         )}
         {app.view === 'procesos' && canAccessView(app.modulosPermitidos, 'procesos') && (
           <ProcesosView
@@ -265,6 +265,7 @@ export default function App(){
             onCrearPeriodoVacaciones={app.crearPeriodoVacaciones}
             onEditarPeriodoVacaciones={app.editarPeriodoVacaciones}
             onEliminarPeriodoVacaciones={app.eliminarPeriodoVacaciones}
+            onAprobarPeriodoVacaciones={app.aprobarPeriodoVacaciones}
             proveedoresGastos={app.proveedoresGastos}
             cuentasCobroGastos={app.cuentasCobroGastos}
             pagosPorRealizar={app.pagosPorRealizar}

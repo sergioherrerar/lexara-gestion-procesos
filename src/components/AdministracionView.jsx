@@ -4,6 +4,7 @@ import ColaboradoresView from './ColaboradoresView';
 import VacacionesTab from './VacacionesTab';
 import { esContratista, tipoContratoCanonico } from '../lib/tipoContrato';
 import HorasExtrasTab from './HorasExtrasTab';
+import NovedadesNominaTab from './NovedadesNominaTab';
 import GastosTab from './GastosTab';
 import FacturacionTab from './FacturacionTab';
 import { IconTextButton } from './IconButton';
@@ -22,6 +23,7 @@ const TABS = [
   {key:'vacaciones', label:'Vacaciones'},
   {key:'documentos', label:'Documentos'},
   {key:'horasExtras', label:'Horas Extras'},
+  {key:'novedadesNomina', label:'Novedades de nómina'},
   {key:'gastos', label:'Egresos'},
   {key:'facturacion', label:'Facturación'},
 ];
@@ -126,7 +128,7 @@ function DocumentosTab({ colaboradores, config, notify }){
   );
 }
 
-export default function AdministracionView({ listas, liveMode, onActualizarEquipo, colaboradores, searchQuery, onOpenColaborador, onCreateColaborador, onDeleteColaborador, canWrite = true, notify, config, tutelas, valoresEntidad, clientes, procesos, facturas, ordenesCompra, onAbrirBorradorOrdenCompra, onAbrirBorradorFactura, horasExtras, onAprobarHoraExtra, vacacionesPeriodos, onCrearPeriodoVacaciones, onEditarPeriodoVacaciones, onEliminarPeriodoVacaciones,
+export default function AdministracionView({ listas, liveMode, onActualizarEquipo, colaboradores, searchQuery, onOpenColaborador, onCreateColaborador, onDeleteColaborador, canWrite = true, notify, config, tutelas, valoresEntidad, clientes, procesos, facturas, ordenesCompra, onAbrirBorradorOrdenCompra, onAbrirBorradorFactura, horasExtras, onAprobarHoraExtra, vacacionesPeriodos, onCrearPeriodoVacaciones, onEditarPeriodoVacaciones, onEliminarPeriodoVacaciones, onAprobarPeriodoVacaciones,
   proveedoresGastos, cuentasCobroGastos, pagosPorRealizar, gastos,
   onCrearProveedorGastos, onEditarProveedorGastos, onEliminarProveedorGastos,
   onCrearCuentaCobroGastos, onEditarCuentaCobroGastos, onEliminarCuentaCobroGastos,
@@ -174,6 +176,7 @@ export default function AdministracionView({ listas, liveMode, onActualizarEquip
           onCrearPeriodo={onCrearPeriodoVacaciones}
           onEditarPeriodo={onEditarPeriodoVacaciones}
           onEliminarPeriodo={onEliminarPeriodoVacaciones}
+          onAprobarPeriodo={onAprobarPeriodoVacaciones}
           notify={notify}
           canWrite={canWrite}
         />
@@ -185,6 +188,17 @@ export default function AdministracionView({ listas, liveMode, onActualizarEquip
           tutelas={tutelas}
           colaboradores={colaboradores}
           onAprobarHoraExtra={onAprobarHoraExtra}
+          notify={notify}
+        />
+      )}
+      {tab==='novedadesNomina' && (
+        <NovedadesNominaTab
+          colaboradores={colaboradores}
+          tutelas={tutelas}
+          valoresEntidad={valoresEntidad}
+          horasExtras={horasExtras}
+          vacacionesPeriodos={vacacionesPeriodos}
+          liveMode={liveMode}
           notify={notify}
         />
       )}

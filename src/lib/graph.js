@@ -415,6 +415,45 @@ async function getMailSendToken(){
 }
 export function cuentaDelPortal(){ return String(account?.username || '').toLowerCase(); }
 
+// Envía YA un correo desde la cuenta con la que se entró (p. ej. la solicitud de vacaciones, 2026-10-29). `to`/`cc` son arreglos de correos; sin duplicados.
+// Queda copia en Enviados. Mismo permiso Mail.Send que las felicitaciones.
+export async function enviarCorreoDirecto({ to, cc, subject, htmlBody, categorias }){
+  const token = await getMailSendToken();
+  const aDirecciones = lista => (lista || []).map(a => String(a || '').trim()).filter(Boolean);
+  const para = [...new Set(aDirecciones(to).map(a => a.toLowerCase()))];
+  const copia = [...new Set(aDirecciones(cc).map(a => a.toLowerCase()))].filter(a => !para.includes(a));
+  const res = await fetch('https://graph.microsoft.com/v1.0/me/sendMail', {
+    method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      message: {
+        subject, body: { contentType: 'HTML', content: htmlBody },
+        ...(categorias && categorias.length ? { categories: categorias } : {}),
+        toRecipients: para.map(address => ({ emailAddress: { address } })),
+        ccRecipients: copia.map(address => ({ emailAddress: { address } })),
+      },
+      saveToSentItems: true,
+    }),
+  });
+  if(!res.ok){
+    const cuerpo = await res.text();
+    if(res.status === 403) throw new Error('Falta el permiso Mail.Send en Azure (Entra) para enviar correos desde el portal.');
+    throw new Error(`Graph ${res.status}: ${cuerpo.substring(0, 300)}`);
+  }
+  invalidarCacheCarpetasCorreo();
+}
+
+// Correos ya ENVIADOS con una categoría (p. ej. «Novedades de nómina»), del más reciente al más antiguo: [{ asunto, fecha, para }]. Sirve para avisar que algo ya se mandó.
+export async function listarEnviadosPorCategoria(categoria){
+  const token = await getMailToken();
+  const filtro = encodeURIComponent(`categories/any(c:c eq '${String(categoria).replace(/'/g, "''")}')`);
+  const res = await fetch(`https://graph.microsoft.com/v1.0/me/mailFolders/sentitems/messages?$filter=${filtro}&$select=subject,toRecipients,sentDateTime&$top=50`, { headers: { Authorization: `Bearer ${token}` } });
+  if(!res.ok) throw new Error(`Graph ${res.status} al revisar Enviados: ${(await res.text()).substring(0, 200)}`);
+  const datos = await res.json();
+  return (datos.value || [])
+    .map(m => ({ asunto: m.subject || '', fecha: m.sentDateTime || '', para: (m.toRecipients || []).map(r => r.emailAddress?.address || '').filter(Boolean) }))
+    .sort((a, b) => String(b.fecha).localeCompare(String(a.fecha)));
+}
+
 const CATEGORIA_FELICITACION = 'Felicitación de cumpleaños';
 const PROP_ENVIO_DIFERIDO = 'SystemTime 0x3FEF';
 

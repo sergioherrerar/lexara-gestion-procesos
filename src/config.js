@@ -981,6 +981,9 @@ export const SHAREPOINT_LISTS_CONFIG = [
       {key:"FechaFin", label:"Fecha Fin", hint:["fecha fin","fechafin"], required:true},
       {key:"Dias", label:"Días", hint:["dias","días"], required:true},
       {key:"Observaciones", label:"Observaciones", hint:["observaciones"]},
+      // Aprobación de la solicitud (2026-10-29): el colaborador la pide desde Informes y Administración la aprueba, igual que «Aprobado» en Horas Extras. Sin mapeo
+      // fijo: el nombre interno real de «Aprobación» (con tilde) lo detecta guessListMapping por su nombre visible.
+      {key:"Aprobacion", label:"Aprobación", hint:["aprobacion","aprobación"]},
     ],
     // Nombres reales = igual al nombre semántico (ninguna columna tiene
     // espacios, así que SharePoint no les agregó ningún "_x0020_").
@@ -1508,8 +1511,9 @@ export const DEMO_HORAS_EXTRAS = [
 // Vacaciones (2026-08-31) — reemplaza el Excel real, una fila por período
 // tomado (no una fila por persona). Ver [[project_administracion_modulo]].
 export const DEMO_VACACIONES_PERIODOS = [
-  {id:1, Colaborador:"Ariana Andrea Torres", FechaInicio:"2025-01-30", FechaFin:"2025-01-31", Dias:2, Observaciones:""},
-  {id:2, Colaborador:"Daniel Santiago Flechas", FechaInicio:"2025-12-15", FechaFin:"2025-12-19", Dias:5, Observaciones:""},
+  {id:1, Colaborador:"Ariana Andrea Torres", FechaInicio:"2025-01-30", FechaFin:"2025-01-31", Dias:2, Observaciones:"", Aprobacion:true, createdDateTime:"2025-01-20T12:00:00Z"},
+  {id:2, Colaborador:"Daniel Santiago Flechas", FechaInicio:"2025-12-15", FechaFin:"2025-12-19", Dias:5, Observaciones:"", Aprobacion:true, createdDateTime:"2025-12-01T12:00:00Z"},
+  {id:3, Colaborador:"Ariana Andrea Torres", FechaInicio:"2026-12-21", FechaFin:"2026-12-23", Dias:3, Observaciones:"Solicitud de ejemplo", Aprobacion:false, createdDateTime:"2026-10-29T12:00:00Z"},
 ];
 
 // Gastos (2026-09-01) — reemplaza el Excel mensual real ("PAGOS DE {MES}

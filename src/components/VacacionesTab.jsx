@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { agruparVacacionesPorColaborador, generarVacacionesExcel, generarPDFVacacionesColaborador, colaboradoresFueraDeVacaciones } from '../lib/vacaciones';
+import { agruparVacacionesPorColaborador, generarVacacionesExcel, generarPDFVacacionesColaborador, colaboradoresFueraDeVacaciones, estadoPeriodo, ETIQUETA_ESTADO_PERIODO, CLASE_ESTADO_PERIODO } from '../lib/vacaciones';
 import { fmtDate, mensajeError } from '../lib/graph';
 import { FieldCard } from './FormFields';
 import IconButton, { IconTextButton } from './IconButton';
@@ -17,7 +17,7 @@ import IconButton, { IconTextButton } from './IconButton';
 // ahora es una lista de SharePoint normal — SÍ funciona en modo demo.
 const FORM_VACIO = { FechaInicio:"", FechaFin:"", Dias:"", Observaciones:"" };
 
-export default function VacacionesTab({ onActualizarEquipo, colaboradores, vacacionesPeriodos, onCrearPeriodo, onEditarPeriodo, onEliminarPeriodo, notify, canWrite }){
+export default function VacacionesTab({ onActualizarEquipo, colaboradores, vacacionesPeriodos, onCrearPeriodo, onEditarPeriodo, onEliminarPeriodo, onAprobarPeriodo, notify, canWrite }){
   const [abiertoPara, setAbiertoPara] = useState("");
   const [form, setForm] = useState(FORM_VACIO);
   const [guardando, setGuardando] = useState(false);
@@ -47,6 +47,9 @@ export default function VacacionesTab({ onActualizarEquipo, colaboradores, vacac
 
   const filas = agruparVacacionesPorColaborador(colaboradores, vacacionesPeriodos);
   const fuera = colaboradoresFueraDeVacaciones(colaboradores);
+  // Solicitudes hechas desde Informes que esperan aprobación (se aprueban con la casilla, como las Horas Extras).
+  const porAprobar = (vacacionesPeriodos || []).filter(p => estadoPeriodo(p) === 'pendiente')
+    .sort((a,b) => String(a.FechaInicio||"").localeCompare(String(b.FechaInicio||"")));
   // Al abrir la pestaña se vuelve a leer Equipo MD (una persona nueva aparece sin pulsar «Actualizar datos»).
   const [actualizandoEquipo, setActualizandoEquipo] = useState(false);
   useEffect(() => {
@@ -121,6 +124,33 @@ export default function VacacionesTab({ onActualizarEquipo, colaboradores, vacac
           {generandoExcel ? "Generando…" : "Descargar Excel"}
         </IconTextButton>
       </div>
+
+      {porAprobar.length > 0 && (
+        <div className="panel" style={{marginBottom:20, borderColor:'#f0c9a8'}}>
+          <div className="panel-head"><h3>Solicitudes por aprobar ({porAprobar.length})</h3></div>
+          <div className="panel-body" style={{padding:'14px 20px'}}>
+            <p className="save-hint" style={{margin:'0 0 10px'}}>Las pidieron los colaboradores desde Informes → Solicitud de vacaciones (Gerencia ya recibió el correo). Marca <strong>Aprobación</strong> para aprobarlas; para rechazar una, elimínala.</p>
+            <div className="table-wrap">
+              <table className="table-compact">
+                <thead><tr><th>Colaborador</th><th>Fecha inicio</th><th>Fecha fin</th><th>Días</th><th>Observaciones</th><th>Aprobación</th>{canWrite && <th>Acciones</th>}</tr></thead>
+                <tbody>
+                  {porAprobar.map(p => (
+                    <tr key={p.id}>
+                      <td className="cliente">{p.Colaborador || "—"}</td>
+                      <td>{fmtDate(p.FechaInicio)}</td>
+                      <td>{fmtDate(p.FechaFin)}</td>
+                      <td>{p.Dias ?? "—"}</td>
+                      <td>{p.Observaciones || "—"}</td>
+                      <td className="linea-pago-check"><input type="checkbox" checked={false} disabled={!canWrite} aria-label={`Aprobar vacaciones de ${p.Colaborador}`} onChange={e => onAprobarPeriodo?.(p.id, e.target.checked)} /></td>
+                      {canWrite && <td><div className="row-actions"><IconButton icon="delete" variant="delete" label={`Rechazar y eliminar solicitud de ${p.Colaborador}`} onClick={() => onEliminarPeriodo?.(p.id)} /></div></td>}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Vista resumen por trabajador — pedido explícito del usuario
           2026-08-31: busca la Fecha de Ingreso en Colaboradores MD, calcula
@@ -212,7 +242,7 @@ export default function VacacionesTab({ onActualizarEquipo, colaboradores, vacac
               {f.historial.length ? (
                 <div className="table-wrap">
                   <table>
-                    <thead><tr><th>Fecha inicio</th><th>Fecha fin</th><th>Días</th><th>Observaciones</th>{canWrite && <th>Acciones</th>}</tr></thead>
+                    <thead><tr><th>Fecha inicio</th><th>Fecha fin</th><th>Días</th><th>Observaciones</th><th>Aprobación</th>{canWrite && <th>Acciones</th>}</tr></thead>
                     <tbody>
                       {f.historial.map(h => (
                         <tr key={h.id}>
@@ -220,6 +250,11 @@ export default function VacacionesTab({ onActualizarEquipo, colaboradores, vacac
                           <td>{fmtDate(h.FechaFin)}</td>
                           <td>{h.Dias ?? "—"}</td>
                           <td>{h.Observaciones || "—"}</td>
+                          <td className="linea-pago-check">
+                            {estadoPeriodo(h) === 'historico'
+                              ? <span className={'badge ' + CLASE_ESTADO_PERIODO.historico}>{ETIQUETA_ESTADO_PERIODO.historico}</span>
+                              : <input type="checkbox" checked={estadoPeriodo(h) === 'aprobada'} disabled={!canWrite} aria-label={`Aprobación de las vacaciones de ${f.nombre}`} onChange={e => onAprobarPeriodo?.(h.id, e.target.checked)} />}
+                          </td>
                           {canWrite && (
                             <td>
                               <div className="row-actions">
