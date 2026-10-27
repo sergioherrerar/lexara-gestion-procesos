@@ -84,8 +84,11 @@ export default function EnviarGastosModal({ filasMes, proveedores, anio, mes, sh
   async function crearBorrador(){
     setAccion('borrador');
     try{
-      const r = await crearBorradorConImagenesInline({ to: [destinatario.correo], cc: [CORREO_GERENCIA_NOVEDADES], subject: correoReal.asunto, htmlBody: correoReal.html, imagenes: [datos.firma], adjuntos: datos.adjuntos, categorias: [CATEGORIA_GASTOS + ' (borrador)'], buzon: REMITENTE_SOPORTE });
-      notify?.('✓ Borrador creado en los Borradores de ' + REMITENTE_SOPORTE + ', para ' + destinatario.correo + ' con copia a Gerencia.' + (r.imagenesFallidas?.length ? ' No se pudo adjuntar: ' + r.imagenesFallidas.join(', ') + '.' : ''), r.imagenesFallidas?.length ? 'info' : 'success');
+      const r = await crearBorradorConImagenesInline({ to: [destinatario.correo], cc: [CORREO_GERENCIA_NOVEDADES], subject: correoReal.asunto, htmlBody: correoReal.html, imagenes: [datos.firma], adjuntos: datos.adjuntos, categorias: [CATEGORIA_GASTOS + ' (borrador)'], buzon: REMITENTE_SOPORTE, caerAlBuzonPropio: true });
+      const aviso = r.enBuzonPropio
+        ? '⚠ No pude crear el borrador en ' + REMITENTE_SOPORTE + ' (Microsoft no encuentra ese buzón: entra una vez a https://outlook.office.com con esa cuenta para activarlo). Quedó en TUS Borradores, para ' + destinatario.correo + ' con copia a Gerencia: cambia el «De» a Soporte si tienes permiso.'
+        : '✓ Borrador creado en los Borradores de ' + REMITENTE_SOPORTE + ', para ' + destinatario.correo + ' con copia a Gerencia.';
+      notify?.(aviso + (r.imagenesFallidas?.length ? ' No se pudo adjuntar: ' + r.imagenesFallidas.join(', ') + '.' : ''), (r.enBuzonPropio || r.imagenesFallidas?.length) ? 'info' : 'success');
     }catch(err){
       console.error(err); notify?.('No se pudo crear el borrador: ' + mensajeError(err), 'error');
     }finally{ setAccion(''); }

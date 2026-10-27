@@ -5,6 +5,7 @@ import { TIPO_DOCUMENTO_OPTIONS, proveedorRepetido, esCuentaDeCobro, emparejarSo
 import IconButton, { IconTextButton } from './IconButton';
 import ColumnHeaderMenu from './ColumnHeaderMenu';
 import EnviarGastosModal from './EnviarGastosModal';
+import PagosPorRealizarModal from './PagosPorRealizarModal';
 import { useColumnFilters } from '../hooks/useColumnFilters';
 import { useColumnSort } from '../hooks/useColumnSort';
 
@@ -279,6 +280,7 @@ function SoporteField({ label, url, fecha, shareUrl, onElegir, textoBoton = "Ele
 function RegistrosSection({ nombreLista, registros, proveedores, conNumero, conTipo, conSoportes, shareUrl, siguienteNumero, onCrear, onEditar, onEliminar, canWrite, notify, colaboradores, liveMode }){
   const hoyRef = new Date();
   const [enviandoGastos, setEnviandoGastos] = useState(false);
+  const [enviandoPagos, setEnviandoPagos] = useState(false);
   const [mes, setMes] = useState(hoyRef.getMonth());
   const [anio, setAnio] = useState(hoyRef.getFullYear());
   const [abierto, setAbierto] = useState(false);
@@ -489,6 +491,11 @@ function RegistrosSection({ nombreLista, registros, proveedores, conNumero, conT
               Enviar gastos del mes
             </IconTextButton>
           )}
+          {conSoportes && (
+            <IconTextButton icon="mail" variant="secondary" onClick={() => setEnviandoPagos(true)}>
+              Pagos por realizar
+            </IconTextButton>
+          )}
           {conSoportes && canWrite && (
             <IconTextButton icon="search" variant="secondary" onClick={handleBuscarSoportes} disabled={buscandoSoportes}>
               {buscandoSoportes ? "Buscando soportes…" : "Buscar soportes"}
@@ -501,6 +508,7 @@ function RegistrosSection({ nombreLista, registros, proveedores, conNumero, conT
           )}
         </div>
       </div>
+      {enviandoPagos && <PagosPorRealizarModal registros={registros} proveedores={proveedores} liveMode={liveMode} notify={notify} onClose={() => setEnviandoPagos(false)} />}
       {enviandoGastos && <EnviarGastosModal filasMes={filtrarPorMes(registros, anio, mes)} proveedores={proveedores} anio={anio} mes={mes} shareUrl={shareUrl} colaboradores={colaboradores} liveMode={liveMode} notify={notify} onClose={() => setEnviandoGastos(false)} />}
       {abierto && <RegistroForm inicial={formInicialNuevo} conNumero={conNumero} conTipo={conTipo} proveedores={proveedores} onGuardar={guardarNuevo} onCancelar={cerrarNuevo} guardando={guardando} />}
       <div className="table-wrap">

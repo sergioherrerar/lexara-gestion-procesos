@@ -336,7 +336,9 @@ export async function eliminarEventoCalendario(config, { tipo, id }){
 // `buzon` (2026-10-21, pedido del usuario): el correo en cuyo buzón se crea el borrador (p. ej. Tutelas@lexaraabogados.com para todo lo de Tutelas); sin él, el del usuario que inició sesión.
 export async function crearBorradorCorreo({ to, cc, subject, htmlBody, adjuntoNombre, adjuntoBase64, categorias, buzon }){
   const token = await getMailToken();
-  const raizBuzon = buzon ? `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(buzon)}` : 'https://graph.microsoft.com/v1.0/me';
+  // Si el buzón pedido es el de quien entró, se usa /me (el camino normal de su propio buzón) en vez de /users/{correo}.
+  const esPropio = !buzon || String(buzon).trim().toLowerCase() === cuentaDelPortal();
+  const raizBuzon = esPropio ? 'https://graph.microsoft.com/v1.0/me' : `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(buzon)}`;
   const body = {
     subject,
     ...(categorias && categorias.length ? { categories: categorias } : {}),
@@ -459,6 +461,7 @@ export async function enviarCorreoDirecto({ to, cc, subject, htmlBody, categoria
   if(!res.ok){
     const cuerpo = await res.text();
     if(res.status === 403 && ajeno) throw new Error(`No se pudo enviar desde ${desde}: falta el permiso Mail.Send.Shared en Azure (Entra) o tu usuario no tiene «Enviar como» sobre ese buzón en Exchange.`);
+    if(res.status === 404 && desde) throw new Error(`Microsoft no encuentra el buzón de ${desde} (404: «${cuerpo.substring(0, 160)}»). Suele pasar cuando esa cuenta nunca ha abierto Outlook: entra una vez a https://outlook.office.com con ${desde} para que Exchange cree sus carpetas, o revisa que tenga licencia de Exchange Online.`);
     if(res.status === 403) throw new Error('Falta el permiso Mail.Send en Azure (Entra) para enviar correos desde el portal.');
     throw new Error(`Graph ${res.status}: ${cuerpo.substring(0, 300)}`);
   }
@@ -558,10 +561,21 @@ export async function listarFelicitacionesProgramadas(){
 // adjunto en línea con su contentId. `imagenes` = [{ nombre, cid, base64, contentType? }]. NUNCA envía: solo deja el borrador. Devuelve el mensaje creado
 // y `imagenesFallidas` (nombres de las que no se pudieron adjuntar).
 // `adjuntos` (opcional, 2026-10-29): además de las imágenes en línea, archivos adjuntos normales [{ nombre, contentType, base64 }]; los que fallen salen en `imagenesFallidas`.
-export async function crearBorradorConImagenesInline({ to, cc, subject, htmlBody, imagenes, adjuntos, categorias, buzon }){
-  const mensaje = await crearBorradorCorreo({ to, cc, subject, htmlBody, categorias, buzon });
+// `caerAlBuzonPropio` (2026-10-29): si el buzón pedido no responde (404/403: carpetas sin crear, sin acceso…), el borrador se crea en el buzón de quien entró y se devuelve
+// `enBuzonPropio: true` (con `motivoBuzon`) para avisarlo — nunca se queda sin crear.
+export async function crearBorradorConImagenesInline({ to, cc, subject, htmlBody, imagenes, adjuntos, categorias, buzon, caerAlBuzonPropio = false }){
+  let buzonUsado = buzon, enBuzonPropio = false, motivoBuzon = '';
+  let mensaje;
+  try{ mensaje = await crearBorradorCorreo({ to, cc, subject, htmlBody, categorias, buzon }); }
+  catch(err){
+    if(!(caerAlBuzonPropio && buzon && /Graph (404|403)|not found in the store|access is denied|ErrorAccessDenied/i.test(String((err && err.message) || err)))) throw err;
+    motivoBuzon = String((err && err.message) || err);
+    mensaje = await crearBorradorCorreo({ to, cc, subject, htmlBody, categorias });
+    buzonUsado = undefined; enBuzonPropio = true;
+  }
   const token = await getMailToken();
-  const raiz = buzon ? `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(buzon)}` : 'https://graph.microsoft.com/v1.0/me';
+  const esPropio = !buzonUsado || String(buzonUsado).trim().toLowerCase() === cuentaDelPortal();
+  const raiz = esPropio ? 'https://graph.microsoft.com/v1.0/me' : `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(buzonUsado)}`;
   const imagenesFallidas = [];
   const todos = [...(imagenes || []), ...(adjuntos || []).map(a => ({ ...a, normal: true }))];
   for(const im of todos){
@@ -577,7 +591,7 @@ export async function crearBorradorConImagenesInline({ to, cc, subject, htmlBody
     }catch(err){ console.error('No se pudo adjuntar la imagen «' + im.nombre + '» al borrador:', err); imagenesFallidas.push(im.nombre); }
   }
   invalidarCacheCarpetasCorreo();
-  return { ...mensaje, imagenesFallidas };
+  return { ...mensaje, imagenesFallidas, ...(enBuzonPropio ? { enBuzonPropio, motivoBuzon } : {}) };
 }
 
 // ---------------------------------------------------------------------------
