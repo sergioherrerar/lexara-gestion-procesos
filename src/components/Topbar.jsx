@@ -8,6 +8,10 @@ import miniVerdeOscuro from '../assets/Mini verde oscuro.png';
 // minúsculas) — corregido de paso al agregar "administracion".
 const TITLES = {dashboard:"Dashboard", informes:"Informes", procesos:"Procesos judiciales", tutelas:"Tutelas", clientes:"Clientes", facturacion:"Solicitud De Factura E.", ordenesCompra:"Órdenes de compra", vencimientos:"Vencimientos", administracion:"Administración", setup:"Configuración"};
 
+// Estas vistas ya traen su propio encabezado grande (el <h1> con la línea dorada) con el MISMO texto: repetirlo en la barra superior era redundante
+// (reporte del usuario 2026-10-29, «aquí dice igual»). Dashboard («Panorama general») y Configuración sí tienen un título distinto y lo conservan.
+const VISTAS_CON_TITULO_PROPIO = new Set(['informes', 'procesos', 'tutelas', 'clientes', 'facturacion', 'ordenesCompra', 'vencimientos', 'administracion']);
+
 // Botón del mini calendario en la cabecera del portal — pedido explícito del
 // usuario 2026-09-15: "que viva en la cabecera del portal al lado donde dice
 // Conectado a SharePoint" (con un dibujo señalando el espacio libre entre esa
@@ -95,7 +99,7 @@ export default function Topbar({ view, liveMode, searchQuery, onSearch, onOpenMo
           )}
           {cargandoInicial && <span className="status-pill status-loading">Cargando datos…</span>}
         </div>
-        <h2>{TITLES[view] || view}</h2>
+        {!VISTAS_CON_TITULO_PROPIO.has(view) && <h2>{TITLES[view] || view}</h2>}
       </div>
       <BotonCalendarioTopbar
         audiencias={audiencias} terminos={terminos} pendientes={pendientes} procesos={procesos}

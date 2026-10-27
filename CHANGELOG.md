@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-10-29 (118)
+- **Se quita el título repetido de la barra superior** — reporte del usuario (en Órdenes de compra el nombre salía dos veces: en la barra de arriba y en el encabezado grande). En los módulos que ya tienen su encabezado grande con el mismo texto (Informes, Procesos judiciales, Tutelas, Clientes, Solicitud De Factura E., Órdenes de compra, Vencimientos y Administración) la barra superior ya no repite el nombre y queda solo con «Conectado a SharePoint» y el botón de actualizar. Dashboard (donde la barra dice «Dashboard» y el encabezado «Panorama general») y Configuración conservan su título de la barra.
+
 ## 2026-10-29 (117)
 - **Énfasis profesional al cambiar de sección** — pedido del usuario. Al entrar a cualquier módulo (Informes, Procesos judiciales, Tutelas, Clientes, Vencimientos, Administración, etc.) el encabezado se anima una sola vez: el título entra con un leve desplazamiento hacia arriba, una **línea dorada** (el amarillo de Lexara) se dibuja debajo de izquierda a derecha y queda como marca fija de la sección, y el subtítulo aparece un instante después. Dura menos de un segundo, no se repite cuando se actualizan los datos (p. ej. el contador «112 de 168 procesos») y se desactiva para quien tiene activada la opción «reducir movimiento» del sistema. Es solo estilo (styles.css), igual en PC y celular.
 
