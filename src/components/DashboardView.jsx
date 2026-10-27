@@ -9,7 +9,7 @@ import { generarDashboardEntidadWord } from '../lib/exportarDashboardWord';
 import { generarSosEjecutivoWord } from '../lib/exportarSosEjecutivoWord';
 import IconButton from './IconButton';
 import QrEnlacesPanel from './QrEnlacesPanel';
-import { REUNIONES_TEAMS } from '../config';
+import { REUNIONES_TEAMS, SITIOS_SHAREPOINT } from '../config';
 import fotoEquipo from '../assets/Equipo Lexara reunion.webp';
 
 function IconFolder(){
@@ -214,6 +214,28 @@ export default function DashboardView({ procesos, desistimientos = [], audiencia
                 <small>{r.detalle}</small>
               </span>
               <span className="reunion-unirme">Unirme <span aria-hidden="true">→</span></span>
+            </a>
+          ))}
+        </div>
+      </section>
+
+      {/* Sitios de SharePoint (2026-10-27, pedido del usuario): accesos de un clic a los sitios del despacho. */}
+      <section className="reuniones-band sitios-band" aria-labelledby="sitios-titulo">
+        <div className="reuniones-head">
+          <h2 id="sitios-titulo">Sitios de SharePoint</h2>
+          <p>Abre el sitio del despacho que necesites.</p>
+        </div>
+        <div className="reuniones-grid">
+          {SITIOS_SHAREPOINT.map(s => (
+            <a key={s.nombre} className="reunion-card" href={s.url} target="_blank" rel="noopener noreferrer" aria-label={'Abrir el sitio de SharePoint: ' + s.nombre + ' (se abre en una pestaña nueva)'}>
+              <span className="reunion-icono" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c2.6 2.6 3.9 5.6 3.9 9s-1.3 6.4-3.9 9c-2.6-2.6-3.9-5.6-3.9-9S9.4 5.6 12 3Z"/></svg>
+              </span>
+              <span className="reunion-texto">
+                <strong>{s.nombre}</strong>
+                <small>{s.detalle}</small>
+              </span>
+              <span className="reunion-unirme">Abrir <span aria-hidden="true">→</span></span>
             </a>
           ))}
         </div>

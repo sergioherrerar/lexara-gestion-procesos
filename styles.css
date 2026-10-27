@@ -2008,3 +2008,24 @@
     .reunion-card{padding:12px 14px;}
   }
   @media (prefers-reduced-motion: reduce){ .reunion-card{transition:none;} .reunion-card:hover{transform:none;} }
+
+  /* Sitios de SharePoint: misma banda que Reuniones, pero sin foto — verde con luz turquesa y el doble chevron de la marca. */
+  .reuniones-band.sitios-band{
+    min-height:0; justify-content:flex-start; gap:0;
+    background:
+      radial-gradient(circle at 94% 6%, rgba(82,187,181,.36), transparent 44%),
+      radial-gradient(circle at 2% 112%, rgba(251,188,51,.14), transparent 40%),
+      linear-gradient(135deg, var(--verde-oscuro-2) 0%, var(--verde-oscuro) 60%, #0a6a5f 100%);
+  }
+  .sitios-band .reuniones-head{margin-bottom:16px;}
+  .sitios-band::after{
+    content:""; position:absolute; right:-30px; top:50%; width:150px; height:150px; transform:translateY(-50%) rotate(45deg);
+    border-right:24px solid rgba(255,255,255,.06); border-bottom:24px solid rgba(255,255,255,.06); pointer-events:none;
+  }
+  @media (max-width:760px){
+    .reuniones-band.sitios-band{
+      background:
+        radial-gradient(circle at 94% 4%, rgba(82,187,181,.32), transparent 46%),
+        linear-gradient(135deg, var(--verde-oscuro-2) 0%, var(--verde-oscuro) 60%, #0a6a5f 100%);
+    }
+  }

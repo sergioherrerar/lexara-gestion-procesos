@@ -116,6 +116,14 @@ export const REUNIONES_TEAMS = [
   { nombre: "Universidad Nacional", detalle: "Reunión de Teams", url: "https://teams.microsoft.com/l/meetup-join/19:meeting_YjRhNGYxMjYtMjY4OS00ZmNlLWJiZjctN2RlYmY5MzU1YTBl%40thread.v2/0?context=%7b%22Tid%22:%22a89ceaa6-c4df-4b18-93a7-65dfa57a5541%22%2c%22Oid%22:%2208043049-5555-4bd7-8f72-0ae433572512%22%7d" },
 ];
 
+// Sitios de SharePoint con acceso de un clic desde el Panorama general («Sitios de SharePoint», pedido del usuario 2026-10-27).
+// Para agregar o cambiar uno basta editar esta lista: nombre, una línea de apoyo y la dirección del sitio.
+export const SITIOS_SHAREPOINT = [
+  { nombre: "Nuevos Procesos MD", detalle: "Sitio principal de procesos", url: "https://mydabogados.sharepoint.com/sites/NuevosProcesosMD/SitePages/CollabHome.aspx" },
+  { nombre: "Tutelas MD Abogados", detalle: "Sitio de tutelas", url: "https://mydabogados.sharepoint.com/sites/TutelasMDABOGADOS" },
+  { nombre: "Personal Mónica", detalle: "Sitio personal de Mónica", url: "https://mydabogados.sharepoint.com/sites/PersonalMonica" },
+];
+
 export const TUTELAS_REMITENTES_PERMITIDOS = [
   "daniacp@colmedica.com", "daniacp@aliansalud.com.co", "daniacp@umd.com.co",
   "Mgabrielac@aliansalud.com.co", "Mgabrielac@colmedica.com",

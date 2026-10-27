@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-10-27 (103)
+- **Panorama general: sección «Sitios de SharePoint» con acceso de un clic a los sitios del despacho** — pedido del usuario. Una banda verde igual de cuidada que la de reuniones (sin foto, con luz turquesa y el doble chevron de la marca), con tres tarjetas y su botón «Abrir →», que abren en una pestaña nueva: **Nuevos Procesos MD** (sitio principal), **Tutelas MD Abogados** y **Personal Mónica**. En el celular se apilan en una columna. Para agregar o cambiar un sitio se edita la lista SITIOS_SHAREPOINT de src/config.js.
+
 ## 2026-10-27 (102)
 - **La foto del equipo como fondo de «Reuniones importantes»** — pedido del usuario. La banda del Panorama general usa ahora la foto real del equipo en la sala de reuniones (con el logo de Lexara en la pantalla), con un velo verde que la deja clara arriba y más oscura abajo, donde van las tarjetas de Teams. En el celular la foto ocupa solo la franja de arriba, detrás del título, y las tarjetas van sobre verde liso para que no tapen a las personas.
 
