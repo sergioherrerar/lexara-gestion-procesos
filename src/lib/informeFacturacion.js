@@ -18,6 +18,13 @@ function fechaISOaExcel(iso){
   return new Date(Number(m[1]), Number(m[2])-1, Number(m[3]));
 }
 
+function fechaDeDiaMesAnio(oc){
+  const d = Number(oc && oc.Dia), m = Number(oc && oc.Mes), a = Number(oc && oc.Anio);
+  if(!d || !m || !a) return null;
+  const f = new Date(a, m - 1, d);
+  return f.getMonth() === m - 1 ? f : null;
+}
+
 function estilizarEncabezado(row){
   row.height = 30;
   row.eachCell(cell => {
@@ -74,13 +81,15 @@ export async function generarInformeFacturasExcel(facturas, clientes){
   await descargarWorkbook(wb, "Informe Facturación");
 }
 
-export async function generarInformeOrdenesCompraExcel(ordenesCompra, clientes, facturas){
+// `cruce` (opcional): Map id de la orden → { factura, metodo } de buscarFacturasParaOrdenes (cruceFacturasOrdenes.js). Sin él se usa solo el cruce exacto de siempre.
+// Las facturas encontradas con un criterio flexible (no «Exacto») quedan con la celda de «Cruce» resaltada para que se revisen.
+export async function generarInformeOrdenesCompraExcel(ordenesCompra, clientes, facturas, cruce){
   const { default: ExcelJS } = await import('exceljs');
   const wb = new ExcelJS.Workbook();
   const ws = wb.addWorksheet("Órdenes de compra");
 
-  const columnas = ["No. Orden","Contrato","Proceso","Cliente","Fecha","Etapa contrato","Subtotal","IVA","Total","Valor a pagar","Factura relacionada"];
-  const anchos = [14, 16, 20, 30, 14, 24, 18, 16, 18, 18, 18];
+  const columnas = ["No. Orden","Contrato","Proceso","Cliente","Fecha","Etapa contrato","Subtotal","IVA","Total","Valor a pagar","Factura relacionada","Fecha factura","Cruce"];
+  const anchos = [14, 16, 20, 30, 14, 24, 18, 16, 18, 18, 18, 16, 16];
   ws.columns = columnas.map((c,i) => ({ width: anchos[i] }));
   estilizarEncabezado(ws.addRow(columnas));
 
@@ -88,13 +97,22 @@ export async function generarInformeOrdenesCompraExcel(ordenesCompra, clientes, 
     const cliente = clienteForOrdenCompra(clientes, oc);
     const totales = computeOrdenCompraTotals(oc);
     const valorAPagar = parseMonto(oc.ValorAPagar) > 0 ? parseMonto(oc.ValorAPagar) : totales.total;
-    const facturaRelacionada = facturaForOrdenCompra(facturas, oc);
+    const hallado = cruce ? cruce.get(oc.id) : null;
+    const facturaRelacionada = hallado ? hallado.factura : facturaForOrdenCompra(facturas, oc);
+    const metodo = hallado ? hallado.metodo : (facturaRelacionada ? "Exacto" : "");
+    // La orden a veces trae la fecha solo en Día / Mes / Año y la columna Fecha vacía.
+    const fechaOrden = fechaISOaExcel(oc.Fecha) || fechaDeDiaMesAnio(oc);
     const row = ws.addRow([
-      ordenCompraNumero(oc), oc.Contrato || "", oc.Proceso || "", cliente?.RazonSocial || "", fechaISOaExcel(oc.Fecha),
+      ordenCompraNumero(oc), oc.Contrato || "", oc.Proceso || "", cliente?.RazonSocial || "", fechaOrden,
       oc.EtapaContrato || "", totales.subtotal, totales.iva, totales.total, valorAPagar,
       facturaRelacionada ? facturaNumero(facturaRelacionada) : "—",
+      facturaRelacionada ? fechaISOaExcel(facturaRelacionada.Fecha) : null,
+      metodo,
     ]);
     estilizarFila(row);
+    if(metodo && metodo !== "Exacto"){
+      row.getCell(columnas.indexOf("Cruce") + 1).fill = { type:'pattern', pattern:'solid', fgColor:{argb:'FFFFF2CC'} };
+    }
   });
 
   ["Subtotal","IVA","Total","Valor a pagar"].forEach(header => {
@@ -102,6 +120,7 @@ export async function generarInformeOrdenesCompraExcel(ordenesCompra, clientes, 
     ws.getColumn(idx).numFmt = '"$"#,##0.00';
   });
   ws.getColumn(columnas.indexOf("Fecha")+1).numFmt = 'dd/mm/yyyy';
+  ws.getColumn(columnas.indexOf("Fecha factura")+1).numFmt = 'dd/mm/yyyy';
 
   ws.views = [{ state:'frozen', ySplit:1 }];
   await descargarWorkbook(wb, "Informe Ordenes de Compra");
