@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-10-28 (107)
+- **La Observación de audiencias y términos también se ve en la lista general de Vencimientos** — pedido del usuario (la pestaña «Todos» mostraba la observación de los pendientes pero no la de audiencias ni términos). Ahora sale en letra pequeña bajo el detalle de cada audiencia y término, igual que en los pendientes. También aparece en el mini calendario al elegir un día y en el mensaje de WhatsApp de las audiencias y términos de los próximos días (entre paréntesis, «Observación: …»).
+
 ## 2026-10-28 (106)
 - **Se descarta el mapeo viejo «Abogado → AppEditor» de la lista Términos** — visto en el mapeo exportado por el usuario (lexara-mapeo-sharepoint.json): ese navegador conservaba «Abogado: AppEditor», la columna de sistema «Aplicación modificada por» que se había adivinado mal en septiembre y que ya no es un campo de Términos. Aunque la app ya no le escribe, ahora ese valor guardado se ignora siempre. Del mismo archivo se confirmó que «Observación» quedó bien mapeada en las tres listas: Audiencias → Observaci_x00f3_n, Términos → Observacion y Pendientes → Observacion.
 

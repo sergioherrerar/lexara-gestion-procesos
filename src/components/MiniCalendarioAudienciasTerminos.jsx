@@ -296,10 +296,10 @@ export default function MiniCalendarioAudienciasTerminos({
                   de audiencia y tipo de termino") — antes solo se veía el
                   Número Corto, sin decir de qué se trata. */}
               {eventosDelDia.terminos.map(t => (
-                <li key={'t'+t.id}><strong>Término</strong> {t.proceso?.Radicado || '—'}{t.Descripcion ? ` — ${t.Descripcion}` : ''}</li>
+                <li key={'t'+t.id}><strong>Término</strong> {t.proceso?.Radicado || '—'}{t.Descripcion ? ` — ${t.Descripcion}` : ''}{t.Observacion ? <div className="save-hint" style={{margin:0}}>{t.Observacion}</div> : null}</li>
               ))}
               {eventosDelDia.audiencias.map(a => (
-                <li key={'a'+a.id}><strong>Audiencia</strong> {a.proceso?.Radicado || '—'}{a.Descripcion ? ` — ${a.Descripcion}` : ''}</li>
+                <li key={'a'+a.id}><strong>Audiencia</strong> {a.proceso?.Radicado || '—'}{a.Descripcion ? ` — ${a.Descripcion}` : ''}{a.Observacion ? <div className="save-hint" style={{margin:0}}>{a.Observacion}</div> : null}</li>
               ))}
               {eventosDelDia.pendientes.map(p => (
                 <li key={'p'+p.id}><strong>Pendiente</strong> {p.Pendiente || '—'}{p.proceso?.Radicado ? ` (${p.proceso.Radicado})` : ''}</li>

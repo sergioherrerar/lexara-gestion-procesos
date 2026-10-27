@@ -55,7 +55,8 @@ function listadoTexto(items){
     const radicado = r.proceso?.Radicado || "—";
     const cliente = r.proceso?.Cliente ? ` — ${r.proceso.Cliente}` : '';
     const descripcion = r.Descripcion ? ` — ${r.Descripcion}` : '';
-    return `${i+1}. ${radicado}${cliente}${descripcion} — vence ${fechaCorta(r.fechaObjetivo)}`;
+    const observacion = r.Observacion ? ` (Observación: ${String(r.Observacion).split(String.fromCharCode(10)).join(' ').trim()})` : '';
+    return `${i+1}. ${radicado}${cliente}${descripcion} — vence ${fechaCorta(r.fechaObjetivo)}${observacion}`;
   }).join('\n');
 }
 

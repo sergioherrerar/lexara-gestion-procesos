@@ -150,11 +150,11 @@ function TodosVencimientos({ audiencias, terminos, pendientes, procesos, onIrATa
     const procesoPorId = new Map((procesos||[]).map(p => [String(p.id), p]));
     const lista = [];
     (audiencias||[]).forEach(a => {
-      lista.push({ clave:'a'+a.id, tipo:'audiencias', fecha:soloFechaISO(a.FechaAudiencia), hora:a.HoraAudiencia||'', texto:a.Descripcion||'', responsable:a.Abogado||'', proceso:procesoPorId.get(String(a.Proceso))||null, terminado:false });
+      lista.push({ clave:'a'+a.id, tipo:'audiencias', fecha:soloFechaISO(a.FechaAudiencia), hora:a.HoraAudiencia||'', texto:a.Descripcion||'', responsable:a.Abogado||'', proceso:procesoPorId.get(String(a.Proceso))||null, terminado:false, observacion:a.Observacion||'' });
     });
     (terminos||[]).forEach(t => {
       const fecha = soloFechaISO(t.VencimientoTermino) || sumarDiasHabilesJudiciales(soloFechaISO(t.FechaNotificacion), t.DiasHabiles) || '';
-      lista.push({ clave:'t'+t.id, tipo:'terminos', fecha, hora:'', texto:t.Descripcion||'', responsable:'', proceso:procesoPorId.get(String(t.Proceso))||null, terminado:false });
+      lista.push({ clave:'t'+t.id, tipo:'terminos', fecha, hora:'', texto:t.Descripcion||'', responsable:'', proceso:procesoPorId.get(String(t.Proceso))||null, terminado:false, observacion:t.Observacion||'' });
     });
     (pendientes||[]).forEach(p => {
       lista.push({ clave:'p'+p.id, tipo:'pendientes', fecha:soloFechaISO(p.FechaPendiente), hora:'', texto:p.Pendiente||'', responsable:p.PendientePara||'', proceso:procesoPorId.get(String(p.Proceso))||null, terminado:p.Estado==='Terminado', observacion:p.Observacion||'' });
