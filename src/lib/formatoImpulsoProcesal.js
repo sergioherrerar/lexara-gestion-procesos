@@ -30,7 +30,7 @@
 // alto proporcional con imagenComoDataUrl(), para que se vea igual en los
 // dos documentos.
 import { fechaLarga, imagenComoDataUrl } from './informesPDF';
-import { crearBorradorCorreo } from './graph';
+import { crearBorradorCorreo, firmaHtml, adjuntarFirmaABorrador } from './graph';
 import { crearHeaderMembreteWord, MARGEN_SUPERIOR_MEMBRETE_MM, MARGEN_INFERIOR_MEMBRETE_MM } from './membreteWord';
 import { generoDePrimerNombre } from './whatsappPago';
 import firmaCompleta from '../assets/Firma Monica Completa.png';
@@ -296,17 +296,22 @@ function asuntoCorreo(d){
 export async function enviarBorradorImpulsoProcesalGraph(proceso, buzon){
   const { d, lineas } = lineasDocumento(proceso);
   if(!d.correoDespacho) throw new Error('Este proceso no tiene un "Correo despacho" guardado — agrégalo en la pestaña "Detalles del despacho" del proceso antes de generar el correo.');
-  const htmlBody = `<html><body style="font-family:Calibri,Arial,sans-serif;font-size:14px;color:#1c2624;">${lineas.map(l => l ? `<p style="margin:0 0 8px;">${escapeHtml(l)}</p>` : `<p style="margin:0 0 8px;">&nbsp;</p>`).join('')}</body></html>`;
+  // Cierra con «Cordial saludo,» y la firma de Gerencia (Mónica, 2026-10-29, pedido del usuario), adjunta en línea después de crear el borrador.
+  const htmlBody = `<html><body style="font-family:Calibri,Arial,sans-serif;font-size:14px;color:#1c2624;">${lineas.map(l => l ? `<p style="margin:0 0 8px;">${escapeHtml(l)}</p>` : `<p style="margin:0 0 8px;">&nbsp;</p>`).join('')}<p style="margin:14px 0 0;">Cordial saludo,</p>${firmaHtml('gerencia')}</body></html>`;
   const datos = { to: d.correoDespacho, subject: asuntoCorreo(d), htmlBody };
+  let creado, buzonUsado = buzon || undefined, enBuzonPropio = false;
   if(buzon){
-    try{ return await crearBorradorCorreo({ ...datos, buzon }); }
+    try{ creado = await crearBorradorCorreo({ ...datos, buzon }); }
     catch(err){
       if(!/403|access is denied|ErrorAccessDenied|forbidden/i.test(String((err && err.message) || err))) throw err;
-      const propio = await crearBorradorCorreo(datos);
-      return { ...propio, enBuzonPropio: true };
+      creado = await crearBorradorCorreo(datos);
+      buzonUsado = undefined; enBuzonPropio = true;
     }
+  }else{
+    creado = await crearBorradorCorreo(datos);
   }
-  return crearBorradorCorreo(datos);
+  const firmaOk = creado?.id ? await adjuntarFirmaABorrador({ mensajeId: creado.id, buzon: buzonUsado, clave: 'gerencia' }) : false;
+  return { ...creado, firmaOk, ...(enBuzonPropio ? { enBuzonPropio: true } : {}) };
 }
 
 // Respaldo sin permiso de Graph — abre el cliente de correo local con

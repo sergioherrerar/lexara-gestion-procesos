@@ -8,7 +8,7 @@ import { filtrarHorasExtrasPorMes, agruparPorColaborador, redondear } from './ho
 import { esColaboradorVigente } from './permissions';
 import { estadoPeriodo } from './vacaciones';
 import { diasHabilesEntre } from './solicitudVacaciones';
-import { fmtMonto } from './graph';
+import { fmtMonto, normalize, firmaHtml } from './graph';
 import { FICHA_EMPRESA_MD } from '../config';
 
 export { MESES_NOMBRES };
@@ -18,9 +18,13 @@ export const CORREO_GERENCIA_NOVEDADES = FICHA_EMPRESA_MD.correo;
 export const CORREO_BEATRIZ_POR_DEFECTO = 'beatriz.sanchez@asescont.com.co';
 
 export function destinatariaNovedades(colaboradores){
-  const ficha = (colaboradores || []).find(c => /beatriz/i.test(c.Nombre || '') && String(c.Correo || '').includes('@'));
+  // Solo una ficha que sea de verdad ella (correo de ASESCONT, o un nombre que EMPIECE por «Beatriz»): un nombre que solo contenga «Beatriz» (p. ej. «Gloria Beatriz …») es otra persona.
+  const ficha = (colaboradores || []).find(c => String(c.Correo || '').includes('@') && (/@asescont\./i.test(c.Correo || '') || /^\s*beatriz\b/i.test(c.Nombre || '')));
   return { nombre: ficha?.Nombre || 'Beatriz Sánchez', correo: (ficha?.Correo || CORREO_BEATRIZ_POR_DEFECTO).trim() };
 }
+
+// Cómo se le saluda: siempre «Beatriz» (pedido del usuario 2026-10-29: la ficha puede traer otro primer nombre, p. ej. «Gloria Beatriz …», y el saludo salía «Gloria»).
+export function nombreDeSaludo(){ return 'Beatriz'; }
 
 function aISO(d){ return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
 function deISO(iso){ const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso || '')); return m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : null; }
@@ -66,7 +70,35 @@ export function armarNovedades({ anio, mesIndex0, tutelas, valoresEntidad, horas
   }).filter(Boolean).sort((a, b) => a.colaborador.localeCompare(b.colaborador) || a.inicio.localeCompare(b.inicio));
   const vacInfo = { filas: vacFilas, pendientes: vacFilas.filter(f => f.pendiente).length, totalDiasEnMes: redondear(vacFilas.reduce((s, f) => s + f.diasEnMes, 0)) };
 
-  return { rangos, tutelas: tutelasInfo, horas: horasInfo, vacaciones: vacInfo };
+  return { rangos, tutelas: tutelasInfo, horas: horasInfo, vacaciones: vacInfo, consolidado: consolidarPorPersona(tutelasInfo, horasInfo, vacInfo) };
+}
+
+// Una sola fila por persona con las tres novedades (pedido del usuario 2026-10-29: «al comienzo del correo un consolidado por persona»). El abogado de una tutela y el
+// colaborador de Horas Extras/Vacaciones pueden venir escritos distinto («Ariana Martín» / «Ariana Andrea Martín Mendoza»): se unen si todas las palabras del nombre más
+// corto (mínimo dos) están en el más largo, sin importar tildes ni mayúsculas.
+function mismaPersona(a, b){
+  const ta = normalize(a).split(/\s+/).filter(Boolean), tb = normalize(b).split(/\s+/).filter(Boolean);
+  if(ta.join(' ') === tb.join(' ')) return true;
+  const [corto, largo] = ta.length <= tb.length ? [ta, tb] : [tb, ta];
+  return corto.length >= 2 && corto.every(t => largo.includes(t));
+}
+function consolidarPorPersona(tutelas, horas, vac){
+  const filas = [];
+  const fila = nombre => {
+    let f = filas.find(x => mismaPersona(x.persona, nombre));
+    if(!f){ f = { persona: nombre, tutelas: 0, valor: 0, horas: 0, vacaciones: 0 }; filas.push(f); }
+    else if(String(nombre).length > String(f.persona).length) f.persona = nombre;
+    return f;
+  };
+  tutelas.grupos.forEach(g => { const f = fila(g.abogado); f.tutelas += g.filas.reduce((s, x) => s + x.cantidad, 0); f.valor += g.totalAbogado; });
+  horas.filas.forEach(h => { fila(h.colaborador).horas += h.total; });
+  vac.filas.forEach(v => { fila(v.colaborador).vacaciones += v.diasEnMes; });
+  filas.sort((a, b) => a.persona.localeCompare(b.persona));
+  filas.forEach(f => { f.horas = redondear(f.horas); f.vacaciones = redondear(f.vacaciones); });
+  return {
+    filas,
+    totales: { tutelas: filas.reduce((s, f) => s + f.tutelas, 0), valor: filas.reduce((s, f) => s + f.valor, 0), horas: redondear(filas.reduce((s, f) => s + f.horas, 0)), vacaciones: redondear(filas.reduce((s, f) => s + f.vacaciones, 0)) },
+  };
 }
 
 export function etiquetaCiclo(anio, mesIndex0){ return `${MESES_NOMBRES[mesIndex0]} de ${anio}`; }
@@ -79,6 +111,11 @@ const TDD = TD + ' text-align:right;';
 const TITULO = 'margin:26px 0 4px; font-size:16px; font-weight:700; color:#004941;';
 const SUBTITULO = 'margin:0 0 10px; font-size:12.5px; color:#5c6b68;';
 
+function tablaConsolidado(c){
+  if(!c.filas.length) return '<p style="margin:0; font-size:13.5px; color:#5c6b68;">No hay novedades en este período.</p>';
+  const filas = c.filas.map(f => `<tr><td style="${TD}">${esc(f.persona)}</td><td style="${TDD}">${f.tutelas || '—'}</td><td style="${TDD}">${f.valor ? pesos(f.valor) : '—'}</td><td style="${TDD}">${f.horas ? num(f.horas) : '—'}</td><td style="${TDD}">${f.vacaciones ? num(f.vacaciones) : '—'}</td></tr>`).join('');
+  return `<table role="presentation" cellpadding="0" cellspacing="0" style="width:100%; border-collapse:collapse;"><tr><th style="${TH}">Persona</th><th style="${THD}">Tutelas contestadas</th><th style="${THD}">Valor Abogado</th><th style="${THD}">Horas extras</th><th style="${THD}">Días de vacaciones</th></tr>${filas}<tr><td style="${TD} background:#004941; color:#fff; font-weight:700;">Total general</td><td style="${TDD} background:#004941; color:#fff; font-weight:700;">${c.totales.tutelas}</td><td style="${TDD} background:#004941; color:#fff; font-weight:700;">${pesos(c.totales.valor)}</td><td style="${TDD} background:#004941; color:#fff; font-weight:700;">${num(c.totales.horas)}</td><td style="${TDD} background:#004941; color:#fff; font-weight:700;">${num(c.totales.vacaciones)}</td></tr></table>`;
+}
 function tablaTutelas(t){
   if(!t.grupos.length) return '<p style="margin:0; font-size:13.5px; color:#5c6b68;">No hubo tutelas contestadas en este período.</p>';
   const filas = t.grupos.map(g => {
@@ -99,14 +136,19 @@ function tablaVacaciones(v){
   return `<table role="presentation" cellpadding="0" cellspacing="0" style="width:100%; border-collapse:collapse;"><tr><th style="${TH}">Colaborador</th><th style="${TH}">Inicio</th><th style="${TH}">Fin</th><th style="${THD}">Días solicitados</th><th style="${THD}">Días en el mes</th><th style="${TH}">Estado</th></tr>${filas}<tr><td style="${TD} background:#004941; color:#fff; font-weight:700;" colspan="4">Total días en el mes</td><td style="${TDD} background:#004941; color:#fff; font-weight:700;">${num(v.totalDiasEnMes)}</td><td style="${TD} background:#004941;"></td></tr></table>${v.filas.some(f => f.cruzaMes) ? '<p style="margin:6px 0 0; font-size:12px; color:#5c6b68;">* El período cruza de mes: se cuentan solo los días hábiles que caen dentro de este mes.</p>' : ''}`;
 }
 
-export function construirCorreoNovedades({ novedades, anio, mesIndex0, destinatario, remitente }){
+// `srcFirma`: de dónde sale la imagen de la firma de Soporte (cid: en el correo real, data: en la vista previa).
+export function construirCorreoNovedades({ novedades, anio, mesIndex0, destinatario, srcFirma }){
   const etiqueta = etiquetaCiclo(anio, mesIndex0);
   const r = novedades.rangos;
-  const pila = String(destinatario?.nombre || 'Beatriz').split(' ')[0];
+  const pila = nombreDeSaludo(destinatario);
   const asunto = `Novedades de nómina — ${etiqueta} — Lexara Abogados`;
   const html = `<div style="font-family:'Segoe UI', Arial, sans-serif; color:#1c2624; max-width:720px;">
   <p style="margin:0 0 12px; font-size:15px;">Buen día, ${esc(pila)}:</p>
   <p style="margin:0 0 6px; font-size:15px; line-height:1.55;">Te compartimos las novedades de nómina de <strong>${esc(etiqueta)}</strong> de MD Abogados SAS (Lexara Abogados), con corte al 28 para tutelas y horas extras.</p>
+
+  <p style="${TITULO}">Consolidado por persona</p>
+  <p style="${SUBTITULO}">Tutelas y horas extras del ${dma(r.cortesInicio)} al ${dma(r.cortesFin)} · vacaciones del ${dma(r.mesInicio)} al ${dma(r.mesFin)}</p>
+  ${tablaConsolidado(novedades.consolidado)}
 
   <p style="${TITULO}">1. Tutelas contestadas</p>
   <p style="${SUBTITULO}">Del ${dma(r.cortesInicio)} al ${dma(r.cortesFin)} (por fecha de vencimiento) · ${novedades.tutelas.cantidad} en total</p>
@@ -121,9 +163,8 @@ export function construirCorreoNovedades({ novedades, anio, mesIndex0, destinata
   ${tablaVacaciones(novedades.vacaciones)}
 
   <p style="margin:24px 0 0; font-size:14px; line-height:1.55;">Quedamos atentos a cualquier inquietud o ajuste.</p>
-  <p style="margin:14px 0 0; font-size:14px;">Cordialmente,</p>
-  <p style="margin:2px 0 0; font-size:14px; font-weight:700; color:#004941;">${esc(remitente || 'Lexara Abogados')}</p>
-  <p style="margin:0; font-size:13px; color:#5c6b68;">MD Abogados SAS — Lexara Abogados</p>
+  <p style="margin:14px 0 0; font-size:14px;">Cordial saludo,</p>
+  ${firmaHtml('soporte', srcFirma)}
 </div>`;
   return { asunto, html };
 }

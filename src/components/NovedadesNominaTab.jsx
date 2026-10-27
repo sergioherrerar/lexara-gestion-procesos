@@ -1,9 +1,9 @@
 import { Fragment, useEffect, useMemo, useState } from 'react';
 import { IconTextButton } from './IconButton';
-import { crearBorradorCorreo, enviarCorreoDirecto, listarEnviadosPorCategoria, cuentaDelPortal, fmtMonto, mensajeError } from '../lib/graph';
+import { crearBorradorConImagenesInline, enviarCorreoDirecto, listarEnviadosPorCategoria, firmaComoImagenInline, fmtMonto, mensajeError } from '../lib/graph';
 import {
   MESES_NOMBRES, CATEGORIA_NOVEDADES, CORREO_GERENCIA_NOVEDADES, destinatariaNovedades,
-  armarNovedades, construirCorreoNovedades, etiquetaCiclo, dma,
+  armarNovedades, construirCorreoNovedades, etiquetaCiclo, dma, nombreDeSaludo,
 } from '../lib/novedadesNomina';
 
 // Administración → «Novedades de nómina» (2026-10-29, pedido del usuario): reúne en una sola vista lo que se le reporta cada mes a Beatriz (contadora contratista)
@@ -22,6 +22,8 @@ function Tarjeta({ titulo, valor, detalle }){
   );
 }
 
+const REMITENTE_SOPORTE = 'soporte@lexaraabogados.com';
+
 export default function NovedadesNominaTab({ colaboradores, tutelas, valoresEntidad, horasExtras, vacacionesPeriodos, liveMode, notify }){
   const hoy = new Date();
   const [mes, setMes] = useState(hoy.getMonth());
@@ -32,23 +34,28 @@ export default function NovedadesNominaTab({ colaboradores, tutelas, valoresEnti
   const [errorEnviados, setErrorEnviados] = useState('');
 
   const destinatario = useMemo(() => destinatariaNovedades(colaboradores), [colaboradores]);
-  const remitente = useMemo(() => {
-    const yo = (colaboradores || []).find(c => String(c.Correo || '').trim().toLowerCase() === cuentaDelPortal());
-    return yo?.Nombre || 'Equipo Lexara Abogados';
-  }, [colaboradores]);
+  // Este correo SIEMPRE sale de la cuenta de Soporte (pedido del usuario 2026-10-29) y cierra con «Cordial saludo,» y la firma de Soporte (imagen real que entregó el usuario).
+  const [firma, setFirma] = useState(null);       // { nombre, cid, base64, contentType, srcVistaPrevia }
+  useEffect(() => {
+    let vivo = true;
+    firmaComoImagenInline('soporte').then(f => { if(vivo) setFirma(f); }).catch(err => console.error('No se pudo leer la firma de Soporte:', err));
+    return () => { vivo = false; };
+  }, []);
 
   const novedades = useMemo(
     () => armarNovedades({ anio, mesIndex0: mes, tutelas, valoresEntidad, horasExtras, vacacionesPeriodos, colaboradores }),
     [anio, mes, tutelas, valoresEntidad, horasExtras, vacacionesPeriodos, colaboradores]
   );
-  const correo = useMemo(() => construirCorreoNovedades({ novedades, anio, mesIndex0: mes, destinatario, remitente }), [novedades, anio, mes, destinatario, remitente]);
+  // `correo` = la vista previa (la firma como data:) · `correoReal` = el que se envía (la firma adjunta en línea, cid:).
+  const correo = useMemo(() => construirCorreoNovedades({ novedades, anio, mesIndex0: mes, destinatario, srcFirma: firma?.srcVistaPrevia }), [novedades, anio, mes, destinatario, firma]);
+  const correoReal = useMemo(() => construirCorreoNovedades({ novedades, anio, mesIndex0: mes, destinatario }), [novedades, anio, mes, destinatario]);
   const etiqueta = etiquetaCiclo(anio, mes);
 
   // ¿Ya se envió el correo de este ciclo? (se busca en Enviados por la categoría y el asunto)
   useEffect(() => {
     if(!liveMode) return;
     let vivo = true;
-    listarEnviadosPorCategoria(CATEGORIA_NOVEDADES)
+    listarEnviadosPorCategoria(CATEGORIA_NOVEDADES, REMITENTE_SOPORTE)
       .then(l => { if(vivo){ setEnviados(l); setErrorEnviados(''); } })
       .catch(err => { console.error(err); if(vivo) setErrorEnviados(mensajeError(err)); });
     return () => { vivo = false; };
@@ -61,8 +68,9 @@ export default function NovedadesNominaTab({ colaboradores, tutelas, valoresEnti
   async function enviar(){
     setConfirmando(false); setAccion('enviando');
     try{
-      await enviarCorreoDirecto({ to: [destinatario.correo], cc: [CORREO_GERENCIA_NOVEDADES], subject: correo.asunto, htmlBody: correo.html, categorias: [CATEGORIA_NOVEDADES] });
-      notify?.('✓ Novedades de nómina de ' + etiqueta + ' enviadas a ' + destinatario.nombre + ' (' + destinatario.correo + ') con copia a Gerencia, desde tu cuenta.', 'success');
+      if(!firma) throw new Error('La imagen de la firma de Soporte aún no se ha cargado; espera un momento e inténtalo de nuevo.');
+      await enviarCorreoDirecto({ to: [destinatario.correo], cc: [CORREO_GERENCIA_NOVEDADES], subject: correoReal.asunto, htmlBody: correoReal.html, categorias: [CATEGORIA_NOVEDADES], desde: REMITENTE_SOPORTE, imagenes: [firma] });
+      notify?.('✓ Novedades de nómina de ' + etiqueta + ' enviadas a ' + destinatario.nombre + ' (' + destinatario.correo + ') con copia a Gerencia, desde ' + REMITENTE_SOPORTE + '.', 'success');
     }catch(err){
       console.error(err); notify?.('No se pudo enviar el correo: ' + mensajeError(err), 'error');
     }finally{ setAccion(''); }
@@ -70,8 +78,9 @@ export default function NovedadesNominaTab({ colaboradores, tutelas, valoresEnti
   async function crearBorrador(){
     setAccion('borrador');
     try{
-      await crearBorradorCorreo({ to: [destinatario.correo], cc: [CORREO_GERENCIA_NOVEDADES], subject: correo.asunto, htmlBody: correo.html, categorias: [CATEGORIA_NOVEDADES + ' (borrador)'] });
-      notify?.('✓ Borrador creado en tus Borradores de Outlook, dirigido a ' + destinatario.correo + ' con copia a Gerencia.', 'success');
+      if(!firma) throw new Error('La imagen de la firma de Soporte aún no se ha cargado; espera un momento e inténtalo de nuevo.');
+      await crearBorradorConImagenesInline({ to: [destinatario.correo], cc: [CORREO_GERENCIA_NOVEDADES], subject: correoReal.asunto, htmlBody: correoReal.html, imagenes: [firma], categorias: [CATEGORIA_NOVEDADES + ' (borrador)'], buzon: REMITENTE_SOPORTE });
+      notify?.('✓ Borrador creado en los Borradores de ' + REMITENTE_SOPORTE + ', dirigido a ' + destinatario.correo + ' con copia a Gerencia.', 'success');
     }catch(err){
       console.error(err); notify?.('No se pudo crear el borrador: ' + mensajeError(err), 'error');
     }finally{ setAccion(''); }
@@ -122,6 +131,21 @@ export default function NovedadesNominaTab({ colaboradores, tutelas, valoresEnti
           <Tarjeta titulo="Horas extras aprobadas" valor={num(nh.totalGeneral) + ' h'} detalle={nh.filas.length + ' colaborador(es) · ' + nh.registros + ' registro(s)'} />
           <Tarjeta titulo="Vacaciones del mes" valor={nv.filas.length} detalle={num(nv.totalDiasEnMes) + ' días en el mes' + (nv.pendientes ? ' · ' + nv.pendientes + ' sin aprobar' : '')} />
         </div>
+
+        <h4 style={{ margin: '0 0 8px', color: 'var(--verde-oscuro)' }}>Consolidado por persona</h4>
+        {novedades.consolidado.filas.length ? (
+          <div className="table-wrap" style={{ marginBottom: 22 }}>
+            <table className="table-compact">
+              <thead><tr><th>Persona</th><th style={{ textAlign: 'right' }}>Tutelas contestadas</th><th style={{ textAlign: 'right' }}>Valor Abogado</th><th style={{ textAlign: 'right' }}>Horas extras</th><th style={{ textAlign: 'right' }}>Días de vacaciones</th></tr></thead>
+              <tbody>
+                {novedades.consolidado.filas.map(f => (
+                  <tr key={f.persona}><td className="cliente">{f.persona}</td><td style={{ textAlign: 'right' }}>{f.tutelas || '—'}</td><td style={{ textAlign: 'right' }}>{f.valor ? peso(f.valor) : '—'}</td><td style={{ textAlign: 'right' }}>{f.horas ? num(f.horas) : '—'}</td><td style={{ textAlign: 'right' }}>{f.vacaciones ? num(f.vacaciones) : '—'}</td></tr>
+                ))}
+                <tr style={{ fontWeight: 700 }}><td>Total general</td><td style={{ textAlign: 'right' }}>{novedades.consolidado.totales.tutelas}</td><td style={{ textAlign: 'right' }}>{peso(novedades.consolidado.totales.valor)}</td><td style={{ textAlign: 'right' }}>{num(novedades.consolidado.totales.horas)}</td><td style={{ textAlign: 'right' }}>{num(novedades.consolidado.totales.vacaciones)}</td></tr>
+              </tbody>
+            </table>
+          </div>
+        ) : <div className="empty-state empty-state-compact" style={{ marginBottom: 22 }}>No hay novedades en este período.</div>}
 
         <h4 style={{ margin: '0 0 8px', color: 'var(--verde-oscuro)' }}>1. Tutelas contestadas</h4>
         {nt.grupos.length ? (
@@ -183,7 +207,7 @@ export default function NovedadesNominaTab({ colaboradores, tutelas, valoresEnti
 
         <h4 style={{ margin: '0 0 8px', color: 'var(--verde-oscuro)' }}>Correo para {destinatario.nombre}</h4>
         <p className="save-hint" style={{ margin: '0 0 8px' }}>
-          <strong>Para:</strong> {destinatario.nombre} ({destinatario.correo}) · <strong>Con copia:</strong> Gerencia ({CORREO_GERENCIA_NOVEDADES}) · <strong>Asunto:</strong> {correo.asunto}
+          <strong>De:</strong> Soporte ({REMITENTE_SOPORTE}) · <strong>Para:</strong> {destinatario.nombre} ({destinatario.correo}) · <strong>Con copia:</strong> Gerencia ({CORREO_GERENCIA_NOVEDADES}) · <strong>Asunto:</strong> {correo.asunto}
         </p>
         <iframe title="Vista previa del correo de novedades de nómina" className="felicitacion-vista" srcDoc={correo.html} sandbox="" style={{ height: 520 }} />
 
@@ -192,14 +216,14 @@ export default function NovedadesNominaTab({ colaboradores, tutelas, valoresEnti
             confirmando ? (
               <>
                 <span className="save-hint" style={{ margin: 0 }}>
-                  {yaEnviado ? <strong>Ya se envió este ciclo. </strong> : null}Se enviará un correo real a {destinatario.correo} con copia a Gerencia, desde tu cuenta. ¿Enviarlo?
+                  {yaEnviado ? <strong>Ya se envió este ciclo. </strong> : null}Se enviará un correo real a {destinatario.correo} con copia a Gerencia, desde {REMITENTE_SOPORTE}. ¿Enviarlo?
                 </span>
                 <IconTextButton icon="mail" variant="primary" onClick={enviar} disabled={!!accion}>Sí, enviar</IconTextButton>
                 <button type="button" className="btn-secondary" onClick={() => setConfirmando(false)}>Cancelar</button>
               </>
             ) : (
               <>
-                <IconTextButton icon="mail" variant="primary" onClick={() => setConfirmando(true)} disabled={!!accion}>{accion === 'enviando' ? 'Enviando…' : 'Enviar a ' + destinatario.nombre.split(' ')[0]}</IconTextButton>
+                <IconTextButton icon="mail" variant="primary" onClick={() => setConfirmando(true)} disabled={!!accion}>{accion === 'enviando' ? 'Enviando…' : 'Enviar a ' + nombreDeSaludo(destinatario)}</IconTextButton>
                 <button type="button" className="btn-secondary" onClick={crearBorrador} disabled={!!accion}>{accion === 'borrador' ? 'Creando…' : 'Solo crear borrador'}</button>
               </>
             )

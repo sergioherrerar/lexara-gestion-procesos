@@ -103,7 +103,7 @@ export default function ProcesosView({ procesos, currentFilter, setFilter, searc
         try{
           const mensaje = await enviarBorradorImpulsoProcesalGraph(proceso, config?.GERENCIA_BUZON_CORREO);
           if(mensaje?.carpetaBorradores) window.open(mensaje.carpetaBorradores, '_blank');
-          const carpetaInfo = mensaje?.carpetaReal ? ` (quedó guardado en la carpeta "${mensaje.carpetaReal}")` : '';
+          const carpetaInfo = (mensaje?.carpetaReal ? ` (quedó guardado en la carpeta "${mensaje.carpetaReal}")` : '') + (mensaje?.firmaOk === false ? ' No se pudo adjuntar la imagen de la firma: agrégala tú en el borrador.' : '');
           notify?.(mensaje?.enBuzonPropio
             ? `Tu cuenta no tiene acceso al buzón de Gerencia, así que el borrador del Impulso Procesal se creó en TU buzón${carpetaInfo}. Pídele al administrador acceso total al buzón de Gerencia para que se cree allá. Complete los Antecedentes/Solicitud antes de enviarlo.`
             : `Se creó el borrador del Impulso Procesal en los Borradores de Gerencia${carpetaInfo} — complete los Antecedentes/Solicitud antes de enviarlo.`, 'info');

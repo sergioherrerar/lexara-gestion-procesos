@@ -1,5 +1,7 @@
 import { seleccionarAdjuntosParaLexIA } from './adjuntosLexIA';
 import firmaArianaUrl from '../assets/Firma Ariana.jpg';
+import firmaSoporteUrl from '../assets/Firma Soporte Sergio.jpg';
+import firmaGerenciaUrl from '../assets/Firma Gerencia Monica.png';
 
 // Estado de MSAL vive fuera de React (no es UI, solo la sesión del SDK).
 let msalInstance = null;
@@ -417,12 +419,27 @@ export function cuentaDelPortal(){ return String(account?.username || '').toLowe
 
 // Envía YA un correo desde la cuenta con la que se entró (p. ej. la solicitud de vacaciones, 2026-10-29). `to`/`cc` son arreglos de correos; sin duplicados.
 // Queda copia en Enviados. Mismo permiso Mail.Send que las felicitaciones.
-export async function enviarCorreoDirecto({ to, cc, subject, htmlBody, categorias }){
-  const token = await getMailSendToken();
+// `desde` (opcional): buzón desde el que sale el correo cuando NO es el de quien entró (p. ej. las novedades de nómina siempre salen de Soporte@, 2026-10-29). Para eso Microsoft
+// pide el permiso «Mail.Send.Shared» (se agrega y aprueba en Azure) y que quien envía tenga «Enviar como» sobre ese buzón en Exchange.
+async function getMailSendSharedToken(){
+  const scopes = ["Mail.Send", "Mail.Send.Shared"];
+  try{
+    const res = await msalInstance.acquireTokenSilent({ scopes, account });
+    return res.accessToken;
+  }catch(err){
+    const res = await msalInstance.acquireTokenPopup({ scopes });
+    return res.accessToken;
+  }
+}
+// `imagenes` (opcional): imágenes en línea [{ nombre, cid, base64, contentType }] (p. ej. la firma), referenciadas en el cuerpo con cid:.
+export async function enviarCorreoDirecto({ to, cc, subject, htmlBody, categorias, desde, imagenes }){
+  const ajeno = !!desde && String(desde).trim().toLowerCase() !== cuentaDelPortal();
+  const token = ajeno ? await getMailSendSharedToken() : await getMailSendToken();
+  const raiz = ajeno ? `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(String(desde).trim())}` : 'https://graph.microsoft.com/v1.0/me';
   const aDirecciones = lista => (lista || []).map(a => String(a || '').trim()).filter(Boolean);
   const para = [...new Set(aDirecciones(to).map(a => a.toLowerCase()))];
   const copia = [...new Set(aDirecciones(cc).map(a => a.toLowerCase()))].filter(a => !para.includes(a));
-  const res = await fetch('https://graph.microsoft.com/v1.0/me/sendMail', {
+  const res = await fetch(`${raiz}/sendMail`, {
     method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
       message: {
@@ -430,12 +447,14 @@ export async function enviarCorreoDirecto({ to, cc, subject, htmlBody, categoria
         ...(categorias && categorias.length ? { categories: categorias } : {}),
         toRecipients: para.map(address => ({ emailAddress: { address } })),
         ccRecipients: copia.map(address => ({ emailAddress: { address } })),
+        ...(imagenes && imagenes.length ? { attachments: imagenes.map(im => ({ '@odata.type': '#microsoft.graph.fileAttachment', name: im.nombre, contentType: im.contentType || 'image/jpeg', contentBytes: im.base64, isInline: true, contentId: im.cid })) } : {}),
       },
       saveToSentItems: true,
     }),
   });
   if(!res.ok){
     const cuerpo = await res.text();
+    if(res.status === 403 && ajeno) throw new Error(`No se pudo enviar desde ${desde}: falta el permiso Mail.Send.Shared en Azure (Entra) o tu usuario no tiene «Enviar como» sobre ese buzón en Exchange.`);
     if(res.status === 403) throw new Error('Falta el permiso Mail.Send en Azure (Entra) para enviar correos desde el portal.');
     throw new Error(`Graph ${res.status}: ${cuerpo.substring(0, 300)}`);
   }
@@ -443,10 +462,15 @@ export async function enviarCorreoDirecto({ to, cc, subject, htmlBody, categoria
 }
 
 // Correos ya ENVIADOS con una categoría (p. ej. «Novedades de nómina»), del más reciente al más antiguo: [{ asunto, fecha, para }]. Sirve para avisar que algo ya se mandó.
-export async function listarEnviadosPorCategoria(categoria){
-  const token = await getMailToken();
+// `buzon` (opcional): el buzón cuyos Enviados se revisan, si no es el de quien entró.
+export async function listarEnviadosPorCategoria(categoria, buzon){
+  const ajeno = !!buzon && String(buzon).trim().toLowerCase() !== cuentaDelPortal();
+  const raiz = ajeno ? `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(String(buzon).trim())}` : 'https://graph.microsoft.com/v1.0/me';
   const filtro = encodeURIComponent(`categories/any(c:c eq '${String(categoria).replace(/'/g, "''")}')`);
-  const res = await fetch(`https://graph.microsoft.com/v1.0/me/mailFolders/sentitems/messages?$filter=${filtro}&$select=subject,toRecipients,sentDateTime&$top=50`, { headers: { Authorization: `Bearer ${token}` } });
+  const pedir = async () => fetch(`${raiz}/mailFolders/sentitems/messages?$filter=${filtro}&$select=subject,toRecipients,sentDateTime&$top=50`, { headers: { Authorization: `Bearer ${await getMailToken()}` } });
+  let res = await pedir();
+  // Buzón de otra persona: puede exigir Mail.ReadWrite.Shared (ver usarPermisoCorreoCompartido); se activa y se reintenta una vez.
+  if(res.status === 403 && ajeno && !mailCompartido){ usarPermisoCorreoCompartido(); res = await pedir(); }
   if(!res.ok) throw new Error(`Graph ${res.status} al revisar Enviados: ${(await res.text()).substring(0, 200)}`);
   const datos = await res.json();
   return (datos.value || [])
@@ -715,27 +739,50 @@ export function tablaDatosTutelaHtml(campos, pretensiones, camposTodos){
 // al borrador (cid) en vez de una imagen incrustada en base64, porque Outlook de escritorio no
 // muestra las imágenes en base64 dentro del cuerpo.
 const FIRMA_CID = 'firma-ariana-lexara';
-let firmaBase64Cache = null;
 export const FIRMA_HTML = `<p style="margin:14px 0 0;"><img src="cid:${FIRMA_CID}" width="520" alt="Ariana Andrea Martin Mendoza — Abogada Junior — Lexara Abogados" style="display:block;border:0;width:520px;max-width:100%;height:auto;"></p>`;
-async function adjuntarFirmaInline(raiz, mensajeId, token){
+
+// Firmas institucionales por buzón (2026-10-29, pedido del usuario): cada correo lleva «Cordial saludo,» y la firma del buzón desde el que sale — Tutelas (Ariana),
+// Soporte (Sergio, Soporte Técnico) y Gerencia (Mónica, Gerente). Son las imágenes reales que entregó el usuario.
+const FIRMAS = {
+  ariana: { cid: FIRMA_CID, url: firmaArianaUrl, nombre: 'Firma Ariana.jpg', tipo: 'image/jpeg', alt: 'Ariana Andrea Martin Mendoza — Abogada Junior — Lexara Abogados' },
+  soporte: { cid: 'firma-soporte-lexara', url: firmaSoporteUrl, nombre: 'Firma Soporte.jpg', tipo: 'image/jpeg', alt: 'Sergio Alexander Herrera Ramírez — Soporte Técnico — Lexara Abogados' },
+  gerencia: { cid: 'firma-gerencia-lexara', url: firmaGerenciaUrl, nombre: 'Firma Gerencia.png', tipo: 'image/png', alt: 'Mónica Paola Quintero Jiménez — Gerente — Lexara Abogados' },
+};
+// <img> de la firma (por cid, o por otra fuente, p. ej. data: para la vista previa).
+export function firmaHtml(clave, src, ancho = 480){
+  const f = FIRMAS[clave];
+  return `<p style="margin:14px 0 0;"><img src="${src || 'cid:' + f.cid}" width="${ancho}" alt="${f.alt}" style="display:block;border:0;width:${ancho}px;max-width:100%;height:auto;"></p>`;
+}
+// La imagen de la firma no cambia: se baja y se convierte UNA vez por sesión (antes se repetía en cada borrador).
+const firmaBase64PorClave = new Map();
+async function firmaBase64(clave){
+  if(!firmaBase64PorClave.has(clave)){
+    const resp = await fetch(FIRMAS[clave].url);
+    if(!resp.ok) throw new Error('no se pudo leer la imagen de la firma');
+    firmaBase64PorClave.set(clave, arrayBufferABase64(await resp.arrayBuffer()));
+  }
+  return firmaBase64PorClave.get(clave);
+}
+// { nombre, cid, base64, contentType } listo para adjuntar en línea (ver `imagenes` de enviarCorreoDirecto / crearBorradorConImagenesInline) y src data: para la vista previa.
+export async function firmaComoImagenInline(clave){
+  const f = FIRMAS[clave];
+  const base64 = await firmaBase64(clave);
+  return { nombre: f.nombre, cid: f.cid, base64, contentType: f.tipo, srcVistaPrevia: `data:${f.tipo};base64,${base64}` };
+}
+async function adjuntarFirmaInline(raiz, mensajeId, token, clave = 'ariana'){
   try{
-    // La imagen de la firma no cambia: se baja y se convierte UNA vez por sesión (antes se repetía en cada borrador).
-    if(!firmaBase64Cache){
-      const resp = await fetch(firmaArianaUrl);
-      if(!resp.ok) throw new Error('no se pudo leer la imagen de la firma');
-      firmaBase64Cache = arrayBufferABase64(await resp.arrayBuffer());
-    }
-    const contentBytes = firmaBase64Cache;
+    const f = FIRMAS[clave];
+    const contentBytes = await firmaBase64(clave);
     const res = await fetch(`${raiz}/messages/${mensajeId}/attachments`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
         '@odata.type': '#microsoft.graph.fileAttachment',
-        name: 'Firma Ariana.jpg',
-        contentType: 'image/jpeg',
+        name: f.nombre,
+        contentType: f.tipo,
         contentBytes,
         isInline: true,
-        contentId: FIRMA_CID,
+        contentId: f.cid,
       }),
     });
     if(!res.ok) throw new Error(`Graph ${res.status}`);
@@ -744,6 +791,11 @@ async function adjuntarFirmaInline(raiz, mensajeId, token){
     console.error('No se pudo adjuntar la firma al borrador:', err);
     return false;
   }
+}
+// Adjunta la firma de `clave` a un borrador ya creado en el buzón `buzon` (o en el de quien entró, si no se indica). Devuelve true/false.
+export async function adjuntarFirmaABorrador({ mensajeId, buzon, clave }){
+  const raiz = buzon ? `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(buzon)}` : 'https://graph.microsoft.com/v1.0/me';
+  return adjuntarFirmaInline(raiz, mensajeId, await getMailToken(), clave);
 }
 
 
