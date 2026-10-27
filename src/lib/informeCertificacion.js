@@ -144,6 +144,11 @@ function dibujarParrafoConNegritas(doc, segmentos, x, y, maxWidth, lineHeight){
   return cursorY + lineHeight;
 }
 
+// Preferencia de «incluir el párrafo de recomendación»: la misma casilla de Administración → Certificaciones y el botón de cada fila de Colaboradores MD (por defecto, sí).
+export function recomendacionPreferida(){
+  try{ return localStorage.getItem('lexara-cert-recomendacion') !== 'no'; }catch(e){ return true; }
+}
+
 // opciones.recomendacion: agrega el párrafo de recomendación (calidades humanas y profesionales) tomado de las cartas del despacho.
 export async function generarCertificacionColaboradorPDF(colaborador, opciones = {}){
   const esContratistaCol = esContratista(colaborador.TipoColaborador);

@@ -7,7 +7,7 @@ import IconButton, { IconTextButton } from './IconButton';
 import ColumnHeaderMenu from './ColumnHeaderMenu';
 import { useColumnFilters } from '../hooks/useColumnFilters';
 import { useColumnSort } from '../hooks/useColumnSort';
-import { generarCertificacionColaboradorPDF } from '../lib/informeCertificacion';
+import { generarCertificacionColaboradorPDF, recomendacionPreferida } from '../lib/informeCertificacion';
 
 const COLUMNS = [
   {key:'nombre', label:'Nombre', value: c => c.Nombre || ""},
@@ -41,7 +41,7 @@ export default function ColaboradoresView({ colaboradores, searchQuery, onOpenCo
       return;
     }
     setGenerandoCertificacion(colaborador.id);
-    try{ await generarCertificacionColaboradorPDF(colaborador); }
+    try{ await generarCertificacionColaboradorPDF(colaborador, { recomendacion: recomendacionPreferida() }); }
     catch(err){ console.error(err); notify?.("No se pudo generar la certificación: " + mensajeError(err), 'error'); }
     finally { setGenerandoCertificacion(null); }
   }

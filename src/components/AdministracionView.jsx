@@ -7,7 +7,7 @@ import HorasExtrasTab from './HorasExtrasTab';
 import GastosTab from './GastosTab';
 import FacturacionTab from './FacturacionTab';
 import { IconTextButton } from './IconButton';
-import { generarCertificacionColaboradorPDF } from '../lib/informeCertificacion';
+import { generarCertificacionColaboradorPDF, recomendacionPreferida } from '../lib/informeCertificacion';
 
 // Módulo "Administración" (agregado 2026-08-25, pedido explícito del
 // usuario) — agrupa en pestañas lo que antes era el módulo suelto
@@ -29,7 +29,7 @@ const TABS = [
 function CertificacionesTab({ colaboradores, notify }){
   const [generando, setGenerando] = useState(null);
   // Párrafo de recomendación (calidades humanas y profesionales): se recuerda la última elección en este navegador.
-  const [conRecomendacion, setConRecomendacion] = useState(() => { try{ return localStorage.getItem('lexara-cert-recomendacion') !== 'no'; }catch(e){ return true; } });
+  const [conRecomendacion, setConRecomendacion] = useState(() => recomendacionPreferida());
   function cambiarRecomendacion(v){ setConRecomendacion(v); try{ localStorage.setItem('lexara-cert-recomendacion', v ? 'si' : 'no'); }catch(e){} }
   async function handleGenerar(c){
     if(!c.Cargo || !c.FechaIngreso){
