@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-10-28 (106)
+- **Se descarta el mapeo viejo «Abogado → AppEditor» de la lista Términos** — visto en el mapeo exportado por el usuario (lexara-mapeo-sharepoint.json): ese navegador conservaba «Abogado: AppEditor», la columna de sistema «Aplicación modificada por» que se había adivinado mal en septiembre y que ya no es un campo de Términos. Aunque la app ya no le escribe, ahora ese valor guardado se ignora siempre. Del mismo archivo se confirmó que «Observación» quedó bien mapeada en las tres listas: Audiencias → Observaci_x00f3_n, Términos → Observacion y Pendientes → Observacion.
+
 ## 2026-10-28 (105)
 - **Observación en Audiencias y Términos (y ya estaba en Pendientes)** — pedido del usuario: las listas «Audiencia» y «Terminos» de SharePoint ahora tienen la columna Observación. Se agregó a las dos como campo visible para mapear en Configuración (se adivina sola al conectar por el nombre «Observación»/«Observacion» y se puede confirmar o cambiar a mano; no se fijó un nombre interno a ciegas para no escribir en una columna equivocada). En el portal: el formulario de agregar audiencia o término trae el campo «Observación» (opcional), las tablas de Audiencias y Términos (incluidas las de dentro de cada proceso) tienen una columna Observación que se puede editar al editar el registro, y el Excel de Audiencias y Términos trae la columna nueva. Pendientes ya tenía su Observación completa. Si la columna aún no está mapeada, el campo se muestra pero no se guarda hasta confirmar el mapeo en Configuración.
 

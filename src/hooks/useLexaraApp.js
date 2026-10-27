@@ -103,7 +103,9 @@ async function cargarTodasLasListas(config, lists, sid){
 // aplicarse en ningún navegador que ya hubiera mapeado antes. Estas 3
 // columnas de Procesos judiciales ya NO deben tomarse nunca de localStorage
 // — el valor correcto vive fijo en config.js desde que se recrearon.
-const CAMPOS_LINK_SIEMPRE_DESDE_CONFIG = { procesos: ['LinkCarpeta','LinkContrato','LinkCliente'] };
+// Términos: «Abogado» se había adivinado mal contra «AppEditor» (la columna de sistema «Aplicación modificada por», no un campo real) y sigue guardado en el
+// navegador de quien lo mapeó entonces; esa columna no debe volver a usarse (2026-10-28, visto en el mapeo exportado por el usuario).
+const CAMPOS_LINK_SIEMPRE_DESDE_CONFIG = { procesos: ['LinkCarpeta','LinkContrato','LinkCliente'], terminos: ['Abogado'] };
 function mapeoSinCamposObsoletos(listKey, mapeoGuardado){
   const excluir = CAMPOS_LINK_SIEMPRE_DESDE_CONFIG[listKey];
   if(!excluir || !mapeoGuardado) return mapeoGuardado;
