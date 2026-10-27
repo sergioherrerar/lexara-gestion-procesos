@@ -9,6 +9,7 @@ import { generarDashboardEntidadWord } from '../lib/exportarDashboardWord';
 import { generarSosEjecutivoWord } from '../lib/exportarSosEjecutivoWord';
 import IconButton from './IconButton';
 import QrEnlacesPanel from './QrEnlacesPanel';
+import { REUNIONES_TEAMS } from '../config';
 
 function IconFolder(){
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/></svg>;
@@ -194,6 +195,28 @@ export default function DashboardView({ procesos, desistimientos = [], audiencia
           <p>Resumen en vivo de los procesos a cargo del despacho.</p>
         </div>
       </div>
+
+      {/* Reuniones importantes (2026-10-27, pedido del usuario): entrada de un clic a las salas de Teams. */}
+      <section className="reuniones-band" aria-labelledby="reuniones-titulo">
+        <div className="reuniones-head">
+          <h2 id="reuniones-titulo">Reuniones importantes</h2>
+          <p>Entra directo a la sala de Teams, sin buscar el enlace.</p>
+        </div>
+        <div className="reuniones-grid">
+          {REUNIONES_TEAMS.map(r => (
+            <a key={r.nombre} className="reunion-card" href={r.url} target="_blank" rel="noopener noreferrer" aria-label={'Unirme a la reunión: ' + r.nombre + ' (se abre en Teams)'}>
+              <span className="reunion-icono" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="6" width="13" height="12" rx="2.5"/><path d="m15 10 6-3.5v11L15 14"/></svg>
+              </span>
+              <span className="reunion-texto">
+                <strong>{r.nombre}</strong>
+                <small>{r.detalle}</small>
+              </span>
+              <span className="reunion-unirme">Unirme <span aria-hidden="true">→</span></span>
+            </a>
+          ))}
+        </div>
+      </section>
 
       <div className="stat-grid">
         {stats.map(s => (

@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-10-27 (101)
+- **Panorama general: sección «Reuniones importantes» con acceso de un clic a las salas de Teams** — pedido del usuario. Una banda verde con el degradado y el chevron de la marca, justo debajo del título, con tres tarjetas: **Reunión semanal**, **Asesoría Jurídica** y **Universidad Nacional**. Cada una trae su botón amarillo «Unirme →» y abre la reunión de Teams en una pestaña nueva. En el celular las tarjetas se apilan en una columna. Para agregar, quitar o cambiar una reunión se edita la lista REUNIONES_TEAMS de src/config.js (nombre, línea de apoyo y enlace de invitación).
+
 ## 2026-10-27 (100)
 - **La factura encontrada por el cruce flexible también se ve en el portal, no solo en el Excel** — reporte del usuario («así queda en el Excel pero no en el portal», caso orden OC-2026-0242 y factura 803). La lista de Órdenes de compra, el detalle de la orden y las órdenes dentro de un Proceso ahora usan el mismo cruce que el botón de la lupa: si no hay un cruce exacto, muestran la factura encontrada con una marca amarilla «≈» (con el motivo al pasar el cursor) y, en la lista y el detalle, la fecha de la factura; la columna Factura también filtra por ese número. El Excel normal de Órdenes de compra usa el mismo cruce, así que coincide con la pantalla. No se escribe nada en SharePoint.
 

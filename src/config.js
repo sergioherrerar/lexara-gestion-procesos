@@ -108,6 +108,14 @@ export const INITIAL_CONFIG = {
 // dominios del grupo (Colmédica y Aliansalud), así que se permiten ambas
 // variantes de cada una. Si algún correo de tutelas no aparece, lo más
 // probable es que venga de una dirección que falta acá.
+// Reuniones de Teams que se abren con un clic desde el Panorama general («Reuniones importantes», pedido del usuario 2026-10-27).
+// Para agregar, quitar o cambiar una reunión basta editar esta lista: nombre, una línea de apoyo y el enlace de invitación de Teams.
+export const REUNIONES_TEAMS = [
+  { nombre: "Reunión semanal", detalle: "Reunión de Teams del equipo", url: "https://teams.microsoft.com/l/meetup-join/19:ExQcuPd2OC0bR9YMeT3OL1fjOTMTLRzzp2lXg2XTpT01%40thread.tacv2/1744732548582?context=%7b%22Tid%22:%22a89ceaa6-c4df-4b18-93a7-65dfa57a5541%22%2c%22Oid%22:%228822a97d-5224-4cc4-9895-c47c7769256e%22%7d" },
+  { nombre: "Asesoría Jurídica", detalle: "Reunión de Teams de la asesoría", url: "https://teams.microsoft.com/l/meetup-join/19:3t8YIV8h6bWI6t3QBzGRRFh2YoXIymHkLyB0o7dAmRk1%40thread.tacv2/1746825072859?context=%7b%22Tid%22:%22a89ceaa6-c4df-4b18-93a7-65dfa57a5541%22%2c%22Oid%22:%228822a97d-5224-4cc4-9895-c47c7769256e%22%7d" },
+  { nombre: "Universidad Nacional", detalle: "Reunión de Teams", url: "https://teams.microsoft.com/l/meetup-join/19:meeting_YjRhNGYxMjYtMjY4OS00ZmNlLWJiZjctN2RlYmY5MzU1YTBl%40thread.v2/0?context=%7b%22Tid%22:%22a89ceaa6-c4df-4b18-93a7-65dfa57a5541%22%2c%22Oid%22:%2208043049-5555-4bd7-8f72-0ae433572512%22%7d" },
+];
+
 export const TUTELAS_REMITENTES_PERMITIDOS = [
   "daniacp@colmedica.com", "daniacp@aliansalud.com.co", "daniacp@umd.com.co",
   "Mgabrielac@aliansalud.com.co", "Mgabrielac@colmedica.com",
