@@ -97,15 +97,18 @@ export function construirHojaPorCliente(wb, grupos, totalGeneral){
 // YA FILTRADAS, sin opinar de qué mes/corte usar) para que "Órdenes
 // Colmédica" (mes calendario completo) y este informe (corte-28) armen
 // exactamente el mismo Excel, cada uno con su propio filtro de mes.
-export async function descargarExcelClientesTutelas(tutelasFiltradas, valoresEntidad, nombreArchivo){
+// El mismo workbook como bytes (2026-10-29: para adjuntarlo al correo de Órdenes Colmédica) — `descargarExcelClientesTutelas` es este Excel como descarga.
+export async function crearExcelClientesTutelas(tutelasFiltradas, valoresEntidad){
   const { default: ExcelJS } = await import('exceljs');
   const { grupos, totalGeneral } = agruparPorCliente(tutelasFiltradas, valoresEntidad);
 
   const wb = new ExcelJS.Workbook();
   construirHojaTutelasXlsx(wb, tutelasFiltradas, valoresEntidad, "Tutelas", { soloValorEntidad: true });
   construirHojaPorCliente(wb, grupos, totalGeneral);
-
-  const buffer = await wb.xlsx.writeBuffer();
+  return wb.xlsx.writeBuffer();
+}
+export async function descargarExcelClientesTutelas(tutelasFiltradas, valoresEntidad, nombreArchivo){
+  const buffer = await crearExcelClientesTutelas(tutelasFiltradas, valoresEntidad);
   const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');

@@ -7,6 +7,7 @@ import {
 import { colorDeTipoRespuesta } from '../lib/informeAbogadosTutelas';
 import { fmtMonto, mensajeError, valoresEntidadFaltantes } from '../lib/graph';
 import StackedBarChart from './StackedBarChart';
+import EnviarOrdenesColmedicaModal from './EnviarOrdenesColmedicaModal';
 
 // "Órdenes Colmédica" (Administración) — pedido explícito del usuario
 // 2026-08-29: por cada Cliente con tutelas en el mes elegido (mes calendario
@@ -17,8 +18,9 @@ import StackedBarChart from './StackedBarChart';
 // valor) listo para revisar y darle "Guardar cambios" — no se crea nada en
 // SharePoint solo. El botón de Excel descarga el mismo detalle de todos los
 // clientes de ese mes junto, de referencia.
-export default function OrdenesColmedicaTab({ tutelas, valoresEntidad, clientes, onAbrirBorradorOrdenCompra, notify }){
+export default function OrdenesColmedicaTab({ tutelas, valoresEntidad, clientes, facturas, ordenesCompra, liveMode, onAbrirBorradorOrdenCompra, notify }){
   const hoyRef = new Date();
+  const [enviandoCorreo, setEnviandoCorreo] = useState(false);
   const [mes, setMes] = useState(hoyRef.getMonth());
   const [anio] = useState(hoyRef.getFullYear());
   const [generandoExcel, setGenerandoExcel] = useState(false);
@@ -77,7 +79,17 @@ export default function OrdenesColmedicaTab({ tutelas, valoresEntidad, clientes,
           <IconTextButton icon="excel" variant="secondary" onClick={handleDescargarExcel} disabled={generandoExcel}>
             {generandoExcel ? "Generando…" : "Descargar Excel"}
           </IconTextButton>
+          <IconTextButton icon="mail" variant="secondary" onClick={() => setEnviandoCorreo(true)} disabled={!grupos.length}>
+            Enviar correo a Dania
+          </IconTextButton>
         </div>
+        {enviandoCorreo && (
+          <EnviarOrdenesColmedicaModal
+            mes={mes} anio={anio} grupos={grupos} detalle={detalleValores} totalGeneral={totalGeneralValores}
+            tutelasDelMes={tutelasDelMes} valoresEntidad={valoresEntidad} clientes={clientes} facturas={facturas} ordenesCompra={ordenesCompra}
+            liveMode={liveMode} notify={notify} onClose={() => setEnviandoCorreo(false)}
+          />
+        )}
         {faltantes.length > 0 && (
           <div className="field-warning" style={{marginBottom:16}}>
             <strong>Estas tutelas están en $0 porque falta su valor en "Valores Entidad":</strong>

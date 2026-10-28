@@ -27,6 +27,15 @@ export function precalentarLibreriasPdf(){
 }
 
 export async function generarPdfDesdeNodo(nodoId, nombreArchivo){
+  const doc = await armarPdfDesdeNodo(nodoId);
+  doc.save(nombreArchivo.toLowerCase().endsWith('.pdf') ? nombreArchivo : `${nombreArchivo}.pdf`);
+}
+// El mismo PDF como bytes (2026-10-29: para adjuntar las órdenes de compra al correo de Órdenes Colmédica, sin descargarlas).
+export async function generarPdfBytesDesdeNodo(nodoId){
+  const doc = await armarPdfDesdeNodo(nodoId);
+  return doc.output('arraybuffer');
+}
+async function armarPdfDesdeNodo(nodoId){
   const [{ default: jsPDF }, { default: html2canvas }] = await precalentarLibreriasPdf();
   const nodo = document.getElementById(nodoId);
   if(!nodo) throw new Error(`No se encontró el contenido a convertir en PDF ("${nodoId}").`);
@@ -53,7 +62,7 @@ export async function generarPdfDesdeNodo(nodoId, nombreArchivo){
     },
   });
   doc.addImage(imgData, 'JPEG', 0, 0, 210, 297);
-  doc.save(nombreArchivo.toLowerCase().endsWith('.pdf') ? nombreArchivo : `${nombreArchivo}.pdf`);
+  return doc;
 }
 
 // Espera a que una imagen (membrete/QR) termine de cargar antes de

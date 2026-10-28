@@ -442,6 +442,59 @@ export async function enviarCorreoDirecto({ to, cc, subject, htmlBody, categoria
   const aDirecciones = lista => (lista || []).map(a => String(a || '').trim()).filter(Boolean);
   const para = [...new Set(aDirecciones(to).map(a => a.toLowerCase()))];
   const copia = [...new Set(aDirecciones(cc).map(a => a.toLowerCase()))].filter(a => !para.includes(a));
+  // Con adjuntos pesados (p. ej. los PDF de las órdenes de compra) el envío directo supera el límite de ~4 MB de una sola petición: se crea el mensaje, se adjunta cada archivo
+  // por separado y se envía (mismo camino de programarCorreoDiferido).
+  const pesoBase64 = [...(imagenes || []), ...(adjuntos || [])].reduce((s, a) => s + String(a.base64 || '').length, 0);
+  if(pesoBase64 > 2500000){
+    let tokenBorrador = await getMailToken();
+    let cabeceras = { Authorization: `Bearer ${tokenBorrador}`, 'Content-Type': 'application/json' };
+    const crear = () => fetch(`${raiz}/messages`, {
+      method: 'POST', headers: cabeceras,
+      body: JSON.stringify({
+        subject, body: { contentType: 'HTML', content: htmlBody },
+        ...(categorias && categorias.length ? { categories: categorias } : {}),
+        toRecipients: para.map(address => ({ emailAddress: { address } })),
+        ccRecipients: copia.map(address => ({ emailAddress: { address } })),
+      }),
+    });
+    let creado = await crear();
+    // Buzón de otra persona: puede exigir Mail.ReadWrite.Shared; se activa y se reintenta una vez.
+    if(creado.status === 403 && ajeno && !mailCompartido){
+      usarPermisoCorreoCompartido();
+      tokenBorrador = await getMailToken();
+      cabeceras = { Authorization: `Bearer ${tokenBorrador}`, 'Content-Type': 'application/json' };
+      creado = await crear();
+    }
+    if(!creado.ok){
+      const cuerpo = await creado.text();
+      if(creado.status === 404 && desde) throw new Error(`Microsoft no encuentra el buzón de ${desde} (404: «${cuerpo.substring(0, 160)}»). Suele pasar cuando esa cuenta nunca ha abierto Outlook: entra una vez a https://outlook.office.com con ${desde} para que Exchange cree sus carpetas, o revisa que tenga licencia de Exchange Online.`);
+      throw new Error(`Graph ${creado.status}: ${cuerpo.substring(0, 300)}`);
+    }
+    const mensaje = await creado.json();
+    const limpiar = async () => { try{ await fetch(`${raiz}/messages/${mensaje.id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${tokenBorrador}` } }); }catch(e){ /* sin importancia */ } };
+    try{
+      const todos = [
+        ...(imagenes || []).map(im => ({ nombre: im.nombre, tipo: im.contentType || 'image/jpeg', base64: im.base64, inline: true, cid: im.cid })),
+        ...(adjuntos || []).map(a => ({ nombre: a.nombre, tipo: a.contentType || 'application/octet-stream', base64: a.base64 })),
+      ];
+      for(const a of todos){
+        const r = await fetch(`${raiz}/messages/${mensaje.id}/attachments`, {
+          method: 'POST', headers: cabeceras,
+          body: JSON.stringify({ '@odata.type': '#microsoft.graph.fileAttachment', name: a.nombre, contentType: a.tipo, contentBytes: a.base64, ...(a.inline ? { isInline: true, contentId: a.cid } : {}) }),
+        });
+        if(!r.ok) throw new Error(`No se pudo adjuntar «${a.nombre}» (Graph ${r.status}: ${(await r.text()).substring(0, 160)})`);
+      }
+      const env = await fetch(`${raiz}/messages/${mensaje.id}/send`, { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Length': '0' } });
+      if(!env.ok){
+        const cuerpo = await env.text();
+        if(env.status === 403 && ajeno) throw new Error(`No se pudo enviar desde ${desde}: falta el permiso Mail.Send.Shared en Azure (Entra) o tu usuario no tiene «Enviar como» sobre ese buzón en Exchange.`);
+        if(env.status === 403) throw new Error('Falta el permiso Mail.Send en Azure (Entra) para enviar correos desde el portal.');
+        throw new Error(`Graph ${env.status}: ${cuerpo.substring(0, 300)}`);
+      }
+    }catch(err){ await limpiar(); throw err; }
+    invalidarCacheCarpetasCorreo();
+    return;
+  }
   const res = await fetch(`${raiz}/sendMail`, {
     method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({

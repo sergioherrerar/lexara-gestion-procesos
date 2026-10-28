@@ -229,6 +229,7 @@ export default function AdministracionView({ listas, liveMode, onActualizarEquip
           procesos={procesos}
           onAbrirBorradorOrdenCompra={onAbrirBorradorOrdenCompra}
           onAbrirBorradorFactura={onAbrirBorradorFactura}
+          liveMode={liveMode}
           notify={notify}
         />
       )}
