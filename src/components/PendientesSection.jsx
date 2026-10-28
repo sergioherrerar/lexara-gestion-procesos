@@ -148,7 +148,16 @@ export function PendientesSection({ pendientes, colaboradores, procesos, onCrear
 
   const columnas = canWrite ? COLUMNAS : COLUMNAS.filter(c => c.key !== 'acciones');
   const filasSinOrdenar = (pendientes||[]).filter(p => rowMatches(p, columnas));
-  const filas = sort ? sortRows(filasSinOrdenar, columnas) : filasSinOrdenar.sort((a,b) => String(b.FechaPendiente||"").localeCompare(String(a.FechaPendiente||"")));
+  // Orden por defecto (2026-10-29, pedido del usuario): los Terminados al final y, dentro de cada grupo, la fecha más antigua arriba (lo más viejo sin cerrar es lo más urgente).
+  // Los que no tienen fecha van al final de su grupo. Si el usuario elige ordenar por una columna, manda su elección.
+  const ordenPorDefecto = (a, b) => {
+    const ta = a.Estado === 'Terminado' ? 1 : 0, tb = b.Estado === 'Terminado' ? 1 : 0;
+    if(ta !== tb) return ta - tb;
+    const fa = String(a.FechaPendiente || "").slice(0, 10), fb = String(b.FechaPendiente || "").slice(0, 10);
+    if(!fa !== !fb) return fa ? -1 : 1;
+    return fa.localeCompare(fb);
+  };
+  const filas = sort ? sortRows(filasSinOrdenar, columnas) : filasSinOrdenar.sort(ordenPorDefecto);
   const nCols = columnas.length;
 
   async function guardarNuevo(datos){

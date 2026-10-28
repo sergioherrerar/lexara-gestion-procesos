@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-10-29 (128)
+- **Pendientes: los terminados al final y lo más antiguo arriba** — pedido del usuario (captura de Vencimientos → Pendientes). El orden por defecto de la tabla ahora es: primero los **Vigentes**, con la **fecha más antigua arriba** (lo más viejo sin cerrar es lo más urgente), y después los **Terminados**, también del más antiguo al más reciente. Los que no tienen fecha van al final de su grupo. Antes salían del más reciente al más antiguo, mezclando vigentes y terminados. Si se elige ordenar por una columna desde su menú, esa elección manda como siempre.
+
 ## 2026-10-29 (127)
 - **Gastos: nuevo botón «Pagos por realizar» — correo de Soporte para Gerencia con los pagos de un día** — pedido del usuario. En Administración → Egresos → Gastos, el botón abre una ventana donde **eliges un día** (se abre en hoy, o en el último día con pagos) y se **filtran todos los gastos de esa fecha**. El correo, de asunto **«Pagos por realizar — dd/mm/aaaa»**, saluda «Buen día, Mónica:» y trae la tabla con, por cada pago, **los datos de su cuenta para poder pagarle**: No., Pagar a, Identificación, Entidad, Cuenta, Tipo de cuenta (tomados de Proveedores), Valor a pagar, Tipo de documento y Observación, con el total a pagar; avisa si algún proveedor no tiene datos bancarios. Sale **de la cuenta de Soporte, para Gerencia (gerencia@lexaraabogados.com)**, cierra con «Cordial saludo,» y la firma de Soporte. Se ve todo antes de enviar (De/Para/Asunto y la vista previa), el envío pide confirmación, también hay «Solo crear borrador», y avisa si ese día ya se envió. En modo demo solo se ve la vista previa.
 
