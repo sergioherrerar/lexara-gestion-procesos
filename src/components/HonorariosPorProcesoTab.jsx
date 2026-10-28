@@ -47,8 +47,9 @@ export default function HonorariosPorProcesoTab({ procesos, clientes, onAbrirBor
       Anio: String(hoy.getFullYear()),
       Descripcion1: descripcion1, Cantidad1: "", ValorUnitario1: "",
     };
-    if(tipoDocumento === 'factura') onAbrirBorradorFactura(borrador);
-    else onAbrirBorradorOrdenCompra(borrador);
+    // `solicitarCorreo`: al guardar este borrador se abre el correo de solicitud (factura → Beatriz; orden de compra → a quien se escriba), con copia a Gerencia.
+    if(tipoDocumento === 'factura') onAbrirBorradorFactura(borrador, { solicitarCorreo: true });
+    else onAbrirBorradorOrdenCompra(borrador, { solicitarCorreo: true });
   }
 
   return (

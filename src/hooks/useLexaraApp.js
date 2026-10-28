@@ -155,6 +155,11 @@ export function useLexaraApp(){
   const [draftCliente, setDraftCliente] = useState(null);
   const [activeFacturaId, setActiveFacturaId] = useState(null);
   const [draftFactura, setDraftFactura] = useState(null);
+  // Correo de solicitud tras guardar un borrador de «Honorarios por Proceso» (2026-10-29): las banderas marcan que el borrador abierto viene de ahí;
+  // `correoDocumento` = { tipo, documento } abre la ventana del correo cuando el documento ya quedó guardado.
+  const [solicitaCorreoFactura, setSolicitaCorreoFactura] = useState(false);
+  const [solicitaCorreoOrden, setSolicitaCorreoOrden] = useState(false);
+  const [correoDocumento, setCorreoDocumento] = useState(null);
   const [autoPrintFacturaId, setAutoPrintFacturaId] = useState(null);
   const [activeOrdenCompraId, setActiveOrdenCompraId] = useState(null);
   const [draftOrdenCompra, setDraftOrdenCompra] = useState(null);
@@ -921,9 +926,10 @@ export function useLexaraApp(){
   // un borrador de Factura con datos ya armados desde afuera — ver
   // "Honorarios por Proceso" en Administración. No toca SharePoint hasta
   // que se le dé "Guardar cambios" en el drawer.
-  function abrirBorradorFactura(datosIniciales){
+  function abrirBorradorFactura(datosIniciales, { solicitarCorreo = false } = {}){
     setActiveFacturaId(null);
     setDraftFactura(datosIniciales);
+    setSolicitaCorreoFactura(solicitarCorreo);
   }
   // Botón "+ Nueva factura" dentro del panel de un Proceso judicial: abre un
   // borrador con el Contrato (y Proceso) ya llenos desde ese proceso, para
@@ -973,7 +979,7 @@ export function useLexaraApp(){
     setActiveFacturaId(null);
     setDraftFactura(draft);
   }
-  function closeFacturaDrawer(){ setActiveFacturaId(null); setDraftFactura(null); reabrirProcesoSiCorresponde(); }
+  function closeFacturaDrawer(){ setActiveFacturaId(null); setDraftFactura(null); setSolicitaCorreoFactura(false); reabrirProcesoSiCorresponde(); }
   async function saveFactura(updates){
     if(!activeFactura) return;
 
@@ -1002,6 +1008,8 @@ export function useLexaraApp(){
       setFacturas(prev => [...prev, nuevo]);
       setDraftFactura(null);
       setActiveFacturaId(null);
+      if(solicitaCorreoFactura) setCorreoDocumento({ tipo: 'factura', documento: nuevo });
+      setSolicitaCorreoFactura(false);
       reabrirProcesoSiCorresponde();
       notify("Creado con éxito en Lexara", 'success');
       return;
@@ -1057,11 +1065,12 @@ export function useLexaraApp(){
   // armados desde afuera (ver "Órdenes Colmédica" en Administración,
   // src/components/OrdenesColmedicaTab.jsx) — mismo criterio de siempre:
   // no toca SharePoint hasta que se le dé "Guardar cambios" en el drawer.
-  function abrirBorradorOrdenCompra(datosIniciales){
+  function abrirBorradorOrdenCompra(datosIniciales, { solicitarCorreo = false } = {}){
     setActiveOrdenCompraId(null);
     setDraftOrdenCompra(datosIniciales);
+    setSolicitaCorreoOrden(solicitarCorreo);
   }
-  function closeOrdenCompraDrawer(){ setActiveOrdenCompraId(null); setDraftOrdenCompra(null); reabrirProcesoSiCorresponde(); }
+  function closeOrdenCompraDrawer(){ setActiveOrdenCompraId(null); setDraftOrdenCompra(null); setSolicitaCorreoOrden(false); reabrirProcesoSiCorresponde(); }
   async function saveOrdenCompra(updates){
     if(!activeOrdenCompra) return;
 
@@ -1082,6 +1091,8 @@ export function useLexaraApp(){
       setOrdenesCompra(prev => [...prev, nuevo]);
       setDraftOrdenCompra(null);
       setActiveOrdenCompraId(null);
+      if(solicitaCorreoOrden) setCorreoDocumento({ tipo: 'ordenCompra', documento: nuevo });
+      setSolicitaCorreoOrden(false);
       reabrirProcesoSiCorresponde();
       notify("Creado con éxito en Lexara", 'success');
       return;
@@ -2066,6 +2077,7 @@ export function useLexaraApp(){
     onSearch: setSearchQuery,
     activeProceso, openProceso, newProceso, closeDrawer, saveProceso, procesoViewOnly, rememberReturnToProceso, vincularLinksProcesosMasivo, guardarEstadoRapidoProceso,
     activeCliente, openCliente, closeClienteDrawer, saveCliente, deleteCliente, createCliente, updateCliente, newCliente,
+    correoDocumento, cerrarCorreoDocumento: () => setCorreoDocumento(null),
     activeFactura, openFactura, newFactura, duplicateFactura, abrirBorradorFactura, closeFacturaDrawer, saveFactura,
     printFactura, autoPrintFacturaId, clearAutoPrint, createFacturaFromOrdenCompra, newFacturaFromProceso,
     activeOrdenCompra, openOrdenCompra, newOrdenCompra, duplicateOrdenCompra, newOrdenCompraFromProceso, abrirBorradorOrdenCompra, closeOrdenCompraDrawer, saveOrdenCompra,

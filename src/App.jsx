@@ -16,6 +16,7 @@ import ProcesoDrawer from './components/ProcesoDrawer';
 import ClienteDrawer from './components/ClienteDrawer';
 import FacturaDrawer from './components/FacturaDrawer';
 import OrdenCompraDrawer from './components/OrdenCompraDrawer';
+import SolicitudDocumentoModal from './components/SolicitudDocumentoModal';
 import ColaboradorDrawer from './components/ColaboradorDrawer';
 import FormaPagoDrawer from './components/FormaPagoDrawer';
 import DesistimientoDrawer from './components/DesistimientoDrawer';
@@ -375,6 +376,17 @@ export default function App(){
         notify={app.notify}
         saving={app.saving}
       />
+      {app.correoDocumento && (
+        <SolicitudDocumentoModal
+          tipo={app.correoDocumento.tipo}
+          documento={app.correoDocumento.documento}
+          clientes={app.clientes}
+          colaboradores={app.colaboradores}
+          liveMode={app.liveMode}
+          notify={app.notify}
+          onClose={app.cerrarCorreoDocumento}
+        />
+      )}
       <ColaboradorDrawer
         colaborador={app.activeColaborador}
         liveMode={app.liveMode}
