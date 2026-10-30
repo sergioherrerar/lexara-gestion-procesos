@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useMemo, useState } from 'react';
 import VistaPreviaCorreo from './VistaPreviaCorreo';
 import { IconTextButton } from './IconButton';
+import { crearAdjuntosNovedades } from '../lib/excelNovedades';
 import { crearBorradorConImagenesInline, enviarCorreoDirecto, listarEnviadosPorCategoria, firmaComoImagenInline, fmtMonto, mensajeError } from '../lib/graph';
 import {
   MESES_NOMBRES, CATEGORIA_NOVEDADES, CORREO_GERENCIA_NOVEDADES, destinatariaNovedades,
@@ -47,9 +48,30 @@ export default function NovedadesNominaTab({ colaboradores, tutelas, valoresEnti
     () => armarNovedades({ anio, mesIndex0: mes, tutelas, valoresEntidad, horasExtras, vacacionesPeriodos, colaboradores }),
     [anio, mes, tutelas, valoresEntidad, horasExtras, vacacionesPeriodos, colaboradores]
   );
+  // Soportes en Excel del mes (los mismos datos del correo, en cuatro archivos adjuntos). Se rearman cuando cambian el mes o los datos.
+  const [adjuntos, setAdjuntos] = useState([]);   // [{ nombre, contentType, base64, tamano }]
+  const [generandoAdj, setGenerandoAdj] = useState(true);
+  const [errorAdj, setErrorAdj] = useState('');
+  useEffect(() => {
+    let vivo = true;
+    setGenerandoAdj(true); setErrorAdj('');
+    crearAdjuntosNovedades({ novedades, tutelas, valoresEntidad, anio, mesIndex0: mes })
+      .then(a => { if(vivo){ setAdjuntos(a); setGenerandoAdj(false); } })
+      .catch(err => { console.error('No se pudieron armar los Excel de soporte:', err); if(vivo){ setAdjuntos([]); setErrorAdj(mensajeError(err)); setGenerandoAdj(false); } });
+    return () => { vivo = false; };
+  }, [novedades, tutelas, valoresEntidad, anio, mes]);
+  function descargarAdjunto(a){
+    const bin = atob(a.base64); const bytes = new Uint8Array(bin.length);
+    for(let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    const url = URL.createObjectURL(new Blob([bytes], { type: a.contentType }));
+    const enlace = document.createElement('a'); enlace.href = url; enlace.download = a.nombre;
+    document.body.appendChild(enlace); enlace.click(); enlace.remove(); URL.revokeObjectURL(url);
+  }
+  const kb = n => Math.max(1, Math.round(n / 1024)) + ' KB';
+
   // `correo` = la vista previa (la firma como data:) · `correoReal` = el que se envía (la firma adjunta en línea, cid:).
-  const correo = useMemo(() => construirCorreoNovedades({ novedades, anio, mesIndex0: mes, destinatario, srcFirma: firma?.srcVistaPrevia }), [novedades, anio, mes, destinatario, firma]);
-  const correoReal = useMemo(() => construirCorreoNovedades({ novedades, anio, mesIndex0: mes, destinatario }), [novedades, anio, mes, destinatario]);
+  const correo = useMemo(() => construirCorreoNovedades({ novedades, anio, mesIndex0: mes, destinatario, srcFirma: firma?.srcVistaPrevia, adjuntos }), [novedades, anio, mes, destinatario, firma, adjuntos]);
+  const correoReal = useMemo(() => construirCorreoNovedades({ novedades, anio, mesIndex0: mes, destinatario, adjuntos }), [novedades, anio, mes, destinatario, adjuntos]);
   const etiqueta = etiquetaCiclo(anio, mes);
 
   // ¿Ya se envió el correo de este ciclo? (se busca en Enviados por la categoría y el asunto)
@@ -72,7 +94,8 @@ export default function NovedadesNominaTab({ colaboradores, tutelas, valoresEnti
     setConfirmando(false); setAccion('enviando');
     try{
       if(!firma) throw new Error('La imagen de la firma de Soporte aún no se ha cargado; espera un momento e inténtalo de nuevo.');
-      await enviarCorreoDirecto({ to: [destinatario.correo], cc: [CORREO_GERENCIA_NOVEDADES], subject: correoReal.asunto, htmlBody: correoReal.html, categorias: [CATEGORIA_NOVEDADES], desde: REMITENTE_SOPORTE, imagenes: [firma] });
+      if(!adjuntos.length) throw new Error('Los Excel de soporte aún no están listos' + (errorAdj ? ' (' + errorAdj + ')' : '; espera un momento e inténtalo de nuevo') + '.');
+      await enviarCorreoDirecto({ to: [destinatario.correo], cc: [CORREO_GERENCIA_NOVEDADES], subject: correoReal.asunto, htmlBody: correoReal.html, categorias: [CATEGORIA_NOVEDADES], desde: REMITENTE_SOPORTE, imagenes: [firma], adjuntos });
       const registro = { ...envioLocal, [etiqueta]: { fecha: new Date().toISOString(), para: [destinatario.correo] } };
       setEnvioLocal(registro);
       try{ localStorage.setItem('lexara-novedades-enviadas', JSON.stringify(registro)); }catch(e){ /* sin almacenamiento */ }
@@ -85,7 +108,8 @@ export default function NovedadesNominaTab({ colaboradores, tutelas, valoresEnti
     setAccion('borrador');
     try{
       if(!firma) throw new Error('La imagen de la firma de Soporte aún no se ha cargado; espera un momento e inténtalo de nuevo.');
-      const r = await crearBorradorConImagenesInline({ to: [destinatario.correo], cc: [CORREO_GERENCIA_NOVEDADES], subject: correoReal.asunto, htmlBody: correoReal.html, imagenes: [firma], categorias: [CATEGORIA_NOVEDADES + ' (borrador)'], buzon: REMITENTE_SOPORTE, caerAlBuzonPropio: true });
+      if(!adjuntos.length) throw new Error('Los Excel de soporte aún no están listos' + (errorAdj ? ' (' + errorAdj + ')' : '; espera un momento e inténtalo de nuevo') + '.');
+      const r = await crearBorradorConImagenesInline({ to: [destinatario.correo], cc: [CORREO_GERENCIA_NOVEDADES], subject: correoReal.asunto, htmlBody: correoReal.html, imagenes: [firma], adjuntos, categorias: [CATEGORIA_NOVEDADES + ' (borrador)'], buzon: REMITENTE_SOPORTE, caerAlBuzonPropio: true });
       notify?.(r.enBuzonPropio
         ? '⚠ No pude crear el borrador en ' + REMITENTE_SOPORTE + ' (Microsoft no encuentra ese buzón: entra una vez a https://outlook.office.com con esa cuenta para activarlo). Quedó en TUS Borradores, dirigido a ' + destinatario.correo + ' con copia a Gerencia: cambia el «De» a Soporte si tienes permiso.'
         : '✓ Borrador creado en los Borradores de ' + REMITENTE_SOPORTE + ', dirigido a ' + destinatario.correo + ' con copia a Gerencia.', r.enBuzonPropio ? 'info' : 'success');
@@ -221,6 +245,18 @@ export default function NovedadesNominaTab({ colaboradores, tutelas, valoresEnti
         <p className="save-hint" style={{ margin: '0 0 8px' }}>
           <strong>De:</strong> Soporte ({REMITENTE_SOPORTE}) · <strong>Para:</strong> {destinatario.nombre} ({destinatario.correo}) · <strong>Con copia:</strong> Gerencia ({CORREO_GERENCIA_NOVEDADES}) · <strong>Asunto:</strong> {correo.asunto}
         </p>
+        <div style={{ margin: '0 0 8px', fontSize: 12.5 }}>
+          <strong>Adjuntos (Excel de soporte del mes{adjuntos.length ? ', ' + adjuntos.length + ' archivos' : ''}):</strong>{' '}
+          {generandoAdj ? <span className="save-hint">Preparando los Excel…</span> : errorAdj ? <span style={{ color: '#a3281c' }}>No se pudieron armar: {errorAdj}</span> : (
+            <span style={{ display: 'inline-flex', flexWrap: 'wrap', gap: 8 }}>
+              {adjuntos.map(a => (
+                <button key={a.nombre} type="button" className="btn-secondary" style={{ fontSize: 11.5, padding: '3px 9px' }} title="Descargar para revisarlo" onClick={() => descargarAdjunto(a)}>
+                  {a.nombre} ({kb(a.tamano)})
+                </button>
+              ))}
+            </span>
+          )}
+        </div>
         <VistaPreviaCorreo titulo="Vista previa del correo de novedades de nómina" html={correo.html} style={{ height: 520 }} />
 
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', marginTop: 14 }}>
@@ -228,15 +264,15 @@ export default function NovedadesNominaTab({ colaboradores, tutelas, valoresEnti
             confirmando ? (
               <>
                 <span className="save-hint" style={{ margin: 0 }}>
-                  {yaEnviado ? <strong>Ya se envió este ciclo. </strong> : null}Se enviará un correo real a {destinatario.correo} con copia a Gerencia, desde {REMITENTE_SOPORTE}. ¿Enviarlo?
+                  {yaEnviado ? <strong>Ya se envió este ciclo. </strong> : null}Se enviará un correo real a {destinatario.correo} con copia a Gerencia, desde {REMITENTE_SOPORTE}, con {adjuntos.length} Excel de soporte adjuntos. ¿Enviarlo?
                 </span>
                 <IconTextButton icon="mail" variant="primary" onClick={enviar} disabled={!!accion}>Sí, enviar</IconTextButton>
                 <button type="button" className="btn-secondary" onClick={() => setConfirmando(false)}>Cancelar</button>
               </>
             ) : (
               <>
-                <IconTextButton icon="mail" variant="primary" onClick={() => setConfirmando(true)} disabled={!!accion}>{accion === 'enviando' ? 'Enviando…' : 'Enviar a ' + nombreDeSaludo(destinatario)}</IconTextButton>
-                <button type="button" className="btn-secondary" onClick={crearBorrador} disabled={!!accion}>{accion === 'borrador' ? 'Creando…' : 'Solo crear borrador'}</button>
+                <IconTextButton icon="mail" variant="primary" onClick={() => setConfirmando(true)} disabled={!!accion || generandoAdj}>{accion === 'enviando' ? 'Enviando…' : 'Enviar a ' + nombreDeSaludo(destinatario)}</IconTextButton>
+                <button type="button" className="btn-secondary" onClick={crearBorrador} disabled={!!accion || generandoAdj}>{accion === 'borrador' ? 'Creando…' : 'Solo crear borrador'}</button>
               </>
             )
           ) : <span className="save-hint" style={{ margin: 0 }}>En modo demo solo se ve la información y la vista previa; el envío requiere la sesión real.</span>}

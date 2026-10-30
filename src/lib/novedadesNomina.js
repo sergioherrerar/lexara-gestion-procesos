@@ -70,7 +70,8 @@ export function armarNovedades({ anio, mesIndex0, tutelas, valoresEntidad, horas
   }).filter(Boolean).sort((a, b) => a.colaborador.localeCompare(b.colaborador) || a.inicio.localeCompare(b.inicio));
   const vacInfo = { filas: vacFilas, pendientes: vacFilas.filter(f => f.pendiente).length, totalDiasEnMes: redondear(vacFilas.reduce((s, f) => s + f.diasEnMes, 0)) };
 
-  return { rangos, tutelas: tutelasInfo, horas: horasInfo, vacaciones: vacInfo, consolidado: consolidarPorPersona(tutelasInfo, horasInfo, vacInfo) };
+  // `horasDetalle`: los registros de horas extras aprobados del ciclo (para el Excel de soporte adjunto al correo).
+  return { rangos, tutelas: tutelasInfo, horas: horasInfo, vacaciones: vacInfo, consolidado: consolidarPorPersona(tutelasInfo, horasInfo, vacInfo), horasDetalle: horasMes };
 }
 
 // Una sola fila por persona con las tres novedades (pedido del usuario 2026-10-29: «al comienzo del correo un consolidado por persona»). El abogado de una tutela y el
@@ -137,7 +138,7 @@ function tablaVacaciones(v){
 }
 
 // `srcFirma`: de dónde sale la imagen de la firma de Soporte (cid: en el correo real, data: en la vista previa).
-export function construirCorreoNovedades({ novedades, anio, mesIndex0, destinatario, srcFirma }){
+export function construirCorreoNovedades({ novedades, anio, mesIndex0, destinatario, srcFirma, adjuntos }){
   const etiqueta = etiquetaCiclo(anio, mesIndex0);
   const r = novedades.rangos;
   const pila = nombreDeSaludo(destinatario);
@@ -162,6 +163,7 @@ export function construirCorreoNovedades({ novedades, anio, mesIndex0, destinata
   <p style="${SUBTITULO}">Mes completo: del ${dma(r.mesInicio)} al ${dma(r.mesFin)}${novedades.vacaciones.pendientes ? ` · ${novedades.vacaciones.pendientes} solicitud(es) aún sin aprobar` : ''}</p>
   ${tablaVacaciones(novedades.vacaciones)}
 
+  ${(adjuntos || []).length ? `<p style="margin:22px 0 0; font-size:13.5px; line-height:1.6; color:#1c2624;"><strong>Soportes en Excel adjuntos</strong> (lo mismo que se ve arriba, con el detalle de cada novedad del mes):<br>${(adjuntos || []).map(a => esc(a.nombre)).join('<br>')}</p>` : ''}
   <p style="margin:24px 0 0; font-size:14px; line-height:1.55;">Quedamos atentos a cualquier inquietud o ajuste.</p>
   <p style="margin:14px 0 0; font-size:14px;">Cordial saludo,</p>
   ${firmaHtml('soporte', srcFirma)}

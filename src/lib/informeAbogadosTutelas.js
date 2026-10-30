@@ -163,7 +163,8 @@ function construirHojaPorAbogado(wb, grupos, totalGeneral){
 
 // Excel completo: hoja 1 = las tutelas del mes (mismo formato de siempre,
 // ya filtradas), hoja 2 = el resumen agrupado por Abogado.
-export async function generarInformeAbogadosTutelasExcel(tutelas, valoresEntidad, anio, mesIndex0){
+// El mismo Excel como bytes (2026-10-30: se adjunta al correo de Novedades de nómina); `generarInformeAbogadosTutelasExcel` es este Excel como descarga.
+export async function crearExcelAbogadosTutelas(tutelas, valoresEntidad, anio, mesIndex0){
   const { default: ExcelJS } = await import('exceljs');
   const filtradas = filtrarTutelasPorMes(tutelas, anio, mesIndex0);
   const { grupos, totalGeneral } = agruparPorAbogado(filtradas, valoresEntidad);
@@ -174,8 +175,10 @@ export async function generarInformeAbogadosTutelasExcel(tutelas, valoresEntidad
   // conserva) — acá solo interesa lo que se le paga al abogado.
   construirHojaTutelasXlsx(wb, filtradas, valoresEntidad, "Tutelas", { incluirValorEntidad: false });
   construirHojaPorAbogado(wb, grupos, totalGeneral);
-
-  const buffer = await wb.xlsx.writeBuffer();
+  return wb.xlsx.writeBuffer();
+}
+export async function generarInformeAbogadosTutelasExcel(tutelas, valoresEntidad, anio, mesIndex0){
+  const buffer = await crearExcelAbogadosTutelas(tutelas, valoresEntidad, anio, mesIndex0);
   const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
