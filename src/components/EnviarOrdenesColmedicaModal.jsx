@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import VistaPreviaCorreo from './VistaPreviaCorreo';
 import { createPortal } from 'react-dom';
 import { IconTextButton } from './IconButton';
 import { OrdenCompraHoja, emptyForm, computeLive, fechaDeImpresion } from './OrdenCompraHoja';
@@ -162,7 +163,7 @@ export default function EnviarOrdenesColmedicaModal({ mes, anio, grupos, detalle
         {adjuntos.length > 0 && (
           <p className="save-hint" style={{ margin: '0 0 8px' }}><strong>Adjuntos ({adjuntos.length}, {mb(pesoTotal)}):</strong> {adjuntos.map(a => a.nombre + ' (' + mb(a.tamano) + ')').join(' · ')}</p>
         )}
-        <iframe title="Vista previa del correo de Órdenes Colmédica" className="felicitacion-vista" srcDoc={vistaPrevia.html} sandbox="" />
+        <VistaPreviaCorreo titulo="Vista previa del correo de Órdenes Colmédica" html={vistaPrevia.html} />
         <div className="confirm-actions" style={{ marginTop: 12, alignItems: 'center', flexWrap: 'wrap' }}>
           {liveMode ? (
             confirmando ? (

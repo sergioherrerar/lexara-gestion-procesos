@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import VistaPreviaCorreo from './VistaPreviaCorreo';
 import { IconTextButton } from './IconButton';
 import { crearBorradorConImagenesInline, enviarCorreoDirecto, listarEnviadosPorCategoria, firmaComoImagenInline, mensajeError } from '../lib/graph';
 import { construirCorreoPagosPorRealizar, pagosDelDia, diaInicialPagos, CATEGORIA_PAGOS_POR_REALIZAR } from '../lib/correoPagosPorRealizar';
@@ -83,7 +84,7 @@ export default function PagosPorRealizarModal({ registros, proveedores, liveMode
           <strong>De:</strong> Soporte ({REMITENTE_SOPORTE}) · <strong>Para:</strong> Gerencia ({CORREO_GERENCIA_NOVEDADES}) · <strong>Asunto:</strong> {vistaPrevia.asunto}
           {vistaPrevia.sinCuenta.length > 0 && <span style={{ color: '#b3590a' }}> · Sin datos bancarios: {vistaPrevia.sinCuenta.join(', ')} (agrégalos en Proveedores)</span>}
         </p>
-        <iframe title="Vista previa del correo de pagos por realizar" className="felicitacion-vista" srcDoc={vistaPrevia.html} sandbox="" />
+        <VistaPreviaCorreo titulo="Vista previa del correo de pagos por realizar" html={vistaPrevia.html} />
         <div className="confirm-actions" style={{ marginTop: 12, alignItems: 'center', flexWrap: 'wrap' }}>
           {liveMode ? (
             confirmando ? (

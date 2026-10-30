@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import VistaPreviaCorreo from './VistaPreviaCorreo';
 import { IconTextButton } from './IconButton';
 import { crearBorradorConImagenesInline, enviarCorreoDirecto, listarEnviadosPorCategoria, firmaComoImagenInline, crearLinkCarpetaMesGastos, mensajeError } from '../lib/graph';
 import { crearExcelRegistrosGastos, crearHTMLRegistrosGastos } from '../lib/gastos';
@@ -113,7 +114,7 @@ export default function EnviarGastosModal({ filasMes, proveedores, anio, mes, sh
               <strong>Adjuntos:</strong> {datos.adjuntos.map(a => a.nombre + ' (' + kb(a.tamano) + ')').join(' · ')} · {filasMes.length} gasto{filasMes.length === 1 ? '' : 's'} del mes
               {!datos.linkCarpetaMes && liveMode ? ' · sin enlace a la carpeta de soportes (aún no existe la carpeta de este mes)' : ''}
             </p>
-            <iframe title="Vista previa del correo de gastos" className="felicitacion-vista" srcDoc={vistaPrevia.html} sandbox="" />
+            <VistaPreviaCorreo titulo="Vista previa del correo de gastos" html={vistaPrevia.html} />
             <div className="confirm-actions" style={{ marginTop: 12, alignItems: 'center', flexWrap: 'wrap' }}>
               {liveMode ? (
                 confirmando ? (

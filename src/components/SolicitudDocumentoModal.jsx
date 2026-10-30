@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import VistaPreviaCorreo from './VistaPreviaCorreo';
 import { IconTextButton } from './IconButton';
 import { crearBorradorConImagenesInline, enviarCorreoDirecto, firmaComoImagenInline, mensajeError } from '../lib/graph';
 import { construirCorreoSolicitudDocumento, CATEGORIA_SOLICITUD_FACTURA, CATEGORIA_SOLICITUD_ORDEN } from '../lib/correoSolicitudDocumento';
@@ -97,7 +98,7 @@ export default function SolicitudDocumentoModal({ tipo, documento, clientes, col
           </>
         )}
         {(vistaPrevia.sinLineas || vistaPrevia.sinValor) && <p className="save-hint" style={{ color: '#b3590a', margin: '0 0 8px' }}>El documento todavía no tiene valores (Cantidad/Valor unitario, total en $ 0,00). Ábrelo desde la lista, complétalos y guarda antes de enviar este correo.</p>}
-        <iframe title="Vista previa del correo de solicitud" className="felicitacion-vista" srcDoc={vistaPrevia.html} sandbox="" />
+        <VistaPreviaCorreo titulo="Vista previa del correo de solicitud" html={vistaPrevia.html} />
         <div className="confirm-actions" style={{ marginTop: 12, alignItems: 'center', flexWrap: 'wrap' }}>
           {liveMode ? (
             confirmando ? (

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import VistaPreviaCorreo from './VistaPreviaCorreo';
 import { prepararFelicitacion } from '../lib/felicitacionCumpleanos';
 import { crearBorradorConImagenesInline, programarCorreoDiferido, mensajeError } from '../lib/graph';
 import { proximoCumpleanos } from '../lib/cumpleanos';
@@ -69,7 +70,7 @@ export default function FelicitacionCumpleanosModal({ colaborador, colaboradores
               {liveMode && <> · {datos.conFoto ? 'Con su foto de SharePoint' : 'Sin foto (no hay una imagen con su nombre de pila en «Fotos correo»)'}</>}
               {datos.aportes.length > 0 &&<> · Aportes encontrados en el portal: {datos.aportes.map(a => a.n + ' de ' + a.label).join(', ')}</>}
             </p>
-            <iframe title="Vista previa de la felicitación" className="felicitacion-vista" srcDoc={datos.htmlVistaPrevia} sandbox="" />
+            <VistaPreviaCorreo titulo="Vista previa de la felicitación" html={datos.htmlVistaPrevia} />
             <div className="confirm-actions" style={{marginTop:12, alignItems:'center', flexWrap:'wrap'}}>
               {creado && <span className="badge badge-verde">Borrador creado</span>}
               {programada && <span className="badge badge-verde">Programada</span>}

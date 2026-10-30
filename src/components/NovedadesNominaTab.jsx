@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useMemo, useState } from 'react';
+import VistaPreviaCorreo from './VistaPreviaCorreo';
 import { IconTextButton } from './IconButton';
 import { crearBorradorConImagenesInline, enviarCorreoDirecto, listarEnviadosPorCategoria, firmaComoImagenInline, fmtMonto, mensajeError } from '../lib/graph';
 import {
@@ -220,7 +221,7 @@ export default function NovedadesNominaTab({ colaboradores, tutelas, valoresEnti
         <p className="save-hint" style={{ margin: '0 0 8px' }}>
           <strong>De:</strong> Soporte ({REMITENTE_SOPORTE}) · <strong>Para:</strong> {destinatario.nombre} ({destinatario.correo}) · <strong>Con copia:</strong> Gerencia ({CORREO_GERENCIA_NOVEDADES}) · <strong>Asunto:</strong> {correo.asunto}
         </p>
-        <iframe title="Vista previa del correo de novedades de nómina" className="felicitacion-vista" srcDoc={correo.html} sandbox="" style={{ height: 520 }} />
+        <VistaPreviaCorreo titulo="Vista previa del correo de novedades de nómina" html={correo.html} style={{ height: 520 }} />
 
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', marginTop: 14 }}>
           {liveMode ? (
