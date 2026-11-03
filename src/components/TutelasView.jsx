@@ -95,7 +95,7 @@ export default function TutelasView({ onMarcarContestadas, tutelas, temas, searc
       setEnvios(mapa);
       const nuevas = [...mapa.entries()].filter(([id]) => { const t = tutelas.find(x => x.id === id); return t && String(t.Contestada||"").trim().toUpperCase() !== 'SI'; }).map(([id, e]) => ({ id, fecha: e.fecha }));
       let guardadas = 0;
-      if(canWrite && onMarcarContestadas && nuevas.length) guardadas = await onMarcarContestadas(nuevas);
+      if(canWrite && onMarcarContestadas && nuevas.length) guardadas = await onMarcarContestadas(nuevas, silencioso);
       if(!silencioso) notify?.(mapa.size ? ('Se reconocieron ' + mapa.size + ' contestaciones enviadas desde Tutelas@' + (guardadas ? ' (' + guardadas + ' nuevas guardadas)' : '') + '.') : ('No encontré contestaciones enviadas en los últimos ' + DIAS_SEGUIMIENTO + ' días.'), 'success');
     }catch(err){
       console.error('Revisar enviadas:', err);

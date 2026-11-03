@@ -1519,8 +1519,11 @@ export function useLexaraApp(){
   }
   // Tutelas → «Revisar enviadas» (2026-11-03): marca como contestadas (Contestada = SI + Fecha contestación) las tutelas cuyo correo de contestación ya salió de Tutelas@.
   // items: [{ id, fecha }]. Devuelve cuántas quedaron guardadas; las que fallan no frenan a las demás.
-  async function marcarTutelasContestadas(items){
+  // Si SharePoint responde 409 («eTag mismatch»: otra persona o un flujo tocó la misma fila justo antes, p. ej. dos personas con Tutelas abierto revisando a la vez) se reintenta la
+  // escritura; las que no se logran no frenan a las demás y la revisión automática (`silencioso`) no muestra avisos: se reintentará en la próxima.
+  async function marcarTutelasContestadas(items, silencioso){
     const fechas = new Map();
+    let fallos = 0, ultimoError = null;
     const list = liveMode ? listByKey('tutelas') : null;
     for(const it of items || []){
       const t = tutelas.find(x => x.id === it.id);
@@ -1530,11 +1533,15 @@ export function useLexaraApp(){
           const siteIdReal = list.siteId || siteId;
           const body = await Graph.graphFieldsFromUpdates(siteIdReal, list, { Contestada: 'SI', FechaContestacion: it.fecha });
           if(!Object.keys(body || {}).length) throw new Error('La lista Tutelas no tiene reconocidas las columnas «Contestada» / «Fecha contestación»; confírmalas en Configuración.');
-          await Graph.graphFetch(`/sites/${siteIdReal}/lists/${list.listId}/items/${t._graphId || t.id}/fields`, { method:'PATCH', body: JSON.stringify(body) });
+          for(let intento = 1; ; intento++){
+            try{ await Graph.graphFetch(`/sites/${siteIdReal}/lists/${list.listId}/items/${t._graphId || t.id}/fields`, { method:'PATCH', body: JSON.stringify(body) }); break; }
+            catch(e){ if(intento >= 4 || !/^Graph (409|412|423|429|503)/.test(String(e?.message || ''))) throw e; await new Promise(r => setTimeout(r, 700 * intento)); }
+          }
         }
         fechas.set(it.id, it.fecha);
-      }catch(err){ console.error('No se pudo marcar la tutela como contestada', it.id, err); if(fechas.size === 0) notify?.('No se pudo guardar «Contestada» en SharePoint: ' + Graph.mensajeError(err), 'error'); break; }
+      }catch(err){ console.error('No se pudo marcar la tutela como contestada', it.id, err); fallos++; ultimoError = err; }
     }
+    if(fallos && !silencioso) notify?.('No se pudo guardar «Contestada» en ' + fallos + ' tutela(s) de SharePoint: ' + Graph.mensajeError(ultimoError), 'error');
     if(fechas.size) setTutelas(prev => prev.map(t => fechas.has(t.id) ? { ...t, Contestada: 'SI', FechaContestacion: fechas.get(t.id) } : t));
     return fechas.size;
   }
