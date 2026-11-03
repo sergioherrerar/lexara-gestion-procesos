@@ -3,6 +3,7 @@ import IconButton from './IconButton';
 import MiniCalendarioAudienciasTerminos from './MiniCalendarioAudienciasTerminos';
 import miniVerdeOscuro from '../assets/Mini verde oscuro.png';
 import { pendientesDePersona } from '../lib/pendientesPersona';
+import { nombreAbogadoCanonico } from '../lib/graph';
 
 // "informes"/"tutelas" faltaban acá desde que se agregaron esos módulos (el
 // <h2> caía al fallback TITLES[view]||view y mostraba el string crudo en
@@ -68,7 +69,7 @@ const TIPOS_CAMPANA = {
 };
 function fechaCorta(iso){ const [y, m, d] = String(iso || '').split('-'); return y && m && d ? `${d}/${m}/${y}` : 'Sin fecha'; }
 
-function CampanaPendientes({ nombre, puedeVerEquipo, audiencias, terminos, pendientes, procesos, tutelas, onIrAVencimientos }){
+function CampanaPendientes({ nombre, esDemo, puedeVerEquipo, audiencias, terminos, pendientes, procesos, tutelas, onIrAVencimientos }){
   const [abierto, setAbierto] = useState(false);
   const [verEquipo, setVerEquipo] = useState(false);   // Administrador y Jefe pueden ver lo de todo el equipo
   const ref = useRef(null);
@@ -80,9 +81,27 @@ function CampanaPendientes({ nombre, puedeVerEquipo, audiencias, terminos, pendi
     document.addEventListener('keydown', onKeyDown);
     return () => { document.removeEventListener('mousedown', onDocPointer); document.removeEventListener('keydown', onKeyDown); };
   }, [abierto]);
-  const filas = useMemo(() => pendientesDePersona({ nombre: verEquipo ? '' : nombre, audiencias, terminos, pendientes, procesos, tutelas }), [nombre, verEquipo, audiencias, terminos, pendientes, procesos, tutelas]);
+  const filas = useMemo(() => pendientesDePersona({ nombre: (verEquipo && puedeVerEquipo) || (esDemo && !nombre) ? '' : (nombre || '~sin-persona-reconocida~'), audiencias, terminos, pendientes, procesos, tutelas }), [nombre, verEquipo, audiencias, terminos, pendientes, procesos, tutelas]);
   const urgentes = filas.filter(f => f.vencido || f.color === 'rojo').length;
   const conteo = tipo => filas.filter(f => f.tipo === tipo).length;
+  // Resumen por colaborador (solo en «Todo el equipo»): quién tiene cuánto, y al hacer clic en una fila la lista se limita a esa persona.
+  const [persona, setPersona] = useState(null);
+  // Solo el perfil Administrador/Jefe puede ver lo de todo el equipo (botón «Todo el equipo»); en modo demo, sin persona, se ve todo. En vivo, sin persona reconocida (cargando) no se muestra nada de nadie.
+  const verTodos = (verEquipo && !!puedeVerEquipo) || (esDemo && !nombre);
+  const claveResp = r => nombreAbogadoCanonico(String(r || '').trim() || 'Sin asignar').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ');
+  const grupos = useMemo(() => {
+    if(!verTodos) return [];
+    const m = new Map();
+    filas.forEach(f => {
+      const k = claveResp(f.responsable);
+      if(!m.has(k)) m.set(k, { k, nombre: nombreAbogadoCanonico(String(f.responsable || '').trim()) || 'Sin asignar', audiencias: 0, terminos: 0, pendientes: 0, tutelas: 0, total: 0, urgentes: 0 });
+      const g = m.get(k);
+      g[f.tipo]++; g.total++;
+      if(f.vencido || f.color === 'rojo') g.urgentes++;
+    });
+    return [...m.values()].sort((a, b) => b.total - a.total || a.nombre.localeCompare(b.nombre));
+  }, [filas, verTodos]);
+  const filasVisibles = verTodos && persona ? filas.filter(f => claveResp(f.responsable) === persona) : filas;
   return (
     <div className="topbar-campana-wrap" ref={ref}>
       <button type="button" className={"topbar-campana-btn" + (abierto ? " abierto" : "")} onClick={() => setAbierto(v => !v)}
@@ -98,16 +117,32 @@ function CampanaPendientes({ nombre, puedeVerEquipo, audiencias, terminos, pendi
           </div>
           {puedeVerEquipo && nombre && (
             <div className="campana-modo">
-              <button type="button" className={verEquipo ? '' : 'activo'} onClick={() => setVerEquipo(false)}>Mis pendientes</button>
+              <button type="button" className={verEquipo ? '' : 'activo'} onClick={() => { setVerEquipo(false); setPersona(null); }}>Mis pendientes</button>
               <button type="button" className={verEquipo ? 'activo' : ''} onClick={() => setVerEquipo(true)}>Todo el equipo</button>
             </div>
           )}
           <div className="campana-resumen">
             {Object.entries(TIPOS_CAMPANA).map(([k, t]) => <span key={k} className={"badge " + t.cls}>{t.plural} {conteo(k)}</span>)}
           </div>
+          {verTodos && grupos.length > 0 && (
+            <div className="campana-equipo" aria-label="Resumen por colaborador">
+              {grupos.map(g => (
+                <button key={g.k} type="button" className={"campana-equipo-fila" + (persona === g.k ? " activo" : "")} onClick={() => setPersona(p => p === g.k ? null : g.k)} title={persona === g.k ? 'Quitar el filtro' : 'Ver solo lo de ' + g.nombre}>
+                  <span className="campana-equipo-nombre">{g.nombre}</span>
+                  <span className="campana-equipo-conteos">
+                    {g.audiencias > 0 && <span className="badge badge-tipo-audiencia">A {g.audiencias}</span>}
+                    {g.terminos > 0 && <span className="badge badge-tipo-termino">T {g.terminos}</span>}
+                    {g.pendientes > 0 && <span className="badge badge-tipo-pendiente">P {g.pendientes}</span>}
+                    {g.tutelas > 0 && <span className="badge badge-tipo-termino">Tut {g.tutelas}</span>}
+                  </span>
+                  <span className={"campana-equipo-total" + (g.urgentes ? " urgente" : "")}>{g.total}</span>
+                </button>
+              ))}
+            </div>
+          )}
           <div className="campana-lista">
-            {filas.length === 0 && <p className="campana-vacia">No tienes audiencias, términos ni pendientes por atender. ¡Todo al día!</p>}
-            {filas.map(f => (
+            {filasVisibles.length === 0 && <p className="campana-vacia">No tienes audiencias, términos ni pendientes por atender. ¡Todo al día!</p>}
+            {filasVisibles.map(f => (
               <div key={f.clave} className="campana-item">
                 <div className="campana-item-fila">
                   <span className={"badge " + TIPOS_CAMPANA[f.tipo].cls}>{TIPOS_CAMPANA[f.tipo].label}</span>
@@ -180,7 +215,7 @@ export default function Topbar({ nombreActual, puedeVerEquipo, tutelas, onIrAVen
         onCrearPendiente={onCrearPendiente} canWrite={canWrite} notify={notify}
       />
       <div className="topbar-derecha">
-      <CampanaPendientes nombre={nombreActual} puedeVerEquipo={puedeVerEquipo} tutelas={tutelas} audiencias={audiencias} terminos={terminos} pendientes={pendientes} procesos={procesos} onIrAVencimientos={onIrAVencimientos} />
+      <CampanaPendientes nombre={nombreActual} esDemo={!liveMode} puedeVerEquipo={puedeVerEquipo} tutelas={tutelas} audiencias={audiencias} terminos={terminos} pendientes={pendientes} procesos={procesos} onIrAVencimientos={onIrAVencimientos} />
       <div className="search-bar">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
         <input

@@ -844,6 +844,15 @@
   .campana-modo{display:flex; gap:4px; padding:8px 16px 0;}
   .campana-modo button{flex:1; padding:6px 8px; border:1px solid var(--gris-linea); border-radius:8px; background:var(--gris-claro); color:var(--texto-suave); font-size:12px; font-weight:600; cursor:pointer;}
   .campana-modo button.activo{background:var(--verde-oscuro); border-color:var(--verde-oscuro); color:#fff;}
+  .campana-equipo{display:flex; flex-direction:column; gap:3px; padding:8px 12px; max-height:170px; overflow-y:auto; border-bottom:1px solid var(--gris-linea); background:#fafaf8;}
+  .campana-equipo-fila{display:flex; align-items:center; gap:8px; width:100%; padding:6px 8px; border:1px solid transparent; border-radius:8px; background:transparent; cursor:pointer; text-align:left; font:inherit;}
+  .campana-equipo-fila:hover{background:#eef4f3;}
+  .campana-equipo-fila.activo{background:#e3f1ef; border-color:var(--verde-claro);}
+  .campana-equipo-nombre{flex:1; min-width:0; font-size:12.5px; font-weight:600; color:var(--texto); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .campana-equipo-conteos{display:flex; gap:4px; flex-shrink:0;}
+  .campana-equipo-conteos .badge{font-size:10.5px; padding:1px 6px;}
+  .campana-equipo-total{flex-shrink:0; min-width:24px; padding:1px 7px; border-radius:10px; background:var(--naranja); color:#fff; font-size:11.5px; font-weight:700; text-align:center;}
+  .campana-equipo-total.urgente{background:#d6402f;}
   .campana-resumen{display:flex; flex-wrap:wrap; gap:6px; padding:10px 16px; border-bottom:1px solid var(--gris-linea);}
   .campana-lista{max-height:min(380px, 55vh); overflow-y:auto;}
   .campana-item{padding:10px 16px; border-bottom:1px solid var(--gris-linea);}

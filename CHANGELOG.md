@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-11-03 (142)
+- **Campana: resumen por colaborador** — pedido del usuario. En «Todo el equipo» hay una fila por persona con su desglose (audiencias, términos, pendientes, tutelas) y el total (rojo si tiene algo para hoy, mañana o vencido), de mayor a menor; al hacer clic en una fila la lista se limita a esa persona. Solo lo ven el Administrador y los jefes: un colaborador normal ve únicamente lo suyo, y mientras el portal no reconoce quién entró no se muestra nada de nadie.
+
 ## 2026-11-03 (141)
 - **El correo de solicitud de factura / orden de compra lleva el PDF adjunto** — pedido del usuario. El borrador que crea el ícono de correo de las tablas (y el que se crea al guardar un borrador en Honorarios por Proceso) adjunta el PDF del documento, con el mismo nombre del que se guarda en Soportes de gastos. Mientras se arma, el ícono gira.
 - **Tildes en el correo de solicitud** — pedido del usuario («Administración Proceso»). En «Proceso» y «Etapa del contrato» el correo muestra las etapas bien escritas (Administración, Admisión, Asesoría, Auditoría, Conciliación, Contestación, Radicación…) y con la primera letra en mayúscula; lo guardado en SharePoint no cambia.
