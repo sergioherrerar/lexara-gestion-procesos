@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-11-03 (134)
+- **Órdenes Colmédica: nuevo botón «Generar órdenes de compra del mes»** — pedido del usuario. Con el Mes elegido, abre una ventana con una fila por Cliente (total con IVA y estado: «Se creará» o «Ya generada · OC-…»), pide confirmación y crea de una vez las órdenes que faltan en SharePoint; las que ya existen no se tocan ni se duplican, y si una falla las demás se crean igual. Al terminar ofrece «Continuar al correo a Dania», que adjunta los PDF de las órdenes y el Excel de cada cliente. Reemplaza el trabajo de «Generar borrador» → «Guardar cambios» cliente por cliente (que sigue disponible).
+
 ## 2026-11-03 (133)
 - **Órdenes Colmédica: «Generar borrador» avisa si la orden del mes ya se hizo** — pedido del usuario (captura de la tabla por Cliente). Antes cada botón armaba un borrador nuevo aunque ya existiera la orden de ese cliente en el mes, y se podía duplicar. Ahora el botón busca la orden ya guardada del cliente para el mes elegido; si existe, cambia a «✓ Ya generada · OC-2026-00NN» y al pulsarlo abre esa orden (sin crear otra). Si no existe, sigue siendo «Generar borrador» y no se guarda nada hasta «Guardar cambios». La búsqueda es la misma del correo a Dania (ahora compartida en `buscarOrdenDelMes`).
 - **LexIA: los errores «500» ahora se explican** — reporte del usuario (tutela 28378, «ya son varios»). Cuando el servidor del robot se corta sin devolver un mensaje, el portal ya no dice solo «código 500»: explica que el servidor se cortó (suele ser por adjuntos pesados o lectura demasiado larga) y qué hacer. Del lado del robot (aparte, sube por cPanel) queda un registro `diagnostico.log` y un tope de tiempo para reintentos, para encontrar la causa.

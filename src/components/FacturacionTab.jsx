@@ -15,7 +15,7 @@ const SUB_TABS = [
 // Proceso eran pestañas propias del menú principal de Administración).
 // Mismo sub-menú segmentado que ya usa Egresos (Proveedores/Gastos) — ver
 // .subnav-panel/.subtabs/.subtab en styles.css.
-export default function FacturacionTab({ facturas, ordenesCompra, clientes, tutelas, valoresEntidad, procesos, onAbrirBorradorOrdenCompra, onAbrirOrdenCompra, onAbrirBorradorFactura, notify, liveMode }){
+export default function FacturacionTab({ facturas, ordenesCompra, clientes, tutelas, valoresEntidad, procesos, onAbrirBorradorOrdenCompra, onAbrirOrdenCompra, onCrearOrdenesCompraEnLote, onAbrirBorradorFactura, notify, liveMode }){
   const [subTab, setSubTab] = useState('porEntidad');
   return (
     <div>
@@ -39,6 +39,7 @@ export default function FacturacionTab({ facturas, ordenesCompra, clientes, tute
           liveMode={liveMode}
           onAbrirBorradorOrdenCompra={onAbrirBorradorOrdenCompra}
           onAbrirOrdenCompra={onAbrirOrdenCompra}
+          onCrearOrdenesCompraEnLote={onCrearOrdenesCompraEnLote}
           notify={notify}
         />
       )}

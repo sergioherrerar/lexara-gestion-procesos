@@ -8,6 +8,7 @@ import { colorDeTipoRespuesta } from '../lib/informeAbogadosTutelas';
 import { fmtMonto, mensajeError, valoresEntidadFaltantes, ordenCompraNumero } from '../lib/graph';
 import StackedBarChart from './StackedBarChart';
 import EnviarOrdenesColmedicaModal from './EnviarOrdenesColmedicaModal';
+import GenerarOrdenesMesModal from './GenerarOrdenesMesModal';
 
 // "Órdenes Colmédica" (Administración) — pedido explícito del usuario
 // 2026-08-29: por cada Cliente con tutelas en el mes elegido (mes calendario
@@ -18,9 +19,10 @@ import EnviarOrdenesColmedicaModal from './EnviarOrdenesColmedicaModal';
 // valor) listo para revisar y darle "Guardar cambios" — no se crea nada en
 // SharePoint solo. El botón de Excel descarga el mismo detalle de todos los
 // clientes de ese mes junto, de referencia.
-export default function OrdenesColmedicaTab({ tutelas, valoresEntidad, clientes, facturas, ordenesCompra, liveMode, onAbrirBorradorOrdenCompra, onAbrirOrdenCompra, notify }){
+export default function OrdenesColmedicaTab({ tutelas, valoresEntidad, clientes, facturas, ordenesCompra, liveMode, onAbrirBorradorOrdenCompra, onAbrirOrdenCompra, onCrearOrdenesCompraEnLote, notify }){
   const hoyRef = new Date();
   const [enviandoCorreo, setEnviandoCorreo] = useState(false);
+  const [generandoOrdenes, setGenerandoOrdenes] = useState(false);
   const [mes, setMes] = useState(hoyRef.getMonth());
   const [anio] = useState(hoyRef.getFullYear());
   const [generandoExcel, setGenerandoExcel] = useState(false);
@@ -86,10 +88,21 @@ export default function OrdenesColmedicaTab({ tutelas, valoresEntidad, clientes,
           <IconTextButton icon="excel" variant="secondary" onClick={handleDescargarExcel} disabled={generandoExcel}>
             {generandoExcel ? "Generando…" : "Descargar Excel"}
           </IconTextButton>
+          <IconTextButton icon="add" variant="primary" onClick={() => setGenerandoOrdenes(true)} disabled={!grupos.length || !onCrearOrdenesCompraEnLote}>
+            Generar órdenes de compra del mes
+          </IconTextButton>
           <IconTextButton icon="mail" variant="secondary" onClick={() => setEnviandoCorreo(true)} disabled={!grupos.length}>
             Enviar correo a Dania
           </IconTextButton>
         </div>
+        {generandoOrdenes && (
+          <GenerarOrdenesMesModal
+            mes={mes} anio={anio} grupos={grupos} valoresEntidad={valoresEntidad} clientes={clientes} ordenesCompra={ordenesCompra}
+            onCrear={onCrearOrdenesCompraEnLote} notify={notify}
+            onContinuarCorreo={() => { setGenerandoOrdenes(false); setEnviandoCorreo(true); }}
+            onClose={() => setGenerandoOrdenes(false)}
+          />
+        )}
         {enviandoCorreo && (
           <EnviarOrdenesColmedicaModal
             mes={mes} anio={anio} grupos={grupos} detalle={detalleValores} totalGeneral={totalGeneralValores}

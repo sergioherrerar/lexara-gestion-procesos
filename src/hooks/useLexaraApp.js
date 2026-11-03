@@ -1118,6 +1118,26 @@ export function useLexaraApp(){
     notify("Guardado con éxito en Lexara", 'success');
   }
 
+  // «Generar órdenes de compra del mes» (Órdenes Colmédica, 2026-11-03): crea de una vez varias órdenes ya armadas (una por Cliente). Solo se llama tras la confirmación del usuario.
+  // Devuelve [{ cliente, orden } | { cliente, error }] en el mismo orden; las que fallan no frenan a las demás.
+  async function crearOrdenesCompraEnLote(items){
+    const resultados = [];
+    let maxId = ordenesCompra.reduce((max,o) => Math.max(max, Number(o.id)||0), 0);
+    for(const { cliente, payload } of items){
+      const nuevo = { ...payload };
+      try{
+        if(liveMode){
+          const list = listByKey('ordenesCompra');
+          const created = await Graph.crearItemConLookups(list.siteId || siteId, list, payload);
+          nuevo.id = created.id; nuevo._graphId = created.id;
+        }else{ maxId += 1; nuevo.id = maxId; }
+        setOrdenesCompra(prev => [...prev, nuevo]);
+        resultados.push({ cliente, orden: nuevo });
+      }catch(err){ console.error(err); resultados.push({ cliente, error: Graph.mensajeError(err) }); }
+    }
+    return resultados;
+  }
+
   function openColaborador(id){ setDraftColaborador(null); setActiveColaboradorId(id); }
   // "+ Nuevo colaborador" solo abre un borrador local — no toca SharePoint
   // hasta que el usuario le da "Guardar cambios" (mismo criterio que en
@@ -2080,7 +2100,7 @@ export function useLexaraApp(){
     correoDocumento, cerrarCorreoDocumento: () => setCorreoDocumento(null),
     activeFactura, openFactura, newFactura, duplicateFactura, abrirBorradorFactura, closeFacturaDrawer, saveFactura,
     printFactura, autoPrintFacturaId, clearAutoPrint, createFacturaFromOrdenCompra, newFacturaFromProceso,
-    activeOrdenCompra, openOrdenCompra, newOrdenCompra, duplicateOrdenCompra, newOrdenCompraFromProceso, abrirBorradorOrdenCompra, closeOrdenCompraDrawer, saveOrdenCompra,
+    activeOrdenCompra, openOrdenCompra, newOrdenCompra, duplicateOrdenCompra, newOrdenCompraFromProceso, abrirBorradorOrdenCompra, crearOrdenesCompraEnLote, closeOrdenCompraDrawer, saveOrdenCompra,
     printOrdenCompra, autoPrintOrdenCompraId, clearAutoPrintOrdenCompra,
     activeColaborador, openColaborador, newColaborador, closeColaboradorDrawer, saveColaborador, deleteColaborador,
     activeFormaPago, openFormaPago, newFormaPagoFromProceso, closeFormaPagoDrawer, saveFormaPago, deleteFormaPago,

@@ -174,6 +174,17 @@ export function construirBorradorOrdenCompra(grupoCliente, mesIndex0, anio, valo
   return borrador;
 }
 
+// Pasa un borrador (construirBorradorOrdenCompra) al formato que se guarda en SharePoint — la misma limpieza que hace «Guardar cambios» en OrdenCompraDrawer
+// (números reales; sin las columnas calculadas ni la Ciudad, que es del Cliente).
+export function borradorAPayloadOrdenCompra(borrador){
+  const payload = { ...borrador };
+  [1,2,3,4,5,6].forEach(n => { delete payload['Total' + n]; });
+  ['Fecha','Subtotal','Iva','Total','RetIva','ValorAPagar','Factura','Ciudad'].forEach(k => { delete payload[k]; });
+  ['Dia','Mes','Anio','CodigoCliente'].forEach(k => { payload[k] = parseMonto(payload[k]); });
+  [1,2,3,4,5,6].forEach(n => { payload['Cantidad' + n] = parseMonto(payload['Cantidad' + n]); payload['ValorUnitario' + n] = parseMonto(payload['ValorUnitario' + n]); });
+  return payload;
+}
+
 // Detalle en pesos por cliente (Tutelas/Impugnaciones/Otras) — pedido
 // explícito del usuario 2026-08-29: "démosle una visual de estos
 // resultados así como en Tutelas por Abogado". Misma forma de resultado
