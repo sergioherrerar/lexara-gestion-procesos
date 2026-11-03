@@ -19,6 +19,23 @@
 @set_time_limit(340);
 @ini_set('memory_limit', '512M');
 
+// Registro de diagnóstico (2026-11-03, errores 500 repetidos sin mensaje, tutelas 28342/28337/28378): cada solicitud deja una línea INICIO y, si el proceso termina por sí solo, una línea FIN
+// con el tiempo, el código HTTP y la memoria máxima. Si en diagnostico.log hay un INICIO sin su FIN, el servidor MATÓ el proceso (tiempo máximo o memoria del hosting) y por eso el portal
+// solo ve «500». Se guarda en esta misma carpeta (.htaccess bloquea los .log) y se rota al pasar de 200 KB.
+$GLOBALS['diag_t0'] = microtime(true);
+$GLOBALS['diag_id'] = substr(md5(uniqid('', true)), 0, 6);
+$GLOBALS['diag_inicio'] = false;
+function diag($mensaje){
+    $ruta = __DIR__ . '/diagnostico.log';
+    if(@file_exists($ruta) && @filesize($ruta) > 200000) @rename($ruta, __DIR__ . '/diagnostico.anterior.log');
+    @file_put_contents($ruta, date('Y-m-d H:i:s') . ' [' . $GLOBALS['diag_id'] . '] ' . $mensaje . "\n", FILE_APPEND);
+}
+register_shutdown_function(function(){
+    if(empty($GLOBALS['diag_inicio'])) return;
+    $e = error_get_last();
+    diag('FIN ' . round(microtime(true) - $GLOBALS['diag_t0'], 1) . 's http=' . http_response_code() . ' memoria_pico=' . round(memory_get_peak_usage(true) / 1048576) . 'MB' . ($e ? ' ultimo_error=' . $e['message'] . ' (' . basename($e['file']) . ':' . $e['line'] . ')' : ''));
+});
+
 header('Content-Type: application/json; charset=utf-8');
 // Restringido a los 2 dominios reales del portal — no "*", evita que
 // cualquier otra página use este robot con nuestra clave.
@@ -75,6 +92,9 @@ $correcciones = is_array($entrada['correcciones'] ?? null) ? $entrada['correccio
 // (ni de costo, ni de tamaño de la solicitud). Subido de 8 a 20 y luego a 40
 // (2026-09-23, bug real dos veces seguidas: correos de "RV:"/reenviados
 // acumulan muchos adjuntos de rondas anteriores).
+$kbAdj = 0; foreach($adjuntos as $adjX){ $kbAdj += (int)(strlen((string)($adjX['base64'] ?? '')) / 1024); }
+$GLOBALS['diag_inicio'] = true;
+diag('INICIO asunto="' . substr(trim((string)($entrada['asunto'] ?? '')), 0, 70) . '" adjuntos=' . count($adjuntos) . ' base64_total=' . $kbAdj . 'KB');
 if(count($adjuntos) > 40){
     http_response_code(400);
     echo json_encode(['error' => 'Demasiados adjuntos en este correo (máximo 40) — extrae los datos a mano para este caso.']);
@@ -316,6 +336,9 @@ function llamarClaude(array $body, string $apiKey){
         $errorCurl = curl_error($ch);
         curl_close($ch);
         $pasajero = !$errorCurl && ($codigoHttp === 429 || $codigoHttp === 529 || $codigoHttp >= 500);
+        diag('API intento ' . $intento . ' codigo=' . $codigoHttp . ($errorCurl ? ' curl=' . $errorCurl : '') . ' a los ' . round(microtime(true) - $GLOBALS['diag_t0'], 1) . 's');
+        // Presupuesto de tiempo: pasados ~110 s no se reintenta (el hosting suele cortar las solicitudes largas y el portal vería un «500» sin explicación).
+        if(microtime(true) - $GLOBALS['diag_t0'] > 110) break;
         if(!$pasajero || $intento === 3) break;
         sleep(3 * $intento);
     }

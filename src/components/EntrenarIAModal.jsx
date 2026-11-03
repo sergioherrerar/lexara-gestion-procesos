@@ -268,7 +268,7 @@ function TabPreguntas({ robotPreguntasUrl, notify, casoActual, casosGuardados, o
         let d;
         try{ d = await res.json(); }catch{ d = null; }
         if(!res.ok || !d || d.error){
-          throw new Error((d && d.error) || `LexIA respondió con error (código ${res.status}).`);
+          throw new Error((d && d.error) || (res.status >= 500 ? `El servidor de LexIA se cortó sin dar explicación (código ${res.status}); vuelve a intentarlo y, si se repite, avisa para revisar el registro del robot.` : `LexIA respondió con error (código ${res.status}).`));
         }
         return d;
       }

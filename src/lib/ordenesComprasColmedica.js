@@ -123,6 +123,15 @@ function lineasDeOrden(valoresEntidad, g){
   return lineas;
 }
 
+// La orden de compra YA guardada de un Cliente para un mes (2026-11-03: «Generar borrador» debe avisar si ya se hizo y no duplicarla): su 1ª descripción trae
+// «… {cliente} por las contestaciones de tutelas hechas en el mes de {Mes} del {año}». Si hay varias, la más reciente.
+export function buscarOrdenDelMes(cliente, ordenesCompra, mesIndex0, anio){
+  const marca = `mes de ${MESES_NOMBRES[mesIndex0]} del ${anio}`;
+  return (ordenesCompra || [])
+    .filter(o => { const d = String(o.Descripcion1 || ''); return d.includes(marca) && d.includes(cliente); })
+    .sort((a, b) => Number(b.id) - Number(a.id))[0] || null;
+}
+
 // Arma el borrador de Orden de compra para un Cliente — mismos campos que
 // espera OrdenCompraDrawer.jsx (`emptyForm`/`handleSave`), listo para
 // abrirse con `abrirBorradorOrdenCompra` en useLexaraApp.js. Corregido

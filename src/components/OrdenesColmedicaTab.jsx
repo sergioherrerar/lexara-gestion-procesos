@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import IconButton, { IconTextButton } from './IconButton';
 import {
-  MESES_NOMBRES, filtrarTutelasPorMesCalendario, agruparPorClienteParaOrden,
+  MESES_NOMBRES, buscarOrdenDelMes, filtrarTutelasPorMesCalendario, agruparPorClienteParaOrden,
   construirBorradorOrdenCompra, generarExcelOrdenesColmedica, calcularDetalleValoresPorCliente,
 } from '../lib/ordenesComprasColmedica';
 import { colorDeTipoRespuesta } from '../lib/informeAbogadosTutelas';
-import { fmtMonto, mensajeError, valoresEntidadFaltantes } from '../lib/graph';
+import { fmtMonto, mensajeError, valoresEntidadFaltantes, ordenCompraNumero } from '../lib/graph';
 import StackedBarChart from './StackedBarChart';
 import EnviarOrdenesColmedicaModal from './EnviarOrdenesColmedicaModal';
 
@@ -18,7 +18,7 @@ import EnviarOrdenesColmedicaModal from './EnviarOrdenesColmedicaModal';
 // valor) listo para revisar y darle "Guardar cambios" — no se crea nada en
 // SharePoint solo. El botón de Excel descarga el mismo detalle de todos los
 // clientes de ese mes junto, de referencia.
-export default function OrdenesColmedicaTab({ tutelas, valoresEntidad, clientes, facturas, ordenesCompra, liveMode, onAbrirBorradorOrdenCompra, notify }){
+export default function OrdenesColmedicaTab({ tutelas, valoresEntidad, clientes, facturas, ordenesCompra, liveMode, onAbrirBorradorOrdenCompra, onAbrirOrdenCompra, notify }){
   const hoyRef = new Date();
   const [enviandoCorreo, setEnviandoCorreo] = useState(false);
   const [mes, setMes] = useState(hoyRef.getMonth());
@@ -41,6 +41,13 @@ export default function OrdenesColmedicaTab({ tutelas, valoresEntidad, clientes,
   const faltantes = valoresEntidadFaltantes(tutelasDelMes, valoresEntidad);
 
   function handleGenerarBorrador(grupo){
+    // Si ya se guardó la orden de ese cliente para el mes, no se arma otra: se abre la existente (evita duplicarla).
+    const existente = buscarOrdenDelMes(grupo.cliente, ordenesCompra, mes, anio);
+    if(existente && onAbrirOrdenCompra){
+      notify?.(`La orden de compra de ${grupo.cliente} de ${MESES_NOMBRES[mes]} ya se generó (${ordenCompraNumero(existente)}); la abro para que la revises.`, 'info');
+      onAbrirOrdenCompra(existente.id);
+      return;
+    }
     const borrador = construirBorradorOrdenCompra(grupo, mes, anio, valoresEntidad, clientes);
     onAbrirBorradorOrdenCompra(borrador);
   }
@@ -137,7 +144,9 @@ export default function OrdenesColmedicaTab({ tutelas, valoresEntidad, clientes,
                 <tr><th>Cliente</th><th>Tutelas</th><th>Impugnaciones</th><th>Otras contestaciones</th><th>Excel</th><th>Orden de compra</th></tr>
               </thead>
               <tbody>
-                {grupos.map(g => (
+                {grupos.map(g => {
+                  const ordenExistente = buscarOrdenDelMes(g.cliente, ordenesCompra, mes, anio);
+                  return (
                   <tr key={g.cliente}>
                     <td className="cliente">{g.cliente}</td>
                     <td>{g.cantidadTutela}</td>
@@ -152,12 +161,19 @@ export default function OrdenesColmedicaTab({ tutelas, valoresEntidad, clientes,
                       />
                     </td>
                     <td>
-                      <IconTextButton icon="add" variant="secondary" onClick={() => handleGenerarBorrador(g)}>
-                        Generar borrador
-                      </IconTextButton>
+                      {ordenExistente ? (
+                        <IconTextButton icon="open" variant="secondary" onClick={() => handleGenerarBorrador(g)}>
+                          ✓ Ya generada · {ordenCompraNumero(ordenExistente)}
+                        </IconTextButton>
+                      ) : (
+                        <IconTextButton icon="add" variant="secondary" onClick={() => handleGenerarBorrador(g)}>
+                          Generar borrador
+                        </IconTextButton>
+                      )}
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>

@@ -11,7 +11,7 @@ import { facturaDeOrden } from '../lib/cruceFacturasOrdenes';
 import { generarPdfBytesDesdeNodo, precargarImagen, precalentarLibreriasPdf } from '../lib/generarPdfDocumento';
 import { obtenerQrRedesDataUrl } from '../lib/qr';
 import { crearExcelClientesTutelas } from '../lib/informeClientesTutelas';
-import { MESES_NOMBRES } from '../lib/ordenesComprasColmedica';
+import { MESES_NOMBRES, buscarOrdenDelMes } from '../lib/ordenesComprasColmedica';
 import {
   construirCorreoOrdenesColmedica, etiquetaMesOrdenes, CORREO_DANIA_COLMEDICA, CATEGORIA_ORDENES_COLMEDICA, MENSAJE_POR_DEFECTO, saludoSegunHora,
 } from '../lib/correoOrdenesColmedica';
@@ -31,13 +31,7 @@ function bytesABase64(bytes){
 }
 const mb = n => (n / 1048576 >= 1 ? (n / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB');
 
-// La orden de compra guardada de un cliente para el mes: su 1ª descripción trae «… {cliente} por las contestaciones de tutelas hechas en el mes de {Mes} del {año}».
-function ordenDelMes(grupo, ordenesCompra, mes, anio){
-  const marca = `mes de ${MESES_NOMBRES[mes]} del ${anio}`;
-  return (ordenesCompra || [])
-    .filter(o => { const d = String(o.Descripcion1 || ''); return d.includes(marca) && d.includes(grupo.cliente); })
-    .sort((a, b) => Number(b.id) - Number(a.id))[0] || null;
-}
+const ordenDelMes = (grupo, ordenesCompra, mes, anio) => buscarOrdenDelMes(grupo.cliente, ordenesCompra, mes, anio);
 
 export default function EnviarOrdenesColmedicaModal({ mes, anio, grupos, detalle, totalGeneral, tutelasDelMes, valoresEntidad, clientes, facturas, ordenesCompra, liveMode, notify, onClose }){
   const etiqueta = etiquetaMesOrdenes(anio, mes);

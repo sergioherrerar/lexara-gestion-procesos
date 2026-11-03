@@ -1551,9 +1551,15 @@ export async function extraerTutelaConLexIA(correoBuzon, mensajeId, tutelas, rob
       // la conexión por tiempo/tamaño, o el robot no está accesible).
       throw new Error('No se pudo comunicar con LexIA (el servidor no respondió). Revisa tu conexión; si el correo trae adjuntos pesados, llena los datos a mano (los adjuntos se guardan en la carpeta de la tutela en OneDrive).');
     }
-    try{ data = await res.json(); }catch{ data = null; }
+    let crudo = '';
+    try{ crudo = await res.text(); }catch{ crudo = ''; }
+    try{ data = JSON.parse(crudo); }catch{ data = null; }
     if(res.ok && data && !data.error) break;
-    const msg = (data && data.error) || `LexIA respondió con error (código ${res.status}).`;
+    // Un «500» sin JSON no lo escribió el robot: lo devolvió el hosting (el proceso se cortó por tiempo o memoria, o un error de PHP sin capturar).
+    const sinJson = !data && res.status >= 500;
+    const msg = (data && data.error) || (sinJson
+      ? `El servidor de LexIA se cortó sin dar explicación (código ${res.status}); suele pasar cuando el correo trae adjuntos pesados o la lectura tarda demasiado. Vuelve a intentarlo; si se repite, llena los datos a mano (los adjuntos quedan guardados en la carpeta de la tutela en OneDrive) y avisa para revisar el registro del robot (diagnostico.log).`
+      : `LexIA respondió con error (código ${res.status}).`);
     // Un PDF protegido con contraseña que el robot no pudo abrir tumba toda
     // la solicitud — se reintenta sin ESE archivo (y se avisa que se omitió).
     const protegido = /El adjunto "(.+?)" viene protegido/.exec(msg);

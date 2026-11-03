@@ -259,6 +259,7 @@ export default function App(){
             facturas={app.facturas}
             ordenesCompra={app.ordenesCompra}
             onAbrirBorradorOrdenCompra={app.abrirBorradorOrdenCompra}
+            onAbrirOrdenCompra={app.openOrdenCompra}
             onAbrirBorradorFactura={app.abrirBorradorFactura}
             horasExtras={app.horasExtras}
             onAprobarHoraExtra={app.aprobarHoraExtra}
