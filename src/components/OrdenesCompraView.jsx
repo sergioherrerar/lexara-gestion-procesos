@@ -11,7 +11,7 @@ function fechaOrdenable(oc){
   return fechaFromPartes(oc.Dia, oc.Mes, oc.Anio) || oc.Fecha || "";
 }
 
-export default function OrdenesCompraView({ ordenesCompra, clientes, procesos, facturas, searchQuery, onOpenOrdenCompra, onCreateOrdenCompra, onDuplicateOrdenCompra, onPrintOrdenCompra, printingId, onCreateFacturaFromOrdenCompra }){
+export default function OrdenesCompraView({ ordenesCompra, clientes, procesos, facturas, searchQuery, onOpenOrdenCompra, onCreateOrdenCompra, onDuplicateOrdenCompra, onPrintOrdenCompra, printingId, onCrearCorreo, generandoCorreoId, onCreateFacturaFromOrdenCompra }){
   const { filters, setFilter, clearFilters, rowMatches, hasActiveFilters } = useColumnFilters();
   const { sort, setSortKey, sortRows } = useColumnSort();
 
@@ -91,6 +91,7 @@ export default function OrdenesCompraView({ ordenesCompra, clientes, procesos, f
                     <div className="row-actions">
                       <IconButton icon="edit" variant="edit" label="Ver / editar orden de compra" onClick={e => { e.stopPropagation(); onOpenOrdenCompra(oc.id); }} />
                       <IconButton icon="duplicate" variant="duplicate" label="Duplicar orden de compra" onClick={e => { e.stopPropagation(); onDuplicateOrdenCompra(oc.id); }} />
+                      {onCrearCorreo && <IconButton icon="mail" variant="mail" label="Crear correo de solicitud de orden de compra (con copia a Gerencia)" spinning={generandoCorreoId === 'ordenCompra:' + oc.id} onClick={e => { e.stopPropagation(); onCrearCorreo(oc); }} />}
                       <IconButton icon="pdf" variant="pdf" label="Guardar orden de compra en PDF" spinning={printingId===oc.id} onClick={e => { e.stopPropagation(); onPrintOrdenCompra(oc.id); }} />
                       <IconButton icon="invoice" variant="invoice" label="Generar factura con estos mismos datos" onClick={e => { e.stopPropagation(); onCreateFacturaFromOrdenCompra(oc.id); }} />
                     </div>

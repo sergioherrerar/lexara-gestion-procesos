@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
+import { crearBorradorSolicitudDocumento } from '../lib/correoSolicitudDocumento';
 import { INITIAL_CONFIG, SHAREPOINT_LISTS_CONFIG, DEMO_PROCESOS, DEMO_CLIENTES, DEMO_FACTURAS, DEMO_ORDENES_COMPRA, DEMO_COLABORADORES, DEMO_FORMAS_PAGO, DEMO_DESISTIMIENTOS, DEMO_TIPOS_ACCION, DEMO_TUTELAS, DEMO_TEMAS, DEMO_VALORES_ENTIDAD, DEMO_HORAS_EXTRAS, DEMO_VACACIONES_PERIODOS, DEMO_PROVEEDORES_GASTOS, DEMO_CUENTAS_COBRO_GASTOS, DEMO_PAGOS_POR_REALIZAR, DEMO_GASTOS, DEMO_TASAS_INTERES, DEMO_IPC, DEMO_AUDIENCIAS, DEMO_TERMINOS, DEMO_PENDIENTES, CALENDARIO_AUDIENCIAS_TERMINOS, RUTAS_CARPETAS_ENTIDAD } from '../config';
 import * as Graph from '../lib/graph';
 import { canWrite as canWriteForColaborador, modulosPermitidosDe, MODULOS_DISPONIBLES } from '../lib/permissions';
@@ -160,6 +161,21 @@ export function useLexaraApp(){
   const [solicitaCorreoFactura, setSolicitaCorreoFactura] = useState(false);
   const [solicitaCorreoOrden, setSolicitaCorreoOrden] = useState(false);
   const [correoDocumento, setCorreoDocumento] = useState(null);
+  // Correo de solicitud de factura / orden de compra creado de una vez (ícono de correo de las tablas y guardado de borradores de Honorarios por Proceso).
+  const [generandoCorreoDoc, setGenerandoCorreoDoc] = useState(null);   // 'factura:12' | 'ordenCompra:7'
+  async function crearCorreoSolicitudDocumento(tipo, documento){
+    const etiqueta = tipo === 'factura' ? 'de la factura' : 'de la orden de compra';
+    if(!liveMode){ notify('En modo demo no se crea el correo; necesita la sesión real de Microsoft 365.', 'info'); return; }
+    setGenerandoCorreoDoc(tipo + ':' + documento.id);
+    try{
+      const r = await crearBorradorSolicitudDocumento({ tipo, documento, clientes, colaboradores });
+      const quien = r.para ? 'para ' + r.para + ' con copia a Gerencia' : 'sin destinatario (escríbelo tú) y con copia a Gerencia';
+      notify(r.enBuzonPropio
+        ? '⚠ Creé el correo ' + etiqueta + ' en TUS Borradores (Microsoft no encontró el buzón de ' + r.remitente + '), ' + quien + ': cambia el «De» a Soporte si tienes permiso.'
+        : '✓ Correo ' + etiqueta + ' creado en los Borradores de ' + r.remitente + ', ' + quien + '.' + (r.imagenesFallidas?.length ? ' No se pudo adjuntar: ' + r.imagenesFallidas.join(', ') + '.' : ''), (r.enBuzonPropio || r.imagenesFallidas?.length) ? 'info' : 'success');
+    }catch(err){ console.error(err); notify('No se pudo crear el correo ' + etiqueta + ': ' + Graph.mensajeError(err), 'error'); }
+    finally{ setGenerandoCorreoDoc(null); }
+  }
   const [autoPrintFacturaId, setAutoPrintFacturaId] = useState(null);
   // Cola de copias de PDF por guardar en «1 Soportes de gastos MD / Año / Mes» (se arma tras guardar una factura u orden de compra; ver App.jsx y subirCopiaPdfSoportes).
   const [colaCopiasSoporte, setColaCopiasSoporte] = useState([]);
@@ -1013,7 +1029,7 @@ export function useLexaraApp(){
       encolarCopiaSoporte('factura', nuevo);
       setDraftFactura(null);
       setActiveFacturaId(null);
-      if(solicitaCorreoFactura) setCorreoDocumento({ tipo: 'factura', documento: nuevo });
+      if(solicitaCorreoFactura){ if(liveMode) crearCorreoSolicitudDocumento('factura', nuevo); else setCorreoDocumento({ tipo: 'factura', documento: nuevo }); }
       setSolicitaCorreoFactura(false);
       reabrirProcesoSiCorresponde();
       notify("Creado con éxito en Lexara", 'success');
@@ -1098,7 +1114,7 @@ export function useLexaraApp(){
       encolarCopiaSoporte('ordenCompra', nuevo);
       setDraftOrdenCompra(null);
       setActiveOrdenCompraId(null);
-      if(solicitaCorreoOrden) setCorreoDocumento({ tipo: 'ordenCompra', documento: nuevo });
+      if(solicitaCorreoOrden){ if(liveMode) crearCorreoSolicitudDocumento('ordenCompra', nuevo); else setCorreoDocumento({ tipo: 'ordenCompra', documento: nuevo }); }
       setSolicitaCorreoOrden(false);
       reabrirProcesoSiCorresponde();
       notify("Creado con éxito en Lexara", 'success');
@@ -2129,6 +2145,7 @@ export function useLexaraApp(){
     activeCliente, openCliente, closeClienteDrawer, saveCliente, deleteCliente, createCliente, updateCliente, newCliente,
     correoDocumento, cerrarCorreoDocumento: () => setCorreoDocumento(null),
     activeFactura, openFactura, newFactura, duplicateFactura, abrirBorradorFactura, closeFacturaDrawer, saveFactura,
+    crearCorreoSolicitudDocumento, generandoCorreoDoc,
     printFactura, autoPrintFacturaId, clearAutoPrint, copiaSoporteActual: colaCopiasSoporte[0] || null, terminarCopiaSoporte, createFacturaFromOrdenCompra, newFacturaFromProceso,
     activeOrdenCompra, openOrdenCompra, newOrdenCompra, duplicateOrdenCompra, newOrdenCompraFromProceso, abrirBorradorOrdenCompra, crearOrdenesCompraEnLote, closeOrdenCompraDrawer, saveOrdenCompra,
     printOrdenCompra, autoPrintOrdenCompraId, clearAutoPrintOrdenCompra,

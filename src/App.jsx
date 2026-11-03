@@ -203,6 +203,8 @@ export default function App(){
             onDuplicateFactura={app.duplicateFactura}
             onPrintFactura={app.printFactura}
             printingId={app.autoPrintFacturaId}
+            onCrearCorreo={f => app.crearCorreoSolicitudDocumento('factura', f)}
+            generandoCorreoId={app.generandoCorreoDoc}
             config={app.config}
             notify={app.notify}
           />
@@ -219,6 +221,8 @@ export default function App(){
             onDuplicateOrdenCompra={app.duplicateOrdenCompra}
             onPrintOrdenCompra={app.printOrdenCompra}
             printingId={app.autoPrintOrdenCompraId}
+            onCrearCorreo={oc => app.crearCorreoSolicitudDocumento('ordenCompra', oc)}
+            generandoCorreoId={app.generandoCorreoDoc}
             onCreateFacturaFromOrdenCompra={app.createFacturaFromOrdenCompra}
           />
         )}

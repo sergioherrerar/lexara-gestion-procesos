@@ -2,8 +2,8 @@
 //   · Factura        → Para: Beatriz, con copia a Gerencia: «solicito generación de factura electrónica» con el detalle de la factura.
 //   · Orden de compra → Para: quien se escriba a mano, con copia a Gerencia: «solicito generación de número de orden de compra» con el detalle de la orden.
 // Se arma DESPUÉS de guardar el borrador (ya con Cantidad/Valor completos). Sale de la cuenta de Soporte, con su firma.
-import { facturaLineItems, computeFacturaTotals, ordenCompraNumero, fmtMonto, parseMonto, firmaHtml } from './graph';
-import { dma } from './novedadesNomina';
+import { facturaLineItems, computeFacturaTotals, ordenCompraNumero, fmtMonto, parseMonto, firmaHtml, firmaComoImagenInline, crearBorradorConImagenesInline } from './graph';
+import { dma, destinatariaNovedades, nombreDeSaludo, CORREO_GERENCIA_NOVEDADES } from './novedadesNomina';
 
 function esc(t){ return String(t ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
 const pesos = n => '$ ' + fmtMonto(n);
@@ -71,4 +71,21 @@ export function construirCorreoSolicitudDocumento({ tipo, documento, cliente, pi
   ${firmaHtml('soporte', srcFirma)}
 </div>`;
   return { asunto, html, sinLineas: !lineas.length, sinValor: !(total > 0) };
+}
+
+// Crea DE UNA VEZ el borrador del correo de solicitud (2026-11-03, pedido del usuario: ícono de correo en las tablas de Facturas y Órdenes de compra, y al guardar un borrador de
+// «Honorarios por Proceso»): factura → Para Beatriz con copia a Gerencia; orden de compra → sin destinatario (queda abierto para escribirlo) con copia a Gerencia.
+// Queda en los Borradores de Soporte (si Microsoft no encuentra ese buzón, en los de quien entró; el resultado lo dice en enBuzonPropio).
+const REMITENTE_SOPORTE = 'soporte@lexaraabogados.com';
+export async function crearBorradorSolicitudDocumento({ tipo, documento, clientes, colaboradores }){
+  const esFactura = tipo === 'factura';
+  const firma = await firmaComoImagenInline('soporte');
+  const cliente = (clientes || []).find(c => String(c.id) === String(documento?.CodigoCliente)) || null;
+  const beatriz = destinatariaNovedades(colaboradores);
+  const correo = construirCorreoSolicitudDocumento({ tipo, documento, cliente, pilaDestinatario: esFactura ? nombreDeSaludo() : '' });
+  const r = await crearBorradorConImagenesInline({
+    to: esFactura ? [beatriz.correo] : [], cc: [CORREO_GERENCIA_NOVEDADES], subject: correo.asunto, htmlBody: correo.html, imagenes: [firma],
+    categorias: [(esFactura ? CATEGORIA_SOLICITUD_FACTURA : CATEGORIA_SOLICITUD_ORDEN) + ' (borrador)'], buzon: REMITENTE_SOPORTE, caerAlBuzonPropio: true,
+  });
+  return { ...r, para: esFactura ? beatriz.correo : '', remitente: REMITENTE_SOPORTE };
 }
