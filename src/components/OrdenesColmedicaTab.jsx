@@ -23,6 +23,7 @@ export default function OrdenesColmedicaTab({ tutelas, valoresEntidad, clientes,
   const hoyRef = new Date();
   const [enviandoCorreo, setEnviandoCorreo] = useState(false);
   const [generandoOrdenes, setGenerandoOrdenes] = useState(false);
+  const [avisoMes, setAvisoMes] = useState(null); // 'ordenes' | 'facturas': recordatorio del mes antes de generar
   const [mes, setMes] = useState(hoyRef.getMonth());
   const [anio] = useState(hoyRef.getFullYear());
   const [generandoExcel, setGenerandoExcel] = useState(false);
@@ -55,6 +56,13 @@ export default function OrdenesColmedicaTab({ tutelas, valoresEntidad, clientes,
   }
 
   // «Generar órdenes de compra del mes»: verifica cuáles ya existen. Si ya están todas, sigue directo al correo; si falta alguna, abre la lista para crearlas (y al terminar sigue al correo).
+  function continuarTrasAviso(){
+    const cual = avisoMes;
+    setAvisoMes(null);
+    if(cual === 'ordenes') handleGenerarOrdenesMes();
+    else if(cual === 'facturas') setEnviandoCorreo(true);
+  }
+
   function handleGenerarOrdenesMes(){
     const faltan = grupos.filter(g => !buscarOrdenDelMes(g.cliente, ordenesCompra, mes, anio));
     if(!faltan.length){
@@ -99,13 +107,24 @@ export default function OrdenesColmedicaTab({ tutelas, valoresEntidad, clientes,
           <IconTextButton icon="excel" variant="secondary" onClick={handleDescargarExcel} disabled={generandoExcel}>
             {generandoExcel ? "Generando…" : "Descargar Excel"}
           </IconTextButton>
-          <IconTextButton icon="mail" variant="primary" onClick={handleGenerarOrdenesMes} disabled={!grupos.length || !onCrearOrdenesCompraEnLote}>
+          <IconTextButton icon="mail" variant="primary" onClick={() => setAvisoMes('ordenes')} disabled={!grupos.length || !onCrearOrdenesCompraEnLote}>
             Generar órdenes de compra del mes
           </IconTextButton>
-          <IconTextButton icon="mail" variant="secondary" onClick={() => setEnviandoCorreo(true)} disabled={!grupos.length}>
+          <IconTextButton icon="mail" variant="secondary" onClick={() => setAvisoMes('facturas')} disabled={!grupos.length}>
             Generador de facturas del mes
           </IconTextButton>
         </div>
+        {avisoMes && (
+          <div className="confirm-overlay" onClick={() => setAvisoMes(null)}>
+            <div className="confirm-box" onClick={e => e.stopPropagation()} role="alertdialog" aria-modal="true">
+              <p><strong>Recuerda:</strong> se están generando las {avisoMes === 'ordenes' ? 'órdenes de compra' : 'facturas'} del mes de <strong>{MESES_NOMBRES[mes]} de {anio}</strong>. Si no es el mes que necesitas, cancela y cámbialo en el selector «Mes».</p>
+              <div className="confirm-actions">
+                <button type="button" className="btn-secondary" onClick={() => setAvisoMes(null)}>Cancelar</button>
+                <button type="button" className="btn-primary" onClick={continuarTrasAviso} autoFocus>Sí, es {MESES_NOMBRES[mes]}</button>
+              </div>
+            </div>
+          </div>
+        )}
         {generandoOrdenes && (
           <GenerarOrdenesMesModal
             mes={mes} anio={anio} grupos={grupos} valoresEntidad={valoresEntidad} clientes={clientes} ordenesCompra={ordenesCompra}

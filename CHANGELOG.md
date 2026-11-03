@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-11-03 (137)
+- **Aviso del mes antes de generar** — pedido del usuario. Al pulsar «Generar órdenes de compra del mes» o «Generador de facturas del mes» (Órdenes Colmédica) y «Enviar gastos del mes» (Egresos → Gastos) sale primero un recordatorio: «se están generando/enviando las del mes de {Mes} de {Año}», con «Cancelar» y «Sí, es {Mes}». Solo después sigue el flujo de siempre.
+
 ## 2026-11-03 (136)
 - **Órdenes Colmédica: «Generar órdenes de compra del mes» verifica y sigue al correo** — pedido del usuario. Al pulsarlo revisa si las órdenes del mes ya existen: si están todas, abre directo el correo; si falta alguna, muestra la lista y el botón «Crear N órdenes de compra y seguir al correo» las crea (sin la pregunta extra) y al terminar abre el correo. Las existentes no se tocan. Los dos botones llevan ahora el ícono de correo.
 

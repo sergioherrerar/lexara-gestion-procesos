@@ -280,6 +280,7 @@ function SoporteField({ label, url, fecha, shareUrl, onElegir, textoBoton = "Ele
 function RegistrosSection({ nombreLista, registros, proveedores, conNumero, conTipo, conSoportes, shareUrl, siguienteNumero, onCrear, onEditar, onEliminar, canWrite, notify, colaboradores, liveMode }){
   const hoyRef = new Date();
   const [enviandoGastos, setEnviandoGastos] = useState(false);
+  const [avisoMes, setAvisoMes] = useState(false); // recordatorio del mes antes de armar el correo de gastos
   const [enviandoPagos, setEnviandoPagos] = useState(false);
   const [mes, setMes] = useState(hoyRef.getMonth());
   const [anio, setAnio] = useState(hoyRef.getFullYear());
@@ -487,7 +488,7 @@ function RegistrosSection({ nombreLista, registros, proveedores, conNumero, conT
             {generandoHTML ? "Generando…" : "Descargar HTML"}
           </IconTextButton>
           {conSoportes && (
-            <IconTextButton icon="mail" variant="secondary" onClick={() => { if(verTodos){ notify?.('Elige un mes (quita «Todos») para armar el correo de gastos de ese mes.', 'info'); return; } setEnviandoGastos(true); }}>
+            <IconTextButton icon="mail" variant="secondary" onClick={() => { if(verTodos){ notify?.('Elige un mes (quita «Todos») para armar el correo de gastos de ese mes.', 'info'); return; } setAvisoMes(true); }}>
               Enviar gastos del mes
             </IconTextButton>
           )}
@@ -509,6 +510,17 @@ function RegistrosSection({ nombreLista, registros, proveedores, conNumero, conT
         </div>
       </div>
       {enviandoPagos && <PagosPorRealizarModal registros={registros} proveedores={proveedores} liveMode={liveMode} notify={notify} onClose={() => setEnviandoPagos(false)} />}
+      {avisoMes && (
+        <div className="confirm-overlay" onClick={() => setAvisoMes(false)}>
+          <div className="confirm-box" onClick={e => e.stopPropagation()} role="alertdialog" aria-modal="true">
+            <p><strong>Recuerda:</strong> se están enviando los gastos del mes de <strong>{MESES_NOMBRES[mes]} de {anio}</strong>. Si no es el mes que necesitas, cancela y cámbialo en los selectores «Mes» y «Año».</p>
+            <div className="confirm-actions">
+              <button type="button" className="btn-secondary" onClick={() => setAvisoMes(false)}>Cancelar</button>
+              <button type="button" className="btn-primary" onClick={() => { setAvisoMes(false); setEnviandoGastos(true); }} autoFocus>Sí, es {MESES_NOMBRES[mes]}</button>
+            </div>
+          </div>
+        </div>
+      )}
       {enviandoGastos && <EnviarGastosModal filasMes={filtrarPorMes(registros, anio, mes)} proveedores={proveedores} anio={anio} mes={mes} shareUrl={shareUrl} colaboradores={colaboradores} liveMode={liveMode} notify={notify} onClose={() => setEnviandoGastos(false)} />}
       {abierto && <RegistroForm inicial={formInicialNuevo} conNumero={conNumero} conTipo={conTipo} proveedores={proveedores} onGuardar={guardarNuevo} onCancelar={cerrarNuevo} guardando={guardando} />}
       <div className="table-wrap">
