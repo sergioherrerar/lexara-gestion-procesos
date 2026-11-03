@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-11-03 (135)
+- **Órdenes Colmédica: el botón «Enviar correo a Dania» ahora se llama «Generador de facturas del mes»** — pedido del usuario. Solo cambia el nombre; abre el mismo correo con la relación del mes, las órdenes de compra y el Excel.
+
 ## 2026-11-03 (134)
 - **Órdenes Colmédica: nuevo botón «Generar órdenes de compra del mes»** — pedido del usuario. Con el Mes elegido, abre una ventana con una fila por Cliente (total con IVA y estado: «Se creará» o «Ya generada · OC-…»), pide confirmación y crea de una vez las órdenes que faltan en SharePoint; las que ya existen no se tocan ni se duplican, y si una falla las demás se crean igual. Al terminar ofrece «Continuar al correo a Dania», que adjunta los PDF de las órdenes y el Excel de cada cliente. Reemplaza el trabajo de «Generar borrador» → «Guardar cambios» cliente por cliente (que sigue disponible).
 

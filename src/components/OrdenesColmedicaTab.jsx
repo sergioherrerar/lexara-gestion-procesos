@@ -92,7 +92,7 @@ export default function OrdenesColmedicaTab({ tutelas, valoresEntidad, clientes,
             Generar órdenes de compra del mes
           </IconTextButton>
           <IconTextButton icon="mail" variant="secondary" onClick={() => setEnviandoCorreo(true)} disabled={!grupos.length}>
-            Enviar correo a Dania
+            Generador de facturas del mes
           </IconTextButton>
         </div>
         {generandoOrdenes && (
