@@ -54,6 +54,17 @@ export default function OrdenesColmedicaTab({ tutelas, valoresEntidad, clientes,
     onAbrirBorradorOrdenCompra(borrador);
   }
 
+  // «Generar órdenes de compra del mes»: verifica cuáles ya existen. Si ya están todas, sigue directo al correo; si falta alguna, abre la lista para crearlas (y al terminar sigue al correo).
+  function handleGenerarOrdenesMes(){
+    const faltan = grupos.filter(g => !buscarOrdenDelMes(g.cliente, ordenesCompra, mes, anio));
+    if(!faltan.length){
+      notify?.(`Las órdenes de compra de ${MESES_NOMBRES[mes]} ya están generadas; sigo con el correo.`, 'info');
+      setEnviandoCorreo(true);
+      return;
+    }
+    setGenerandoOrdenes(true);
+  }
+
   async function handleDescargarExcel(){
     setGenerandoExcel(true);
     try{ await generarExcelOrdenesColmedica(tutelasDelMes, valoresEntidad, mes, anio); }
@@ -88,7 +99,7 @@ export default function OrdenesColmedicaTab({ tutelas, valoresEntidad, clientes,
           <IconTextButton icon="excel" variant="secondary" onClick={handleDescargarExcel} disabled={generandoExcel}>
             {generandoExcel ? "Generando…" : "Descargar Excel"}
           </IconTextButton>
-          <IconTextButton icon="add" variant="primary" onClick={() => setGenerandoOrdenes(true)} disabled={!grupos.length || !onCrearOrdenesCompraEnLote}>
+          <IconTextButton icon="mail" variant="primary" onClick={handleGenerarOrdenesMes} disabled={!grupos.length || !onCrearOrdenesCompraEnLote}>
             Generar órdenes de compra del mes
           </IconTextButton>
           <IconTextButton icon="mail" variant="secondary" onClick={() => setEnviandoCorreo(true)} disabled={!grupos.length}>

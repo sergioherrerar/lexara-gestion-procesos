@@ -7,7 +7,6 @@ import { ordenCompraNumero, fmtMonto, parseMonto, computeOrdenCompraTotals } fro
 // cada Cliente con tutelas en el mes elegido. Primero lista qué se creará y qué ya existe; no se guarda nada en SharePoint hasta «Sí, crear». Las que ya existen no se tocan.
 // Al terminar ofrece seguir al correo a Dania, que adjunta los PDF de las órdenes y el Excel de cada cliente.
 export default function GenerarOrdenesMesModal({ mes, anio, grupos, valoresEntidad, clientes, ordenesCompra, onCrear, onContinuarCorreo, onClose, notify }){
-  const [confirmando, setConfirmando] = useState(false);
   const [creando, setCreando] = useState(false);
   const [resultados, setResultados] = useState(null);
 
@@ -21,12 +20,13 @@ export default function GenerarOrdenesMesModal({ mes, anio, grupos, valoresEntid
   const incompletas = porCrear.filter(f => !f.borrador.CodigoCliente || !(parseMonto(f.borrador.Cantidad1) > 0));
 
   async function crear(){
-    setConfirmando(false); setCreando(true);
+    setCreando(true);
     try{
       const r = await onCrear(porCrear.map(f => ({ cliente: f.grupo.cliente, payload: borradorAPayloadOrdenCompra(f.borrador) })));
       setResultados(r);
       const ok = r.filter(x => x.orden).length, mal = r.length - ok;
       notify?.(mal ? `Se crearon ${ok} órdenes y ${mal} fallaron; revisa el detalle.` : `✓ Se crearon ${ok} órdenes de compra de ${MESES_NOMBRES[mes]}.`, mal ? 'error' : 'success');
+      if(!mal) onContinuarCorreo?.();
     }catch(err){ console.error(err); notify?.('No se pudieron crear las órdenes: ' + (err?.message || err), 'error'); }
     finally{ setCreando(false); }
   }
@@ -39,7 +39,7 @@ export default function GenerarOrdenesMesModal({ mes, anio, grupos, valoresEntid
           <h3>Órdenes de compra de {MESES_NOMBRES[mes]} de {anio}</h3>
           <button type="button" className="btn-secondary" onClick={onClose}>Cerrar</button>
         </div>
-        <p className="save-hint" style={{ margin: '0 0 8px' }}>Una orden por Cliente con tutelas que vencen en el mes. Las que ya existen no se tocan ni se duplican.</p>
+        <p className="save-hint" style={{ margin: '0 0 8px' }}>Una orden por Cliente con tutelas que vencen en el mes. Las que ya existen no se tocan ni se duplican; al crear las que faltan se sigue al correo.</p>
         <div className="table-wrap">
           <table>
             <thead><tr><th>Cliente</th><th style={{ textAlign: 'right' }}>Total con IVA</th><th>Estado</th></tr></thead>
@@ -66,17 +66,11 @@ export default function GenerarOrdenesMesModal({ mes, anio, grupos, valoresEntid
           <p className="save-hint" style={{ color: '#a3281c' }}>Ojo: {incompletas.map(f => f.grupo.cliente).join(', ')} no tiene el cliente enlazado o la cantidad en blanco; revisa el borrador de esa orden antes de crearla.</p>
         )}
         <div className="confirm-actions" style={{ marginTop: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-          {!resultados && porCrear.length > 0 && (confirmando ? (
-            <>
-              <span className="save-hint" style={{ margin: 0 }}>Se {porCrear.length === 1 ? 'creará 1 orden de compra real' : `crearán ${porCrear.length} órdenes de compra reales`} en SharePoint. ¿Continuar?</span>
-              <IconTextButton icon="add" variant="primary" onClick={crear} disabled={creando}>Sí, crear</IconTextButton>
-              <button type="button" className="btn-secondary" onClick={() => setConfirmando(false)}>Cancelar</button>
-            </>
-          ) : (
-            <IconTextButton icon="add" variant="primary" onClick={() => setConfirmando(true)} disabled={creando}>
-              {creando ? 'Creando…' : `Crear ${porCrear.length} orden${porCrear.length === 1 ? '' : 'es'} de compra`}
+          {!resultados && porCrear.length > 0 && (
+            <IconTextButton icon="mail" variant="primary" onClick={crear} disabled={creando}>
+              {creando ? 'Creando…' : `Crear ${porCrear.length} orden${porCrear.length === 1 ? '' : 'es'} de compra y seguir al correo`}
             </IconTextButton>
-          ))}
+          )}
           {todasListas && filas.length > 0 && (
             <IconTextButton icon="mail" variant="primary" onClick={onContinuarCorreo}>Continuar al correo a Dania</IconTextButton>
           )}
