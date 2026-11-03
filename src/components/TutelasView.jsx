@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useRef, lazy, Suspense } from 'react';
 import { ICON_SVG, TUTELAS_REMITENTES_PERMITIDOS } from '../config';
 import { fmtDate, listarEnviadosConAdjuntos, mensajeError } from '../lib/graph';
-import { contestacionesDeEnviados, enviadasPorTutela } from '../lib/contestacionesEnviadas';
+import { contestacionesDeEnviados, enviadasPorTutela, vencimientoEfectivo } from '../lib/contestacionesEnviadas';
 import { cargarModulo } from '../lib/cargaModulo';
 import IconButton, { IconTextButton } from './IconButton';
 import ColumnHeaderMenu from './ColumnHeaderMenu';
@@ -67,6 +67,7 @@ export default function TutelasView({ onMarcarContestadas, tutelas, temas, searc
   const DIAS_SEGUIMIENTO = 45;
   const [envios, setEnvios] = useState(null);          // Map id → { fecha, tipo } del último escaneo
   const [revisando, setRevisando] = useState(false);
+  const [errorRevision, setErrorRevision] = useState('');   // por qué falló la última revisión (la automática no muestra avisos)
   const [filtroEnvio, setFiltroEnvio] = useState('todas'); // 'todas' | 'porContestar' | 'enviadas'
   const desdeISO = (() => { const d = new Date(); d.setDate(d.getDate() - DIAS_SEGUIMIENTO); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); })();
   function estadoDe(t){
@@ -74,8 +75,11 @@ export default function TutelasView({ onMarcarContestadas, tutelas, temas, searc
     const guardada = String(t.Contestada||"").trim().toUpperCase() === 'SI';
     const escaneada = envios?.get(t.id);
     if(guardada || escaneada) return { estado:'enviada', fecha: guardada ? (t.FechaContestacion || escaneada?.fecha || '') : escaneada.fecha };
+    if(!envios) return null;                          // todavía no se ha revisado Tutelas@: no se afirma nada
     if(!venc || venc < desdeISO) return null;       // fuera del seguimiento
-    return { estado: venc < hoyISO() ? 'vencida' : 'porContestar' };
+    // Si de este número ya se envió el aplazamiento, el plazo gana un día hábil (ver vencimientoEfectivo).
+    const ef = vencimientoEfectivo(t, tutelas, x => String(x.Contestada||"").trim().toUpperCase() === 'SI' || !!envios.get(x.id));
+    return { estado: ef.fecha < hoyISO() ? 'vencida' : 'porContestar', ampliado: ef.ampliado, vence: ef.fecha };
   }
   function fechaHoraCorta(iso){
     const d = new Date(iso);
@@ -84,7 +88,7 @@ export default function TutelasView({ onMarcarContestadas, tutelas, temas, searc
   }
   async function revisarEnviadas(silencioso){
     if(!liveMode || !config?.TUTELAS_BUZON_CORREO) return;
-    setRevisando(true);
+    setRevisando(true); setErrorRevision('');
     try{
       const mensajes = await listarEnviadosConAdjuntos(config.TUTELAS_BUZON_CORREO, desdeISO, silencioso);
       const mapa = enviadasPorTutela(tutelas, contestacionesDeEnviados(mensajes));
@@ -95,6 +99,7 @@ export default function TutelasView({ onMarcarContestadas, tutelas, temas, searc
       if(!silencioso) notify?.(mapa.size ? ('Se reconocieron ' + mapa.size + ' contestaciones enviadas desde Tutelas@' + (guardadas ? ' (' + guardadas + ' nuevas guardadas)' : '') + '.') : ('No encontré contestaciones enviadas en los últimos ' + DIAS_SEGUIMIENTO + ' días.'), 'success');
     }catch(err){
       console.error('Revisar enviadas:', err);
+      setErrorRevision(mensajeError(err));
       if(!silencioso) notify?.('No se pudieron revisar los correos enviados de Tutelas@: ' + mensajeError(err), 'error');
     }finally{ setRevisando(false); }
   }
@@ -105,7 +110,7 @@ export default function TutelasView({ onMarcarContestadas, tutelas, temas, searc
     revisarEnviadas(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [liveMode, tutelas.length]);
-  const textoEstado = t => { const e = estadoDe(t); return !e ? '' : e.estado === 'enviada' ? 'Enviada' : e.estado === 'vencida' ? 'Vencida sin enviar' : 'Por contestar'; };
+  const textoEstado = t => { const e = estadoDe(t); return !e ? '' : e.estado === 'enviada' ? 'Enviada' : e.estado === 'vencida' ? 'Sin envío reconocido' : 'Por contestar'; };
   const columnas = useMemo(() => [...COLUMNS.slice(0, 8), { key:'contestacion', label:'Contestación', value: textoEstado }, ...COLUMNS.slice(8)],
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [envios, tutelas]);
@@ -172,6 +177,7 @@ export default function TutelasView({ onMarcarContestadas, tutelas, temas, searc
           <span className={"badge badge-forma-boton " + (vencenHoy > 0 ? "badge-alerta" : "badge-gris")}>
             {vencenHoy} {vencenHoy === 1 ? "vence" : "vencen"} hoy
           </span>
+          {liveMode && !envios && !revisando && <span className="badge badge-naranja" title={errorRevision || 'Aún no se han revisado los correos enviados de Tutelas@'}>{errorRevision ? 'No se pudo revisar Tutelas@' : 'Sin revisar enviadas'}</span>}
           {liveMode && <IconTextButton icon="mail" variant="secondary" onClick={() => revisarEnviadas(false)} disabled={revisando}>{revisando ? 'Revisando…' : 'Revisar enviadas'}</IconTextButton>}
           {canWrite && <IconTextButton icon="add" variant="primary" onClick={() => onCreateTutela()}>Nueva tutela</IconTextButton>}
         </div>
@@ -236,7 +242,7 @@ export default function TutelasView({ onMarcarContestadas, tutelas, temas, searc
                 <td>{fmtDate(t.FechaVencimiento)}</td>
                 <td>{fmtDate(t.FechaNotificacion)}</td>
                 <td>{t.Tema || "—"}</td>
-                <td>{(() => { const e = estadoDe(t); if(!e) return "—"; return e.estado === 'enviada' ? <span className="badge badge-verde" title="Contestación enviada desde Tutelas@">Enviada{e.fecha ? ' ' + fechaHoraCorta(e.fecha) : ''}</span> : e.estado === 'vencida' ? <span className="badge badge-rojo">Vencida sin enviar</span> : <span className="badge badge-naranja">Por contestar</span>; })()}</td>
+                <td>{(() => { const e = estadoDe(t); if(!e) return "—"; return e.estado === 'enviada' ? <span className="badge badge-verde" title="Contestación enviada desde Tutelas@">Enviada{e.fecha ? ' ' + fechaHoraCorta(e.fecha) : ''}</span> : e.estado === 'vencida' ? <span className="badge badge-naranja" title={'Era para el ' + fmtDate(e.vence) + (e.ampliado ? ' (plazo ampliado por el aplazamiento enviado)' : '') + ' y no encontré el correo de contestación en Tutelas@. Verifica antes de darla por vencida: puede haber salido con otro número o desde otro buzón.'}>Sin envío reconocido</span> : <span className="badge badge-naranja" title={e.ampliado ? 'Plazo ampliado un día hábil por el aplazamiento ya enviado: vence ' + fmtDate(e.vence) : undefined}>Por contestar{e.ampliado ? ' · +' + e.ampliado + ' día hábil' : ''}</span>; })()}</td>
                 <td style={{whiteSpace:'nowrap'}}>
                   <div className="row-actions">
                     <IconButton icon="edit" variant="edit" label={canWrite ? "Editar tutela" : "Ver tutela"} onClick={() => onOpenTutela(t.id)} />

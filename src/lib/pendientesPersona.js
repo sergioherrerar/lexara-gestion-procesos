@@ -7,6 +7,7 @@
 // siguen «Vigente», aunque su fecha ya haya pasado (esos sí son tareas sin hacer).
 import { sumarDiasHabilesJudiciales, diasHabilesRestantes, colorCuentaRegresiva, etiquetaCuentaRegresiva } from './audienciasTerminos.js';
 import { nombreAbogadoCanonico } from './graph.js';
+import { vencimientoEfectivo } from './contestacionesEnviadas.js';
 
 const soloFechaISO = v => String(v || '').slice(0, 10);
 const clave = n => String(n || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
@@ -30,7 +31,7 @@ export function pendientesDePersona({ nombre, audiencias, terminos, pendientes, 
   function agregar(f){
     const vencido = !!f.fecha && f.fecha < hoy;
     const restantes = !f.fecha ? null : vencido ? -1 : diasHabilesRestantes(f.fecha);
-    lista.push({ ...f, vencido, color: vencido ? 'rojo' : colorCuentaRegresiva(restantes), etiqueta: f.fecha ? (vencido ? 'Vencido' : etiquetaCuentaRegresiva(restantes)) : 'Sin fecha' });
+    lista.push({ ...f, vencido, color: vencido ? (f.revisarEnvio ? 'naranja' : 'rojo') : colorCuentaRegresiva(restantes), etiqueta: f.fecha ? (vencido ? (f.revisarEnvio ? 'Revisar envío' : 'Vencido') : etiquetaCuentaRegresiva(restantes)) : 'Sin fecha' });
   }
   (audiencias || []).forEach(a => {
     if(filtrar && !mismaPersona(a.Abogado, nombre)) return;
@@ -56,9 +57,11 @@ export function pendientesDePersona({ nombre, audiencias, terminos, pendientes, 
   (tutelas || []).forEach(tu => {
     if(String(tu.Contestada || '').trim().toUpperCase() === 'SI') return;
     if(filtrar && !mismaPersona(tu.AbogadoRespuesta, nombre)) return;
-    const fecha = soloFechaISO(tu.FechaVencimiento);
+    // Con el aplazamiento de ese número ya enviado (Contestada = SI) el plazo gana un día hábil.
+    const fecha = vencimientoEfectivo(tu, tutelas, x => String(x.Contestada || '').trim().toUpperCase() === 'SI').fecha;
     if(!fecha || fecha < limite) return;
-    agregar({ clave: 'u' + tu.id, tipo: 'tutelas', fecha, hora: '', texto: 'Tutela ' + (tu.NoTutela || '') + (tu.TipoRespuesta ? ' · ' + tu.TipoRespuesta : ''), radicado: '', cliente: tu.Cliente || '', responsable: tu.AbogadoRespuesta || '' });
+    // «Vencido» es muy grave: el portal no puede asegurar que no se envió (el correo pudo salir con otro número o desde otro buzón), así que en tutelas solo pide revisar el envío.
+    agregar({ revisarEnvio: fecha < hoy, clave: 'u' + tu.id, tipo: 'tutelas', fecha, hora: '', texto: 'Tutela ' + (tu.NoTutela || '') + (tu.TipoRespuesta ? ' · ' + tu.TipoRespuesta : ''), radicado: '', cliente: tu.Cliente || '', responsable: tu.AbogadoRespuesta || '' });
   });
   return lista.sort((a, b) => {
     if(!a.fecha && !b.fecha) return 0;

@@ -550,20 +550,26 @@ export async function listarEnviadosConAdjuntos(buzon, desdeISO, silencioso){
   const raiz = ajeno ? `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(String(buzon).trim())}` : 'https://graph.microsoft.com/v1.0/me';
   const filtro = encodeURIComponent(`sentDateTime ge ${desdeISO}T00:00:00Z and hasAttachments eq true`);
   const select = 'subject,toRecipients,sentDateTime,bodyPreview';
-  const base = `${raiz}/mailFolders/sentitems/messages?$filter=${filtro}&$orderby=sentDateTime desc&$select=${select}&$expand=attachments($select=name)&$top=50`;
-  let url = base;
+  // Variantes de la consulta, de la más completa a la más simple: con los nombres de los adjuntos y ordenada, o solo filtrada (si Microsoft responde 400 a la primera).
+  const variantes = [
+    `${raiz}/mailFolders/sentitems/messages?$filter=${filtro}&$orderby=sentDateTime desc&$select=${select}&$expand=attachments($select=name)&$top=50`,
+    `${raiz}/mailFolders/sentitems/messages?$filter=${filtro}&$select=${select}&$top=50`,
+  ];
+  let variante = 0;
+  let url = variantes[0];
   const mensajes = [];
-  for(let pagina = 0; url && pagina < 8; pagina++){
+  for(let pagina = 0; url && pagina < 30; pagina++){
     const pedir = async () => fetch(url, { headers: { Authorization: `Bearer ${await getMailToken(silencioso)}` } });
     let res = await pedir();
     if(res.status === 403 && ajeno && !mailCompartido && !silencioso){ usarPermisoCorreoCompartido(); res = await pedir(); }
+    if(res.status === 400 && pagina === 0 && variante < variantes.length - 1){ variante++; url = variantes[variante]; res = await pedir(); }
     if(!res.ok){
       const cuerpo = await res.text();
       if(carpetaPorDefectoInexistente(res.status, cuerpo)) return [];
       throw new Error(`Graph ${res.status} al revisar Enviados: ${cuerpo.substring(0, 200)}`);
     }
     const datos = await res.json();
-    (datos.value || []).forEach(m => mensajes.push({ asunto: m.subject || '', fecha: m.sentDateTime || '', para: (m.toRecipients || []).map(r => r.emailAddress?.address || '').filter(Boolean), vista: m.bodyPreview || '', adjuntos: (m.attachments || []).map(a => a.name || '') }));
+    (datos.value || []).forEach(m => mensajes.push({ asunto: m.subject || '', fecha: m.sentDateTime || '', para: (m.toRecipients || []).map(r => r.emailAddress?.address || '').filter(Boolean), vista: m.bodyPreview || '', adjuntos: m.attachments ? m.attachments.map(a => a.name || '') : ['(adjunto)'] }));
     url = datos['@odata.nextLink'] || null;
   }
   return mensajes;
