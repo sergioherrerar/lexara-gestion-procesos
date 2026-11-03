@@ -390,11 +390,13 @@ export default function App(){
       {/* Copia del PDF a «1 Soportes de gastos MD / Año / Mes»: se arma sola, sin mostrar nada, tras guardar una factura u orden de compra (una a la vez). */}
       {app.copiaSoporteActual && app.copiaSoporteActual.tipo === 'factura' && !app.activeFactura && (
         <FacturaDrawer key={app.copiaSoporteActual.clave} factura={app.copiaSoporteActual.documento} clientes={app.clientes} procesos={app.procesos} liveMode={app.liveMode}
-          autoPrint soloCopia shareUrlSoportes={app.config?.GASTOS_SOPORTES_SHARE_URL} onClose={app.terminarCopiaSoporte} onAutoPrinted={app.terminarCopiaSoporte} notify={app.notify} />
+          autoPrint soloCopia subirCopia={app.copiaSoporteActual.subir} alPdfListo={app.copiaSoporteActual.correo ? (pdf => app.crearCorreoSolicitudDocumento('factura', app.copiaSoporteActual.documento, pdf)) : undefined}
+          shareUrlSoportes={app.config?.GASTOS_SOPORTES_SHARE_URL} onClose={app.terminarCopiaSoporte} onAutoPrinted={app.terminarCopiaSoporte} notify={app.notify} />
       )}
       {app.copiaSoporteActual && app.copiaSoporteActual.tipo === 'ordenCompra' && !app.activeOrdenCompra && (
         <OrdenCompraDrawer key={app.copiaSoporteActual.clave} ordenCompra={app.copiaSoporteActual.documento} clientes={app.clientes} procesos={app.procesos} facturas={app.facturas} ordenesCompra={app.ordenesCompra} liveMode={app.liveMode}
-          autoPrint soloCopia shareUrlSoportes={app.config?.GASTOS_SOPORTES_SHARE_URL} onClose={app.terminarCopiaSoporte} onAutoPrinted={app.terminarCopiaSoporte} notify={app.notify} />
+          autoPrint soloCopia subirCopia={app.copiaSoporteActual.subir} alPdfListo={app.copiaSoporteActual.correo ? (pdf => app.crearCorreoSolicitudDocumento('ordenCompra', app.copiaSoporteActual.documento, pdf)) : undefined}
+          shareUrlSoportes={app.config?.GASTOS_SOPORTES_SHARE_URL} onClose={app.terminarCopiaSoporte} onAutoPrinted={app.terminarCopiaSoporte} notify={app.notify} />
       )}
       {app.correoDocumento && (
         <SolicitudDocumentoModal

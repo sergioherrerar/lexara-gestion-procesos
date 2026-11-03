@@ -2,6 +2,10 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-11-03 (141)
+- **El correo de solicitud de factura / orden de compra lleva el PDF adjunto** — pedido del usuario. El borrador que crea el ícono de correo de las tablas (y el que se crea al guardar un borrador en Honorarios por Proceso) adjunta el PDF del documento, con el mismo nombre del que se guarda en Soportes de gastos. Mientras se arma, el ícono gira.
+- **Tildes en el correo de solicitud** — pedido del usuario («Administración Proceso»). En «Proceso» y «Etapa del contrato» el correo muestra las etapas bien escritas (Administración, Admisión, Asesoría, Auditoría, Conciliación, Contestación, Radicación…) y con la primera letra en mayúscula; lo guardado en SharePoint no cambia.
+
 ## 2026-11-03 (140)
 - **Correo de solicitud de factura / orden de compra con un clic** — pedido del usuario. En las tablas de Facturas y de Órdenes de compra hay un ícono de correo por fila que crea de una vez el borrador del correo de solicitud, desde Soporte y con su firma: la factura va para Beatriz con copia a Gerencia; la orden de compra queda sin destinatario (abierta para escribirlo) y con copia a Gerencia. En Administración → Facturación → Honorarios por Proceso, al guardar el borrador el portal crea el correo solo (ya no abre la ventana de revisión; en modo demo sigue abriéndola). Queda en los Borradores de Soporte y un aviso confirma el resultado.
 

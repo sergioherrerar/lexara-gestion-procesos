@@ -163,12 +163,14 @@ export function useLexaraApp(){
   const [correoDocumento, setCorreoDocumento] = useState(null);
   // Correo de solicitud de factura / orden de compra creado de una vez (ícono de correo de las tablas y guardado de borradores de Honorarios por Proceso).
   const [generandoCorreoDoc, setGenerandoCorreoDoc] = useState(null);   // 'factura:12' | 'ordenCompra:7'
-  async function crearCorreoSolicitudDocumento(tipo, documento){
+  // Sin `pdf`: pone en cola la generación del PDF (se arma sin mostrarse, ver App.jsx) y cuando está listo vuelve acá con él para adjuntarlo al borrador.
+  async function crearCorreoSolicitudDocumento(tipo, documento, pdf){
     const etiqueta = tipo === 'factura' ? 'de la factura' : 'de la orden de compra';
     if(!liveMode){ notify('En modo demo no se crea el correo; necesita la sesión real de Microsoft 365.', 'info'); return; }
+    if(!pdf){ setGenerandoCorreoDoc(tipo + ':' + documento.id); encolarCopiaSoporte(tipo, documento, { subir: false, correo: true }); return; }
     setGenerandoCorreoDoc(tipo + ':' + documento.id);
     try{
-      const r = await crearBorradorSolicitudDocumento({ tipo, documento, clientes, colaboradores });
+      const r = await crearBorradorSolicitudDocumento({ tipo, documento, clientes, colaboradores, pdf });
       const quien = r.para ? 'para ' + r.para + ' con copia a Gerencia' : 'sin destinatario (escríbelo tú) y con copia a Gerencia';
       notify(r.enBuzonPropio
         ? '⚠ Creé el correo ' + etiqueta + ' en TUS Borradores (Microsoft no encontró el buzón de ' + r.remitente + '), ' + quien + ': cambia el «De» a Soporte si tienes permiso.'
@@ -179,8 +181,9 @@ export function useLexaraApp(){
   const [autoPrintFacturaId, setAutoPrintFacturaId] = useState(null);
   // Cola de copias de PDF por guardar en «1 Soportes de gastos MD / Año / Mes» (se arma tras guardar una factura u orden de compra; ver App.jsx y subirCopiaPdfSoportes).
   const [colaCopiasSoporte, setColaCopiasSoporte] = useState([]);
-  function encolarCopiaSoporte(tipo, documento){ if(liveMode) setColaCopiasSoporte(prev => [...prev, { tipo, documento, clave: tipo + (documento.id ?? '') + '-' + Date.now() }]); }
-  function terminarCopiaSoporte(){ setColaCopiasSoporte(prev => prev.slice(1)); }
+  // Tarea de la cola: genera el PDF del documento y, según `subir`, lo guarda en Soportes de gastos y, según `correo`, lo adjunta al borrador del correo de solicitud.
+  function encolarCopiaSoporte(tipo, documento, { subir = true, correo = false } = {}){ if(liveMode) setColaCopiasSoporte(prev => [...prev, { tipo, documento, subir, correo, clave: tipo + (documento.id ?? '') + '-' + Date.now() }]); }
+  function terminarCopiaSoporte(){ setColaCopiasSoporte(prev => prev.slice(1)); setGenerandoCorreoDoc(null); }
   const [activeOrdenCompraId, setActiveOrdenCompraId] = useState(null);
   const [draftOrdenCompra, setDraftOrdenCompra] = useState(null);
   const [autoPrintOrdenCompraId, setAutoPrintOrdenCompraId] = useState(null);
@@ -1026,10 +1029,10 @@ export function useLexaraApp(){
         nuevo.Factura = String(nuevo.id + 91);
       }
       setFacturas(prev => [...prev, nuevo]);
-      encolarCopiaSoporte('factura', nuevo);
+      encolarCopiaSoporte('factura', nuevo, { correo: solicitaCorreoFactura });
       setDraftFactura(null);
       setActiveFacturaId(null);
-      if(solicitaCorreoFactura){ if(liveMode) crearCorreoSolicitudDocumento('factura', nuevo); else setCorreoDocumento({ tipo: 'factura', documento: nuevo }); }
+      if(solicitaCorreoFactura && !liveMode) setCorreoDocumento({ tipo: 'factura', documento: nuevo });
       setSolicitaCorreoFactura(false);
       reabrirProcesoSiCorresponde();
       notify("Creado con éxito en Lexara", 'success');
@@ -1111,10 +1114,10 @@ export function useLexaraApp(){
         nuevo.id = maxId + 1;
       }
       setOrdenesCompra(prev => [...prev, nuevo]);
-      encolarCopiaSoporte('ordenCompra', nuevo);
+      encolarCopiaSoporte('ordenCompra', nuevo, { correo: solicitaCorreoOrden });
       setDraftOrdenCompra(null);
       setActiveOrdenCompraId(null);
-      if(solicitaCorreoOrden){ if(liveMode) crearCorreoSolicitudDocumento('ordenCompra', nuevo); else setCorreoDocumento({ tipo: 'ordenCompra', documento: nuevo }); }
+      if(solicitaCorreoOrden && !liveMode) setCorreoDocumento({ tipo: 'ordenCompra', documento: nuevo });
       setSolicitaCorreoOrden(false);
       reabrirProcesoSiCorresponde();
       notify("Creado con éxito en Lexara", 'success');

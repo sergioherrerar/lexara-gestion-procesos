@@ -8,7 +8,7 @@ import membrete from '../assets/Membrete Lexara.png';
 import { OrdenCompraHoja, LINE_NUMS, emptyForm, lineTotal, computeLive, nombreArchivoOrdenCompraPDF, fechaDeImpresion } from './OrdenCompraHoja';
 
 
-export default function OrdenCompraDrawer({ ordenCompra, clientes, procesos, facturas, ordenesCompra, liveMode, onClose, onSave, onUpdateCliente, autoPrint, soloCopia, shareUrlSoportes, onAutoPrinted, saving, notify }){
+export default function OrdenCompraDrawer({ ordenCompra, clientes, procesos, facturas, ordenesCompra, liveMode, onClose, onSave, onUpdateCliente, autoPrint, soloCopia, subirCopia = true, alPdfListo, shareUrlSoportes, onAutoPrinted, saving, notify }){
   const [form, setForm] = useState(null);
   const [generandoPdf, setGenerandoPdf] = useState(false);
 
@@ -35,8 +35,12 @@ export default function OrdenCompraDrawer({ ordenCompra, clientes, procesos, fac
       await precargarImagen(qrDataUrl);
       if(soloCopia){
         const bytes = new Uint8Array(await generarPdfBytesDesdeNodo('oc-print-sheet'));
-        const r = await subirCopiaPdfSoportes(shareUrlSoportes, fechaISODeDocumento(form), nombreArchivoOrdenCompraPDF(ordenCompra, clientes, procesos), bytes);
-        notify?.('✓ Copia del PDF guardada en Soportes de gastos MD / ' + r.ruta + ' como «' + r.nombre + '».', 'success');
+        const nombrePdf = nombreArchivoOrdenCompraPDF(ordenCompra, clientes, procesos);
+        if(subirCopia){
+          const r = await subirCopiaPdfSoportes(shareUrlSoportes, fechaISODeDocumento(form), nombrePdf, bytes);
+          notify?.('✓ Copia del PDF guardada en Soportes de gastos MD / ' + r.ruta + ' como «' + r.nombre + '».', 'success');
+        }
+        if(alPdfListo) await alPdfListo({ bytes, nombre: nombrePdf.replace(/\.pdf$/i, '') + '.pdf' });
       }else{
         await generarPdfDesdeNodo('oc-print-sheet', nombreArchivoOrdenCompraPDF(ordenCompra, clientes, procesos));
         notify?.("PDF generado — revisa tu carpeta de Descargas.", 'success');

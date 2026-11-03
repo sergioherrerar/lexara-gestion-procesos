@@ -44,7 +44,7 @@ function nombreArchivoFacturaPDF(factura, clientes, procesos){
   return nombreArchivoSeguro(`FE ${facturaNumero(factura)} ${proceso?.Entidad || 'Sin entidad'} ${proceso?.Radicado || factura.Proceso || 'Sin proceso'} ${factura.EtapaContrato || ''}`.trim());
 }
 
-export default function FacturaDrawer({ factura, clientes, procesos, liveMode, onClose, onSave, onUpdateCliente, autoPrint, soloCopia, shareUrlSoportes, onAutoPrinted, saving, notify }){
+export default function FacturaDrawer({ factura, clientes, procesos, liveMode, onClose, onSave, onUpdateCliente, autoPrint, soloCopia, subirCopia = true, alPdfListo, shareUrlSoportes, onAutoPrinted, saving, notify }){
   const [form, setForm] = useState(null);
   const [generandoPdf, setGenerandoPdf] = useState(false);
 
@@ -75,8 +75,12 @@ export default function FacturaDrawer({ factura, clientes, procesos, liveMode, o
       if(soloCopia){
         // Sin descargar: la copia va directo a «1 Soportes de gastos MD / Año / Mes» (ver subirCopiaPdfSoportes).
         const bytes = new Uint8Array(await generarPdfBytesDesdeNodo('factura-print-sheet'));
-        const r = await subirCopiaPdfSoportes(shareUrlSoportes, fechaISODeDocumento(form), nombreArchivoFacturaPDF(factura, clientes, procesos), bytes);
-        notify?.('✓ Copia del PDF guardada en Soportes de gastos MD / ' + r.ruta + ' como «' + r.nombre + '».', 'success');
+        const nombrePdf = nombreArchivoFacturaPDF(factura, clientes, procesos);
+        if(subirCopia){
+          const r = await subirCopiaPdfSoportes(shareUrlSoportes, fechaISODeDocumento(form), nombrePdf, bytes);
+          notify?.('✓ Copia del PDF guardada en Soportes de gastos MD / ' + r.ruta + ' como «' + r.nombre + '».', 'success');
+        }
+        if(alPdfListo) await alPdfListo({ bytes, nombre: nombrePdf.replace(/\.pdf$/i, '') + '.pdf' });
       }else{
         await generarPdfDesdeNodo('factura-print-sheet', nombreArchivoFacturaPDF(factura, clientes, procesos));
         notify?.("PDF generado — revisa tu carpeta de Descargas.", 'success');

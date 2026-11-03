@@ -11,6 +11,13 @@ const TH = 'padding:8px 10px; background:#004941; color:#ffffff; font-size:12.5p
 const TD = 'padding:7px 10px; font-size:13px; border:1px solid #e4e4e1; color:#1c2624; vertical-align:top;';
 const TDE = 'padding:8px 12px; width:34%; background:#f4f4f2; color:#5c6b68; font-size:13px; border:1px solid #e4e4e1;';
 
+// Las etapas del contrato se guardan sin tilde («Administracion Proceso», así están las opciones en SharePoint); en el correo se muestran bien escritas y con la primera letra en mayúscula.
+const PALABRAS_CON_TILDE = { administracion: 'Administración', admision: 'Admisión', asesoria: 'Asesoría', asesorias: 'Asesorías', auditoria: 'Auditoría', conciliacion: 'Conciliación', contestacion: 'Contestación', excepcion: 'Excepción', oposicion: 'Oposición', radicacion: 'Radicación', reposicion: 'Reposición', recurso: 'Recurso', articulo: 'Artículo', pruebas: 'Pruebas' };
+export function conTildes(texto){
+  const t = String(texto ?? '').trim().replace(/\b[A-Za-zÁÉÍÓÚáéíóúñÑ]+\b/g, w => PALABRAS_CON_TILDE[w.toLowerCase()] || w);
+  return t ? t.charAt(0).toUpperCase() + t.slice(1) : t;
+}
+
 export const CATEGORIA_SOLICITUD_FACTURA = 'Solicitud de factura electrónica';
 export const CATEGORIA_SOLICITUD_ORDEN = 'Solicitud de orden de compra';
 
@@ -58,8 +65,8 @@ export function construirCorreoSolicitudDocumento({ tipo, documento, cliente, pi
     ${fila('Cliente', razon ? esc(razon) : '')}
     ${fila('NIT', cliente?.Nit ? esc(cliente.Nit) : '')}
     ${fila('Contrato', d.Contrato ? esc(d.Contrato) : '')}
-    ${fila('Proceso', d.Proceso ? esc(d.Proceso) : '')}
-    ${fila('Etapa del contrato', d.EtapaContrato ? esc(d.EtapaContrato) : '')}
+    ${fila('Proceso', d.Proceso ? esc(conTildes(d.Proceso)) : '')}
+    ${fila('Etapa del contrato', d.EtapaContrato ? esc(conTildes(d.EtapaContrato)) : '')}
     ${fila('Ciudad', d.Ciudad ? esc(d.Ciudad) : '')}
     ${fila('Fecha', fechaDelDocumento(d))}
     ${fila('Referencia en el portal', referencia ? esc(referencia) : '')}
@@ -77,7 +84,12 @@ export function construirCorreoSolicitudDocumento({ tipo, documento, cliente, pi
 // «Honorarios por Proceso»): factura → Para Beatriz con copia a Gerencia; orden de compra → sin destinatario (queda abierto para escribirlo) con copia a Gerencia.
 // Queda en los Borradores de Soporte (si Microsoft no encuentra ese buzón, en los de quien entró; el resultado lo dice en enBuzonPropio).
 const REMITENTE_SOPORTE = 'soporte@lexaraabogados.com';
-export async function crearBorradorSolicitudDocumento({ tipo, documento, clientes, colaboradores }){
+function bytesABase64(bytes){
+  let bin = '';
+  for(let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+  return btoa(bin);
+}
+export async function crearBorradorSolicitudDocumento({ tipo, documento, clientes, colaboradores, pdf }){
   const esFactura = tipo === 'factura';
   const firma = await firmaComoImagenInline('soporte');
   const cliente = (clientes || []).find(c => String(c.id) === String(documento?.CodigoCliente)) || null;
@@ -85,6 +97,7 @@ export async function crearBorradorSolicitudDocumento({ tipo, documento, cliente
   const correo = construirCorreoSolicitudDocumento({ tipo, documento, cliente, pilaDestinatario: esFactura ? nombreDeSaludo() : '' });
   const r = await crearBorradorConImagenesInline({
     to: esFactura ? [beatriz.correo] : [], cc: [CORREO_GERENCIA_NOVEDADES], subject: correo.asunto, htmlBody: correo.html, imagenes: [firma],
+    adjuntos: pdf ? [{ nombre: pdf.nombre, contentType: 'application/pdf', base64: bytesABase64(pdf.bytes), tamano: pdf.bytes.length }] : [],
     categorias: [(esFactura ? CATEGORIA_SOLICITUD_FACTURA : CATEGORIA_SOLICITUD_ORDEN) + ' (borrador)'], buzon: REMITENTE_SOPORTE, caerAlBuzonPropio: true,
   });
   return { ...r, para: esFactura ? beatriz.correo : '', remitente: REMITENTE_SOPORTE };
