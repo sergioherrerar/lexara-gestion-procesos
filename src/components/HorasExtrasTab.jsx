@@ -50,6 +50,7 @@ export default function HorasExtrasTab({ horasExtras, tutelas, colaboradores, on
   const [generandoPDF, setGenerandoPDF] = useState(false);
   const hoyRef = new Date();
   const [mes, setMes] = useState(hoyRef.getMonth());
+  const [avisoMes, setAvisoMes] = useState(false); // recordatorio del mes antes de generar el PDF
   const [anio] = useState(hoyRef.getFullYear());
 
   // Solo colaboradores vigentes (Activo=Sí, no Contratista) — pedido
@@ -146,11 +147,22 @@ export default function HorasExtrasTab({ horasExtras, tutelas, colaboradores, on
 
         <div className="panel-head" style={{marginTop:28, padding:'0 0 12px'}}><h3>Relación mensual (solo aprobadas)</h3></div>
         <div style={{display:'flex', alignItems:'center', gap:14, flexWrap:'wrap', marginBottom:16}}>
-          <IconTextButton icon="pdf" variant="secondary" onClick={handleDescargarPDF} disabled={generandoPDF}>
+          <IconTextButton icon="pdf" variant="secondary" onClick={() => setAvisoMes(true)} disabled={generandoPDF}>
             {generandoPDF ? "Generando…" : "Descargar PDF"}
           </IconTextButton>
         </div>
 
+        {avisoMes && (
+          <div className="confirm-overlay" onClick={() => setAvisoMes(false)}>
+            <div className="confirm-box" onClick={e => e.stopPropagation()} role="alertdialog" aria-modal="true">
+              <p><strong>Recuerda:</strong> se está generando la relación de horas extras del mes de <strong>{MESES_NOMBRES[mes]} de {anio}</strong>. Si no es el mes que necesitas, cancela y cámbialo en el selector «Mes».</p>
+              <div className="confirm-actions">
+                <button type="button" className="btn-secondary" onClick={() => setAvisoMes(false)}>Cancelar</button>
+                <button type="button" className="btn-primary" autoFocus onClick={() => { setAvisoMes(false); handleDescargarPDF(); }}>Sí, es {MESES_NOMBRES[mes]}</button>
+              </div>
+            </div>
+          </div>
+        )}
         <StackedBarChart
           grupos={grupos} labelKey="colaborador" totalKey="totalColaborador"
           formatValue={v => `${v} horas`} colorFor={colorDeTipoHoraExtra}

@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-11-03 (138)
+- **Aviso del mes también en Novedades de nómina y Horas extras** — pedido del usuario. «Enviar a …» y «Solo crear borrador» (Novedades de nómina) y «Descargar PDF» de la relación mensual (Horas extras) muestran primero el recordatorio «se está generando/enviando el mes de {Mes} de {Año}», con «Cancelar» y «Sí, es {Mes}». En Novedades de nómina, el envío real sigue pidiendo su confirmación de siempre.
+
 ## 2026-11-03 (137)
 - **Aviso del mes antes de generar** — pedido del usuario. Al pulsar «Generar órdenes de compra del mes» o «Generador de facturas del mes» (Órdenes Colmédica) y «Enviar gastos del mes» (Egresos → Gastos) sale primero un recordatorio: «se están generando/enviando las del mes de {Mes} de {Año}», con «Cancelar» y «Sí, es {Mes}». Solo después sigue el flujo de siempre.
 

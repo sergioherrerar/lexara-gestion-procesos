@@ -31,6 +31,7 @@ export default function NovedadesNominaTab({ colaboradores, tutelas, valoresEnti
   const [mes, setMes] = useState(hoy.getMonth());
   const [anio, setAnio] = useState(hoy.getFullYear());
   const [confirmando, setConfirmando] = useState(false);
+  const [avisoMes, setAvisoMes] = useState(null); // 'enviar' | 'borrador': recordatorio del mes antes de seguir
   const [accion, setAccion] = useState('');      // 'enviando' | 'borrador' | ''
   const [enviados, setEnviados] = useState([]);
   const [errorEnviados, setErrorEnviados] = useState('');
@@ -257,6 +258,17 @@ export default function NovedadesNominaTab({ colaboradores, tutelas, valoresEnti
             </span>
           )}
         </div>
+        {avisoMes && (
+          <div className="confirm-overlay" onClick={() => setAvisoMes(null)}>
+            <div className="confirm-box" onClick={e => e.stopPropagation()} role="alertdialog" aria-modal="true">
+              <p><strong>Recuerda:</strong> se están {avisoMes === 'enviar' ? 'enviando' : 'preparando en borrador'} las novedades de nómina del mes de <strong>{etiqueta}</strong>. Si no es el mes que necesitas, cancela y cámbialo en los selectores «Mes» y «Año».</p>
+              <div className="confirm-actions">
+                <button type="button" className="btn-secondary" onClick={() => setAvisoMes(null)}>Cancelar</button>
+                <button type="button" className="btn-primary" autoFocus onClick={() => { const cual = avisoMes; setAvisoMes(null); if(cual === 'enviar') setConfirmando(true); else crearBorrador(); }}>Sí, es {MESES_NOMBRES[mes]}</button>
+              </div>
+            </div>
+          </div>
+        )}
         <VistaPreviaCorreo titulo="Vista previa del correo de novedades de nómina" html={correo.html} style={{ height: 520 }} />
 
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', marginTop: 14 }}>
@@ -271,8 +283,8 @@ export default function NovedadesNominaTab({ colaboradores, tutelas, valoresEnti
               </>
             ) : (
               <>
-                <IconTextButton icon="mail" variant="primary" onClick={() => setConfirmando(true)} disabled={!!accion || generandoAdj}>{accion === 'enviando' ? 'Enviando…' : 'Enviar a ' + nombreDeSaludo(destinatario)}</IconTextButton>
-                <button type="button" className="btn-secondary" onClick={crearBorrador} disabled={!!accion || generandoAdj}>{accion === 'borrador' ? 'Creando…' : 'Solo crear borrador'}</button>
+                <IconTextButton icon="mail" variant="primary" onClick={() => setAvisoMes('enviar')} disabled={!!accion || generandoAdj}>{accion === 'enviando' ? 'Enviando…' : 'Enviar a ' + nombreDeSaludo(destinatario)}</IconTextButton>
+                <button type="button" className="btn-secondary" onClick={() => setAvisoMes('borrador')} disabled={!!accion || generandoAdj}>{accion === 'borrador' ? 'Creando…' : 'Solo crear borrador'}</button>
               </>
             )
           ) : <span className="save-hint" style={{ margin: 0 }}>En modo demo solo se ve la información y la vista previa; el envío requiere la sesión real.</span>}
