@@ -1,14 +1,14 @@
 import { facturaDeOrden, textoCruce, fechaDeRegistro } from '../lib/cruceFacturasOrdenes';
 import { useState, useEffect } from 'react';
-import { clienteForOrdenCompra, procesoForOrdenCompra, ordenCompraNumero, facturaForOrdenCompra, facturaNumero, fmtDate, parseMonto, fmtMonto, IVA_RATE_DEFAULT, ETAPA_CONTRATO_OPTIONS, nombreArchivoSeguro, mensajeError } from '../lib/graph';
-import { generarPdfDesdeNodo, precargarImagen, precalentarLibreriasPdf } from '../lib/generarPdfDocumento';
+import { clienteForOrdenCompra, procesoForOrdenCompra, ordenCompraNumero, facturaForOrdenCompra, facturaNumero, fmtDate, parseMonto, fmtMonto, IVA_RATE_DEFAULT, ETAPA_CONTRATO_OPTIONS, nombreArchivoSeguro, mensajeError, subirCopiaPdfSoportes, fechaISODeDocumento } from '../lib/graph';
+import { generarPdfDesdeNodo, generarPdfBytesDesdeNodo, precargarImagen, precalentarLibreriasPdf } from '../lib/generarPdfDocumento';
 import { obtenerQrRedesDataUrl } from '../lib/qr';
 import { useEscapeToClose } from '../hooks/useEscapeToClose';
 import membrete from '../assets/Membrete Lexara.png';
 import { OrdenCompraHoja, LINE_NUMS, emptyForm, lineTotal, computeLive, nombreArchivoOrdenCompraPDF, fechaDeImpresion } from './OrdenCompraHoja';
 
 
-export default function OrdenCompraDrawer({ ordenCompra, clientes, procesos, facturas, ordenesCompra, liveMode, onClose, onSave, onUpdateCliente, autoPrint, onAutoPrinted, saving, notify }){
+export default function OrdenCompraDrawer({ ordenCompra, clientes, procesos, facturas, ordenesCompra, liveMode, onClose, onSave, onUpdateCliente, autoPrint, soloCopia, shareUrlSoportes, onAutoPrinted, saving, notify }){
   const [form, setForm] = useState(null);
   const [generandoPdf, setGenerandoPdf] = useState(false);
 
@@ -33,11 +33,17 @@ export default function OrdenCompraDrawer({ ordenCompra, clientes, procesos, fac
       const qrImgEl = document.getElementById('oc-print-qr');
       if(qrImgEl) qrImgEl.src = qrDataUrl;
       await precargarImagen(qrDataUrl);
-      await generarPdfDesdeNodo('oc-print-sheet', nombreArchivoOrdenCompraPDF(ordenCompra, clientes, procesos));
-      notify?.("PDF generado — revisa tu carpeta de Descargas.", 'success');
+      if(soloCopia){
+        const bytes = new Uint8Array(await generarPdfBytesDesdeNodo('oc-print-sheet'));
+        const r = await subirCopiaPdfSoportes(shareUrlSoportes, fechaISODeDocumento(form), nombreArchivoOrdenCompraPDF(ordenCompra, clientes, procesos), bytes);
+        notify?.('✓ Copia del PDF guardada en Soportes de gastos MD / ' + r.ruta + ' como «' + r.nombre + '».', 'success');
+      }else{
+        await generarPdfDesdeNodo('oc-print-sheet', nombreArchivoOrdenCompraPDF(ordenCompra, clientes, procesos));
+        notify?.("PDF generado — revisa tu carpeta de Descargas.", 'success');
+      }
     }catch(err){
       console.error(err);
-      notify?.("No se pudo generar el PDF: " + mensajeError(err), 'error');
+      notify?.(soloCopia ? "La orden de compra se guardó, pero NO se pudo guardar la copia del PDF en la carpeta de soportes: " + mensajeError(err) : "No se pudo generar el PDF: " + mensajeError(err), 'error');
     }finally{
       setGenerandoPdf(false);
     }

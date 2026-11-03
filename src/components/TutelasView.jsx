@@ -1,6 +1,7 @@
-import { useState, lazy, Suspense } from 'react';
+import { useState, useMemo, useEffect, useRef, lazy, Suspense } from 'react';
 import { ICON_SVG, TUTELAS_REMITENTES_PERMITIDOS } from '../config';
-import { fmtDate } from '../lib/graph';
+import { fmtDate, listarEnviadosConAdjuntos, mensajeError } from '../lib/graph';
+import { contestacionesDeEnviados, enviadasPorTutela } from '../lib/contestacionesEnviadas';
 import { cargarModulo } from '../lib/cargaModulo';
 import IconButton, { IconTextButton } from './IconButton';
 import ColumnHeaderMenu from './ColumnHeaderMenu';
@@ -38,7 +39,7 @@ function hoyISO(){
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 
-export default function TutelasView({ tutelas, temas, searchQuery, onOpenTutela, onCreateTutela, onDuplicateTutela, onDeleteTutela, onAgregarCorreccionIA, canWrite = true, liveMode, config, notify }){
+export default function TutelasView({ onMarcarContestadas, tutelas, temas, searchQuery, onOpenTutela, onCreateTutela, onDuplicateTutela, onDeleteTutela, onAgregarCorreccionIA, canWrite = true, liveMode, config, notify }){
   const { filters, setFilter, clearFilters, rowMatches, hasActiveFilters } = useColumnFilters();
   const { sort, setSortKey, sortRows } = useColumnSort();
   // "Leer correo (LexIA)" — nombre elegido por el usuario 2026-09-24 para
@@ -60,6 +61,54 @@ export default function TutelasView({ tutelas, temas, searchQuery, onOpenTutela,
   // que siempre queda al día con lo último que haya en `tutelas` (recién
   // cargado o después de un refresh).
   const vencenHoy = tutelas.filter(t => String(t.FechaVencimiento||"").slice(0,10) === hoyISO()).length;
+  // «Contestación» (2026-11-03, pedido del usuario): reconoce en los Enviados de Tutelas@ el correo de contestación de cada tutela (por su número) y la marca como Enviada;
+  // lo que sigue sin correo queda «Por contestar». Se revisa solo al abrir (sin ventanas de permiso) y con el botón «Revisar enviadas». Solo se hace seguimiento a lo que
+  // venció en los últimos 45 días (lo anterior no se marca como pendiente).
+  const DIAS_SEGUIMIENTO = 45;
+  const [envios, setEnvios] = useState(null);          // Map id → { fecha, tipo } del último escaneo
+  const [revisando, setRevisando] = useState(false);
+  const [filtroEnvio, setFiltroEnvio] = useState('todas'); // 'todas' | 'porContestar' | 'enviadas'
+  const desdeISO = (() => { const d = new Date(); d.setDate(d.getDate() - DIAS_SEGUIMIENTO); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); })();
+  function estadoDe(t){
+    const venc = String(t.FechaVencimiento||"").slice(0,10);
+    const guardada = String(t.Contestada||"").trim().toUpperCase() === 'SI';
+    const escaneada = envios?.get(t.id);
+    if(guardada || escaneada) return { estado:'enviada', fecha: guardada ? (t.FechaContestacion || escaneada?.fecha || '') : escaneada.fecha };
+    if(!venc || venc < desdeISO) return null;       // fuera del seguimiento
+    return { estado: venc < hoyISO() ? 'vencida' : 'porContestar' };
+  }
+  function fechaHoraCorta(iso){
+    const d = new Date(iso);
+    if(isNaN(d)) return '';
+    return d.toLocaleDateString('es-CO', {day:'2-digit', month:'2-digit'}) + ' ' + d.toLocaleTimeString('es-CO', {hour:'2-digit', minute:'2-digit', hour12:false});
+  }
+  async function revisarEnviadas(silencioso){
+    if(!liveMode || !config?.TUTELAS_BUZON_CORREO) return;
+    setRevisando(true);
+    try{
+      const mensajes = await listarEnviadosConAdjuntos(config.TUTELAS_BUZON_CORREO, desdeISO, silencioso);
+      const mapa = enviadasPorTutela(tutelas, contestacionesDeEnviados(mensajes));
+      setEnvios(mapa);
+      const nuevas = [...mapa.entries()].filter(([id]) => { const t = tutelas.find(x => x.id === id); return t && String(t.Contestada||"").trim().toUpperCase() !== 'SI'; }).map(([id, e]) => ({ id, fecha: e.fecha }));
+      let guardadas = 0;
+      if(canWrite && onMarcarContestadas && nuevas.length) guardadas = await onMarcarContestadas(nuevas);
+      if(!silencioso) notify?.(mapa.size ? ('Se reconocieron ' + mapa.size + ' contestaciones enviadas desde Tutelas@' + (guardadas ? ' (' + guardadas + ' nuevas guardadas)' : '') + '.') : ('No encontré contestaciones enviadas en los últimos ' + DIAS_SEGUIMIENTO + ' días.'), 'success');
+    }catch(err){
+      console.error('Revisar enviadas:', err);
+      if(!silencioso) notify?.('No se pudieron revisar los correos enviados de Tutelas@: ' + mensajeError(err), 'error');
+    }finally{ setRevisando(false); }
+  }
+  const revisoAlAbrir = useRef(false);
+  useEffect(() => {
+    if(revisoAlAbrir.current || !liveMode || !tutelas.length) return;
+    revisoAlAbrir.current = true;
+    revisarEnviadas(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [liveMode, tutelas.length]);
+  const textoEstado = t => { const e = estadoDe(t); return !e ? '' : e.estado === 'enviada' ? 'Enviada' : e.estado === 'vencida' ? 'Vencida sin enviar' : 'Por contestar'; };
+  const columnas = useMemo(() => [...COLUMNS.slice(0, 8), { key:'contestacion', label:'Contestación', value: textoEstado }, ...COLUMNS.slice(8)],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [envios, tutelas]);
   const query = (searchQuery||"").trim().toLowerCase();
   // "No Tutela" es una columna numérica en SharePoint (llega como number,
   // no string) — .toLowerCase()/.localeCompare no existen en números y
@@ -72,9 +121,9 @@ export default function TutelasView({ tutelas, temas, searchQuery, onOpenTutela,
   const rows = tutelas.filter(t => (!query ||
     String(t.NoTutela||"").toLowerCase().includes(query) ||
     String(t.Cliente||"").toLowerCase().includes(query) ||
-    String(t.Entidad||"").toLowerCase().includes(query)) && rowMatches(t, COLUMNS))
+    String(t.Entidad||"").toLowerCase().includes(query)) && rowMatches(t, columnas) && (filtroEnvio === 'todas' || (filtroEnvio === 'enviadas' ? estadoDe(t)?.estado === 'enviada' : ['porContestar','vencida'].includes(estadoDe(t)?.estado))))
     .sort((a,b) => (Number(b.NoTutela)||0) - (Number(a.NoTutela)||0));
-  const sortedRows = sortRows(rows, COLUMNS);
+  const sortedRows = sortRows(rows, columnas);
   // Diferencia por tipo (pedido explícito del usuario 2026-08-31, ajustado
   // 2026-09-01 a "solo las del día") — desglose del mismo badge "vencen
   // hoy" de arriba: cuántas de las que vencen HOY son Tutela/Impugnación/
@@ -85,6 +134,8 @@ export default function TutelasView({ tutelas, temas, searchQuery, onOpenTutela,
   const conteoTutela = tutelasHoy.filter(t => (t.TipoRespuesta||"").trim().toUpperCase() === 'TUTELA').length;
   const conteoImpugnacion = tutelasHoy.filter(t => (t.TipoRespuesta||"").trim().toUpperCase() === 'IMPUGNACION').length;
   const conteoOtras = tutelasHoy.length - conteoTutela - conteoImpugnacion;
+  const enviadasHoy = tutelasHoy.filter(t => estadoDe(t)?.estado === 'enviada').length;
+  const hayEstado = !!envios || tutelas.some(t => t.Contestada);
 
   return (
     <div className="view">
@@ -121,6 +172,7 @@ export default function TutelasView({ tutelas, temas, searchQuery, onOpenTutela,
           <span className={"badge badge-forma-boton " + (vencenHoy > 0 ? "badge-alerta" : "badge-gris")}>
             {vencenHoy} {vencenHoy === 1 ? "vence" : "vencen"} hoy
           </span>
+          {liveMode && <IconTextButton icon="mail" variant="secondary" onClick={() => revisarEnviadas(false)} disabled={revisando}>{revisando ? 'Revisando…' : 'Revisar enviadas'}</IconTextButton>}
           {canWrite && <IconTextButton icon="add" variant="primary" onClick={() => onCreateTutela()}>Nueva tutela</IconTextButton>}
         </div>
       </div>
@@ -150,7 +202,16 @@ export default function TutelasView({ tutelas, temas, searchQuery, onOpenTutela,
           de arriba: metida en la misma fila del view-header (que no tiene
           flex-wrap) empujaba el título hacia abajo en pantallas angostas.
           Alineada a la derecha, también pedido explícito. */}
-      <div style={{display:'flex', gap:10, flexWrap:'wrap', justifyContent:'flex-end', marginBottom:16}}>
+      <div style={{display:'flex', gap:10, flexWrap:'wrap', justifyContent:'flex-end', alignItems:'center', marginBottom:16}}>
+        {hayEstado && (
+          <span style={{display:'inline-flex', gap:6, marginRight:'auto', flexWrap:'wrap'}}>
+            {[['todas','Todas'],['porContestar','Por contestar'],['enviadas','Enviadas']].map(([k, etiqueta]) => (
+              <button key={k} type="button" className={"filter-chip" + (filtroEnvio === k ? " active" : "")} onClick={() => setFiltroEnvio(k)}>{etiqueta}</button>
+            ))}
+          </span>
+        )}
+        {hayEstado && <span className="badge badge-verde">{enviadasHoy} de hoy ya enviadas</span>}
+        {hayEstado && <span className="badge badge-naranja">{tutelasHoy.length - enviadasHoy} de hoy por contestar</span>}
         <span className="badge badge-verde">{conteoTutela} Tutelas</span>
         <span className="badge badge-naranja">{conteoImpugnacion} Impugnaciones</span>
         <span className="badge badge-gris">{conteoOtras} Otras contestaciones</span>
@@ -159,7 +220,7 @@ export default function TutelasView({ tutelas, temas, searchQuery, onOpenTutela,
         <table>
           <thead>
             <tr>
-              {COLUMNS.map(c => (
+              {columnas.map(c => (
                 <ColumnHeaderMenu key={c.key} column={c} sort={sort} onSort={setSortKey} filterValue={filters[c.key]} onFilterChange={setFilter} rows={tutelas} />
               ))}
             </tr>
@@ -175,6 +236,7 @@ export default function TutelasView({ tutelas, temas, searchQuery, onOpenTutela,
                 <td>{fmtDate(t.FechaVencimiento)}</td>
                 <td>{fmtDate(t.FechaNotificacion)}</td>
                 <td>{t.Tema || "—"}</td>
+                <td>{(() => { const e = estadoDe(t); if(!e) return "—"; return e.estado === 'enviada' ? <span className="badge badge-verde" title="Contestación enviada desde Tutelas@">Enviada{e.fecha ? ' ' + fechaHoraCorta(e.fecha) : ''}</span> : e.estado === 'vencida' ? <span className="badge badge-rojo">Vencida sin enviar</span> : <span className="badge badge-naranja">Por contestar</span>; })()}</td>
                 <td style={{whiteSpace:'nowrap'}}>
                   <div className="row-actions">
                     <IconButton icon="edit" variant="edit" label={canWrite ? "Editar tutela" : "Ver tutela"} onClick={() => onOpenTutela(t.id)} />
@@ -184,7 +246,7 @@ export default function TutelasView({ tutelas, temas, searchQuery, onOpenTutela,
                 </td>
               </tr>
             )) : (
-              <tr><td colSpan={9}><div className="empty-state"><div className="mark" dangerouslySetInnerHTML={{__html: ICON_SVG}} />No hay tutelas para mostrar.</div></td></tr>
+              <tr><td colSpan={10}><div className="empty-state"><div className="mark" dangerouslySetInnerHTML={{__html: ICON_SVG}} />No hay tutelas para mostrar.</div></td></tr>
             )}
           </tbody>
         </table>

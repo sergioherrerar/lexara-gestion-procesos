@@ -822,6 +822,9 @@ export const SHAREPOINT_LISTS_CONFIG = [
       // que hay que confirmarla una vez en Configuración (o dejar que
       // guessListMapping la adivine sola por el hint).
       {key:"CorreccionIA", label:"Corrección IA", hint:["correccion ia","corrección ia"]},
+      // Contestación enviada (2026-11-03): «Contestada» es Opción SI/NO y «Fecha contestación» fecha y hora; las llena el portal al reconocer el correo enviado desde Tutelas@ (ver contestacionesEnviadas.js).
+      {key:"Contestada", label:"Contestada", hint:["contestada"]},
+      {key:"FechaContestacion", label:"Fecha contestación", hint:["fecha contestacion","fecha contestación"]},
     ],
     // Mapeo real completo, confirmado por el usuario desde Configuración y
     // exportado el 2026-08-25 ("mira el mapeo si quedó bien") — se deja

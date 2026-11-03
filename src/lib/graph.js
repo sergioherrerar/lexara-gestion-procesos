@@ -101,12 +101,13 @@ function usarPermisoCorreoCompartido(){
   mailCompartido = true;
   try{ localStorage.setItem(CLAVE_MAIL_COMPARTIDO, '1'); }catch(e){ /* sin almacenamiento */ }
 }
-async function getMailToken(){
+async function getMailToken(silencioso){
   const scopes = mailCompartido ? ["Mail.ReadWrite", "Mail.ReadWrite.Shared"] : ["Mail.ReadWrite"];
   try{
     const res = await msalInstance.acquireTokenSilent({ scopes, account });
     return res.accessToken;
   }catch(err){
+    if(silencioso) throw err;   // revisión automática: sin ventanita; si falta el permiso, queda el botón manual
     const res = await msalInstance.acquireTokenPopup({ scopes });
     return res.accessToken;
   }
@@ -541,6 +542,31 @@ export async function listarEnviadosPorCategoria(categoria, buzon){
   return (datos.value || [])
     .map(m => ({ asunto: m.subject || '', fecha: m.sentDateTime || '', para: (m.toRecipients || []).map(r => r.emailAddress?.address || '').filter(Boolean) }))
     .sort((a, b) => String(b.fecha).localeCompare(String(a.fecha)));
+}
+// Correos ENVIADOS con adjuntos desde `desdeISO` (yyyy-mm-dd), del más reciente al más antiguo: [{ asunto, fecha, para, vista, adjuntos:[nombres] }]. Para reconocer qué contestaciones de
+// tutelas ya se mandaron (ver contestacionesEnviadas.js). `silencioso`: sin ventanas de permiso (revisión automática al abrir Tutelas).
+export async function listarEnviadosConAdjuntos(buzon, desdeISO, silencioso){
+  const ajeno = !!buzon && String(buzon).trim().toLowerCase() !== cuentaDelPortal();
+  const raiz = ajeno ? `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(String(buzon).trim())}` : 'https://graph.microsoft.com/v1.0/me';
+  const filtro = encodeURIComponent(`sentDateTime ge ${desdeISO}T00:00:00Z and hasAttachments eq true`);
+  const select = 'subject,toRecipients,sentDateTime,bodyPreview';
+  const base = `${raiz}/mailFolders/sentitems/messages?$filter=${filtro}&$orderby=sentDateTime desc&$select=${select}&$expand=attachments($select=name)&$top=50`;
+  let url = base;
+  const mensajes = [];
+  for(let pagina = 0; url && pagina < 8; pagina++){
+    const pedir = async () => fetch(url, { headers: { Authorization: `Bearer ${await getMailToken(silencioso)}` } });
+    let res = await pedir();
+    if(res.status === 403 && ajeno && !mailCompartido && !silencioso){ usarPermisoCorreoCompartido(); res = await pedir(); }
+    if(!res.ok){
+      const cuerpo = await res.text();
+      if(carpetaPorDefectoInexistente(res.status, cuerpo)) return [];
+      throw new Error(`Graph ${res.status} al revisar Enviados: ${cuerpo.substring(0, 200)}`);
+    }
+    const datos = await res.json();
+    (datos.value || []).forEach(m => mensajes.push({ asunto: m.subject || '', fecha: m.sentDateTime || '', para: (m.toRecipients || []).map(r => r.emailAddress?.address || '').filter(Boolean), vista: m.bodyPreview || '', adjuntos: (m.attachments || []).map(a => a.name || '') }));
+    url = datos['@odata.nextLink'] || null;
+  }
+  return mensajes;
 }
 function carpetaPorDefectoInexistente(status, cuerpo){
   return status === 404 && /default folder .* not found/i.test(String(cuerpo || ''));
@@ -3177,6 +3203,48 @@ export async function listarSoportesGastosDelMes(shareUrl, fechaISO){
     if(!/^Graph 404/.test(err.message||"")) throw err;
   }
   return archivos.sort((a,b) => a.nombre.localeCompare(b.nombre));
+}
+
+// Copia del PDF de cada factura / orden de compra en «ADMINISTRACION / 1 Soportes de gastos MD / {Año} / {Mes}» (2026-11-03, pedido del usuario: «cualquier factura o orden de
+// compra que se genere por cualquier medio del portal debe guardar una copia del PDF»). El mes es el de la fecha del documento; si la carpeta del año o del mes no existe, se crea.
+// Con el mismo nombre se reemplaza (es la copia del mismo documento, actualizada).
+async function asegurarSubcarpeta(driveId, carpetaPadreId, nombre){
+  const buscar = () => graphFetch('/drives/' + driveId + '/items/' + carpetaPadreId + ':/' + encodeURIComponent(nombre) + '?$select=id,folder');
+  try{ return (await buscar()).id; }
+  catch(err){ if(!/^Graph 404/.test(err.message || '')) throw err; }
+  try{
+    const nueva = await graphFetch('/drives/' + driveId + '/items/' + carpetaPadreId + '/children', { method: 'POST', body: JSON.stringify({ name: nombre, folder: {}, '@microsoft.graph.conflictBehavior': 'fail' }) });
+    return nueva.id;
+  }catch(err){
+    if(/^Graph 409/.test(err.message || '')) return (await buscar()).id;   // la creó otra copia al mismo tiempo
+    throw err;
+  }
+}
+/** 'AAAA-MM-DD' de un factura/orden de compra (por sus campos Día/Mes/Año; si faltan, su Fecha; si no, hoy). */
+export function fechaISODeDocumento(doc){
+  const y = Number(parseMonto(doc?.Anio)), m = Number(parseMonto(doc?.Mes)), d = Number(parseMonto(doc?.Dia));
+  if(y > 2000 && m >= 1 && m <= 12 && d >= 1 && d <= 31) return y + '-' + String(m).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+  const f = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(doc?.Fecha || ''));
+  if(f) return f[0];
+  const h = new Date();
+  return h.getFullYear() + '-' + String(h.getMonth() + 1).padStart(2, '0') + '-' + String(h.getDate()).padStart(2, '0');
+}
+export async function subirCopiaPdfSoportes(shareUrl, fechaISO, nombreArchivo, bytes){
+  if(!shareUrl) throw new Error('Falta la dirección de la carpeta «1 Soportes de gastos MD» (GASTOS_SOPORTES_SHARE_URL en la configuración).');
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(fechaISO || '');
+  const mes = m ? MESES_CARPETA_GASTOS[Number(m[2]) - 1] : null;
+  if(!mes) throw new Error('El documento no tiene una fecha válida para elegir la carpeta del mes.');
+  const carpeta = await resolverCarpetaGastosSoportes(shareUrl);
+  const idAnio = await asegurarSubcarpeta(carpeta.driveId, carpeta.folderId, m[1]);
+  const idMes = await asegurarSubcarpeta(carpeta.driveId, idAnio, mes);
+  const nombre = nombreArchivoSeguro(nombreArchivo).replace(/\.pdf$/i, '') + '.pdf';
+  const token = await getGraphToken();
+  const res = await fetch('https://graph.microsoft.com/v1.0/drives/' + carpeta.driveId + '/items/' + idMes + ':/' + encodeURIComponent(nombre) + ':/content?@microsoft.graph.conflictBehavior=replace', {
+    method: 'PUT', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/pdf' }, body: bytes,
+  });
+  if(!res.ok) throw new Error('Graph ' + res.status + ' al subir el PDF: ' + (await res.text()).substring(0, 200));
+  const item = await res.json();
+  return { nombre, ruta: m[1] + ' / ' + mes, webUrl: item.webUrl || '' };
 }
 
 // Documentos corporativos MD (Diligenciamiento Formatos Empresas) — viven

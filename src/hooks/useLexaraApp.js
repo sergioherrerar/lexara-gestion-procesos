@@ -161,6 +161,10 @@ export function useLexaraApp(){
   const [solicitaCorreoOrden, setSolicitaCorreoOrden] = useState(false);
   const [correoDocumento, setCorreoDocumento] = useState(null);
   const [autoPrintFacturaId, setAutoPrintFacturaId] = useState(null);
+  // Cola de copias de PDF por guardar en «1 Soportes de gastos MD / Año / Mes» (se arma tras guardar una factura u orden de compra; ver App.jsx y subirCopiaPdfSoportes).
+  const [colaCopiasSoporte, setColaCopiasSoporte] = useState([]);
+  function encolarCopiaSoporte(tipo, documento){ if(liveMode) setColaCopiasSoporte(prev => [...prev, { tipo, documento, clave: tipo + (documento.id ?? '') + '-' + Date.now() }]); }
+  function terminarCopiaSoporte(){ setColaCopiasSoporte(prev => prev.slice(1)); }
   const [activeOrdenCompraId, setActiveOrdenCompraId] = useState(null);
   const [draftOrdenCompra, setDraftOrdenCompra] = useState(null);
   const [autoPrintOrdenCompraId, setAutoPrintOrdenCompraId] = useState(null);
@@ -1006,6 +1010,7 @@ export function useLexaraApp(){
         nuevo.Factura = String(nuevo.id + 91);
       }
       setFacturas(prev => [...prev, nuevo]);
+      encolarCopiaSoporte('factura', nuevo);
       setDraftFactura(null);
       setActiveFacturaId(null);
       if(solicitaCorreoFactura) setCorreoDocumento({ tipo: 'factura', documento: nuevo });
@@ -1030,6 +1035,7 @@ export function useLexaraApp(){
       }catch(err){ console.error(err); notify("No se pudo guardar en SharePoint: " + Graph.mensajeError(err), 'error'); setSaving(false); return; }
       setSaving(false);
     }
+    encolarCopiaSoporte('factura', { ...activeFactura, ...updates });
     setActiveFacturaId(null);
     reabrirProcesoSiCorresponde();
     notify("Guardado con éxito en Lexara", 'success');
@@ -1089,6 +1095,7 @@ export function useLexaraApp(){
         nuevo.id = maxId + 1;
       }
       setOrdenesCompra(prev => [...prev, nuevo]);
+      encolarCopiaSoporte('ordenCompra', nuevo);
       setDraftOrdenCompra(null);
       setActiveOrdenCompraId(null);
       if(solicitaCorreoOrden) setCorreoDocumento({ tipo: 'ordenCompra', documento: nuevo });
@@ -1113,6 +1120,7 @@ export function useLexaraApp(){
       }catch(err){ console.error(err); notify("No se pudo guardar en SharePoint: " + Graph.mensajeError(err), 'error'); setSaving(false); return; }
       setSaving(false);
     }
+    encolarCopiaSoporte('ordenCompra', { ...activeOrdenCompra, ...updates });
     setActiveOrdenCompraId(null);
     reabrirProcesoSiCorresponde();
     notify("Guardado con éxito en Lexara", 'success');
@@ -1132,6 +1140,7 @@ export function useLexaraApp(){
           nuevo.id = created.id; nuevo._graphId = created.id;
         }else{ maxId += 1; nuevo.id = maxId; }
         setOrdenesCompra(prev => [...prev, nuevo]);
+        encolarCopiaSoporte('ordenCompra', nuevo);
         resultados.push({ cliente, orden: nuevo });
       }catch(err){ console.error(err); resultados.push({ cliente, error: Graph.mensajeError(err) }); }
     }
@@ -1488,6 +1497,27 @@ export function useLexaraApp(){
     setActiveTutelaId(null);
     notify("Guardado con éxito en Lexara", 'success');
     reflejarTutelaEnLecturaLexIA({ ...activeTutela, ...updates });
+  }
+  // Tutelas → «Revisar enviadas» (2026-11-03): marca como contestadas (Contestada = SI + Fecha contestación) las tutelas cuyo correo de contestación ya salió de Tutelas@.
+  // items: [{ id, fecha }]. Devuelve cuántas quedaron guardadas; las que fallan no frenan a las demás.
+  async function marcarTutelasContestadas(items){
+    const fechas = new Map();
+    const list = liveMode ? listByKey('tutelas') : null;
+    for(const it of items || []){
+      const t = tutelas.find(x => x.id === it.id);
+      if(!t) continue;
+      try{
+        if(liveMode){
+          const siteIdReal = list.siteId || siteId;
+          const body = await Graph.graphFieldsFromUpdates(siteIdReal, list, { Contestada: 'SI', FechaContestacion: it.fecha });
+          if(!Object.keys(body || {}).length) throw new Error('La lista Tutelas no tiene reconocidas las columnas «Contestada» / «Fecha contestación»; confírmalas en Configuración.');
+          await Graph.graphFetch(`/sites/${siteIdReal}/lists/${list.listId}/items/${t._graphId || t.id}/fields`, { method:'PATCH', body: JSON.stringify(body) });
+        }
+        fechas.set(it.id, it.fecha);
+      }catch(err){ console.error('No se pudo marcar la tutela como contestada', it.id, err); if(fechas.size === 0) notify?.('No se pudo guardar «Contestada» en SharePoint: ' + Graph.mensajeError(err), 'error'); break; }
+    }
+    if(fechas.size) setTutelas(prev => prev.map(t => fechas.has(t.id) ? { ...t, Contestada: 'SI', FechaContestacion: fechas.get(t.id) } : t));
+    return fechas.size;
   }
   // Corrección masiva puntual 2026-08-28, pedida explícitamente por el
   // usuario: 285 de 322 tutelas (las de agosto) quedaron con "Entidad"
@@ -2078,7 +2108,7 @@ export function useLexaraApp(){
   return {
     config, saveConfig, clearConfig,
     lists, listByKey, updateListMapping,
-    liveMode, account, appActive, view, setView, role, canWrite, modulosPermitidos,
+    liveMode, account, appActive, view, setView, role, canWrite, modulosPermitidos, colaboradorActual,
     testStatus, testConnection, applyAllMappings, downloadAllMappings,
     refreshData, refreshing, refreshEquipoYVacaciones,
     signIn, enterDemo, goSetup, signOut,
@@ -2099,13 +2129,13 @@ export function useLexaraApp(){
     activeCliente, openCliente, closeClienteDrawer, saveCliente, deleteCliente, createCliente, updateCliente, newCliente,
     correoDocumento, cerrarCorreoDocumento: () => setCorreoDocumento(null),
     activeFactura, openFactura, newFactura, duplicateFactura, abrirBorradorFactura, closeFacturaDrawer, saveFactura,
-    printFactura, autoPrintFacturaId, clearAutoPrint, createFacturaFromOrdenCompra, newFacturaFromProceso,
+    printFactura, autoPrintFacturaId, clearAutoPrint, copiaSoporteActual: colaCopiasSoporte[0] || null, terminarCopiaSoporte, createFacturaFromOrdenCompra, newFacturaFromProceso,
     activeOrdenCompra, openOrdenCompra, newOrdenCompra, duplicateOrdenCompra, newOrdenCompraFromProceso, abrirBorradorOrdenCompra, crearOrdenesCompraEnLote, closeOrdenCompraDrawer, saveOrdenCompra,
     printOrdenCompra, autoPrintOrdenCompraId, clearAutoPrintOrdenCompra,
     activeColaborador, openColaborador, newColaborador, closeColaboradorDrawer, saveColaborador, deleteColaborador,
     activeFormaPago, openFormaPago, newFormaPagoFromProceso, closeFormaPagoDrawer, saveFormaPago, deleteFormaPago,
     activeDesistimiento, openDesistimiento, newDesistimientoFromProceso, closeDesistimientoDrawer, saveDesistimiento, deleteDesistimiento,
-    activeTutela, openTutela, newTutela, duplicateTutela, closeTutelaDrawer, saveTutela, deleteTutela, corregirEntidadFaltanteTutelas, agregarCorreccionIA,
+    activeTutela, openTutela, newTutela, duplicateTutela, closeTutelaDrawer, saveTutela, deleteTutela, marcarTutelasContestadas, corregirEntidadFaltanteTutelas, agregarCorreccionIA,
     createTema, saveTema, createTipoTermino, createValorEntidad, saveValorEntidad,
     createHoraExtra, aprobarHoraExtra, editarHoraExtra, eliminarHoraExtra,
     crearPeriodoVacaciones, editarPeriodoVacaciones, eliminarPeriodoVacaciones, aprobarPeriodoVacaciones, solicitarVacaciones, enviarCorreoSolicitudVacaciones,

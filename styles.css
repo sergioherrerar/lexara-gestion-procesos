@@ -815,6 +815,45 @@
     box-shadow:0 8px 24px rgba(0,20,18,.16); border-radius:var(--radius);
   }
   .topbar-calendario-popover .mini-calendario{margin-bottom:0;}
+  /* Campana de pendientes (2026-11-03): junto al buscador. Número naranja de marca; rojo si hay algo para hoy/mañana o ya vencido. */
+  .topbar-derecha{display:flex; align-items:center; gap:12px; flex-shrink:0;}
+  .topbar-campana-wrap{position:relative; flex-shrink:0;}
+  .topbar-campana-btn{
+    position:relative; display:flex; align-items:center; justify-content:center;
+    width:40px; height:40px; border-radius:10px; cursor:pointer;
+    border:1px solid var(--gris-linea); background:var(--gris-claro); color:var(--verde-oscuro);
+    transition:background .15s, border-color .15s;
+  }
+  .topbar-campana-btn:hover, .topbar-campana-btn.abierto{background:#e3f1ef; border-color:var(--verde-claro);}
+  .topbar-campana-btn svg{width:20px; height:20px;}
+  .topbar-campana-badge{
+    position:absolute; top:-6px; right:-6px; min-width:20px; height:20px; padding:0 5px; box-sizing:border-box;
+    display:flex; align-items:center; justify-content:center;
+    border-radius:10px; border:2px solid #fff; background:var(--naranja); color:#fff;
+    font-size:11px; font-weight:700; line-height:1;
+  }
+  .topbar-campana-badge.urgente{background:#d6402f;}
+  .topbar-campana-popover{
+    position:absolute; top:100%; right:0; margin-top:10px; z-index:40; width:380px; max-width:calc(100vw - 24px);
+    background:#fff; border:1px solid var(--gris-linea); border-radius:var(--radius); overflow:hidden;
+    box-shadow:0 8px 24px rgba(0,20,18,.18);
+  }
+  .campana-cab{display:flex; flex-direction:column; gap:2px; padding:12px 16px; background:var(--verde-oscuro); color:#fff; border-bottom:3px solid var(--amarillo);}
+  .campana-cab strong{font-family:var(--font-display); font-size:15px; font-weight:600;}
+  .campana-cab span{font-size:12px; opacity:.85;}
+  .campana-modo{display:flex; gap:4px; padding:8px 16px 0;}
+  .campana-modo button{flex:1; padding:6px 8px; border:1px solid var(--gris-linea); border-radius:8px; background:var(--gris-claro); color:var(--texto-suave); font-size:12px; font-weight:600; cursor:pointer;}
+  .campana-modo button.activo{background:var(--verde-oscuro); border-color:var(--verde-oscuro); color:#fff;}
+  .campana-resumen{display:flex; flex-wrap:wrap; gap:6px; padding:10px 16px; border-bottom:1px solid var(--gris-linea);}
+  .campana-lista{max-height:min(380px, 55vh); overflow-y:auto;}
+  .campana-item{padding:10px 16px; border-bottom:1px solid var(--gris-linea);}
+  .campana-item:last-child{border-bottom:none;}
+  .campana-item-fila{display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:4px;}
+  .campana-item-texto{font-size:13.5px; font-weight:600; color:var(--texto);}
+  .campana-item-meta{font-size:12px; color:var(--texto-suave); margin-top:2px;}
+  .campana-vacia{margin:0; padding:22px 16px; text-align:center; font-size:13px; color:var(--texto-suave);}
+  .campana-pie{width:100%; padding:11px 16px; border:none; border-top:1px solid var(--gris-linea); background:var(--gris-claro); color:var(--verde-oscuro); font-weight:600; font-size:13px; cursor:pointer;}
+  .campana-pie:hover{background:#e9e9e6;}
   /* Contador "N vencen hoy" en Tutelas — pedido explícito del usuario
      ("dale más importancia... más llamativo") — a diferencia de .badge-rojo
      (pastel suave, reusado como estado neutro en muchas tablas), este es
@@ -1798,6 +1837,8 @@
        "top:64px" siempre queda pegado justo debajo de ella. */
     .topbar-calendario-popover{position:fixed; top:64px; left:12px; right:12px; margin-top:0;}
     .topbar-calendario-popover .mini-calendario{width:100%;}
+    .topbar-derecha{gap:8px;}
+    .topbar-campana-popover{position:fixed; top:64px; left:12px; right:12px; margin-top:0; width:auto; max-width:none;}
   }
 
   /* ---------- Hoja imprimible de factura/orden de compra ---------- */

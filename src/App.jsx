@@ -111,6 +111,10 @@ export default function App(){
       />
       <div className="main">
         <Topbar
+          nombreActual={app.liveMode ? (app.colaboradorActual?.Nombre || '') : ''}
+          puedeVerEquipo={app.role === 'Administrador' || app.role === 'Jefe'}
+          tutelas={app.tutelas}
+          onIrAVencimientos={canAccessView(app.modulosPermitidos, 'vencimientos') ? () => goView('vencimientos') : null}
           view={app.view}
           liveMode={app.liveMode}
           searchQuery={app.searchQuery}
@@ -167,6 +171,7 @@ export default function App(){
             searchQuery={app.searchQuery}
             onOpenTutela={app.openTutela}
             onCreateTutela={app.newTutela}
+            onMarcarContestadas={app.marcarTutelasContestadas}
             onDuplicateTutela={app.duplicateTutela}
             onDeleteTutela={app.deleteTutela}
             onAgregarCorreccionIA={app.agregarCorreccionIA}
@@ -378,6 +383,15 @@ export default function App(){
         notify={app.notify}
         saving={app.saving}
       />
+      {/* Copia del PDF a «1 Soportes de gastos MD / Año / Mes»: se arma sola, sin mostrar nada, tras guardar una factura u orden de compra (una a la vez). */}
+      {app.copiaSoporteActual && app.copiaSoporteActual.tipo === 'factura' && !app.activeFactura && (
+        <FacturaDrawer key={app.copiaSoporteActual.clave} factura={app.copiaSoporteActual.documento} clientes={app.clientes} procesos={app.procesos} liveMode={app.liveMode}
+          autoPrint soloCopia shareUrlSoportes={app.config?.GASTOS_SOPORTES_SHARE_URL} onClose={app.terminarCopiaSoporte} onAutoPrinted={app.terminarCopiaSoporte} notify={app.notify} />
+      )}
+      {app.copiaSoporteActual && app.copiaSoporteActual.tipo === 'ordenCompra' && !app.activeOrdenCompra && (
+        <OrdenCompraDrawer key={app.copiaSoporteActual.clave} ordenCompra={app.copiaSoporteActual.documento} clientes={app.clientes} procesos={app.procesos} facturas={app.facturas} ordenesCompra={app.ordenesCompra} liveMode={app.liveMode}
+          autoPrint soloCopia shareUrlSoportes={app.config?.GASTOS_SOPORTES_SHARE_URL} onClose={app.terminarCopiaSoporte} onAutoPrinted={app.terminarCopiaSoporte} notify={app.notify} />
+      )}
       {app.correoDocumento && (
         <SolicitudDocumentoModal
           tipo={app.correoDocumento.tipo}
