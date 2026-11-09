@@ -6,7 +6,7 @@
 // Entidad, igual que la consulta original de Access.
 // Ver [[project_tutelas_modulo]].
 import { prepararDocumentoPDF, fechaCorta, VERDE_OSCURO, GRIS_ZEBRA, BORDE_SUAVE, TEXTO, MARGEN, CONTENIDO_Y_INICIAL, CONTENIDO_Y_MAXIMO } from './informesPDF';
-import { stripHtml, parseMonto, crearBorradorCorreo, buscarValorEntidad } from './graph';
+import { stripHtml, parseMonto, crearBorradorConImagenesInline, buscarValorEntidad, firmaComoImagenInline, firmaHtml } from './graph';
 
 const DIAS = ["domingo","lunes","martes","miércoles","jueves","viernes","sábado"];
 const MESES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
@@ -161,11 +161,11 @@ export async function generarInformeTutelasPDF(tutelas, fechaNotificacionISO, fe
 // al cuerpo de solo texto que ya existía, para no perder la información.
 const DESTINATARIO_TO = "daniacp@aliansalud.com.co";
 const DESTINATARIOS_CC = ["asesoriajuridica@lexaraabogados.com", "Gerencia@lexaraabogados.com", "myd.abogados.monica@hotmail.com"];
-// Misma imagen de firma que usaba la macro de Access original (URL real de
-// SharePoint, no un archivo aparte) — se incluye tal cual, tanto en la tabla
-// copiada al portapapeles como en el borrador creado por Graph.
+// Firma: desde 2026-11-05 (pedido del usuario: «para que todos los correos que salen de Tutelas la tomen») es la tarjeta de Ariana del portal (src/assets/Firma Ariana.jpg, «Abogada»),
+// la misma de los demás correos de Tutelas: adjunta en línea (cid) en el borrador de Graph y como imagen incrustada en el HTML que se copia al portapapeles. La imagen de SharePoint
+// que usaba la macro de Access original queda solo como respaldo si no se pudiera leer la del portal.
 const FIRMA_URL = "https://mydabogados.sharepoint.com/sites/NuevosProcesosMD/Documentos%20compartidos/Lexara%20Abogados/Imagenes%20Corporativas/Firma%20Correo%20Ariana.jpg";
-const FIRMA_HTML = `<img src="${FIRMA_URL}" alt="" style="width:227px;height:113px;" />`;
+const FIRMA_HTML_RESPALDO = `<img src="${FIRMA_URL}" alt="" style="width:227px;height:113px;" />`;
 
 // Un mailto: muy largo puede fallar o cortarse en algunos clientes/SO — se
 // limita cuántas filas se listan en el cuerpo (el PDF adjunto siempre trae
@@ -287,7 +287,9 @@ export async function abrirCorreoTutelas(tutelas, fechaNotificacionISO, fechaVen
     'Saludos,',
   ].join('\n');
 
-  const htmlTablas = tablaHtml(`Contestaciones con Vencimiento (${fechaCorta(fechaVencimiento)})`, vencimiento) + tablaHtml('Tutelas Asignadas el Día Anterior', notificadas) + FIRMA_HTML;
+  let firmaPortapapeles = FIRMA_HTML_RESPALDO;
+  try{ firmaPortapapeles = firmaHtml('ariana', (await firmaComoImagenInline('ariana')).srcVistaPrevia); }catch(err){ console.error('No se pudo leer la firma de Ariana del portal; se usa la de SharePoint:', err); }
+  const htmlTablas = tablaHtml(`Contestaciones con Vencimiento (${fechaCorta(fechaVencimiento)})`, vencimiento) + tablaHtml('Tutelas Asignadas el Día Anterior', notificadas) + firmaPortapapeles;
   const copiadoHtml = await copiarTablaAlPortapapeles(htmlTablas, cuerpoConListado);
 
   // Si sí se copió el HTML, el cuerpo del mailto se deja simple (sin el
@@ -333,19 +335,19 @@ export async function enviarBorradorTutelasGraph(tutelas, fechaNotificacionISO, 
     `<p>En el documento adjunto se encuentran las tutelas asignadas el día <strong>${fechaLargaSinHora(fechaNotificacion)}</strong>, así como aquellas que se encuentran en término de vencimiento el día <strong>${fechaLargaSinHora(fechaVencimiento)}</strong>.</p>` +
     tablaHtml(`Contestaciones con Vencimiento (${fechaCorta(fechaVencimiento)})`, vencimiento) +
     tablaHtml('Tutelas Asignadas el Día Anterior', notificadas) +
-    FIRMA_HTML +
+    firmaHtml('ariana') +
     `</body></html>`;
 
   const { doc, nombreArchivo } = await construirPDFTutelas(tutelas, fechaNotificacionISO, fechaVencimientoISO);
   const adjuntoBase64 = arrayBufferABase64(doc.output('arraybuffer'));
 
-  return crearBorradorCorreo({
+  return crearBorradorConImagenesInline({
     to: DESTINATARIO_TO,
     cc: DESTINATARIOS_CC,
     subject: asunto,
     htmlBody,
-    adjuntoNombre: nombreArchivo,
-    adjuntoBase64,
+    imagenes: [await firmaComoImagenInline('ariana')],
+    adjuntos: [{ nombre: nombreArchivo, contentType: 'application/pdf', base64: adjuntoBase64 }],
     buzon: buzon || undefined,
   });
 }

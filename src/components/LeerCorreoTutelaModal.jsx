@@ -389,6 +389,8 @@ export default function LeerCorreoTutelaModal({ correoBuzon, remitentesPermitido
         adjuntos: adjuntosExtra,
         etiquetaEnvio,
         solicitudesPrevias,
+        // Para y copia del primer correo de la tutela y del que se está leyendo: ahí el área jurídica pone el área de Aliansalud que responde (EPS sola o simultaneidad).
+        destinatariosNotificacion: [...new Set([...(primerCorreo.para || []), ...(primerCorreo.cc || []), ...(mensaje.para || []), ...(mensaje.cc || [])].map(c => String(c).trim()).filter(Boolean))],
         forzarPruebas: forzar || !!etiquetaEnvio,   // el aplazamiento usa el mismo robot: la regla «no es contra la entidad» no le aplica
       });
       // Tutela que NO va contra la entidad del cliente (p. ej. contra un juzgado): no se piden pruebas (criterio de la abogada, 2026-10-21, tutela 28325).

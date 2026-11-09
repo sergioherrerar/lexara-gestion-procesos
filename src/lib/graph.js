@@ -858,12 +858,12 @@ export function tablaDatosTutelaHtml(campos, pretensiones, camposTodos){
 // al borrador (cid) en vez de una imagen incrustada en base64, porque Outlook de escritorio no
 // muestra las imágenes en base64 dentro del cuerpo.
 const FIRMA_CID = 'firma-ariana-lexara';
-export const FIRMA_HTML = `<p style="margin:14px 0 0;"><img src="cid:${FIRMA_CID}" width="520" alt="Ariana Andrea Martin Mendoza — Abogada Junior — Lexara Abogados" style="display:block;border:0;width:520px;max-width:100%;height:auto;"></p>`;
+export const FIRMA_HTML = `<p style="margin:14px 0 0;"><img src="cid:${FIRMA_CID}" width="520" alt="Ariana Andrea Martin Mendoza — Abogada — Lexara Abogados" style="display:block;border:0;width:520px;max-width:100%;height:auto;"></p>`;
 
 // Firmas institucionales por buzón (2026-10-29, pedido del usuario): cada correo lleva «Cordial saludo,» y la firma del buzón desde el que sale — Tutelas (Ariana),
 // Soporte (Sergio, Soporte Técnico) y Gerencia (Mónica, Gerente). Son las imágenes reales que entregó el usuario.
 const FIRMAS = {
-  ariana: { cid: FIRMA_CID, url: firmaArianaUrl, nombre: 'Firma Ariana.jpg', tipo: 'image/jpeg', alt: 'Ariana Andrea Martin Mendoza — Abogada Junior — Lexara Abogados' },
+  ariana: { cid: FIRMA_CID, url: firmaArianaUrl, nombre: 'Firma Ariana.jpg', tipo: 'image/jpeg', alt: 'Ariana Andrea Martin Mendoza — Abogada — Lexara Abogados' },
   soporte: { cid: 'firma-soporte-lexara', url: firmaSoporteUrl, nombre: 'Firma Soporte.jpg', tipo: 'image/jpeg', alt: 'Sergio Alexander Herrera Ramírez — Soporte Técnico — Lexara Abogados' },
   gerencia: { cid: 'firma-gerencia-lexara', url: firmaGerenciaUrl, nombre: 'Firma Gerencia.png', tipo: 'image/png', alt: 'Mónica Paola Quintero Jiménez — Gerente — Lexara Abogados' },
 };
@@ -1074,11 +1074,11 @@ async function reenviarComoBorrador(correoBuzon, mensajeId, { para, cc, categori
 // (valores oficiales) para la tabla. Si se da `mensajeIdReenviar`, el borrador es un reenvío de
 // ese correo (conserva la traza); si no se puede reenviar, queda como borrador nuevo y se avisa.
 // Devuelve { para, cc, asunto, notas, formato, reenviado, borrador }.
-export async function crearSolicitudPruebasBorrador({ config, robotSolicitudUrl, registro, registros, campos, camposTodos, asuntoCorreo, noTutela, fechaVencimiento, correoBuzon, mensajeIdReenviar, clientesSenalados, correosRecibidos, adjuntos, etiquetaEnvio, forzarPruebas, solicitudesPrevias }){
+export async function crearSolicitudPruebasBorrador({ config, robotSolicitudUrl, registro, registros, campos, camposTodos, asuntoCorreo, noTutela, fechaVencimiento, correoBuzon, mensajeIdReenviar, clientesSenalados, correosRecibidos, adjuntos, etiquetaEnvio, forzarPruebas, solicitudesPrevias, destinatariosNotificacion }){
   if(!robotSolicitudUrl) throw new Error('Falta la dirección del robot de solicitud de pruebas (ROBOT_SOLICITUD_PRUEBAS_URL).');
   const formato = await leerFormatoSolicitudPruebas(config);
   // Se reintenta solo (hasta 2 veces más) si la conexión se corta, el servidor responde con un error pasajero o la respuesta de LexIA no se pudo leer.
-  const cuerpoPruebas = JSON.stringify({ formato: formato.texto, registro, registros: registros && registros.length ? registros : [registro], asuntoCorreo, noTutela, fechaVencimiento, clientesSenalados: clientesSenalados || [], correosRecibidos: correosRecibidos || [], forzarPruebas: !!forzarPruebas, solicitudesPrevias: solicitudesPrevias || [] });
+  const cuerpoPruebas = JSON.stringify({ formato: formato.texto, registro, registros: registros && registros.length ? registros : [registro], asuntoCorreo, noTutela, fechaVencimiento, clientesSenalados: clientesSenalados || [], correosRecibidos: correosRecibidos || [], forzarPruebas: !!forzarPruebas, solicitudesPrevias: solicitudesPrevias || [], destinatariosNotificacion: destinatariosNotificacion || [] });
   let res, data = null, falloPasajero = null;
   for(let intento = 0; intento <= 2; intento++){
     if(intento > 0) await new Promise(r => setTimeout(r, 2500 * intento));
@@ -1212,7 +1212,7 @@ export async function leerCorreosTutelas(correoBuzon, remitentesPermitidos, top 
   // (ya no va en esta consulta), no por ordenar junto con el filtro de
   // fecha (misma propiedad simple, sí es soportado).
   const params = new URLSearchParams({
-    $select: 'id,subject,from,receivedDateTime,hasAttachments,bodyPreview,conversationId',
+    $select: 'id,subject,from,receivedDateTime,hasAttachments,bodyPreview,conversationId,toRecipients,ccRecipients',
     $top: String(top),
     $filter: partesFiltro.join(' and '),
     $orderby: 'receivedDateTime desc',
@@ -1248,6 +1248,9 @@ export async function leerCorreosTutelas(correoBuzon, remitentesPermitidos, top 
       conversacionId: m.conversationId || '',
       tieneAdjuntos: !!m.hasAttachments,
       resumen: m.bodyPreview || '',
+      // Para y copia del correo: el área jurídica del cliente pone ahí el área que responde (ver regla 24 de solicitud-pruebas.php).
+      para: (m.toRecipients || []).map(r => r.emailAddress?.address || '').filter(Boolean),
+      cc: (m.ccRecipients || []).map(r => r.emailAddress?.address || '').filter(Boolean),
     }));
 }
 
@@ -1262,7 +1265,7 @@ export async function primerCorreoDeConversacion(correoBuzon, conversacionId, re
   if(!conversacionId) return null;
   const token = await getMailToken();
   const params = new URLSearchParams({
-    $select: 'id,from,receivedDateTime',
+    $select: 'id,from,receivedDateTime,toRecipients,ccRecipients',
     $top: '100',
     $filter: `conversationId eq '${String(conversacionId).replace(/'/g, "''")}'`,
   });
@@ -1273,7 +1276,8 @@ export async function primerCorreoDeConversacion(correoBuzon, conversacionId, re
   const candidatos = (data.value || [])
     .filter(m => m.receivedDateTime && (!permitidos.length || permitidos.includes((m.from?.emailAddress?.address||'').trim().toLowerCase())))
     .sort((a, b) => String(a.receivedDateTime).localeCompare(String(b.receivedDateTime)));
-  return candidatos[0] ? { id: candidatos[0].id, fecha: candidatos[0].receivedDateTime } : null;
+  const primero = candidatos[0];
+  return primero ? { id: primero.id, fecha: primero.receivedDateTime, para: (primero.toRecipients || []).map(r => r.emailAddress?.address || '').filter(Boolean), cc: (primero.ccRecipients || []).map(r => r.emailAddress?.address || '').filter(Boolean) } : null;
 }
 
 // Precarga de LexIA (2026-09-25, pedido explícito del usuario) — casi todos
