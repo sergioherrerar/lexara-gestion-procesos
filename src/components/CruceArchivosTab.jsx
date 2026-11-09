@@ -1,12 +1,12 @@
 import { useState } from 'react';
-import { mensajeError, listarExcelDesistimientosSOS, descargarArchivoSharePoint, RUTA_DESISTIMIENTOS_SOS } from '../lib/graph';
+import { mensajeError, fmtMonto, listarExcelDesistimientosSOS, descargarArchivoSharePoint, RUTA_DESISTIMIENTOS_SOS } from '../lib/graph';
 import {
   cargarWorkbook, nombresDeHojas, leerHoja, compararArchivos, generarExcelCruce,
-  ROLES_CRUCE, detectarRol, sugerirProcesoCorto, procesosDelArchivo, sugerirHoja, sugerirColumnaLlave, sugerirColumnaCumplimiento, analizarArchivos, armarHojasEspeciales,
+  ROLES_CRUCE, detectarRol, sugerirColumnaValor, sugerirProcesoCorto, procesosDelArchivo, sugerirHoja, sugerirColumnaLlave, sugerirColumnaCumplimiento, analizarArchivos, armarHojasEspeciales,
 } from '../lib/cruceArchivos';
 import { IconTextButton } from './IconButton';
 
-const SLOT_VACIO = { file:null, workbook:null, hojas:[], hoja:"", columnas:[], columnaLlave:"", columnaCumplimiento:"", filas:null, leyendo:false, rol:"generico", sugerida:false };
+const SLOT_VACIO = { file:null, workbook:null, hojas:[], hoja:"", columnas:[], columnaLlave:"", columnaCumplimiento:"", columnaValor:"", filas:null, leyendo:false, rol:"generico", sugerida:false };
 
 // «Cruce de archivos» (Informes → Herramientas) — pedido del usuario 2026-09-03 y mejorado 2026-11-09 (cruce de la base de la demanda con el peritaje y con los desistimientos).
 // Por cada archivo: se sube (o, el de desistimientos, se trae de SharePoint), se dice QUÉ ES (base de la demanda / peritaje / desistimientos / otro), qué HOJA analizar y cuál es la
@@ -20,7 +20,7 @@ function Slot({ indice, slot, onChange, onQuitar, puedeQuitar, notify, config, l
   function conHoja(base, workbook, hoja, rol){
     const { columnas, filas } = leerHoja(workbook, hoja);
     const llave = sugerirColumnaLlave(columnas);
-    return { ...base, hoja, columnas, filas, columnaLlave: llave, columnaCumplimiento: rol === 'peritaje' ? sugerirColumnaCumplimiento(columnas) : "", sugerida: !!llave };
+    return { ...base, hoja, columnas, filas, columnaLlave: llave, columnaCumplimiento: rol === 'peritaje' ? sugerirColumnaCumplimiento(columnas) : "", columnaValor: sugerirColumnaValor(columnas), sugerida: !!llave };
   }
 
   async function procesarArchivo(file){
@@ -45,7 +45,7 @@ function Slot({ indice, slot, onChange, onQuitar, puedeQuitar, notify, config, l
     if(file) await procesarArchivo(file);
   }
   function handleHoja(hoja){
-    if(!hoja){ onChange({ ...slot, hoja:"", columnas:[], columnaLlave:"", columnaCumplimiento:"", filas:null, sugerida:false }); return; }
+    if(!hoja){ onChange({ ...slot, hoja:"", columnas:[], columnaLlave:"", columnaCumplimiento:"", columnaValor:"", filas:null, sugerida:false }); return; }
     try{ onChange(conHoja(slot, slot.workbook, hoja, slot.rol)); }
     catch(err){
       console.error(err);
@@ -116,6 +116,15 @@ function Slot({ indice, slot, onChange, onQuitar, puedeQuitar, notify, config, l
             </select>
           </div>
         )}
+        {slot.columnas.length > 0 && (
+          <div className="field" style={{minWidth:240}}>
+            <label>Columna de valor (subtotales){slot.columnaValor ? ' · propuesta por el portal' : ''}</label>
+            <select value={slot.columnaValor} onChange={e => onChange({ ...slot, columnaValor: e.target.value })}>
+              <option value="">— sin subtotal de valor —</option>
+              {slot.columnas.map(c => <option value={c} key={c}>{c}</option>)}
+            </select>
+          </div>
+        )}
         {slot.rol === 'peritaje' && slot.columnas.length > 0 && (
           <div className="field" style={{minWidth:260}}>
             <label>Columna de cumplimiento de requisitos esenciales</label>
@@ -172,7 +181,7 @@ export default function CruceArchivosTab({ notify, config, liveMode }){
     const base = s.file.name.replace(/\.xlsx$/i, '');
     // El mismo Excel puede entrar dos veces con hojas distintas (p. ej. «Base original» y «Base depurada»): se distinguen por su hoja.
     const repetido = slots.filter(x => x.file && x.file.name === s.file.name).length > 1;
-    return { nombre: repetido ? base + ' · ' + s.hoja : base, nombreHoja: repetido ? s.hoja : '', rol: s.rol, columnaLlave: s.columnaLlave, columnaCumplimiento: s.columnaCumplimiento, columnas: s.columnas, filas: s.filas };
+    return { nombre: repetido ? base + ' · ' + s.hoja : base, nombreHoja: repetido ? s.hoja : '', rol: s.rol, columnaLlave: s.columnaLlave, columnaCumplimiento: s.columnaCumplimiento, columnaValor: s.columnaValor, columnas: s.columnas, filas: s.filas };
   }
 
   const archivosLeidos = slots.filter(s => s.file && s.filas).map(aArchivo);
@@ -266,10 +275,10 @@ export default function CruceArchivosTab({ notify, config, liveMode }){
             </div>
             <div className="table-wrap" style={{marginBottom:14}}>
               <table className="table-compact">
-                <thead><tr><th>Archivo</th><th style={{textAlign:'right'}}>Filas</th><th style={{textAlign:'right'}}>Llaves únicas</th><th style={{textAlign:'right'}}>Sin llave</th><th style={{textAlign:'right'}}>Llaves repetidas</th></tr></thead>
+                <thead><tr><th>Archivo</th><th style={{textAlign:'right'}}>Filas</th><th style={{textAlign:'right'}}>Recobros únicos</th><th style={{textAlign:'right'}}>Sin llave</th><th style={{textAlign:'right'}}>Llaves repetidas</th><th style={{textAlign:'right'}}>Subtotal del valor</th></tr></thead>
                 <tbody>
                   {resultado.analisis.porArchivo.map(p => (
-                    <tr key={p.nombre}><td>{p.nombre}</td><td style={{textAlign:'right'}}>{p.filas}</td><td style={{textAlign:'right'}}>{p.llavesUnicas}</td><td style={{textAlign:'right'}}>{p.sinLlave}</td><td style={{textAlign:'right'}}>{p.llavesRepetidas}</td></tr>
+                    <tr key={p.nombre}><td>{p.nombre}</td><td style={{textAlign:'right'}}>{p.filas}</td><td style={{textAlign:'right'}}>{p.llavesUnicas}</td><td style={{textAlign:'right'}}>{p.sinLlave}</td><td style={{textAlign:'right'}}>{p.llavesRepetidas}</td><td style={{textAlign:'right'}}>{p.valor == null ? '—' : '$ ' + fmtMonto(p.valor)}</td></tr>
                   ))}
                 </tbody>
               </table>

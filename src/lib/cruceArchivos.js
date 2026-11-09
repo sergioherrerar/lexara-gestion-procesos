@@ -191,6 +191,17 @@ export function sugerirColumnaCumplimiento(columnas){
   return exacta || '';
 }
 
+/** La columna del VALOR ACTUAL de cada recobro, para los subtotales: «Valor de cartera Actual» (peritaje), «VALOR ACTUAL» (base), «VALOR VIGENTE» (desistimientos) o parecida; '' si ninguna se parece. */
+export function sugerirColumnaValor(columnas){
+  const n = columnas.map(c => ({ c, t: normalize(c).replace(/\s+/g, ' ') }));
+  const patrones = [/valor de cartera actual/, /cartera actual/, /^(\d+\.\s*)?valor actual$/, /valor actual/, /valor vigente/, /saldo actual/];
+  for(const re of patrones){ const hallada = n.find(x => re.test(x.t)); if(hallada) return hallada.c; }
+  return '';
+}
+const aNumero = v => (typeof v === 'number' ? v : (/^-?\d+(\.\d+)?$/.test(String(v ?? '').trim()) ? Number(String(v).trim()) : null));
+const FORMATO_DINERO = '"$" #,##0.00';
+const esColumnaDinero = c => /valor/.test(normalize(c));
+
 const numero = v => { const n = Number(String(v ?? '').replace(/[^\d.,-]/g, '').replace(/,/g, '')); return Number.isFinite(n) ? n : 0; };
 
 /** El número corto de un proceso («2015-00826», «2015 00826», «2015-826»…) en una forma única para comparar. */
@@ -235,7 +246,8 @@ export function analizarArchivos(archivos){
     let sinLlave = 0;
     a.filas.forEach(f => { const k = normalizarLlave(f[a.columnaLlave]); if(!k){ sinLlave++; return; } cuenta.set(k, (cuenta.get(k) || 0) + 1); });
     const repetidas = [...cuenta.entries()].filter(([, n]) => n > 1);
-    return { nombre: a.nombre, rol: a.rol, filas: a.filas.length, sinLlave, llavesUnicas: cuenta.size, llavesRepetidas: repetidas.length, filasDeLlavesRepetidas: repetidas.reduce((s, [, n]) => s + n, 0),
+    const valor = a.columnaValor ? a.filas.reduce((s, f) => s + (aNumero(f[a.columnaValor]) ?? 0), 0) : null;
+    return { nombre: a.nombre, rol: a.rol, columnaValor: a.columnaValor || '', valor, filas: a.filas.length, sinLlave, llavesUnicas: cuenta.size, llavesRepetidas: repetidas.length, filasDeLlavesRepetidas: repetidas.reduce((s, [, n]) => s + n, 0),
       ejemplosRepetidas: repetidas.sort((x, y) => y[1] - x[1]).slice(0, 5).map(([k, n]) => k + ' (' + n + ' filas)'), llaves: new Set(cuenta.keys()) };
   });
   const todas = new Set(); porArchivo.forEach(p => p.llaves.forEach(k => todas.add(k)));
@@ -266,9 +278,9 @@ export function armarHojasEspeciales(archivos, procesoCorto = ''){
     if(peri.columnaCumplimiento){
       const cumple = peri.filas.filter(f => normalize(String(f[peri.columnaCumplimiento] || '')).trim() === 'cumple');
       const filas = cumple.map(f => setBase ? { ...f, __enBase: setBase.has(normalizarLlave(f[peri.columnaLlave])) ? 'Sí' : 'No' } : f);
-      hojas.push({ nombre: 'Peritaje CUMPLE', columnas: peri.columnas, extras: setBase ? [{ key: '__enBase', header: 'En la base de la demanda' }] : [], filas });
+      hojas.push({ nombre: 'Peritaje CUMPLE', columnas: peri.columnas, extras: setBase ? [{ key: '__enBase', header: 'En la base de la demanda' }] : [], filas, columnaLlave: peri.columnaLlave, columnaValor: peri.columnaValor || '' });
       const llavesCumple = new Set(cumple.map(f => normalizarLlave(f[peri.columnaLlave])).filter(Boolean));
-      info.peritaje = { archivo: peri.nombre, columna: peri.columnaCumplimiento, filasTotales: peri.filas.length, cumple: cumple.length, noCumple: peri.filas.filter(f => normalize(String(f[peri.columnaCumplimiento] || '')).trim() === 'no cumple').length, llavesCumple: llavesCumple.size };
+      info.peritaje = { archivo: peri.nombre, columna: peri.columnaCumplimiento, filasTotales: peri.filas.length, cumple: cumple.length, noCumple: peri.filas.filter(f => normalize(String(f[peri.columnaCumplimiento] || '')).trim() === 'no cumple').length, llavesCumple: llavesCumple.size, columnaValor: peri.columnaValor || '', valorCumple: peri.columnaValor ? cumple.reduce((s, f) => s + (aNumero(f[peri.columnaValor]) ?? 0), 0) : null };
     }else info.peritajeSinColumna = true;
   }
   if(des){
@@ -294,7 +306,7 @@ export function armarHojasEspeciales(archivos, procesoCorto = ''){
     if(setBase) extras.push({ key: '__vigente', header: 'Anotación: vigente o no en la base de la demanda' });
     if(setPeri) extras.push({ key: '__enPeritaje', header: 'En el peritaje' });
     otros.forEach((o, i) => extras.push({ key: '__otro' + i, header: 'En ' + o.nombre }));
-    hojas.push({ nombre: porProceso ? 'Desistimientos ' + claveBuscada : 'Desistimientos cruzados', columnas: des.columnas, extras, filas });
+    hojas.push({ nombre: porProceso ? 'Desistimientos ' + claveBuscada : 'Desistimientos cruzados', columnas: des.columnas, extras, filas, columnaLlave: des.columnaLlave, columnaValor: des.columnaValor || '' });
     const colDesistir = des.columnas.find(c => /valor a desistir/.test(normalize(c))), colVigente = des.columnas.find(c => /valor vigente/.test(normalize(c)));
     info.desistimientos = { archivo: des.nombre, proceso: porProceso ? claveBuscada : '', sinColumnaProceso: !!procesoCorto && !colProceso, hoja: porProceso ? 'Desistimientos ' + claveBuscada : 'Desistimientos cruzados', filasTotales: des.filas.length, cruzan: filas.length, vigentes: filas.filter(f => String(f.__vigente).startsWith('Vigente')).length,
       noEstanEnBase: filas.filter(f => String(f.__vigente).startsWith('No está')).length, valorADesistir: colDesistir ? filas.reduce((s, f) => s + numero(f[colDesistir]), 0) : null, valorVigente: colVigente ? filas.reduce((s, f) => s + numero(f[colVigente]), 0) : null };
@@ -378,6 +390,49 @@ function encabezarHoja(ws, columnas){
   ws.views = [{ state:'frozen', ySplit:1 }];
 }
 
+// Pie de cada hoja de datos (2026-11-09, pedido del usuario: «en todas las hojas subtotales de la columna Valor de cartera Actual — siempre valor actual o similar — y un conteo de
+// recobros únicos por la misma columna que se cruza»): las columnas de dinero se escriben como NÚMEROS (con formato de pesos y a la derecha) y debajo de los datos van, tras una fila en
+// blanco, el SUBTOTAL de cada columna de valor (fórmula de Excel: se ajusta a lo que dejes visible al filtrar), las filas visibles y los recobros ÚNICOS por la columna llave.
+function escribirDatosConPie(ws, cols, filas, { columnaLlave, columnaValor }){
+  const idx = key => cols.findIndex(c => c.key === key) + 1;
+  const dinero = cols.filter(c => esColumnaDinero(c.header) || c.key === columnaValor).map(c => c.key);
+  const sumas = new Map(dinero.map(k => [k, 0]));
+  filas.forEach(f => {
+    const fila = { ...f };
+    dinero.forEach(k => { const n = aNumero(fila[k]); if(n !== null){ fila[k] = n; sumas.set(k, sumas.get(k) + n); } });
+    const row = ws.addRow(fila);
+    dinero.forEach(k => { const c = row.getCell(idx(k)); if(typeof c.value === 'number'){ c.numFmt = FORMATO_DINERO; c.alignment = { horizontal: 'right' }; } });
+  });
+  if(!filas.length) return;
+  const ultima = filas.length + 1;
+  const letra = n => ws.getColumn(n).letter;
+  const llaves = new Set(filas.map(f => normalizarLlave(f[columnaLlave])).filter(Boolean));
+  // Cuadro del pie, como lo pidió el usuario (2026-11-09): debajo de la columna de valor, «VALOR» con el subtotal y al lado «RECOBROS» con la cantidad de recobros únicos. Ambos son fórmulas de
+  // Excel que siguen lo que se deje visible al filtrar (con el resultado ya calculado); sin columna de valor solo va «RECOBROS», debajo de la columna llave.
+  const colLlave = idx(columnaLlave) || 1;
+  const colValor = columnaValor ? idx(columnaValor) : 0;
+  const colRec = colValor ? colValor + 1 : colLlave;
+  const colIni = colValor || colLlave;
+  const rl = letra(colLlave), rango = rl + '2:' + rl + ultima;
+  const fUnicos = 'SUMPRODUCT(SUBTOTAL(103,OFFSET(' + rl + '2,ROW(' + rango + ')-ROW(' + rl + '2),0))/COUNTIF(' + rango + ',' + rango + '&))';
+  const borde = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+  ws.addRow([]); ws.addRow([]);
+  const rEnc = ws.addRow([]), rVal = ws.addRow([]);
+  if(colValor){
+    const cEnc = rEnc.getCell(colValor); cEnc.value = 'VALOR';
+    const cVal = rVal.getCell(colValor); cVal.value = { formula: 'SUBTOTAL(109,' + letra(colValor) + '2:' + letra(colValor) + ultima + ')', result: sumas.get(columnaValor) || 0 }; cVal.numFmt = FORMATO_DINERO;
+    ws.getColumn(colValor).width = Math.max(ws.getColumn(colValor).width || 0, 24);
+  }
+  rEnc.getCell(colRec).value = 'RECOBROS';
+  rVal.getCell(colRec).value = { formula: fUnicos, result: llaves.size };
+  ws.getColumn(colRec).width = Math.max(ws.getColumn(colRec).width || 0, 16);
+  for(let n = colIni; n <= colRec; n++){
+    [rEnc.getCell(n), rVal.getCell(n)].forEach(c => { c.border = borde; c.alignment = { horizontal: 'center', vertical: 'middle' }; });
+    rEnc.getCell(n).font = { name: 'Calibri', size: 12, bold: true };
+    rVal.getCell(n).font = { name: 'Calibri', size: 14, bold: true };
+  }
+}
+
 // Excel de salida con una hoja "Revisión" (resumen, una fila por llave
 // única) + una hoja por cada archivo subido (todas sus columnas
 // originales + Observación) — pedido explícito del usuario 2026-09-03.
@@ -389,14 +444,14 @@ export async function generarExcelCruce(nombreArchivo, archivos, { resumen, porA
   // Hoja «Resumen» (lo primero que se ve): lo que encontró el análisis, en renglones simples.
   if(analisis || infoEspecial){
     const ws = wb.addWorksheet('Resumen');
-    ws.columns = [{ width: 46 }, { width: 22 }, { width: 22 }, { width: 22 }, { width: 22 }, { width: 50 }];
-    const titulo = texto => { const r = ws.addRow([texto]); r.font = { name: 'Calibri', size: 12, bold: true, color: { argb: 'FFFFFFFF' } }; r.eachCell(c => { c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLOR_ENCABEZADO } }; }); ws.mergeCells(r.number, 1, r.number, 6); };
+    ws.columns = [{ width: 46 }, { width: 22 }, { width: 22 }, { width: 22 }, { width: 22 }, { width: 34 }, { width: 22 }, { width: 50 }];
+    const titulo = texto => { const r = ws.addRow([texto]); r.font = { name: 'Calibri', size: 12, bold: true, color: { argb: 'FFFFFFFF' } }; r.eachCell(c => { c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLOR_ENCABEZADO } }; }); ws.mergeCells(r.number, 1, r.number, 8); };
     const encab = (...cols) => { const r = ws.addRow(cols); r.font = { bold: true }; r.eachCell(c => { c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE3EFEE' } }; }); };
     const nf = n => (n == null ? '' : Number(n));
     if(analisis){
       titulo('Los archivos cruzados');
-      encab('Archivo', 'Filas', 'Llaves únicas', 'Filas sin llave', 'Llaves repetidas', 'Ejemplos de llaves repetidas');
-      analisis.porArchivo.forEach(p => ws.addRow([p.nombre, p.filas, p.llavesUnicas, p.sinLlave, p.llavesRepetidas, p.ejemplosRepetidas.join(', ')]));
+      encab('Archivo', 'Filas', 'Recobros únicos', 'Filas sin llave', 'Llaves repetidas', 'Columna de valor', 'Subtotal del valor', 'Ejemplos de llaves repetidas');
+      analisis.porArchivo.forEach(p => { const r = ws.addRow([p.nombre, p.filas, p.llavesUnicas, p.sinLlave, p.llavesRepetidas, p.columnaValor, p.valor == null ? '' : p.valor, p.ejemplosRepetidas.join(', ')]); r.getCell(7).numFmt = FORMATO_DINERO; });
       ws.addRow([]);
       titulo('En cuántos archivos está cada llave (' + analisis.llavesTotales + ' llaves en total)');
       encab('Dónde está', 'Llaves');
@@ -407,6 +462,7 @@ export async function generarExcelCruce(nombreArchivo, archivos, { resumen, porA
       const p = infoEspecial.peritaje;
       titulo('Peritaje — ' + p.columna);
       ws.addRow(['Filas del peritaje', nf(p.filasTotales)]); ws.addRow(['Filas que CUMPLEN (hoja «Peritaje CUMPLE»)', nf(p.cumple)]); ws.addRow(['Filas que NO CUMPLEN', nf(p.noCumple)]); ws.addRow(['Radicados distintos que cumplen', nf(p.llavesCumple)]);
+      if(p.valorCumple != null){ const r = ws.addRow(['Subtotal de «' + p.columnaValor + '» de las filas que CUMPLEN', nf(p.valorCumple)]); r.getCell(2).numFmt = FORMATO_DINERO; }
       ws.addRow([]);
     }
     if(infoEspecial?.peritajeSinColumna){ titulo('Peritaje'); ws.addRow(['No se eligió la columna de cumplimiento de requisitos esenciales: no se armó la hoja «Peritaje CUMPLE».']); ws.addRow([]); }
@@ -430,6 +486,13 @@ export async function generarExcelCruce(nombreArchivo, archivos, { resumen, porA
   ];
   encabezarHoja(wsRevision, columnasRevision);
   resumen.forEach(f => wsRevision.addRow(f));
+  if(resumen.length){
+    wsRevision.addRow([]);
+    const ult = resumen.length + 1, pie = wsRevision.addRow([]);
+    pie.getCell(1).value = 'TOTAL (' + resumen.length + ' llaves)';
+    archivos.forEach((a, i) => { const n = i + 2, c = pie.getCell(n); c.value = { formula: 'SUBTOTAL(109,' + wsRevision.getColumn(n).letter + '2:' + wsRevision.getColumn(n).letter + ult + ')', result: resumen.reduce((s, f) => s + (f['cantidad_' + i] || 0), 0) }; });
+    pie.eachCell({ includeEmpty: true }, (c, n) => { if(n <= archivos.length + 2){ c.font = { name: 'Calibri', bold: true }; c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE3EFEE' } }; } });
+  }
 
   // Bug real 2026-09-03, reportado por el usuario ("Worksheet name already
   // exists"): 2 archivos con nombres largos y parecidos (ej. "CUADRO ANEXO
@@ -457,18 +520,21 @@ export async function generarExcelCruce(nombreArchivo, archivos, { resumen, porA
     // Nombre de hoja de Excel: máximo 31 caracteres, sin ciertos símbolos.
     const nombreHoja = nombreDeHojaUnico(etiquetaHoja || nombre);
     const ws = wb.addWorksheet(nombreHoja);
-    encabezarHoja(ws, [
+    const colsHoja = [
       ...columnas.map(c => ({ header:c, key:c, width:18 })),
       { header:"Observación", key:"__observacion", width:50 },
-    ]);
-    filas.forEach(f => ws.addRow(f));
+    ];
+    encabezarHoja(ws, colsHoja);
+    const origen = archivos.find(a => a.nombre === nombre) || {};
+    escribirDatosConPie(ws, colsHoja, filas, { columnaLlave: origen.columnaLlave, columnaValor: origen.columnaValor });
   });
 
   // Hojas especiales (Peritaje CUMPLE, Desistimientos cruzados): todas las columnas del archivo, más las que agrega el cruce.
   (hojasEspeciales || []).forEach(h => {
     const ws = wb.addWorksheet(nombreDeHojaUnico(h.nombre));
-    encabezarHoja(ws, [...h.columnas.map(c => ({ header: c, key: c, width: 18 })), ...h.extras.map(x => ({ header: x.header, key: x.key, width: 34 }))]);
-    h.filas.forEach(f => ws.addRow(f));
+    const colsEsp = [...h.columnas.map(c => ({ header: c, key: c, width: 18 })), ...h.extras.map(x => ({ header: x.header, key: x.key, width: 34 }))];
+    encabezarHoja(ws, colsEsp);
+    escribirDatosConPie(ws, colsEsp, h.filas, { columnaLlave: h.columnaLlave, columnaValor: h.columnaValor });
   });
 
   const buffer = await wb.xlsx.writeBuffer();
