@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { mensajeError, listarExcelDesistimientosSOS, descargarArchivoSharePoint, RUTA_DESISTIMIENTOS_SOS } from '../lib/graph';
 import {
   cargarWorkbook, nombresDeHojas, leerHoja, compararArchivos, generarExcelCruce,
-  ROLES_CRUCE, detectarRol, sugerirHoja, sugerirColumnaLlave, sugerirColumnaCumplimiento, analizarArchivos, armarHojasEspeciales,
+  ROLES_CRUCE, detectarRol, sugerirProcesoCorto, procesosDelArchivo, sugerirHoja, sugerirColumnaLlave, sugerirColumnaCumplimiento, analizarArchivos, armarHojasEspeciales,
 } from '../lib/cruceArchivos';
 import { IconTextButton } from './IconButton';
 
@@ -156,6 +156,7 @@ export default function CruceArchivosTab({ notify, config, liveMode }){
   const [slots, setSlots] = useState([{ ...SLOT_VACIO, rol:'base' }, { ...SLOT_VACIO }]);
   const [resultado, setResultado] = useState(null);
   const [generandoExcel, setGenerandoExcel] = useState(false);
+  const [procesoManual, setProcesoManual] = useState('');   // el número corto del proceso de la demanda; vacío = el que propone el portal
 
   function actualizarSlot(i, nuevo){
     setSlots(prev => prev.map((s, idx) => idx===i ? nuevo : s));
@@ -174,14 +175,20 @@ export default function CruceArchivosTab({ notify, config, liveMode }){
     return { nombre: repetido ? base + ' · ' + s.hoja : base, nombreHoja: repetido ? s.hoja : '', rol: s.rol, columnaLlave: s.columnaLlave, columnaCumplimiento: s.columnaCumplimiento, columnas: s.columnas, filas: s.filas };
   }
 
+  const archivosLeidos = slots.filter(s => s.file && s.filas).map(aArchivo);
+  const procesoSugerido = sugerirProcesoCorto(archivosLeidos);
+  const archivoDes = archivosLeidos.find(a => a.rol === 'desistimientos');
+  const procesosDelDes = archivoDes ? procesosDelArchivo(archivoDes) : [];
+  const procesoCorto = procesoManual.trim() || procesoSugerido;
+
   function handleComparar(){
     const todos = slots.map(aArchivo);
     // Los desistimientos (decenas de miles de filas) no entran al cruce general: alimentan su propia hoja.
     const entreSi = todos.filter(a => a.rol !== 'desistimientos');
     const cruce = entreSi.length >= 2 ? compararArchivos(entreSi) : { resumen: [], porArchivo: [] };
     const analisis = analizarArchivos(entreSi);
-    const { hojas, info } = armarHojasEspeciales(todos);
-    setResultado({ cruce, entreSi, analisis, hojasEspeciales: hojas, infoEspecial: info });
+    const { hojas, info } = armarHojasEspeciales(todos, procesoCorto);
+    setResultado({ cruce, entreSi, analisis, hojasEspeciales: hojas, infoEspecial: info, procesoCorto });
     notify?.("Cruce listo.", 'success');
   }
 
@@ -190,7 +197,8 @@ export default function CruceArchivosTab({ notify, config, liveMode }){
     setGenerandoExcel(true);
     try{
       const hoyISO = new Date().toISOString().slice(0,10);
-      await generarExcelCruce(`Cruce de archivos ${hoyISO}`, resultado.entreSi, resultado.cruce, { analisis: resultado.analisis, hojasEspeciales: resultado.hojasEspeciales, infoEspecial: resultado.infoEspecial });
+      // Nombre del archivo (pedido del usuario 2026-11-09): número corto del proceso + «Análisis» + la fecha, p. ej. «2015-00826 Análisis 2026-11-09».
+      await generarExcelCruce(`${resultado.procesoCorto || 'Cruce de archivos'} Análisis ${hoyISO}`, resultado.entreSi, resultado.cruce, { analisis: resultado.analisis, hojasEspeciales: resultado.hojasEspeciales, infoEspecial: resultado.infoEspecial });
     }catch(err){
       console.error(err);
       notify?.("No se pudo generar el Excel del cruce: " + mensajeError(err), 'error');
@@ -206,8 +214,8 @@ export default function CruceArchivosTab({ notify, config, liveMode }){
       <div className="panel-body">
         <p style={{margin:'0 0 16px', color:'var(--texto-suave)', fontSize:13}}>
           Sube 2 o más archivos Excel para cruzarlos por una columna en común (el número de radicado). Por cada archivo di qué es (base de la demanda, peritaje, desistimientos u otro), elige la hoja y confirma la columna — el portal propone
-          «Ultimo Radicado MYT0102», «RADICADO O ENTREGA» o «RADICADO». Con un <strong>peritaje</strong> arma además la hoja de los recobros que CUMPLEN, y con los <strong>desistimientos</strong> la hoja de los que cruzan y si siguen vigentes en la base de la demanda.
-          Consejo: el mismo Excel se puede subir dos veces con hojas distintas (por ejemplo «Base original» y «Base depurada», esta última como «Otro archivo»): la hoja de desistimientos dirá en cuál de las dos sigue estando cada radicado.
+          «Ultimo Radicado MYT0102», «RADICADO O ENTREGA» o «RADICADO». Con un <strong>peritaje</strong> arma además la hoja de los recobros que CUMPLEN, y con los <strong>desistimientos</strong> la hoja con todos los del proceso de la demanda y una anotación final de si siguen vigentes en la base.
+          Consejo: el mismo Excel se puede subir dos veces con hojas distintas (por ejemplo «Base original» como base y «Base depurada» como «Otro archivo»): la hoja de desistimientos dirá en cuál de las dos sigue estando cada radicado.
         </p>
 
         {slots.map((slot, i) => (
@@ -224,6 +232,23 @@ export default function CruceArchivosTab({ notify, config, liveMode }){
           />
         ))}
 
+        {archivoDes && (
+          <div className="panel" style={{marginBottom:14}}>
+            <div className="panel-body" style={{display:'flex', gap:14, flexWrap:'wrap', alignItems:'flex-end'}}>
+              <div className="field" style={{minWidth:260}}>
+                <label>Proceso de esta demanda (número corto){!procesoManual.trim() && procesoSugerido ? ' · propuesto por el portal' : ''}</label>
+                <input type="text" list="cruce-procesos-des" value={procesoManual} onChange={e => { setProcesoManual(e.target.value); setResultado(null); }} placeholder={procesoSugerido || 'ej. 2015-00826'} />
+                <datalist id="cruce-procesos-des">{procesosDelDes.map(p => <option key={p.proceso} value={p.proceso}>{p.filas} filas</option>)}</datalist>
+              </div>
+              <span className="save-hint">
+                {procesoCorto
+                  ? 'La hoja de desistimientos trae TODOS los del proceso ' + procesoCorto + ' (' + (procesosDelDes.find(p => p.proceso === procesoCorto)?.filas ?? 0) + ' filas), con su anotación al final de si siguen en la base de la demanda.'
+                  : 'Escribe el número corto del proceso para traer todos sus desistimientos; sin él solo se traen los que cruzan por radicado.'}
+              </span>
+            </div>
+          </div>
+        )}
+
         <div style={{display:'flex', gap:10, flexWrap:'wrap', marginBottom:18}}>
           <button type="button" className="btn-secondary" onClick={agregarArchivo}>+ Agregar otro archivo</button>
           <IconTextButton icon="add" variant="primary" onClick={handleComparar} disabled={!listos}>Comparar</IconTextButton>
@@ -235,7 +260,7 @@ export default function CruceArchivosTab({ notify, config, liveMode }){
               <span className="badge badge-verde">{resultado.analisis.llavesTotales} llave(s) en total</span>
               {resultado.entreSi.length >= 2 && <span className={conObservacion ? "badge badge-alerta" : "badge badge-gris"}>{conObservacion} con observación</span>}
               {peri && <span className="badge badge-verde">{peri.cumple} fila(s) CUMPLEN de {peri.filasTotales}</span>}
-              {des && <span className="badge badge-naranja">{des.cruzan} desistimiento(s) cruzan</span>}
+              {des && <span className="badge badge-naranja">{des.cruzan} desistimiento(s){des.proceso ? ' del proceso ' + des.proceso : ' cruzan'}</span>}
               {des && <span className="badge badge-verde">{des.vigentes} vigentes en la base</span>}
               {des && <span className="badge badge-gris">{des.noEstanEnBase} no están en la base</span>}
             </div>
@@ -259,7 +284,7 @@ export default function CruceArchivosTab({ notify, config, liveMode }){
               </IconTextButton>
             </div>
             <p className="save-hint">
-              El Excel trae: «Resumen» (lo que encontró el análisis), «Revisión» (por llave, con la observación de cada una), una hoja por cada archivo{peri ? ', «Peritaje CUMPLE» (solo los recobros que cumplen)' : ''}{des ? ' y «Desistimientos cruzados» (con si siguen vigentes en la base de la demanda)' : ''}.
+              El Excel trae: «Resumen» (lo que encontró el análisis), «Revisión» (por llave, con la observación de cada una), una hoja por cada archivo{peri ? ', «Peritaje CUMPLE» (solo los recobros que cumplen)' : ''}{des ? ' y «' + des.hoja + '» (' + (des.proceso ? 'todos los desistimientos de ese proceso' : 'los que cruzan') + ', con la anotación al final de si siguen vigentes en la base de la demanda)' : ''}.
             </p>
           </>
         )}

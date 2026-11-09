@@ -193,6 +193,41 @@ export function sugerirColumnaCumplimiento(columnas){
 
 const numero = v => { const n = Number(String(v ?? '').replace(/[^\d.,-]/g, '').replace(/,/g, '')); return Number.isFinite(n) ? n : 0; };
 
+/** El número corto de un proceso («2015-00826», «2015 00826», «2015-826»…) en una forma única para comparar. */
+export function claveProceso(v){
+  const t = String(v ?? '').trim();
+  const m = /(\d{4})\D+0*(\d{1,5})\b/.exec(t);
+  return m ? m[1] + '-' + m[2].padStart(5, '0') : normalize(t);
+}
+
+/** La columna del archivo de desistimientos que dice a qué proceso pertenece cada recobro («RADICACIÓN PROCESO»). */
+export function columnaProceso(columnas){
+  return columnas.find(c => /radicacion\s+proceso/.test(normalize(c))) || columnas.find(c => normalize(c).trim() === 'proceso') || '';
+}
+
+/** Los procesos que trae el archivo de desistimientos, con cuántas filas tiene cada uno (de más a menos). */
+export function procesosDelArchivo(archivo){
+  if(!archivo || !archivo.filas) return [];
+  const col = columnaProceso(archivo.columnas || []);
+  if(!col) return [];
+  const cuenta = new Map();
+  archivo.filas.forEach(f => { const k = claveProceso(f[col]); if(k) cuenta.set(k, (cuenta.get(k) || 0) + 1); });
+  return [...cuenta.entries()].sort((a, b) => b[1] - a[1]).map(([proceso, filas]) => ({ proceso, filas }));
+}
+
+/** El proceso de la demanda que se está cruzando: el número corto del nombre de la base («Base de datos No. 2015-00826»), o del peritaje, o el que más trae la columna PROCESO del peritaje. */
+export function sugerirProcesoCorto(archivos){
+  const deNombre = a => { const m = /(\d{4})\D{1,3}(\d{5})/.exec(String(a.nombre || '')); return m ? m[1] + '-' + m[2] : ''; };
+  const base = archivos.find(a => a.rol === 'base'), peri = archivos.find(a => a.rol === 'peritaje');
+  const n = (base && deNombre(base)) || (peri && deNombre(peri));
+  if(n) return n;
+  if(peri && peri.filas){
+    const col = peri.columnas.find(c => normalize(c).trim() === 'proceso');
+    if(col){ const cuenta = new Map(); peri.filas.forEach(f => { const k = claveProceso(f[col]); if(k) cuenta.set(k, (cuenta.get(k) || 0) + 1); }); const top = [...cuenta.entries()].sort((a, b) => b[1] - a[1])[0]; if(top) return top[0]; }
+  }
+  return '';
+}
+
 /** Análisis tipo analista de datos de los archivos que se cruzan entre sí (sin los de desistimientos): por archivo, cuántas filas, llaves únicas, repetidas y vacías; y en cuántos archivos está cada llave. */
 export function analizarArchivos(archivos){
   const porArchivo = archivos.map(a => {
@@ -220,7 +255,7 @@ export function analizarArchivos(archivos){
  *    si ese radicado sigue VIGENTE en la base de la demanda o NO está en ella.
  * Devuelve { hojas:[{ nombre, columnas, extras, filas }], info }.
  */
-export function armarHojasEspeciales(archivos){
+export function armarHojasEspeciales(archivos, procesoCorto = ''){
   const base = archivos.find(a => a.rol === 'base') || archivos.find(a => a.rol === 'generico');
   const peri = archivos.find(a => a.rol === 'peritaje');
   const des = archivos.find(a => a.rol === 'desistimientos');
@@ -239,24 +274,29 @@ export function armarHojasEspeciales(archivos){
   if(des){
     // Los demás archivos que no son la base ni el peritaje (p. ej. la «Base depurada»): una columna Sí/No por cada uno, para ver en cuáles sigue estando el radicado.
     const otros = archivos.filter(a => a !== base && a !== peri && a !== des && a.rol !== 'desistimientos').map(a => ({ nombre: a.nombre, llaves: llavesDe(a) }));
+    // Con el número corto del proceso (RADICACIÓN PROCESO) se toman TODOS los desistimientos de esa demanda, como si se filtrara el proceso en el Excel y se copiara a una hoja nueva;
+    // sin proceso (o sin esa columna) se toman los que cruzan por radicado con la base, el peritaje u otro archivo.
+    const colProceso = columnaProceso(des.columnas);
+    const porProceso = !!procesoCorto && !!colProceso;
+    const claveBuscada = claveProceso(procesoCorto);
     const filas = [];
     des.filas.forEach(f => {
       const k = normalizarLlave(f[des.columnaLlave]);
-      if(!k) return;
-      const enBase = !!setBase && setBase.has(k), enPeri = !!setPeri && setPeri.has(k);
-      const enOtros = otros.map(o => o.llaves.has(k));
-      if(!enBase && !enPeri && !enOtros.some(Boolean)) return;
-      const fila = { ...f, __vigente: setBase ? (enBase ? 'Vigente (está en la base de la demanda)' : 'No está en la base de la demanda') : '', __enPeritaje: setPeri ? (enPeri ? 'Sí' : 'No') : '' };
+      if(porProceso ? claveProceso(f[colProceso]) !== claveBuscada : !k) return;
+      const enBase = !!setBase && !!k && setBase.has(k), enPeri = !!setPeri && !!k && setPeri.has(k);
+      const enOtros = otros.map(o => !!k && o.llaves.has(k));
+      if(!porProceso && !enBase && !enPeri && !enOtros.some(Boolean)) return;
+      const fila = { ...f, __vigente: setBase ? (enBase ? 'Vigente en la base de la demanda' : 'No está en la base de la demanda') : '', __enPeritaje: setPeri ? (enPeri ? 'Sí' : 'No') : '' };
       otros.forEach((o, i) => { fila['__otro' + i] = enOtros[i] ? 'Sí' : 'No'; });
       filas.push(fila);
     });
     const extras = [];
-    if(setBase) extras.push({ key: '__vigente', header: 'Vigente o no en la base de la demanda' });
+    if(setBase) extras.push({ key: '__vigente', header: 'Anotación: vigente o no en la base de la demanda' });
     if(setPeri) extras.push({ key: '__enPeritaje', header: 'En el peritaje' });
     otros.forEach((o, i) => extras.push({ key: '__otro' + i, header: 'En ' + o.nombre }));
-    hojas.push({ nombre: 'Desistimientos cruzados', columnas: des.columnas, extras, filas });
+    hojas.push({ nombre: porProceso ? 'Desistimientos ' + claveBuscada : 'Desistimientos cruzados', columnas: des.columnas, extras, filas });
     const colDesistir = des.columnas.find(c => /valor a desistir/.test(normalize(c))), colVigente = des.columnas.find(c => /valor vigente/.test(normalize(c)));
-    info.desistimientos = { archivo: des.nombre, filasTotales: des.filas.length, cruzan: filas.length, vigentes: filas.filter(f => String(f.__vigente).startsWith('Vigente')).length,
+    info.desistimientos = { archivo: des.nombre, proceso: porProceso ? claveBuscada : '', sinColumnaProceso: !!procesoCorto && !colProceso, hoja: porProceso ? 'Desistimientos ' + claveBuscada : 'Desistimientos cruzados', filasTotales: des.filas.length, cruzan: filas.length, vigentes: filas.filter(f => String(f.__vigente).startsWith('Vigente')).length,
       noEstanEnBase: filas.filter(f => String(f.__vigente).startsWith('No está')).length, valorADesistir: colDesistir ? filas.reduce((s, f) => s + numero(f[colDesistir]), 0) : null, valorVigente: colVigente ? filas.reduce((s, f) => s + numero(f[colVigente]), 0) : null };
   }
   return { hojas, info };
@@ -373,8 +413,10 @@ export async function generarExcelCruce(nombreArchivo, archivos, { resumen, porA
     if(infoEspecial?.desistimientos){
       const d = infoEspecial.desistimientos;
       titulo('Desistimientos — ' + d.archivo);
-      ws.addRow(['Filas del archivo de desistimientos', nf(d.filasTotales)]); ws.addRow(['Filas que cruzan con la base o el peritaje (hoja «Desistimientos cruzados»)', nf(d.cruzan)]);
+      ws.addRow(['Filas del archivo de desistimientos', nf(d.filasTotales)]);
+      ws.addRow([d.proceso ? 'Desistimientos del proceso ' + d.proceso + ' (hoja «' + d.hoja + '»)' : 'Filas que cruzan con la base o el peritaje (hoja «' + d.hoja + '»)', nf(d.cruzan)]);
       ws.addRow(['De ellas, vigentes en la base de la demanda', nf(d.vigentes)]); ws.addRow(['De ellas, que NO están en la base de la demanda', nf(d.noEstanEnBase)]);
+      if(d.sinColumnaProceso) ws.addRow(['Ojo: el archivo no trae una columna «RADICACIÓN PROCESO»; se cruzó por radicado.']);
       if(d.valorADesistir != null){ const r = ws.addRow(['Suma de «Valor a desistir» de esas filas', nf(d.valorADesistir)]); r.getCell(2).numFmt = '"$" #,##0.00'; }
       if(d.valorVigente != null){ const r = ws.addRow(['Suma de «Valor vigente» de esas filas', nf(d.valorVigente)]); r.getCell(2).numFmt = '"$" #,##0.00'; }
     }
