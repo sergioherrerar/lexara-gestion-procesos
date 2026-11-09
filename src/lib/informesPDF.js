@@ -137,9 +137,14 @@ export function dibujarResumenBox(doc, x, y, width, items){
   doc.setDrawColor(...VERDE_OSCURO);
   doc.setLineWidth(0.3);
   doc.roundedRect(x, y, width, alto, 2, 2, 'FD');
-  const anchoCelda = width / items.length;
+  // Cada celda puede pedir más ancho con `peso` (p. ej. el cargo, que suele ser largo); por defecto todas valen 1.
+  const pesos = items.map(it => it.peso || 1);
+  const pesoTotal = pesos.reduce((s, p) => s + p, 0);
+  let acumulado = 0;
   items.forEach((item, i) => {
-    const cx = x + anchoCelda * i;
+    const anchoCelda = width * pesos[i] / pesoTotal;
+    const cx = x + acumulado;
+    acumulado += anchoCelda;
     if(i > 0){
       doc.setDrawColor(...VERDE_OSCURO); doc.setLineWidth(0.15);
       doc.line(cx, y + 3.5, cx, y + alto - 3.5);
@@ -148,7 +153,17 @@ export function dibujarResumenBox(doc, x, y, width, items){
     doc.text(item.label.toUpperCase(), cx + anchoCelda/2, y + 6.5, {align:'center'});
     const valor = String(item.value);
     doc.setFont('helvetica','bold'); doc.setFontSize(valor.length > 16 || item.pequeno ? 9.5 : 12.5); doc.setTextColor(...VERDE_OSCURO);
-    doc.text(valor, cx + anchoCelda/2, y + 13.5, {align:'center'});
+    // El valor se achica hasta que quepa dentro de su celda (antes «Contador Publico» se salía de la caja por la izquierda); si ni así cabe (un cargo largo), se parte en dos líneas.
+    let tamano = valor.length > 16 || item.pequeno ? 9.5 : 12.5;
+    doc.setFontSize(tamano);
+    while(doc.getTextWidth(valor) > anchoCelda - 5 && tamano > 8){ tamano -= 0.5; doc.setFontSize(tamano); }
+    if(doc.getTextWidth(valor) > anchoCelda - 5){
+      doc.setFontSize(8);
+      const lineas = doc.splitTextToSize(valor, anchoCelda - 5).slice(0, 2);
+      lineas.forEach((l, k) => doc.text(l, cx + anchoCelda/2, y + 11.6 + k * 3.4, {align:'center'}));
+    }else{
+      doc.text(valor, cx + anchoCelda/2, y + 13.5, {align:'center'});
+    }
   });
   return y + alto;
 }

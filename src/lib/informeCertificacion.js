@@ -158,31 +158,42 @@ export async function generarCertificacionColaboradorPDF(colaborador, opciones =
   dibujarEncabezadoYPie();
   let y = CONTENIDO_Y_INICIAL;
   doc.setFont('helvetica','normal'); doc.setFontSize(10.5); doc.setTextColor(...TEXTO);
-  doc.text(`Bogotá D.C., ${fecha}`, MARGEN, y); y += 9;
+  doc.text(`Bogotá D.C., ${fecha}`, MARGEN, y); y += 7;
   // "A quien interese" / Asunto centrados (pedido explícito del usuario
   // 2026-08-22) — la fecha de arriba se queda alineada al margen.
-  doc.text('A quien interese:', pageWidth/2, y, {align:'center'}); y += 9;
+  doc.text('A quien interese:', pageWidth/2, y, {align:'center'}); y += 7;
   doc.setFont('helvetica','bold'); doc.setFontSize(11); doc.setTextColor(...VERDE_OSCURO);
-  doc.text(`Asunto: ${titulo}`, pageWidth/2, y, {align:'center'}); y += 8;
+  doc.text(`Asunto: ${titulo}`, pageWidth/2, y, {align:'center'}); y += 6;
 
   y = dibujarResumenBox(doc, MARGEN, y, pageWidth - MARGEN*2, [
-    { label:'Cargo', value: colaborador.Cargo || "—" },
+    { label:'Cargo', value: colaborador.Cargo || "—", peso: 1.7 },
     { label:'Tipo de contrato', value: tipoContratoCanonico(colaborador.TipoColaborador) || 'Indefinido' },
     { label:'Fecha de ingreso', value: fechaCortaVisible(colaborador.FechaIngreso) },
     { label:'Tiempo de servicio', value: tiempoDeServicio(colaborador.FechaIngreso, colaborador.FechaRetiro, hoy) || '—', pequeno: true },
     { label: colaborador.FechaRetiro ? 'Fecha de retiro' : 'Estado', value: colaborador.FechaRetiro ? fechaCortaVisible(colaborador.FechaRetiro) : 'Vigente' },
-  ]) + 9;
+  ]) + 7;
 
   doc.setFontSize(10.5); doc.setTextColor(...TEXTO);
-  y = dibujarParrafoConNegritas(doc, segmentosCertificacion(colaborador, esContratistaCol, hoy, { recomendacion: !!opciones.recomendacion }), MARGEN, y, pageWidth - MARGEN*2, 5.4) + 4;
+  y = dibujarParrafoConNegritas(doc, segmentosCertificacion(colaborador, esContratistaCol, hoy, { recomendacion: !!opciones.recomendacion }), MARGEN, y, pageWidth - MARGEN*2, 5.2) + 3;
   // Cierre de cortesía de las cartas del despacho, justo antes de «Cordial saludo,» y la firma.
   doc.setFont('helvetica','normal'); doc.setFontSize(10.5); doc.setTextColor(...TEXTO);
-  doc.text('Sin otro particular y agradeciendo la atención prestada.', MARGEN, y); y += 9;
+  doc.text('Sin otro particular y agradeciendo la atención prestada.', MARGEN, y); y += 7;
 
-  if(y > CONTENIDO_Y_MAXIMO - 68){
+  // Bloque de cierre: se lee la imagen ANTES de decidir si cabe, para conocer su alto real. Pedido del usuario 2026-11-09: «que todo quede en una sola hoja, sin amontonar» — antes la firma
+  // (78 mm de ancho) exigía 68 mm libres y, con poco espacio de sobra, se iba SOLA a la hoja 2. Ahora ocupa 66 mm de ancho y, si el texto es largo, se achica hasta 54 mm antes de recurrir
+  // a una segunda hoja. La línea y la nota de «generado automáticamente» reservan 12 mm bajo la firma.
+  let imagenFirma = null;
+  try{ imagenFirma = await imagenComoDataUrl(firmaCompleta); }catch(err){ console.error('No se pudo cargar la imagen de cierre, se usa el texto de respaldo:', err); }
+  const proporcionFirma = imagenFirma ? imagenFirma.alto / imagenFirma.ancho : 0.667;
+  const RESERVA_PIE = 12, ANCHO_FIRMA_NORMAL = 66, ANCHO_FIRMA_MINIMO = 54;
+  let anchoFirma = ANCHO_FIRMA_NORMAL;
+  const espacioFirma = CONTENIDO_Y_MAXIMO - RESERVA_PIE - y;
+  if(anchoFirma * proporcionFirma + 6 > espacioFirma) anchoFirma = Math.max(ANCHO_FIRMA_MINIMO, (espacioFirma - 6) / proporcionFirma);
+  if(anchoFirma * proporcionFirma + 6 > espacioFirma){
     doc.addPage();
     dibujarEncabezadoYPie();
     y = CONTENIDO_Y_INICIAL;
+    anchoFirma = ANCHO_FIRMA_NORMAL;
   }
   // Bloque de cierre completo ("Cordial saludo," + firma real + nombre/CC/TP
   // impresos) como una sola imagen — solo para Mónica, la firmante por
@@ -191,13 +202,11 @@ export async function generarCertificacionColaboradorPDF(colaborador, opciones =
   // carga por lo que sea, cae de vuelta al mismo bloque armado con texto
   // (sin la firma real) para no dejar la certificación sin cierre.
   const yInicioFirma = y;
-  try{
-    const { dataUrl, ancho, alto } = await imagenComoDataUrl(firmaCompleta);
-    const altoBloque = ANCHO_FIRMA_COMPLETA_MM * (alto/ancho);
-    doc.addImage(dataUrl, 'JPEG', MARGEN - 3, y, ANCHO_FIRMA_COMPLETA_MM, altoBloque);
+  if(imagenFirma){
+    const altoBloque = anchoFirma * proporcionFirma;
+    doc.addImage(imagenFirma.dataUrl, 'JPEG', MARGEN - 3, y, anchoFirma, altoBloque);
     y += altoBloque + 6;
-  }catch(err){
-    console.error('No se pudo cargar la imagen de cierre, se usa el texto de respaldo:', err);
+  }else{
     doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(...TEXTO);
     doc.text('Cordial saludo,', MARGEN, y); y += 20;
     doc.setFont('helvetica','bold'); doc.text(FIRMA_DEFECTO.nombre, MARGEN, y); y += 5;
