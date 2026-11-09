@@ -3253,6 +3253,22 @@ export async function subirCopiaPdfSoportes(shareUrl, fechaISO, nombreArchivo, b
   return { nombre, ruta: m[1] + ' / ' + mes, webUrl: item.webUrl || '' };
 }
 
+// Cruce de archivos → Desistimientos (2026-11-09): los Excel de «NuevosProcesosMD - Documentos / Procesos / Sos / DESISTIMIENTOS SOS» se pueden traer directo de SharePoint.
+export const RUTA_DESISTIMIENTOS_SOS = 'Procesos/Sos/DESISTIMIENTOS SOS';
+export async function listarExcelDesistimientosSOS(config){
+  const driveId = await resolverDriveIdPrincipal(config);
+  const res = await graphFetch('/drives/' + driveId + '/root:/' + encodeURIComponent(RUTA_DESISTIMIENTOS_SOS).replace(/%2F/g, '/') + ':/children?$select=id,name,size,file,lastModifiedDateTime&$top=200');
+  const archivos = (res.value || []).filter(f => f.file && /\.xlsx$/i.test(f.name) && !/^~\$/.test(f.name)).map(f => ({ id: f.id, nombre: f.name, tamano: f.size || 0, modificado: f.lastModifiedDateTime || '' }));
+  return { driveId, archivos };
+}
+/** Descarga un archivo de SharePoint y lo devuelve como File (para leerlo igual que uno subido a mano). */
+export async function descargarArchivoSharePoint(driveId, itemId, nombre){
+  const token = await getGraphToken();
+  const res = await fetch('https://graph.microsoft.com/v1.0/drives/' + driveId + '/items/' + itemId + '/content', { headers: { Authorization: 'Bearer ' + token } });
+  if(!res.ok) throw new Error('Graph ' + res.status + ' al descargar «' + nombre + '»');
+  return new File([await res.arrayBuffer()], nombre, { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+}
+
 // Documentos corporativos MD (Diligenciamiento Formatos Empresas) — viven
 // en una carpeta real dentro del sitio RAÍZ del tenant ("Administración
 // Lexara" en la UI de SharePoint, mismo sitio que ya usan Horas

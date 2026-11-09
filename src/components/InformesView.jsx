@@ -954,7 +954,7 @@ export default function InformesView({ procesos, clientes, facturas, desistimien
             <RevisionProcesosTab procesos={procesos} notify={notify} />
           </div>
         )}
-        {subTabHerramientas==='cruceArchivos' && <CruceArchivosTab notify={notify} />}
+        {subTabHerramientas==='cruceArchivos' && <CruceArchivosTab notify={notify} config={config} liveMode={liveMode} />}
         {subTabHerramientas==='liquidacionIntereses' && (
           <LiquidacionInteresesTab
             notify={notify} tasasInteres={tasasInteres} ipcMensual={ipcMensual} config={config}
