@@ -31,6 +31,9 @@ export default function ColaboradoresView({ listas, liveMode, colaboradores, sea
   const { filters, setFilter, clearFilters, rowMatches, hasActiveFilters } = useColumnFilters();
   const { sort, setSortKey, sortRows } = useColumnSort();
   const [generandoCertificacion, setGenerandoCertificacion] = useState(null); // id del colaborador mientras genera su certificación
+  // Párrafo de recomendación (calidades humanas y profesionales): la misma casilla y la misma preferencia que Administración → Certificaciones (se recuerda en este navegador).
+  const [conRecomendacion, setConRecomendacion] = useState(() => recomendacionPreferida());
+  function cambiarRecomendacion(v){ setConRecomendacion(v); try{ localStorage.setItem('lexara-cert-recomendacion', v ? 'si' : 'no'); }catch(e){ /* sin almacenamiento */ } }
 
   // Requiere Cargo y Fecha de ingreso para que el texto de la certificación
   // tenga sentido — sin esto avisa en vez de generar un PDF con "—" por todos
@@ -41,7 +44,7 @@ export default function ColaboradoresView({ listas, liveMode, colaboradores, sea
       return;
     }
     setGenerandoCertificacion(colaborador.id);
-    try{ await generarCertificacionColaboradorPDF(colaborador, { recomendacion: recomendacionPreferida() }); }
+    try{ await generarCertificacionColaboradorPDF(colaborador, { recomendacion: conRecomendacion }); }
     catch(err){ console.error(err); notify?.("No se pudo generar la certificación: " + mensajeError(err), 'error'); }
     finally { setGenerandoCertificacion(null); }
   }
@@ -57,6 +60,11 @@ export default function ColaboradoresView({ listas, liveMode, colaboradores, sea
   );
   const cumpleanos = <CumpleanosBanda colaboradores={colaboradores} canWrite={canWrite} listas={listas} config={config} liveMode={liveMode} notify={notify} />;
   const tabla = (
+    <>
+      <label className="save-hint" style={{display:'inline-flex', alignItems:'center', gap:8, margin:'0 0 10px', cursor:'pointer'}}>
+        <input type="checkbox" checked={conRecomendacion} onChange={e => cambiarRecomendacion(e.target.checked)} />
+        Incluir el párrafo de recomendación (calidades humanas y profesionales) en las certificaciones
+      </label>
       <div className="table-wrap">
         <table>
           <thead>
@@ -95,6 +103,7 @@ export default function ColaboradoresView({ listas, liveMode, colaboradores, sea
           </tbody>
         </table>
       </div>
+    </>
   );
 
   if(embedded){

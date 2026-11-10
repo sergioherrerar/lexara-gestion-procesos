@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-11-09 (150)
+- **Colaboradores MD: casilla «Incluir el párrafo de recomendación (calidades humanas y profesionales) en las certificaciones»** — reporte del usuario («no veo el botón»). Esa casilla solo estaba en Administración → Certificaciones; en Colaboradores MD el botón de PDF de cada fila usaba en silencio la última elección guardada. Ahora la casilla también está encima de la tabla de Colaboradores MD (marcada por defecto) y comparte la misma preferencia que la de Certificaciones.
+
 ## 2026-11-09 (149)
 - **Certificaciones (laboral y de prestación de servicios): todo en UNA hoja, sin amontonar** — pedido del usuario. La firma con «Cordial saludo,» y el QR se iban solos a la hoja 2 aunque la hoja 1 tenía espacio libre (la firma exigía 68 mm libres). Ahora los espacios son algo más compactos (~13 mm menos en total) y la firma mide 66 mm de ancho (antes 78); si el texto es largo se achica hasta 54 mm antes de recurrir a una segunda hoja. Vale con y sin el párrafo de recomendación (calidades humanas y profesionales) y para todas las certificaciones, que salen del mismo código. Probado: contratista con y sin recomendación, trabajador, trabajador retirado y cargo muy largo = 1 página cada uno.
 - **Caja de datos de las cartas y certificaciones: el cargo ya no se sale** — «Contador Publico» se salía de la caja por la izquierda. Ahora el valor se achica hasta caber, la celda del Cargo es más ancha en las certificaciones y, si el cargo es muy largo, se parte en dos líneas dentro de la caja (el cambio aplica a todas las cajas de resumen de los PDF).
