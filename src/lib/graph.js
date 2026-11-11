@@ -3935,11 +3935,36 @@ export function fmtMonto(n){
 // armar el nombre sugerido de PDF de Factura/Orden de compra (ver
 // FacturaDrawer.jsx/OrdenCompraDrawer.jsx) y de la ficha de proceso
 // (informeProceso.js, que trae su propia copia histórica de esta función).
+// Reglas por contrato (2026-11-11, pedido del usuario) — se aplican al abrir y guardar facturas y órdenes de compra, desde cualquier ruta del portal:
+//  · Contrato GJU-31-03-2025-431 (Administración, SOS): Proceso = «Administracion Proceso» (como se escribe en las opciones de etapa).
+//  · Contratos del Grupo Colmédica («Propuesta 20 Octubre 2021», «08 Mayo de 2013» y «Julio de 2020»): Proceso y Etapa = «Tutelas».
+export const CONTRATO_ADMINISTRACION = 'GJU-31-03-2025-431';
+export const PROCESO_ADMINISTRACION = 'Administracion Proceso';
+const CONTRATOS_GRUPO_COLMEDICA = ['propuesta 20 octubre 2021', '08 mayo de 2013', 'julio de 2020'];
+/** Contratos que NO tienen un número corto único (el de Administración trae muchos procesos; los del Grupo Colmédica son de tutelas): no se muestra ni se usa en el nombre del PDF. */
+export function contratoSinNumeroCorto(contrato){
+  const compacto = String(contrato || '').replace(/\s+/g, '').toLowerCase();
+  const texto = normalize(String(contrato || '')).replace(/\s+/g, ' ').trim();
+  return !!compacto && (compacto === CONTRATO_ADMINISTRACION.toLowerCase() || CONTRATOS_GRUPO_COLMEDICA.some(c => texto.includes(c)));
+}
+export function aplicarReglaContrato(doc){
+  if(!doc || !doc.Contrato) return doc;
+  const compacto = String(doc.Contrato).replace(/\s+/g, '').toLowerCase();
+  const texto = normalize(String(doc.Contrato)).replace(/\s+/g, ' ').trim();
+  if(compacto === CONTRATO_ADMINISTRACION.toLowerCase()){
+    return doc.Proceso === PROCESO_ADMINISTRACION ? doc : { ...doc, Proceso: PROCESO_ADMINISTRACION };
+  }
+  if(CONTRATOS_GRUPO_COLMEDICA.some(c => texto.includes(c))){
+    return doc.Proceso === 'Tutelas' && doc.EtapaContrato === 'Tutelas' ? doc : { ...doc, Proceso: 'Tutelas', EtapaContrato: 'Tutelas' };
+  }
+  return doc;
+}
+
 // Nombre de los PDF de facturas y órdenes de compra (2026-11-11, pedido del usuario): «FE <número> <cliente resumido> <etapa> <número corto>» — p. ej. «FE 826 SOS Admón Proceso 2015-00826»
 // y «OC-2026-0012 Aliansalud Admón Proceso 2015-00826». Es el mismo nombre al descargar el PDF, al guardar la copia en Soportes de gastos y al adjuntarlo a los correos.
 const CLIENTES_RESUMIDOS = [
-  [/servicio occidental de salud|\bsos\b/, 'SOS'], [/aliansalud/, 'Aliansalud'], [/colmedica/, 'Colmédica'], [/unidad medica y de diagnostico|\bumd\b/, 'UMD'],
-  [/famisanar/, 'Famisanar'], [/colpatria/, 'Colpatria'], [/salud total/, 'Salud Total'], [/coomeva/, 'Coomeva'], [/grupo colmedica/, 'Colmédica'],
+  [/servicio occidental de salud|\bsos\b/, 'SOS'], [/aliansalud/, 'Aliansalud'], [/colmedica/, 'Colmedica'], [/unidad medica y de diagnostico|\bumd\b/, 'UMD'],
+  [/famisanar/, 'Famisanar'], [/colpatria/, 'Colpatria'], [/salud total/, 'Salud Total'], [/coomeva/, 'Coomeva'], [/grupo colmedica/, 'Colmedica'],
 ];
 export function clienteResumido(razonSocial, respaldo){
   const t = normalize(String(razonSocial || respaldo || '')).replace(/\s+/g, ' ').trim();
@@ -3951,7 +3976,7 @@ export function clienteResumido(razonSocial, respaldo){
   return palabras.join(' ').slice(0, 22).trim();
 }
 const ABREVIATURAS_ETAPA = [
-  [/administracion/gi, 'Admón'], [/conciliacion/gi, 'Concil'], [/contestacion/gi, 'Contest'], [/audiencia/gi, 'Aud'], [/sentencia/gi, 'Sent'], [/reconocimiento/gi, 'Recon'],
+  [/conciliacion/gi, 'Concil'], [/contestacion/gi, 'Contest'], [/audiencia/gi, 'Aud'], [/sentencia/gi, 'Sent'], [/reconocimiento/gi, 'Recon'],
   [/radicacion/gi, 'Rad'], [/oposicion/gi, 'Oposic'], [/reposicion/gi, 'Reposic'], [/\barticulo\b/gi, 'Art'], [/\bprimera\b/gi, '1ra'], [/\bsegunda\b/gi, '2da'], [/\brecurso\b/gi, 'Rec'],
 ];
 export function etapaResumida(etapa){
@@ -3964,8 +3989,18 @@ export function etapaResumida(etapa){
 }
 /** «FE 826 SOS Admón Proceso 2015-00826»: el prefijo-número, el cliente resumido, la etapa abreviada y el número corto del proceso (las partes que falten se omiten). */
 export function nombrePdfDocumento(prefijoNumero, cliente, proceso, etapa, procesoTexto){
-  const partes = [prefijoNumero, clienteResumido(cliente?.RazonSocial, proceso?.Entidad), etapaResumida(etapa), proceso?.Radicado || procesoTexto || ''];
-  return nombreArchivoSeguro(partes.filter(Boolean).join(' ').replace(/\s+/g, ' ').trim());
+  // «Proceso» del documento (su campo; normalmente el número corto, o «Tutelas» / «Administracion Proceso»); si está vacío, el número corto del proceso del contrato.
+  const procesoDoc = String(procesoTexto || '').trim() || (proceso && !contratoSinNumeroCorto(proceso.NumeroContrato) ? proceso.Radicado : '') || '';
+  const partes = [prefijoNumero, clienteResumido(cliente?.RazonSocial, proceso?.Entidad), etapaResumida(etapa), procesoDoc];
+  // Sin repetidos: si el Proceso dice lo mismo que la Etapa (p. ej. «Tutelas» y «Tutelas») va una sola vez.
+  const vistos = new Set();
+  const unicas = partes.filter(p => {
+    const clave = normalize(String(p || '')).replace(/\s+/g, ' ').trim();
+    if(!clave || vistos.has(clave)) return false;
+    vistos.add(clave);
+    return true;
+  });
+  return nombreArchivoSeguro(unicas.join(' ').replace(/\s+/g, ' ').trim());
 }
 
 export function nombreArchivoSeguro(s){

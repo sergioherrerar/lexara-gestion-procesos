@@ -1005,6 +1005,7 @@ export function useLexaraApp(){
   function closeFacturaDrawer(){ setActiveFacturaId(null); setDraftFactura(null); setSolicitaCorreoFactura(false); reabrirProcesoSiCorresponde(); }
   async function saveFactura(updates){
     if(!activeFactura) return;
+    updates = Graph.aplicarReglaContrato(updates);   // contrato de Administración → Proceso «Administracion Proceso»
 
     if(draftFactura){
       const nuevo = {...updates};
@@ -1098,6 +1099,7 @@ export function useLexaraApp(){
   function closeOrdenCompraDrawer(){ setActiveOrdenCompraId(null); setDraftOrdenCompra(null); setSolicitaCorreoOrden(false); reabrirProcesoSiCorresponde(); }
   async function saveOrdenCompra(updates){
     if(!activeOrdenCompra) return;
+    updates = Graph.aplicarReglaContrato(updates);   // contrato de Administración → Proceso «Administracion Proceso»
 
     if(draftOrdenCompra){
       const nuevo = {...updates};

@@ -2,6 +2,10 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-11-11 (152)
+- **Reglas por contrato en facturas y órdenes de compra** — pedido del usuario. Contrato `GJU-31-03-2025-431` (Administración, SOS): Proceso = «Administracion Proceso». Contratos del Grupo Colmédica («Propuesta 20 Octubre 2021», «08 Mayo de 2013», «Julio de 2020»): Proceso y Etapa = «Tutelas». Se aplica al elegir el contrato, al abrir el documento y al guardar (formulario, Honorarios por Proceso, cualquier ruta). Para esos contratos el formulario ya no muestra el recuadro «Numero corto» ni la advertencia de «no coincide con ningún proceso» (el contrato de Administración trae muchos procesos).
+- **Nombre de los PDF: sin repetir Proceso y Etapa y sin número corto del contrato de Administración** — pedido del usuario: «FE 828 Colmedica Tutelas», «FE 829 Aliansalud Tutelas», «FE 826 SOS Administracion Proceso». Si el Proceso dice lo mismo que la Etapa va una sola vez; «Colmedica» va sin tilde y «Administracion Proceso» sin abreviar; el número corto solo sale cuando el Proceso del documento es un número corto real (p. ej. «FE 800 Colpatria Sent 1ra 2015-00727»).
+
 ## 2026-11-11 (151)
 - **Nombre de los PDF de facturas y órdenes de compra** — pedido del usuario: «FE o OC + número + cliente resumido + etapa + número corto», por ejemplo «FE 826 SOS Admón Proceso 2015-00826» y «OC-2026-0264 UMD Aud Art 77 2024-00262». El cliente se resume (SOS, Aliansalud, Colmédica, UMD, Famisanar, Colpatria, Salud Total, Coomeva; los demás sin formas legales y con dos palabras) y la etapa se abrevia (Admón, Concil, Contest, Aud, Sent, Rad, Art, 1ra, 2da…); lo que falte se omite. Es el mismo nombre al descargar el PDF, en la copia automática de Soportes de gastos y al adjuntarlo a los correos; los PDF de las órdenes del correo de Órdenes Colmédica quedan «OC-2026-0262 Aliansalud Tutelas Octubre 2026».
 

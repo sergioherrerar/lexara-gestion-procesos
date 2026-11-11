@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { clienteForFactura, procesoForFactura, facturaNumero, parseMonto, fmtMonto, IVA_RATE_DEFAULT, ETAPA_CONTRATO_OPTIONS, nombreArchivoSeguro, nombrePdfDocumento, mensajeError, subirCopiaPdfSoportes, fechaISODeDocumento } from '../lib/graph';
+import { clienteForFactura, procesoForFactura, facturaNumero, parseMonto, fmtMonto, IVA_RATE_DEFAULT, ETAPA_CONTRATO_OPTIONS, nombreArchivoSeguro, nombrePdfDocumento, aplicarReglaContrato, contratoSinNumeroCorto, mensajeError, subirCopiaPdfSoportes, fechaISODeDocumento } from '../lib/graph';
 import { generarPdfDesdeNodo, generarPdfBytesDesdeNodo, precargarImagen, precalentarLibreriasPdf } from '../lib/generarPdfDocumento';
 import { obtenerQrRedesDataUrl } from '../lib/qr';
 import { useEscapeToClose } from '../hooks/useEscapeToClose';
@@ -41,7 +41,8 @@ function computeLive(form){
 // "FE" + Entidad + Número Corto + Etapa contrato.
 function nombreArchivoFacturaPDF(factura, clientes, procesos){
   // 2026-11-11: «FE número, cliente resumido, etapa y número corto» (ver nombrePdfDocumento en graph.js).
-  return nombrePdfDocumento('FE ' + facturaNumero(factura), clienteForFactura(clientes, factura), procesoForFactura(procesos, factura), factura.EtapaContrato, factura.Proceso);
+  const f = aplicarReglaContrato(factura);   // un registro viejo del contrato de Administración todavía puede traer el número corto en Proceso
+  return nombrePdfDocumento('FE ' + facturaNumero(f), clienteForFactura(clientes, f), procesoForFactura(procesos, f), f.EtapaContrato, f.Proceso);
 }
 
 export default function FacturaDrawer({ factura, clientes, procesos, liveMode, onClose, onSave, onUpdateCliente, autoPrint, soloCopia, subirCopia = true, alPdfListo, shareUrlSoportes, onAutoPrinted, saving, notify }){
@@ -49,7 +50,7 @@ export default function FacturaDrawer({ factura, clientes, procesos, liveMode, o
   const [generandoPdf, setGenerandoPdf] = useState(false);
 
   useEffect(() => {
-    setForm(factura ? emptyForm(factura, clientes) : null);
+    setForm(factura ? aplicarReglaContrato(emptyForm(factura, clientes)) : null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [factura]);
 
@@ -198,17 +199,17 @@ export default function FacturaDrawer({ factura, clientes, procesos, liveMode, o
                 <input type="text" list="lista-contratos" value={form.Contrato} onChange={e => {
                   const contrato = e.target.value;
                   const matched = procesos.find(p => p.NumeroContrato === contrato);
-                  setForm(prev => ({...prev, Contrato: contrato, Proceso: matched ? matched.Radicado : prev.Proceso}));
+                  setForm(prev => aplicarReglaContrato({...prev, Contrato: contrato, Proceso: matched ? matched.Radicado : prev.Proceso}));
                 }} placeholder="Escribe para buscar…" />
                 <datalist id="lista-contratos">
                   {procesos.filter(p => p.NumeroContrato).map(p => (
                     <option value={p.NumeroContrato} key={p.id}>{p.NumeroContrato} · {p.Radicado}</option>
                   ))}
                 </datalist>
-                {form.Contrato && !linkedProceso && (
+                {form.Contrato && !linkedProceso && !contratoSinNumeroCorto(form.Contrato) && (
                   <div className="field-warning">Este contrato no coincide con ningún proceso registrado.</div>
                 )}
-                {linkedProceso && (
+                {linkedProceso && !contratoSinNumeroCorto(form.Contrato) && (
                   <div className="field-info">Numero corto: {linkedProceso.Radicado || "—"}</div>
                 )}
               </div>
