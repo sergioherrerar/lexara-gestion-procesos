@@ -10,7 +10,7 @@ function fechaOrdenable(f){
   return fechaFromPartes(f.Dia, f.Mes, f.Anio) || f.Fecha || "";
 }
 
-export default function FacturacionView({ facturas, clientes, procesos, searchQuery, onOpenFactura, onCreateFactura, onDuplicateFactura, onPrintFactura, printingId, onCrearCorreo, generandoCorreoId, config, notify }){
+export default function FacturacionView({ facturas, clientes, procesos, searchQuery, onOpenFactura, onCreateFactura, onDuplicateFactura, onPrintFactura, printingId, onCrearCorreo, generandoCorreoId, onActualizar, actualizando, config, notify }){
   const { filters, setFilter, clearFilters, rowMatches, hasActiveFilters } = useColumnFilters();
   const { sort, setSortKey, sortRows } = useColumnSort();
   const [buscandoSiigo, setBuscandoSiigo] = useState(null); // id de la factura mientras se busca su PDF
@@ -60,7 +60,10 @@ export default function FacturacionView({ facturas, clientes, procesos, searchQu
           <h1>Solicitud De Factura E.</h1>
           <p>{rows.length} de {facturas.length} facturas{hasActiveFilters && <> · <button type="button" className="clear-filters-link" onClick={clearFilters}>Limpiar filtros de columna</button></>}</p>
         </div>
-        <IconTextButton icon="add" variant="primary" onClick={onCreateFactura}>Nueva factura</IconTextButton>
+        <div style={{display:'flex', alignItems:'center', gap:10, flexWrap:'wrap'}}>
+          {onActualizar && <IconTextButton icon="refresh" variant="secondary" onClick={onActualizar} disabled={actualizando}>{actualizando ? 'Actualizando…' : 'Actualizar facturas y órdenes'}</IconTextButton>}
+          <IconTextButton icon="add" variant="primary" onClick={onCreateFactura}>Nueva factura</IconTextButton>
+        </div>
       </div>
       <div className="table-wrap">
         <table>

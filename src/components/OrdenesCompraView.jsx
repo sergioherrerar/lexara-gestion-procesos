@@ -11,7 +11,7 @@ function fechaOrdenable(oc){
   return fechaFromPartes(oc.Dia, oc.Mes, oc.Anio) || oc.Fecha || "";
 }
 
-export default function OrdenesCompraView({ ordenesCompra, clientes, procesos, facturas, searchQuery, onOpenOrdenCompra, onCreateOrdenCompra, onDuplicateOrdenCompra, onPrintOrdenCompra, printingId, onCrearCorreo, generandoCorreoId, onCreateFacturaFromOrdenCompra }){
+export default function OrdenesCompraView({ ordenesCompra, clientes, procesos, facturas, searchQuery, onOpenOrdenCompra, onCreateOrdenCompra, onDuplicateOrdenCompra, onPrintOrdenCompra, printingId, onCrearCorreo, generandoCorreoId, onActualizar, actualizando, onCreateFacturaFromOrdenCompra }){
   const { filters, setFilter, clearFilters, rowMatches, hasActiveFilters } = useColumnFilters();
   const { sort, setSortKey, sortRows } = useColumnSort();
 
@@ -48,7 +48,10 @@ export default function OrdenesCompraView({ ordenesCompra, clientes, procesos, f
           <h1>Órdenes de compra</h1>
           <p>{rows.length} de {ordenesCompra.length} órdenes de compra{hasActiveFilters && <> · <button type="button" className="clear-filters-link" onClick={clearFilters}>Limpiar filtros de columna</button></>}</p>
         </div>
-        <IconTextButton icon="add" variant="primary" style={{background:'var(--verde-claro)'}} onClick={onCreateOrdenCompra}>Nueva orden de compra</IconTextButton>
+        <div style={{display:'flex', alignItems:'center', gap:10, flexWrap:'wrap'}}>
+          {onActualizar && <IconTextButton icon="refresh" variant="secondary" onClick={onActualizar} disabled={actualizando}>{actualizando ? 'Actualizando…' : 'Actualizar facturas y órdenes'}</IconTextButton>}
+          <IconTextButton icon="add" variant="primary" style={{background:'var(--verde-claro)'}} onClick={onCreateOrdenCompra}>Nueva orden de compra</IconTextButton>
+        </div>
       </div>
       <div className="table-wrap">
         <table>

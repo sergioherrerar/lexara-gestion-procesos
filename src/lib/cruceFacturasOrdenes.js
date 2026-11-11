@@ -29,6 +29,19 @@ export function claveEtapa(v){
 }
 function claveContrato(v){ return normalize(v).replace(/[^a-z0-9]/g, ''); }
 
+// Descripción de la línea de detalle (Descripcion1..6) como conjunto de palabras: sirve para elegir entre varias coincidencias (p. ej. «…contestaciones de tutelas hechas en el mes de Octubre del 2026»
+// separa la orden y la factura de Octubre de las de Septiembre aunque compartan contrato, proceso, etapa y hasta el valor).
+const PALABRAS_VACIAS = new Set(['por', 'las', 'los', 'del', 'con', 'para', 'una', 'uno', 'que', 'mes']);
+function palabrasDescripcion(r){
+  const texto = [1, 2, 3, 4, 5, 6].map(n => r && r['Descripcion' + n]).filter(Boolean).join(' ');
+  return new Set(normalize(texto).split(/[^a-z0-9]+/).filter(p => p.length >= 3 && !PALABRAS_VACIAS.has(p)));
+}
+function parecidoDescripcion(a, b){
+  if(!a.size || !b.size) return 0;
+  let comunes = 0; a.forEach(p => { if(b.has(p)) comunes++; });
+  return comunes / (a.size + b.size - comunes);   // Jaccard: 1 = misma descripción
+}
+
 function mismoValor(a, b){ return a > 0 && b > 0 && Math.abs(a - b) < 1; }
 
 // Devuelve un Map: id de la orden → { factura, metodo } o { factura: null, metodo: '' } si no se encontró ninguna.
@@ -37,22 +50,61 @@ export function buscarFacturasParaOrdenes(ordenes, facturas){
   const lista = facturas || [];
   const info = lista.map(f => {
     const t = computeFacturaTotals(f);
-    return { f, contrato: claveContrato(f.Contrato), proceso: soloDigitos(f.Proceso), etapa: claveEtapa(f.EtapaContrato), subtotal: t.subtotal, total: t.total, usada: false };
+    return { f, contrato: claveContrato(f.Contrato), proceso: soloDigitos(f.Proceso), etapa: claveEtapa(f.EtapaContrato), subtotal: t.subtotal, total: t.total, palabras: palabrasDescripcion(f), usada: false };
   });
   const porContrato = new Map();
   info.forEach(i => { if(i.contrato){ if(!porContrato.has(i.contrato)) porContrato.set(i.contrato, []); porContrato.get(i.contrato).push(i); } });
   const numeroDe = i => Number(facturaNumero(i.f)) || 0;
-  const masReciente = candidatas => candidatas.slice().sort((a, b) => numeroDe(b) - numeroDe(a))[0];
+  const masReciente = (candidatas, oc) => {
+    const palabrasOC = oc ? palabrasDescripcion(oc) : null;
+    return candidatas.slice().sort((a, b) => (palabrasOC ? parecidoDescripcion(palabrasOC, b.palabras) - parecidoDescripcion(palabrasOC, a.palabras) : 0) || numeroDe(b) - numeroDe(a))[0];
+  };
+
+  // «Exacto» (2026-11-11, pedido del usuario: «la búsqueda de la factura en las órdenes de compra relaciona más de una factura»): las órdenes del Grupo Colmédica de todos los meses comparten
+  // Contrato + Proceso + Etapa («Julio de 2020» / «Tutelas» / «Tutelas»), y el cruce de siempre las mandaba TODAS a la factura de número más alto. Ahora, entre las órdenes y las facturas que
+  // comparten esas tres claves, cada factura se le da a UNA sola orden: primero la que tiene el mismo valor (subtotal o total) y, si no hay, la factura libre de fecha más cercana.
+  const clave3 = (c, p, e) => normalize(c) + '\u0001' + normalize(p) + '\u0001' + normalize(e);
+  const gruposF = new Map();
+  info.forEach(i => { const k = clave3(i.f.Contrato, i.f.Proceso, i.f.EtapaContrato); if(!gruposF.has(k)) gruposF.set(k, []); gruposF.get(k).push(i); });
+  const gruposO = new Map();
+  (ordenes || []).forEach(oc => { if(!oc || !oc.Contrato) return; const k = clave3(oc.Contrato, oc.Proceso, oc.EtapaContrato); if(!gruposO.has(k)) gruposO.set(k, []); gruposO.get(k).push(oc); });
+  const fechaMs = r => { const d = fechaDeRegistro(r); const ms = d ? Date.parse(String(d).slice(0, 10)) : NaN; return Number.isFinite(ms) ? ms : null; };
+  const masCercana = (candidatas, oc) => {
+    const f0 = fechaMs(oc);
+    return candidatas.slice().sort((a, b) => {
+      const da = f0 != null && fechaMs(a.f) != null ? Math.abs(fechaMs(a.f) - f0) : Infinity;
+      const db = f0 != null && fechaMs(b.f) != null ? Math.abs(fechaMs(b.f) - f0) : Infinity;
+      return da - db || numeroDe(b) - numeroDe(a);
+    })[0];
+  };
+  gruposO.forEach((ocs, k) => {
+    const fs = gruposF.get(k) || [];
+    if(!fs.length) return;
+    const asignar = (oc, i) => { i.usada = true; resultado.set(oc.id, { factura: i.f, metodo: 'Exacto' }); };
+    if(fs.length === 1 && ocs.length === 1){ asignar(ocs[0], fs[0]); return; }   // el caso normal
+    // Puntaje de cada par: mismo valor (subtotal o total) pesa más, luego la misma descripción, y a igualdad la fecha más cercana. Se asigna de mejor a peor, una factura por orden.
+    const pares = [];
+    ocs.forEach(oc => {
+      const t3 = computeOrdenCompraTotals(oc), palabrasOC = palabrasDescripcion(oc), f0 = fechaMs(oc);
+      fs.forEach(i => {
+        const dias = f0 != null && fechaMs(i.f) != null ? Math.abs(fechaMs(i.f) - f0) / 86400000 : 400;
+        const puntaje = (mismoValor(i.subtotal, t3.subtotal) || mismoValor(i.total, t3.total) ? 1000 : 0) + Math.round(parecidoDescripcion(palabrasOC, i.palabras) * 500) - Math.min(dias, 400);
+        pares.push({ oc, i, puntaje });
+      });
+    });
+    pares.sort((a, b) => b.puntaje - a.puntaje || numeroDe(b.i) - numeroDe(a.i));
+    const ocsListas = new Set();
+    pares.forEach(p => { if(ocsListas.has(p.oc.id) || p.i.usada) return; ocsListas.add(p.oc.id); asignar(p.oc, p.i); });
+  });
 
   const pendientes = [];
   (ordenes || []).forEach(oc => {
-    const exacta = facturaForOrdenCompra(lista, oc);
-    if(exacta){ resultado.set(oc.id, { factura: exacta, metodo: 'Exacto' }); return; }
+    if(resultado.has(oc.id)) return;
     const contrato = claveContrato(oc.Contrato);
     const candidatas = contrato ? (porContrato.get(contrato) || []) : [];
     const proceso = soloDigitos(oc.Proceso), etapa = claveEtapa(oc.EtapaContrato);
-    const aprox = candidatas.filter(i => i.proceso && i.proceso === proceso && i.etapa && i.etapa === etapa);
-    if(aprox.length){ resultado.set(oc.id, { factura: masReciente(aprox).f, metodo: 'Aproximado' }); return; }
+    const aprox = candidatas.filter(i => !i.usada && i.proceso && i.proceso === proceso && i.etapa && i.etapa === etapa);
+    if(aprox.length){ resultado.set(oc.id, { factura: masReciente(aprox, oc).f, metodo: 'Aproximado' }); return; }
     pendientes.push({ oc, candidatas, proceso, etapa });
   });
 
@@ -61,7 +113,7 @@ export function buscarFacturasParaOrdenes(ordenes, facturas){
     const t = computeOrdenCompraTotals(oc);
     const libres = candidatas.filter(i => !i.usada);
     const porValor = libres.filter(i => (mismoValor(i.subtotal, t.subtotal) || mismoValor(i.total, t.total)) && (!proceso || !i.proceso || i.proceso === proceso));
-    if(porValor.length){ const g = masReciente(porValor); g.usada = true; resultado.set(oc.id, { factura: g.f, metodo: 'Por valor' }); return; }
+    if(porValor.length){ const g = masReciente(porValor, oc); g.usada = true; resultado.set(oc.id, { factura: g.f, metodo: 'Por valor' }); return; }
     const porEtapa = libres.filter(i => etapa && i.etapa === etapa);
     if(porEtapa.length === 1){ porEtapa[0].usada = true; resultado.set(oc.id, { factura: porEtapa[0].f, metodo: 'Por etapa' }); return; }
     resultado.set(oc.id, { factura: null, metodo: '' });

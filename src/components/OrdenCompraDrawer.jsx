@@ -99,11 +99,13 @@ export default function OrdenCompraDrawer({ ordenCompra, clientes, procesos, fac
   const linkedCliente = clienteForOrdenCompra(clientes, form);
   const linkedProceso = procesoForOrdenCompra(procesos, form);
   // Cruce exacto con lo que se está editando; si no hay, el cruce flexible de la orden guardada (mientras no se haya cambiado Contrato/Proceso/Etapa).
-  const facturaExacta = facturaForOrdenCompra(facturas, form);
+  // Con Contrato/Proceso/Etapa sin cambiar, la factura de ESTA orden es la que le asigna el cruce (una factura por orden: las órdenes de todos los meses de un contrato comparten esas claves y
+  // no pueden quedar todas con la factura más reciente); si se están editando, se usa el cruce exacto de siempre con lo que hay en pantalla.
   const sinCambiarClaves = ordenCompra && form.Contrato === ordenCompra.Contrato && form.Proceso === ordenCompra.Proceso && form.EtapaContrato === ordenCompra.EtapaContrato;
-  const cruceFlexible = !facturaExacta && sinCambiarClaves ? facturaDeOrden(facturas, ordenCompra, ordenesCompra) : { factura: null, metodo: '' };
-  const linkedFactura = facturaExacta || cruceFlexible.factura;
-  const metodoFactura = facturaExacta ? 'Exacto' : cruceFlexible.metodo;
+  const cruceGuardado = sinCambiarClaves ? facturaDeOrden(facturas, ordenCompra, ordenesCompra) : { factura: null, metodo: '' };
+  const facturaExacta = cruceGuardado.factura ? null : facturaForOrdenCompra(facturas, form);
+  const linkedFactura = cruceGuardado.factura || facturaExacta;
+  const metodoFactura = cruceGuardado.factura ? cruceGuardado.metodo : (facturaExacta ? 'Exacto' : '');
   const totals = computeLive(form);
   const numero = ordenCompraNumero(ordenCompra);
   const ahora = new Date();

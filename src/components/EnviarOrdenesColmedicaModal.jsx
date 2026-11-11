@@ -51,8 +51,7 @@ export default function EnviarOrdenesColmedicaModal({ mes, anio, grupos, detalle
   const hojas = useMemo(() => ordenes.filter(o => o.oc).map(({ grupo, oc }, i) => {
     const form = emptyForm(oc, clientes);
     const linkedCliente = clienteForOrdenCompra(clientes, form);
-    const exacta = facturaForOrdenCompra(facturas, form);
-    const linkedFactura = exacta || facturaDeOrden(facturas, oc, ordenesCompra).factura;
+    const linkedFactura = facturaDeOrden(facturas, oc, ordenesCompra).factura || facturaForOrdenCompra(facturas, form);   // primero el cruce que reparte una factura por orden
     return { i, grupo, oc, form, linkedCliente, linkedFactura, totals: computeLive(form) };
   }), [ordenes, clientes, facturas, ordenesCompra]);
 

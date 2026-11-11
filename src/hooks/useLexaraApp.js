@@ -249,6 +249,7 @@ export function useLexaraApp(){
   const [currentFilter, setCurrentFilter] = useState('todos');
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
+  const [refreshingFacturas, setRefreshingFacturas] = useState(false);
   const [saving, setSaving] = useState(false);
   const [signingIn, setSigningIn] = useState(false);
   const [toast, setToast] = useState(null); // {msg, type}
@@ -509,6 +510,26 @@ export function useLexaraApp(){
       if(col) setColaboradores(col.items || []);
       if(vac) setVacacionesPeriodos(vac.items || []);
     }catch(err){ console.error('No se pudo actualizar Equipo MD y Vacaciones:', err); }
+  }
+  // «Actualizar» de Órdenes de compra y de Facturas (2026-11-11, pedido del usuario): vuelve a leer SOLO esas dos listas de SharePoint y con eso se recalcula la factura de cada orden;
+  // no toca las demás listas ni lo que haya abierto.
+  async function refreshFacturasYOrdenes(){
+    if(!liveMode || refreshingFacturas) return;
+    setRefreshingFacturas(true);
+    try{
+      const sid = siteId || await Graph.fetchSiteId(config);
+      const subset = lists.filter(l => l.key === 'facturacion' || l.key === 'ordenesCompra');
+      if(!subset.length) throw new Error('Todavía no están cargadas las listas de Facturación y Órdenes de compra.');
+      const updated = await cargarTodasLasListas(config, subset, sid);
+      const fac = updated.find(l => l.key === 'facturacion')?.items || [];
+      const ord = updated.find(l => l.key === 'ordenesCompra')?.items || [];
+      setFacturas(fac); setOrdenesCompra(ord);
+      notify('Facturas y órdenes de compra actualizadas (' + fac.length + ' facturas, ' + ord.length + ' órdenes).', 'success');
+    }catch(err){
+      console.error(err);
+      notify('No se pudieron actualizar las facturas y órdenes: ' + Graph.mensajeError(err), 'error');
+    }
+    setRefreshingFacturas(false);
   }
   async function refreshData(){
     if(!liveMode || refreshing) return;
@@ -2138,7 +2159,7 @@ export function useLexaraApp(){
     lists, listByKey, updateListMapping,
     liveMode, account, appActive, view, setView, role, canWrite, modulosPermitidos, colaboradorActual,
     testStatus, testConnection, applyAllMappings, downloadAllMappings,
-    refreshData, refreshing, refreshEquipoYVacaciones,
+    refreshData, refreshing, refreshEquipoYVacaciones, refreshFacturasYOrdenes, refreshingFacturas,
     signIn, enterDemo, goSetup, signOut,
     saving, signingIn,
     toast, closeToast, confirmState, acceptConfirm, cancelConfirm, notify, requestConfirm,

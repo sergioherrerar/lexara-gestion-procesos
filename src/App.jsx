@@ -205,6 +205,8 @@ export default function App(){
             printingId={app.autoPrintFacturaId}
             onCrearCorreo={f => app.crearCorreoSolicitudDocumento('factura', f)}
             generandoCorreoId={app.generandoCorreoDoc}
+            onActualizar={app.liveMode ? app.refreshFacturasYOrdenes : null}
+            actualizando={app.refreshingFacturas}
             config={app.config}
             notify={app.notify}
           />
@@ -223,6 +225,8 @@ export default function App(){
             printingId={app.autoPrintOrdenCompraId}
             onCrearCorreo={oc => app.crearCorreoSolicitudDocumento('ordenCompra', oc)}
             generandoCorreoId={app.generandoCorreoDoc}
+            onActualizar={app.liveMode ? app.refreshFacturasYOrdenes : null}
+            actualizando={app.refreshingFacturas}
             onCreateFacturaFromOrdenCompra={app.createFacturaFromOrdenCompra}
           />
         )}
