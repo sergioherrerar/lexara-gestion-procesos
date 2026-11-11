@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-11-11 (155)
+- **Correo de la orden de compra: mismo estilo que el de la factura** — pedido del usuario. Saludo «Buenos días.» / «Buenas tardes.» según la hora (sin nombre: el destinatario se escribe a mano), «Por favor generar el número de orden de compra con el siguiente detalle:» y asunto «Generación de número de orden de compra» + cliente resumido + etapa + número corto (mismas reglas del nombre del PDF), p. ej. «Generación de número de orden de compra UMD Tutelas».
+
 ## 2026-11-11 (154)
 - **Correo de la factura: saludo, encabezado y asunto nuevos** — pedido del usuario. Saludo «Beatriz, buenos días.» (antes del mediodía) o «Beatriz, buenas tardes.» según la hora de quien lo crea, seguido de «Por favor emitir factura electrónica con el siguiente detalle:» (el resto del correo igual). Asunto: «Emisión de factura electrónica» + cliente resumido + etapa + número corto, con las mismas reglas del nombre del PDF (sin repetir Proceso y Etapa; sin el número corto del contrato de Administración), p. ej. «Emisión de factura electrónica SOS Administracion Proceso». El correo de la orden de compra no cambia.
 

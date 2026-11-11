@@ -18,7 +18,7 @@ export function conTildes(texto){
   return t ? t.charAt(0).toUpperCase() + t.slice(1) : t;
 }
 
-// Saludo del correo de la factura (2026-11-11, pedido del usuario): «Beatriz, buenos días.» hasta el mediodía y «Beatriz, buenas tardes.» después, según la hora de quien lo crea.
+// Saludo del correo de la factura y de la orden de compra (2026-11-11, pedido del usuario): «Beatriz, buenos días.» hasta el mediodía y «Beatriz, buenas tardes.» después, según la hora de quien lo crea.
 export function saludoFactura(nombre, fecha = new Date()){
   const saludo = fecha.getHours() < 12 ? 'buenos días' : 'buenas tardes';
   return nombre ? esc(nombre) + ', ' + saludo + '.' : saludo.charAt(0).toUpperCase() + saludo.slice(1) + '.';
@@ -62,12 +62,12 @@ export function construirCorreoSolicitudDocumento({ tipo, documento, cliente, pi
   const asunto = esFactura
     // 2026-11-11 (pedido del usuario): «Emisión de factura electrónica» + cliente resumido + etapa + número corto, igual que el nombre del PDF (sin repetir Proceso y Etapa).
     ? ('Emisión de factura electrónica ' + nombrePdfDocumento('', cliente, null, aplicarReglaContrato(d).EtapaContrato, aplicarReglaContrato(d).Proceso)).trim()
-    : `Solicitud de número de orden de compra${razon ? ' — ' + razon : ''}${d.Contrato ? ' — Contrato ' + d.Contrato : ''}`;
+    : ('Generación de número de orden de compra ' + nombrePdfDocumento('', cliente, null, aplicarReglaContrato(d).EtapaContrato, aplicarReglaContrato(d).Proceso)).trim();
   const html = `<div style="font-family:'Segoe UI', Arial, sans-serif; color:#1c2624; max-width:760px;">
-  <p style="margin:0 0 12px; font-size:15px;">${esFactura ? saludoFactura(pilaDestinatario) : (pilaDestinatario ? `Buen día, ${esc(pilaDestinatario)}:` : 'Buen día,')}</p>
+  <p style="margin:0 0 12px; font-size:15px;">${saludoFactura(pilaDestinatario)}</p>
   <p style="margin:0 0 14px; font-size:15px; line-height:1.55;">${esFactura
     ? 'Por favor <strong>emitir factura electrónica</strong> con el siguiente detalle:'
-    : 'Solicito la <strong>generación del número de orden de compra</strong> con el siguiente detalle:'}</p>
+    : 'Por favor <strong>generar el número de orden de compra</strong> con el siguiente detalle:'}</p>
   <table role="presentation" cellpadding="0" cellspacing="0" style="width:100%; border-collapse:collapse;">
     ${fila('Cliente', razon ? esc(razon) : '')}
     ${fila('NIT', cliente?.Nit ? esc(cliente.Nit) : '')}
