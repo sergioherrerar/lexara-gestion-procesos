@@ -3265,6 +3265,14 @@ export async function listarExcelDesistimientosSOS(config){
   const archivos = (res.value || []).filter(f => f.file && /\.xlsx$/i.test(f.name) && !/^~\$/.test(f.name)).map(f => ({ id: f.id, nombre: f.name, tamano: f.size || 0, modificado: f.lastModifiedDateTime || '' }));
   return { driveId, archivos };
 }
+/** Descarga un archivo de la carpeta «1 Soportes de gastos MD» como adjunto de correo: { base64, tamano }. (2026-11-11: correo de facturas a Beatriz.) */
+export async function descargarSoporteBase64(driveId, itemId){
+  const token = await getGraphToken();
+  const res = await fetch('https://graph.microsoft.com/v1.0/drives/' + driveId + '/items/' + itemId + '/content', { headers: { Authorization: 'Bearer ' + token } });
+  if(!res.ok) throw new Error('Graph ' + res.status + ' al descargar el soporte');
+  const buf = await res.arrayBuffer();
+  return { base64: arrayBufferABase64(buf), tamano: buf.byteLength };
+}
 /** Descarga un archivo de SharePoint y lo devuelve como File (para leerlo igual que uno subido a mano). */
 export async function descargarArchivoSharePoint(driveId, itemId, nombre){
   const token = await getGraphToken();

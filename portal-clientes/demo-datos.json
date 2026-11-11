@@ -1,0 +1,262 @@
+{
+  "procesos": [
+    {
+      "Radicado": "2024-00112",
+      "Cliente": "Colmédica Medicina Prepagada S.A.",
+      "Despacho": "Juzgado 12 Civil del Circuito de Bogotá",
+      "Demandante": "Carlos Pérez Ruiz",
+      "Demandado": "Colmédica Medicina Prepagada S.A.",
+      "ParteActuamos": "Demandado",
+      "TipoProceso": "Ordinario",
+      "Instancia": "Primera",
+      "EtapaProcesal": "Contestación de demanda",
+      "Estado": "Se radicó la contestación de la demanda dentro del término. Pendiente auto que admite pruebas.",
+      "FechaUltimoEstado": "2026-11-04",
+      "Entidad": "GRUPO COLMEDICA"
+    },
+    {
+      "Radicado": "2025-00231",
+      "Cliente": "Colmédica Medicina Prepagada S.A.",
+      "Despacho": "Juzgado 3 Laboral del Circuito de Medellín",
+      "Demandante": "Ana Gómez Torres",
+      "Demandado": "Colmédica Medicina Prepagada S.A.",
+      "ParteActuamos": "Demandado",
+      "TipoProceso": "Laboral",
+      "Instancia": "Primera",
+      "EtapaProcesal": "Audiencia",
+      "Estado": "Audiencia programada para el 2 de diciembre de 2026.",
+      "FechaUltimoEstado": "2026-10-28",
+      "Entidad": "GRUPO COLMEDICA"
+    },
+    {
+      "Radicado": "2023-00579",
+      "Cliente": "Aliansalud EPS S.A.",
+      "Despacho": "Juzgado 5 Civil del Circuito de Cali",
+      "Demandante": "Luis Martínez",
+      "Demandado": "Aliansalud EPS S.A.",
+      "ParteActuamos": "Demandado",
+      "TipoProceso": "Responsabilidad civil",
+      "Instancia": "Segunda",
+      "EtapaProcesal": "Alegatos",
+      "Estado": "Se presentaron alegatos de conclusión. Al despacho para sentencia.",
+      "FechaUltimoEstado": "2026-11-02",
+      "Entidad": "GRUPO COLMEDICA"
+    },
+    {
+      "Radicado": "2025-00877",
+      "Cliente": "Aliansalud EPS S.A.",
+      "Despacho": "Juzgado 8 Administrativo de Bogotá",
+      "Demandante": "María Rojas",
+      "Demandado": "Aliansalud EPS S.A.",
+      "ParteActuamos": "Demandado",
+      "TipoProceso": "Reparación directa",
+      "Instancia": "Primera",
+      "EtapaProcesal": "Traslado de excepciones",
+      "Estado": "Traslado de excepciones corrido a la parte demandante.",
+      "FechaUltimoEstado": "2026-10-15",
+      "Entidad": "GRUPO COLMEDICA"
+    },
+    {
+      "Radicado": "2024-00340",
+      "Cliente": "Unidad Médica y de Diagnóstico S.A.S.",
+      "Despacho": "Juzgado 2 Civil Municipal de Bogotá",
+      "Demandante": "Jorge Salazar",
+      "Demandado": "Unidad Médica y de Diagnóstico S.A.S.",
+      "ParteActuamos": "Demandado",
+      "TipoProceso": "Ejecutivo",
+      "Instancia": "Primera",
+      "EtapaProcesal": "Notificación",
+      "Estado": "Se notificó el mandamiento de pago; se presentaron excepciones.",
+      "FechaUltimoEstado": "2026-09-30",
+      "Entidad": "GRUPO COLMEDICA"
+    },
+    {
+      "Radicado": "2022-00915",
+      "Cliente": "EPS SOS",
+      "Despacho": "Tribunal Superior de Bogotá",
+      "Demandante": "Patricia Nieto",
+      "Demandado": "EPS SOS",
+      "ParteActuamos": "Demandado",
+      "TipoProceso": "Ordinario",
+      "Instancia": "Segunda",
+      "EtapaProcesal": "Recurso de apelación",
+      "Estado": "Concedido el recurso de apelación; en espera de reparto.",
+      "FechaUltimoEstado": "2026-10-22",
+      "Entidad": "SOS"
+    },
+    {
+      "Radicado": "2025-00410",
+      "Cliente": "Ana Pérez (particular)",
+      "Entidad": "PARTICULARES",
+      "Despacho": "Juzgado 4 Civil Municipal de Bogotá",
+      "Demandante": "Ana Pérez",
+      "Demandado": "Constructora Sol S.A.",
+      "ParteActuamos": "Demandante",
+      "TipoProceso": "Ejecutivo",
+      "Instancia": "Primera",
+      "EtapaProcesal": "Mandamiento de pago",
+      "Estado": "Se libró mandamiento de pago; pendiente notificación.",
+      "FechaUltimoEstado": "2026-11-03"
+    },
+    {
+      "Radicado": "2024-00777",
+      "Cliente": "Transportes Andes S.A.S.",
+      "Entidad": "PARTICULARES",
+      "Despacho": "Juzgado 9 Laboral de Bogotá",
+      "Demandante": "Pedro Díaz",
+      "Demandado": "Transportes Andes S.A.S.",
+      "ParteActuamos": "Demandado",
+      "TipoProceso": "Laboral",
+      "Instancia": "Primera",
+      "EtapaProcesal": "Audiencia",
+      "Estado": "Audiencia aplazada.",
+      "FechaUltimoEstado": "2026-10-20"
+    }
+  ],
+  "clientes": [
+    {
+      "razon": "Colmédica Medicina Prepagada S.A.",
+      "correos": "grupo@demo.com",
+      "entidad": "GRUPO COLMEDICA"
+    },
+    {
+      "razon": "Aliansalud EPS S.A.",
+      "correos": "",
+      "entidad": "GRUPO COLMEDICA"
+    },
+    {
+      "razon": "Unidad Médica y de Diagnóstico S.A.S.",
+      "correos": "",
+      "entidad": "GRUPO COLMEDICA"
+    },
+    {
+      "razon": "EPS SOS",
+      "correos": "sos@demo.com",
+      "entidad": "SOS"
+    },
+    {
+      "razon": "Ana Pérez (particular)",
+      "correos": "ana@demo.com",
+      "entidad": "PARTICULARES"
+    },
+    {
+      "razon": "Transportes Andes S.A.S.",
+      "correos": "andes@demo.com",
+      "entidad": "PARTICULARES"
+    }
+  ],
+  "tutelas": [
+    {
+      "NoTutela": "2026-00311",
+      "Cliente": "Colmédica Medicina Prepagada S.A.",
+      "Entidad": "COLMEDICA",
+      "Juzgado": "Juzgado 14 Civil Municipal",
+      "Departamento": "Cundinamarca",
+      "Ciudad": "Bogotá",
+      "FechaNotificacion": "2026-10-28",
+      "FechaVencimiento": "2026-11-02",
+      "TipoRespuesta": "TUTELA",
+      "Usuario": "María López",
+      "Contestada": true,
+      "FechaContestacion": "2026-11-02"
+    },
+    {
+      "NoTutela": "2026-00305",
+      "Cliente": "Aliansalud EPS S.A.",
+      "Entidad": "ALIANSALUD",
+      "Juzgado": "Juzgado 2 Penal Municipal",
+      "Departamento": "Cundinamarca",
+      "Ciudad": "Bogotá",
+      "FechaNotificacion": "2026-10-27",
+      "FechaVencimiento": "2026-11-03",
+      "TipoRespuesta": "TUTELA",
+      "Usuario": "José Ramírez",
+      "Contestada": true,
+      "FechaContestacion": "2026-11-03"
+    },
+    {
+      "NoTutela": "2026-00298",
+      "Cliente": "Unidad Médica y de Diagnóstico S.A.S.",
+      "Entidad": "UMD",
+      "Juzgado": "Juzgado 7 Civil Municipal",
+      "Departamento": "Cundinamarca",
+      "Ciudad": "Bogotá",
+      "FechaNotificacion": "2026-10-26",
+      "FechaVencimiento": "2026-10-30",
+      "TipoRespuesta": "IMPUGNACION",
+      "Usuario": "Luisa Torres",
+      "Contestada": true,
+      "FechaContestacion": "2026-10-29"
+    },
+    {
+      "NoTutela": "2026-00290",
+      "Cliente": "Colmédica Medicina Prepagada S.A.",
+      "Entidad": "COLMEDICA",
+      "Juzgado": "Juzgado 3 Promiscuo",
+      "Departamento": "Cundinamarca",
+      "Ciudad": "Bogotá",
+      "FechaNotificacion": "2026-10-20",
+      "FechaVencimiento": "2026-10-27",
+      "TipoRespuesta": "TUTELA",
+      "Usuario": "Carlos Ruiz",
+      "Contestada": true,
+      "FechaContestacion": "2026-10-27"
+    },
+    {
+      "NoTutela": "2026-00322",
+      "Cliente": "Aliansalud EPS S.A.",
+      "Entidad": "ALIANSALUD",
+      "Juzgado": "Juzgado 11 Civil Municipal",
+      "Departamento": "Cundinamarca",
+      "Ciudad": "Bogotá",
+      "FechaNotificacion": "2026-11-09",
+      "FechaVencimiento": "2026-11-13",
+      "TipoRespuesta": "TUTELA",
+      "Usuario": "Sandra Gil",
+      "Contestada": false,
+      "FechaContestacion": ""
+    },
+    {
+      "NoTutela": "2026-00330",
+      "Cliente": "Colmédica Medicina Prepagada S.A.",
+      "Entidad": "COLMEDICA",
+      "Juzgado": "Juzgado 5 Penal Municipal",
+      "Departamento": "Cundinamarca",
+      "Ciudad": "Bogotá",
+      "FechaNotificacion": "2026-11-10",
+      "FechaVencimiento": "2026-11-16",
+      "TipoRespuesta": "Otras contestaciones",
+      "Usuario": "Andrés Mora",
+      "Contestada": false,
+      "FechaContestacion": ""
+    },
+    {
+      "NoTutela": "2026-00250",
+      "Cliente": "Colmédica Medicina Prepagada S.A.",
+      "Entidad": "COLMEDICA",
+      "Juzgado": "Juzgado 1 Civil Municipal",
+      "Departamento": "Cundinamarca",
+      "Ciudad": "Bogotá",
+      "FechaNotificacion": "2026-09-15",
+      "FechaVencimiento": "2026-09-22",
+      "TipoRespuesta": "TUTELA",
+      "Usuario": "Diana Cruz",
+      "Contestada": true,
+      "FechaContestacion": "2026-09-21"
+    },
+    {
+      "NoTutela": "2026-00255",
+      "Cliente": "Aliansalud EPS S.A.",
+      "Entidad": "ALIANSALUD",
+      "Juzgado": "Juzgado 6 Civil Municipal",
+      "Departamento": "Cundinamarca",
+      "Ciudad": "Bogotá",
+      "FechaNotificacion": "2026-09-18",
+      "FechaVencimiento": "2026-09-24",
+      "TipoRespuesta": "IMPUGNACION",
+      "Usuario": "Felipe Rojas",
+      "Contestada": true,
+      "FechaContestacion": "2026-09-24"
+    }
+  ]
+}

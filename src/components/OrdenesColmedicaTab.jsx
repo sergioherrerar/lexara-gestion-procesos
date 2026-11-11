@@ -9,6 +9,8 @@ import { fmtMonto, mensajeError, valoresEntidadFaltantes, ordenCompraNumero } fr
 import StackedBarChart from './StackedBarChart';
 import EnviarOrdenesColmedicaModal from './EnviarOrdenesColmedicaModal';
 import GenerarOrdenesMesModal from './GenerarOrdenesMesModal';
+import GenerarFacturasMesModal from './GenerarFacturasMesModal';
+import EnviarFacturasColmedicaModal from './EnviarFacturasColmedicaModal';
 
 // "Órdenes Colmédica" (Administración) — pedido explícito del usuario
 // 2026-08-29: por cada Cliente con tutelas en el mes elegido (mes calendario
@@ -19,10 +21,13 @@ import GenerarOrdenesMesModal from './GenerarOrdenesMesModal';
 // valor) listo para revisar y darle "Guardar cambios" — no se crea nada en
 // SharePoint solo. El botón de Excel descarga el mismo detalle de todos los
 // clientes de ese mes junto, de referencia.
-export default function OrdenesColmedicaTab({ tutelas, valoresEntidad, clientes, facturas, ordenesCompra, liveMode, onAbrirBorradorOrdenCompra, onAbrirOrdenCompra, onCrearOrdenesCompraEnLote, notify }){
+export default function OrdenesColmedicaTab({ tutelas, valoresEntidad, clientes, facturas, ordenesCompra, liveMode, onAbrirBorradorOrdenCompra, onAbrirOrdenCompra, onCrearOrdenesCompraEnLote, onCrearFacturasDesdeOrdenes, colaboradores, config, notify }){
   const hoyRef = new Date();
   const [enviandoCorreo, setEnviandoCorreo] = useState(false);
   const [generandoOrdenes, setGenerandoOrdenes] = useState(false);
+  const [generandoFacturas, setGenerandoFacturas] = useState(false);
+  const [correoFacturas, setCorreoFacturas] = useState(false);
+  const [parejasFacturas, setParejasFacturas] = useState({});   // 'AAAA-M|Cliente' → factura recién creada para su orden (no depende del cruce)
   const [avisoMes, setAvisoMes] = useState(null); // 'ordenes' | 'facturas': recordatorio del mes antes de generar
   const [mes, setMes] = useState(hoyRef.getMonth());
   const [anio] = useState(hoyRef.getFullYear());
@@ -60,7 +65,7 @@ export default function OrdenesColmedicaTab({ tutelas, valoresEntidad, clientes,
     const cual = avisoMes;
     setAvisoMes(null);
     if(cual === 'ordenes') handleGenerarOrdenesMes();
-    else if(cual === 'facturas') setEnviandoCorreo(true);
+    else if(cual === 'facturas') setGenerandoFacturas(true);
   }
 
   function handleGenerarOrdenesMes(){
@@ -110,7 +115,7 @@ export default function OrdenesColmedicaTab({ tutelas, valoresEntidad, clientes,
           <IconTextButton icon="mail" variant="primary" onClick={() => setAvisoMes('ordenes')} disabled={!grupos.length || !onCrearOrdenesCompraEnLote}>
             Generar órdenes de compra del mes
           </IconTextButton>
-          <IconTextButton icon="mail" variant="secondary" onClick={() => setAvisoMes('facturas')} disabled={!grupos.length}>
+          <IconTextButton icon="mail" variant="secondary" onClick={() => setAvisoMes('facturas')} disabled={!grupos.length || !onCrearFacturasDesdeOrdenes}>
             Generador de facturas del mes
           </IconTextButton>
         </div>
@@ -131,6 +136,21 @@ export default function OrdenesColmedicaTab({ tutelas, valoresEntidad, clientes,
             onCrear={onCrearOrdenesCompraEnLote} notify={notify}
             onContinuarCorreo={() => { setGenerandoOrdenes(false); setEnviandoCorreo(true); }}
             onClose={() => setGenerandoOrdenes(false)}
+          />
+        )}
+        {generandoFacturas && (
+          <GenerarFacturasMesModal
+            mes={mes} anio={anio} grupos={grupos} facturas={facturas} ordenesCompra={ordenesCompra}
+            onCrear={onCrearFacturasDesdeOrdenes} notify={notify}
+            onCreadas={rs => setParejasFacturas(prev => { const n = { ...prev }; rs.forEach(r => { if(r.factura) n[anio + '-' + mes + '|' + r.cliente] = r.factura; }); return n; })}
+            onContinuarCorreo={() => { setGenerandoFacturas(false); setCorreoFacturas(true); }}
+            onClose={() => setGenerandoFacturas(false)}
+          />
+        )}
+        {correoFacturas && (
+          <EnviarFacturasColmedicaModal
+            mes={mes} anio={anio} grupos={grupos} facturas={facturas} ordenesCompra={ordenesCompra} parejas={parejasFacturas}
+            colaboradores={colaboradores} config={config} liveMode={liveMode} notify={notify} onClose={() => setCorreoFacturas(false)}
           />
         )}
         {enviandoCorreo && (

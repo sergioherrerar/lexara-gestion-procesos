@@ -1,0 +1,8 @@
+# Portal de clientes: nada de listar carpetas ni abrir archivos internos.
+Options -Indexes
+<FilesMatch "^(config|config\.example|lib)\.php$">
+  Require all denied
+</FilesMatch>
+<FilesMatch "^demo-datos\.json$">
+  Require all denied
+</FilesMatch>

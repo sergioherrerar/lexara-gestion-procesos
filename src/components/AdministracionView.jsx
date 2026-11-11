@@ -128,7 +128,7 @@ function DocumentosTab({ colaboradores, config, notify }){
   );
 }
 
-export default function AdministracionView({ listas, liveMode, onActualizarEquipo, colaboradores, searchQuery, onOpenColaborador, onCreateColaborador, onDeleteColaborador, canWrite = true, notify, config, tutelas, valoresEntidad, clientes, procesos, facturas, ordenesCompra, onAbrirBorradorOrdenCompra, onAbrirOrdenCompra, onCrearOrdenesCompraEnLote, onAbrirBorradorFactura, horasExtras, onAprobarHoraExtra, vacacionesPeriodos, onCrearPeriodoVacaciones, onEditarPeriodoVacaciones, onEliminarPeriodoVacaciones, onAprobarPeriodoVacaciones,
+export default function AdministracionView({ listas, liveMode, onActualizarEquipo, colaboradores, searchQuery, onOpenColaborador, onCreateColaborador, onDeleteColaborador, canWrite = true, notify, config, tutelas, valoresEntidad, clientes, procesos, facturas, ordenesCompra, onAbrirBorradorOrdenCompra, onAbrirOrdenCompra, onCrearOrdenesCompraEnLote, onCrearFacturasDesdeOrdenes, onAbrirBorradorFactura, horasExtras, onAprobarHoraExtra, vacacionesPeriodos, onCrearPeriodoVacaciones, onEditarPeriodoVacaciones, onEliminarPeriodoVacaciones, onAprobarPeriodoVacaciones,
   proveedoresGastos, cuentasCobroGastos, pagosPorRealizar, gastos,
   onCrearProveedorGastos, onEditarProveedorGastos, onEliminarProveedorGastos,
   onCrearCuentaCobroGastos, onEditarCuentaCobroGastos, onEliminarCuentaCobroGastos,
@@ -230,7 +230,10 @@ export default function AdministracionView({ listas, liveMode, onActualizarEquip
           onAbrirBorradorOrdenCompra={onAbrirBorradorOrdenCompra}
           onAbrirOrdenCompra={onAbrirOrdenCompra}
           onCrearOrdenesCompraEnLote={onCrearOrdenesCompraEnLote}
+          onCrearFacturasDesdeOrdenes={onCrearFacturasDesdeOrdenes}
           onAbrirBorradorFactura={onAbrirBorradorFactura}
+          colaboradores={colaboradores}
+          config={config}
           liveMode={liveMode}
           notify={notify}
         />

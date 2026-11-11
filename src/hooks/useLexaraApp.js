@@ -1189,6 +1189,33 @@ export function useLexaraApp(){
     return resultados;
   }
 
+  // «Generador de facturas del mes» (Órdenes Colmédica, 2026-11-11): crea de una vez la factura de cada orden de compra del mes (mismos datos que «generar factura» de la orden). Solo tras la
+  // confirmación del usuario. Devuelve [{ cliente, factura } | { cliente, error }]; las que fallan no frenan a las demás. Cada factura guarda su copia en PDF en la carpeta de soportes.
+  async function crearFacturasDesdeOrdenes(items){
+    const resultados = [];
+    let maxId = facturas.reduce((max,f) => Math.max(max, Number(f.id)||0), 0);
+    for(const { cliente, payload: original } of items){
+      const payload = Graph.aplicarReglaContrato({ ...original });
+      const nuevo = { ...payload };
+      try{
+        if(liveMode){
+          const list = listByKey('facturacion');
+          const created = await Graph.crearItemConLookups(list.siteId || siteId, list, payload);
+          nuevo.id = created.id; nuevo._graphId = created.id;
+          const numero = String(Number(created.id) + 91);
+          nuevo.Factura = numero;
+          if(list.mapping.Factura){
+            await Graph.graphFetch(`/sites/${siteId}/lists/${list.listId}/items/${created.id}/fields`, { method:"PATCH", body: JSON.stringify({ [list.mapping.Factura]: numero }) });
+          }
+        }else{ maxId += 1; nuevo.id = maxId; nuevo.Factura = String(maxId + 91); }
+        setFacturas(prev => [...prev, nuevo]);
+        encolarCopiaSoporte('factura', nuevo);
+        resultados.push({ cliente, factura: nuevo });
+      }catch(err){ console.error(err); resultados.push({ cliente, error: Graph.mensajeError(err) }); }
+    }
+    return resultados;
+  }
+
   function openColaborador(id){ setDraftColaborador(null); setActiveColaboradorId(id); }
   // "+ Nuevo colaborador" solo abre un borrador local — no toca SharePoint
   // hasta que el usuario le da "Guardar cambios" (mismo criterio que en
@@ -2180,7 +2207,7 @@ export function useLexaraApp(){
     activeFactura, openFactura, newFactura, duplicateFactura, abrirBorradorFactura, closeFacturaDrawer, saveFactura,
     crearCorreoSolicitudDocumento, generandoCorreoDoc,
     printFactura, autoPrintFacturaId, clearAutoPrint, copiaSoporteActual: colaCopiasSoporte[0] || null, terminarCopiaSoporte, createFacturaFromOrdenCompra, newFacturaFromProceso,
-    activeOrdenCompra, openOrdenCompra, newOrdenCompra, duplicateOrdenCompra, newOrdenCompraFromProceso, abrirBorradorOrdenCompra, crearOrdenesCompraEnLote, closeOrdenCompraDrawer, saveOrdenCompra,
+    activeOrdenCompra, openOrdenCompra, newOrdenCompra, duplicateOrdenCompra, newOrdenCompraFromProceso, abrirBorradorOrdenCompra, crearOrdenesCompraEnLote, crearFacturasDesdeOrdenes, closeOrdenCompraDrawer, saveOrdenCompra,
     printOrdenCompra, autoPrintOrdenCompraId, clearAutoPrintOrdenCompra,
     activeColaborador, openColaborador, newColaborador, closeColaboradorDrawer, saveColaborador, deleteColaborador,
     activeFormaPago, openFormaPago, newFormaPagoFromProceso, closeFormaPagoDrawer, saveFormaPago, deleteFormaPago,

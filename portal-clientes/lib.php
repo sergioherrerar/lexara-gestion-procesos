@@ -1,0 +1,473 @@
+<?php
+// Portal de clientes — funciones comunes (2026-11-11). Todo el filtrado por cliente se hace AQUÍ, en el servidor:
+// el navegador del cliente nunca recibe la clave de Microsoft ni procesos de otros clientes.
+
+declare(strict_types=1);
+
+function cfg(): array {
+    static $c = null;
+    if ($c === null) {
+        $ruta = __DIR__ . '/config.php';
+        if (!is_file($ruta)) $ruta = __DIR__ . '/config.example.php';
+        $c = require $ruta;
+    }
+    return $c;
+}
+function esDemo(): bool { return (cfg()['modo'] ?? 'demo') !== 'real'; }
+
+function salir(array $datos, int $codigo = 200): void {
+    http_response_code($codigo);
+    header('Content-Type: application/json; charset=utf-8');
+    header('Cache-Control: no-store');
+    echo json_encode($datos, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    exit;
+}
+
+// ---------- archivos de datos (códigos, sesiones, límites, caché) ----------
+function dirDatos(): string {
+    $d = __DIR__ . '/data';
+    if (!is_dir($d)) { @mkdir($d, 0700, true); }
+    if (!is_file($d . '/.htaccess')) { @file_put_contents($d . '/.htaccess', "Require all denied\nDeny from all\n"); }
+    return $d;
+}
+// Los archivos de datos se guardan como .php con un guardián al principio: aunque el servidor ignorara el .htaccess, abrirlos desde el navegador no muestra nada.
+const GUARDIAN = "<?php http_response_code(404); exit; ?>
+";
+function leerJson(string $nombre): array {
+    $f = dirDatos() . '/' . $nombre . '.php';
+    if (!is_file($f)) return [];
+    $t = @file_get_contents($f);
+    if (!$t) return [];
+    $j = json_decode(substr($t, strlen(GUARDIAN)), true);
+    return is_array($j) ? $j : [];
+}
+function escribirJson(string $nombre, array $datos): void {
+    $f = dirDatos() . '/' . $nombre . '.php';
+    @file_put_contents($f, GUARDIAN . json_encode($datos, JSON_UNESCAPED_UNICODE), LOCK_EX);
+}
+
+// ---------- texto ----------
+function normalizar(string $t): string {
+    $t = mb_strtolower(trim($t), 'UTF-8');
+    $t = strtr($t, ['á'=>'a','é'=>'e','í'=>'i','ó'=>'o','ú'=>'u','ü'=>'u','ñ'=>'n','à'=>'a','è'=>'e','ì'=>'i','ò'=>'o','ù'=>'u']);
+    return trim(preg_replace('/\s+/', ' ', $t));
+}
+function sinHtml($t): string {
+    $t = (string)$t;
+    $t = preg_replace('#<(br|/p|/div|/li)\s*/?>#i', "\n", $t);
+    $t = html_entity_decode(strip_tags($t), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    return trim(preg_replace("/[ \t]+/", ' ', preg_replace("/\n{3,}/", "\n\n", $t)));
+}
+function ipCliente(): string { return substr((string)($_SERVER['REMOTE_ADDR'] ?? '0'), 0, 64); }
+
+// ---------- Microsoft Graph con la clave de la aplicación (solo modo real) ----------
+function http(string $metodo, string $url, array $cabeceras, ?string $cuerpo = null): array {
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_CUSTOMREQUEST => $metodo, CURLOPT_HTTPHEADER => $cabeceras, CURLOPT_TIMEOUT => 40]);
+    if ($cuerpo !== null) curl_setopt($ch, CURLOPT_POSTFIELDS, $cuerpo);
+    $r = curl_exec($ch);
+    $codigo = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $err = curl_error($ch);
+    curl_close($ch);
+    if ($r === false) throw new RuntimeException('Sin conexión con Microsoft: ' . $err);
+    return [$codigo, $r];
+}
+function tokenGraph(): string {
+    $c = cfg();
+    $cache = leerJson('token.json');
+    if (!empty($cache['token']) && ($cache['exp'] ?? 0) > time() + 120) return $cache['token'];
+    [$codigo, $r] = http('POST', 'https://login.microsoftonline.com/' . $c['tenant_id'] . '/oauth2/v2.0/token',
+        ['Content-Type: application/x-www-form-urlencoded'],
+        http_build_query(['client_id' => $c['client_id'], 'client_secret' => $c['client_secret'], 'scope' => 'https://graph.microsoft.com/.default', 'grant_type' => 'client_credentials']));
+    $j = json_decode($r, true);
+    if ($codigo !== 200 || empty($j['access_token'])) throw new RuntimeException('Microsoft no entregó el token (' . $codigo . '): ' . substr((string)($j['error_description'] ?? $r), 0, 200));
+    escribirJson('token.json', ['token' => $j['access_token'], 'exp' => time() + (int)($j['expires_in'] ?? 3000)]);
+    return $j['access_token'];
+}
+function graphGet(string $rutaOUrl): array {
+    $url = str_starts_with($rutaOUrl, 'http') ? $rutaOUrl : 'https://graph.microsoft.com/v1.0' . $rutaOUrl;
+    for ($i = 0; $i < 3; $i++) {
+        [$codigo, $r] = http('GET', $url, ['Authorization: Bearer ' . tokenGraph(), 'Accept: application/json']);
+        if ($codigo === 429 || $codigo >= 500) { sleep(2 + $i); continue; }
+        $j = json_decode($r, true);
+        if ($codigo >= 400) throw new RuntimeException('Graph ' . $codigo . ': ' . substr((string)($j['error']['message'] ?? $r), 0, 200));
+        return is_array($j) ? $j : [];
+    }
+    throw new RuntimeException('Microsoft está ocupado; intenta de nuevo en un momento.');
+}
+function graphTodos(string $ruta): array {
+    $items = [];
+    $url = $ruta;
+    for ($pag = 0; $url && $pag < 60; $pag++) {
+        $j = graphGet($url);
+        foreach (($j['value'] ?? []) as $v) $items[] = $v;
+        $url = $j['@odata.nextLink'] ?? null;
+    }
+    return $items;
+}
+function idSitio(string $rutaSitio): string {
+    $c = cfg();
+    $cache = leerJson('sitios.json');
+    if (!empty($cache[$rutaSitio])) return $cache[$rutaSitio];
+    $j = graphGet('/sites/' . $c['sp_host'] . ':' . $rutaSitio . '?$select=id');
+    $cache[$rutaSitio] = $j['id'];
+    escribirJson('sitios.json', $cache);
+    return $j['id'];
+}
+function idLista(string $sitio, string $nombre): string {
+    $cache = leerJson('listas.json');
+    $clave = $sitio . '|' . $nombre;
+    if (!empty($cache[$clave])) return $cache[$clave];
+    foreach (graphTodos('/sites/' . $sitio . '/lists?$select=id,displayName&$top=200') as $l) {
+        if (normalizar($l['displayName'] ?? '') === normalizar($nombre)) { $cache[$clave] = $l['id']; escribirJson('listas.json', $cache); return $l['id']; }
+    }
+    throw new RuntimeException('No encontré la lista «' . $nombre . '» en SharePoint.');
+}
+/** Nombre interno de la columna cuyo nombre visible coincide con alguna de las pistas (exacto primero, luego «contiene»). */
+function columnasDe(string $sitio, string $lista): array {
+    return graphTodos('/sites/' . $sitio . '/lists/' . $lista . '/columns?$select=name,displayName&$top=500');
+}
+function resolverColumna(array $columnas, array $pistas): ?string {
+    foreach ($pistas as $p) foreach ($columnas as $c) if (normalizar($c['displayName'] ?? '') === normalizar($p)) return $c['name'];
+    foreach ($pistas as $p) foreach ($columnas as $c) if (str_contains(normalizar($c['displayName'] ?? ''), normalizar($p))) return $c['name'];
+    return null;
+}
+function valorCampo($v): string {
+    if (is_array($v)) {
+        if (isset($v['LookupValue'])) return (string)$v['LookupValue'];
+        if (isset($v[0]) && is_array($v[0]) && isset($v[0]['LookupValue'])) return implode('; ', array_map(fn($x) => (string)($x['LookupValue'] ?? ''), $v));
+        return implode('; ', array_map('strval', array_filter($v, 'is_scalar')));
+    }
+    return (string)($v ?? '');
+}
+
+// ---------- accesos: quién entra y qué ve ----------
+// Todo sale de la lista «Clientes» (la misma de siempre): cada cliente tiene su CORREO y su Entidad (p. ej. «GRUPO COLMEDICA»). Quien tenga su correo en la fila de un cliente
+// entra y ve los procesos de TODA la Entidad de ese cliente; si la entidad tiene varios clientes (Grupo Colmédica) se ve un selector «Todos / cada cliente».
+// Si hace falta dar acceso a más personas, se pueden agregar más correos (separados por «;») en la misma celda CORREO o en una columna opcional «Correos portal».
+function claveEntidad(string $t): string { return normalizar(preg_replace('/\s+/', ' ', $t)); }
+
+/** Filas de la lista Clientes: [['razon','correos','entidad']]. En modo real se lee de SharePoint y se guarda 5 minutos. */
+function filasClientes(): array {
+    if (esDemo()) {
+        $demo = json_decode((string)file_get_contents(__DIR__ . '/demo-datos.json'), true);
+        return $demo['clientes'];
+    }
+    $cache = leerJson('cache-clientes.json');
+    if (!empty($cache['filas']) && ($cache['exp'] ?? 0) > time()) return $cache['filas'];
+    $c = cfg();
+    $sitio = idSitio($c['sitio_procesos']);
+    $lista = idLista($sitio, ($c['lista_clientes'] ?? 'Clientes'));
+    $cols = columnasDe($sitio, $lista);
+    $cRazon = resolverColumna($cols, ['razon social']);
+    $cCorreo = resolverColumna($cols, ['correo']);
+    $cExtra = resolverColumna($cols, ['correos portal', 'correo portal']);
+    $cEntidad = resolverColumna($cols, ['entidad']);
+    if (!$cRazon || !$cCorreo || !$cEntidad) throw new RuntimeException('La lista Clientes necesita las columnas Razón social, Correo y Entidad.');
+    $filas = [];
+    foreach (graphTodos('/sites/' . $sitio . '/lists/' . $lista . '/items?$expand=fields&$top=500') as $it) {
+        $f = $it['fields'] ?? [];
+        $correos = valorCampo($f[$cCorreo] ?? '') . ';' . ($cExtra ? valorCampo($f[$cExtra] ?? '') : '');
+        $filas[] = ['razon' => valorCampo($f[$cRazon] ?? ''), 'correos' => $correos, 'entidad' => valorCampo($f[$cEntidad] ?? '')];
+    }
+    escribirJson('cache-clientes.json', ['exp' => time() + 300, 'filas' => $filas]);
+    return $filas;
+}
+/** ¿Es del equipo de Lexara? Por dominio de correo (config 'dominios_lexara') o por correo suelto (config 'correos_lexara'). */
+function esEquipoLexara(string $correo): bool {
+    $c = cfg();
+    $correo = normalizar($correo);
+    if (in_array($correo, array_map('normalizar', $c['correos_lexara'] ?? []), true)) return true;
+    $dominio = substr(strrchr($correo, '@') ?: '', 1);
+    return $dominio !== '' && in_array($dominio, array_map('normalizar', $c['dominios_lexara'] ?? ['lexaraabogados.com']), true);
+}
+function accesoDe(string $correo): ?array {
+    $correo = normalizar($correo);
+    if ($correo === '' || !filter_var($correo, FILTER_VALIDATE_EMAIL)) return null;
+    if (esEquipoLexara($correo)) {
+        // El equipo de Lexara entra con su correo y elige «ver como» cualquier cliente (ver opcionesEquipo / accesoDeOpcion). No es un cliente: no ve nada hasta elegir.
+        return ['correo' => $correo, 'nombre' => 'Equipo Lexara', 'equipo' => true, 'entidades' => [], 'solos' => [], 'clientes' => [], 'grupo' => false];
+    }
+    return accesoDesdeClientes($correo, filasClientes());
+}
+/** Lo que el equipo puede elegir para «ver como»: cada entidad de GRUPO como una sola opción, y cada cliente suelto por separado. */
+function opcionesEquipo(): array {
+    $grupo = entidadesGrupo();
+    $nombresGrupo = [];
+    $opciones = [];
+    foreach (filasClientes() as $fila) {
+        $razon = trim((string)($fila['razon'] ?? ''));
+        if ($razon === '') continue;
+        $ent = claveEntidad((string)($fila['entidad'] ?? ''));
+        if ($ent !== '' && in_array($ent, $grupo, true)) { if (!isset($nombresGrupo[$ent])) $nombresGrupo[$ent] = trim((string)$fila['entidad']); }
+        else $opciones['c:' . normalizar($razon)] = ['id' => 'c:' . normalizar($razon), 'nombre' => $razon, 'grupo' => false];
+    }
+    $etiquetas = array_change_key_case(cfg()['etiquetas_grupo'] ?? ['grupo colmedica' => 'Grupo Colmédica'], CASE_LOWER);
+    $lista = [];
+    foreach ($nombresGrupo as $ent => $nombre) $lista[] = ['id' => 'g:' . $ent, 'nombre' => $etiquetas[$ent] ?? $nombre, 'grupo' => true];
+    $resto = array_values($opciones);
+    usort($resto, fn($x, $y) => strcmp(normalizar($x['nombre']), normalizar($y['nombre'])));
+    return array_merge($lista, $resto);
+}
+/** El acceso tal como lo tendría el cliente elegido (mismas reglas, mismos filtros): lo que ve el cliente es exactamente lo que ve el equipo. */
+function accesoDeOpcion(string $id): ?array {
+    $filas = filasClientes();
+    if (strncmp($id, 'g:', 2) === 0) {
+        $ent = substr($id, 2);
+        if (!in_array($ent, entidadesGrupo(), true)) return null;
+        $clientes = [];
+        foreach ($filas as $fila) if (claveEntidad((string)($fila['entidad'] ?? '')) === $ent && trim((string)($fila['razon'] ?? '')) !== '') $clientes[] = trim((string)$fila['razon']);
+        return $clientes ? ['correo' => '', 'nombre' => '', 'entidades' => [$ent], 'solos' => [], 'clientes' => array_values(array_unique($clientes)), 'grupo' => true] : null;
+    }
+    if (strncmp($id, 'c:', 2) === 0) {
+        $n = substr($id, 2);
+        foreach ($filas as $fila) {
+            $razon = trim((string)($fila['razon'] ?? ''));
+            if ($razon !== '' && normalizar($razon) === $n && !in_array(claveEntidad((string)($fila['entidad'] ?? '')), entidadesGrupo(), true)) {
+                return ['correo' => '', 'nombre' => '', 'entidades' => [], 'solos' => [$n], 'clientes' => [$razon], 'grupo' => false];
+            }
+        }
+    }
+    return null;
+}
+
+/** Entidades que se ven como GRUPO (todos sus clientes juntos, con resumen y tutelas). Cualquier otra Entidad (particulares, empresas sueltas) = cada cliente ve solo lo suyo. */
+function entidadesGrupo(): array {
+    return array_map('claveEntidad', cfg()['entidades_grupo'] ?? ['GRUPO COLMEDICA']);
+}
+/** Puro (se prueba sin Microsoft). $filas = [['razon','correos','entidad']].
+ *  - Si el correo está en un cliente de una entidad de GRUPO → ve toda la entidad (sus clientes y procesos), con resumen y tutelas.
+ *  - Si no → ve solo ese cliente (por su razón social); las demás empresas de su misma «Entidad» NO se mezclan. */
+function accesoDesdeClientes(string $correo, array $filas): ?array {
+    $correo = normalizar($correo);
+    $grupo = entidadesGrupo();
+    $entidades = [];   // entidades de grupo a las que tiene acceso
+    $solos = [];       // clientes individuales (razón social normalizada → nombre)
+    foreach ($filas as $fila) {
+        $razon = trim((string)($fila['razon'] ?? ''));
+        if ($razon === '') continue;
+        $correos = array_map('normalizar', preg_split('/[;,\s]+/', (string)($fila['correos'] ?? ''), -1, PREG_SPLIT_NO_EMPTY));
+        if (!in_array($correo, $correos, true)) continue;
+        $ent = claveEntidad((string)($fila['entidad'] ?? ''));
+        if ($ent !== '' && in_array($ent, $grupo, true)) $entidades[$ent] = true;
+        else $solos[normalizar($razon)] = $razon;
+    }
+    if (!$entidades && !$solos) return null;
+    $clientes = array_values($solos);
+    foreach ($filas as $fila) {
+        $razon = trim((string)($fila['razon'] ?? ''));
+        if ($razon !== '' && isset($entidades[claveEntidad((string)($fila['entidad'] ?? ''))])) $clientes[] = $razon;
+    }
+    return ['correo' => $correo, 'nombre' => '', 'entidades' => array_keys($entidades), 'solos' => array_keys($solos),
+            'clientes' => array_values(array_unique($clientes)), 'grupo' => count($entidades) > 0];
+}
+
+// ---------- códigos de ingreso ----------
+function limitarIntentos(string $clave, int $maximo, int $ventanaSeg): bool {
+    $l = leerJson('limites.json');
+    $ahora = time();
+    foreach ($l as $k => $v) $l[$k] = array_values(array_filter($v, fn($t) => $t > $ahora - 86400));
+    $recientes = array_filter($l[$clave] ?? [], fn($t) => $t > $ahora - $ventanaSeg);
+    if (count($recientes) >= $maximo) { escribirJson('limites.json', $l); return false; }
+    $l[$clave][] = $ahora;
+    escribirJson('limites.json', $l);
+    return true;
+}
+function claveHash(string $s): string {
+    $sal = leerJson('sal.json');
+    if (empty($sal['s'])) { $sal = ['s' => bin2hex(random_bytes(32))]; escribirJson('sal.json', $sal); }
+    return hash_hmac('sha256', $s, $sal['s']);
+}
+function enviarCodigo(string $correo, string $nombre, string $codigo): void {
+    $c = cfg();
+    $minutos = (int)($c['codigo_minutos'] ?? 10);
+    $html = '<div style="font-family:Segoe UI,Arial,sans-serif;color:#1c2624;max-width:480px">'
+        . '<p style="font-size:15px">' . ($nombre !== '' ? htmlspecialchars($nombre) . ', s' : 'S') . 'u código de acceso al portal de clientes de MD Abogados es:</p>'
+        . '<p style="font-size:30px;font-weight:700;letter-spacing:6px;color:#004941;margin:14px 0">' . $codigo . '</p>'
+        . '<p style="font-size:13px;color:#5c6b68">Vale ' . $minutos . ' minutos. Si usted no lo pidió, ignore este mensaje.</p></div>';
+    $cuerpo = json_encode(['message' => [
+        'subject' => 'Su código de acceso — MD Abogados',
+        'body' => ['contentType' => 'HTML', 'content' => $html],
+        'toRecipients' => [['emailAddress' => ['address' => $correo]]],
+    ], 'saveToSentItems' => false], JSON_UNESCAPED_UNICODE);
+    [$codigoHttp, $r] = http('POST', 'https://graph.microsoft.com/v1.0/users/' . rawurlencode($c['correo_envio']) . '/sendMail',
+        ['Authorization: Bearer ' . tokenGraph(), 'Content-Type: application/json'], $cuerpo);
+    if ($codigoHttp >= 300) throw new RuntimeException('No se pudo enviar el correo (' . $codigoHttp . ').');
+}
+
+// ---------- sesión ----------
+function sesionActual(): ?array {
+    $t = $_COOKIE['lexara_portal'] ?? '';
+    if (!preg_match('/^[a-f0-9]{64}$/', $t)) return null;
+    $s = leerJson('sesiones.json');
+    $h = claveHash($t);
+    $r = $s[$h] ?? null;
+    if (!$r || $r['exp'] < time()) return null;
+    // Se vuelve a leer el acceso: si lo desactivaron o le cambiaron los clientes, rige de inmediato.
+    $acceso = accesoDe($r['correo']);
+    return $acceso;
+}
+function abrirSesion(array $acceso): void {
+    $horas = (int)(cfg()['sesion_horas'] ?? 8);
+    $t = bin2hex(random_bytes(32));
+    $s = leerJson('sesiones.json');
+    foreach ($s as $k => $v) if ($v['exp'] < time()) unset($s[$k]);
+    $s[claveHash($t)] = ['correo' => $acceso['correo'], 'exp' => time() + $horas * 3600];
+    escribirJson('sesiones.json', $s);
+    $https = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off';
+    setcookie('lexara_portal', $t, ['expires' => time() + $horas * 3600, 'path' => '/', 'secure' => $https, 'httponly' => true, 'samesite' => 'Strict']);
+}
+function cerrarSesion(): void {
+    $t = $_COOKIE['lexara_portal'] ?? '';
+    if (preg_match('/^[a-f0-9]{64}$/', $t)) { $s = leerJson('sesiones.json'); unset($s[claveHash($t)]); escribirJson('sesiones.json', $s); }
+    setcookie('lexara_portal', '', ['expires' => time() - 3600, 'path' => '/']);
+}
+
+// ---------- procesos (solo campos que el cliente puede ver) ----------
+const CAMPOS_PROCESO = [
+    'Radicado'           => ['numero corto', 'numero_corto', 'radicado'],
+    'Cliente'            => ['cliente'],
+    'Entidad'            => ['entidad'],
+    'Despacho'           => ['despacho judicial', 'despacho', 'juzgado'],
+    'Demandante'         => ['demandante'],
+    'Demandado'          => ['demandado'],
+    'ParteActuamos'      => ['parte en la que actuamos', 'parte en que actuamos'],
+    'TipoProceso'        => ['tipo de proceso', 'tipoproceso'],
+    'Instancia'          => ['instancia'],
+    'EtapaProcesal'      => ['etapa procesal', 'etapa'],
+    'Estado'             => ['estado'],
+    'FechaUltimoEstado'  => ['fecha ultimo estado'],
+];
+function procesosTodos(): array {
+    if (esDemo()) {
+        $demo = json_decode((string)file_get_contents(__DIR__ . '/demo-datos.json'), true);
+        return $demo['procesos'];
+    }
+    $cache = leerJson('cache-procesos.json');
+    if (!empty($cache['procesos']) && ($cache['exp'] ?? 0) > time()) return $cache['procesos'];
+    $c = cfg();
+    $sitio = idSitio($c['sitio_procesos']);
+    $lista = idLista($sitio, $c['lista_procesos']);
+    $cols = columnasDe($sitio, $lista);
+    $mapa = [];
+    foreach (CAMPOS_PROCESO as $clave => $pistas) $mapa[$clave] = resolverColumna($cols, $pistas);
+    if (!$mapa['Cliente']) throw new RuntimeException('La lista de procesos no tiene la columna Cliente.');
+    $salida = [];
+    foreach (graphTodos('/sites/' . $sitio . '/lists/' . $lista . '/items?$expand=fields&$top=500') as $it) {
+        $f = $it['fields'] ?? [];
+        $p = [];
+        foreach ($mapa as $clave => $interno) $p[$clave] = $interno ? valorCampo($f[$interno] ?? '') : '';
+        $p['Estado'] = mb_substr(sinHtml($p['Estado']), 0, 700);
+        if ($p['FechaUltimoEstado'] !== '') $p['FechaUltimoEstado'] = substr($p['FechaUltimoEstado'], 0, 10);
+        $salida[] = $p;
+    }
+    escribirJson('cache-procesos.json', ['exp' => time() + 300, 'procesos' => $salida]);
+    return $salida;
+}
+function clienteElegidoValido(array $acceso, ?string $clienteElegido): ?string {
+    if ($clienteElegido === null || $clienteElegido === '' || $clienteElegido === 'todos') return '';
+    $n = normalizar($clienteElegido);
+    return in_array($n, array_map('normalizar', $acceso['clientes'] ?? []), true) ? $n : null;   // null = pidió un cliente que no es suyo
+}
+function procesosDe(array $acceso, ?string $clienteElegido): array {
+    $elegido = clienteElegidoValido($acceso, $clienteElegido);
+    if ($elegido === null) return [];
+    $entidades = $acceso['entidades'] ?? [];
+    $solos = $acceso['solos'] ?? [];
+    $salida = [];
+    foreach (procesosTodos() as $p) {
+        $cli = normalizar((string)($p['Cliente'] ?? ''));
+        $permitido = in_array(claveEntidad((string)($p['Entidad'] ?? '')), $entidades, true) || in_array($cli, $solos, true);
+        if (!$permitido) continue;
+        if ($elegido !== '' && $cli !== $elegido) continue;
+        $salida[] = $p;
+    }
+    usort($salida, fn($a, $b) => strcmp($b['FechaUltimoEstado'] ?? '', $a['FechaUltimoEstado'] ?? ''));
+    return $salida;
+}
+
+// ---------- tutelas y resumen (solo GRUPO COLMÉDICA) ----------
+// Nombres internos reales de la lista Tutelas (mapeo confirmado en la app); si alguno no existe, se busca por nombre visible.
+const CAMPOS_TUTELA = [
+    'NoTutela'          => ['No_x0020_Tutela', ['no tutela', 'numero tutela']],
+    'Cliente'           => ['Cliente', ['cliente']],
+    'Entidad'           => ['Entidad', ['entidad']],
+    'Juzgado'           => ['juzgado', ['juzgado']],
+    'Departamento'      => ['Departamento', ['departamento']],
+    'Ciudad'            => ['Ciudad', ['ciudad']],
+    'FechaNotificacion' => ['fecha_x0020_Notificacion', ['fecha notificacion']],
+    'FechaVencimiento'  => ['Vencimiento', ['vencimiento', 'fecha vencimiento']],
+    'TipoRespuesta'     => ['Tipo_x0020_Respuesta', ['tipo respuesta']],
+    'Usuario'           => ['Usuario', ['usuario']],
+    'Contestada'        => ['Contestada', ['contestada']],
+    'FechaContestacion' => ['FechaContestacion', ['fecha contestacion']],
+];
+function fechaIso($v): string { return preg_match('/^(\d{4}-\d{2}-\d{2})/', (string)$v, $m) ? $m[1] : ''; }
+function tutelasTodas(): array {
+    if (esDemo()) {
+        $demo = json_decode((string)file_get_contents(__DIR__ . '/demo-datos.json'), true);
+        return $demo['tutelas'];
+    }
+    $cache = leerJson('cache-tutelas.json');
+    if (!empty($cache['tutelas']) && ($cache['exp'] ?? 0) > time()) return $cache['tutelas'];
+    $c = cfg();
+    $sitio = idSitio($c['sitio_tutelas'] ?? '/sites/TutelasMDABOGADOS');
+    $lista = idLista($sitio, $c['lista_tutelas'] ?? 'Tutelas');
+    $cols = columnasDe($sitio, $lista);
+    $nombres = array_column($cols, 'name');
+    $mapa = [];
+    foreach (CAMPOS_TUTELA as $clave => [$interno, $pistas]) $mapa[$clave] = in_array($interno, $nombres, true) ? $interno : resolverColumna($cols, $pistas);
+    $salida = [];
+    foreach (graphTodos('/sites/' . $sitio . '/lists/' . $lista . '/items?$expand=fields&$top=500') as $it) {
+        $f = $it['fields'] ?? [];
+        $x = [];
+        foreach ($mapa as $clave => $interno) $x[$clave] = $interno ? valorCampo($f[$interno] ?? '') : '';
+        $x['FechaNotificacion'] = fechaIso($x['FechaNotificacion']);
+        $x['FechaVencimiento'] = fechaIso($x['FechaVencimiento']);
+        $x['FechaContestacion'] = fechaIso($x['FechaContestacion']);
+        $x['Contestada'] = in_array(normalizar((string)$x['Contestada']), ['si', 'sí', 'true', '1', 'yes'], true);
+        $salida[] = $x;
+    }
+    escribirJson('cache-tutelas.json', ['exp' => time() + 300, 'tutelas' => $salida]);
+    return $salida;
+}
+function tutelasDe(array $acceso, ?string $clienteElegido): array {
+    if (empty($acceso['grupo'])) return [];   // tutelas y resumen solo para el Grupo Colmédica
+    $elegido = clienteElegidoValido($acceso, $clienteElegido);
+    if ($elegido === null) return [];
+    $permitidos = array_map('normalizar', $acceso['clientes'] ?? []);
+    $salida = [];
+    foreach (tutelasTodas() as $x) {
+        $cli = normalizar((string)($x['Cliente'] ?? ''));
+        if (!in_array($cli, $permitidos, true)) continue;
+        if ($elegido !== '' && $cli !== $elegido) continue;
+        $salida[] = $x;
+    }
+    usort($salida, fn($a, $b) => strcmp($b['FechaVencimiento'] ?? '', $a['FechaVencimiento'] ?? ''));
+    return $salida;
+}
+function contar(array $filas, callable $clave): array {
+    $c = [];
+    foreach ($filas as $f) { $k = trim((string)$clave($f)); if ($k === '') $k = 'Sin dato'; $c[$k] = ($c[$k] ?? 0) + 1; }
+    arsort($c);
+    $salida = [];
+    foreach ($c as $k => $n) $salida[] = ['nombre' => (string)$k, 'cantidad' => $n];
+    return $salida;
+}
+/** Resumen estadístico del grupo: procesos y tutelas por cliente, por etapa, por mes y estado de envío. */
+function resumenDe(array $acceso, ?string $clienteElegido): array {
+    if (empty($acceso['grupo'])) return [];
+    $procesos = procesosDe($acceso, $clienteElegido);
+    $tutelas = tutelasDe($acceso, $clienteElegido);
+    $enviadas = count(array_filter($tutelas, fn($x) => !empty($x['Contestada'])));
+    $porMes = [];
+    foreach ($tutelas as $x) { $m = substr((string)($x['FechaVencimiento'] ?? ''), 0, 7); if ($m !== '') $porMes[$m] = ($porMes[$m] ?? 0) + 1; }
+    ksort($porMes);
+    $porMes = array_slice($porMes, -12, null, true);
+    $meses = [];
+    foreach ($porMes as $m => $n) $meses[] = ['mes' => $m, 'cantidad' => $n];
+    return [
+        'procesos' => ['total' => count($procesos), 'porCliente' => contar($procesos, fn($p) => $p['Cliente'] ?? ''), 'porEtapa' => array_slice(contar($procesos, fn($p) => $p['EtapaProcesal'] ?? ''), 0, 8), 'porTipo' => array_slice(contar($procesos, fn($p) => $p['TipoProceso'] ?? ''), 0, 8)],
+        'tutelas' => ['total' => count($tutelas), 'enviadas' => $enviadas, 'porEnviar' => count($tutelas) - $enviadas, 'porCliente' => contar($tutelas, fn($x) => $x['Cliente'] ?? ''), 'porTipo' => array_slice(contar($tutelas, fn($x) => $x['TipoRespuesta'] ?? ''), 0, 8), 'porEntidad' => array_slice(contar($tutelas, fn($x) => $x['Entidad'] ?? ''), 0, 8), 'porMes' => $meses],
+    ];
+}

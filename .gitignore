@@ -7,3 +7,7 @@ robot-tutelas/config.php
 
 # PROMPT MAESTRO de la abogada (know-how del despacho): vive solo en el servidor (cPanel) y en la maquina local, nunca en el repo publico.
 robot-tutelas/prompt-maestro.md
+
+# Portal de clientes: clave real de Azure y datos de sesiones/codigos (solo viven en el servidor)
+portal-clientes/config.php
+portal-clientes/data/

@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Portal de clientes — Lexara Abogados</title>
+<link rel="icon" href="logo.png">
+<link rel="stylesheet" href="portal.css">
+</head>
+<body>
+
+<!-- Ingreso -->
+<main id="vista-login" class="login" hidden>
+  <section class="login-marca">
+    <img src="logo-blanco.png" alt="Lexara Abogados" class="login-logo">
+    <p class="login-lema">Siga el avance de sus procesos, en un solo lugar.</p>
+  </section>
+  <section class="login-caja">
+    <div id="aviso-demo" class="demo" hidden>MODO DEMO · datos de ejemplo</div>
+    <h1>Portal de clientes</h1>
+    <p class="suave" id="login-ayuda">Escriba su correo y le enviamos un código de un solo uso. No necesita contraseña.</p>
+
+    <form id="form-correo" autocomplete="on">
+      <label for="correo">Correo electrónico</label>
+      <input id="correo" name="correo" type="email" inputmode="email" autocomplete="email" required placeholder="nombre@empresa.com">
+      <button type="submit" class="boton" id="btn-pedir">Enviarme el código</button>
+    </form>
+
+    <form id="form-codigo" autocomplete="off" hidden>
+      <p class="info" id="msg-codigo"></p>
+      <div id="codigo-demo" class="demo-codigo" hidden></div>
+      <label for="codigo">Código de 6 dígitos</label>
+      <input id="codigo" name="codigo" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="one-time-code" required placeholder="······">
+      <button type="submit" class="boton" id="btn-entrar">Entrar</button>
+      <button type="button" class="enlace" id="btn-otro">Usar otro correo o pedir un código nuevo</button>
+    </form>
+    <p class="error" id="login-error" role="alert" hidden></p>
+  </section>
+</main>
+
+<!-- Portal -->
+<div id="vista-app" hidden>
+  <header class="barra">
+    <img src="logo.png" alt="Lexara Abogados" class="barra-logo logo-claro"><img src="logo-blanco.png" alt="Lexara Abogados" class="barra-logo logo-oscuro">
+    <div class="barra-der">
+      <span class="barra-usuario" id="usuario"></span>
+      <button type="button" class="boton-sec" id="btn-salir">Salir</button>
+    </div>
+  </header>
+
+  <main class="contenido">
+    <div id="aviso-demo2" class="demo" hidden>MODO DEMO · datos de ejemplo</div>
+    <div id="franja-equipo" class="franja-equipo" hidden>
+      <span id="franja-texto"></span>
+      <button type="button" class="boton-sec" id="btn-cambiar">Cambiar de cliente</button>
+    </div>
+    <h1 id="titulo">Sus procesos</h1>
+
+    <!-- Solo equipo Lexara: elegir un cliente para ver el portal como lo ve ese cliente -->
+    <section id="panel-equipo" hidden>
+      <p class="suave">Elija un cliente para ver el portal <strong>exactamente como lo ve él</strong>: sus mismos procesos, filtros y pestañas.</p>
+      <div class="herramientas"><input id="buscar-cliente" type="search" placeholder="Buscar cliente…" aria-label="Buscar cliente"><span class="conteo" id="conteo-clientes"></span></div>
+      <div id="rejilla-clientes" class="rejilla-clientes"></div>
+    </section>
+
+    <div id="selector" class="selector" role="group" aria-label="Cliente" hidden></div>
+    <nav id="pestanas" class="pestanas" role="tablist" hidden>
+      <button type="button" role="tab" data-panel="procesos" aria-selected="true">Procesos</button>
+      <button type="button" role="tab" data-panel="resumen" aria-selected="false">Resumen</button>
+      <button type="button" role="tab" data-panel="tutelas" aria-selected="false">Tutelas</button>
+    </nav>
+
+    <p class="error" id="app-error" role="alert" hidden></p>
+
+    <!-- Procesos -->
+    <section id="panel-procesos">
+      <div class="herramientas">
+        <input id="buscar" type="search" placeholder="Buscar por radicado, juzgado, demandante…" aria-label="Buscar procesos">
+        <span class="conteo" id="conteo"></span>
+      </div>
+      <p class="suave" id="cargando">Cargando sus procesos…</p>
+      <div id="lista" class="lista"></div>
+      <p class="vacio" id="vacio" hidden>No hay procesos para mostrar.</p>
+    </section>
+
+    <!-- Resumen (solo grupo) -->
+    <section id="panel-resumen" hidden>
+      <p class="suave" id="cargando-resumen">Calculando el resumen…</p>
+      <div id="resumen"></div>
+    </section>
+
+    <!-- Tutelas (solo grupo) -->
+    <section id="panel-tutelas" hidden>
+      <div class="herramientas">
+        <input id="buscar-tutelas" type="search" placeholder="Buscar por número, juzgado, accionante, entidad…" aria-label="Buscar tutelas">
+        <select id="filtro-envio" aria-label="Estado de la contestación">
+          <option value="">Todas</option>
+          <option value="enviada">Contestación enviada</option>
+          <option value="pendiente">Por enviar</option>
+        </select>
+        <select id="filtro-mes" aria-label="Mes de vencimiento"><option value="">Todos los meses</option></select>
+        <span class="conteo" id="conteo-tutelas"></span>
+      </div>
+      <p class="suave" id="cargando-tutelas">Cargando las tutelas…</p>
+      <div id="lista-tutelas" class="lista"></div>
+      <p class="vacio" id="vacio-tutelas" hidden>No hay tutelas para mostrar.</p>
+    </section>
+  </main>
+
+  <footer class="pie">MD Abogados SAS · Esta información es de consulta y se actualiza con cada actuación.</footer>
+</div>
+
+<script src="portal.js"></script>
+</body>
+</html>
