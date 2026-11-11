@@ -57,7 +57,7 @@ export default function FacturacionView({ facturas, clientes, procesos, searchQu
     <div className="view">
       <div className="view-header">
         <div>
-          <h1>Solicitud De Factura E.</h1>
+          <h1>Factura Electrónica</h1>
           <p>{rows.length} de {facturas.length} facturas{hasActiveFilters && <> · <button type="button" className="clear-filters-link" onClick={clearFilters}>Limpiar filtros de columna</button></>}</p>
         </div>
         <div style={{display:'flex', alignItems:'center', gap:10, flexWrap:'wrap'}}>

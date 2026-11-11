@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-11-11 (156)
+- **«Solicitud De Factura E.» ahora se llama «Factura Electrónica»** — pedido del usuario. Cambia en el menú lateral, el título de la pantalla, la barra superior, la lista de «Módulos permitidos» de la ficha del colaborador y el manual de usuario. El funcionamiento y los permisos no cambian.
+
 ## 2026-11-11 (155)
 - **Correo de la orden de compra: mismo estilo que el de la factura** — pedido del usuario. Saludo «Buenos días.» / «Buenas tardes.» según la hora (sin nombre: el destinatario se escribe a mano), «Por favor generar el número de orden de compra con el siguiente detalle:» y asunto «Generación de número de orden de compra» + cliente resumido + etapa + número corto (mismas reglas del nombre del PDF), p. ej. «Generación de número de orden de compra UMD Tutelas».
 

@@ -53,7 +53,7 @@ const NAV_ITEMS = [
   {view:'procesos', label:'Procesos judiciales', icon:<IconProcesos/>},
   {view:'tutelas', label:'Tutelas', icon:<IconTutelas/>},
   {view:'clientes', label:'Clientes', icon:<IconClientes/>},
-  {view:'facturacion', label:'Solicitud De Factura E.', icon:<IconFacturacion/>},
+  {view:'facturacion', label:'Factura Electrónica', icon:<IconFacturacion/>},
   {view:'ordenesCompra', label:'Órdenes de compra', icon:<IconOrdenesCompra/>},
   {view:'vencimientos', label:'Vencimientos', icon:<IconVencimientos/>},
   {view:'administracion', label:'Administración', icon:<IconColaboradores/>},

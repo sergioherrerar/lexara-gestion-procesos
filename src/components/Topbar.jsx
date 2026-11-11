@@ -8,7 +8,7 @@ import { nombreAbogadoCanonico } from '../lib/graph';
 // "informes"/"tutelas" faltaban acá desde que se agregaron esos módulos (el
 // <h2> caía al fallback TITLES[view]||view y mostraba el string crudo en
 // minúsculas) — corregido de paso al agregar "administracion".
-const TITLES = {dashboard:"Dashboard", informes:"Informes", procesos:"Procesos judiciales", tutelas:"Tutelas", clientes:"Clientes", facturacion:"Solicitud De Factura E.", ordenesCompra:"Órdenes de compra", vencimientos:"Vencimientos", administracion:"Administración", setup:"Configuración"};
+const TITLES = {dashboard:"Dashboard", informes:"Informes", procesos:"Procesos judiciales", tutelas:"Tutelas", clientes:"Clientes", facturacion:"Factura Electrónica", ordenesCompra:"Órdenes de compra", vencimientos:"Vencimientos", administracion:"Administración", setup:"Configuración"};
 
 // Estas vistas ya traen su propio encabezado grande (el <h1> con la línea dorada) con el MISMO texto: repetirlo en la barra superior era redundante
 // (reporte del usuario 2026-10-29, «aquí dice igual»). Dashboard («Panorama general») y Configuración sí tienen un título distinto y lo conservan.
