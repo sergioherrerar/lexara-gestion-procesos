@@ -6,3 +6,10 @@ Options -Indexes
 <FilesMatch "^demo-datos\.json$">
   Require all denied
 </FilesMatch>
+
+# Que el navegador revise siempre si hay una versión nueva de la página, el diseño y el script (evita ver el diseño viejo después de actualizar).
+<IfModule mod_headers.c>
+  <FilesMatch "\.(html|css|js)$">
+    Header set Cache-Control "no-cache, must-revalidate"
+  </FilesMatch>
+</IfModule>

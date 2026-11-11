@@ -58,7 +58,7 @@
   // ---------- estructura ----------
   function iniciar(){
     api('sesion', null, estado.como ? '&como=' + encodeURIComponent(estado.como) : '').then(function(s){
-      if(!s.ok){ mostrar('login'); return; }
+      if(!s.ok){ mostrar('login'); if(s._estado >= 500) errorLogin(s.error || 'El portal no está disponible en este momento.'); return; }
       estado.demo = !!s.demo; estado.equipo = !!s.equipo; estado.opciones = s.opciones || []; estado.clientes = s.clientes || []; estado.grupo = !!s.grupo;
       estado.como = s.como || ''; estado.elegido = 'todos'; estado.panel = 'procesos'; estado.cargado = {};
       $('aviso-demo').hidden = !estado.demo; $('aviso-demo2').hidden = !estado.demo;

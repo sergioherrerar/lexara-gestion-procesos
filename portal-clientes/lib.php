@@ -4,16 +4,26 @@
 
 declare(strict_types=1);
 
+/** El servidor no tiene config.php: el portal NO arranca (antes caía en silencio a la plantilla en modo demo, mostrando datos de ejemplo y el código en pantalla). */
+class ConfigFaltante extends RuntimeException {}
 function cfg(): array {
     static $c = null;
     if ($c === null) {
         $ruta = __DIR__ . '/config.php';
-        if (!is_file($ruta)) $ruta = __DIR__ . '/config.example.php';
+        if (!is_file($ruta)) {
+            // La plantilla (modo demo) solo se usa para probar en un computador (localhost / línea de comandos), nunca en el servidor real.
+            $local = PHP_SAPI === 'cli' || in_array((string)($_SERVER['SERVER_NAME'] ?? ''), ['localhost', '127.0.0.1', '::1'], true);
+            if (!$local) throw new ConfigFaltante('Falta el archivo config.php en el servidor.');
+            $ruta = __DIR__ . '/config.example.php';
+        }
         $c = require $ruta;
     }
     return $c;
 }
-function esDemo(): bool { return (cfg()['modo'] ?? 'demo') !== 'real'; }
+function esDemo(): bool {
+    try { return (cfg()['modo'] ?? 'demo') !== 'real'; }
+    catch (ConfigFaltante $e) { return false; }
+}
 
 function salir(array $datos, int $codigo = 200): void {
     http_response_code($codigo);

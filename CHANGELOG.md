@@ -2,6 +2,11 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-11-11 (160)
+- **Portal de clientes: ya no arranca en modo demo si falta `config.php`** — antes, un servidor sin ese archivo caía en silencio a la plantilla (`config.example.php`) en modo demo, mostrando datos de ejemplo y el código de ingreso en pantalla. Ahora el portal avisa «El portal todavía no está configurado en el servidor (falta el archivo config.php)» y no funciona; el modo demo solo sirve en un computador de pruebas (localhost o línea de comandos).
+- **Portal de clientes: el navegador ya no se queda con el diseño viejo** — la página pide `portal.css` y `portal.js` con marca de versión y el `.htaccess` obliga a revisar siempre si hay una versión nueva (se veía el HTML nuevo con la hoja de estilos vieja después de actualizar).
+- La configuración real del portal (con la clave de Azure) se guarda aparte del código, en `portal-clientes-config/` (fuera de git), para restaurarla sin tocar el paquete principal.
+
 ## 2026-11-11 (159)
 - **Botón «Portal de clientes» en el menú lateral de la app** — pedido del usuario. Grupo «Clientes», entre los módulos y «Configuración»: abre www.lexaraabogados.com/portal-clientes/ en una pestaña nueva (la dirección vive en `PORTAL_CLIENTES_URL` de `src/config.js`).
 - **Portal de clientes: nuevo diseño** — pedido del usuario («está muy oscuro… menú lateral a pantalla completa»). Un solo tema claro y sobrio (ya no sigue el modo oscuro del equipo), menú lateral verde institucional con el logo grande (Procesos, Resumen y Tutelas; las dos últimas solo para el Grupo Colmédica) y el contenido a todo el ancho. El selector de cliente pasó a lista desplegable (los nombres largos no cabían como botones). Cada proceso y cada tutela es una tarjeta con encabezado (radicado o número de tutela, cliente, etapa o insignia «Contestación enviada» / «Por enviar») y cuerpo en dos columnas (datos | último estado o fechas). En celular el menú se abre con ☰ y se cierra solo al elegir una sección.

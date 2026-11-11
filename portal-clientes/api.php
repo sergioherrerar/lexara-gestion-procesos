@@ -105,6 +105,7 @@ try {
     }
 } catch (Throwable $e) {
     error_log('portal-clientes: ' . $e->getMessage());
+    if ($e instanceof ConfigFaltante) salir(['ok' => false, 'error' => 'El portal todavía no está configurado en el servidor (falta el archivo config.php). Avise al equipo de Lexara.'], 500);
     // El detalle técnico solo se ve en modo demo; el cliente recibe un mensaje general.
     salir(['ok' => false, 'error' => esDemo() ? $e->getMessage() : 'No pudimos completar la consulta. Intente de nuevo en unos minutos.'], 500);
 }

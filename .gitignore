@@ -11,3 +11,8 @@ robot-tutelas/prompt-maestro.md
 # Portal de clientes: clave real de Azure y datos de sesiones/codigos (solo viven en el servidor)
 portal-clientes/config.php
 portal-clientes/data/
+
+# Config real del portal de clientes lista para restaurar en el servidor (lleva la clave de Azure): nunca al repositorio
+portal-clientes-config/
+portal-clientes-config.zip
+portal-clientes-cpanel.zip
