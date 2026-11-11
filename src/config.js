@@ -7,6 +7,9 @@
 // vistazo si ya subió la versión más reciente a cada sitio.
 export const APP_VERSION = "1";
 
+// Portal de clientes (carpeta portal-clientes/, página aparte para que cada cliente vea sus procesos). El equipo entra con su correo de Lexara y elige un cliente para verlo como él.
+export const PORTAL_CLIENTES_URL = "https://www.lexaraabogados.com/portal-clientes/";
+
 // =========================================================================
 // CONFIG — edítalo directamente aquí para dejar la conexión fija en producción.
 // =========================================================================

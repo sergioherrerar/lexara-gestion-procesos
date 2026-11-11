@@ -1,6 +1,6 @@
 import logoSidebar from '../assets/Logo Blanco.png';
 import { canAccessView } from '../lib/permissions';
-import { APP_VERSION } from '../config';
+import { APP_VERSION, PORTAL_CLIENTES_URL } from '../config';
 
 // Un ícono propio por módulo (pedido explícito del usuario 2026-08-25) —
 // antes todos los ítems del menú usaban la misma marca de Lexara (ICON_SVG,
@@ -42,6 +42,9 @@ function IconVencimientos(){
 // .sidebar.collapsed .sidebar-collapse-btn en styles.css).
 function IconColapsar(){
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>;
+}
+function IconPortalClientes(){
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><path d="M15 3h6v6"/><path d="M10 14L21 3"/></svg>;
 }
 function IconConfiguracion(){
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>;
@@ -102,6 +105,11 @@ export default function Sidebar({ view, onGoView, account, liveMode, modulosPerm
           <span className="label-text">{item.label}</span>
         </div>
       ))}
+      <div className="nav-group-label">Clientes</div>
+      <a className="nav-item nav-item-externo" href={PORTAL_CLIENTES_URL} target="_blank" rel="noopener noreferrer" title="Abrir el portal de clientes en una pestaña nueva">
+        <span className="nav-item-icon"><IconPortalClientes/></span>
+        <span className="label-text">Portal de clientes</span>
+      </a>
       {puedeConfiguracion && (
         <>
           <div className="nav-group-label">Sistema</div>

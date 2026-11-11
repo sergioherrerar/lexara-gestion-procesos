@@ -73,7 +73,7 @@
   function vistaElegirCliente(){
     try{ sessionStorage.removeItem('lexara-como'); }catch(e){}
     estado.como = '';
-    $('franja-equipo').hidden = true; $('selector').hidden = true; $('pestanas').hidden = true;
+    $('franja-equipo').hidden = true; $('selector').hidden = true; $('pestanas').hidden = true; cerrarMenu();
     ['procesos', 'resumen', 'tutelas'].forEach(function(p){ $('panel-' + p).hidden = true; });
     $('panel-equipo').hidden = false; $('titulo').textContent = 'Equipo Lexara'; errorApp('');
     pintarClientes();
@@ -103,27 +103,33 @@
     var f = $('franja-equipo');
     if(estado.equipo){ $('franja-texto').textContent = 'Vista del equipo Lexara · está viendo el portal como «' + nombreOpcionActual() + '»'; f.hidden = false; } else { f.hidden = true; }
     $('titulo').textContent = estado.equipo ? nombreOpcionActual() : (estado.clientes.length === 1 ? 'Procesos de ' + estado.clientes[0] : (estado.grupo ? 'Grupo Colmédica' : 'Sus procesos'));
-    $('pestanas').hidden = !estado.grupo;
-    armarSelector(); marcarPestana(); cargarPanel();
+    mostrarMenu(); armarSelector(); marcarPestana(); cargarPanel();
   }
 
   function armarSelector(){
-    var cont = $('selector'); cont.textContent = '';
+    var cont = $('selector'), sel = $('sel-cliente');
     if(estado.clientes.length < 2){ cont.hidden = true; estado.elegido = 'todos'; return; }
-    cont.hidden = false;
+    cont.hidden = false; sel.textContent = '';
     ['todos'].concat(estado.clientes).forEach(function(c){
-      var b = el('button', null, c === 'todos' ? 'Todos' : c);
-      b.type = 'button'; b.setAttribute('aria-pressed', String(c === estado.elegido));
-      b.addEventListener('click', function(){ estado.elegido = c; estado.cargado = {}; armarSelector(); cargarPanel(); });
-      cont.appendChild(b);
+      var o = el('option', null, c === 'todos' ? 'Todos los clientes' : c); o.value = c; sel.appendChild(o);
     });
+    sel.value = estado.elegido;
   }
+  $('sel-cliente').addEventListener('change', function(){ estado.elegido = this.value; estado.cargado = {}; cargarPanel(); });
+  // menú lateral: «Resumen» y «Tutelas» solo para el grupo; en celular el menú se abre con ☰
+  function mostrarMenu(){
+    $('pestanas').hidden = false;
+    [].forEach.call(document.querySelectorAll('#pestanas [data-solo-grupo]'), function(b){ b.hidden = !estado.grupo; });
+  }
+  function cerrarMenu(){ $('vista-app').classList.remove('menu-abierto'); $('btn-menu').setAttribute('aria-expanded', 'false'); }
+  $('btn-menu').addEventListener('click', function(){ var abierto = $('vista-app').classList.toggle('menu-abierto'); this.setAttribute('aria-expanded', String(abierto)); });
+  $('velo').addEventListener('click', cerrarMenu);
   function marcarPestana(){
     [].forEach.call(document.querySelectorAll('#pestanas button'), function(b){ b.setAttribute('aria-selected', String(b.getAttribute('data-panel') === estado.panel)); });
     ['procesos', 'resumen', 'tutelas'].forEach(function(p){ $('panel-' + p).hidden = p !== estado.panel; });
   }
   [].forEach.call(document.querySelectorAll('#pestanas button'), function(b){
-    b.addEventListener('click', function(){ estado.panel = b.getAttribute('data-panel'); marcarPestana(); cargarPanel(); });
+    b.addEventListener('click', function(){ estado.panel = b.getAttribute('data-panel'); marcarPestana(); cargarPanel(); cerrarMenu(); });
   });
   function cargarPanel(){
     errorApp('');
@@ -155,16 +161,18 @@
     var cont = $('lista'); cont.textContent = '';
     lista.forEach(function(p){
       var art = el('article', 'proceso');
-      var c1 = el('div');
-      c1.appendChild(el('div', 'rad', p.Radicado || 'Sin radicado'));
-      c1.appendChild(el('div', 'cli', p.Cliente || ''));
-      if(p.EtapaProcesal) c1.appendChild(el('span', 'etapa', p.EtapaProcesal));
-      var c2 = el('dl');
-      [['Juzgado', p.Despacho], ['Demandante', p.Demandante], ['Demandado', p.Demandado], ['Tipo', p.TipoProceso], ['Instancia', p.Instancia]].forEach(function(par){ var f = fila(par[0], par[1]); if(f) c2.appendChild(f); });
-      var c3 = el('div');
-      if(p.FechaUltimoEstado) c3.appendChild(el('span', 'fecha', 'Último estado: ' + fechaCorta(p.FechaUltimoEstado)));
-      c3.appendChild(el('div', 'estado', p.Estado || 'Sin novedades registradas.'));
-      art.appendChild(c1); art.appendChild(c2); art.appendChild(c3);
+      var cab = el('header', 'p-cab');
+      var tit = el('div'); tit.appendChild(el('div', 'rad', p.Radicado || 'Sin radicado')); tit.appendChild(el('div', 'cli', p.Cliente || ''));
+      cab.appendChild(tit);
+      if(p.EtapaProcesal) cab.appendChild(el('span', 'etapa', p.EtapaProcesal));
+      var cuerpo = el('div', 'p-cuerpo');
+      var dl = el('dl');
+      [['Juzgado', p.Despacho], ['Demandante', p.Demandante], ['Demandado', p.Demandado], ['Tipo', p.TipoProceso], ['Instancia', p.Instancia]].forEach(function(par){ var f = fila(par[0], par[1]); if(f) dl.appendChild(f); });
+      var est = el('div', 'p-estado');
+      est.appendChild(el('span', 'fecha', p.FechaUltimoEstado ? 'Último estado · ' + fechaCorta(p.FechaUltimoEstado) : 'Último estado'));
+      est.appendChild(el('div', 'estado', p.Estado || 'Sin novedades registradas.'));
+      cuerpo.appendChild(dl); cuerpo.appendChild(est);
+      art.appendChild(cab); art.appendChild(cuerpo);
       cont.appendChild(art);
     });
     $('vacio').hidden = lista.length > 0;
@@ -243,17 +251,20 @@
     var cont = $('lista-tutelas'); cont.textContent = '';
     lista.forEach(function(x){
       var art = el('article', 'proceso tutela');
-      var c1 = el('div');
-      c1.appendChild(el('div', 'rad', 'Tutela ' + (x.NoTutela || 'sin número')));
-      c1.appendChild(el('div', 'cli', x.Cliente || ''));
-      if(x.TipoRespuesta) c1.appendChild(el('span', 'etapa', x.TipoRespuesta));
-      var c2 = el('dl');
-      [['Accionante', x.Usuario], ['Entidad', x.Entidad], ['Juzgado', x.Juzgado], ['Ciudad', [x.Ciudad, x.Departamento].filter(Boolean).join(', ')], ['Notificación', fechaCorta(x.FechaNotificacion)], ['Vencimiento', fechaCorta(x.FechaVencimiento)]].forEach(function(par){ var f = fila(par[0], par[1]); if(f) c2.appendChild(f); });
-      var c3 = el('div');
-      var ins = el('span', 'insignia ' + (x.Contestada ? 'ok' : 'pend'), x.Contestada ? 'Contestación enviada' : 'Por enviar');
-      c3.appendChild(ins);
-      if(x.Contestada && x.FechaContestacion) c3.appendChild(el('div', 'estado', 'Enviada el ' + fechaCorta(x.FechaContestacion) + '.'));
-      art.appendChild(c1); art.appendChild(c2); art.appendChild(c3);
+      var cab = el('header', 'p-cab');
+      var tit = el('div'); tit.appendChild(el('div', 'rad', 'Tutela ' + (x.NoTutela || 'sin número'))); tit.appendChild(el('div', 'cli', x.Cliente || ''));
+      cab.appendChild(tit);
+      cab.appendChild(el('span', 'insignia ' + (x.Contestada ? 'ok' : 'pend'), x.Contestada ? 'Contestación enviada' : 'Por enviar'));
+      var cuerpo = el('div', 'p-cuerpo');
+      var dl = el('dl');
+      [['Accionante', x.Usuario], ['Entidad', x.Entidad], ['Juzgado', x.Juzgado], ['Ciudad', [x.Ciudad, x.Departamento].filter(Boolean).join(', ')], ['Tipo', x.TipoRespuesta]].forEach(function(par){ var f = fila(par[0], par[1]); if(f) dl.appendChild(f); });
+      var est = el('div', 'p-estado');
+      est.appendChild(el('span', 'fecha', 'Fechas'));
+      var fl = el('dl'); fl.className = 'fechas';
+      [['Notificación', fechaCorta(x.FechaNotificacion)], ['Vencimiento', fechaCorta(x.FechaVencimiento)], ['Enviada', x.Contestada ? fechaCorta(x.FechaContestacion) : '']].forEach(function(par){ var f = fila(par[0], par[1]); if(f) fl.appendChild(f); });
+      est.appendChild(fl);
+      cuerpo.appendChild(dl); cuerpo.appendChild(est);
+      art.appendChild(cab); art.appendChild(cuerpo);
       cont.appendChild(art);
     });
     $('vacio-tutelas').hidden = lista.length > 0;

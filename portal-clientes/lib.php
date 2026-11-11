@@ -125,12 +125,25 @@ function idLista(string $sitio, string $nombre): string {
 }
 /** Nombre interno de la columna cuyo nombre visible coincide con alguna de las pistas (exacto primero, luego «contiene»). */
 function columnasDe(string $sitio, string $lista): array {
-    return graphTodos('/sites/' . $sitio . '/lists/' . $lista . '/columns?$select=name,displayName&$top=500');
+    return graphTodos('/sites/' . $sitio . '/lists/' . $lista . '/columns?$select=name,displayName,lookup,personOrGroup&$top=500');
 }
 function resolverColumna(array $columnas, array $pistas): ?string {
     foreach ($pistas as $p) foreach ($columnas as $c) if (normalizar($c['displayName'] ?? '') === normalizar($p)) return $c['name'];
     foreach ($pistas as $p) foreach ($columnas as $c) if (str_contains(normalizar($c['displayName'] ?? ''), normalizar($p))) return $c['name'];
     return null;
+}
+/** Items de una lista con sus campos. Las columnas de tipo Búsqueda (p. ej. «Cliente» en Tutelas) y Persona vienen VACÍAS con $expand=fields a secas: Graph solo entrega su valor si se
+ *  piden por nombre. Por eso se hace una segunda pasada SOLO con esas columnas y se une por id (igual que la app). */
+function itemsDeLista(string $sitio, string $lista, array $cols): array {
+    $items = graphTodos('/sites/' . $sitio . '/lists/' . $lista . '/items?$expand=fields&$top=200');
+    $especiales = [];
+    foreach ($cols as $c) if (!empty($c['lookup']) || !empty($c['personOrGroup'])) $especiales[] = $c['name'];
+    if ($especiales) {
+        $porId = [];
+        foreach (graphTodos('/sites/' . $sitio . '/lists/' . $lista . '/items?$expand=fields($select=' . implode(',', $especiales) . ')&$top=200') as $it) $porId[$it['id']] = $it['fields'] ?? [];
+        foreach ($items as $k => $it) if (isset($porId[$it['id']])) $items[$k]['fields'] = array_merge($it['fields'] ?? [], $porId[$it['id']]);
+    }
+    return $items;
 }
 function valorCampo($v): string {
     if (is_array($v)) {
@@ -165,7 +178,7 @@ function filasClientes(): array {
     $cEntidad = resolverColumna($cols, ['entidad']);
     if (!$cRazon || !$cCorreo || !$cEntidad) throw new RuntimeException('La lista Clientes necesita las columnas Razón social, Correo y Entidad.');
     $filas = [];
-    foreach (graphTodos('/sites/' . $sitio . '/lists/' . $lista . '/items?$expand=fields&$top=500') as $it) {
+    foreach (itemsDeLista($sitio, $lista, $cols) as $it) {
         $f = $it['fields'] ?? [];
         $correos = valorCampo($f[$cCorreo] ?? '') . ';' . ($cExtra ? valorCampo($f[$cExtra] ?? '') : '');
         $filas[] = ['razon' => valorCampo($f[$cRazon] ?? ''), 'correos' => $correos, 'entidad' => valorCampo($f[$cEntidad] ?? '')];
@@ -353,7 +366,7 @@ function procesosTodos(): array {
     foreach (CAMPOS_PROCESO as $clave => $pistas) $mapa[$clave] = resolverColumna($cols, $pistas);
     if (!$mapa['Cliente']) throw new RuntimeException('La lista de procesos no tiene la columna Cliente.');
     $salida = [];
-    foreach (graphTodos('/sites/' . $sitio . '/lists/' . $lista . '/items?$expand=fields&$top=500') as $it) {
+    foreach (itemsDeLista($sitio, $lista, $cols) as $it) {
         $f = $it['fields'] ?? [];
         $p = [];
         foreach ($mapa as $clave => $interno) $p[$clave] = $interno ? valorCampo($f[$interno] ?? '') : '';
@@ -418,7 +431,7 @@ function tutelasTodas(): array {
     $mapa = [];
     foreach (CAMPOS_TUTELA as $clave => [$interno, $pistas]) $mapa[$clave] = in_array($interno, $nombres, true) ? $interno : resolverColumna($cols, $pistas);
     $salida = [];
-    foreach (graphTodos('/sites/' . $sitio . '/lists/' . $lista . '/items?$expand=fields&$top=500') as $it) {
+    foreach (itemsDeLista($sitio, $lista, $cols) as $it) {
         $f = $it['fields'] ?? [];
         $x = [];
         foreach ($mapa as $clave => $interno) $x[$clave] = $interno ? valorCampo($f[$interno] ?? '') : '';

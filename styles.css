@@ -217,6 +217,8 @@
     position:relative;
   }
   .nav-item:hover{background:rgba(255,255,255,.06);}
+  a.nav-item{text-decoration:none; color:rgba(255,255,255,.82);}
+  a.nav-item:focus-visible{outline:2px solid var(--verde-claro); outline-offset:-2px;}
   .nav-item.active{background:rgba(255,255,255,.1); color:#fff;}
   /* Ícono propio por módulo, SIEMPRE visible (antes solo la marca de Lexara
      aparecía, y solo en el ítem activo) — ver Sidebar.jsx. */
