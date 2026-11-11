@@ -5,7 +5,7 @@ import { IconTextButton } from './IconButton';
 import { OrdenCompraHoja, emptyForm, computeLive, fechaDeImpresion } from './OrdenCompraHoja';
 import {
   crearBorradorConImagenesInline, enviarCorreoDirecto, listarEnviadosPorCategoria, firmaComoImagenInline,
-  clienteForOrdenCompra, facturaForOrdenCompra, ordenCompraNumero, nombreArchivoSeguro, mensajeError,
+  clienteForOrdenCompra, facturaForOrdenCompra, ordenCompraNumero, nombreArchivoSeguro, clienteResumido, mensajeError,
 } from '../lib/graph';
 import { facturaDeOrden } from '../lib/cruceFacturasOrdenes';
 import { generarPdfBytesDesdeNodo, precargarImagen, precalentarLibreriasPdf } from '../lib/generarPdfDocumento';
@@ -84,7 +84,7 @@ export default function EnviarOrdenesColmedicaModal({ mes, anio, grupos, detalle
         const pdfs = [];
         for(const h of hojas){
           const bytes = new Uint8Array(await generarPdfBytesDesdeNodo('oc-colm-hoja-' + h.i));
-          pdfs.push({ nombre: nombreArchivoSeguro(`${ordenCompraNumero(h.oc)} ${h.grupo.cliente} - Tutelas ${MESES_NOMBRES[mes]} ${anio}`) + '.pdf', contentType: 'application/pdf', base64: bytesABase64(bytes), tamano: bytes.length });
+          pdfs.push({ nombre: nombreArchivoSeguro(`${ordenCompraNumero(h.oc)} ${clienteResumido(h.grupo.cliente)} Tutelas ${MESES_NOMBRES[mes]} ${anio}`) + '.pdf', contentType: 'application/pdf', base64: bytesABase64(bytes), tamano: bytes.length });
         }
         if(vivo){ setAdjuntos([...pdfs, ...salida]); setEstado('listo'); }
       }catch(err){ console.error(err); if(vivo){ setError(mensajeError(err)); setEstado('error'); } }

@@ -1,4 +1,4 @@
-import { clienteForOrdenCompra, ordenCompraNumero, facturaNumero, parseMonto, fmtMonto, IVA_RATE_DEFAULT, procesoForOrdenCompra, nombreArchivoSeguro } from '../lib/graph';
+import { clienteForOrdenCompra, ordenCompraNumero, facturaNumero, parseMonto, fmtMonto, IVA_RATE_DEFAULT, procesoForOrdenCompra, nombreArchivoSeguro, nombrePdfDocumento } from '../lib/graph';
 import membrete from '../assets/Membrete Lexara.png';
 
 // La HOJA imprimible de la Orden de compra («SOLICITUD DE NUMERO ORDEN DE COMPRA», A4 con membrete) y sus ayudas de cálculo. Vivía dentro de OrdenCompraDrawer.jsx;
@@ -35,8 +35,8 @@ export function computeLive(form){
 export function nombreArchivoOrdenCompraPDF(oc, clientes, procesos){
   // ordenCompraNumero ya trae el prefijo "OC-" (ej. "OC-2026-0002") — no se
   // repite acá para no leer "OC OC-2026-0002".
-  const proceso = procesoForOrdenCompra(procesos, oc);
-  return nombreArchivoSeguro(`${ordenCompraNumero(oc)} ${proceso?.Entidad || 'Sin entidad'} ${proceso?.Radicado || oc.Proceso || 'Sin proceso'} ${oc.EtapaContrato || ''}`.trim());
+  // 2026-11-11: «OC número, cliente resumido, etapa y número corto» (ver nombrePdfDocumento en graph.js).
+  return nombrePdfDocumento(ordenCompraNumero(oc), clienteForOrdenCompra(clientes, oc), procesoForOrdenCompra(procesos, oc), oc.EtapaContrato, oc.Proceso);
 }
 
 // `idHoja`/`idQr`: ids del nodo y del QR (distintos si hay varias hojas a la vez). `ordenCompra` = el registro (para el número); `form` = emptyForm(...) o el formulario en edición.

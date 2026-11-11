@@ -3935,6 +3935,39 @@ export function fmtMonto(n){
 // armar el nombre sugerido de PDF de Factura/Orden de compra (ver
 // FacturaDrawer.jsx/OrdenCompraDrawer.jsx) y de la ficha de proceso
 // (informeProceso.js, que trae su propia copia histórica de esta función).
+// Nombre de los PDF de facturas y órdenes de compra (2026-11-11, pedido del usuario): «FE <número> <cliente resumido> <etapa> <número corto>» — p. ej. «FE 826 SOS Admón Proceso 2015-00826»
+// y «OC-2026-0012 Aliansalud Admón Proceso 2015-00826». Es el mismo nombre al descargar el PDF, al guardar la copia en Soportes de gastos y al adjuntarlo a los correos.
+const CLIENTES_RESUMIDOS = [
+  [/servicio occidental de salud|\bsos\b/, 'SOS'], [/aliansalud/, 'Aliansalud'], [/colmedica/, 'Colmédica'], [/unidad medica y de diagnostico|\bumd\b/, 'UMD'],
+  [/famisanar/, 'Famisanar'], [/colpatria/, 'Colpatria'], [/salud total/, 'Salud Total'], [/coomeva/, 'Coomeva'], [/grupo colmedica/, 'Colmédica'],
+];
+export function clienteResumido(razonSocial, respaldo){
+  const t = normalize(String(razonSocial || respaldo || '')).replace(/\s+/g, ' ').trim();
+  if(!t) return '';
+  for(const [re, corto] of CLIENTES_RESUMIDOS){ if(re.test(t)) return corto; }
+  // Sin nombre conocido: se quitan las formas legales y se dejan las dos primeras palabras (máx. 22 letras).
+  const limpio = String(razonSocial || respaldo || '').replace(/\b(s\.?\s?a\.?\s?s\.?|s\.?\s?a\.?|ltda\.?|e\.?\s?p\.?\s?s\.?|en liquidaci[oó]n|en reorganizaci[oó]n|entidad promotora de salud|y cia\.?)\b/gi, ' ').replace(/[.,]/g, ' ').replace(/\s+/g, ' ').trim();
+  const palabras = limpio.split(' ').slice(0, 2).map(p => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase());
+  return palabras.join(' ').slice(0, 22).trim();
+}
+const ABREVIATURAS_ETAPA = [
+  [/administracion/gi, 'Admón'], [/conciliacion/gi, 'Concil'], [/contestacion/gi, 'Contest'], [/audiencia/gi, 'Aud'], [/sentencia/gi, 'Sent'], [/reconocimiento/gi, 'Recon'],
+  [/radicacion/gi, 'Rad'], [/oposicion/gi, 'Oposic'], [/reposicion/gi, 'Reposic'], [/\barticulo\b/gi, 'Art'], [/\bprimera\b/gi, '1ra'], [/\bsegunda\b/gi, '2da'], [/\brecurso\b/gi, 'Rec'],
+];
+export function etapaResumida(etapa){
+  let t = String(etapa || '').trim();
+  if(!t) return '';
+  // Se abrevia sobre el texto sin tildes (las etapas se guardan así: «Administracion Proceso») y las que ya traen tilde también.
+  const sinTildes = t.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  t = ABREVIATURAS_ETAPA.reduce((acc, [re, corto]) => acc.replace(re, corto), sinTildes);
+  return t.replace(/\s+/g, ' ').trim();
+}
+/** «FE 826 SOS Admón Proceso 2015-00826»: el prefijo-número, el cliente resumido, la etapa abreviada y el número corto del proceso (las partes que falten se omiten). */
+export function nombrePdfDocumento(prefijoNumero, cliente, proceso, etapa, procesoTexto){
+  const partes = [prefijoNumero, clienteResumido(cliente?.RazonSocial, proceso?.Entidad), etapaResumida(etapa), proceso?.Radicado || procesoTexto || ''];
+  return nombreArchivoSeguro(partes.filter(Boolean).join(' ').replace(/\s+/g, ' ').trim());
+}
+
 export function nombreArchivoSeguro(s){
   return (s||"").toString().replace(/[\/\\?%*:|"<>]/g, "-").trim();
 }

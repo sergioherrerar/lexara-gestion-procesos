@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { clienteForFactura, procesoForFactura, facturaNumero, parseMonto, fmtMonto, IVA_RATE_DEFAULT, ETAPA_CONTRATO_OPTIONS, nombreArchivoSeguro, mensajeError, subirCopiaPdfSoportes, fechaISODeDocumento } from '../lib/graph';
+import { clienteForFactura, procesoForFactura, facturaNumero, parseMonto, fmtMonto, IVA_RATE_DEFAULT, ETAPA_CONTRATO_OPTIONS, nombreArchivoSeguro, nombrePdfDocumento, mensajeError, subirCopiaPdfSoportes, fechaISODeDocumento } from '../lib/graph';
 import { generarPdfDesdeNodo, generarPdfBytesDesdeNodo, precargarImagen, precalentarLibreriasPdf } from '../lib/generarPdfDocumento';
 import { obtenerQrRedesDataUrl } from '../lib/qr';
 import { useEscapeToClose } from '../hooks/useEscapeToClose';
@@ -40,8 +40,8 @@ function computeLive(form){
 // formato anterior "FE (No. factura) (Cliente) (Proceso)" de 2026-09-07):
 // "FE" + Entidad + Número Corto + Etapa contrato.
 function nombreArchivoFacturaPDF(factura, clientes, procesos){
-  const proceso = procesoForFactura(procesos, factura);
-  return nombreArchivoSeguro(`FE ${facturaNumero(factura)} ${proceso?.Entidad || 'Sin entidad'} ${proceso?.Radicado || factura.Proceso || 'Sin proceso'} ${factura.EtapaContrato || ''}`.trim());
+  // 2026-11-11: «FE número, cliente resumido, etapa y número corto» (ver nombrePdfDocumento en graph.js).
+  return nombrePdfDocumento('FE ' + facturaNumero(factura), clienteForFactura(clientes, factura), procesoForFactura(procesos, factura), factura.EtapaContrato, factura.Proceso);
 }
 
 export default function FacturaDrawer({ factura, clientes, procesos, liveMode, onClose, onSave, onUpdateCliente, autoPrint, soloCopia, subirCopia = true, alPdfListo, shareUrlSoportes, onAutoPrinted, saving, notify }){

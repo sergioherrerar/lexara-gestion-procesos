@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-11-11 (151)
+- **Nombre de los PDF de facturas y órdenes de compra** — pedido del usuario: «FE o OC + número + cliente resumido + etapa + número corto», por ejemplo «FE 826 SOS Admón Proceso 2015-00826» y «OC-2026-0264 UMD Aud Art 77 2024-00262». El cliente se resume (SOS, Aliansalud, Colmédica, UMD, Famisanar, Colpatria, Salud Total, Coomeva; los demás sin formas legales y con dos palabras) y la etapa se abrevia (Admón, Concil, Contest, Aud, Sent, Rad, Art, 1ra, 2da…); lo que falte se omite. Es el mismo nombre al descargar el PDF, en la copia automática de Soportes de gastos y al adjuntarlo a los correos; los PDF de las órdenes del correo de Órdenes Colmédica quedan «OC-2026-0262 Aliansalud Tutelas Octubre 2026».
+
 ## 2026-11-09 (150)
 - **Colaboradores MD: casilla «Incluir el párrafo de recomendación (calidades humanas y profesionales) en las certificaciones»** — reporte del usuario («no veo el botón»). Esa casilla solo estaba en Administración → Certificaciones; en Colaboradores MD el botón de PDF de cada fila usaba en silencio la última elección guardada. Ahora la casilla también está encima de la tabla de Colaboradores MD (marcada por defecto) y comparte la misma preferencia que la de Certificaciones.
 
