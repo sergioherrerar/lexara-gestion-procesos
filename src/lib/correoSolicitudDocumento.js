@@ -2,7 +2,7 @@
 //   · Factura        → Para: Beatriz, con copia a Gerencia: «solicito generación de factura electrónica» con el detalle de la factura.
 //   · Orden de compra → Para: quien se escriba a mano, con copia a Gerencia: «solicito generación de número de orden de compra» con el detalle de la orden.
 // Se arma DESPUÉS de guardar el borrador (ya con Cantidad/Valor completos). Sale de la cuenta de Soporte, con su firma.
-import { facturaLineItems, computeFacturaTotals, ordenCompraNumero, fmtMonto, parseMonto, firmaHtml, firmaComoImagenInline, crearBorradorConImagenesInline } from './graph';
+import { facturaLineItems, computeFacturaTotals, ordenCompraNumero, fmtMonto, parseMonto, firmaHtml, firmaComoImagenInline, crearBorradorConImagenesInline, nombrePdfDocumento, aplicarReglaContrato } from './graph';
 import { dma, destinatariaNovedades, nombreDeSaludo, CORREO_GERENCIA_NOVEDADES } from './novedadesNomina';
 
 function esc(t){ return String(t ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
@@ -16,6 +16,12 @@ const PALABRAS_CON_TILDE = { administracion: 'Administración', admision: 'Admis
 export function conTildes(texto){
   const t = String(texto ?? '').trim().replace(/\b[A-Za-zÁÉÍÓÚáéíóúñÑ]+\b/g, w => PALABRAS_CON_TILDE[w.toLowerCase()] || w);
   return t ? t.charAt(0).toUpperCase() + t.slice(1) : t;
+}
+
+// Saludo del correo de la factura (2026-11-11, pedido del usuario): «Beatriz, buenos días.» hasta el mediodía y «Beatriz, buenas tardes.» después, según la hora de quien lo crea.
+export function saludoFactura(nombre, fecha = new Date()){
+  const saludo = fecha.getHours() < 12 ? 'buenos días' : 'buenas tardes';
+  return nombre ? esc(nombre) + ', ' + saludo + '.' : saludo.charAt(0).toUpperCase() + saludo.slice(1) + '.';
 }
 
 export const CATEGORIA_SOLICITUD_FACTURA = 'Solicitud de factura electrónica';
@@ -54,12 +60,13 @@ export function construirCorreoSolicitudDocumento({ tipo, documento, cliente, pi
   </table>`
     : '<p style="margin:14px 0 0; font-size:13.5px; color:#b3590a;">El documento aún no tiene líneas de detalle.</p>';
   const asunto = esFactura
-    ? `Solicitud de generación de factura electrónica${razon ? ' — ' + razon : ''}${d.Contrato ? ' — Contrato ' + d.Contrato : ''}`
+    // 2026-11-11 (pedido del usuario): «Emisión de factura electrónica» + cliente resumido + etapa + número corto, igual que el nombre del PDF (sin repetir Proceso y Etapa).
+    ? ('Emisión de factura electrónica ' + nombrePdfDocumento('', cliente, null, aplicarReglaContrato(d).EtapaContrato, aplicarReglaContrato(d).Proceso)).trim()
     : `Solicitud de número de orden de compra${razon ? ' — ' + razon : ''}${d.Contrato ? ' — Contrato ' + d.Contrato : ''}`;
   const html = `<div style="font-family:'Segoe UI', Arial, sans-serif; color:#1c2624; max-width:760px;">
-  <p style="margin:0 0 12px; font-size:15px;">${pilaDestinatario ? `Buen día, ${esc(pilaDestinatario)}:` : 'Buen día,'}</p>
+  <p style="margin:0 0 12px; font-size:15px;">${esFactura ? saludoFactura(pilaDestinatario) : (pilaDestinatario ? `Buen día, ${esc(pilaDestinatario)}:` : 'Buen día,')}</p>
   <p style="margin:0 0 14px; font-size:15px; line-height:1.55;">${esFactura
-    ? 'Solicito la <strong>generación de la factura electrónica</strong> con el siguiente detalle:'
+    ? 'Por favor <strong>emitir factura electrónica</strong> con el siguiente detalle:'
     : 'Solicito la <strong>generación del número de orden de compra</strong> con el siguiente detalle:'}</p>
   <table role="presentation" cellpadding="0" cellspacing="0" style="width:100%; border-collapse:collapse;">
     ${fila('Cliente', razon ? esc(razon) : '')}
