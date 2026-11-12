@@ -1,8 +1,10 @@
 import logoLogin from '../assets/Logo verde OScuro.png';
+import { SITIO_WEB_URL } from '../config';
 
 export default function LoginScreen({ config, onSignIn, onEnterDemo, onGoSetup, signingIn }){
   return (
     <div id="login-screen">
+      <a className="login-inicio" href={SITIO_WEB_URL}>⌂ Inicio</a>
       <div className="login-visual">
         <div className="chevrons">
           <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">

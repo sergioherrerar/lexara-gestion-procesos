@@ -6,12 +6,13 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Portal de clientes — Lexara Abogados</title>
 <link rel="icon" href="logo.png">
-<link rel="stylesheet" href="portal.css?v=20261111e">
+<link rel="stylesheet" href="portal.css?v=20261111j">
 </head>
 <body>
 
 <!-- Ingreso -->
 <main id="vista-login" class="login" hidden>
+  <a class="login-inicio" href="https://www.lexaraabogados.com"><span aria-hidden="true">⌂</span> Inicio</a>
   <section class="login-marca">
     <img src="logo.png" alt="Lexara Abogados" class="login-logo">
     <p class="login-lema">Siga el avance de sus procesos, en un solo lugar.</p>
@@ -44,15 +45,18 @@
   <header class="barra-movil">
     <button type="button" class="btn-menu" id="btn-menu" aria-label="Abrir el menú" aria-expanded="false">☰</button>
     <img src="logo.png" alt="Lexara Abogados" class="barra-logo">
+    <a class="boton-sec boton-inicio-movil" href="https://www.lexaraabogados.com">⌂ Inicio</a>
   </header>
 
   <aside class="lateral" id="lateral">
     <div class="lateral-marca"><img src="logo-blanco.png" alt="Lexara Abogados"></div>
+    <a class="menu-inicio" href="https://www.lexaraabogados.com"><span class="menu-ico" aria-hidden="true">⌂</span>Inicio</a>
     <nav id="pestanas" class="menu" role="tablist" aria-label="Secciones">
       <button type="button" role="tab" data-panel="procesos" aria-selected="true"><span class="menu-ico" aria-hidden="true">⚖</span>Procesos</button>
       <button type="button" role="tab" data-panel="resumen" data-solo-grupo aria-selected="false"><span class="menu-ico" aria-hidden="true">▤</span>Resumen</button>
       <button type="button" role="tab" data-panel="tutelas" data-solo-grupo aria-selected="false"><span class="menu-ico" aria-hidden="true">✉</span>Tutelas</button>
     </nav>
+    <a class="menu-inicio menu-aldia" href="https://www.lexaraabogados.com/lexara-al-dia/" target="_blank" rel="noopener noreferrer"><span class="menu-ico" aria-hidden="true">✦</span>Lexara al Día</a>
     <div class="lateral-pie">
       <div class="lateral-usuario" id="usuario"></div>
       <button type="button" class="boton-lateral" id="btn-salir">Cerrar sesión</button>
@@ -88,6 +92,10 @@
       <section id="panel-procesos">
         <div class="herramientas">
           <input id="buscar" type="search" placeholder="Buscar por radicado, juzgado, demandante…" aria-label="Buscar procesos">
+          <div class="acciones-informe">
+            <button type="button" class="btn-informe excel" id="btn-procesos-excel">Excel de todos</button>
+            <button type="button" class="btn-informe pdf" id="btn-procesos-pdf">PDF de todos</button>
+          </div>
           <span class="conteo" id="conteo"></span>
         </div>
         <p class="suave" id="cargando">Cargando sus procesos…</p>
@@ -113,6 +121,15 @@
           <select id="filtro-mes" aria-label="Mes de vencimiento"><option value="">Todos los meses</option></select>
           <span class="conteo" id="conteo-tutelas"></span>
         </div>
+        <div class="herramientas rango">
+          <label class="campo-fecha">Vencimiento desde <input type="date" id="desde-tutelas"></label>
+          <label class="campo-fecha">hasta <input type="date" id="hasta-tutelas"></label>
+          <button type="button" class="enlace" id="btn-limpiar-tutelas">Quitar filtros</button>
+          <div class="acciones-informe">
+            <button type="button" class="btn-informe excel" id="btn-tutelas-excel">Excel de todas</button>
+            <button type="button" class="btn-informe pdf" id="btn-tutelas-pdf">PDF de todas</button>
+          </div>
+        </div>
         <p class="suave" id="cargando-tutelas">Cargando las tutelas…</p>
         <div id="lista-tutelas" class="lista"></div>
         <p class="vacio" id="vacio-tutelas" hidden>No hay tutelas para mostrar.</p>
@@ -122,6 +139,6 @@
   </div>
 </div>
 
-<script src="portal.js?v=20261111e"></script>
+<script src="portal.js?v=20261111j"></script>
 </body>
 </html>

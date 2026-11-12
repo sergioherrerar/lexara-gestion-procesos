@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lexara al Día — MD Abogados</title>
+<meta name="description" content="Lexara al Día, de MD Abogados SAS: noticias, videos, reels y publicaciones en un solo lugar.">
+<link rel="icon" href="assets/img/logo.png">
+<link rel="stylesheet" href="assets/css/estilos.css?v=3">
+</head>
+<body>
+
+<header class="barra">
+  <a class="barra-marca" href="https://www.lexaraabogados.com" aria-label="Lexara Abogados — ir al inicio"><img src="assets/img/logo.png" alt="Lexara Abogados"></a>
+  <nav class="barra-nav" aria-label="Principal">
+    <a href="#publicaciones">Publicaciones</a>
+    <a href="#redes">Nuestras redes</a>
+    <a class="boton-inicio" id="enlace-inicio" href="https://www.lexaraabogados.com"><span aria-hidden="true">⌂</span> Inicio</a>
+  </nav>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="hero-contenido">
+      <p class="eyebrow">MD ABOGADOS SAS</p>
+      <h1 id="titulo-sitio">Lexara al Día</h1>
+      <p class="hero-lema" id="lema-sitio"></p>
+      <dl class="cifras" id="cifras" aria-label="Resumen del contenido"></dl>
+    </div>
+    <div class="hero-redes" id="redes" aria-label="Nuestras redes sociales"></div>
+  </section>
+
+  <div class="aviso-ejemplo" id="aviso-ejemplo" hidden>Contenido de ejemplo: reemplácelo por las publicaciones reales editando <code>data/publicaciones.json</code>.</div>
+
+  <section class="destacada" id="destacada" hidden aria-label="Publicación destacada"></section>
+
+  <section class="listado" id="publicaciones" aria-labelledby="titulo-listado">
+    <div class="listado-cab">
+      <h2 id="titulo-listado">Todas las publicaciones</h2>
+      <span class="conteo" id="conteo" aria-live="polite"></span>
+    </div>
+    <div class="filtros">
+      <div class="tipos" id="tipos" role="tablist" aria-label="Tipo de contenido"></div>
+      <div class="controles">
+        <input type="search" id="buscar" placeholder="Buscar por título o tema…" aria-label="Buscar">
+        <select id="filtro-red" aria-label="Red social"><option value="">Todas las redes</option></select>
+        <select id="orden" aria-label="Orden">
+          <option value="reciente">Más recientes</option>
+          <option value="antigua">Más antiguas</option>
+        </select>
+      </div>
+    </div>
+    <p class="suave" id="cargando">Cargando publicaciones…</p>
+    <p class="error" id="error" role="alert" hidden></p>
+    <div class="rejilla" id="rejilla"></div>
+    <p class="vacio" id="vacio" hidden>No hay publicaciones con esos filtros.</p>
+  </section>
+</main>
+
+<footer class="pie">
+  <img src="assets/img/logo-blanco.png" alt="Lexara Abogados">
+  <p>MD Abogados SAS · <a href="https://www.lexaraabogados.com">www.lexaraabogados.com</a></p>
+</footer>
+
+<!-- Reproductor (videos de YouTube se ven aquí mismo; el resto abre la red social) -->
+<div class="modal" id="modal" hidden role="dialog" aria-modal="true" aria-label="Reproductor">
+  <div class="modal-caja">
+    <button type="button" class="modal-cerrar" id="modal-cerrar" aria-label="Cerrar">✕</button>
+    <div class="modal-video" id="modal-video"></div>
+  </div>
+</div>
+
+<script src="assets/js/app.js?v=2"></script>
+</body>
+</html>

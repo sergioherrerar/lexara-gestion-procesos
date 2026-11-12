@@ -1,0 +1,122 @@
+/* Lexara al Día — sección de publicaciones (noticias, videos, reels). Tema claro, institucional, con la paleta de Lexara. */
+:root{
+  color-scheme: light;
+  --verde:#004941; --verde-2:#003630; --turquesa:#52bbb5; --turquesa-suave:#e5f3f1; --turquesa-borde:#c8e3df;
+  --ambar:#fbbc33; --naranja:#ef7d00; --azul:#2f7fb8; --violeta:#7a5fb5;
+  --fondo:#f4f7f7; --tarjeta:#fff; --linea:#dfe7e5; --texto:#16302c; --suave:#5d706c; --rojo:#a3281c;
+  --radio:14px; --sombra:0 1px 2px rgba(10,50,45,.06), 0 6px 18px rgba(10,50,45,.07);
+  --font:'Aptos','Segoe UI',system-ui,-apple-system,sans-serif;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth; -webkit-text-size-adjust:100%}
+body{margin:0; font-family:var(--font); background:var(--fondo); color:var(--texto); line-height:1.55}
+[hidden]{display:none !important}
+a{color:inherit}
+:focus-visible{outline:3px solid var(--turquesa); outline-offset:2px}
+.suave{color:var(--suave)}
+.error{color:var(--rojo); font-weight:600}
+code{background:#eef3f2; padding:.05rem .35rem; border-radius:5px; font-size:.9em}
+
+/* barra superior */
+.barra{position:sticky; top:0; z-index:20; display:flex; align-items:center; justify-content:space-between; gap:1rem; padding:.7rem clamp(1rem,4vw,3rem); background:rgba(255,255,255,.94); backdrop-filter:blur(8px); border-bottom:1px solid var(--linea)}
+.barra-marca img{height:36px; width:auto; display:block}
+.barra-nav{display:flex; align-items:center; gap:1.4rem; font-weight:600; font-size:.95rem}
+.barra-nav a{text-decoration:none; color:var(--suave)}
+.barra-nav a:hover{color:var(--verde)}
+.barra-nav .boton-inicio{display:inline-flex; align-items:center; gap:.4rem; color:var(--verde); background:#fff; border:1px solid var(--turquesa-borde); border-radius:99px; padding:.45rem 1.05rem; box-shadow:var(--sombra)}
+.boton-inicio span{color:var(--naranja)}
+.boton-inicio:hover{background:var(--turquesa-suave)}
+
+/* hero */
+.hero{display:grid; grid-template-columns:1.4fr 1fr; gap:2rem; align-items:end; padding:clamp(2rem,5vw,4rem) clamp(1rem,4vw,3rem); background:linear-gradient(135deg,#e6f4f2 0%,#cfe8e4 55%,#f5e9c8 140%)}
+.eyebrow{margin:0 0 .6rem; font-size:.78rem; letter-spacing:.18em; font-weight:700; color:#0b7a6f}
+h1{margin:0; font-size:clamp(2.2rem,5vw,3.6rem); line-height:1.05; letter-spacing:-.02em; color:var(--verde)}
+.hero-lema{margin:.9rem 0 0; font-size:1.12rem; max-width:46ch; color:#254a45}
+.cifras{display:flex; flex-wrap:wrap; gap:.8rem; margin:1.6rem 0 0}
+.cifra{background:#fff; border:1px solid var(--turquesa-borde); border-radius:12px; padding:.6rem 1.1rem; min-width:100px}
+.cifra dt{font-size:.74rem; text-transform:uppercase; letter-spacing:.08em; color:var(--suave); font-weight:700}
+.cifra dd{margin:0; font-size:1.7rem; font-weight:700; color:var(--verde); line-height:1.2; font-variant-numeric:tabular-nums}
+.hero-redes{display:flex; flex-wrap:wrap; gap:.6rem; justify-content:flex-end}
+
+/* chips de red social */
+.red{display:inline-flex; align-items:center; gap:.4rem; font-size:.78rem; font-weight:700; padding:.28rem .75rem; border-radius:99px; color:#fff; text-decoration:none; white-space:nowrap}
+.red.instagram{background:linear-gradient(45deg,#f58529,#dd2a7b 55%,#8134af)} .red.facebook{background:#1877f2} .red.tiktok{background:#111}
+.red.youtube{background:#e00} .red.linkedin{background:#0a66c2} .red.x{background:#222} .red.web{background:var(--verde)}
+a.red:hover{filter:brightness(1.08)}
+.red.grande{font-size:.9rem; padding:.5rem 1.1rem}
+
+.aviso-ejemplo{margin:1.2rem clamp(1rem,4vw,3rem) 0; background:#fff6dc; border:1px solid #f0d58a; color:#7a5300; border-radius:10px; padding:.65rem 1rem; font-size:.92rem}
+
+/* destacada */
+.destacada{margin:2rem clamp(1rem,4vw,3rem) 0; display:grid; grid-template-columns:1.2fr 1fr; background:var(--tarjeta); border:1px solid var(--linea); border-radius:18px; overflow:hidden; box-shadow:var(--sombra)}
+.destacada .medio{min-height:300px}
+.destacada .cuerpo{padding:clamp(1.2rem,3vw,2.2rem); display:flex; flex-direction:column; justify-content:center; gap:.7rem}
+.destacada .rotulo{font-size:.75rem; font-weight:700; letter-spacing:.14em; color:var(--naranja)}
+.destacada h2{margin:0; font-size:clamp(1.4rem,2.6vw,2rem); line-height:1.15; color:var(--verde)}
+
+/* listado */
+.listado{padding:2.4rem clamp(1rem,4vw,3rem) 3rem}
+.listado-cab{display:flex; align-items:baseline; justify-content:space-between; gap:1rem; margin-bottom:1rem}
+.listado h2{margin:0; font-size:1.5rem; color:var(--verde)}
+.conteo{color:var(--suave); font-size:.92rem}
+.filtros{display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:.8rem 1.2rem; margin-bottom:1.3rem; padding-bottom:1rem; border-bottom:1px solid var(--linea)}
+.tipos{display:flex; flex-wrap:wrap; gap:.5rem}
+.tipos button{font:inherit; font-weight:600; font-size:.9rem; background:#fff; color:var(--texto); border:1px solid var(--linea); border-radius:99px; padding:.42rem 1rem; cursor:pointer}
+.tipos button:hover{border-color:var(--turquesa)}
+.tipos button[aria-selected=true]{background:var(--verde); border-color:var(--verde); color:#fff}
+.tipos .n{opacity:.7; font-weight:500; margin-left:.3rem}
+.controles{display:flex; flex-wrap:wrap; gap:.6rem}
+.controles input,.controles select{font:inherit; padding:.55rem .8rem; border:1px solid var(--linea); border-radius:10px; background:#fff; color:var(--texto)}
+.controles input{min-width:230px}
+
+/* tarjetas */
+.rejilla{display:grid; grid-template-columns:repeat(auto-fill,minmax(min(310px,100%),1fr)); gap:1.2rem}
+.tarjeta{display:flex; flex-direction:column; background:var(--tarjeta); border:1px solid var(--linea); border-radius:var(--radio); overflow:hidden; box-shadow:var(--sombra); transition:transform .15s ease, box-shadow .15s ease}
+.tarjeta:hover{transform:translateY(-3px); box-shadow:0 2px 4px rgba(10,50,45,.07), 0 12px 26px rgba(10,50,45,.12)}
+.medio{position:relative; aspect-ratio:16/10; background:#dcebe8 center/cover no-repeat; display:flex; align-items:center; justify-content:center; overflow:hidden; border:0; padding:0; width:100%; cursor:pointer}
+.medio.sin-miniatura{background:linear-gradient(135deg,var(--c1,#1d6f66),var(--c2,#52bbb5))}
+.medio .icono-tipo{width:64px; height:64px; color:rgba(255,255,255,.9)}
+.medio .play{position:absolute; width:62px; height:62px; border-radius:50%; background:rgba(0,36,32,.72); color:#fff; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 14px rgba(0,0,0,.25)}
+.medio .play svg{width:26px; height:26px; margin-left:3px}
+.medio:hover .play{background:rgba(0,36,32,.9)}
+.insignia-tipo{position:absolute; top:.7rem; left:.7rem; font-size:.72rem; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:#fff; padding:.25rem .65rem; border-radius:99px}
+.t-video{background:var(--azul)} .t-reel{background:#c4458a} .t-noticia{background:var(--naranja)} .t-publicacion{background:var(--violeta)}
+.cuerpo{padding:1rem 1.15rem 1.2rem; display:flex; flex-direction:column; gap:.55rem; flex:1}
+.meta{display:flex; align-items:center; justify-content:space-between; gap:.6rem; font-size:.82rem; color:var(--suave)}
+.tarjeta h3{margin:0; font-size:1.12rem; line-height:1.25; color:var(--verde); text-wrap:balance}
+.tarjeta p{margin:0; font-size:.93rem; color:#3d5651; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden}
+.etiquetas{display:flex; flex-wrap:wrap; gap:.35rem}
+.etiqueta{font-size:.74rem; font-weight:600; color:#0b6b63; background:var(--turquesa-suave); border-radius:6px; padding:.12rem .5rem}
+.ver{margin-top:auto; padding-top:.3rem}
+.boton{display:inline-flex; align-items:center; gap:.45rem; font:inherit; font-weight:700; font-size:.9rem; color:#fff; background:var(--verde); border:0; border-radius:10px; padding:.55rem 1.1rem; text-decoration:none; cursor:pointer}
+.boton:hover{background:var(--verde-2)}
+.boton.apagado{background:#9db1ad; cursor:default; pointer-events:none}
+.vacio{text-align:center; color:var(--suave); padding:2.5rem 0}
+
+/* pie */
+.pie{background:linear-gradient(180deg,var(--verde),var(--verde-2)); color:rgba(255,255,255,.85); text-align:center; padding:2rem 1rem}
+.pie img{height:40px; width:auto}
+.pie p{margin:.8rem 0 0; font-size:.9rem}
+.pie a{color:#fff}
+
+/* reproductor */
+.modal{position:fixed; inset:0; z-index:50; background:rgba(6,24,22,.78); display:flex; align-items:center; justify-content:center; padding:1rem}
+.modal-caja{position:relative; width:min(960px,100%)}
+.modal-video{position:relative; aspect-ratio:16/9; background:#000; border-radius:12px; overflow:hidden}
+.modal-video iframe{position:absolute; inset:0; width:100%; height:100%; border:0}
+.modal-cerrar{position:absolute; top:-2.6rem; right:0; font:inherit; font-size:1.1rem; color:#fff; background:transparent; border:1px solid rgba(255,255,255,.5); border-radius:99px; width:2.2rem; height:2.2rem; cursor:pointer}
+
+@media (max-width:900px){
+  .hero{grid-template-columns:1fr; align-items:start}
+  .hero-redes{justify-content:flex-start}
+  .destacada{grid-template-columns:1fr}
+  .destacada .medio{min-height:220px}
+  .barra-nav a:not(.boton-inicio){display:none}
+  .controles input{min-width:0; flex:1 1 200px}
+}
+@media (prefers-reduced-motion:reduce){ html{scroll-behavior:auto} .tarjeta{transition:none} }
+
+/* reels: miniatura vertical (no se recorta la cabeza ni el título del video) */
+.medio.vertical{aspect-ratio:4/5; background-position:center 18%}
+.destacada .medio.vertical{aspect-ratio:auto; min-height:420px; background-position:center 15%}
+@media (max-width:900px){ .destacada .medio.vertical{min-height:380px} }

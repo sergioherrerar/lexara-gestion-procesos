@@ -9,6 +9,10 @@ export const APP_VERSION = "1";
 
 // Portal de clientes (carpeta portal-clientes/, página aparte para que cada cliente vea sus procesos). El equipo entra con su correo de Lexara y elige un cliente para verlo como él.
 export const PORTAL_CLIENTES_URL = "https://www.lexaraabogados.com/portal-clientes/";
+// Sitio web de Lexara: el botón «Inicio» del menú y del ingreso lleva aquí.
+export const SITIO_WEB_URL = "https://www.lexaraabogados.com";
+// Lexara al Día: noticias, videos, reels y publicaciones de redes (carpeta lexara-al-dia/).
+export const LEXARA_AL_DIA_URL = "https://www.lexaraabogados.com/lexara-al-dia/";
 
 // =========================================================================
 // CONFIG — edítalo directamente aquí para dejar la conexión fija en producción.

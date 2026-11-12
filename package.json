@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "build:cpanel": "vite build --config vite.config.cpanel.js",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "build:portal": "vite build --config vite.config.portal.js"
   },
   "dependencies": {
     "docx": "^9.7.1",

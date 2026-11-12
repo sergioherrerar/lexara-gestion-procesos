@@ -358,7 +358,11 @@ export async function prepararDocumentoPDF(tituloEncabezado = 'Reporte procesos 
 // }
 export async function generarCartaInformePDF(opts){
   const { nombreArchivo, nombreEntidad, cantidadProcesos, parrafo, columnas, filas, columnStyles, firma = FIRMA_DEFECTO } = opts;
-  const { doc, autoTable, pageWidth, pageHeight, hoy, fecha, dibujarEncabezadoYPie, numerarPaginas } = await prepararDocumentoPDF();
+  // Textos opcionales (2026-11-11, portal de clientes: la misma carta sirve para tutelas). Por defecto salen los de siempre.
+  const asunto = opts.asunto || 'Reporte procesos judiciales';
+  const etiquetaCantidad = opts.etiquetaCantidad || 'Cantidad de procesos';
+  const unidad = opts.unidad || 'proceso';
+  const { doc, autoTable, pageWidth, pageHeight, hoy, fecha, dibujarEncabezadoYPie, numerarPaginas } = await prepararDocumentoPDF(opts.tituloEncabezado);
 
   // --- Página 1: encabezado de la carta ---
   dibujarEncabezadoYPie();
@@ -369,14 +373,14 @@ export async function generarCartaInformePDF(opts){
   doc.setFont('helvetica','bold'); doc.text(nombreEntidad, MARGEN, y); y += 5;
   doc.setFont('helvetica','normal'); doc.text('Ciudad', MARGEN, y); y += 9;
   doc.setFont('helvetica','bold'); doc.setFontSize(11); doc.setTextColor(...VERDE_OSCURO);
-  doc.text('Asunto: Reporte procesos judiciales', MARGEN, y); y += 8;
+  doc.text('Asunto: ' + asunto, MARGEN, y); y += 8;
 
   // Caja de resumen destacada (fecha de corte + cantidad) — le da peso visual
   // a la carta incluso cuando la tabla que sigue tiene pocas filas (pedido
   // explícito del usuario 2026-08-19: "no se está llenando la información").
   y = dibujarResumenBox(doc, MARGEN, y, pageWidth - MARGEN*2, [
     { label:'Fecha de corte', value: fecha },
-    { label:'Cantidad de procesos', value: cantidadProcesos },
+    { label: etiquetaCantidad, value: cantidadProcesos },
   ]);
   // Resumen de la Entidad (procesos activos/total, valor actual demanda y semáforo de Estado), igual al de Informes.
   const resumenEntidad = resumenEntidadPendiente; resumenEntidadPendiente = null;
@@ -404,7 +408,7 @@ export async function generarCartaInformePDF(opts){
     body: filas,
     // Fila de cierre con el total — le da a la tabla un final visible en vez
     // de simplemente detenerse, y sirve de verificación rápida del conteo.
-    foot: [[{ content: `Total: ${filas.length} proceso${filas.length===1?'':'s'}`, colSpan: columnas.length, styles:{halign:'right', fontStyle:'bold', fillColor:VERDE_CLARO, textColor:VERDE_OSCURO, fontSize:8.5} }]],
+    foot: [[{ content: `Total: ${filas.length} ${unidad}${filas.length===1?'':'s'}`, colSpan: columnas.length, styles:{halign:'right', fontStyle:'bold', fillColor:VERDE_CLARO, textColor:VERDE_OSCURO, fontSize:8.5} }]],
     // Solo en la última página de la tabla — por defecto autoTable la repite
     // en TODAS las páginas, lo que se ve raro cuando la tabla es larga: el
     // total real aparece de golpe justo debajo de la primera tanda de filas.

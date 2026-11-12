@@ -1,0 +1,33 @@
+{
+  "nombre": "Lexara al Día",
+  "lema": "Noticias, videos, reels y publicaciones de MD Abogados en un solo lugar.",
+  "descripcion": "Todo lo que publicamos en nuestras redes y medios, ordenado por fecha y por tema. Sígalo desde aquí o entre directo a la publicación en cada red social.",
+  "inicioUrl": "https://www.lexaraabogados.com",
+  "redes": [
+    {
+      "id": "instagram",
+      "nombre": "Instagram",
+      "url": "https://www.instagram.com/lexaraabogados/"
+    },
+    {
+      "id": "facebook",
+      "nombre": "Facebook",
+      "url": "https://www.facebook.com/profile.php?id=100066492968498"
+    },
+    {
+      "id": "tiktok",
+      "nombre": "TikTok",
+      "url": ""
+    },
+    {
+      "id": "youtube",
+      "nombre": "YouTube",
+      "url": ""
+    },
+    {
+      "id": "linkedin",
+      "nombre": "LinkedIn",
+      "url": "https://www.linkedin.com/company/lexaraabogados/"
+    }
+  ]
+}

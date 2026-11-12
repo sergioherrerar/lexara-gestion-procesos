@@ -1,6 +1,6 @@
 import logoSidebar from '../assets/Logo Blanco.png';
 import { canAccessView } from '../lib/permissions';
-import { APP_VERSION, PORTAL_CLIENTES_URL } from '../config';
+import { APP_VERSION, PORTAL_CLIENTES_URL, SITIO_WEB_URL, LEXARA_AL_DIA_URL } from '../config';
 
 // Un ícono propio por módulo (pedido explícito del usuario 2026-08-25) —
 // antes todos los ítems del menú usaban la misma marca de Lexara (ICON_SVG,
@@ -42,6 +42,12 @@ function IconVencimientos(){
 // .sidebar.collapsed .sidebar-collapse-btn en styles.css).
 function IconColapsar(){
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>;
+}
+function IconInicio(){
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V10"/></svg>;
+}
+function IconLexaraAlDia(){
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 5h13a2 2 0 0 1 2 2v12H6a2 2 0 0 1-2-2z"/><path d="M19 9h2v8a2 2 0 0 1-2 2"/><path d="M8 9h7M8 13h7M8 16h4"/></svg>;
 }
 function IconPortalClientes(){
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><path d="M15 3h6v6"/><path d="M10 14L21 3"/></svg>;
@@ -105,7 +111,15 @@ export default function Sidebar({ view, onGoView, account, liveMode, modulosPerm
           <span className="label-text">{item.label}</span>
         </div>
       ))}
-      <div className="nav-group-label">Clientes</div>
+      <div className="nav-group-label">Enlaces</div>
+      <a className="nav-item nav-item-externo" href={SITIO_WEB_URL} target="_blank" rel="noopener noreferrer" title="Ir al sitio web de Lexara (www.lexaraabogados.com) en una pestaña nueva">
+        <span className="nav-item-icon"><IconInicio/></span>
+        <span className="label-text">Inicio</span>
+      </a>
+      <a className="nav-item nav-item-externo" href={LEXARA_AL_DIA_URL} target="_blank" rel="noopener noreferrer" title="Abrir Lexara al Día (noticias, videos y reels) en una pestaña nueva">
+        <span className="nav-item-icon"><IconLexaraAlDia/></span>
+        <span className="label-text">Lexara al Día</span>
+      </a>
       <a className="nav-item nav-item-externo" href={PORTAL_CLIENTES_URL} target="_blank" rel="noopener noreferrer" title="Abrir el portal de clientes en una pestaña nueva">
         <span className="nav-item-icon"><IconPortalClientes/></span>
         <span className="label-text">Portal de clientes</span>

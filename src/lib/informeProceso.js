@@ -120,7 +120,8 @@ function dibujarSeccionTexto(ctx, titulo, texto, y){
   return yy + 8;
 }
 
-export async function generarFichaProcesoPDF(proceso){
+export async function generarFichaProcesoPDF(proceso, opciones = {}){
+  // opciones.paraCliente (portal de clientes): sin la sección de valores y contingencia ni el histórico interno de otros campos.
   const radicado = proceso.Radicado || proceso.NoCompleto || "—";
   const tituloDocumento = `Ficha del proceso — ${radicado}`;
   const { doc, pageWidth, dibujarEncabezadoYPie, numerarPaginas } = await prepararDocumentoPDF(tituloDocumento);
@@ -162,10 +163,12 @@ export async function generarFichaProcesoPDF(proceso){
     ['Fecha último estado', fechaCorta(proceso.FechaUltimoEstado)],
   ], y);
 
-  y = dibujarSeccionGrilla(ctx, 'Valores y contingencia', [
-    ['Valor actual demanda', proceso.ValorActualDemanda ? fmtMonto(parseMonto(proceso.ValorActualDemanda)) : "—"],
-    ['Calificación de contingencia', proceso.CalificacionContingencia],
-  ], y);
+  if(!opciones.paraCliente){
+    y = dibujarSeccionGrilla(ctx, 'Valores y contingencia', [
+      ['Valor actual demanda', proceso.ValorActualDemanda ? fmtMonto(parseMonto(proceso.ValorActualDemanda)) : "—"],
+      ['Calificación de contingencia', proceso.CalificacionContingencia],
+    ], y);
+  }
 
   y = dibujarSeccionTexto(ctx, 'Estado', stripHtml(proceso.Estado), y);
   y = dibujarSeccionTexto(ctx, 'Histórico', stripHtml(proceso.Historico), y);

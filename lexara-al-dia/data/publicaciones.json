@@ -1,0 +1,26 @@
+[
+  {
+    "id": "2026-11-04-reforma-pensional-incidente-impacto-fiscal",
+    "tipo": "reel",
+    "titulo": "Reforma pensional: ¿hay plata para arrancar?",
+    "descripcion": "Colpensiones pidió a Hacienda certificar si hay recursos para la reforma. Explicamos el incidente de impacto fiscal (artículo 334 de la Constitución): qué es, sus límites y por qué puede mover los tiempos de la reforma sin frenarla.",
+    "fecha": "2026-11-04",
+    "red": "instagram",
+    "url": "https://www.instagram.com/lexaraabogados/reel/DfUjor7HEwd/",
+    "miniatura": "assets/img/miniaturas/reforma-pensional.jpg",
+    "destacada": true,
+    "etiquetas": ["Reforma pensional", "Derecho laboral", "Corte Constitucional"]
+  },
+  {
+    "id": "2026-10-31-apoyo-nomina-terremoto-decreto-1417",
+    "tipo": "reel",
+    "titulo": "¿Tu empresa fue golpeada por el terremoto?",
+    "descripcion": "El Decreto 1417 de 2026 trae apoyo a la nómina (cerca de $700 mil al mes por trabajador), un auxilio para quien perdió el empleo y herramientas para sostener el empleo. Las solicitudes se reciben hasta el 31 de diciembre de 2026.",
+    "fecha": "2026-10-31",
+    "red": "instagram",
+    "url": "https://www.instagram.com/lexaraabogados/reel/DfLp7hSmnW8/",
+    "miniatura": "assets/img/miniaturas/apoyo-nomina-terremoto.jpg",
+    "destacada": false,
+    "etiquetas": ["Derecho laboral", "Nómina", "Decreto 1417 de 2026"]
+  }
+]

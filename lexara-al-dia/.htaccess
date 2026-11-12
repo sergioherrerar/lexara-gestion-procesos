@@ -1,0 +1,15 @@
+# Lexara al Día: sin listado de carpetas y siempre la versión más nueva del contenido.
+Options -Indexes
+<IfModule mod_headers.c>
+  <FilesMatch "\.(html|css|js|json)$">
+    Header set Cache-Control "no-cache, must-revalidate"
+  </FilesMatch>
+</IfModule>
+
+# La actualización automática y su configuración solo las usa el servidor (cron), nunca el navegador.
+<FilesMatch "^(actualizar|config|config\.example)\.php$">
+  Require all denied
+</FilesMatch>
+<FilesMatch "\.(bak|tmp|log)$">
+  Require all denied
+</FilesMatch>

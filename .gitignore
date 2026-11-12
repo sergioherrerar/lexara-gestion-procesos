@@ -16,3 +16,12 @@ portal-clientes/data/
 portal-clientes-config/
 portal-clientes-config.zip
 portal-clientes-cpanel.zip
+dist-portal/
+lexara-al-dia-cpanel.zip
+
+# Lexara al Día: clave de Instagram y registros de la actualización automática (solo viven en el servidor)
+lexara-al-dia/config.php
+lexara-al-dia/privado/*
+!lexara-al-dia/privado/.htaccess
+lexara-al-dia/data/*.bak
+lexara-al-dia/data/*.tmp

@@ -347,23 +347,92 @@ function cerrarSesion(): void {
 }
 
 // ---------- procesos (solo campos que el cliente puede ver) ----------
+// [nombre interno real (el que confirmó la app en config.js) o null, pistas por nombre visible]. Lo que el cliente NO recibe: Observaciones, contingencia, valores y honorarios, enlaces internos.
 const CAMPOS_PROCESO = [
-    'Radicado'           => ['numero corto', 'numero_corto', 'radicado'],
-    'Cliente'            => ['cliente'],
-    'Entidad'            => ['entidad'],
-    'Despacho'           => ['despacho judicial', 'despacho', 'juzgado'],
-    'Demandante'         => ['demandante'],
-    'Demandado'          => ['demandado'],
-    'ParteActuamos'      => ['parte en la que actuamos', 'parte en que actuamos'],
-    'TipoProceso'        => ['tipo de proceso', 'tipoproceso'],
-    'Instancia'          => ['instancia'],
-    'EtapaProcesal'      => ['etapa procesal', 'etapa'],
-    'Estado'             => ['estado'],
-    'FechaUltimoEstado'  => ['fecha ultimo estado'],
+    'Radicado'                  => [null, ['numero corto', 'numero_corto', 'radicado']],
+    'Cliente'                   => [null, ['cliente']],
+    'Entidad'                   => [null, ['entidad']],
+    'Despacho'                  => [null, ['despacho judicial', 'despacho', 'juzgado']],
+    'Demandante'                => [null, ['demandante']],
+    'Demandado'                 => [null, ['demandado']],
+    'ParteActuamos'             => [null, ['parte en la que actuamos', 'parte en que actuamos']],
+    'TipoProceso'               => [null, ['tipo de proceso', 'tipoproceso']],
+    'Instancia'                 => [null, ['instancia']],
+    'EtapaProcesal'             => [null, ['etapa procesal', 'etapa']],
+    'Estado'                    => [null, ['estado']],
+    'FechaUltimoEstado'         => [null, ['fecha ultimo estado']],
+    // Para «Ver más», los informes y la ficha:
+    'NoCompleto'                => ['No_x0020_Completo', ['no completo', 'numero completo']],
+    'NumeroDespacho'            => ['numero_x0020_de_x0020_despacho', ['numero de despacho']],
+    'Apoderado'                 => ['Apoderada', ['apoderada', 'apoderado']],
+    'TipoAccion'                => ['Tipo_x0020_de_x0020_Accion', ['tipo de accion']],
+    'EstadoVT'                  => ['Estado_x0020_V_x002f_T', ['estado v/t', 'estado vt']],
+    'FechaAdmision'             => ['Fecha_x0020_Admision_x0020_del_x', ['fecha admision', 'admision']],
+    'FechaContestacion'         => ['Fecha_x0020_Contestacion_x0020_d', ['fecha contestacion', 'contestacion']],
+    'FechaInstancia'            => ['fecha_x0020_Instancia', ['fecha instancia']],
+    'FechaReformaDemanda'       => ['Fecha_x0020_reforma_x0020_de_x00', ['fecha reforma de demanda']],
+    'FechaTerminacion'          => ['Fecha_x0020_Posible_x0020_Termin', ['fecha posible de terminacion', 'fecha terminacion']],
+    'RadicacionProceso'         => ['Fecha_x0020_Radicacion_x0020_del', ['radicacion del proceso']],
+    'Admitida'                  => ['Admitida', ['admitida']],
+    'PruebaPericial'            => ['Prueba_x0020_Pericial', ['prueba pericial']],
+    'OrigenTipoGlosa'           => ['Origen_x002f_Tipo_x0020_Glosa', ['origen tipo glosa', 'tipo glosa']],
+    'HistoricoNumerosCompletos' => ['Historico_x0020_numeros_x0020_co', ['historico numeros completos']],
+    'Historico'                 => ['Historico', ['historico']],
 ];
+const CAMPOS_FECHA_PROCESO = ['FechaUltimoEstado', 'FechaAdmision', 'FechaContestacion', 'FechaInstancia', 'FechaReformaDemanda', 'FechaTerminacion', 'RadicacionProceso'];
+const CAMPOS_TEXTO_LARGO = ['Estado' => 3000, 'Historico' => 8000, 'HistoricoNumerosCompletos' => 1500];
+
+function columnaDe(array $cols, ?string $interno, array $pistas): ?string {
+    if ($interno) foreach ($cols as $c) if (($c['name'] ?? '') === $interno) return $interno;
+    return resolverColumna($cols, $pistas);
+}
+function textoCampo($v): string {
+    if ($v === true) return 'SI';
+    if ($v === false) return 'NO';
+    return valorCampo($v);
+}
+/** Desistimientos agrupados por el ID del proceso (la lista «Desistimientos tabla» se une por ID, no por contrato). */
+function desistimientosPorProceso(): array {
+    if (esDemo()) {
+        $demo = json_decode((string)file_get_contents(__DIR__ . '/demo-datos.json'), true);
+        $por = [];
+        foreach (($demo['desistimientos'] ?? []) as $d) $por[(string)$d['Proceso']][] = ['FechaRadicacion' => $d['FechaRadicacion'] ?? '', 'Aprobacion' => $d['Aprobacion'] ?? '', 'FechaAprobacion' => $d['FechaAprobacion'] ?? '', 'Valor' => (float)($d['Valor'] ?? 0), 'Observaciones' => $d['Observaciones'] ?? ''];
+        return $por;
+    }
+    $c = cfg();
+    $sitio = idSitio($c['sitio_procesos']);
+    $lista = idLista($sitio, $c['lista_desistimientos'] ?? 'Desistimientos tabla');
+    $cols = columnasDe($sitio, $lista);
+    $m = [
+        'Proceso'         => columnaDe($cols, 'Proceso', ['proceso']),
+        'FechaRadicacion' => columnaDe($cols, 'Fecha_x0020_Radicacion', ['fecha radicacion']),
+        'Aprobacion'      => columnaDe($cols, 'Aprobacion', ['aprobacion']),
+        'FechaAprobacion' => columnaDe($cols, 'Fecha_x0020_de_x0020_Aprobacion', ['fecha de aprobacion']),
+        'Valor'           => columnaDe($cols, 'Desistimiento_x0020_Valor', ['desistimiento valor']),
+        'Observaciones'   => columnaDe($cols, 'Observaciones', ['observaciones']),
+    ];
+    if (!$m['Proceso']) return [];
+    $por = [];
+    foreach (itemsDeLista($sitio, $lista, $cols) as $it) {
+        $f = $it['fields'] ?? [];
+        $id = trim(valorCampo($f[$m['Proceso']] ?? ''));
+        if ($id === '') continue;
+        $apr = $m['Aprobacion'] ? trim(valorCampo($f[$m['Aprobacion']] ?? '')) : '';
+        $por[$id][] = [
+            'FechaRadicacion' => $m['FechaRadicacion'] ? fechaIso($f[$m['FechaRadicacion']] ?? '') : '',
+            'Aprobacion'      => $apr === '' ? '' : mb_convert_case(mb_strtolower($apr, 'UTF-8'), MB_CASE_TITLE, 'UTF-8'),   // «Aprobado» y «APROBADO» son lo mismo
+            'FechaAprobacion' => $m['FechaAprobacion'] ? fechaIso($f[$m['FechaAprobacion']] ?? '') : '',
+            'Valor'           => $m['Valor'] ? (float)($f[$m['Valor']] ?? 0) : 0.0,
+            'Observaciones'   => $m['Observaciones'] ? mb_substr(sinHtml($f[$m['Observaciones']] ?? ''), 0, 600) : '',
+        ];
+    }
+    return $por;
+}
 function procesosTodos(): array {
     if (esDemo()) {
         $demo = json_decode((string)file_get_contents(__DIR__ . '/demo-datos.json'), true);
+        $des = desistimientosPorProceso();
+        foreach ($demo['procesos'] as $k => $p) $demo['procesos'][$k]['Desistimientos'] = $des[(string)($p['id'] ?? '')] ?? [];
         return $demo['procesos'];
     }
     $cache = leerJson('cache-procesos.json');
@@ -373,15 +442,17 @@ function procesosTodos(): array {
     $lista = idLista($sitio, $c['lista_procesos']);
     $cols = columnasDe($sitio, $lista);
     $mapa = [];
-    foreach (CAMPOS_PROCESO as $clave => $pistas) $mapa[$clave] = resolverColumna($cols, $pistas);
+    foreach (CAMPOS_PROCESO as $clave => [$interno, $pistas]) $mapa[$clave] = columnaDe($cols, $interno, $pistas);
     if (!$mapa['Cliente']) throw new RuntimeException('La lista de procesos no tiene la columna Cliente.');
+    $des = desistimientosPorProceso();
     $salida = [];
     foreach (itemsDeLista($sitio, $lista, $cols) as $it) {
         $f = $it['fields'] ?? [];
-        $p = [];
-        foreach ($mapa as $clave => $interno) $p[$clave] = $interno ? valorCampo($f[$interno] ?? '') : '';
-        $p['Estado'] = mb_substr(sinHtml($p['Estado']), 0, 700);
-        if ($p['FechaUltimoEstado'] !== '') $p['FechaUltimoEstado'] = substr($p['FechaUltimoEstado'], 0, 10);
+        $p = ['id' => (string)$it['id']];
+        foreach ($mapa as $clave => $interno) $p[$clave] = $interno ? textoCampo($f[$interno] ?? '') : '';
+        foreach (CAMPOS_TEXTO_LARGO as $clave => $max) $p[$clave] = mb_substr(sinHtml($p[$clave]), 0, $max);
+        foreach (CAMPOS_FECHA_PROCESO as $clave) if ($p[$clave] !== '') $p[$clave] = fechaIso($p[$clave]);
+        $p['Desistimientos'] = $des[$p['id']] ?? [];
         $salida[] = $p;
     }
     escribirJson('cache-procesos.json', ['exp' => time() + 300, 'procesos' => $salida]);
@@ -422,6 +493,11 @@ const CAMPOS_TUTELA = [
     'FechaVencimiento'  => ['Vencimiento', ['vencimiento', 'fecha vencimiento']],
     'TipoRespuesta'     => ['Tipo_x0020_Respuesta', ['tipo respuesta']],
     'Usuario'           => ['Usuario', ['usuario']],
+    'Prestacion'        => ['Prestacion', ['prestacion']],
+    'NoIdentificacion'  => ['No_x0020_Identificacion', ['no identificacion']],
+    'Tema'              => ['Tema', ['tema']],
+    'Solicita'          => ['Solicita', ['solicita']],
+    'AbogadoRespuesta'  => ['Abogado_x0020_Tutela', ['abogado tutela', 'abogado respuesta']],
     'Contestada'        => ['Contestada', ['contestada']],
     'FechaContestacion' => ['FechaContestacion', ['fecha contestacion']],
 ];
@@ -443,8 +519,9 @@ function tutelasTodas(): array {
     $salida = [];
     foreach (itemsDeLista($sitio, $lista, $cols) as $it) {
         $f = $it['fields'] ?? [];
-        $x = [];
+        $x = ['id' => (string)$it['id']];
         foreach ($mapa as $clave => $interno) $x[$clave] = $interno ? valorCampo($f[$interno] ?? '') : '';
+        $x['Solicita'] = mb_substr(sinHtml($x['Solicita']), 0, 3000);
         $x['FechaNotificacion'] = fechaIso($x['FechaNotificacion']);
         $x['FechaVencimiento'] = fechaIso($x['FechaVencimiento']);
         $x['FechaContestacion'] = fechaIso($x['FechaContestacion']);
@@ -493,4 +570,33 @@ function resumenDe(array $acceso, ?string $clienteElegido): array {
         'procesos' => ['total' => count($procesos), 'porCliente' => contar($procesos, fn($p) => $p['Cliente'] ?? ''), 'porEtapa' => array_slice(contar($procesos, fn($p) => $p['EtapaProcesal'] ?? ''), 0, 8), 'porTipo' => array_slice(contar($procesos, fn($p) => $p['TipoProceso'] ?? ''), 0, 8)],
         'tutelas' => ['total' => count($tutelas), 'enviadas' => $enviadas, 'porEnviar' => count($tutelas) - $enviadas, 'porCliente' => contar($tutelas, fn($x) => $x['Cliente'] ?? ''), 'porTipo' => array_slice(contar($tutelas, fn($x) => $x['TipoRespuesta'] ?? ''), 0, 8), 'porEntidad' => array_slice(contar($tutelas, fn($x) => $x['Entidad'] ?? ''), 0, 8), 'porMes' => $meses],
     ];
+}
+
+/** Valor Entidad por Entidad + Cliente + Tipo, solo de los clientes de este grupo (el Excel de tutelas lo suma por cliente). Nunca se entrega el Valor Abogado. */
+function valoresDe(array $acceso): array {
+    if (empty($acceso['grupo'])) return [];
+    $permitidos = array_map('normalizar', $acceso['clientes'] ?? []);
+    if (esDemo()) {
+        $demo = json_decode((string)file_get_contents(__DIR__ . '/demo-datos.json'), true);
+        $filas = $demo['valores'] ?? [];
+    } else {
+        $cache = leerJson('cache-valores.json');
+        if (!empty($cache['filas']) && ($cache['exp'] ?? 0) > time()) $filas = $cache['filas'];
+        else {
+            $c = cfg();
+            $sitio = idSitio($c['sitio_tutelas'] ?? '/sites/TutelasMDABOGADOS');
+            $lista = idLista($sitio, $c['lista_valores'] ?? 'Valores Entidad');
+            $cols = columnasDe($sitio, $lista);
+            $m = ['Entidad' => columnaDe($cols, 'Entidad', ['entidad']), 'Cliente' => columnaDe($cols, 'Clientess', ['clientess', 'cliente']),
+                  'Tipo' => columnaDe($cols, 'Tipo', ['tipo']), 'ValorEntidad' => columnaDe($cols, 'Valor_x0020_Entidad', ['valor entidad'])];
+            $filas = [];
+            foreach (itemsDeLista($sitio, $lista, $cols) as $it) {
+                $f = $it['fields'] ?? [];
+                $filas[] = ['Entidad' => $m['Entidad'] ? valorCampo($f[$m['Entidad']] ?? '') : '', 'Cliente' => $m['Cliente'] ? valorCampo($f[$m['Cliente']] ?? '') : '',
+                            'Tipo' => $m['Tipo'] ? valorCampo($f[$m['Tipo']] ?? '') : '', 'ValorEntidad' => $m['ValorEntidad'] ? (float)($f[$m['ValorEntidad']] ?? 0) : 0.0];
+            }
+            escribirJson('cache-valores.json', ['exp' => time() + 300, 'filas' => $filas]);
+        }
+    }
+    return array_values(array_filter($filas, fn($v) => in_array(normalizar((string)($v['Cliente'] ?? '')), $permitidos, true)));
 }

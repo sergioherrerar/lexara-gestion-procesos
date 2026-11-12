@@ -95,6 +95,11 @@ try {
             if ($accion === 'tutelas') { $l = tutelasDe($a, $cli); salir(['ok' => true, 'total' => count($l), 'tutelas' => $l]); }
             salir(['ok' => true, 'resumen' => resumenDe($a, $cli)]);
         }
+        case 'valores': {
+            $a = accesoEfectivo();
+            if (empty($a['grupo'])) salir(['ok' => false, 'error' => 'Esta sección no está disponible para su cuenta.'], 403);
+            salir(['ok' => true, 'valores' => valoresDe($a)]);
+        }
         case 'salir': {
             if (!$esPost) salir(['error' => 'Método no permitido.'], 405);
             cerrarSesion();
