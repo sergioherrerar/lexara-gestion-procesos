@@ -2156,6 +2156,7 @@
   .redes-kpi{background:#fff; border:1px solid var(--gris-linea); border-top:3px solid var(--verde-oscuro); border-radius:var(--radius); box-shadow:var(--shadow); padding:14px 16px; display:flex; flex-direction:column; gap:4px; min-width:0;}
   .redes-kpi-n{font-family:var(--font-display); font-size:28px; font-weight:700; color:var(--verde-oscuro); font-variant-numeric:tabular-nums; line-height:1.1;}
   .redes-kpi-t{font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--texto-suave);}
+  .redes-kpi-f{margin-top:auto; padding-top:6px; font-size:12px; font-weight:600; color:var(--verde-oscuro); font-variant-numeric:tabular-nums;}
   .redes-kpi-s{font-size:12.5px; color:var(--texto); overflow-wrap:anywhere;}
   .redes-seccion h3{font-family:var(--font-display); font-size:16px; color:var(--verde-oscuro); margin:0 0 8px;}
   .redes-tabla{width:100%; border-collapse:collapse; font-size:13px;}

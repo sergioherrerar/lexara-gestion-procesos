@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-11-12 (165)
+- **Informe «Redes sociales»: fecha de publicación en «Más vista» y «Menos vista»** — pedido del usuario (captura con las dos tarjetas marcadas). Debajo del título de cada una aparece «Publicada el …»; si la pieza salió un día distinto al programado, muestra el día en que realmente salió.
+
 ## 2026-11-12 (164)
 - **Lexara al Día: campanita de publicaciones nuevas** — pedido del usuario. Junto al botón «Inicio» aparece una campana con el número de videos/publicaciones que esa persona aún no ha visto; al abrirla muestra la lista (miniatura, título, tipo, red y fecha) y al tocar una se reproduce. El aviso se apaga al cerrar el panel o con «Marcar todas como vistas». Lo que ya vio cada visitante se recuerda en su propio navegador (localStorage), sin servidor ni datos personales; en la primera visita solo cuentan como nuevas las de los últimos 7 días. Funciona en celular y respeta «reducir movimiento».
 - **Lexara al Día: botón de TikTok** (@lexara.abogados) con el enlace que dio el usuario.

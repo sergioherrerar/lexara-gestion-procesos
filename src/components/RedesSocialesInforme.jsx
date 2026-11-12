@@ -116,7 +116,7 @@ export default function RedesSocialesInforme(){
 
     // Más / menos vista: solo hay vistas públicas de YouTube.
     const conVistas = publicadasMes
-      .concat(filasProg.filter(f => f.g.vistas && !f.real).map(f => ({ ...f.g, redes: ['youtube', 'spotify'] })))
+      .concat(filasProg.filter(f => f.g.vistas && !f.real).map(f => ({ ...f.g, fecha: f.g.publicadaComo || f.g.fecha, redes: ['youtube', 'spotify'] })))
       .map(p => ({ p, v: totalVistas(p) }))
       .filter(x => x.v > 0 || (x.p.vistas && Object.keys(x.p.vistas).length))
       .sort((a, b) => b.v - a.v);
@@ -178,11 +178,13 @@ export default function RedesSocialesInforme(){
           <span className="redes-kpi-n">{vista.mas ? fmt(totalVistas(vista.mas.p)) : '—'}</span>
           <span className="redes-kpi-t">Más vista (YouTube + TikTok)</span>
           <span className="redes-kpi-s">{vista.mas ? vista.mas.p.titulo : 'Sin vistas públicas en este mes'}</span>
+          {vista.mas && <span className="redes-kpi-f">Publicada el {fechaLarga(vista.mas.p.fecha)}</span>}
         </div>
         <div className="redes-kpi">
           <span className="redes-kpi-n">{vista.menos ? fmt(totalVistas(vista.menos.p)) : '—'}</span>
           <span className="redes-kpi-t">Menos vista (YouTube + TikTok)</span>
           <span className="redes-kpi-s">{vista.menos ? vista.menos.p.titulo : 'Se necesitan al menos 2 piezas con vistas'}</span>
+          {vista.menos && <span className="redes-kpi-f">Publicada el {fechaLarga(vista.menos.p.fecha)}</span>}
         </div>
       </div>
 
