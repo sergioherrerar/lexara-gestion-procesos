@@ -167,13 +167,78 @@
   $('filtro-red').addEventListener('change', function(){ estado.red = this.value; pintar(); });
   $('orden').addEventListener('change', function(){ estado.orden = this.value; pintar(); });
 
+  // ---------- campanita de publicaciones nuevas ----------
+  // Es «nueva» la publicación que esta persona todavía no ha visto en este navegador (se recuerda en localStorage; no se envía nada a ningún servidor).
+  // Primera visita: solo cuentan como nuevas las de los últimos 7 días, para no avisar de todo el historial.
+  var CLAVE_VISTAS = 'lexaraAlDia.vistas.v1';
+  function idDe(p){ return p.id || p.url || p.titulo; }
+  function leerVistas(){ try{ var v = JSON.parse(localStorage.getItem(CLAVE_VISTAS)); return Array.isArray(v) ? v : null; }catch(e){ return null; } }
+  function guardarVistas(ids){ try{ localStorage.setItem(CLAVE_VISTAS, JSON.stringify(ids)); }catch(e){} }
+  var campana = { nuevas: [], vistas: [] };
+  function porFechaDesc(a, b){ return String(b.fecha).localeCompare(String(a.fecha)); }
+  function marcarVistas(){
+    var ids = estado.todas.map(idDe);   // solo se recuerdan las que siguen publicadas (la lista es de las 10 últimas)
+    guardarVistas(ids); campana.vistas = ids; campana.nuevas = []; pintarCampana();
+  }
+  function cerrarCampana(marcar){
+    var pn = $('campana-panel'); if(pn.hidden) return;
+    pn.hidden = true; $('campana-btn').setAttribute('aria-expanded', 'false');
+    if(marcar) marcarVistas();
+  }
+  function pintarCampana(){
+    var n = campana.nuevas.length, num = $('campana-num');
+    num.hidden = !n; num.textContent = n > 9 ? '9+' : String(n);
+    $('campana-btn').classList.toggle('con-nuevas', n > 0);
+    $('campana-btn').setAttribute('aria-label', n ? n + (n === 1 ? ' publicación nueva' : ' publicaciones nuevas') : 'Publicaciones nuevas: estás al día');
+    var pn = $('campana-panel'); pn.textContent = '';
+    pn.appendChild(el('p', 'campana-titulo', n ? 'Publicaciones nuevas' : 'Estás al día'));
+    if(!n){ pn.appendChild(el('p', 'campana-vacio', 'No hay videos ni publicaciones nuevas desde tu última visita. Cuando salga uno, aquí te avisamos.')); return; }
+    var ul = el('ul', 'campana-lista');
+    campana.nuevas.forEach(function(p){
+      var li = el('li'); var b = el('button', 'campana-item'); b.type = 'button';
+      var mini = el('span', 'campana-mini'); var m = miniaturaDe(p); if(m) mini.style.backgroundImage = 'url("' + m.replace(/"/g, '%22') + '")'; else { var d = DEGRADADOS[p.tipo] || DEGRADADOS.publicacion; mini.style.background = 'linear-gradient(135deg,' + d[0] + ',' + d[1] + ')'; }
+      var tx = el('span', 'campana-texto');
+      tx.appendChild(el('strong', null, p.titulo));
+      tx.appendChild(el('small', null, tipoDe(p.tipo).singular + ' · ' + (REDES[p.red] || 'Sitio web') + ' · ' + fechaLarga(p.fecha)));
+      b.appendChild(mini); b.appendChild(tx);
+      b.addEventListener('click', function(){
+        campana.vistas.push(idDe(p)); guardarVistas(campana.vistas);
+        campana.nuevas = campana.nuevas.filter(function(x){ return x !== p; });
+        cerrarCampana(false); pintarCampana(); abrir(p);
+      });
+      li.appendChild(b); ul.appendChild(li);
+    });
+    pn.appendChild(ul);
+    var t = el('button', 'campana-todo', 'Marcar todas como vistas'); t.type = 'button';
+    t.addEventListener('click', function(){ cerrarCampana(true); });
+    pn.appendChild(t);
+  }
+  function iniciarCampana(){
+    var vistas = leerVistas();
+    if(!vistas){   // primera visita (o el navegador no guarda datos): solo los últimos 7 días
+      var corte = new Date(); corte.setDate(corte.getDate() - 7);
+      var c = corte.getFullYear() + '-' + ('0' + (corte.getMonth() + 1)).slice(-2) + '-' + ('0' + corte.getDate()).slice(-2);
+      vistas = estado.todas.filter(function(p){ return String(p.fecha) < c; }).map(idDe);
+    }
+    campana.vistas = vistas;
+    campana.nuevas = estado.todas.filter(function(p){ return !p.ejemplo && vistas.indexOf(idDe(p)) < 0; }).sort(porFechaDesc);
+    $('campana').hidden = false; pintarCampana();
+    $('campana-btn').addEventListener('click', function(ev){
+      ev.stopPropagation();
+      var pn = $('campana-panel');
+      if(pn.hidden){ pn.hidden = false; this.setAttribute('aria-expanded', 'true'); } else cerrarCampana(true);
+    });
+    document.addEventListener('click', function(ev){ if(!$('campana').contains(ev.target)) cerrarCampana(true); });
+    document.addEventListener('keydown', function(ev){ if(ev.key === 'Escape' && !$('campana-panel').hidden){ cerrarCampana(true); $('campana-btn').focus(); } });
+  }
+
   // ---------- carga ----------
   function leer(url){ return fetch(url, { cache: 'no-cache' }).then(function(r){ if(!r.ok) throw new Error('No se pudo leer ' + url + ' (' + r.status + ')'); return r.json(); }); }
   Promise.all([leer('data/sitio.json'), leer('data/publicaciones.json')]).then(function(r){
     estado.sitio = r[0] || {};
     estado.todas = (r[1] || []).filter(function(p){ return p && p.titulo; });
     $('cargando').hidden = true;
-    pintarCabecera(); pintarDestacada(); pintarTipos(); pintar();
+    pintarCabecera(); pintarDestacada(); pintarTipos(); pintar(); iniciarCampana();
   }).catch(function(err){
     console.error(err);
     $('cargando').hidden = true;

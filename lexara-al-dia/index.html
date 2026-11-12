@@ -6,7 +6,7 @@
 <title>Lexara al Día — MD Abogados</title>
 <meta name="description" content="Lexara al Día, de MD Abogados SAS: noticias, videos, reels y publicaciones en un solo lugar.">
 <link rel="icon" href="assets/img/logo.png">
-<link rel="stylesheet" href="assets/css/estilos.css?v=6">
+<link rel="stylesheet" href="assets/css/estilos.css?v=7">
 </head>
 <body>
 
@@ -15,6 +15,13 @@
   <nav class="barra-nav" aria-label="Principal">
     <a href="#publicaciones">Publicaciones</a>
     <a href="#redes">Nuestras redes</a>
+    <div class="campana" id="campana" hidden>
+      <button type="button" class="campana-btn" id="campana-btn" aria-haspopup="true" aria-expanded="false" aria-controls="campana-panel" aria-label="Publicaciones nuevas">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+        <span class="campana-num" id="campana-num" hidden>0</span>
+      </button>
+      <div class="campana-panel" id="campana-panel" hidden role="region" aria-label="Publicaciones nuevas"></div>
+    </div>
     <a class="boton-inicio" id="enlace-inicio" href="https://www.lexaraabogados.com"><span aria-hidden="true">⌂</span> Inicio</a>
   </nav>
 </header>
@@ -70,6 +77,6 @@
   </div>
 </div>
 
-<script src="assets/js/app.js?v=4"></script>
+<script src="assets/js/app.js?v=5"></script>
 </body>
 </html>

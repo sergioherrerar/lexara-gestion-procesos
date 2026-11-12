@@ -7,7 +7,7 @@ import { useState, useEffect, useMemo } from 'react';
 // cuando el usuario dice «actualiza redes» (lee Bustral con Chrome conectado).
 
 const MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
-const RED_NOMBRE = { youtube: 'YouTube', facebook: 'Facebook', instagram: 'Instagram', spotify: 'Spotify' };
+const RED_NOMBRE = { tiktok: 'TikTok', youtube: 'YouTube', facebook: 'Facebook', instagram: 'Instagram', spotify: 'Spotify' };
 const ESTADO = {
   video_aprobado: { texto: 'Video aprobado', clase: 'badge-verde' },
   guion_aprobado: { texto: 'Guion aprobado', clase: 'badge-verde' },
@@ -176,12 +176,12 @@ export default function RedesSocialesInforme(){
         </div>
         <div className="redes-kpi">
           <span className="redes-kpi-n">{vista.mas ? fmt(totalVistas(vista.mas.p)) : '—'}</span>
-          <span className="redes-kpi-t">Más vista (YouTube)</span>
+          <span className="redes-kpi-t">Más vista (YouTube + TikTok)</span>
           <span className="redes-kpi-s">{vista.mas ? vista.mas.p.titulo : 'Sin vistas públicas en este mes'}</span>
         </div>
         <div className="redes-kpi">
           <span className="redes-kpi-n">{vista.menos ? fmt(totalVistas(vista.menos.p)) : '—'}</span>
-          <span className="redes-kpi-t">Menos vista (YouTube)</span>
+          <span className="redes-kpi-t">Menos vista (YouTube + TikTok)</span>
           <span className="redes-kpi-s">{vista.menos ? vista.menos.p.titulo : 'Se necesitan al menos 2 piezas con vistas'}</span>
         </div>
       </div>
@@ -251,7 +251,7 @@ export default function RedesSocialesInforme(){
         </div>
       </div>
 
-      <p className="save-hint">{datos.fuente} Las vistas por publicación solo existen para YouTube (Bustral y Facebook/Instagram no las entregan por pieza). «Nuevos seguidores del mes» de Instagram se podrá medir cuando se guarde un conteo mensual.</p>
+      <p className="save-hint">{datos.fuente} Las vistas por publicación solo se ven en YouTube y TikTok (Bustral, Facebook e Instagram no las entregan por pieza; Bustral tampoco mide TikTok, LinkedIn ni Spotify). «Nuevos seguidores del mes» de Instagram se podrá medir cuando se guarde un conteo mensual.</p>
 
       {abierta && <DetalleRedes f={abierta} onClose={() => setAbierta(null)} />}
     </div>
@@ -296,7 +296,7 @@ function DetalleRedes({ f, onClose }){
               <div className="redes-sinvideo">
                 {g && g.tieneVideo
                   ? 'El video de esta pieza está en Bustral (botón «Descargar video»).'
-                  : 'Esta pieza no tiene video en YouTube.'}
+                  : Object.keys(urls).length ? 'El video se abre en la red, con los botones de abajo.' : 'Esta pieza no tiene video con enlace público.'}
               </div>
             )}
             <div className="redes-enlaces">

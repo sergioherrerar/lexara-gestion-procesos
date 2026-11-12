@@ -2,6 +2,11 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-11-12 (164)
+- **Lexara al Día: campanita de publicaciones nuevas** — pedido del usuario. Junto al botón «Inicio» aparece una campana con el número de videos/publicaciones que esa persona aún no ha visto; al abrirla muestra la lista (miniatura, título, tipo, red y fecha) y al tocar una se reproduce. El aviso se apaga al cerrar el panel o con «Marcar todas como vistas». Lo que ya vio cada visitante se recuerda en su propio navegador (localStorage), sin servidor ni datos personales; en la primera visita solo cuentan como nuevas las de los últimos 7 días. Funciona en celular y respeta «reducir movimiento».
+- **Lexara al Día: botón de TikTok** (@lexara.abogados) con el enlace que dio el usuario.
+- **Informe «Redes sociales» ahora incluye TikTok, LinkedIn y Spotify** — seguidores (TikTok 306, LinkedIn 137; Spotify no muestra seguidores públicos) y vistas por video de TikTok sumadas a las de YouTube. La publicación más vista pasa a ser «¿Hay plata para arrancar?» (4.135 en TikTok + 161 en YouTube). Bustral no mide TikTok, LinkedIn ni Spotify.
+
 ## 2026-11-12 (163)
 - **Informes → nueva pestaña «Redes sociales»** — pedido del usuario (estadística de redes con los datos de Bustral). Selector de mes; piezas publicadas con el detalle por red; cumplimiento del calendario (programadas frente a publicadas: a tiempo, con retraso o vencida sin publicar); aprobadas frente a objetadas; publicación más y menos vista; seguidores actuales y nuevos; métricas de 30 días de Facebook, Instagram y YouTube. Con un clic en una pieza se ve el copy y el video (miniatura y enlaces).
 - Los datos viven en `public/data/redes-sociales.json` (lectura de Bustral del 12-nov-2026 + seguidores públicos + vistas de YouTube) y se refrescan cuando se pide «actualiza redes». Límites: las vistas por publicación solo existen para YouTube; Bustral muestra 0 seguidores de Instagram (el perfil público tiene 900) y un «% de vista promedio» de YouTube erróneo; los seguidores nuevos del mes de Instagram aún no se pueden medir.

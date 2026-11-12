@@ -1,6 +1,6 @@
 {
   "leido": "2026-11-12",
-  "fuente": "Bustral (calendario, copy y métricas, lectura del 12-nov-2026) + vistas públicas de YouTube. Se actualiza cuando se pide «actualizar redes».",
+  "fuente": "Bustral (calendario, copy y métricas, lectura del 12-nov-2026) + páginas públicas de YouTube, TikTok, LinkedIn y Spotify (vistas por video, seguidores). Se actualiza cuando se pide «actualizar redes».",
   "seguidores": [
     {
       "red": "instagram",
@@ -22,6 +22,27 @@
       "actuales": 17,
       "nuevos30d": 3,
       "nota": "Suscriptores ganados en 30 días (0 perdidos), según Bustral."
+    },
+    {
+      "red": "tiktok",
+      "nombre": "TikTok · @lexara.abogados",
+      "actuales": 306,
+      "nuevos30d": null,
+      "nota": "306 seguidores y 2.496 me gusta en el perfil público. Bustral no mide TikTok."
+    },
+    {
+      "red": "linkedin",
+      "nombre": "LinkedIn · Lexara Abogados",
+      "actuales": 137,
+      "nuevos30d": null,
+      "nota": "137 seguidores en la página pública. LinkedIn solo muestra reacciones (2 a 8 por publicación), no vistas; Bustral tampoco lo mide."
+    },
+    {
+      "red": "spotify",
+      "nombre": "Spotify · Café Laboral",
+      "actuales": null,
+      "nuevos30d": null,
+      "nota": "Spotify no muestra públicamente seguidores ni reproducciones (solo calificación 5 de 3 reseñas y 30 episodios). Eso está en Spotify for Podcasters. El episodio 30 figura publicado el 7 nov."
     }
   ],
   "metricas30d": {
@@ -111,15 +132,18 @@
       "redes": [
         "instagram",
         "youtube",
-        "facebook"
+        "facebook",
+        "tiktok"
       ],
       "titulo": "Una emergencia también puede generar decisiones laborales (Circular 0096)",
       "copy": "🚨 Una emergencia también puede generar decisiones laborales que las empresas deben conocer.\nLa Circular 0096 del 13 de agosto de 2026 establece orientaciones para empleadores, trabajadores del sector privado y Direcciones Territoriales del Ministerio del Trabajo, en el marco de la situación de desastre nacional declarada tras el sismo. Aborda trabajo en casa temporal, ausencias, vacaciones, retiro parcial de cesantías, licencias, anticipo de prima, fuerza mayor y suspensión del contrato, accidentes laborales y SG-SST.\n📩 Escríbenos si necesitas acompañamiento jurídico.",
       "vistas": {
-        "youtube": 132
+        "youtube": 132,
+        "tiktok": 181
       },
       "urls": {
-        "youtube": "https://www.youtube.com/watch?v=Ze41e6-Ty8c"
+        "youtube": "https://www.youtube.com/watch?v=Ze41e6-Ty8c",
+        "tiktok": "https://www.tiktok.com/@lexara.abogados/video/7681840204633640210"
       }
     },
     {
@@ -159,16 +183,19 @@
       "redes": [
         "instagram",
         "facebook",
-        "youtube"
+        "youtube",
+        "tiktok"
       ],
       "titulo": "Se radicó el Estatuto del Trabajo. Esto es lo que cambiaría",
       "copy": "Se radicó el Estatuto del Trabajo. Esto es lo que cambiaría:\n💰 Salario vital, no solo mínimo — calculado según costo de vida real, no solo inflación.\n🛡️ Más estabilidad laboral y garantías para organizarse sindicalmente.\n🤖 Si un algoritmo toma una decisión sobre tu trabajo, tienes derecho a saber cómo se tomó — y a pedir que una persona la revise.\nSigue en trámite en el Congreso. Te contamos qué sigue.",
       "vistas": {
-        "youtube": 3
+        "youtube": 3,
+        "tiktok": 198
       },
       "urls": {
         "instagram": "https://www.instagram.com/reel/Dd2bOkOgZA8/",
-        "youtube": "https://www.youtube.com/watch?v=SoC74LPGTcA"
+        "youtube": "https://www.youtube.com/watch?v=SoC74LPGTcA",
+        "tiktok": "https://www.tiktok.com/@lexara.abogados/video/7690741025849068808"
       }
     },
     {
@@ -176,67 +203,87 @@
       "redes": [
         "youtube",
         "facebook",
-        "instagram"
+        "instagram",
+        "tiktok"
       ],
       "titulo": "Reforma pensional y régimen de transición",
       "copy": "La razón que exponen: la entidad requiere un año adicional para completar los ajustes tecnológicos, operativos, financieros e institucionales necesarios para implementar la nueva ley. Al 31 de agosto, Colpensiones había identificado 84 requerimientos pendientes. Además, Hacienda solicitó abrir un incidente de impacto fiscal: la reforma requeriría al menos $5 billones adicionales no incluidos en el Presupuesto 2027.\nLo importante: la reforma no ha sido aplazada; la fecha vigente sigue siendo el 1 de abril de 2027. ¿Está usted próximo a pensionarse? Escríbanos.",
       "vistas": {
-        "youtube": 460
+        "youtube": 460,
+        "tiktok": 224
       },
       "urls": {
         "instagram": "https://www.instagram.com/reel/DeAgdLpCgtj/",
-        "youtube": "https://www.youtube.com/watch?v=Zp_mv9TR7GE"
+        "youtube": "https://www.youtube.com/watch?v=Zp_mv9TR7GE",
+        "tiktok": "https://www.tiktok.com/@lexara.abogados/video/7691673884281638162"
       }
     },
     {
       "fecha": "2026-10-06",
       "redes": [
         "facebook",
-        "instagram"
+        "instagram",
+        "tiktok"
       ],
       "titulo": "¿Y si todo lo que te dijeron sobre la nueva reforma pensional fuera mentira?",
       "copy": "🚨 ¿Y si todo lo que te dijeron sobre la nueva reforma pensional fuera mentira?\nHay mucha desinformación circulando y, cuando se trata de tu futuro pensional, no puedes quedarte con lo que viste en un video o te contó alguien.\n👀 La pregunta realmente importante es: ¿qué ley te aplica a ti?\n💬 Cuéntanos: ¿ya sabes cuántas semanas tienes cotizadas?\n🎙️ Si quieres entenderlo sin enredos, te esperamos en Café Laboral.",
-      "vistas": {},
+      "vistas": {
+        "tiktok": 241
+      },
       "urls": {
-        "instagram": "https://www.instagram.com/reel/DeK_6zXOgq0/"
+        "instagram": "https://www.instagram.com/reel/DeK_6zXOgq0/",
+        "tiktok": "https://www.tiktok.com/@lexara.abogados/video/7693912747523771655"
       }
     },
     {
       "fecha": "2026-10-13",
       "redes": [
         "facebook",
-        "instagram"
+        "instagram",
+        "tiktok"
       ],
       "titulo": "¿Estás pagando un cálculo actuarial para mejorar tu pensión?",
       "copy": "💰 ¿Estás pagando un cálculo actuarial para mejorar tu pensión? ¡Cuidado! Podrías estar tomando una decisión sin conocer todos los riesgos.\nLa fecha de entrada en vigor de la reforma pensional sigue siendo un tema de debate y, dependiendo de tu situación, podría convenirte más el régimen anterior que el nuevo sistema.\n💬 Comenta «PENSIÓN» y te enviaremos los lineamientos que debes tener en cuenta antes de tomar una decisión.",
-      "vistas": {},
+      "vistas": {
+        "tiktok": 2
+      },
       "urls": {
-        "instagram": "https://www.instagram.com/reel/Deb0G2KjQqR/"
+        "instagram": "https://www.instagram.com/reel/Deb0G2KjQqR/",
+        "tiktok": "https://www.tiktok.com/@lexara.abogados/video/7696129221265001735"
       }
     },
     {
       "fecha": "2026-10-16",
       "redes": [
         "facebook",
-        "instagram"
+        "instagram",
+        "tiktok"
       ],
       "titulo": "¿Terminaste tu contrato y crees que ya no pueden reclamarte?",
       "copy": "¿Terminaste tu contrato y crees que ya no pueden reclamarte? 👀⚖️\nNo necesariamente. En algunos casos, después de terminar la relación laboral todavía pueden existir reclamaciones por salarios, prestaciones sociales e intereses de mora. Además, es importante conocer cómo funciona la sanción moratoria y desde cuándo puede generarse.\n📌 ¿Tienes dudas sobre una liquidación laboral o una reclamación después de terminado tu contrato? Escríbenos.",
-      "vistas": {},
+      "vistas": {
+        "tiktok": 286
+      },
       "urls": {
-        "instagram": "https://www.instagram.com/reel/DekjnniAHZW/"
+        "instagram": "https://www.instagram.com/reel/DekjnniAHZW/",
+        "tiktok": "https://www.tiktok.com/@lexara.abogados/video/7697265736569523474"
       }
     },
     {
       "fecha": "2026-10-17",
       "redes": [
         "instagram",
-        "facebook"
+        "facebook",
+        "tiktok"
       ],
       "titulo": "¿La reforma pensional cambió? ¿Qué sigue ahora?",
       "copy": "🚨 ¿La reforma pensional cambió? ¿Qué sigue ahora?\nLa reciente sentencia sobre la reforma pensional abre importantes preguntas para trabajadores y futuros pensionados.\n⚖️ En nuestro nuevo episodio analizamos qué decidió la Corte, qué significa y qué debemos esperar.\n🎙️ Dale play al episodio completo. Encuéntralo en YouTube.",
-      "vistas": {},
-      "urls": {}
+      "vistas": {
+        "tiktok": 184
+      },
+      "urls": {
+        "tiktok": "https://www.tiktok.com/@lexara.abogados/video/7697799025344417032"
+      }
     },
     {
       "fecha": "2026-10-28",
@@ -258,26 +305,34 @@
       "fecha": "2026-10-29",
       "redes": [
         "facebook",
-        "instagram"
+        "instagram",
+        "tiktok"
       ],
       "titulo": "Acoso y violencia laboral: intolerables (Decreto 1040 de 2026)",
       "copy": "Acoso y violencia laboral: intolerables. Y ahora, con obligaciones concretas para tu empresa. ⚠️\nEl Decreto 1040 de 2026 exige a los empleadores garantizar un entorno laboral libre de violencia y acoso. ¿Qué implica en la práctica?\n✅ Política de cero tolerancia. ✅ Un protocolo participativo con rutas de atención y canales seguros de denuncia. ✅ Incorporarlo en el reglamento interno y en los contratos. ✅ Medidas de protección para quien denuncia.",
-      "vistas": {},
+      "vistas": {
+        "tiktok": 204
+      },
       "urls": {
-        "instagram": "https://www.instagram.com/reel/DfGPrZDjQMR/"
+        "instagram": "https://www.instagram.com/reel/DfGPrZDjQMR/",
+        "tiktok": "https://www.tiktok.com/@lexara.abogados/video/7702244015663582482"
       }
     },
     {
       "fecha": "2026-10-31",
       "redes": [
         "facebook",
-        "instagram"
+        "instagram",
+        "tiktok"
       ],
       "titulo": "¿Tu empresa fue golpeada por el terremoto? (Decreto 1417 de 2026)",
       "copy": "¿Tu empresa fue golpeada por el terremoto? El Gobierno te va a dar $700.362 al mes por cada trabajador que mantengas en nómina. 💼\nEl Decreto 1417 de 2026 trae tres medidas concretas: 1️⃣ Apoyo a la nómina. 2️⃣ Auxilio para quien perdió el empleo. 3️⃣ Herramientas para sostener el empleo.\n⏰ Las solicitudes se reciben hasta el 31 de diciembre de 2026.\n👉 Comenta «AUXILIOS» y te enviamos el análisis del decreto.",
-      "vistas": {},
+      "vistas": {
+        "tiktok": 160
+      },
       "urls": {
-        "instagram": "https://www.instagram.com/reel/DfLp7hSmnW8/"
+        "instagram": "https://www.instagram.com/reel/DfLp7hSmnW8/",
+        "tiktok": "https://www.tiktok.com/@lexara.abogados/video/7703023636973636916"
       }
     },
     {
@@ -285,16 +340,19 @@
       "redes": [
         "youtube",
         "facebook",
-        "instagram"
+        "instagram",
+        "tiktok"
       ],
       "titulo": "Reforma pensional: ¿hay plata para arrancar?",
       "copy": "Reforma pensional: ¿hay plata para arrancar? 💰\nColpensiones le pidió al Ministerio de Hacienda certificar si existen los recursos para poner en marcha la reforma. Y ahí aparece una figura clave: el incidente de impacto fiscal (artículo 334 de la Constitución).\nLa Corte no puede cambiar el sentido de su decisión ni limitar derechos fundamentales por el factor económico; solo puede ajustar el cómo y el desde cuándo se cumple.\nEn otras palabras: el incidente de impacto fiscal no frena la reforma, pero sí puede mover sus tiempos.",
       "vistas": {
-        "youtube": 161
+        "youtube": 161,
+        "tiktok": 4135
       },
       "urls": {
         "instagram": "https://www.instagram.com/reel/DfUjor7HEwd/",
-        "youtube": "https://www.youtube.com/watch?v=EKT_Z2-R3kQ"
+        "youtube": "https://www.youtube.com/watch?v=EKT_Z2-R3kQ",
+        "tiktok": "https://www.tiktok.com/@lexara.abogados/video/7704306579704745223"
       }
     }
   ],
