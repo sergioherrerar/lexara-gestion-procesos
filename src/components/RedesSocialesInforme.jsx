@@ -14,6 +14,24 @@ const ESTADO = {
   video_objetado: { texto: 'Video objetado', clase: 'badge-rojo' },
   por_aprobar: { texto: 'Por aprobar', clase: 'badge-naranja' },
 };
+// Qué significa cada métrica (definiciones habituales de Meta y YouTube; Bustral las toma de ahí).
+// Se muestran siempre debajo del nombre, no como globo al pasar el mouse, para que se lean igual en el celular.
+const GLOSARIO = {
+  'facebook|Impresiones de la página': 'Veces que apareció en pantalla algo de tu página. Si una persona lo ve 3 veces, cuenta 3.',
+  'facebook|Vistas de contenido': 'Veces que se vio tu contenido (videos, fotos, publicaciones). También cuenta repeticiones.',
+  'facebook|Interacciones': 'Acciones de la gente sobre tus publicaciones: reacciones, comentarios, compartidos y clics.',
+  'facebook|Seguidores nuevos (neto)': 'Los que se sumaron menos los que dejaron de seguirte: el saldo final.',
+  'instagram|Alcance': 'Personas distintas que vieron tu contenido. Cada persona cuenta una sola vez.',
+  'instagram|Vistas': 'Veces que se vio tu contenido, contando repeticiones. Por eso es mayor que el alcance.',
+  'instagram|Me gusta': 'Corazones que recibieron tus publicaciones.',
+  'instagram|Comentarios': 'Comentarios escritos en tus publicaciones.',
+  'instagram|Compartidos': 'Veces que alguien envió tu publicación a otra persona o la subió a sus historias. Es la señal más valiosa: lleva tu contenido a gente nueva.',
+  'instagram|Guardados': 'Veces que alguien guardó la publicación para verla después: indica que le pareció útil.',
+  'youtube|Minutos vistos': 'Tiempo total que la gente pasó viendo tus videos, sumado en minutos.',
+  'youtube|Suscriptores ganados': 'Personas que se suscribieron al canal en el período.',
+  'youtube|Suscriptores perdidos': 'Personas que se dieron de baja del canal en el período.',
+  'youtube|Me gusta': 'Veces que le dieron «me gusta» a tus videos.',
+};
 const fmt = n => (n == null ? '—' : Number(n).toLocaleString('es-CO'));
 const mesDe = f => String(f || '').slice(0, 7);
 function fechaLarga(f){
@@ -245,7 +263,12 @@ export default function RedesSocialesInforme(){
               <h4>{RED_NOMBRE[r]}</h4>
               <table className="redes-tabla">
                 <tbody>
-                  {datos.metricas30d[r].map(([k, v]) => <tr key={k}><td>{k}</td><td className="redes-num">{fmt(v)}</td></tr>)}
+                  {datos.metricas30d[r].map(([k, v]) => (
+                    <tr key={k}>
+                      <td>{k}{GLOSARIO[r + '|' + k] && <small className="redes-explica">{GLOSARIO[r + '|' + k]}</small>}</td>
+                      <td className="redes-num">{fmt(v)}</td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>

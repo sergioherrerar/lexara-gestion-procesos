@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-11-12 (166)
+- **Informe «Redes sociales»: explicación de cada métrica de los últimos 30 días** — pedido del usuario («un breve explicación de estos términos… dentro del portal»). Debajo del nombre de cada métrica de Facebook, Instagram y YouTube (impresiones, vistas de contenido, interacciones, alcance, compartidos, guardados, minutos vistos, etc.) aparece una frase corta que dice qué significa. Se muestra siempre, no como globo al pasar el mouse, para que se lea igual en el celular.
+
 ## 2026-11-12 (165)
 - **Informe «Redes sociales»: fecha de publicación en «Más vista» y «Menos vista»** — pedido del usuario (captura con las dos tarjetas marcadas). Debajo del título de cada una aparece «Publicada el …»; si la pieza salió un día distinto al programado, muestra el día en que realmente salió.
 
