@@ -56,7 +56,7 @@ a.red:hover{filter:brightness(1.08)}
 
 /* listado */
 .listado{padding:2.4rem clamp(1rem,4vw,3rem) 3rem}
-.listado-cab{display:flex; align-items:baseline; justify-content:space-between; gap:1rem; margin-bottom:1rem}
+.listado-cab{display:flex; flex-wrap:wrap; align-items:baseline; justify-content:space-between; gap:.3rem 1rem; margin-bottom:1rem}
 .listado h2{margin:0; font-size:1.5rem; color:var(--verde)}
 .conteo{color:var(--suave); font-size:.92rem}
 .filtros{display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:.8rem 1.2rem; margin-bottom:1.3rem; padding-bottom:1rem; border-bottom:1px solid var(--linea)}
@@ -120,3 +120,15 @@ a.red:hover{filter:brightness(1.08)}
 .medio.vertical{aspect-ratio:4/5; background-position:center 18%}
 .destacada .medio.vertical{aspect-ratio:auto; min-height:420px; background-position:center 15%}
 @media (max-width:900px){ .destacada .medio.vertical{min-height:380px} }
+
+/* «También en …»: la misma pieza publicada en otras redes */
+.tambien{display:flex; flex-wrap:wrap; align-items:center; gap:.4rem; font-size:.8rem; color:var(--suave)}
+.tambien .red{font-size:.72rem; padding:.18rem .6rem}
+
+/* TikTok: reproductor vertical dentro de la página */
+.modal-video.vertical{aspect-ratio:9/16; width:min(360px,100%); max-height:78vh; margin:0 auto}
+
+/* Spotify, podcast y reproductor de audio */
+.red.spotify{background:#1db954; color:#04230f}
+.t-podcast{background:#138a43}
+.modal-video.audio{aspect-ratio:auto; height:352px; background:transparent}

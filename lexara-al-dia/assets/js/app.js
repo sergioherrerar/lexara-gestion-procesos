@@ -5,11 +5,12 @@
   var TIPOS = [
     { id: 'video', nombre: 'Videos', singular: 'Video' },
     { id: 'reel', nombre: 'Reels', singular: 'Reel' },
+    { id: 'podcast', nombre: 'Podcast', singular: 'Podcast' },
     { id: 'noticia', nombre: 'Noticias', singular: 'Noticia' },
     { id: 'publicacion', nombre: 'Publicaciones', singular: 'Publicación' },
   ];
-  var REDES = { instagram: 'Instagram', facebook: 'Facebook', tiktok: 'TikTok', youtube: 'YouTube', linkedin: 'LinkedIn', x: 'X', web: 'Sitio web' };
-  var DEGRADADOS = { video: ['#1b5f8a', '#52bbb5'], reel: ['#a3306f', '#ef7d00'], noticia: ['#c46300', '#fbbc33'], publicacion: ['#5a3f96', '#52bbb5'] };
+  var REDES = { instagram: 'Instagram', facebook: 'Facebook', tiktok: 'TikTok', spotify: 'Spotify', youtube: 'YouTube', linkedin: 'LinkedIn', x: 'X', web: 'Sitio web' };
+  var DEGRADADOS = { video: ['#1b5f8a', '#52bbb5'], reel: ['#a3306f', '#ef7d00'], podcast: ['#14753f', '#52bbb5'], noticia: ['#c46300', '#fbbc33'], publicacion: ['#5a3f96', '#52bbb5'] };
   var estado = { sitio: {}, todas: [], tipo: '', red: '', texto: '', orden: 'reciente' };
 
   function el(tag, clase, texto){ var e = document.createElement(tag); if(clase) e.className = clase; if(texto != null) e.textContent = texto; return e; }
@@ -21,6 +22,8 @@
   function tipoDe(id){ return TIPOS.filter(function(t){ return t.id === id; })[0] || TIPOS[3]; }
   // Solo se abren direcciones http(s): una publicación mal escrita nunca ejecuta código.
   function urlSegura(u){ return /^https?:\/\//i.test(u || '') ? u : ''; }
+  function idSpotify(u){ var m = /open\.spotify\.com\/(?:intl-[a-z]+\/)?(episode|show)\/(\w+)/.exec(u || ''); return m ? { tipo: m[1], id: m[2] } : null; }
+  function idTikTok(u){ var m = /tiktok\.com\/.*\/video\/(\d+)/.exec(u || ''); return m ? m[1] : ''; }
   function idYoutube(u){
     var m = /(?:youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/)|youtu\.be\/)([\w-]{11})/.exec(u || ''); return m ? m[1] : '';
   }
@@ -32,6 +35,7 @@
     play: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>',
     video: '<svg class="icono-tipo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3z"/></svg>',
     reel: '<svg class="icono-tipo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="3"/><path d="M10 9l5 3-5 3z"/></svg>',
+    podcast: '<svg class="icono-tipo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v4M8 22h8"/></svg>',
     noticia: '<svg class="icono-tipo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h13a2 2 0 0 1 2 2v12H6a2 2 0 0 1-2-2z"/><path d="M19 9h2v8a2 2 0 0 1-2 2"/><path d="M8 9h7M8 13h7M8 16h4"/></svg>',
     publicacion: '<svg class="icono-tipo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-8 8"/></svg>',
   };
@@ -39,7 +43,7 @@
 
   // ---------- medio (miniatura / degradado + icono) ----------
   function medioDe(p, abrir){
-    var url = urlSegura(p.url), mini = miniaturaDe(p), esVideo = p.tipo === 'video' || p.tipo === 'reel';
+    var url = urlSegura(p.url), mini = miniaturaDe(p), esVideo = p.tipo === 'video' || p.tipo === 'reel' || p.tipo === 'podcast';
     var m = el(url || esVideo ? 'button' : 'div', 'medio' + (p.tipo === 'reel' ? ' vertical' : ''));
     if(m.tagName === 'BUTTON'){ m.type = 'button'; m.setAttribute('aria-label', 'Abrir: ' + p.titulo); m.addEventListener('click', function(){ abrir(p); }); }
     if(mini){ m.style.backgroundImage = 'url("' + mini.replace(/"/g, '%22') + '")'; }
@@ -58,11 +62,14 @@
 
   // ---------- reproductor ----------
   function abrir(p){
-    var yt = idYoutube(p.url);
-    if(!yt){ var u = urlSegura(p.url); if(u) window.open(u, '_blank', 'noopener'); return; }   // fuera de YouTube se abre la red social
-    var cont = $('modal-video'); cont.textContent = '';
+    var yt = idYoutube(p.url), sp = idSpotify(p.url), tt = idTikTok(p.url);
+    if(!yt && !sp && !tt){ var u = urlSegura(p.url); if(u) window.open(u, '_blank', 'noopener'); return; }   // fuera de YouTube y Spotify se abre la red social
+    var cont = $('modal-video'); cont.textContent = ''; cont.className = 'modal-video' + (sp ? ' audio' : tt ? ' vertical' : '');
     var f = document.createElement('iframe');
-    f.src = 'https://www.youtube-nocookie.com/embed/' + yt + '?autoplay=1&rel=0'; f.title = p.titulo; f.allow = 'autoplay; encrypted-media; picture-in-picture'; f.allowFullscreen = true;
+    if(tt){ f.src = 'https://www.tiktok.com/player/v1/' + tt + '?autoplay=1&description=1'; f.allow = 'autoplay; fullscreen; encrypted-media'; }
+    else if(sp){ f.src = 'https://open.spotify.com/embed/' + sp.tipo + '/' + sp.id + '?utm_source=generator'; f.allow = 'autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture'; }
+    else { f.src = 'https://www.youtube-nocookie.com/embed/' + yt + '?autoplay=1&rel=0'; f.allow = 'autoplay; encrypted-media; picture-in-picture'; }
+    f.title = p.titulo; f.allowFullscreen = true;
     cont.appendChild(f); $('modal').hidden = false; $('modal-cerrar').focus();
   }
   function cerrar(){ $('modal').hidden = true; $('modal-video').textContent = ''; }
@@ -70,6 +77,13 @@
   $('modal').addEventListener('click', function(ev){ if(ev.target === this) cerrar(); });
   document.addEventListener('keydown', function(ev){ if(ev.key === 'Escape' && !$('modal').hidden) cerrar(); });
 
+  function tambienEn(p){
+    var lista = (p.tambien || []).filter(function(t){ return urlSegura(t.url); });
+    if(!lista.length) return null;
+    var c = el('div', 'tambien'); c.appendChild(el('span', null, 'También en'));
+    lista.forEach(function(t){ var a = el('a', 'red ' + (REDES[t.red] ? t.red : 'web'), REDES[t.red] || 'Sitio web'); a.href = urlSegura(t.url); a.target = '_blank'; a.rel = 'noopener noreferrer'; c.appendChild(a); });
+    return c;
+  }
   // ---------- tarjetas ----------
   function tarjeta(p){
     var art = el('article', 'tarjeta');
@@ -78,6 +92,7 @@
     var meta = el('div', 'meta'); meta.appendChild(el('span', null, fechaLarga(p.fecha))); meta.appendChild(chipRed(p)); c.appendChild(meta);
     c.appendChild(el('h3', null, p.titulo));
     if(p.descripcion) c.appendChild(el('p', null, p.descripcion));
+    var tb = tambienEn(p); if(tb) c.appendChild(tb);
     if((p.etiquetas || []).length){ var et = el('div', 'etiquetas'); p.etiquetas.forEach(function(t){ et.appendChild(el('span', 'etiqueta', t)); }); c.appendChild(et); }
     var ver = el('div', 'ver'); ver.appendChild(boton(p)); c.appendChild(ver);
     art.appendChild(c); return art;
@@ -93,6 +108,7 @@
     c.appendChild(el('h2', null, d.titulo));
     var meta = el('div', 'meta'); meta.appendChild(el('span', null, fechaLarga(d.fecha))); meta.appendChild(chipRed(d)); c.appendChild(meta);
     if(d.descripcion) c.appendChild(el('p', null, d.descripcion));
+    var tbd = tambienEn(d); if(tbd) c.appendChild(tbd);
     c.appendChild(boton(d));
     cont.appendChild(c);
   }

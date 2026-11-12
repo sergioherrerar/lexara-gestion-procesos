@@ -3,31 +3,18 @@
   "lema": "Noticias, videos, reels y publicaciones de MD Abogados en un solo lugar.",
   "descripcion": "Todo lo que publicamos en nuestras redes y medios, ordenado por fecha y por tema. Sígalo desde aquí o entre directo a la publicación en cada red social.",
   "inicioUrl": "https://www.lexaraabogados.com",
+  "maximo": 10,
+  "fuentes": {
+    "instagram": { "usuario": "lexaraabogados" },
+    "youtube": { "canal": "UCcJbAvJdFZyJl4aNhFUyGPA", "nombre": "Café Laboral" },
+    "spotify": { "show": "7lRO8jZVSDx4qcMiIOdjjL", "nombre": "Café Laboral" }
+  },
   "redes": [
-    {
-      "id": "instagram",
-      "nombre": "Instagram",
-      "url": "https://www.instagram.com/lexaraabogados/"
-    },
-    {
-      "id": "facebook",
-      "nombre": "Facebook",
-      "url": "https://www.facebook.com/profile.php?id=100066492968498"
-    },
-    {
-      "id": "tiktok",
-      "nombre": "TikTok",
-      "url": ""
-    },
-    {
-      "id": "youtube",
-      "nombre": "YouTube",
-      "url": ""
-    },
-    {
-      "id": "linkedin",
-      "nombre": "LinkedIn",
-      "url": "https://www.linkedin.com/company/lexaraabogados/"
-    }
+    { "id": "instagram", "nombre": "Instagram", "url": "https://www.instagram.com/lexaraabogados/" },
+    { "id": "facebook", "nombre": "Facebook", "url": "https://www.facebook.com/profile.php?id=100066492968498" },
+    { "id": "tiktok", "nombre": "TikTok", "url": "" },
+    { "id": "spotify", "nombre": "Spotify · Café Laboral", "url": "https://open.spotify.com/show/7lRO8jZVSDx4qcMiIOdjjL" },
+    { "id": "youtube", "nombre": "YouTube · Café Laboral", "url": "https://www.youtube.com/@Caf%C3%A9Laboral" },
+    { "id": "linkedin", "nombre": "LinkedIn", "url": "https://www.linkedin.com/company/lexaraabogados/" }
   ]
 }

@@ -1,26 +1,156 @@
 [
-  {
-    "id": "2026-11-04-reforma-pensional-incidente-impacto-fiscal",
-    "tipo": "reel",
-    "titulo": "Reforma pensional: ¿hay plata para arrancar?",
-    "descripcion": "Colpensiones pidió a Hacienda certificar si hay recursos para la reforma. Explicamos el incidente de impacto fiscal (artículo 334 de la Constitución): qué es, sus límites y por qué puede mover los tiempos de la reforma sin frenarla.",
-    "fecha": "2026-11-04",
-    "red": "instagram",
-    "url": "https://www.instagram.com/lexaraabogados/reel/DfUjor7HEwd/",
-    "miniatura": "assets/img/miniaturas/reforma-pensional.jpg",
-    "destacada": true,
-    "etiquetas": ["Reforma pensional", "Derecho laboral", "Corte Constitucional"]
-  },
-  {
-    "id": "2026-10-31-apoyo-nomina-terremoto-decreto-1417",
-    "tipo": "reel",
-    "titulo": "¿Tu empresa fue golpeada por el terremoto?",
-    "descripcion": "El Decreto 1417 de 2026 trae apoyo a la nómina (cerca de $700 mil al mes por trabajador), un auxilio para quien perdió el empleo y herramientas para sostener el empleo. Las solicitudes se reciben hasta el 31 de diciembre de 2026.",
-    "fecha": "2026-10-31",
-    "red": "instagram",
-    "url": "https://www.instagram.com/lexaraabogados/reel/DfLp7hSmnW8/",
-    "miniatura": "assets/img/miniaturas/apoyo-nomina-terremoto.jpg",
-    "destacada": false,
-    "etiquetas": ["Derecho laboral", "Nómina", "Decreto 1417 de 2026"]
-  }
+    {
+        "id": "2026-11-06-sp-5eDbEa1B17jgAGtiBryqVf",
+        "tipo": "podcast",
+        "titulo": "No. 30 - Reforma laboral: lo que podría cambiar",
+        "descripcion": "Episodio del podcast Café Laboral · 30 min.",
+        "fecha": "2026-11-06",
+        "red": "spotify",
+        "url": "https://open.spotify.com/episode/5eDbEa1B17jgAGtiBryqVf",
+        "miniatura": "assets/img/miniaturas/spotify-5eDbEa1B17jgAGtiBryqVf.jpg",
+        "destacada": true,
+        "etiquetas": [],
+        "origen": "spotify",
+        "tambien": [
+            {
+                "red": "youtube",
+                "url": "https://www.youtube.com/watch?v=stDrwdLIHNQ"
+            }
+        ]
+    },
+    {
+        "id": "2026-11-04-reforma-pensional-incidente-impacto-fiscal",
+        "tipo": "reel",
+        "titulo": "Reforma pensional: ¿hay plata para arrancar?",
+        "descripcion": "Colpensiones pidió a Hacienda certificar si hay recursos para la reforma. Explicamos el incidente de impacto fiscal (artículo 334 de la Constitución): qué es, sus límites y por qué puede mover los tiempos de la reforma sin frenarla.",
+        "fecha": "2026-11-04",
+        "red": "instagram",
+        "url": "https://www.instagram.com/lexaraabogados/reel/DfUjor7HEwd/",
+        "miniatura": "assets/img/miniaturas/reforma-pensional.jpg",
+        "destacada": false,
+        "etiquetas": [
+            "Reforma pensional",
+            "Derecho laboral",
+            "Corte Constitucional"
+        ],
+        "tambien": [
+            {
+                "red": "youtube",
+                "url": "https://www.youtube.com/shorts/EKT_Z2-R3kQ"
+            }
+        ]
+    },
+    {
+        "id": "2026-10-31-apoyo-nomina-terremoto-decreto-1417",
+        "tipo": "reel",
+        "titulo": "¿Tu empresa fue golpeada por el terremoto?",
+        "descripcion": "El Decreto 1417 de 2026 trae apoyo a la nómina (cerca de $700 mil al mes por trabajador), un auxilio para quien perdió el empleo y herramientas para sostener el empleo. Las solicitudes se reciben hasta el 31 de diciembre de 2026.",
+        "fecha": "2026-10-31",
+        "red": "instagram",
+        "url": "https://www.instagram.com/lexaraabogados/reel/DfLp7hSmnW8/",
+        "miniatura": "assets/img/miniaturas/apoyo-nomina-terremoto.jpg",
+        "destacada": false,
+        "etiquetas": [
+            "Derecho laboral",
+            "Nómina",
+            "Decreto 1417 de 2026"
+        ]
+    },
+    {
+        "id": "2026-10-29-ig-DfGPrZDjQMR",
+        "tipo": "reel",
+        "titulo": "Acoso y violencia laboral: intolerables.",
+        "descripcion": "Y ahora, con obligaciones concretas para tu empresa. ⚠️ El Decreto 1040 de 2026 exige a los empleadores garantizar un entorno laboral libre de violencia y acoso. ¿Qué implica en la práctica? Política de cero tolerancia, un protocolo participativo con rutas de…",
+        "fecha": "2026-10-29",
+        "red": "instagram",
+        "url": "https://www.instagram.com/reel/DfGPrZDjQMR/",
+        "miniatura": "assets/img/miniaturas/instagram-DfGPrZDjQMR.jpg",
+        "destacada": false,
+        "etiquetas": [],
+        "origen": "instagram"
+    },
+    {
+        "id": "2026-10-28-yt-YOt2Be8619c",
+        "tipo": "reel",
+        "titulo": "¿Te pensionas con la ley vieja o con la nueva?",
+        "descripcion": "¿Te pensionas con la ley vieja o con la nueva? 🤔 La reforma pensional trae cambios en muchas materias, y una de las más importantes es el régimen de transición: la regla que define si tu pensión se liquida con la Ley 100 o con la nueva ley. La clave está en…",
+        "fecha": "2026-10-28",
+        "red": "youtube",
+        "url": "https://www.youtube.com/shorts/YOt2Be8619c",
+        "miniatura": "assets/img/miniaturas/youtube-YOt2Be8619c.jpg",
+        "destacada": false,
+        "etiquetas": [],
+        "origen": "youtube",
+        "tambien": [
+            {
+                "red": "instagram",
+                "url": "https://www.instagram.com/reel/DfCyyrcALVj/"
+            }
+        ]
+    },
+    {
+        "id": "2026-10-26-yt-foAkXEHoZxk",
+        "tipo": "video",
+        "titulo": "No. 29 ¿Se acabo la reforma Pensional?",
+        "descripcion": "Aclaramos las dudas si se acabo la reforma pensional o continúan cambios importantes que te pueden afectar",
+        "fecha": "2026-10-26",
+        "red": "youtube",
+        "url": "https://www.youtube.com/watch?v=foAkXEHoZxk",
+        "miniatura": "assets/img/miniaturas/youtube-foAkXEHoZxk.jpg",
+        "destacada": false,
+        "etiquetas": [],
+        "origen": "youtube"
+    },
+    {
+        "id": "2026-10-16-ig-DekjnniAHZW",
+        "tipo": "reel",
+        "titulo": "¿Terminaste tu contrato y crees que ya no pueden reclamarte?",
+        "descripcion": "No necesariamente. En algunos casos, después de terminar la relación laboral todavía pueden existir reclamaciones por salarios, prestaciones sociales e intereses de mora. Además, es importante conocer cómo funciona la sanción moratoria y desde cuándo puede…",
+        "fecha": "2026-10-16",
+        "red": "instagram",
+        "url": "https://www.instagram.com/reel/DekjnniAHZW/",
+        "miniatura": "assets/img/miniaturas/instagram-DekjnniAHZW.jpg",
+        "destacada": false,
+        "etiquetas": [],
+        "origen": "instagram"
+    },
+    {
+        "id": "2026-10-15-ig-DehViz_xmmR",
+        "tipo": "reel",
+        "titulo": "La Ley 100 de 1993, en su versión original, no limitó el monto de las pensiones de alta cuantía.",
+        "descripcion": "El Acto Legislativo 01 de 2005 introdujo el tope de 25 salarios mínimos, con efectos desde el 31 de julio de 2010. Entre esas dos fechas hay más de 15 años de reglas distintas — y de derechos adquiridos que todavía hoy son materia de discusión jurídica. En el…",
+        "fecha": "2026-10-15",
+        "red": "instagram",
+        "url": "https://www.instagram.com/reel/DehViz_xmmR/",
+        "miniatura": "assets/img/miniaturas/instagram-DehViz_xmmR.jpg",
+        "destacada": false,
+        "etiquetas": [],
+        "origen": "instagram"
+    },
+    {
+        "id": "2026-10-13-ig-Deb0G2KjQqR",
+        "tipo": "reel",
+        "titulo": "¿Estás pagando un cálculo actuarial para mejorar tu pensión?",
+        "descripcion": "¡Cuidado! Podrías estar tomando una decisión sin conocer todos los riesgos. La fecha de entrada en vigor de la reforma pensional sigue siendo un tema de debate, y además, dependiendo de tu situación, podría convenirte más el régimen anterior que el nuevo…",
+        "fecha": "2026-10-13",
+        "red": "instagram",
+        "url": "https://www.instagram.com/reel/Deb0G2KjQqR/",
+        "miniatura": "assets/img/miniaturas/instagram-Deb0G2KjQqR.jpg",
+        "destacada": false,
+        "etiquetas": [],
+        "origen": "instagram"
+    },
+    {
+        "id": "2026-10-10-yt-gtwjs2xJ-n4",
+        "tipo": "video",
+        "titulo": "No. 28. Sentencia a la reforma pensional",
+        "descripcion": "",
+        "fecha": "2026-10-10",
+        "red": "youtube",
+        "url": "https://www.youtube.com/watch?v=gtwjs2xJ-n4",
+        "miniatura": "assets/img/miniaturas/youtube-gtwjs2xJ-n4.jpg",
+        "destacada": false,
+        "etiquetas": [],
+        "origen": "youtube"
+    }
 ]
