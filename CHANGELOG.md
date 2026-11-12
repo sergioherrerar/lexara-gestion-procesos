@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-11-12 (169)
+- **Informe «Redes sociales»: la fecha de Bustral queda al lado de «Publicada»** — pedido del usuario (captura con las dos columnas marcadas). El calendario del mes ahora va: Pieza, Aprobación, Cumplimiento, **Programada (Bustral)**, **Publicada**, Aprobar u objetar; así se compara de un vistazo (p. ej. «3 nov» frente a «4 nov»). En «Publicada» se agrega la hora cuando se conoce («4 nov · 8:23 a. m.»).
+
 ## 2026-11-12 (168)
 - **Informe «Redes sociales»: correo «Revisión de publicaciones de Lexara Abogados» en Borradores, más informe en Excel y PDF** — pedido del usuario. Tres botones nuevos bajo el selector de mes:
   - **Crear borrador de correo**: deja en los Borradores del Outlook de quien inició sesión (nunca se envía solo) el correo con asunto «Revisión de publicaciones de Lexara Abogados», saludo «Hola, buenos días.» / «Hola, buenas tardes.» según la hora, resumen del mes, **lista de novedades** (fecha programada en Bustral, estado de aprobación, fecha y hora de publicación con las redes, cumplimiento), lista aparte de **los videos que no se publicaron** (fecha programada ya vencida), enlace al calendario de Bustral y la firma de Soporte. Campo opcional «Para».

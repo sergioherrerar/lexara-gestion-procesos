@@ -167,7 +167,7 @@ export default function RedesSocialesInforme({ liveMode, notify }){
         <p className="save-hint" style={{margin:'0 0 8px'}}>Haz clic en una fila para ver el copy y el video. «Programada» es la fecha que tiene la pieza en el calendario de Bustral. Aprobar u objetar se hace en Bustral con tu sesión: el enlace abre su calendario.</p>
         <div className="table-wrap">
           <table className="redes-tabla redes-tabla-cal">
-            <thead><tr><th>Programada (Bustral)</th><th>Pieza</th><th>Aprobación</th><th>Cumplimiento</th><th>Publicada</th><th>Aprobar u objetar</th></tr></thead>
+            <thead><tr><th>Pieza</th><th>Aprobación</th><th>Cumplimiento</th><th>Programada (Bustral)</th><th>Publicada</th><th>Aprobar u objetar</th></tr></thead>
             <tbody>
               {vista.filas.length === 0 && <tr><td colSpan={6} className="redes-vacio">No hay publicaciones ni programación en este mes.</td></tr>}
               {vista.filas.map(f => {
@@ -178,12 +178,12 @@ export default function RedesSocialesInforme({ liveMode, notify }){
                   : f.g.publicadaEn ? Object.keys(f.g.publicadaEn).map(r => RED_NOMBRE[r] || r) : [];
                 return (
                   <tr key={f.tipo + f.fecha + f.titulo} className="redes-fila" tabIndex={0} onClick={() => abrir(f)} onKeyDown={e => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); abrir(f); } }}>
-                    <td className="redes-fecha">{f.tipo === 'programada' ? fechaCorta(f.g.fecha) : <span className="redes-sin">Sin programar</span>}</td>
                     <td className="redes-titulo">{f.titulo}</td>
                     <td>{est ? <span className={"badge " + est.clase}>{est.texto}</span> : <span className="redes-sin">Publicada en Bustral</span>}</td>
                     <td>{f.cumpl ? <span className={"badge " + f.cumpl.clase}>{f.cumpl.texto}</span> : <span className="redes-sin">Sin programación en el calendario</span>}</td>
+                    <td className="redes-fecha">{f.tipo === 'programada' ? fechaCorta(f.g.fecha) : <span className="redes-sin">Sin programar</span>}</td>
                     <td className="redes-fecha">
-                      {(f.tipo === 'publicada' || f.salioEn) ? <>{fechaCorta(f.tipo === 'publicada' ? f.fecha : f.salioEn)}{redes.length > 0 && <small>{redes.join(' · ')}</small>}</> : <span className="redes-sin">Aún no</span>}
+                      {(f.tipo === 'publicada' || f.salioEn) ? <>{fechaCorta(f.tipo === 'publicada' ? f.fecha : f.salioEn)}{((f.tipo === 'publicada' ? f.p : f.real)?.hora) && <> · {(f.tipo === 'publicada' ? f.p : f.real).hora}</>}{redes.length > 0 && <small>{redes.join(' · ')}</small>}</> : <span className="redes-sin">Aún no</span>}
                     </td>
                     <td onClick={e => e.stopPropagation()} onKeyDown={e => e.stopPropagation()}>
                       {f.tipo === 'programada'
