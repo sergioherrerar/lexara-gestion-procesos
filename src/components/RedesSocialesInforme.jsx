@@ -7,7 +7,7 @@ import { useState, useEffect, useMemo } from 'react';
 // cuando el usuario dice «actualiza redes» (lee Bustral con Chrome conectado).
 
 const MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
-const RED_NOMBRE = { tiktok: 'TikTok', youtube: 'YouTube', facebook: 'Facebook', instagram: 'Instagram', spotify: 'Spotify' };
+const RED_NOMBRE = { linkedin: 'LinkedIn', tiktok: 'TikTok', youtube: 'YouTube', facebook: 'Facebook', instagram: 'Instagram', spotify: 'Spotify' };
 const ESTADO = {
   video_aprobado: { texto: 'Video aprobado', clase: 'badge-verde' },
   guion_aprobado: { texto: 'Guion aprobado', clase: 'badge-verde' },
@@ -27,11 +27,29 @@ const GLOSARIO = {
   'instagram|Comentarios': 'Comentarios escritos en tus publicaciones.',
   'instagram|Compartidos': 'Veces que alguien envió tu publicación a otra persona o la subió a sus historias. Es la señal más valiosa: lleva tu contenido a gente nueva.',
   'instagram|Guardados': 'Veces que alguien guardó la publicación para verla después: indica que le pareció útil.',
+  'tiktok|Me gusta del perfil (total)': 'Corazones que han recibido todos los videos de la cuenta desde que existe (TikTok no da el dato por mes).',
+  'spotify|Episodios publicados': 'Episodios del podcast Café Laboral que hay en Spotify.',
+  'spotify|Calificación (3 reseñas)': 'Promedio de estrellas (de 5) que le dieron los oyentes que dejaron reseña.',
   'youtube|Minutos vistos': 'Tiempo total que la gente pasó viendo tus videos, sumado en minutos.',
   'youtube|Suscriptores ganados': 'Personas que se suscribieron al canal en el período.',
   'youtube|Suscriptores perdidos': 'Personas que se dieron de baja del canal en el período.',
   'youtube|Me gusta': 'Veces que le dieron «me gusta» a tus videos.',
 };
+const REDES_ORDEN = ['facebook', 'instagram', 'tiktok', 'youtube', 'spotify', 'linkedin'];
+// «Nuevos del mes»: si hay un conteo guardado de hace ~30 días (datos.historialSeguidores) se calcula solo (hoy − entonces);
+// si no, se usa el dato que entrega Bustral (Facebook y YouTube) o queda sin medir.
+function nuevosDe(datos, red, s){
+  const hoy = new Date(datos.leido + 'T00:00:00');
+  const previos = (datos.historialSeguidores || [])
+    .map(h => ({ h, dias: Math.round((hoy - new Date(h.fecha + 'T00:00:00')) / 86400000) }))
+    .filter(x => x.dias >= 25 && x.dias <= 40 && x.h[red] != null)
+    .sort((a, b) => Math.abs(a.dias - 30) - Math.abs(b.dias - 30));
+  if(previos.length && s.actuales != null) return { valor: s.actuales - previos[0].h[red], texto: `Seguidores de hoy menos los que había el ${fechaLarga(previos[0].h.fecha)} (conteo guardado).` };
+  if(s.nuevos30d != null) return { valor: s.nuevos30d, texto: red === 'facebook' ? 'Los que se sumaron menos los que dejaron de seguirte en 30 días (dato de Bustral).' : 'Suscriptores ganados en los últimos 30 días (dato de Bustral).' };
+  return { valor: null, texto: 'Aún no se puede medir: el conteo de hoy queda guardado y el próximo mes se calcula solo.' };
+}
+// Bustral no tiene enlace directo a una pieza: el enlace abre su calendario, donde se aprueba u objeta con la sesión de quien administra.
+const BUSTRAL_CALENDARIO = 'https://app.bustral.com/dashboard/social';
 const fmt = n => (n == null ? '—' : Number(n).toLocaleString('es-CO'));
 const mesDe = f => String(f || '').slice(0, 7);
 function fechaLarga(f){
@@ -196,43 +214,24 @@ export default function RedesSocialesInforme(){
           <span className="redes-kpi-n">{vista.mas ? fmt(totalVistas(vista.mas.p)) : '—'}</span>
           <span className="redes-kpi-t">Más vista (YouTube + TikTok)</span>
           <span className="redes-kpi-s">{vista.mas ? vista.mas.p.titulo : 'Sin vistas públicas en este mes'}</span>
-          {vista.mas && <span className="redes-kpi-f">Publicada el {fechaLarga(vista.mas.p.fecha)}</span>}
+          {vista.mas && <FechasKpi p={vista.mas.p} datos={datos} />}
         </div>
         <div className="redes-kpi">
           <span className="redes-kpi-n">{vista.menos ? fmt(totalVistas(vista.menos.p)) : '—'}</span>
           <span className="redes-kpi-t">Menos vista (YouTube + TikTok)</span>
           <span className="redes-kpi-s">{vista.menos ? vista.menos.p.titulo : 'Se necesitan al menos 2 piezas con vistas'}</span>
-          {vista.menos && <span className="redes-kpi-f">Publicada el {fechaLarga(vista.menos.p.fecha)}</span>}
-        </div>
-      </div>
-
-      <div className="redes-seccion">
-        <h3>Seguidores</h3>
-        <div className="table-wrap">
-          <table className="redes-tabla">
-            <thead><tr><th>Red</th><th className="redes-num">Seguidores actuales</th><th className="redes-num">Nuevos (últimos 30 días)</th><th>Nota</th></tr></thead>
-            <tbody>
-              {datos.seguidores.map(s => (
-                <tr key={s.red}>
-                  <td>{s.nombre}</td>
-                  <td className="redes-num">{fmt(s.actuales)}</td>
-                  <td className="redes-num">{fmt(s.nuevos30d)}</td>
-                  <td className="redes-nota">{s.nota}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          {vista.menos && <FechasKpi p={vista.menos.p} datos={datos} />}
         </div>
       </div>
 
       <div className="redes-seccion">
         <h3>Calendario de {MESES[mm - 1]} {anio}: lo programado frente a lo publicado</h3>
-        <p className="save-hint" style={{margin:'0 0 8px'}}>Haz clic en una fila para ver el copy y el video.</p>
+        <p className="save-hint" style={{margin:'0 0 8px'}}>Haz clic en una fila para ver el copy y el video. «Programada» es la fecha que tiene la pieza en el calendario de Bustral. Aprobar u objetar se hace en Bustral con tu sesión: el enlace abre su calendario.</p>
         <div className="table-wrap">
           <table className="redes-tabla redes-tabla-cal">
-            <thead><tr><th>Fecha</th><th>Pieza</th><th>Aprobación</th><th>Cumplimiento</th><th>Dónde salió</th></tr></thead>
+            <thead><tr><th>Programada (Bustral)</th><th>Pieza</th><th>Aprobación</th><th>Cumplimiento</th><th>Publicada</th><th>Aprobar u objetar</th></tr></thead>
             <tbody>
-              {vista.filas.length === 0 && <tr><td colSpan={5} className="redes-vacio">No hay publicaciones ni programación en este mes.</td></tr>}
+              {vista.filas.length === 0 && <tr><td colSpan={6} className="redes-vacio">No hay publicaciones ni programación en este mes.</td></tr>}
               {vista.filas.map(f => {
                 const est = f.tipo === 'programada' ? ESTADO[f.g.estado] : null;
                 const redes = f.tipo === 'publicada'
@@ -241,11 +240,18 @@ export default function RedesSocialesInforme(){
                   : f.g.publicadaEn ? Object.keys(f.g.publicadaEn).map(r => RED_NOMBRE[r] || r) : [];
                 return (
                   <tr key={f.tipo + f.fecha + f.titulo} className="redes-fila" tabIndex={0} onClick={() => abrir(f)} onKeyDown={e => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); abrir(f); } }}>
-                    <td className="redes-fecha">{fechaCorta(f.fecha)}{f.salioEn && f.salioEn !== f.fecha && <small>salió {fechaCorta(f.salioEn)}</small>}</td>
+                    <td className="redes-fecha">{f.tipo === 'programada' ? fechaCorta(f.g.fecha) : <span className="redes-sin">Sin programar</span>}</td>
                     <td className="redes-titulo">{f.titulo}</td>
                     <td>{est ? <span className={"badge " + est.clase}>{est.texto}</span> : <span className="redes-sin">Publicada en Bustral</span>}</td>
                     <td>{f.cumpl ? <span className={"badge " + f.cumpl.clase}>{f.cumpl.texto}</span> : <span className="redes-sin">Sin programación en el calendario</span>}</td>
-                    <td>{redes.length ? redes.join(' · ') : <span className="redes-sin">—</span>}</td>
+                    <td className="redes-fecha">
+                      {(f.tipo === 'publicada' || f.salioEn) ? <>{fechaCorta(f.tipo === 'publicada' ? f.fecha : f.salioEn)}{redes.length > 0 && <small>{redes.join(' · ')}</small>}</> : <span className="redes-sin">Aún no</span>}
+                    </td>
+                    <td onClick={e => e.stopPropagation()} onKeyDown={e => e.stopPropagation()}>
+                      {f.tipo === 'programada'
+                        ? <a className="redes-bustral" href={BUSTRAL_CALENDARIO} target="_blank" rel="noopener noreferrer">{f.g.estado === 'video_aprobado' || f.g.estado === 'guion_aprobado' ? 'Revisar' : 'Aprobar / objetar'} en Bustral ↗</a>
+                        : <span className="redes-sin">—</span>}
+                    </td>
                   </tr>
                 );
               })}
@@ -255,24 +261,37 @@ export default function RedesSocialesInforme(){
       </div>
 
       <div className="redes-seccion">
-        <h3>Métricas de los últimos 30 días</h3>
-        <p className="save-hint" style={{margin:'0 0 8px'}}>{datos.metricas30d.periodo}</p>
+        <h3>Seguidores y métricas de los últimos 30 días</h3>
+        <p className="save-hint" style={{margin:'0 0 8px'}}>{datos.metricas30d.periodo}. Lo primero de cada red es cuántos seguidores tiene hoy y cuántos se sumaron en el mes.</p>
         <div className="redes-metricas">
-          {['facebook', 'instagram', 'youtube'].map(r => (
-            <div className="redes-metrica" key={r}>
-              <h4>{RED_NOMBRE[r]}</h4>
-              <table className="redes-tabla">
-                <tbody>
-                  {datos.metricas30d[r].map(([k, v]) => (
-                    <tr key={k}>
-                      <td>{k}{GLOSARIO[r + '|' + k] && <small className="redes-explica">{GLOSARIO[r + '|' + k]}</small>}</td>
-                      <td className="redes-num">{fmt(v)}</td>
+          {REDES_ORDEN.map(r => {
+            const s = datos.seguidores.find(x => x.red === r) || {};
+            const nuevos = nuevosDe(datos, r, s);
+            const filas = (datos.metricas30d[r] || []).filter(([k]) => k !== 'Seguidores nuevos (neto)');
+            return (
+              <div className="redes-metrica" key={r}>
+                <h4>{RED_NOMBRE[r]}{s.cuenta && <small className="redes-cuenta">{s.cuenta}</small>}</h4>
+                <table className="redes-tabla">
+                  <tbody>
+                    <tr className="redes-fila-seg">
+                      <td>Seguidores actuales<small className="redes-explica">{s.actuales == null ? (r === 'spotify' ? 'Spotify no muestra los seguidores públicamente; están en Spotify for Podcasters.' : 'Esta red no entrega ese dato.') : 'Personas que siguen la cuenta hoy.'}</small></td>
+                      <td className="redes-num">{fmt(s.actuales)}</td>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ))}
+                    <tr className="redes-fila-seg">
+                      <td>Seguidores nuevos del mes<small className="redes-explica">{nuevos.texto}</small></td>
+                      <td className="redes-num">{nuevos.valor == null ? '—' : (nuevos.valor > 0 ? '+' : '') + fmt(nuevos.valor)}</td>
+                    </tr>
+                    {filas.map(([k, v]) => (
+                      <tr key={k}>
+                        <td>{k}{GLOSARIO[r + '|' + k] && <small className="redes-explica">{GLOSARIO[r + '|' + k]}</small>}</td>
+                        <td className="redes-num">{fmt(v)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -280,6 +299,17 @@ export default function RedesSocialesInforme(){
 
       {abierta && <DetalleRedes f={abierta} onClose={() => setAbierta(null)} />}
     </div>
+  );
+}
+
+// Las dos fechas de una pieza: la que tiene en el calendario de Bustral (programada) y la del día en que quedó publicada.
+function FechasKpi({ p, datos }){
+  const prog = datos.programadas.find(g => g.publicadaComo === p.fecha);
+  return (
+    <span className="redes-kpi-f">
+      <span className="redes-kpi-fila"><b>En Bustral:</b> {prog ? `programada el ${fechaLarga(prog.fecha)}` : 'sin fecha programada'}</span>
+      <span className="redes-kpi-fila"><b>Publicada:</b> {fechaLarga(p.fecha)}</span>
+    </span>
   );
 }
 
@@ -305,6 +335,7 @@ function DetalleRedes({ f, onClose }){
               {est && <span className={"badge " + est.clase}>{est.texto}</span>}
               {f.cumpl && <span className={"badge " + f.cumpl.clase}>{f.cumpl.texto}</span>}
               {g && g.destino && <span className="badge badge-gris">Destino: {g.destino}</span>}
+              {g && <a className="redes-bustral" href={BUSTRAL_CALENDARIO} target="_blank" rel="noopener noreferrer">Aprobar u objetar en Bustral ↗</a>}
             </div>
           </div>
           <button type="button" className="redes-cerrar" onClick={onClose} aria-label="Cerrar">×</button>

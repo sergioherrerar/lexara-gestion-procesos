@@ -7,42 +7,48 @@
       "nombre": "Instagram · @lexaraabogados",
       "actuales": 900,
       "nuevos30d": null,
-      "nota": "Seguidores del perfil público (900). Bustral muestra 0 por un error propio; el dato de nuevos no lo entrega."
+      "nota": "Seguidores del perfil público (900). Bustral muestra 0 por un error propio; el dato de nuevos no lo entrega.",
+      "cuenta": "@lexaraabogados"
     },
     {
       "red": "facebook",
       "nombre": "Facebook · Lexara Abogados",
       "actuales": 309,
       "nuevos30d": 117,
-      "nota": "309 seguidores en la página pública. Nuevos en 30 días (+117 neto) según Bustral."
+      "nota": "309 seguidores en la página pública. Nuevos en 30 días (+117 neto) según Bustral.",
+      "cuenta": "Lexara Abogados"
     },
     {
       "red": "youtube",
       "nombre": "YouTube · Café Laboral",
       "actuales": 17,
       "nuevos30d": 3,
-      "nota": "Suscriptores ganados en 30 días (0 perdidos), según Bustral."
+      "nota": "Suscriptores ganados en 30 días (0 perdidos), según Bustral.",
+      "cuenta": "Café Laboral"
     },
     {
       "red": "tiktok",
       "nombre": "TikTok · @lexara.abogados",
       "actuales": 306,
       "nuevos30d": null,
-      "nota": "306 seguidores y 2.496 me gusta en el perfil público. Bustral no mide TikTok."
+      "nota": "306 seguidores y 2.496 me gusta en el perfil público. Bustral no mide TikTok.",
+      "cuenta": "@lexara.abogados"
     },
     {
       "red": "linkedin",
       "nombre": "LinkedIn · Lexara Abogados",
       "actuales": 137,
       "nuevos30d": null,
-      "nota": "137 seguidores en la página pública. LinkedIn solo muestra reacciones (2 a 8 por publicación), no vistas; Bustral tampoco lo mide."
+      "nota": "137 seguidores en la página pública. LinkedIn solo muestra reacciones (2 a 8 por publicación), no vistas; Bustral tampoco lo mide.",
+      "cuenta": "Lexara Abogados"
     },
     {
       "red": "spotify",
       "nombre": "Spotify · Café Laboral",
       "actuales": null,
       "nuevos30d": null,
-      "nota": "Spotify no muestra públicamente seguidores ni reproducciones (solo calificación 5 de 3 reseñas y 30 episodios). Eso está en Spotify for Podcasters. El episodio 30 figura publicado el 7 nov."
+      "nota": "Spotify no muestra públicamente seguidores ni reproducciones (solo calificación 5 de 3 reseñas y 30 episodios). Eso está en Spotify for Podcasters. El episodio 30 figura publicado el 7 nov.",
+      "cuenta": "Café Laboral"
     }
   ],
   "metricas30d": {
@@ -108,7 +114,24 @@
         "Me gusta",
         12
       ]
-    ]
+    ],
+    "tiktok": [
+      [
+        "Me gusta del perfil (total)",
+        2496
+      ]
+    ],
+    "spotify": [
+      [
+        "Episodios publicados",
+        30
+      ],
+      [
+        "Calificación (3 reseñas)",
+        5
+      ]
+    ],
+    "linkedin": []
   },
   "publicadas": [
     {
@@ -446,6 +469,17 @@
       "destino": "Instagram",
       "tieneVideo": true,
       "copy": "Material grabado: carpeta 07_TE SANCIONAN MEJORA CALIDAD (Drive Lexara).\nGancho (0:00–0:07): «Empresario: si el inspector de trabajo encuentra un incumplimiento en tu empresa, ¿te sanciona de una vez? Desde octubre, no necesariamente.»\n[0:07–0:30] «El Ministerio de Trabajo expidió la Circular 110 de 2026. No crea nuevas obligaciones ni multas: unifica cómo los inspectores usan una facultad que ya tenían, la de advertir y aconsejar antes de iniciar un proceso sancionatorio…»"
+    }
+  ],
+  "historialSeguidores": [
+    {
+      "fecha": "2026-11-12",
+      "facebook": 309,
+      "instagram": 900,
+      "tiktok": 306,
+      "youtube": 17,
+      "linkedin": 137,
+      "spotify": null
     }
   ]
 }

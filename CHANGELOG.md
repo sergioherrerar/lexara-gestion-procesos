@@ -2,6 +2,11 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-11-12 (167)
+- **Informe «Redes sociales»: calendario con fecha programada de Bustral, fecha publicada y enlace para aprobar/objetar** — pedido del usuario. La tabla ahora tiene las columnas «Programada (Bustral)» y «Publicada» (día real y redes) y el botón «Aprobar / objetar en Bustral» (o «Revisar» si ya está aprobada), que abre el calendario de Bustral en otra pestaña: Bustral no tiene enlace directo a una pieza y la aprobación la hace cada persona con su sesión (el portal no aprueba ni objeta por nadie). El mismo botón está en el detalle de cada pieza.
+- **Informe «Redes sociales»: las tarjetas «Más vista» y «Menos vista» muestran las dos fechas** — «En Bustral: programada el …» y «Publicada: …» (o «sin fecha programada» si la pieza no estaba en el calendario).
+- **Informe «Redes sociales»: seguidores y métricas por red, ahora con TikTok, Spotify y LinkedIn** — cada red abre con «Seguidores actuales» y «Seguidores nuevos del mes» (Facebook +117 y YouTube +3 vienen de Bustral). Instagram, TikTok y LinkedIn no entregan los nuevos en forma pública, así que se guardó hoy un conteo base (`historialSeguidores` en `redes-sociales.json`): con él, dentro de unos 30 días el informe calcula solo los nuevos del mes. Spotify no muestra seguidores públicamente (están en Spotify for Podcasters). Se quitó la tabla «Seguidores» que quedó repetida.
+
 ## 2026-11-12 (166)
 - **Informe «Redes sociales»: explicación de cada métrica de los últimos 30 días** — pedido del usuario («un breve explicación de estos términos… dentro del portal»). Debajo del nombre de cada métrica de Facebook, Instagram y YouTube (impresiones, vistas de contenido, interacciones, alcance, compartidos, guardados, minutos vistos, etc.) aparece una frase corta que dice qué significa. Se muestra siempre, no como globo al pasar el mouse, para que se lea igual en el celular.
 
