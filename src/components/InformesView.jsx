@@ -24,6 +24,7 @@ import CruceArchivosTab from './CruceArchivosTab';
 import CrearLinkCompartirTab from './CrearLinkCompartirTab';
 import LiquidacionInteresesTab from './LiquidacionInteresesTab';
 import DiligenciamientoFormatosTab from './DiligenciamientoFormatosTab';
+import RedesSocialesInforme from './RedesSocialesInforme';
 import { construirMensajePagoWhatsApp, normalizarTelefonoWaMe, normalizarTelefonoManualWaMe, PAISES_WHATSAPP } from '../lib/whatsappPago';
 
 // Entidades con formato de informe formal ya confirmado, y qué generador usa
@@ -69,6 +70,7 @@ const TABS = [
   {key:'clientesPagos', label:'Clientes y Pagos'},
   {key:'tutelas', label:'Tutelas'},
   {key:'procesos', label:'Procesos Judiciales'},
+  {key:'redesSociales', label:'Redes sociales'},
   {key:'horasExtras', label:'Horas Extras'},
   {key:'vacaciones', label:'Solicitud de vacaciones'},
   {key:'herramientas', label:'Herramientas'},
@@ -583,6 +585,8 @@ export default function InformesView({ procesos, clientes, facturas, desistimien
       )}
       </div>
       )}
+
+      {tab==='redesSociales' && <RedesSocialesInforme />}
 
       {tab==='horasExtras' && (
       <div>
