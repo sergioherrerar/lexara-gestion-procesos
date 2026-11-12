@@ -376,7 +376,8 @@
         "instagram": "https://www.instagram.com/reel/DfUjor7HEwd/",
         "youtube": "https://www.youtube.com/watch?v=EKT_Z2-R3kQ",
         "tiktok": "https://www.tiktok.com/@lexara.abogados/video/7704306579704745223"
-      }
+      },
+      "hora": "8:23 a. m."
     }
   ],
   "programadas": [
@@ -481,5 +482,6 @@
       "linkedin": 137,
       "spotify": null
     }
-  ]
+  ],
+  "notaFechasBustral": "Bustral solo registra el estado actual de cada video (aprobado u objetado), no cuándo se aprobó u objetó; las piezas programadas figuran a las 12:00 a. m. (sin hora). La hora de publicación solo está donde Bustral la muestra. Se pueden anotar a mano «aprobadoEl» / «objetadoEl» («AAAA-MM-DD» o «AAAA-MM-DD HH:MM») y «horaPublicada» en cada pieza."
 }

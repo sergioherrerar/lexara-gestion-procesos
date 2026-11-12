@@ -1,4 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
+import { MESES, RED_NOMBRE, ESTADO, BUSTRAL_CALENDARIO, REDES_ORDEN, mesDe, fechaLarga, fechaCorta, totalVistas, nuevosDe, calcularVistaMes, mesesDisponibles } from '../lib/redesSociales';
+import { IconTextButton } from './IconButton';
+import { generarInformeRedesExcel, generarInformeRedesPDF, crearBorradorRevisionRedes } from '../lib/informeRedes';
 
 // Informe de redes sociales (2026-11-12). Los datos salen de Bustral (la
 // empresa de comunicaciones: calendario, copy, estado de aprobación y
@@ -6,14 +9,6 @@ import { useState, useEffect, useMemo } from 'react';
 // public/data/redes-sociales.json. Fase 1: Claude actualiza ese archivo
 // cuando el usuario dice «actualiza redes» (lee Bustral con Chrome conectado).
 
-const MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
-const RED_NOMBRE = { linkedin: 'LinkedIn', tiktok: 'TikTok', youtube: 'YouTube', facebook: 'Facebook', instagram: 'Instagram', spotify: 'Spotify' };
-const ESTADO = {
-  video_aprobado: { texto: 'Video aprobado', clase: 'badge-verde' },
-  guion_aprobado: { texto: 'Guion aprobado', clase: 'badge-verde' },
-  video_objetado: { texto: 'Video objetado', clase: 'badge-rojo' },
-  por_aprobar: { texto: 'Por aprobar', clase: 'badge-naranja' },
-};
 // Qué significa cada métrica (definiciones habituales de Meta y YouTube; Bustral las toma de ahí).
 // Se muestran siempre debajo del nombre, no como globo al pasar el mouse, para que se lean igual en el celular.
 const GLOSARIO = {
@@ -35,49 +30,18 @@ const GLOSARIO = {
   'youtube|Suscriptores perdidos': 'Personas que se dieron de baja del canal en el período.',
   'youtube|Me gusta': 'Veces que le dieron «me gusta» a tus videos.',
 };
-const REDES_ORDEN = ['facebook', 'instagram', 'tiktok', 'youtube', 'spotify', 'linkedin'];
-// «Nuevos del mes»: si hay un conteo guardado de hace ~30 días (datos.historialSeguidores) se calcula solo (hoy − entonces);
-// si no, se usa el dato que entrega Bustral (Facebook y YouTube) o queda sin medir.
-function nuevosDe(datos, red, s){
-  const hoy = new Date(datos.leido + 'T00:00:00');
-  const previos = (datos.historialSeguidores || [])
-    .map(h => ({ h, dias: Math.round((hoy - new Date(h.fecha + 'T00:00:00')) / 86400000) }))
-    .filter(x => x.dias >= 25 && x.dias <= 40 && x.h[red] != null)
-    .sort((a, b) => Math.abs(a.dias - 30) - Math.abs(b.dias - 30));
-  if(previos.length && s.actuales != null) return { valor: s.actuales - previos[0].h[red], texto: `Seguidores de hoy menos los que había el ${fechaLarga(previos[0].h.fecha)} (conteo guardado).` };
-  if(s.nuevos30d != null) return { valor: s.nuevos30d, texto: red === 'facebook' ? 'Los que se sumaron menos los que dejaron de seguirte en 30 días (dato de Bustral).' : 'Suscriptores ganados en los últimos 30 días (dato de Bustral).' };
-  return { valor: null, texto: 'Aún no se puede medir: el conteo de hoy queda guardado y el próximo mes se calcula solo.' };
-}
-// Bustral no tiene enlace directo a una pieza: el enlace abre su calendario, donde se aprueba u objeta con la sesión de quien administra.
-const BUSTRAL_CALENDARIO = 'https://app.bustral.com/dashboard/social';
 const fmt = n => (n == null ? '—' : Number(n).toLocaleString('es-CO'));
-const mesDe = f => String(f || '').slice(0, 7);
-function fechaLarga(f){
-  if(!f) return '—';
-  const [a, m, d] = String(f).split('-').map(Number);
-  return `${d} de ${MESES[m - 1]} de ${a}`;
-}
-function fechaCorta(f){
-  if(!f) return '—';
-  const [, m, d] = String(f).split('-').map(Number);
-  return `${d} ${MESES[m - 1].slice(0, 3)}`;
-}
-function diasEntre(a, b){
-  return Math.round((new Date(b + 'T00:00:00') - new Date(a + 'T00:00:00')) / 86400000);
-}
 function idYoutube(url){
   const m = String(url || '').match(/[?&]v=([\w-]{6,})/);
   return m ? m[1] : null;
 }
-function totalVistas(p){
-  return Object.values(p.vistas || {}).reduce((s, n) => s + (Number(n) || 0), 0);
-}
-
-export default function RedesSocialesInforme(){
+export default function RedesSocialesInforme({ liveMode, notify }){
   const [datos, setDatos] = useState(null);
   const [error, setError] = useState('');
   const [mes, setMes] = useState('');
   const [abierta, setAbierta] = useState(null);
+  const [para, setPara] = useState('');
+  const [accion, setAccion] = useState('');   // '' | 'excel' | 'pdf' | 'correo'
 
   useEffect(() => {
     let vivo = true;
@@ -107,61 +71,7 @@ export default function RedesSocialesInforme(){
     if(datos && !mes && meses.length) setMes(meses[meses.length - 1]);
   }, [datos, meses, mes]);
 
-  const vista = useMemo(() => {
-    if(!datos || !mes) return null;
-    const hoy = datos.leido;
-    const publicadasMes = datos.publicadas.filter(p => mesDe(p.fecha) === mes);
-    const programadasMes = datos.programadas.filter(p => mesDe(p.fecha) === mes);
-
-    // Cada programada se cruza con su publicación real (misma pieza, a veces otro día).
-    const filasProg = programadasMes.map(g => {
-      const real = g.publicadaComo ? datos.publicadas.find(p => p.fecha === g.publicadaComo) : null;
-      const salioEn = real ? real.fecha : (g.publicadaEn ? g.publicadaComo : null);
-      let cumpl;
-      if(salioEn){
-        const d = diasEntre(g.fecha, salioEn);
-        cumpl = d === 0 ? { texto: 'Publicada a tiempo', clase: 'badge-verde' }
-          : d > 0 ? { texto: `Publicada con ${d} día${d > 1 ? 's' : ''} de retraso`, clase: 'badge-naranja' }
-          : { texto: `Publicada ${-d} día${d < -1 ? 's' : ''} antes`, clase: 'badge-verde' };
-      } else if(g.fecha < hoy){
-        cumpl = { texto: 'Sin publicar (fecha vencida)', clase: 'badge-rojo' };
-      } else if(g.fecha === hoy){
-        cumpl = { texto: 'Programada para hoy', clase: 'badge-naranja' };
-      } else {
-        cumpl = { texto: 'Pendiente', clase: 'badge-gris' };
-      }
-      return { tipo: 'programada', fecha: g.fecha, titulo: g.titulo, g, real, salioEn, cumpl };
-    });
-    const vinculadas = new Set(filasProg.filter(f => f.real).map(f => f.real.fecha + '|' + f.real.titulo));
-    const filasPub = publicadasMes
-      .filter(p => !vinculadas.has(p.fecha + '|' + p.titulo))
-      .map(p => ({ tipo: 'publicada', fecha: p.fecha, titulo: p.titulo, p, cumpl: null }));
-    const filas = [...filasProg, ...filasPub].sort((a, b) => a.fecha.localeCompare(b.fecha));
-
-    // Piezas realmente publicadas en el mes (sin contarlas dos veces).
-    const piezasPublicadas = filasPub.length + filasProg.filter(f => f.salioEn).length;
-    const porRed = {};
-    publicadasMes.forEach(p => (p.redes || []).forEach(r => { porRed[r] = (porRed[r] || 0) + 1; }));
-
-    const programadas = filasProg.length;
-    const cumplidas = filasProg.filter(f => f.salioEn).length;
-    const aTiempo = filasProg.filter(f => f.salioEn && diasEntre(f.fecha, f.salioEn) <= 0).length;
-    const vencidasSin = filasProg.filter(f => !f.salioEn && f.fecha < hoy).length;
-    const aprobadas = filasProg.filter(f => ['video_aprobado', 'guion_aprobado'].includes(f.g.estado)).length;
-    const objetadas = filasProg.filter(f => f.g.estado === 'video_objetado').length;
-
-    // Más / menos vista: solo hay vistas públicas de YouTube.
-    const conVistas = publicadasMes
-      .concat(filasProg.filter(f => f.g.vistas && !f.real).map(f => ({ ...f.g, fecha: f.g.publicadaComo || f.g.fecha, redes: ['youtube', 'spotify'] })))
-      .map(p => ({ p, v: totalVistas(p) }))
-      .filter(x => x.v > 0 || (x.p.vistas && Object.keys(x.p.vistas).length))
-      .sort((a, b) => b.v - a.v);
-    return {
-      filas, piezasPublicadas, porRed, programadas, cumplidas, aTiempo, vencidasSin, aprobadas, objetadas,
-      mas: conVistas[0] || null, menos: conVistas.length > 1 ? conVistas[conVistas.length - 1] : null,
-      hayProgramacion: programadas > 0,
-    };
-  }, [datos, mes]);
+  const vista = useMemo(() => (datos && mes ? calcularVistaMes(datos, mes) : null), [datos, mes]);
 
   if(error) return <p className="save-hint">{error}</p>;
   if(!datos || !vista) return <p className="save-hint">Cargando redes sociales…</p>;
@@ -170,6 +80,24 @@ export default function RedesSocialesInforme(){
   const pct = vista.programadas ? Math.round(vista.cumplidas / vista.programadas * 100) : null;
 
   function abrir(f){ setAbierta(f); }
+
+  async function ejecutar(tipo, fn, mensajeOk){
+    if(accion) return;
+    setAccion(tipo);
+    try{ const r = await fn(); if(mensajeOk) notify?.(typeof mensajeOk === 'function' ? mensajeOk(r) : mensajeOk, 'info'); }
+    catch(err){ console.error(err); notify?.('No se pudo generar: ' + (err?.message || err), 'error'); }
+    finally{ setAccion(''); }
+  }
+  const correosPara = () => para.split(/[;,\s]+/).map(c => c.trim()).filter(c => /^\S+@\S+\.\S+$/.test(c));
+  function crearCorreo(){
+    if(!liveMode){ notify?.('El borrador se crea en tu Outlook al iniciar sesión con Microsoft; en el modo demo no hay buzón. Puedes descargar el Excel o el PDF.', 'info'); return; }
+    ejecutar('correo', async () => {
+      const m = await crearBorradorRevisionRedes(datos, mes, { para: correosPara() });
+      await new Promise(r => setTimeout(r, 3000));
+      if(m?.carpetaBorradores) window.open(m.carpetaBorradores, '_blank');
+      return m;
+    }, m => `Se creó el borrador «Revisión de publicaciones de Lexara Abogados» en tus Borradores de Outlook${m?.carpetaReal ? ` (carpeta «${m.carpetaReal}»)` : ''}. Revísalo y envíalo.`);
+  }
 
   return (
     <div className="redes-informe">
@@ -185,6 +113,16 @@ export default function RedesSocialesInforme(){
         </label>
         <span className="redes-leido">Datos leídos de Bustral el {fechaLarga(datos.leido)}</span>
       </div>
+
+      <div className="redes-acciones">
+        <IconTextButton icon="excel" variant="secondary" onClick={() => ejecutar('excel', () => generarInformeRedesExcel(datos, mes))} disabled={!!accion}>{accion === 'excel' ? 'Generando…' : 'Excel'}</IconTextButton>
+        <IconTextButton icon="pdf" variant="secondary" onClick={() => ejecutar('pdf', () => generarInformeRedesPDF(datos, mes))} disabled={!!accion}>{accion === 'pdf' ? 'Generando…' : 'PDF'}</IconTextButton>
+        <span className="redes-acciones-correo">
+          <input type="text" inputMode="email" value={para} onChange={e => setPara(e.target.value)} placeholder="Para (opcional): correo@empresa.com" aria-label="Destinatario del borrador (opcional)" />
+          <IconTextButton icon="mail" variant="primary" onClick={crearCorreo} disabled={!!accion}>{accion === 'correo' ? 'Creando borrador…' : 'Crear borrador de correo'}</IconTextButton>
+        </span>
+      </div>
+      <p className="save-hint" style={{margin:'-6px 0 0'}}>El correo «Revisión de publicaciones de Lexara Abogados» queda en los Borradores de tu Outlook, con la lista de novedades de {MESES[mm - 1]} (fecha programada, aprobación, fecha y hora de publicación, y lo que no se publicó). No se envía solo.</p>
 
       <div className="redes-kpis">
         <div className="redes-kpi">

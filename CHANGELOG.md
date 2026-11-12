@@ -2,6 +2,14 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-11-12 (168)
+- **Informe «Redes sociales»: correo «Revisión de publicaciones de Lexara Abogados» en Borradores, más informe en Excel y PDF** — pedido del usuario. Tres botones nuevos bajo el selector de mes:
+  - **Crear borrador de correo**: deja en los Borradores del Outlook de quien inició sesión (nunca se envía solo) el correo con asunto «Revisión de publicaciones de Lexara Abogados», saludo «Hola, buenos días.» / «Hola, buenas tardes.» según la hora, resumen del mes, **lista de novedades** (fecha programada en Bustral, estado de aprobación, fecha y hora de publicación con las redes, cumplimiento), lista aparte de **los videos que no se publicaron** (fecha programada ya vencida), enlace al calendario de Bustral y la firma de Soporte. Campo opcional «Para».
+  - **Excel**: formato institucional (encabezado verde, fila congelada, valores numéricos a la derecha), hojas «Calendario» y «Resumen y seguidores».
+  - **PDF**: membrete Lexara, resumen arriba, tabla de novedades, no publicadas y seguidores por red.
+- Límites reales de Bustral, dichos en el propio correo: solo guarda el **estado actual** de cada video (no cuándo se aprobó u objetó; si alguien lo anota a mano en el JSON como `aprobadoEl`/`objetadoEl` sale solo) y las piezas programadas figuran a las 12:00 a. m. (sin hora); la hora de publicación solo está donde Bustral la muestra (hoy: 4-nov 8:23 a. m.).
+- Código: el cálculo del mes pasó a `src/lib/redesSociales.js` (lo comparten la pestaña, el Excel, el PDF y el correo) y los generadores están en `src/lib/informeRedes.js`.
+
 ## 2026-11-12 (167)
 - **Informe «Redes sociales»: calendario con fecha programada de Bustral, fecha publicada y enlace para aprobar/objetar** — pedido del usuario. La tabla ahora tiene las columnas «Programada (Bustral)» y «Publicada» (día real y redes) y el botón «Aprobar / objetar en Bustral» (o «Revisar» si ya está aprobada), que abre el calendario de Bustral en otra pestaña: Bustral no tiene enlace directo a una pieza y la aprobación la hace cada persona con su sesión (el portal no aprueba ni objeta por nadie). El mismo botón está en el detalle de cada pieza.
 - **Informe «Redes sociales»: las tarjetas «Más vista» y «Menos vista» muestran las dos fechas** — «En Bustral: programada el …» y «Publicada: …» (o «sin fecha programada» si la pieza no estaba en el calendario).

@@ -586,7 +586,7 @@ export default function InformesView({ procesos, clientes, facturas, desistimien
       </div>
       )}
 
-      {tab==='redesSociales' && <RedesSocialesInforme />}
+      {tab==='redesSociales' && <RedesSocialesInforme liveMode={liveMode} notify={notify} />}
 
       {tab==='horasExtras' && (
       <div>
