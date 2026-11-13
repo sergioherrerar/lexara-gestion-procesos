@@ -20,6 +20,27 @@ export function numerosDelProceso(proceso){
   return { principal, historicos: todos.filter(r => r !== principal) };
 }
 
+// Abre la Consulta de Procesos de la Rama Judicial por número de radicación y copia el radicado de 23 dígitos al portapapeles, porque esa página
+// no deja prellenar el número desde la dirección: solo queda pegarlo y presionar «Consultar». Debe llamarse desde un clic (para que el navegador
+// permita abrir la pestaña). Devuelve true si había un radicado para abrir.
+export const URL_CONSULTA_RAMA = 'https://consultaprocesos.ramajudicial.gov.co/Procesos/NumeroRadicacion';
+export function abrirEnRamaJudicial(proceso, notify, radicadoElegido){
+  const radicado = radicadoElegido || numerosDelProceso(proceso).principal;
+  if(!radicado){
+    notify?.('Este proceso no tiene un «No. completo» de 23 dígitos para buscar en la Rama Judicial.', 'error');
+    return false;
+  }
+  window.open(URL_CONSULTA_RAMA, '_blank', 'noopener,noreferrer');
+  const aviso = copiado => notify?.(
+    (copiado ? `Radicado ${radicado} copiado. ` : `Radicado: ${radicado}. `) +
+    'En la Rama Judicial péguelo (Ctrl+V), marque «Todos los Procesos» si es un proceso antiguo y presione «Consultar».', copiado ? 'success' : 'info');
+  try{
+    if(navigator.clipboard?.writeText) navigator.clipboard.writeText(radicado).then(() => aviso(true), () => aviso(false));
+    else aviso(false);
+  }catch(e){ aviso(false); }
+  return true;
+}
+
 const cache = new Map();   // radicado -> { t, datos }   (10 minutos, para no repetir consultas al abrir y cerrar la ficha)
 const VIGENCIA_MS = 10 * 60 * 1000;
 

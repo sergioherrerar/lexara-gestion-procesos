@@ -2246,3 +2246,5 @@
   .rama-hist-aviso{display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px; padding:10px 12px; border-radius:10px; background:#eef7f5; font-size:13px; color:var(--texto-suave);}
   .rama-bloque-pendiente{padding:10px 14px;}
   .rama-bloque-pendiente .rama-cab{margin:0;}
+  .rama-cab-acc{display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;}
+  .drawer-head-acciones{margin-top:10px;}

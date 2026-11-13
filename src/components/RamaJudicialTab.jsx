@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { stripHtml } from '../lib/graph';
 import {
   numerosDelProceso, consultarRama, fechaDMA, resumenAnotacion, esDeTramite, yaEstaEnHistorico,
-  actuacionesNuevas, htmlRenglones, actualizacionDesdeRama, ultimaActualizacionDesdeRama,
+  actuacionesNuevas, htmlRenglones, actualizacionDesdeRama, ultimaActualizacionDesdeRama, abrirEnRamaJudicial,
 } from '../lib/ramaJudicial';
 
 // Pestaña «Rama Judicial» de la ficha del proceso (2026-11-13): lee las actuaciones del proceso en la Consulta Nacional Unificada de la Rama
@@ -108,7 +108,10 @@ export default function RamaJudicialTab({ proceso, historico, fechaEstado, canWr
             <div key={rad} className="rama-bloque rama-bloque-pendiente">
               <div className="rama-cab">
                 <h4><span className="rama-tipo">Número del histórico</span> {rad}</h4>
-                <button type="button" className="btn-secondary rama-btn" onClick={() => cargar(rad, false)}>Consultar este número</button>
+                <span className="rama-cab-acc">
+                  <button type="button" className="btn-secondary rama-btn" onClick={() => abrirEnRamaJudicial(proceso, notify, rad)} title="Abre la consulta de la Rama Judicial y copia este radicado">Abrir en la Rama</button>
+                  <button type="button" className="btn-secondary rama-btn" onClick={() => cargar(rad, false)}>Consultar este número</button>
+                </span>
               </div>
             </div>
           );
@@ -119,7 +122,10 @@ export default function RamaJudicialTab({ proceso, historico, fechaEstado, canWr
           <div key={rad} className="rama-bloque">
             <div className="rama-cab">
               <h4><span className={'rama-tipo' + (esPrincipal ? ' principal' : '')}>{esPrincipal ? 'Número principal' : 'Número del histórico'}</span> {rad}</h4>
-              <button type="button" className="btn-secondary rama-btn" onClick={() => cargar(rad, true)} disabled={r.cargando}>{r.cargando ? 'Consultando…' : 'Actualizar'}</button>
+              <span className="rama-cab-acc">
+                <button type="button" className="btn-secondary rama-btn" onClick={() => abrirEnRamaJudicial(proceso, notify, rad)} title="Abre la consulta de la Rama Judicial y copia este radicado">Abrir en la Rama</button>
+                <button type="button" className="btn-secondary rama-btn" onClick={() => cargar(rad, true)} disabled={r.cargando}>{r.cargando ? 'Consultando…' : 'Actualizar'}</button>
+              </span>
             </div>
             {r.error && <div className="rama-error" role="alert">{r.error}</div>}
             {!r.datos && r.cargando && <div className="rama-cargando">Consultando la Rama Judicial…</div>}
