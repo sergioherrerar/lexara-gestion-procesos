@@ -2,6 +2,14 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-11-13 (174)
+- **Lexara al Día: «Pausa activa», 4 juegos sencillos para desestresarse, al lado de la última publicación** — pedido del usuario («un juego para abogados, sencillo, desestresante… se pueden los 4… cada jueguito al lado de la última publicación»). Junto a la publicación destacada hay un panel con los 4 juegos (debajo de ella en pantallas angostas); cada botón abre el juego en una ventana, sin recargar la página y sin tiempo ni puntaje:
+  - **Palabra del día** (estilo Wordle): una palabra jurídica de 5 letras, nueva cada día, 6 intentos, teclado en pantalla y físico; al terminar muestra su significado y permite copiar el resultado; el juego del día queda guardado en el navegador.
+  - **Memoria jurídica**: 6 parejas término ↔ significado con cartas que giran en 3D; cuenta movimientos.
+  - **Sopa de letras con las palabras de la última publicación** (título, etiquetas y descripción; si traen pocas, se completa con términos laborales): cuadrícula 10×10, se toca la primera y la última letra.
+  - **Ahorcado de la balanza**: cada error inclina la balanza; 6 oportunidades, botón de pista con el significado; si se acierta, queda equilibrada.
+- El contenido es editable en `lexara-al-dia/data/juegos.json` (45 palabras de 5 letras con significado, 26 términos con definición corta y 19 palabras de respaldo para la sopa); las listas son una primera propuesta para que las revisen los abogados. Todo corre en el navegador (sin servidor ni cuentas) y los archivos de los juegos solo se cargan cuando alguien abre uno. Funciona igual en celular y computador.
+
 ## 2026-11-13 (173)
 - **Papá Noel rediseñado, más parecido a la imagen de referencia del usuario, con volumen en 3D** — pedido del usuario («que se parezca más a este… un poco de forma 3D»). Dibujo propio en SVG (no se copió la ilustración de referencia): Papá Noel sentado en un trineo rojo con adornos dorados en espiral, con regalo y bastón de caramelo, sosteniendo las riendas de dos renos que saltan (manchas, collar rojo con puntos dorados, campana, astas oscuras). Degradados de luz y sombra en el trineo, el abrigo, la cara, la barba y los renos para dar volumen; la cuerda une el cartel con el trineo a la misma altura.
 - **Logo del cartel más nítido** — el usuario lo vio borroso: el archivo oficial tiene mucho margen transparente, el cartel se inclinaba al animarse y el logo quedaba chico. Ahora se usa el mismo logo oficial recortado a su contenido (`navidad/logo-navidad.png`, que el generador copia a cada sección), casi al doble de tamaño y el cartel solo se desplaza (sin girar ni inclinarse, para no suavizar la imagen).

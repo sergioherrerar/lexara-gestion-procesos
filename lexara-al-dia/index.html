@@ -12,6 +12,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/css/menu-sitio.css?v=984c4750">
 <link rel="stylesheet" href="assets/css/navidad.css?v=8aff5ce0">
+<link rel="stylesheet" href="assets/css/juegos.css?v=2">
 </head>
 <body>
 
@@ -62,7 +63,16 @@
 
   <div class="aviso-ejemplo" id="aviso-ejemplo" hidden>Contenido de ejemplo: reemplácelo por las publicaciones reales editando <code>data/publicaciones.json</code>.</div>
 
-  <section class="destacada" id="destacada" hidden aria-label="Publicación destacada"></section>
+  <div class="zona-destacada">
+    <section class="destacada" id="destacada" hidden aria-label="Publicación destacada"></section>
+    <aside class="pausa-lateral" aria-label="Pausa activa: juegos">
+      <p class="pausa-rotulo">PAUSA ACTIVA</p>
+      <button type="button" class="jg-mini jg-op-palabra" data-juego="palabra" aria-haspopup="dialog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="8" width="4.2" height="8" rx="1.2"/><rect x="7.9" y="8" width="4.2" height="8" rx="1.2"/><rect x="13.3" y="8" width="4.2" height="8" rx="1.2"/><rect x="18.7" y="8" width="3" height="8" rx="1.2"/></svg><span><strong>Palabra del día</strong><small>Una palabra jurídica nueva cada día</small></span></button>
+      <button type="button" class="jg-mini jg-op-memoria" data-juego="memoria" aria-haspopup="dialog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="10" height="14" rx="2"/><rect x="11" y="5" width="10" height="14" rx="2" transform="rotate(10 16 12)"/></svg><span><strong>Memoria jurídica</strong><small>Empareje cada término con su significado</small></span></button>
+      <button type="button" class="jg-mini jg-op-sopa" data-juego="sopa" aria-haspopup="dialog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 8h.01M12 8h.01M16 8h.01M8 12h.01M12 12h.01M16 12h.01M8 16h.01M12 16h.01M16 16h.01"/><path d="M7 17 17 7" stroke-width="2.2"/></svg><span><strong>Sopa de letras</strong><small>Con las palabras de la última publicación</small></span></button>
+      <button type="button" class="jg-mini jg-op-ahorcado" data-juego="ahorcado" aria-haspopup="dialog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v14M7 20h10M4 8l16-2"/><path d="M4 8l-2 5h4zM20 6l-2 5h4z"/></svg><span><strong>Ahorcado de la balanza</strong><small>Adivine el término jurídico</small></span></button>
+    </aside>
+  </div>
 
   <section class="listado" id="publicaciones" aria-labelledby="titulo-listado">
     <div class="listado-cab">
@@ -111,5 +121,6 @@
 <script src="assets/js/app.js?v=8"></script>
 <script src="assets/js/menu-sitio.js?v=984c4750"></script>
 <script src="assets/js/navidad.js?v=8aff5ce0" data-logo="assets/img/logo-navidad.png"></script>
+<script src="assets/js/juegos.js?v=2" defer></script>
 </body>
 </html>
