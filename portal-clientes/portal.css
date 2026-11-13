@@ -81,7 +81,7 @@ label{font-size:.82rem; font-weight:600; color:var(--suave)}
 .p-cuerpo dd{margin:0; overflow-wrap:anywhere}
 .p-estado{padding:1rem 1.2rem; background:#f6faf9; border-left:1px solid var(--linea)}
 .p-estado .fecha{display:block; font-size:.74rem; color:var(--suave); text-transform:uppercase; letter-spacing:.06em; margin-bottom:.35rem; font-weight:600}
-.p-estado .estado{font-size:.92rem; white-space:pre-line}
+.p-estado .estado{font-size:.92rem; white-space:normal}
 .insignia{display:inline-block; font-size:.8rem; font-weight:700; padding:.25rem .75rem; border-radius:99px}
 .insignia.ok{background:var(--ok-suave); color:var(--ok)}
 .insignia.pend{background:var(--ambar-suave); color:var(--ambar-texto)}
@@ -202,7 +202,7 @@ h1{background:linear-gradient(90deg,var(--verde) 0%,#0b7a6f 100%); -webkit-backg
 .tile:nth-child(4n+2){border-top-color:var(--ambar)} .tile:nth-child(4n+3){border-top-color:var(--azul)} .tile:nth-child(4n+4){border-top-color:var(--naranja)}
 .tile-l{font-size:.72rem; text-transform:uppercase; letter-spacing:.05em; color:var(--suave); font-weight:600}
 .tile-v{font-weight:600; overflow-wrap:anywhere}
-.historico{white-space:pre-line; max-height:230px; overflow:auto; background:#fff; border:1px solid var(--linea); border-radius:8px; padding:.7rem .9rem; font-size:.9rem}
+.historico{white-space:normal; max-height:230px; overflow:auto; background:#fff; border:1px solid var(--linea); border-radius:8px; padding:.7rem .9rem; font-size:.9rem}
 .tabla-caja{overflow-x:auto; border:1px solid var(--linea); border-radius:10px; background:#fff}
 .tabla{width:100%; border-collapse:collapse; font-size:.88rem}
 .tabla th{background:var(--verde); color:#fff; text-align:left; padding:.55rem .8rem; font-weight:700; white-space:nowrap}
@@ -233,3 +233,52 @@ h1{background:linear-gradient(90deg,var(--verde) 0%,#0b7a6f 100%); -webkit-backg
 .menu-aldia{margin-top:.2rem; background:rgba(82,187,181,.16); border-color:rgba(82,187,181,.45)}
 .menu-aldia .menu-ico{color:#7fd6d0}
 .menu-aldia:hover{background:rgba(82,187,181,.28)}
+
+
+/* botón flotante de soporte por WhatsApp (mismo estilo que el del resto de www.lexaraabogados.com, con la palabra «Soporte») */
+.wa-flotante{ position:fixed; right:18px; bottom:18px; z-index:900; height:56px; padding:0 20px 0 15px; border-radius:99px; background:#25d366; color:#fff; display:flex; align-items:center; gap:10px; text-decoration:none; font-weight:700; font-size:1rem; letter-spacing:.01em;
+  box-shadow:0 4px 14px rgba(0,0,0,.28), 0 10px 26px rgba(37,211,102,.35), inset 0 1.5px 0 rgba(255,255,255,.4); transition:transform .18s ease, box-shadow .18s ease; animation:wa-late 2.6s ease-out 1.5s 3; }
+.wa-flotante svg{ width:30px; height:30px; flex:none; display:block; }
+.wa-flotante:hover{ transform:translateY(-2px) scale(1.04); box-shadow:0 6px 18px rgba(0,0,0,.32), 0 14px 32px rgba(37,211,102,.45), inset 0 1.5px 0 rgba(255,255,255,.4); }
+.wa-flotante:focus-visible{ outline:3px solid #fff; outline-offset:2px; box-shadow:0 0 0 6px #128c4a; }
+@keyframes wa-late{ 0%{ box-shadow:0 4px 14px rgba(0,0,0,.28), 0 0 0 0 rgba(37,211,102,.55); } 70%,100%{ box-shadow:0 4px 14px rgba(0,0,0,.28), 0 0 0 18px rgba(37,211,102,0); } }
+@media (max-width:560px){ .wa-flotante{ right:14px; bottom:14px; height:52px; padding:0 16px 0 12px; font-size:.95rem; } .wa-flotante svg{ width:28px; height:28px; } }
+@media (prefers-reduced-motion:reduce){ .wa-flotante{ animation:none; transition:none; } .wa-flotante:hover{ transform:none; } }
+
+
+/* estado e histórico: un renglón por anotación, con el mismo espacio entre una y otra */
+.linea-est{ padding:.4rem 0; line-height:1.45; overflow-wrap:anywhere; }
+.linea-est + .linea-est{ border-top:1px solid #dfeae7; }
+.linea-est:first-child{ padding-top:0; }
+.linea-est:last-child{ padding-bottom:0; }
+.linea-fecha{ display:inline-block; margin-right:.4em; font-weight:700; font-variant-numeric:tabular-nums; color:var(--verde); }
+
+
+/* ---- casillas y tarjetas en relieve 3D (borde superior de color, sombra en capas y elevación al pasar el mouse) ---- */
+.proceso, .kpi, .grafico, .tarjeta-cliente{ box-shadow:0 1px 3px rgba(0,30,26,.10), 0 4px 10px rgba(0,30,26,.08), 0 18px 34px rgba(0,30,26,.11), inset 0 1px 0 rgba(255,255,255,.9); }
+.proceso{ border-top:3px solid var(--verde); transition:transform .2s ease, box-shadow .2s ease; }
+.proceso.terminado{ border-top-color:#8a9794; }
+.proceso:hover{ transform:translateY(-3px); box-shadow:0 2px 4px rgba(0,30,26,.10), 0 10px 18px rgba(0,30,26,.12), 0 26px 44px rgba(0,30,26,.16), inset 0 1px 0 rgba(255,255,255,.9); }
+.tile{ box-shadow:0 1px 2px rgba(0,30,26,.10), 0 3px 8px rgba(0,30,26,.08), 0 10px 20px rgba(0,30,26,.08), inset 0 1px 0 rgba(255,255,255,.9); transition:transform .18s ease, box-shadow .18s ease; }
+.tile:hover{ transform:translateY(-3px); box-shadow:0 2px 4px rgba(0,30,26,.10), 0 8px 14px rgba(0,30,26,.12), 0 18px 28px rgba(0,30,26,.14), inset 0 1px 0 rgba(255,255,255,.9); }
+.tarjeta-cliente{ transition:transform .18s ease, box-shadow .18s ease; border-top:3px solid var(--turquesa); }
+.tarjeta-cliente:hover{ transform:translateY(-3px); }
+@media (prefers-reduced-motion:reduce){ .proceso, .tile, .tarjeta-cliente{ transition:none; } .proceso:hover, .tile:hover, .tarjeta-cliente:hover{ transform:none; } }
+
+/* ---- Vigente / Terminado bien marcados ---- */
+.vt{ display:inline-flex; align-items:center; gap:.35rem; font-size:.76rem; font-weight:800; letter-spacing:.03em; text-transform:uppercase; padding:.2rem .75rem; border-radius:99px; }
+.vt::before{ content:""; width:.5rem; height:.5rem; border-radius:50%; background:currentColor; }
+.vt.vigente{ background:#14753f; color:#fff; box-shadow:0 2px 0 #0b4d29; }
+.vt.terminado{ background:#6b7775; color:#fff; box-shadow:0 2px 0 #444e4c; }
+.proceso.terminado .p-cuerpo{ opacity:.92; }
+.chips-vt{ display:flex; flex-wrap:wrap; gap:.55rem; margin:0 0 .9rem; }
+.chips-vt[hidden]{ display:none; }
+.chip-vt{ font:inherit; font-weight:700; font-size:.88rem; display:inline-flex; align-items:center; gap:.45rem; padding:.45rem .95rem; border-radius:99px; border:1px solid var(--turquesa-borde); background:#fff; color:var(--verde); cursor:pointer; box-shadow:0 2px 0 var(--turquesa-borde), 0 6px 12px rgba(0,30,26,.08); transition:transform .15s ease, box-shadow .15s ease; }
+.chip-vt:hover{ transform:translateY(-1px); }
+.chip-vt.activo{ background:var(--verde); color:#fff; border-color:var(--verde); box-shadow:0 2px 0 #00241f, 0 8px 14px rgba(0,30,26,.2); }
+.chip-n{ background:rgba(0,73,65,.1); border-radius:99px; padding:.05rem .5rem; font-variant-numeric:tabular-nums; }
+.chip-vt.activo .chip-n{ background:rgba(255,255,255,.2); }
+
+/* botón «Carpeta del proceso» (mismo estilo de los botones de informe, en azul) */
+a.btn-informe.carpeta{ text-decoration:none; display:inline-flex; align-items:center; background:#e6f1fb; color:#0c447c; border:1px solid #b5d4f4; }
+a.btn-informe.carpeta:hover{ background:#d4e8f9; }

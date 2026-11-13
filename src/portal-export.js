@@ -22,16 +22,28 @@ const FORMATOS = {
 const GENERICO = { excel: generarInformeLexaraExcel, pdf: generarInformeLexaraPDF };
 const activo = p => !String(p.EstadoVT || '').toLowerCase().includes('termin');   // igual que esProcesoActivo de la app
 
+// Los desistimientos que el portal ya trae dentro de cada proceso → la forma que usan los informes de la app (el Proceso se une por su id).
+function desistimientosDe(procesos){
+  const salida = [];
+  procesos.forEach(p => (p.Desistimientos || []).forEach(d => salida.push({
+    Proceso: p.id, FechaRadicacion: d.FechaRadicacion, Aprobacion: d.Aprobacion, FechaAprobacion: d.FechaAprobacion,
+    DesistimientoValor: d.Valor, Observaciones: d.Observaciones,
+  })));
+  return salida;
+}
 function formatoDe(clave){ return FORMATOS[normalize(clave).replace(/\s+/g, ' ').trim()] || GENERICO; }
 
 window.PortalExport = {
   /** Informe de procesos. tipo: 'excel' | 'pdf'. entidad: la Entidad del cliente (elige el formato); nombre: cómo se llama el archivo / la carta. */
-  procesos: async function(tipo, entidad, nombre, procesos){
+  procesos: async function(tipo, entidad, nombre, procesos, opciones){
     const fmt = formatoDe(entidad);
-    // Como en Informes: el reporte de varios procesos solo lleva los vigentes; la ficha o el Excel de UN proceso sí sirve aunque esté terminado.
-    const lista = procesos.length > 1 ? procesos.filter(activo) : procesos;
-    if(tipo === 'excel') return fmt.excel(nombre, lista, [], []);
-    return fmt.pdf(nombre, lista);
+    // Como en Informes: el reporte de varios procesos solo lleva los vigentes (salvo que el cliente haya elegido ver los «Terminados»); la ficha o el Excel de UN proceso sí sirve aunque esté terminado.
+    const lista = procesos.length > 1 && !(opciones && opciones.incluirTerminados) ? procesos.filter(activo) : procesos;
+    // SOS (2026-11-13): el Excel lleva además la hoja de Desistimientos y el PDF un resumen consolidado de desistimientos antes de la firma — los mismos del Portal Lexara.
+    const esSOS = fmt.excel === generarInformeSOSExcel;
+    const desist = esSOS ? desistimientosDe(lista) : undefined;
+    if(tipo === 'excel') return fmt.excel(nombre, lista, [], [], desist);
+    return fmt.pdf(nombre, lista, desist);
   },
   /** Ficha de UN proceso en PDF (sin valores ni contingencia). */
   ficha: function(proceso){ return generarFichaProcesoPDF(proceso, { paraCliente: true }); },

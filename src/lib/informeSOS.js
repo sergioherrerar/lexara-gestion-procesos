@@ -11,7 +11,7 @@
 // informes puntuales — se importan de forma diferida (dynamic import) para
 // que no infle el paquete principal que se descarga en cada inicio de sesión.
 import { stripHtml, parseMonto, fmtMonto, procesoForDesistimiento, fmtDate } from './graph';
-import { generarCartaInformePDF, fechaLarga, fechaCorta, VERDE_OSCURO, GRIS_SUAVE } from './informesPDF';
+import { generarCartaInformePDF, fechaLarga, fechaCorta, VERDE_OSCURO, GRIS_SUAVE, VERDE_CLARO, BORDE_SUAVE, GRIS_ZEBRA, TEXTO, MARGEN, CONTENIDO_Y_INICIAL, CONTENIDO_Y_MAXIMO, dibujarResumenBox } from './informesPDF';
 
 // [columna Excel, header exacto que la Entidad SOS espera, campo interno de
 // la app, tipo]. El orden de este arreglo ES el orden de columnas del Excel.
@@ -146,7 +146,8 @@ export function resolverValorColumnaSOS(campo, p, nitPorClienteMapa, identificac
 // resto de generadores de Excel (ver FORMATOS_POR_ENTIDAD en InformesView.jsx).
 // "clientes" y "colaboradores" se agregaron 2026-09-17 para poder resolver
 // el NIT y la CC Apoderada de respaldo (ver arriba).
-export async function generarInformeSOSExcel(entidad, procesos, clientes, colaboradores){
+// `desistimientos` (opcional, 5.º parámetro; lo pasa el Portal de clientes): si viene, el libro lleva una segunda hoja «Des SOS» con el informe de desistimientos de esos procesos.
+export async function generarInformeSOSExcel(entidad, procesos, clientes, colaboradores, desistimientos){
   const { default: ExcelJS } = await import('exceljs');
   const wb = new ExcelJS.Workbook();
   const ws = wb.addWorksheet("SOS");
@@ -192,6 +193,8 @@ export async function generarInformeSOSExcel(entidad, procesos, clientes, colabo
 
   ws.views = [{ state:'frozen', ySplit:1 }];
 
+  if(Array.isArray(desistimientos)) construirHojaDesistimientosSOS(wb, desistimientos, procesos);
+
   const buffer = await wb.xlsx.writeBuffer();
   const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
   const url = URL.createObjectURL(blob);
@@ -223,7 +226,8 @@ const NOMBRE_COMPLETO_ENTIDAD = {
 // "entidad" es la etiqueta corta guardada en el proceso (p.ej. "SOS");
 // "procesosVigentes" ya debe venir filtrado (solo los NO terminados de esa
 // Entidad) — el conteo y las filas de la carta son exactamente esa lista.
-export async function generarInformeSOSPDF(entidad, procesosVigentes){
+// `desistimientos` (opcional, 3.er parámetro; lo pasa el Portal de clientes): si hay, al final de los procesos y antes de la firma va un resumen consolidado de desistimientos.
+export async function generarInformeSOSPDF(entidad, procesosVigentes, desistimientos){
   const nombreEntidad = NOMBRE_COMPLETO_ENTIDAD[(entidad||"").toUpperCase()] || entidad;
   const filas = [...procesosVigentes].sort((a,b) => (a.NoCompleto||a.Radicado||"").localeCompare(b.NoCompleto||b.Radicado||""));
   const fecha = fechaLarga(new Date());
@@ -244,6 +248,7 @@ export async function generarInformeSOSPDF(entidad, procesosVigentes){
       stripHtml(p.Estado) || "—",
       p.ValorActualDemanda ? fmtMonto(parseMonto(p.ValorActualDemanda)) : "—",
     ]),
+    antesDeLaFirma: resumenDesistimientosPDF(filas, desistimientos),
     columnStyles: {
       // No. Completo/Radicado y Valor Actual Demanda son cadenas largas en
       // fuente monoespaciada — con el tamaño base (8.5) no cabían en una
@@ -280,9 +285,8 @@ const COLUMNAS_DESISTIMIENTOS_SOS = [
 ];
 const ANCHOS_DESISTIMIENTOS = [6, 16, 24, 30, 30, 20, 20, 16, 14, 18, 36];
 
-export async function generarDesistimientosSOSExcel(desistimientos, procesosEntidad){
-  const { default: ExcelJS } = await import('exceljs');
-  const wb = new ExcelJS.Workbook();
+// La hoja «Des SOS» (mismo formato de siempre). Se usa en el Excel de Desistimientos y, desde 2026-11-13 (pedido del usuario, Portal de clientes), también como SEGUNDA hoja del Excel de procesos de SOS.
+export function construirHojaDesistimientosSOS(wb, desistimientos, procesosEntidad){
   const ws = wb.addWorksheet("Des SOS");
 
   ws.columns = [{width: ANCHOS_DESISTIMIENTOS[0]}, ...COLUMNAS_DESISTIMIENTOS_SOS.map((c,i) => ({width: ANCHOS_DESISTIMIENTOS[i+1]}))];
@@ -325,6 +329,13 @@ export async function generarDesistimientosSOSExcel(desistimientos, procesosEnti
   ws.getColumn(10).numFmt = 'mm-dd-yy';   // Fecha de Aprobacion
 
   ws.views = [{ state:'frozen', ySplit:1 }];
+  return ws;
+}
+
+export async function generarDesistimientosSOSExcel(desistimientos, procesosEntidad){
+  const { default: ExcelJS } = await import('exceljs');
+  const wb = new ExcelJS.Workbook();
+  construirHojaDesistimientosSOS(wb, desistimientos, procesosEntidad);
 
   const buffer = await wb.xlsx.writeBuffer();
   const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
@@ -337,4 +348,44 @@ export async function generarDesistimientosSOSExcel(desistimientos, procesosEnti
   a.click();
   a.remove();
   URL.revokeObjectURL(url);
+}
+
+
+/* ---------------- Resumen consolidado de desistimientos (PDF) ----------------
+   Bloque que la carta de SOS dibuja al final de la tabla de procesos y ANTES de la firma (Portal de clientes, 2026-11-13). Devuelve una función para
+   generarCartaInformePDF (opción antesDeLaFirma) o null si no hay desistimientos que mostrar. */
+function resumenDesistimientosPDF(procesos, desistimientos){
+  const filas = (desistimientos || []).map(d => ({ d, proceso: procesoForDesistimiento(procesos, d) })).filter(x => x.proceso);
+  if(!filas.length) return null;
+  const decision = d => { const a = String(d.Aprobacion || '').toLowerCase(); return /aprob/.test(a) ? 'aprobado' : /rechaz|negad/.test(a) ? 'rechazado' : 'pendiente'; };
+  const cuenta = { aprobado: 0, pendiente: 0, rechazado: 0 };
+  let valorTotal = 0, valorAprobado = 0;
+  const procesosConDes = new Set();
+  filas.forEach(({ d, proceso }) => { const k = decision(d); cuenta[k]++; const v = parseMonto(d.DesistimientoValor); valorTotal += v; if(k === 'aprobado') valorAprobado += v; procesosConDes.add(String(proceso.id)); });
+  return async function({ doc, autoTable, y, pageWidth, dibujarEncabezadoYPie }){
+    const necesario = 70 + Math.min(filas.length, 6) * 7;
+    if(y + necesario > CONTENIDO_Y_MAXIMO){ doc.addPage(); dibujarEncabezadoYPie(); y = CONTENIDO_Y_INICIAL; }
+    doc.setFont('helvetica','bold'); doc.setFontSize(11); doc.setTextColor(...VERDE_OSCURO);
+    doc.text('Resumen consolidado de desistimientos', MARGEN, y); y += 4;
+    y = dibujarResumenBox(doc, MARGEN, y, pageWidth - MARGEN*2, [
+      { label:'Procesos con desistimiento', value: procesosConDes.size },
+      { label:'Desistimientos', value: filas.length },
+      { label:'Aprob. / pend. / rechaz.', value: cuenta.aprobado + ' / ' + cuenta.pendiente + ' / ' + cuenta.rechazado },
+      { label:'Valor total', value: '$' + fmtMonto(valorTotal) },
+    ]);
+    autoTable(doc, {
+      startY: y + 4,
+      margin: { left: MARGEN, right: MARGEN, top: CONTENIDO_Y_INICIAL, bottom: 297 - CONTENIDO_Y_MAXIMO },
+      head: [['No. Radicado', 'Fecha radicación', 'Aprobación', 'Fecha aprobación', 'Valor desistimiento']],
+      body: filas.map(({ d, proceso }) => [proceso.NoCompleto || proceso.Radicado || '—', fechaCorta(d.FechaRadicacion), d.Aprobacion || 'Sin decisión', fechaCorta(d.FechaAprobacion), d.DesistimientoValor ? fmtMonto(parseMonto(d.DesistimientoValor)) : '—']),
+      foot: [[{ content: 'Valor total de desistimientos: $' + fmtMonto(valorTotal) + (cuenta.aprobado ? '   ·   Aprobado: $' + fmtMonto(valorAprobado) : ''), colSpan: 5, styles:{ halign:'right', fontStyle:'bold', fillColor:VERDE_CLARO, textColor:VERDE_OSCURO, fontSize:8.5 } }]],
+      showFoot: 'lastPage',
+      styles: { font:'helvetica', fontSize:8, cellPadding:2.2, valign:'top', lineColor:BORDE_SUAVE, lineWidth:0.15, textColor:TEXTO },
+      headStyles: { fillColor:VERDE_OSCURO, textColor:255, fontStyle:'bold', halign:'center', fontSize:8 },
+      alternateRowStyles: { fillColor:GRIS_ZEBRA },
+      columnStyles: { 0: { halign:'center', font:'courier', fontSize:7, cellWidth:42, fontStyle:'bold', textColor:VERDE_OSCURO }, 1: { halign:'center', cellWidth:26 }, 2: { halign:'center', cellWidth:'auto' }, 3: { halign:'center', cellWidth:28 }, 4: { halign:'right', cellWidth:34 } },
+      willDrawPage: dibujarEncabezadoYPie,
+    });
+    return doc.lastAutoTable.finalY;
+  };
 }

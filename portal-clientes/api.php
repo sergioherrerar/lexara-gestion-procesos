@@ -41,6 +41,11 @@ try {
             }
             $mensaje = 'Si su correo tiene acceso, le enviamos un código. Revise su bandeja (y el correo no deseado).';
             $acceso = accesoDe($correo);
+            // 2026-11-13 (pedido del usuario): si el correo no es el que está anotado en la lista Clientes (ni es del equipo), se dice claro en vez de aparentar que se envió.
+            // (Los topes por correo y por IP de arriba siguen limitando los intentos.)
+            if (!$acceso || (empty($acceso['equipo']) && !count($acceso['clientes']))) {
+                salir(['ok' => false, 'error' => 'Este correo no pertenece a ningún cliente de Lexara Abogados. Escriba el mismo correo que tiene registrado con nosotros; si cree que es un error, escríbanos por WhatsApp (botón «Soporte»).'], 404);
+            }
             $respuesta = ['ok' => true, 'mensaje' => $mensaje];
             if ($acceso && (!empty($acceso['equipo']) || count($acceso['clientes']))) {
                 $codigo = (string)random_int(100000, 999999);
@@ -48,14 +53,16 @@ try {
                 // Se limpian los vencidos y se guardan los ÚLTIMOS 3 códigos vigentes de este correo: si el correo del primero llega tarde, ese código todavía sirve.
                 foreach ($codigos as $k => $v) { $v = codigosVigentes($v); if ($v) $codigos[$k] = $v; else unset($codigos[$k]); }
                 $previos = codigosVigentes($codigos[$correo] ?? []);
-                $previos['lista'][] = ['hash' => claveHash($correo . '|' . $codigo), 'exp' => time() + (int)(cfg()['codigo_minutos'] ?? 10) * 60];
+                $previos['lista'][] = ['hash' => claveHash($correo . '|' . $codigo), 'exp' => time() + vigenciaCodigoMinutos() * 60];
                 $previos['lista'] = array_slice($previos['lista'], -3);
                 $previos['intentos'] = 0;
                 $codigos[$correo] = $previos;
                 escribirJson('codigos.json', $codigos);
                 if (esDemo()) { $respuesta['codigo_demo'] = $codigo; anotarIntento('envio:' . $correo); }   // SOLO modo demo: nunca en modo real
                 else {
-                    try { $por = enviarCodigo($correo, $acceso['nombre'], $codigo); if ($por !== 'microsoft') registrarError('Código a ' . $correo . ' enviado por el correo del servidor (Microsoft no respondió).'); anotarIntento('envio:' . $correo); }
+                    try { $por = enviarCodigo($correo, $acceso['nombre'], $codigo); if ($por !== 'microsoft') registrarError('Código a ' . $correo . ' enviado por el correo del servidor (Microsoft no respondió).'); anotarIntento('envio:' . $correo);
+                        // Solo para el equipo de Lexara: por dónde salió el correo y cuánto tardó (para saber qué pasa si un código llega tarde o no llega).
+                        if (!empty($acceso['equipo'])) { $i = $GLOBALS['envio_info'] ?? []; $respuesta['detalle_equipo'] = 'Enviado por ' . (($i['via'] ?? '') === 'microsoft' ? 'Microsoft 365' : 'el correo del servidor (Microsoft falló: ' . substr((string)($i['fallo'] ?? ''), 0, 160) . ')') . ' en ' . ($i['seg'] ?? '?') . ' s. Vale ' . vigenciaCodigoMinutos() . ' minutos.'; } }
                     catch (Throwable $e) {
                         // El código no se pudo mandar: se descarta (no queda uno válido que nadie recibió), se anota el detalle y se avisa claro.
                         error_log('portal-clientes: ' . $e->getMessage());

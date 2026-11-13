@@ -39,16 +39,45 @@
     noticia: '<svg class="icono-tipo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h13a2 2 0 0 1 2 2v12H6a2 2 0 0 1-2-2z"/><path d="M19 9h2v8a2 2 0 0 1-2 2"/><path d="M8 9h7M8 13h7M8 16h4"/></svg>',
     publicacion: '<svg class="icono-tipo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-8 8"/></svg>',
   };
+  // Botones de redes del encabezado (2026-11-13): tarjetas con relieve 3D. Los íconos son los oficiales de cada red (24×24), constantes de este archivo.
+  var ICONOS_RED = {"instagram":"M12 7.3A4.7 4.7 0 1 0 12 16.7 4.7 4.7 0 0 0 12 7.3zm0 7.75A3.05 3.05 0 1 1 12 8.95a3.05 3.05 0 0 1 0 6.1zM16.95 6.1a1.1 1.1 0 1 0 0 2.2 1.1 1.1 0 0 0 0-2.2zM12 2.2c-2.67 0-3 .01-4.05.06-1.05.05-1.77.22-2.4.46a4.85 4.85 0 0 0-1.75 1.14A4.85 4.85 0 0 0 2.66 5.6c-.24.63-.41 1.35-.46 2.4C2.15 9.05 2.14 9.38 2.14 12s.01 2.95.06 4c.05 1.05.22 1.77.46 2.4.25.66.6 1.22 1.14 1.76.54.55 1.1.89 1.76 1.14.63.24 1.35.41 2.4.46 1.05.05 1.38.06 4.04.06s2.99-.01 4.04-.06c1.05-.05 1.77-.22 2.4-.46a5.05 5.05 0 0 0 2.9-2.9c.24-.63.41-1.35.46-2.4.05-1.05.06-1.38.06-4.04s-.01-2.99-.06-4.04c-.05-1.05-.22-1.77-.46-2.4a4.85 4.85 0 0 0-1.14-1.76 4.85 4.85 0 0 0-1.76-1.14c-.63-.24-1.35-.41-2.4-.46C14.99 2.21 14.66 2.2 12 2.2zm0 1.8c2.62 0 2.93.01 3.96.06.96.04 1.48.2 1.83.34.46.18.79.4 1.13.74.34.34.56.67.74 1.13.14.35.3.87.34 1.83.05 1.03.06 1.34.06 3.96s-.01 2.93-.06 3.96c-.04.96-.2 1.48-.34 1.83-.18.46-.4.79-.74 1.13-.34.34-.67.56-1.13.74-.35.14-.87.3-1.83.34-1.03.05-1.34.06-3.96.06s-2.93-.01-3.96-.06c-.96-.04-1.48-.2-1.83-.34a3.05 3.05 0 0 1-1.13-.74 3.05 3.05 0 0 1-.74-1.13c-.14-.35-.3-.87-.34-1.83C4.01 14.93 4 14.62 4 12s.01-2.93.06-3.96c.04-.96.2-1.48.34-1.83.18-.46.4-.79.74-1.13.34-.34.67-.56 1.13-.74.35-.14.87-.3 1.83-.34C9.07 4.01 9.38 4 12 4z","facebook":"M24 12.07C24 5.4 18.63 0 12 0S0 5.4 0 12.07C0 18.1 4.39 23.1 10.13 24v-8.44H7.08v-3.49h3.05V9.41c0-3.02 1.8-4.7 4.54-4.7 1.31 0 2.69.24 2.69.24v2.97h-1.51c-1.49 0-1.96.93-1.96 1.89v2.26h3.33l-.53 3.49h-2.8V24C19.61 23.1 24 18.1 24 12.07z","tiktok":"M12.53.02C13.84 0 15.14.01 16.44 0c.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z","spotify":"M12 1.5a10.5 10.5 0 1 0 0 21 10.5 10.5 0 0 0 0-21zm4.8 15.15a.65.65 0 0 1-.9.22c-2.45-1.5-5.55-1.84-9.18-1-.35.08-.69-.14-.77-.49a.64.64 0 0 1 .48-.77c3.98-.91 7.4-.52 10.15 1.17.3.18.4.58.22.87zm1.28-2.85a.8.8 0 0 1-1.1.26c-2.8-1.72-7.08-2.22-10.4-1.21a.8.8 0 0 1-.46-1.53c3.8-1.15 8.5-.6 11.7 1.38.38.23.5.72.26 1.1zm.11-2.96c-3.36-2-8.9-2.18-12.1-1.2a.96.96 0 1 1-.56-1.84c3.68-1.12 9.8-.9 13.67 1.4a.96.96 0 0 1-1 1.64z","youtube":"M23 7.2a3 3 0 0 0-2.1-2.1C19 4.6 12 4.6 12 4.6s-7 0-8.9.5A3 3 0 0 0 1 7.2C.5 9.1.5 12 .5 12s0 2.9.5 4.8a3 3 0 0 0 2.1 2.1c1.9.5 8.9.5 8.9.5s7 0 8.9-.5a3 3 0 0 0 2.1-2.1c.5-1.9.5-4.8.5-4.8s0-2.9-.5-4.8zM9.8 15.1V8.9l5.8 3.1-5.8 3.1z","linkedin":"M20.45 20.45h-3.56v-5.57c0-1.33-.03-3.04-1.85-3.04-1.85 0-2.14 1.45-2.14 2.94v5.67H9.35V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.46v6.28zM5.34 7.43a2.06 2.06 0 1 1 0-4.13 2.06 2.06 0 0 1 0 4.13zM7.12 20.45H3.56V9h3.56v11.45zM22.22 0H1.77C.79 0 0 .77 0 1.73v20.54C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.73V1.73C24 .77 23.2 0 22.22 0z"};
+  var RED_3D = {
+    instagram: { n: 'Instagram', s: '', a: 'Reels y publicaciones' },
+    facebook: { n: 'Facebook', s: '', a: 'Noticias y novedades' },
+    tiktok: { n: 'TikTok', s: '', a: 'Videos cortos' },
+    spotify: { n: 'Spotify', s: 'Café Laboral', a: 'Podcast Café Laboral' },
+    youtube: { n: 'YouTube', s: 'Café Laboral', a: 'Episodios de Café Laboral' },
+    linkedin: { n: 'LinkedIn', s: '', a: 'Red profesional' },
+  };
+  function iconoRed(id){
+    var d = ICONOS_RED[id]; if(!d) return '';
+    if(id === 'tiktok') return '<svg viewBox="0 0 24 24" aria-hidden="true"><path transform="translate(-.7 -.7)" fill="#25F4EE" d="' + d + '"/><path transform="translate(.7 .7)" fill="#FE2C55" d="' + d + '"/><path fill="#fff" d="' + d + '"/></svg>';
+    return '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="' + d + '"/></svg>';
+  }
   function conSvg(contenedor, svg){ contenedor.insertAdjacentHTML('beforeend', svg); }   // los SVG son constantes de este archivo, nunca datos de las publicaciones
 
   // ---------- medio (miniatura / degradado + icono) ----------
+  // Cada video se ve dentro de un dispositivo (2026-11-13, pedido del usuario): los reels y publicaciones de Instagram/TikTok en un CELULAR y los videos de YouTube en un TELEVISOR.
+  function dispositivoDe(p){
+    if(p.tipo === 'reel' || p.red === 'instagram' || p.red === 'tiktok') return 'celular';
+    if(p.red === 'youtube' || p.tipo === 'video') return 'tv';
+    return '';
+  }
   function medioDe(p, abrir){
-    var url = urlSegura(p.url), mini = miniaturaDe(p), esVideo = p.tipo === 'video' || p.tipo === 'reel' || p.tipo === 'podcast';
-    var m = el(url || esVideo ? 'button' : 'div', 'medio' + (p.tipo === 'reel' ? ' vertical' : ''));
+    var url = urlSegura(p.url), mini = miniaturaDe(p), esVideo = p.tipo === 'video' || p.tipo === 'reel' || p.tipo === 'podcast', disp = dispositivoDe(p);
+    var m = el(url || esVideo ? 'button' : 'div', 'medio' + (disp ? ' con-' + disp : (p.tipo === 'reel' ? ' vertical' : '')));
     if(m.tagName === 'BUTTON'){ m.type = 'button'; m.setAttribute('aria-label', 'Abrir: ' + p.titulo); m.addEventListener('click', function(){ abrir(p); }); }
-    if(mini){ m.style.backgroundImage = 'url("' + mini.replace(/"/g, '%22') + '")'; }
-    else { m.classList.add('sin-miniatura'); var d = DEGRADADOS[p.tipo] || DEGRADADOS.publicacion; m.style.setProperty('--c1', d[0]); m.style.setProperty('--c2', d[1]); conSvg(m, SVG[p.tipo] || SVG.publicacion); }
-    if(esVideo){ var pl = el('span', 'play'); conSvg(pl, SVG.play); m.appendChild(pl); }
+    var pantalla = m;   // donde va la imagen: el propio recuadro, o la pantalla del celular / televisor
+    if(disp){
+      pantalla = el('span', 'pantalla-d');
+      var cont = el('span', disp === 'celular' ? 'celular' : 'tv');
+      if(disp === 'celular'){ cont.appendChild(pantalla); }
+      else { var marco = el('span', 'tv-marco'); marco.appendChild(pantalla); cont.appendChild(marco); cont.appendChild(el('span', 'tv-cuello')); cont.appendChild(el('span', 'tv-base')); }
+      m.appendChild(cont);
+    }
+    if(mini){ pantalla.style.backgroundImage = 'url("' + mini.replace(/"/g, '%22') + '")'; }
+    else { pantalla.classList.add('sin-miniatura'); var d = DEGRADADOS[p.tipo] || DEGRADADOS.publicacion; pantalla.style.setProperty('--c1', d[0]); pantalla.style.setProperty('--c2', d[1]); conSvg(pantalla, SVG[p.tipo] || SVG.publicacion); }
+    if(esVideo){ var pl = el('span', 'play'); conSvg(pl, SVG.play); pantalla.appendChild(pl); }
     var ins = el('span', 'insignia-tipo t-' + p.tipo, tipoDe(p.tipo).singular); m.appendChild(ins);
     return m;
   }
@@ -154,7 +183,13 @@
     var redes = $('redes'); redes.textContent = '';
     (s.redes || []).forEach(function(r){
       var u = urlSegura(r.url); if(!u) return;
-      var a = el('a', 'red grande ' + r.id, r.nombre); a.href = u; a.target = '_blank'; a.rel = 'noopener noreferrer'; redes.appendChild(a);
+      var info = RED_3D[r.id];
+      if(!info){ var g = el('a', 'red grande ' + r.id, r.nombre); g.href = u; g.target = '_blank'; g.rel = 'noopener noreferrer'; redes.appendChild(g); return; }
+      var a = el('a', 'red-3d ' + r.id); a.href = u; a.target = '_blank'; a.rel = 'noopener noreferrer'; a.setAttribute('aria-label', info.n + ': ' + info.a + ' (se abre en una pestaña nueva)');
+      var ico = el('span', 'r3d-ico'); ico.insertAdjacentHTML('beforeend', iconoRed(r.id));   // SVG constante de este archivo, nunca datos de las publicaciones
+      var tx = el('span', 'r3d-txt'); tx.appendChild(el('strong', null, info.n)); if(info.s) tx.appendChild(el('small', null, info.s));
+      a.appendChild(ico); a.appendChild(tx); a.appendChild(el('span', 'r3d-flecha', '↗'));
+      redes.appendChild(a);
     });
     if(!redes.children.length) redes.hidden = true;
     var sel = $('filtro-red'); var usadas = {};

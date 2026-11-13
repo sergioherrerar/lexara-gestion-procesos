@@ -40,6 +40,6 @@ return [
     'envio' => 'auto',
 
     // Minutos que vale el código y horas que dura la sesión.
-    'codigo_minutos' => 10,
+    'codigo_minutos' => 20,   // el portal usa como mínimo 20: si el correo tarda en llegar, el código no vence antes de poder usarlo
     'sesion_horas'   => 8,
 ];

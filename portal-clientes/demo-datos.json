@@ -29,7 +29,13 @@
       "PruebaPericial": "NO",
       "OrigenTipoGlosa": "Glosa de facturación",
       "HistoricoNumerosCompletos": "",
-      "Historico": "12-03-2024 Auto admite demanda\n02-05-2024 Se radica contestación\n04-11-2026 Se radicó la contestación de la demanda dentro del término."
+      "Historico": "12-03-2024 Auto admite demanda\n02-05-2024 Se radica contestación\n04-11-2026 Se radicó la contestación de la demanda dentro del término.",
+      "ValorActualDemanda": "135.400.000,00",
+      "ValorCarteraActual": "135.400.000,00",
+      "ValorRadicacion": "121860000",
+      "ValorReforma": "128630000",
+      "MontoMedidaCautelar": "",
+      "EnlaceProceso": "#https://mydabogados.sharepoint.com/sites/demo/carpeta-101#"
     },
     {
       "Radicado": "2025-00231",
@@ -60,7 +66,12 @@
       "PruebaPericial": "SI",
       "OrigenTipoGlosa": "",
       "HistoricoNumerosCompletos": "",
-      "Historico": "08-04-2025 Auto admite demanda\n20-05-2025 Contestación\n28-10-2026 Audiencia programada para el 2 de diciembre de 2026."
+      "Historico": "08-04-2025 Auto admite demanda\n20-05-2025 Contestación\n28-10-2026 Audiencia programada para el 2 de diciembre de 2026.",
+      "ValorActualDemanda": "262345678.5",
+      "ValorCarteraActual": "262345678.5",
+      "ValorRadicacion": "236111111",
+      "ValorReforma": "249228395",
+      "MontoMedidaCautelar": ""
     },
     {
       "Radicado": "2023-00579",
@@ -91,7 +102,13 @@
       "PruebaPericial": "SI",
       "OrigenTipoGlosa": "Pertinencia médica",
       "HistoricoNumerosCompletos": "76001310300520230057900 (primera instancia)",
-      "Historico": "10-06-2023 Admisión\n11-02-2025 Pasa a segunda instancia\n02-11-2026 Alegatos de conclusión."
+      "Historico": "10-06-2023 Admisión\n11-02-2025 Pasa a segunda instancia\n02-11-2026 Alegatos de conclusión.",
+      "ValorActualDemanda": "274691357",
+      "ValorCarteraActual": "274691357",
+      "ValorRadicacion": "247222221",
+      "ValorReforma": "260956789",
+      "MontoMedidaCautelar": "",
+      "EnlaceProceso": "#https://mydabogados.sharepoint.com/sites/demo/carpeta-103#"
     },
     {
       "Radicado": "2025-00877",
@@ -122,7 +139,12 @@
       "PruebaPericial": "NO",
       "OrigenTipoGlosa": "",
       "HistoricoNumerosCompletos": "",
-      "Historico": "19-08-2025 Admisión\n15-10-2026 Traslado de excepciones."
+      "Historico": "19-08-2025 Admisión\n15-10-2026 Traslado de excepciones.",
+      "ValorActualDemanda": "135.400.000,00",
+      "ValorCarteraActual": "135.400.000,00",
+      "ValorRadicacion": "121860000",
+      "ValorReforma": "128630000",
+      "MontoMedidaCautelar": ""
     },
     {
       "Radicado": "2024-00340",
@@ -153,7 +175,13 @@
       "PruebaPericial": "NO",
       "OrigenTipoGlosa": "",
       "HistoricoNumerosCompletos": "",
-      "Historico": "21-05-2024 Mandamiento de pago\n30-09-2026 Notificación y excepciones."
+      "Historico": "21-05-2024 Mandamiento de pago\n30-09-2026 Notificación y excepciones.",
+      "ValorActualDemanda": "299382714",
+      "ValorCarteraActual": "299382714",
+      "ValorRadicacion": "269444443",
+      "ValorReforma": "284413578",
+      "MontoMedidaCautelar": "",
+      "EnlaceProceso": "#https://mydabogados.sharepoint.com/sites/demo/carpeta-105#"
     },
     {
       "Radicado": "2022-00915",
@@ -184,7 +212,12 @@
       "PruebaPericial": "SI",
       "OrigenTipoGlosa": "Procesos antiguos",
       "HistoricoNumerosCompletos": "",
-      "Historico": "01-03-2022 Admisión\n18-01-2024 Segunda instancia\n22-10-2026 Concedido el recurso de apelación."
+      "Historico": "01-03-2022 Admisión\n18-01-2024 Segunda instancia\n22-10-2026 Concedido el recurso de apelación.",
+      "ValorActualDemanda": "311728392.5",
+      "ValorCarteraActual": "311728392.5",
+      "ValorRadicacion": "280555553",
+      "ValorReforma": "296141973",
+      "MontoMedidaCautelar": ""
     },
     {
       "Radicado": "2025-00410",
@@ -200,7 +233,13 @@
       "Estado": "Se libró mandamiento de pago; pendiente notificación.",
       "FechaUltimoEstado": "2026-11-03",
       "id": "107",
-      "EstadoVT": "Vigente"
+      "EstadoVT": "Vigente",
+      "ValorActualDemanda": "135.400.000,00",
+      "ValorCarteraActual": "135.400.000,00",
+      "ValorRadicacion": "121860000",
+      "ValorReforma": "128630000",
+      "MontoMedidaCautelar": "",
+      "EnlaceProceso": "#https://mydabogados.sharepoint.com/sites/demo/carpeta-107#"
     },
     {
       "Radicado": "2024-00777",
@@ -216,7 +255,49 @@
       "Estado": "Audiencia aplazada.",
       "FechaUltimoEstado": "2026-10-20",
       "id": "108",
-      "EstadoVT": "Vigente"
+      "EstadoVT": "Vigente",
+      "ValorActualDemanda": "336419749.5",
+      "ValorCarteraActual": "336419749.5",
+      "ValorRadicacion": "302777775",
+      "ValorReforma": "319598762",
+      "MontoMedidaCautelar": ""
+    },
+    {
+      "Radicado": "2023-00418",
+      "Cliente": "EPS SOS",
+      "Despacho": "Juzgado 12 Laboral del Circuito de Bogotá",
+      "Demandante": "Patricia Nieto",
+      "Demandado": "EPS SOS",
+      "ParteActuamos": "Demandado",
+      "TipoProceso": "Ordinario",
+      "Instancia": "Segunda",
+      "EtapaProcesal": "Recurso de apelación",
+      "Estado": "15-10-2026 Auto fija audiencia para el 3 de marzo de 2027\n\n\n02-11-2026 Se allega memorial de desistimiento parcial de pretensiones",
+      "FechaUltimoEstado": "2026-11-02",
+      "Entidad": "SOS",
+      "id": "109",
+      "NoCompleto": "11001310500820230041800",
+      "NumeroDespacho": "",
+      "Apoderado": "Carlos Medina",
+      "TipoAccion": "Civil",
+      "EstadoVT": "Vigente",
+      "FechaAdmision": "2022-03-01",
+      "FechaContestacion": "2022-04-12",
+      "FechaInstancia": "2024-01-18",
+      "FechaReformaDemanda": "2022-09-09",
+      "FechaTerminacion": "2028-01-31",
+      "RadicacionProceso": "2022-02-10",
+      "Admitida": "SI",
+      "PruebaPericial": "SI",
+      "OrigenTipoGlosa": "Procesos antiguos",
+      "HistoricoNumerosCompletos": "",
+      "Historico": "01-03-2022 Admisión\n18-01-2024 Segunda instancia\n22-10-2026 Concedido el recurso de apelación.",
+      "ValorActualDemanda": "418.250.000,00",
+      "ValorCarteraActual": "311728392.5",
+      "ValorRadicacion": "280555553",
+      "ValorReforma": "296141973",
+      "MontoMedidaCautelar": "",
+      "EnlaceProceso": "#https://mydabogados.sharepoint.com/sites/demo/carpeta-109#"
     }
   ],
   "clientes": [
@@ -249,6 +330,11 @@
       "razon": "Transportes Andes S.A.S.",
       "correos": "andes@demo.com",
       "entidad": "PARTICULARES"
+    },
+    {
+      "razon": "Cliente Nuevo sin procesos S.A.S.",
+      "correos": "",
+      "entidad": ""
     }
   ],
   "tutelas": [
@@ -445,6 +531,14 @@
       "FechaAprobacion": "2026-01-09",
       "Valor": 5000000,
       "Observaciones": "Requería poder con facultad expresa."
+    },
+    {
+      "Proceso": "109",
+      "FechaRadicacion": "2026-11-02",
+      "Aprobacion": "Pendiente",
+      "FechaAprobacion": "",
+      "Valor": 35000000,
+      "Observaciones": "Desistimiento parcial radicado."
     }
   ],
   "valores": [

@@ -424,8 +424,13 @@ export async function generarCartaInformePDF(opts){
     willDrawPage: dibujarEncabezadoYPie,
   });
 
+  // --- Bloque opcional entre la tabla y la firma (p. ej. el resumen de desistimientos de SOS) ---
+  let finTabla = doc.lastAutoTable.finalY;
+  if(typeof opts.antesDeLaFirma === 'function'){
+    finTabla = await opts.antesDeLaFirma({ doc, autoTable, y: finTabla + 12, pageWidth, dibujarEncabezadoYPie });
+  }
   // --- Firma, después de la tabla (nueva hoja si ya no cabe) ---
-  let yFirma = doc.lastAutoTable.finalY + 16;
+  let yFirma = finTabla + 16;
   // Se reserva espacio no solo para la firma sino también para la nota de
   // cierre que sigue abajo (línea + texto), para que nunca quede cortada.
   if(yFirma > CONTENIDO_Y_MAXIMO - 45){

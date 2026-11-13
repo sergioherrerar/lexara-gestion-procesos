@@ -64,5 +64,10 @@ const noDisponible = nombre => () => { throw new Error(nombre + ' no está dispo
 export const crearBorradorConImagenesInline = noDisponible('crearBorradorConImagenesInline');
 export const firmaComoImagenInline = noDisponible('firmaComoImagenInline');
 export const firmaHtml = noDisponible('firmaHtml');
-export const procesoForDesistimiento = noDisponible('procesoForDesistimiento');
+// Une un desistimiento con su proceso por el id (igual que graph.js): lo usan la hoja «Des SOS» del Excel y el resumen de desistimientos del PDF de SOS.
+export function procesoForDesistimiento(procesos, desistimiento){
+  if(!desistimiento || desistimiento.Proceso == null) return null;
+  return (procesos || []).find(p => String(p.id) === String(desistimiento.Proceso)) || null;
+}
 export const nombreAbogadoCanonico = s => s;
+

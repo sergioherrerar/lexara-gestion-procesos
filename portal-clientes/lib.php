@@ -218,9 +218,12 @@ function opcionesEquipo(): array {
     $grupo = entidadesGrupo();
     $nombresGrupo = [];
     $opciones = [];
+    // Solo clientes que YA tienen procesos en el Portal Lexara (2026-11-13, pedido del usuario): sin procesos no hay nada que ver «como él».
+    $conProcesos = [];
+    foreach (procesosTodos() as $pr) { $k = normalizar((string)($pr['Cliente'] ?? '')); if ($k !== '') $conProcesos[$k] = true; }
     foreach (filasClientes() as $fila) {
         $razon = trim((string)($fila['razon'] ?? ''));
-        if ($razon === '') continue;
+        if ($razon === '' || !isset($conProcesos[normalizar($razon)])) continue;
         $ent = claveEntidad((string)($fila['entidad'] ?? ''));
         if ($ent !== '' && in_array($ent, $grupo, true)) { if (!isset($nombresGrupo[$ent])) $nombresGrupo[$ent] = trim((string)$fila['entidad']); }
         else $opciones['c:' . normalizar($razon)] = ['id' => 'c:' . normalizar($razon), 'nombre' => $razon, 'grupo' => false];
@@ -337,10 +340,16 @@ function claveHash(string $s): string {
  * Manda el código por correo. Config «envio» (opcional): 'auto' (por defecto: primero Microsoft 365 y, si no responde, el correo del propio servidor),
  * 'microsoft' (solo Microsoft) o 'servidor' (solo el correo del servidor de cPanel, sin Microsoft). Devuelve por cuál salió.
  */
+/** Minutos que vale un código: lo del config, pero nunca menos de 20 (si el correo tarda en llegar, el código no puede vencer antes de que se lea). */
+function vigenciaCodigoMinutos(): int {
+    return max(20, (int)(cfg()['codigo_minutos'] ?? 20));
+}
 function enviarCodigo(string $correo, string $nombre, string $codigo): string {
+    $inicio = microtime(true);
+    $GLOBALS['envio_info'] = ['via' => '', 'fallo' => '', 'seg' => 0.0];
     $c = cfg();
     $modo = (string)($c['envio'] ?? 'auto');
-    $minutos = (int)($c['codigo_minutos'] ?? 10);
+    $minutos = vigenciaCodigoMinutos();
     $asunto = 'Su código de acceso — MD Abogados';
     $html = '<div style="font-family:Segoe UI,Arial,sans-serif;color:#1c2624;max-width:480px">'
         . '<p style="font-size:15px">' . ($nombre !== '' ? htmlspecialchars($nombre) . ', s' : 'S') . 'u código de acceso al portal de clientes de MD Abogados es:</p>'
@@ -348,7 +357,7 @@ function enviarCodigo(string $correo, string $nombre, string $codigo): string {
         . '<p style="font-size:13px;color:#5c6b68">Vale ' . $minutos . ' minutos. Si usted no lo pidió, ignore este mensaje.</p></div>';
     $falloMicrosoft = '';
     if ($modo !== 'servidor') {
-        try { enviarPorMicrosoft($correo, $asunto, $html); return 'microsoft'; }
+        try { enviarPorMicrosoft($correo, $asunto, $html); $GLOBALS['envio_info'] = ['via' => 'microsoft', 'fallo' => '', 'seg' => round(microtime(true) - $inicio, 1)]; return 'microsoft'; }
         catch (Throwable $e) {
             $falloMicrosoft = $e->getMessage();
             registrarError('Envío por Microsoft a ' . $correo . ' — ' . $falloMicrosoft);
@@ -358,6 +367,7 @@ function enviarCodigo(string $correo, string $nombre, string $codigo): string {
     if (!enviarPorServidor($correo, $asunto, $html, (string)($c['correo_envio'] ?? ''))) {
         throw new RuntimeException('No se pudo enviar el correo' . ($falloMicrosoft !== '' ? ' (Microsoft: ' . $falloMicrosoft . ')' : '') . ' ni con el correo del servidor.');
     }
+    $GLOBALS['envio_info'] = ['via' => 'servidor', 'fallo' => $falloMicrosoft, 'seg' => round(microtime(true) - $inicio, 1)];
     return 'servidor';
 }
 function enviarPorMicrosoft(string $correo, string $asunto, string $html): void {
@@ -429,7 +439,8 @@ function cerrarSesion(): void {
 }
 
 // ---------- procesos (solo campos que el cliente puede ver) ----------
-// [nombre interno real (el que confirmó la app en config.js) o null, pistas por nombre visible]. Lo que el cliente NO recibe: Observaciones, contingencia, valores y honorarios, enlaces internos.
+// [nombre interno real (el que confirmó la app en config.js) o null, pistas por nombre visible]. Lo que el cliente NO recibe: Observaciones, contingencia, honorarios y enlaces internos.
+// Valores: SOLO los de reclamo de sus propios procesos (2026-11-13: son las columnas de valores de la carta/Excel del informe que se le entrega); nada del dinero del despacho (honorarios, contingencia).
 const CAMPOS_PROCESO = [
     'Radicado'                  => [null, ['numero corto', 'numero_corto', 'radicado']],
     'Cliente'                   => [null, ['cliente']],
@@ -460,7 +471,16 @@ const CAMPOS_PROCESO = [
     'OrigenTipoGlosa'           => ['Origen_x002f_Tipo_x0020_Glosa', ['origen tipo glosa', 'tipo glosa']],
     'HistoricoNumerosCompletos' => ['Historico_x0020_numeros_x0020_co', ['historico numeros completos']],
     'Historico'                 => ['Historico', ['historico']],
+    // Valores de los reclamos del propio cliente (columnas «Valor radicación», «Valor Reforma», «Valor Cartera actual» y «Monto Medida Cautelar» del Excel de Informes). «Valor Cartera actual» es la MISMA columna que «Valor Actual Demanda».
+    // Enlace a la carpeta del proceso PARA EL CLIENTE (la columna «Link cliente», la misma del «Enlace Proceso» de los Excel); no se entrega el link interno de la carpeta del despacho.
+    'EnlaceProceso'             => ['LinkCliente', ['link cliente']],
+    'ValorRadicacion'           => ['Valor_x0020_radicacion', ['valor radicacion']],
+    'ValorReforma'              => ['Valor_x0020_Reforma', ['valor reforma']],
+    'ValorActualDemanda'        => ['Valor_x0020_Actual_x0020_Demanda', ['valor actual demanda', 'valor cartera actual']],
+    'ValorCarteraActual'        => ['Valor_x0020_Actual_x0020_Demanda', ['valor actual demanda', 'valor cartera actual']],
+    'MontoMedidaCautelar'       => ['Monto_x0020_Medida_x0020_Cautela', ['monto medida cautelar']],
 ];
+const CAMPOS_DINERO_PROCESO = ['ValorRadicacion', 'ValorReforma', 'ValorActualDemanda', 'ValorCarteraActual', 'MontoMedidaCautelar'];
 const CAMPOS_FECHA_PROCESO = ['FechaUltimoEstado', 'FechaAdmision', 'FechaContestacion', 'FechaInstancia', 'FechaReformaDemanda', 'FechaTerminacion', 'RadicacionProceso'];
 const CAMPOS_TEXTO_LARGO = ['Estado' => 3000, 'Historico' => 8000, 'HistoricoNumerosCompletos' => 1500];
 
@@ -532,6 +552,9 @@ function procesosTodos(): array {
         $f = $it['fields'] ?? [];
         $p = ['id' => (string)$it['id']];
         foreach ($mapa as $clave => $interno) $p[$clave] = $interno ? textoCampo($f[$interno] ?? '') : '';
+        // Los enlaces del sistema anterior venían envueltos en «#»: se limpian.
+        $p['EnlaceProceso'] = trim((string)($p['EnlaceProceso'] ?? ''), "# \t\r\n");
+        foreach (CAMPOS_DINERO_PROCESO as $clave) { $crudo = $mapa[$clave] ? ($f[$mapa[$clave]] ?? '') : ''; if (is_int($crudo) || is_float($crudo)) $p[$clave] = number_format((float)$crudo, 2, '.', ''); }
         foreach (CAMPOS_TEXTO_LARGO as $clave => $max) $p[$clave] = mb_substr(sinHtml($p[$clave]), 0, $max);
         foreach (CAMPOS_FECHA_PROCESO as $clave) if ($p[$clave] !== '') $p[$clave] = fechaIso($p[$clave]);
         $p['Desistimientos'] = $des[$p['id']] ?? [];

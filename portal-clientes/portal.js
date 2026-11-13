@@ -5,6 +5,8 @@
   var MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
   var estado = { equipo: false, opciones: [], como: '', clientes: [], elegido: 'todos', grupo: false, panel: 'procesos', procesos: [], tutelas: [], cargado: {}, demo: false, correo: '' };
 
+  var filtroVT = 'todos';   // 'todos' | 'vigentes' | 'terminados'
+  function esTerminado(p){ return /termin/i.test(p.EstadoVT || ''); }
   function api(accion, cuerpo, query){
     var url = 'api.php?a=' + accion + (query || '');
     var opciones = cuerpo ? { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Portal': '1' }, body: JSON.stringify(cuerpo), credentials: 'same-origin' }
@@ -33,8 +35,8 @@
     api('solicitar', { correo: correo }).then(function(j){
       $('btn-pedir').disabled = false;
       if(!j.ok){ errorLogin(j.error || 'No pudimos enviar el código.'); return; }
-      estado.correo = correo;
-      $('msg-codigo').textContent = j.mensaje;
+      estado.correo = correo; recordarCorreo(correo.trim().toLowerCase());
+      $('msg-codigo').textContent = j.mensaje + (j.detalle_equipo ? '  [Equipo Lexara: ' + j.detalle_equipo + ']' : '');
       var d = $('codigo-demo');
       if(j.codigo_demo){ d.textContent = 'Modo demo: su código es ' + j.codigo_demo; d.hidden = false; } else { d.hidden = true; }
       $('form-correo').hidden = true; $('form-codigo').hidden = false; $('login-ayuda').hidden = true;
@@ -56,6 +58,22 @@
   $('btn-salir').addEventListener('click', function(){ api('salir', {}).then(function(){ location.reload(); }); });
 
   // ---------- estructura ----------
+  // ---------- ayuda para escribir el correo: completa el dominio mientras se escribe y recuerda los correos usados en este navegador ----------
+  var DOMINIOS_COMUNES = ['gmail.com', 'hotmail.com', 'outlook.com', 'outlook.es', 'yahoo.com', 'yahoo.es', 'live.com', 'icloud.com', 'lexaraabogados.com'];
+  var CLAVE_CORREOS = 'lexaraPortal.correos.v1';
+  function correosRecordados(){ try{ var v = JSON.parse(localStorage.getItem(CLAVE_CORREOS)); return Array.isArray(v) ? v : []; }catch(e){ return []; } }
+  function recordarCorreo(c){ try{ var l = correosRecordados().filter(function(x){ return x !== c; }); l.unshift(c); localStorage.setItem(CLAVE_CORREOS, JSON.stringify(l.slice(0, 5))); }catch(e){} }
+  function sugerirCorreo(){
+    var dl = $('correos-sugeridos'); if(!dl) return; dl.textContent = '';
+    var v = $('correo').value.trim().toLowerCase(); if(!v) return;
+    var i = v.indexOf('@'), usuario = i < 0 ? v : v.slice(0, i), parte = i < 0 ? '' : v.slice(i + 1), vistos = {}, lista = [];
+    function poner(c){ if(!vistos[c] && c !== v){ vistos[c] = true; lista.push(c); } }
+    correosRecordados().forEach(function(c){ if(c.indexOf(v) === 0) poner(c); });
+    if(usuario) DOMINIOS_COMUNES.forEach(function(d){ if(d.indexOf(parte) === 0) poner(usuario + '@' + d); });
+    lista.slice(0, 8).forEach(function(c){ var o = document.createElement('option'); o.value = c; dl.appendChild(o); });
+  }
+  $('correo').addEventListener('input', sugerirCorreo);
+  $('correo').addEventListener('focus', sugerirCorreo);
   function iniciar(){
     api('sesion', null, estado.como ? '&como=' + encodeURIComponent(estado.como) : '').then(function(s){
       if(!s.ok){ mostrar('login'); if(s._estado >= 500) errorLogin(s.error || 'El portal no está disponible en este momento.'); return; }
@@ -69,6 +87,22 @@
     }).catch(function(){ mostrar('login'); });
   }
   // ---------- equipo Lexara: ver el portal como un cliente ----------
+  // Estado e histórico (2026-11-13, pedido del usuario: «un solo espacio por línea», sin huecos desordenados): cada anotación va en su propio renglón con el mismo espacio entre una y otra;
+  // las líneas vacías de más se descartan y la fecha con que empieza cada anotación (19-12-2023, 9/01/2024…) se resalta. Todo con textContent: nunca HTML.
+  var RE_FECHA_INICIO = /^(\d{1,2}[-\/.]\d{1,2}[-\/.]\d{2,4})(\b[\s\S]*)$/;
+  function pintarLineas(cont, texto, maximo){
+    var lineas = String(texto || '').split(/\r?\n/).map(function(l){ return l.replace(/\s+/g, ' ').trim(); }).filter(function(l){ return l !== ''; });
+    var usados = 0, cortado = false;
+    lineas.forEach(function(l){
+      if(cortado) return;
+      if(maximo && usados + l.length > maximo){ l = l.slice(0, Math.max(0, maximo - usados)).replace(/\s+\S*$/, '') + '…'; cortado = true; }
+      usados += l.length;
+      var fila = el('div', 'linea-est'), m = RE_FECHA_INICIO.exec(l);
+      if(m){ fila.appendChild(el('span', 'linea-fecha', m[1])); fila.appendChild(document.createTextNode(m[2])); } else fila.textContent = l;
+      cont.appendChild(fila);
+    });
+    return cont;
+  }
   function nombreOpcionActual(){ var o = estado.opciones.filter(function(x){ return x.id === estado.como; })[0]; return o ? o.nombre : ''; }
   function vistaElegirCliente(){
     try{ sessionStorage.removeItem('lexara-como'); }catch(e){}
@@ -145,7 +179,7 @@
     if(window.PortalExport) return Promise.resolve(window.PortalExport);
     if(!cargandoExport){
       cargandoExport = new Promise(function(resolve, reject){
-        var s = document.createElement('script'); s.src = 'exportar.js?v=20261111j';
+        var s = document.createElement('script'); s.src = 'exportar.js?v=20261113f';
         s.onload = function(){ window.PortalExport ? resolve(window.PortalExport) : reject(new Error('El generador de reportes no cargó bien.')); };
         s.onerror = function(){ cargandoExport = null; reject(new Error('No se pudo cargar el generador de reportes. Revise su conexión e intente de nuevo.')); };
         document.head.appendChild(s);
@@ -211,10 +245,10 @@
     [['Fecha de admisión', fechaCorta(p.FechaAdmision)], ['Fecha de contestación', fechaCorta(p.FechaContestacion)], ['Fecha instancia', fechaCorta(p.FechaInstancia)],
      ['Reforma de demanda', fechaCorta(p.FechaReformaDemanda)], ['Posible terminación', fechaCorta(p.FechaTerminacion)], ['Radicación del proceso', fechaCorta(p.RadicacionProceso)],
      ['Admitida', p.Admitida], ['Prueba pericial', p.PruebaPericial], ['Origen / tipo glosa', p.OrigenTipoGlosa], ['No. completo', p.NoCompleto], ['Apoderado', p.Apoderado], ['Tipo de acción', p.TipoAccion]
-    ].forEach(function(par){ var t = el('div', 'tile'); t.appendChild(el('span', 'tile-l', par[0])); t.appendChild(el('span', 'tile-v', par[1] || '—')); rejilla.appendChild(t); });
-    sec.appendChild(rejilla); cont.appendChild(sec);
+    ].forEach(function(par){ if(!par[1]) return; var t = el('div', 'tile'); t.appendChild(el('span', 'tile-l', par[0])); t.appendChild(el('span', 'tile-v', par[1])); rejilla.appendChild(t); });   // las casillas sin dato no se muestran
+    if(rejilla.children.length){ sec.appendChild(rejilla); cont.appendChild(sec); }
     if(p.Historico){
-      var h = el('section', 'mas-sec'); h.appendChild(el('h4', null, 'Histórico')); h.appendChild(el('div', 'historico', p.Historico)); cont.appendChild(h);
+      var h = el('section', 'mas-sec'); h.appendChild(el('h4', null, 'Histórico')); h.appendChild(pintarLineas(el('div', 'historico'), p.Historico, 0)); cont.appendChild(h);
     }
     var des = p.Desistimientos || [];
     if(des.length){
@@ -243,8 +277,11 @@
     var tit = el('div'); tit.appendChild(el('div', 'rad', p.Radicado || 'Sin radicado')); tit.appendChild(el('div', 'cli', p.Cliente || ''));
     cab.appendChild(tit);
     var der = el('div', 'p-cab-der');
+    var termina = esTerminado(p);
+    art.classList.add(termina ? 'terminado' : 'vigente');
+    der.appendChild(el('span', 'vt ' + (termina ? 'terminado' : 'vigente'), termina ? 'Terminado' : 'Vigente'));
     if(p.EtapaProcesal) der.appendChild(el('span', 'etapa', p.EtapaProcesal));
-    der.appendChild(el('span', 'sem ' + s.c, s.t));
+    if(!termina) der.appendChild(el('span', 'sem ' + s.c, s.t));
     cab.appendChild(der);
     var cuerpo = el('div', 'p-cuerpo');
     var dl = el('dl');
@@ -252,11 +289,17 @@
     var est = el('div', 'p-estado');
     est.appendChild(el('span', 'fecha', p.FechaUltimoEstado ? 'Último estado · ' + fechaCorta(p.FechaUltimoEstado) : 'Último estado'));
     var texto = p.Estado || 'Sin novedades registradas.';
-    est.appendChild(el('div', 'estado', texto.length > 600 ? texto.slice(0, 600).replace(/\s+\S*$/, '') + '…' : texto));
+    est.appendChild(pintarLineas(el('div', 'estado'), texto, 600));
     cuerpo.appendChild(dl); cuerpo.appendChild(est);
     // pie: reportes de ESTE proceso (a la izquierda) y «Ver más» (a la derecha)
     var pie = el('footer', 'p-pie');
     var izq = el('div', 'p-pie-izq');
+    // Enlace a la carpeta del proceso (como la columna «Carpeta» del Portal Lexara); solo si es un enlace web válido.
+    var enlaceProceso = String(p.EnlaceProceso || '').replace(/^[#\s]+|[#\s]+$/g, '');   // los enlaces del sistema anterior venían entre «#»
+    if(/^https?:\/\//i.test(enlaceProceso)){
+      var car = el('a', 'btn-informe carpeta', 'Carpeta del proceso ↗'); car.href = enlaceProceso; car.target = '_blank'; car.rel = 'noopener noreferrer'; car.title = 'Abrir la carpeta de este proceso';
+      izq.appendChild(car);
+    }
     izq.appendChild(boton('pdf', 'Ficha PDF', 'Ficha de este proceso en PDF', function(b){ ejecutar(b, function(X){ return X.ficha(p); }); }));
     izq.appendChild(boton('excel', 'Excel', 'Este proceso en Excel (formato de Informes)', function(b){ ejecutar(b, function(X){ return X.procesos('excel', p.Entidad, p.Cliente + ' ' + p.Radicado, [p]); }); }));
     var nDes = (p.Desistimientos || []).length;
@@ -276,8 +319,22 @@
   function procesosFiltrados(){
     var q = sinTildes($('buscar').value.trim());
     return estado.procesos.filter(function(p){
+      if(filtroVT === 'vigentes' && esTerminado(p)) return false;
+      if(filtroVT === 'terminados' && !esTerminado(p)) return false;
       return !q || sinTildes([p.Radicado, p.Despacho, p.Demandante, p.Demandado, p.Cliente, p.EtapaProcesal, p.Estado, p.NoCompleto].join(' ')).indexOf(q) >= 0;
     });
+  }
+  // Chips «Todos / Vigentes / Terminados» con su cantidad (el cliente ve ambos, bien marcados).
+  function pintarChipsVT(){
+    var cont = $('chips-vt'); if(!cont) return; cont.textContent = '';
+    var todos = estado.procesos.length, term = estado.procesos.filter(esTerminado).length, vig = todos - term;
+    [['todos', 'Todos', todos], ['vigentes', 'Vigentes', vig], ['terminados', 'Terminados', term]].forEach(function(c){
+      var b = el('button', 'chip-vt ' + c[0] + (filtroVT === c[0] ? ' activo' : ''), c[1] + ' '); b.type = 'button'; b.setAttribute('aria-pressed', String(filtroVT === c[0]));
+      b.appendChild(el('span', 'chip-n', String(c[2])));
+      b.addEventListener('click', function(){ filtroVT = c[0]; pintarChipsVT(); pintarProcesos(); });
+      cont.appendChild(b);
+    });
+    cont.hidden = !todos || !term;   // si todos son vigentes (o todos terminados) no hace falta el filtro
   }
   function pintarProcesos(){
     var lista = procesosFiltrados();
@@ -286,10 +343,11 @@
     $('vacio').hidden = lista.length > 0;
     $('conteo').textContent = lista.length + (lista.length === 1 ? ' proceso' : ' procesos');
     $('btn-procesos-excel').disabled = $('btn-procesos-pdf').disabled = !lista.length;
+    pintarChipsVT();
   }
   $('buscar').addEventListener('input', pintarProcesos);
-  $('btn-procesos-excel').addEventListener('click', function(){ var b = this, l = procesosFiltrados(); ejecutar(b, function(X){ return X.procesos('excel', entidadDe(l), nombreDe(l), l); }); });
-  $('btn-procesos-pdf').addEventListener('click', function(){ var b = this, l = procesosFiltrados(); ejecutar(b, function(X){ return X.procesos('pdf', entidadDe(l), nombreDe(l), l); }); });
+  $('btn-procesos-excel').addEventListener('click', function(){ var b = this, l = procesosFiltrados(); ejecutar(b, function(X){ return X.procesos('excel', entidadDe(l), nombreDe(l), l, { incluirTerminados: filtroVT === 'terminados' }); }); });
+  $('btn-procesos-pdf').addEventListener('click', function(){ var b = this, l = procesosFiltrados(); ejecutar(b, function(X){ return X.procesos('pdf', entidadDe(l), nombreDe(l), l, { incluirTerminados: filtroVT === 'terminados' }); }); });
 
   // ---------- resumen estadístico (barras de colores) ----------
   function tarjeta(valor, etiqueta, extra){
