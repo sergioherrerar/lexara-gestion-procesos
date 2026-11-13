@@ -25,6 +25,7 @@ import { Toast, ConfirmDialog } from './components/Feedback';
 import CargaInicialOverlay from './components/CargaInicialOverlay';
 import { cargarModulo, marcarCargaCorrecta } from './lib/cargaModulo';
 import { useAvisoVersionNueva } from './hooks/useAvisoVersionNueva';
+import { useNovedadesRama } from './hooks/useNovedadesRama';
 
 // Carga diferida (2026-10-05): Informes y Administración son los módulos más
 // pesados (generadores de PDF/Excel/Word) y no se usan en cada sesión — se
@@ -39,6 +40,10 @@ function CargandoModulo(){
 
 export default function App(){
   const app = useLexaraApp();
+  // Balanza de la Rama Judicial (2026-11-13): novedades de los procesos vigentes de la persona, revisadas una vez al día.
+  const nombreRama = app.liveMode ? (app.colaboradorActual?.Nombre || '') : '';
+  const rama = useNovedadesRama({ procesos: app.procesos, nombre: nombreRama, liveMode: app.liveMode, url: app.config?.RAMA_JUDICIAL_URL });
+  const [pestanaProceso, setPestanaProceso] = useState(null);
   useAvisoVersionNueva(app.notify);   // avisa si se publicó una versión nueva y esta pestaña sigue con la vieja
   useEffect(() => { marcarCargaCorrecta(); }, []);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -111,6 +116,11 @@ export default function App(){
       />
       <div className="main">
         <Topbar
+          ramaDisponible={app.liveMode && !!nombreRama && !!app.config?.RAMA_JUDICIAL_URL}
+          novedadesRama={rama.novedades}
+          revisandoRama={rama.revisando}
+          onRevisarRama={rama.revisarAhora}
+          onAbrirProcesoRama={id => { setPestanaProceso('rama'); app.openProceso(id, { viewOnly: false }); }}
           nombreActual={app.liveMode ? (app.colaboradorActual?.Nombre || '') : ''}
           puedeVerEquipo={app.role === 'Administrador' || app.role === 'Jefe'}
           tutelas={app.tutelas}
@@ -319,6 +329,8 @@ export default function App(){
 
       <ProcesoDrawer
         proceso={app.activeProceso}
+        pestanaInicial={pestanaProceso}
+        onRamaVista={rama.marcarVista}
         clientes={app.clientes}
         colaboradores={app.colaboradores}
         facturas={app.facturas}
@@ -329,7 +341,7 @@ export default function App(){
         terminos={app.terminos}
         tiposAccion={app.tiposAccion}
         liveMode={app.liveMode}
-        onClose={app.closeDrawer}
+        onClose={() => { setPestanaProceso(null); app.closeDrawer(); }}
         onSave={app.saveProceso}
         onNavigateAway={app.rememberReturnToProceso}
         onCreateCliente={app.createCliente}

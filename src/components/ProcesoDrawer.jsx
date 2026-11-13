@@ -282,7 +282,7 @@ function renderGenericField(key, type, form, setField, canWrite){
 }
 const EMPTY_NEW_CLIENTE = {RazonSocial:"", Nit:"", Direccion:"", Telefono:"", Correo:""};
 
-export default function ProcesoDrawer({ proceso, clientes, colaboradores, facturas, ordenesCompra, formasPago, desistimientos, audiencias, terminos, tiposAccion, liveMode, onClose, onSave, onNavigateAway, onCreateCliente, onOpenFactura, onPrintFactura, onCreateFactura, onOpenOrdenCompra, onPrintOrdenCompra, onCreateOrdenCompra, onOpenFormaPago, onCreateFormaPago, onOpenDesistimiento, onCreateDesistimiento, onCrearAudiencia, onEditarAudiencia, onEliminarAudiencia, onCrearTermino, onEditarTermino, onEliminarTermino, onCreateTipoTermino, saving, canWrite = true, config, notify }){
+export default function ProcesoDrawer({ pestanaInicial, onRamaVista, proceso, clientes, colaboradores, facturas, ordenesCompra, formasPago, desistimientos, audiencias, terminos, tiposAccion, liveMode, onClose, onSave, onNavigateAway, onCreateCliente, onOpenFactura, onPrintFactura, onCreateFactura, onOpenOrdenCompra, onPrintOrdenCompra, onCreateOrdenCompra, onOpenFormaPago, onCreateFormaPago, onOpenDesistimiento, onCreateDesistimiento, onCrearAudiencia, onEditarAudiencia, onEliminarAudiencia, onCrearTermino, onEditarTermino, onEliminarTermino, onCreateTipoTermino, saving, canWrite = true, config, notify }){
   const [form, setForm] = useState(null);
   const [showNewCliente, setShowNewCliente] = useState(false);
   const [newCliente, setNewCliente] = useState(EMPTY_NEW_CLIENTE);
@@ -465,7 +465,7 @@ export default function ProcesoDrawer({ proceso, clientes, colaboradores, factur
       setShowNewCliente(false);
       setNewCliente(EMPTY_NEW_CLIENTE);
       setNuevoClienteError("");
-      setActiveTab('datos');
+      setActiveTab(pestanaInicial || 'datos');
     } else {
       setForm(null);
     }
@@ -822,7 +822,7 @@ export default function ProcesoDrawer({ proceso, clientes, colaboradores, factur
           )}
           {activeTab === 'rama' && (
             <RamaJudicialTab
-              proceso={proceso} historico={form.Historico || ''} fechaEstado={form.FechaUltimoEstado} canWrite={canWrite} config={config} notify={notify}
+              proceso={proceso} historico={form.Historico || ''} fechaEstado={form.FechaUltimoEstado} canWrite={canWrite} config={config} notify={notify} onRamaVista={onRamaVista}
               onAgregarAlHistorico={html => setField('Historico', (form.Historico || '') + html)}
               onActualizar={({ historicoHtml, estado, fechaEstado }) => {
                 setForm(prev => ({ ...prev, Historico: (prev.Historico || '') + historicoHtml, ...(estado !== null ? { Estado: estado, FechaUltimoEstado: fechaEstado } : {}) }));

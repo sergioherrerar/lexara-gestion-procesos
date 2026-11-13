@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import IconButton from './IconButton';
+import BalanzaRama from './BalanzaRama';
 import MiniCalendarioAudienciasTerminos from './MiniCalendarioAudienciasTerminos';
 import miniVerdeOscuro from '../assets/Mini verde oscuro.png';
 import { pendientesDePersona } from '../lib/pendientesPersona';
@@ -162,7 +163,7 @@ function CampanaPendientes({ nombre, esDemo, puedeVerEquipo, audiencias, termino
   );
 }
 
-export default function Topbar({ nombreActual, puedeVerEquipo, tutelas, onIrAVencimientos, view, liveMode, searchQuery, onSearch, onOpenMobileNav, onRefresh, refreshing, cargandoInicial, audiencias, terminos, pendientes, procesos, tiposAccion, colaboradores, onCrearEventoPersonalizado, onListarOtrosEventosDelMes, onCrearAudiencia, onCrearTermino, onCreateTipoTermino, onCrearPendiente, canWrite, notify }){
+export default function Topbar({ novedadesRama, revisandoRama, ramaDisponible, onAbrirProcesoRama, onRevisarRama, nombreActual, puedeVerEquipo, tutelas, onIrAVencimientos, view, liveMode, searchQuery, onSearch, onOpenMobileNav, onRefresh, refreshing, cargandoInicial, audiencias, terminos, pendientes, procesos, tiposAccion, colaboradores, onCrearEventoPersonalizado, onListarOtrosEventosDelMes, onCrearAudiencia, onCrearTermino, onCreateTipoTermino, onCrearPendiente, canWrite, notify }){
   const cargando = refreshing || cargandoInicial;
   // Búsqueda con espera de 250ms: el texto del cuadro se actualiza al instante,
   // pero el filtrado de las tablas (miles de filas, y todo App se vuelve a
@@ -215,6 +216,7 @@ export default function Topbar({ nombreActual, puedeVerEquipo, tutelas, onIrAVen
         onCrearPendiente={onCrearPendiente} canWrite={canWrite} notify={notify}
       />
       <div className="topbar-derecha">
+      <BalanzaRama disponible={ramaDisponible} novedades={novedadesRama} revisando={revisandoRama} onAbrir={onAbrirProcesoRama} onRevisar={onRevisarRama} />
       <CampanaPendientes nombre={nombreActual} esDemo={!liveMode} puedeVerEquipo={puedeVerEquipo} tutelas={tutelas} audiencias={audiencias} terminos={terminos} pendientes={pendientes} procesos={procesos} onIrAVencimientos={onIrAVencimientos} />
       <div className="search-bar">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>

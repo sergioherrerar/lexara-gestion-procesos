@@ -40,6 +40,25 @@ exports.handler = async (event) => {
   let entrada = null;
   try { entrada = JSON.parse(event.body || ''); } catch (e) { /* inválida */ }
   if (!entrada || typeof entrada !== 'object') return responder(400, { ok: false, error: 'Solicitud inválida.' });
+  // Modo lote (2026-11-13, novedades de la campana): { "radicados": [...hasta 20] } → solo la fecha de la última actuación de cada uno (una consulta por radicado).
+  if (Array.isArray(entrada.radicados)) {
+    const lista = [...new Set(entrada.radicados.map(r => String(r || '').replace(/\D+/g, '')).filter(r => r.length === 23))].slice(0, 20);
+    const resultados = {};
+    let i = 0;
+    const trabajador = async () => {
+      while (i < lista.length) {
+        const rad = lista[i++];
+        const r = await pedirRama('/Procesos/Consulta/NumeroRadicacion?numero=' + rad + '&SoloActivos=false&pagina=1');
+        if (r.json === null || r.codigo >= 400 || !r.json.procesos) { resultados[rad] = { ok: false, error: r.falla || 'código ' + r.codigo }; continue; }
+        const p = r.json.procesos[0];
+        resultados[rad] = p
+          ? { ok: true, idProceso: p.idProceso || null, despacho: String(p.despacho || '').trim(), fechaUltimaActuacion: p.fechaUltimaActuacion || null, esPrivado: !!p.esPrivado }
+          : { ok: true, sinProceso: true };
+      }
+    };
+    await Promise.all([trabajador(), trabajador(), trabajador(), trabajador()]);
+    return responder(200, { ok: true, resultados });
+  }
   const radicado = String(entrada.radicado || '').replace(/\D+/g, '');
   if (radicado.length !== 23) return responder(400, { ok: false, error: 'El número de radicación debe tener 23 dígitos (el «No. completo» del proceso).' });
   const maxPaginas = Math.max(1, Math.min(6, parseInt(entrada.paginas, 10) || 3));

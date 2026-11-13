@@ -33,7 +33,7 @@ function FilaActuacion({ act, nuevo, enHistorico, canWrite, onAgregar }){
   );
 }
 
-export default function RamaJudicialTab({ proceso, historico, fechaEstado, canWrite, config, notify, onAgregarAlHistorico, onActualizar }){
+export default function RamaJudicialTab({ proceso, historico, fechaEstado, canWrite, config, notify, onAgregarAlHistorico, onActualizar, onRamaVista }){
   const { principal, historicos } = useMemo(() => numerosDelProceso(proceso), [proceso]);
   const radicados = useMemo(() => [principal, ...historicos].filter(Boolean), [principal, historicos]);
   const [buscarHist, setBuscarHist] = useState(false);   // false: solo el número principal; true: también los del histórico
@@ -54,6 +54,12 @@ export default function RamaJudicialTab({ proceso, historico, fechaEstado, canWr
 
   // Al abrir la pestaña se consulta primero el número principal (el servidor limita las consultas y se recuerdan 10 minutos).
   useEffect(() => { if(principal) cargar(principal, false); }, [principal, cargar]);
+
+  // Al ver la Rama del proceso, su novedad en la balanza de la cabecera se da por vista.
+  useEffect(() => {
+    const fecha = resultados[principal]?.datos?.procesos?.[0]?.fechaUltimaActuacion;
+    if(principal && fecha && onRamaVista) onRamaVista(principal, fecha);
+  }, [resultados, principal, onRamaVista]);
 
   // Si el principal no aparece en la Rama, se pasa solo a los números del histórico.
   const resPrincipal = resultados[principal];

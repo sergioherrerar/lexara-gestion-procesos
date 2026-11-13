@@ -2248,3 +2248,10 @@
   .rama-bloque-pendiente .rama-cab{margin:0;}
   .rama-cab-acc{display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;}
   .drawer-head-acciones{margin-top:10px;}
+
+  /* Balanza de la Rama Judicial (2026-11-13) */
+  .balanza-rama-btn svg{width:26px; height:26px;}
+  .balanza-rama-btn.revisando svg{opacity:.55;}
+  .balanza-item{display:block; width:100%; text-align:left; background:#fff; border:0; border-bottom:1px solid var(--gris-linea); cursor:pointer; font:inherit;}
+  .balanza-item:hover{background:#f1f8f6;}
+  .balanza-pie{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 16px; border-top:1px solid var(--gris-linea); background:var(--gris-claro); font-size:11.5px; color:var(--texto-suave); line-height:1.4;}
