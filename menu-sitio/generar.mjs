@@ -93,7 +93,8 @@ for(const d of destinos){
   const navLink = `<link rel="stylesheet" href="${navCssRuta}?v=${navVersion}">`;
   if(/navidad\.css/.test(html)) html = html.replace(/<link rel="stylesheet" href="[^"]*navidad\.css[^"]*">/, () => navLink);
   else html = html.replace('</head>', () => navLink + '\n</head>');
-  const navTag = `<script src="${navJsRuta}?v=${navVersion}" data-logo="${d.logo}"></script>`;
+  const navLogoRuta = path.posix.join(path.posix.dirname(d.logo), 'logo-navidad.png');   // logo oficial recortado a su contenido, con más resolución útil para el cartel
+  const navTag = `<script src="${navJsRuta}?v=${navVersion}" data-logo="${navLogoRuta}"></script>`;
   if(/navidad\.js/.test(html)) html = html.replace(/<script src="[^"]*navidad\.js[^"]*"[^>]*><\/script>/, () => navTag);
   else html = html.replace('</body>', () => navTag + '\n</body>');
   fs.writeFileSync(ruta, html);
@@ -101,6 +102,7 @@ for(const d of destinos){
   fs.writeFileSync(path.join(carpeta, d.jsRuta), js);
   fs.writeFileSync(path.join(carpeta, navCssRuta), navCss);
   fs.writeFileSync(path.join(carpeta, navJsRuta), navJs);
+  fs.copyFileSync(path.join(raiz, 'navidad', 'logo-navidad.png'), path.join(carpeta, navLogoRuta));
   console.log('listo:', d.archivo, '(activo: ' + d.activo + ')');
 }
 console.log('versión', version);

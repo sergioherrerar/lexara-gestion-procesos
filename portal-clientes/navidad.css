@@ -1,19 +1,21 @@
 /* Papá Noel con su trineo halando el logo de Lexara (decoración que cruza la pantalla una vez). Ver navidad.js. */
-.nav-santa{ position:fixed; left:0; top:calc(var(--alto-menu-sitio, 86px) + 18px); z-index:1500; width:max-content; pointer-events:none; font-size:16px; will-change:transform; animation:nv-cruce 14s linear 1 forwards; }
+.nav-santa{ position:fixed; -webkit-font-smoothing:antialiased; left:0; top:calc(var(--alto-menu-sitio, 86px) + 18px); z-index:1500; width:max-content; pointer-events:none; font-size:16px; will-change:transform; animation:nv-cruce 14s linear 1 forwards; }
 .nav-santa-in{ display:flex; align-items:center; animation:nv-vuelo 1.7s ease-in-out infinite alternate; }
 .nav-cartel{ flex:none; display:flex; flex-direction:column; align-items:center; gap:.2em; padding:.7em 1.1em .55em; background:#fff; border:.16em solid #c8102e; border-radius:.5em; box-shadow:0 .5em 1.2em rgba(0,36,32,.28), inset 0 0 0 .16em #1f7a4d; transform-origin:100% 50%; animation:nv-ondea 1.1s ease-in-out infinite alternate; }
-.nav-cartel img{ display:block; height:3.6em; width:auto; }
+.nav-cartel img{ display:block; height:3.3em; width:auto; image-rendering:auto; backface-visibility:hidden; transform:translateZ(0); }
 .nav-cartel span{ font-family:'Prompt','Segoe UI',system-ui,sans-serif; font-weight:600; font-size:.72em; color:#c8102e; letter-spacing:.02em; white-space:nowrap; }
 .nv-cuerda{ flex:none; width:4.4em; height:auto; margin:0 -.1em; }
-.nv-trineo{ flex:none; width:27em; height:auto; overflow:visible; filter:drop-shadow(0 .4em .5em rgba(0,36,32,.25)); }
-.nv-pata path{ stroke:#6b4423; stroke-width:6; stroke-linecap:round; fill:none; }
-.nv-pata{ transform-box:fill-box; transform-origin:50% 0; animation:nv-pata .42s ease-in-out infinite alternate; }
-.nv-reno{ animation:nv-galope .42s ease-in-out infinite alternate; }
-.nv-reno-2{ animation-delay:-.2s; }
+.nv-trineo{ flex:none; width:31em; height:auto; overflow:visible; filter:drop-shadow(0 .4em .5em rgba(0,36,32,.25)); }
+.nv-reno{ animation:nv-galope .55s ease-in-out infinite alternate; }
+.nv-reno-2{ animation-delay:-.27s; }
 @keyframes nv-cruce{ from{ transform:translateX(-100%); } to{ transform:translateX(100vw); } }
 @keyframes nv-vuelo{ from{ transform:translateY(-.7em); } to{ transform:translateY(.7em); } }
-@keyframes nv-ondea{ from{ transform:rotate(-2.5deg) skewY(-1.5deg); } to{ transform:rotate(2.5deg) skewY(1.5deg); } }
-@keyframes nv-pata{ from{ transform:rotate(-24deg); } to{ transform:rotate(24deg); } }
-@keyframes nv-galope{ from{ transform:translateY(-1px); } to{ transform:translateY(3px); } }
+@keyframes nv-ondea{ from{ transform:translateY(-.25em); } to{ transform:translateY(.25em); } }
+@keyframes nv-galope{ from{ transform:translateY(-5px) rotate(-1deg); } to{ transform:translateY(6px) rotate(1.2deg); } }
 @media (max-width:980px){ .nav-santa{ top:calc(var(--alto-menu-sitio, 66px) + 14px); font-size:11px; animation-duration:11s; } }
 @media (prefers-reduced-motion:reduce){ .nav-santa{ display:none; } }
+
+/* la cuerda une el cartel con la parte de atrás del trineo a la misma altura */
+.nav-santa-in{ align-items:flex-start; }
+.nav-cartel{ margin-top:6.6em; }
+.nv-cuerda{ margin-top:8.1em; }
