@@ -28,8 +28,16 @@ try {
             if (!$esPost) salir(['error' => 'Método no permitido.'], 405);
             $correo = normalizar((string)($entrada['correo'] ?? ''));
             if (!filter_var($correo, FILTER_VALIDATE_EMAIL)) salir(['error' => 'Escriba un correo válido.'], 400);
-            if (!limitarIntentos('ip:' . ipCliente(), 20, 3600) || !limitarIntentos('mail:' . $correo, 5, 3600)) {
-                salir(['error' => 'Demasiados intentos. Espere un rato e intente de nuevo.'], 429);
+            // Límites (2026-11-12, pedido del usuario: «que se puedan enviar varios códigos, por lo menos tres, antes de que salga este error»):
+            //   · hasta 6 códigos realmente enviados por correo y hora (los intentos en que el envío falla NO gastan cupo);
+            //   · tope general de solicitudes por correo (15/h) y por IP (60/h: una oficina entera comparte la misma IP) contra abusos.
+            $maxCodigos = 6;
+            $pedidoOk = limitarIntentos('pedido:' . $correo, 15, 3600);
+            $ipOk = limitarIntentos('ipx:' . ipCliente(), 60, 3600);
+            $cupoOk = limitarIntentos('envio:' . $correo, $maxCodigos, 3600, false);
+            if (!$pedidoOk || !$ipOk || !$cupoOk) {
+                $min = !$cupoOk ? minutosDeEspera('envio:' . $correo, $maxCodigos, 3600) : 10;
+                salir(['error' => 'Ya le enviamos varios códigos. Para su seguridad, espere unos ' . $min . ' minuto' . ($min === 1 ? '' : 's') . ' e intente de nuevo (use el último código que le llegó).'], 429);
             }
             $mensaje = 'Si su correo tiene acceso, le enviamos un código. Revise su bandeja (y el correo no deseado).';
             $acceso = accesoDe($correo);
@@ -37,11 +45,26 @@ try {
             if ($acceso && (!empty($acceso['equipo']) || count($acceso['clientes']))) {
                 $codigo = (string)random_int(100000, 999999);
                 $codigos = leerJson('codigos.json');
-                foreach ($codigos as $k => $v) if ($v['exp'] < time()) unset($codigos[$k]);
-                $codigos[$correo] = ['hash' => claveHash($correo . '|' . $codigo), 'exp' => time() + (int)(cfg()['codigo_minutos'] ?? 10) * 60, 'intentos' => 0];
+                // Se limpian los vencidos y se guardan los ÚLTIMOS 3 códigos vigentes de este correo: si el correo del primero llega tarde, ese código todavía sirve.
+                foreach ($codigos as $k => $v) { $v = codigosVigentes($v); if ($v) $codigos[$k] = $v; else unset($codigos[$k]); }
+                $previos = codigosVigentes($codigos[$correo] ?? []);
+                $previos['lista'][] = ['hash' => claveHash($correo . '|' . $codigo), 'exp' => time() + (int)(cfg()['codigo_minutos'] ?? 10) * 60];
+                $previos['lista'] = array_slice($previos['lista'], -3);
+                $previos['intentos'] = 0;
+                $codigos[$correo] = $previos;
                 escribirJson('codigos.json', $codigos);
-                if (esDemo()) { $respuesta['codigo_demo'] = $codigo; }   // SOLO modo demo: nunca en modo real
-                else { enviarCodigo($correo, $acceso['nombre'], $codigo); }
+                if (esDemo()) { $respuesta['codigo_demo'] = $codigo; anotarIntento('envio:' . $correo); }   // SOLO modo demo: nunca en modo real
+                else {
+                    try { $por = enviarCodigo($correo, $acceso['nombre'], $codigo); if ($por !== 'microsoft') registrarError('Código a ' . $correo . ' enviado por el correo del servidor (Microsoft no respondió).'); anotarIntento('envio:' . $correo); }
+                    catch (Throwable $e) {
+                        // El código no se pudo mandar: se descarta (no queda uno válido que nadie recibió), se anota el detalle y se avisa claro.
+                        error_log('portal-clientes: ' . $e->getMessage());
+                        registrarError('Envío del código a ' . $correo . ' — ' . $e->getMessage());
+                        array_pop($codigos[$correo]['lista']); if (!$codigos[$correo]['lista']) unset($codigos[$correo]); escribirJson('codigos.json', $codigos);
+                        $detalle = !empty($acceso['equipo']) ? ' (Detalle para el equipo: ' . $e->getMessage() . ')' : '';
+                        salir(['ok' => false, 'error' => 'No pudimos enviarle el código por correo en este momento. Intente de nuevo en unos minutos; si sigue igual, avise al equipo de Lexara.' . $detalle], 502);
+                    }
+                }
             }
             salir($respuesta);
         }
@@ -50,12 +73,16 @@ try {
             $correo = normalizar((string)($entrada['correo'] ?? ''));
             $codigo = preg_replace('/\D/', '', (string)($entrada['codigo'] ?? ''));
             $codigos = leerJson('codigos.json');
-            $r = $codigos[$correo] ?? null;
+            $r = codigosVigentes($codigos[$correo] ?? []);
             $malo = ['error' => 'El código no es correcto o ya venció. Pida uno nuevo.'];
-            if (!$r || $r['exp'] < time()) salir($malo, 401);
-            if ($r['intentos'] >= 5) { unset($codigos[$correo]); escribirJson('codigos.json', $codigos); salir($malo, 401); }
-            if (!hash_equals($r['hash'], claveHash($correo . '|' . $codigo))) {
-                $codigos[$correo]['intentos']++;
+            if (!$r) salir($malo, 401);
+            if (($r['intentos'] ?? 0) >= 5) { unset($codigos[$correo]); escribirJson('codigos.json', $codigos); salir($malo, 401); }
+            $propuesto = claveHash($correo . '|' . $codigo);
+            $acierta = false;
+            foreach ($r['lista'] as $item) if (hash_equals($item['hash'], $propuesto)) $acierta = true;
+            if (!$acierta) {
+                $r['intentos'] = ($r['intentos'] ?? 0) + 1;
+                $codigos[$correo] = $r;
                 escribirJson('codigos.json', $codigos);
                 salir($malo, 401);
             }

@@ -35,6 +35,10 @@ return [
     // Correo desde el que sale el código (debe existir en tu Microsoft 365).
     'correo_envio' => 'soporte@lexaraabogados.com',
 
+    // Cómo sale el código: 'auto' (por defecto: primero Microsoft 365 y, si no responde en 10 s, el correo del propio servidor de cPanel),
+    // 'microsoft' (solo Microsoft) o 'servidor' (solo el correo del servidor: sin Microsoft, instantáneo).
+    'envio' => 'auto',
+
     // Minutos que vale el código y horas que dura la sesión.
     'codigo_minutos' => 10,
     'sesion_horas'   => 8,

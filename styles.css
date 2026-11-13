@@ -97,7 +97,7 @@
     padding:40px;
   }
   .login-box{width:100%; max-width:360px;}
-  #login-screen{position:relative;}
+  #login-screen{position:relative; min-height:calc(100vh - var(--alto-menu-sitio, 86px));}   /* debajo del menú principal del sitio */
   .login-inicio{position:absolute; top:16px; right:20px; z-index:3; text-decoration:none; font-size:13.5px; font-weight:700; color:var(--verde-oscuro); background:#fff; border:1px solid var(--gris-linea, #e4e4e1); border-radius:99px; padding:7px 16px; box-shadow:0 1px 3px rgba(0,30,26,.10);}
   .login-inicio:hover{border-color:var(--verde-claro); background:#f2faf9;}
   .brand-logo-wrap{margin-bottom:36px; display:flex; justify-content:center;}

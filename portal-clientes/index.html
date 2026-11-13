@@ -6,13 +6,43 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Portal de clientes — Lexara Abogados</title>
 <link rel="icon" href="logo.png">
-<link rel="stylesheet" href="portal.css?v=20261111j">
+<link rel="stylesheet" href="portal.css?v=20261113a">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="menu-sitio.css?v=984c4750">
 </head>
 <body>
 
+<!--MENU-SITIO-->
+<header class="msitio" id="menu-sitio" hidden>
+  <div class="msitio-in">
+    <a class="msitio-logo" href="https://www.lexaraabogados.com/" aria-label="Lexara Abogados — ir al inicio"><img src="logo.png" alt="Lexara Abogados"></a>
+    <nav class="msitio-nav" id="msitio-nav" aria-label="Menú principal de Lexara Abogados">
+      <ul>
+        <li><a href="https://www.lexaraabogados.com/">Inicio</a></li>
+        <li><a href="https://www.lexaraabogados.com/quienes-somos">¿Quiénes somos?</a></li>
+        <li class="tiene-sub"><a href="https://www.lexaraabogados.com/#servicios" class="msitio-sub-btn" aria-haspopup="true" aria-expanded="false">Servicios <svg class="msitio-flecha" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 4.2 6 8l4-3.8"/></svg></a>
+          <ul class="msitio-sub">
+            <li><a href="https://www.lexaraabogados.com/servicios-representacion-judicial/">Representación Judicial</a></li>
+            <li><a href="https://www.lexaraabogados.com/asesoria-y-consultoria/">Asesoría y consultoría</a></li>
+            <li><a href="https://www.lexaraabogados.com/auditoria-legal-laboral/">Auditoría legal laboral</a></li>
+            <li><a href="https://www.lexaraabogados.com/cobro-de-cartera/">Cobro de Cartera</a></li>
+            <li><a href="https://www.lexaraabogados.com/capacitacion/">Capacitación</a></li>
+          </ul></li>
+        <li><a href="https://www.lexaraabogados.com/portal-clientes/" class="activo" aria-current="page">Portal Clientes</a></li>
+        <li><a href="https://www.lexaraabogados.com/app/lexara-gestion-procesos.html">Portal lexara</a></li>
+        <li><a href="https://www.lexaraabogados.com/lexara-al-dia/">Lexara al Día</a></li>
+        <li><a href="https://www.lexaraabogados.com/links/">Redes Sociales</a></li>
+      </ul>
+    </nav>
+    <button type="button" class="msitio-burger" aria-label="Abrir el menú" aria-expanded="false" aria-controls="msitio-nav"><span></span><span></span><span></span></button>
+  </div>
+</header>
+<!--/MENU-SITIO-->
+
 <!-- Ingreso -->
 <main id="vista-login" class="login" hidden>
-  <a class="login-inicio" href="https://www.lexaraabogados.com"><span aria-hidden="true">⌂</span> Inicio</a>
   <section class="login-marca">
     <img src="logo.png" alt="Lexara Abogados" class="login-logo">
     <p class="login-lema">Siga el avance de sus procesos, en un solo lugar.</p>
@@ -139,6 +169,7 @@
   </div>
 </div>
 
-<script src="portal.js?v=20261111j"></script>
+<script src="portal.js?v=20261113a"></script>
+<script src="menu-sitio.js?v=984c4750"></script>
 </body>
 </html>

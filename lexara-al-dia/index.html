@@ -7,24 +7,46 @@
 <meta name="description" content="Lexara al Día, de MD Abogados SAS: noticias, videos, reels y publicaciones en un solo lugar.">
 <link rel="icon" href="assets/img/logo.png">
 <link rel="stylesheet" href="assets/css/estilos.css?v=7">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/menu-sitio.css?v=984c4750">
 </head>
 <body>
 
-<header class="barra">
-  <a class="barra-marca" href="https://www.lexaraabogados.com" aria-label="Lexara Abogados — ir al inicio"><img src="assets/img/logo.png" alt="Lexara Abogados"></a>
-  <nav class="barra-nav" aria-label="Principal">
-    <a href="#publicaciones">Publicaciones</a>
-    <a href="#redes">Nuestras redes</a>
-    <div class="campana" id="campana" hidden>
+<!--MENU-SITIO-->
+<header class="msitio" id="menu-sitio">
+  <div class="msitio-in">
+    <a class="msitio-logo" href="https://www.lexaraabogados.com/" aria-label="Lexara Abogados — ir al inicio"><img src="assets/img/logo.png" alt="Lexara Abogados"></a>
+    <nav class="msitio-nav" id="msitio-nav" aria-label="Menú principal de Lexara Abogados">
+      <ul>
+        <li><a id="enlace-inicio" href="https://www.lexaraabogados.com/">Inicio</a></li>
+        <li><a href="https://www.lexaraabogados.com/quienes-somos">¿Quiénes somos?</a></li>
+        <li class="tiene-sub"><a href="https://www.lexaraabogados.com/#servicios" class="msitio-sub-btn" aria-haspopup="true" aria-expanded="false">Servicios <svg class="msitio-flecha" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 4.2 6 8l4-3.8"/></svg></a>
+          <ul class="msitio-sub">
+            <li><a href="https://www.lexaraabogados.com/servicios-representacion-judicial/">Representación Judicial</a></li>
+            <li><a href="https://www.lexaraabogados.com/asesoria-y-consultoria/">Asesoría y consultoría</a></li>
+            <li><a href="https://www.lexaraabogados.com/auditoria-legal-laboral/">Auditoría legal laboral</a></li>
+            <li><a href="https://www.lexaraabogados.com/cobro-de-cartera/">Cobro de Cartera</a></li>
+            <li><a href="https://www.lexaraabogados.com/capacitacion/">Capacitación</a></li>
+          </ul></li>
+        <li><a href="https://www.lexaraabogados.com/portal-clientes/">Portal Clientes</a></li>
+        <li><a href="https://www.lexaraabogados.com/app/lexara-gestion-procesos.html">Portal lexara</a></li>
+        <li><a href="https://www.lexaraabogados.com/lexara-al-dia/" class="activo" aria-current="page">Lexara al Día</a></li>
+        <li><a href="https://www.lexaraabogados.com/links/">Redes Sociales</a></li>
+      </ul>
+    </nav>
+    <div class="msitio-extra"><div class="campana" id="campana" hidden>
       <button type="button" class="campana-btn" id="campana-btn" aria-haspopup="true" aria-expanded="false" aria-controls="campana-panel" aria-label="Publicaciones nuevas">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
         <span class="campana-num" id="campana-num" hidden>0</span>
       </button>
       <div class="campana-panel" id="campana-panel" hidden role="region" aria-label="Publicaciones nuevas"></div>
-    </div>
-    <a class="boton-inicio" id="enlace-inicio" href="https://www.lexaraabogados.com"><span aria-hidden="true">⌂</span> Inicio</a>
-  </nav>
+    </div></div>
+    <button type="button" class="msitio-burger" aria-label="Abrir el menú" aria-expanded="false" aria-controls="msitio-nav"><span></span><span></span><span></span></button>
+  </div>
 </header>
+<!--/MENU-SITIO-->
 
 <main>
   <section class="hero">
@@ -78,5 +100,6 @@
 </div>
 
 <script src="assets/js/app.js?v=5"></script>
+<script src="assets/js/menu-sitio.js?v=984c4750"></script>
 </body>
 </html>

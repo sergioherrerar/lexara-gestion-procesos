@@ -1,0 +1,49 @@
+/* Menú principal de www.lexaraabogados.com repetido en el inicio de cada sección (2026-11-13). Copia única: se reparte con `node menu-sitio/generar.mjs`. */
+:root{ --alto-menu-sitio:86px; }
+.msitio, .msitio *{ box-sizing:border-box; }
+.msitio{
+  position:sticky; top:0; z-index:1000; height:var(--alto-menu-sitio); background:#fff; border-bottom:1px solid #e7ecea;
+  box-shadow:0 1px 10px rgba(0,40,35,.06); font-family:'Prompt','Segoe UI',system-ui,sans-serif; font-weight:500; line-height:1.2; text-align:left;
+}
+.msitio-in{ height:100%; max-width:1500px; margin:0 auto; padding:0 clamp(16px,4vw,56px); display:flex; align-items:center; gap:18px; }
+.msitio-logo{ display:flex; align-items:center; flex:none; }
+.msitio-logo img{ height:54px; width:auto; display:block; }
+.msitio-nav{ margin-left:auto; }
+.msitio-nav > ul{ list-style:none; margin:0; padding:0; display:flex; flex-direction:row; width:auto; align-items:center; gap:clamp(14px,2.4vw,40px); }
+.msitio-nav li{ position:relative; list-style:none; margin:0; padding:0; }
+.msitio-nav a{ display:inline-flex; align-items:center; gap:6px; text-decoration:none; color:#2d3331; font-size:15.5px; padding:8px 0; border-bottom:2px solid transparent; white-space:nowrap; transition:color .15s, border-color .15s; }
+.msitio-nav a:hover, .msitio-nav a:focus-visible{ color:#004941; }
+.msitio-nav a.activo{ color:#1c2624; border-bottom-color:#ef7d00; }
+.msitio-nav a:focus-visible, .msitio-burger:focus-visible{ outline:2px solid #52bbb5; outline-offset:3px; border-radius:4px; }
+.msitio-flecha{ width:11px; height:11px; flex:none; transition:transform .15s; }
+.msitio-sub-btn[aria-expanded="true"] .msitio-flecha{ transform:rotate(180deg); }
+.msitio-sub{ list-style:none; margin:0; padding:8px 0; width:auto; flex-direction:column; position:absolute; left:-14px; top:100%; min-width:250px; background:#fff; border:1px solid #e7ecea; border-top:2px solid #ef7d00; box-shadow:0 12px 28px rgba(0,40,35,.14); display:none; z-index:5; }
+.msitio-sub li{ display:block; }
+.msitio-sub a{ display:flex; width:100%; padding:10px 20px; border-bottom:0; white-space:normal; }
+.msitio-sub a:hover{ background:#f1f8f6; }
+.tiene-sub.sub-abierto > .msitio-sub{ display:block; }
+@media (hover:hover) and (min-width:981px){ .tiene-sub:hover > .msitio-sub{ display:block; } .tiene-sub:hover .msitio-flecha{ transform:rotate(180deg); } }
+.msitio-extra{ display:flex; align-items:center; flex:none; margin-left:6px; }
+.msitio-burger{ display:none; margin-left:auto; width:44px; height:44px; border:1px solid #dfe7e5; background:#fff; border-radius:10px; cursor:pointer; padding:0; flex-direction:column; align-items:center; justify-content:center; gap:5px; }
+.msitio-burger span{ display:block; width:20px; height:2px; background:#1c2624; border-radius:2px; transition:transform .2s, opacity .2s; }
+.msitio.abierto .msitio-burger span:nth-child(1){ transform:translateY(7px) rotate(45deg); }
+.msitio.abierto .msitio-burger span:nth-child(2){ opacity:0; }
+.msitio.abierto .msitio-burger span:nth-child(3){ transform:translateY(-7px) rotate(-45deg); }
+
+@media (max-width:980px){
+  :root{ --alto-menu-sitio:66px; }
+  .msitio-logo img{ height:44px; }
+  .msitio-burger{ display:flex; }
+  .msitio-extra{ margin-left:auto; }
+  .msitio-extra + .msitio-burger{ margin-left:0; }
+  .msitio-nav{ display:none; position:absolute; left:0; right:0; top:100%; margin:0; background:#fff; border-bottom:1px solid #e7ecea; box-shadow:0 16px 30px rgba(0,40,35,.14); max-height:calc(100vh - var(--alto-menu-sitio)); overflow:auto; }
+  .msitio.abierto .msitio-nav{ display:block; }
+  .msitio-nav > ul{ flex-direction:column; align-items:stretch; gap:0; padding:6px clamp(16px,4vw,56px) 14px; }
+  .msitio-nav > ul > li{ border-bottom:1px solid #eef2f1; }
+  .msitio-nav > ul > li:last-child{ border-bottom:0; }
+  .msitio-nav a{ display:flex; width:100%; justify-content:space-between; padding:14px 0; font-size:16px; border-bottom:0; }
+  .msitio-nav a.activo{ color:#004941; box-shadow:inset 3px 0 0 #ef7d00; padding-left:12px; }
+  .msitio-sub{ position:static; min-width:0; border:0; box-shadow:none; padding:0 0 8px 12px; }
+  .msitio-sub a{ padding:11px 8px; font-size:15px; color:#4d5754; }
+}
+@media (prefers-reduced-motion:reduce){ .msitio *{ transition:none !important; } }

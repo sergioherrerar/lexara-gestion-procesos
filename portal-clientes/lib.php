@@ -71,9 +71,9 @@ function sinHtml($t): string {
 function ipCliente(): string { return substr((string)($_SERVER['REMOTE_ADDR'] ?? '0'), 0, 64); }
 
 // ---------- Microsoft Graph con la clave de la aplicación (solo modo real) ----------
-function http(string $metodo, string $url, array $cabeceras, ?string $cuerpo = null): array {
+function http(string $metodo, string $url, array $cabeceras, ?string $cuerpo = null, int $tiempo = 40): array {
     $ch = curl_init($url);
-    curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_CUSTOMREQUEST => $metodo, CURLOPT_HTTPHEADER => $cabeceras, CURLOPT_TIMEOUT => 40]);
+    curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_CUSTOMREQUEST => $metodo, CURLOPT_HTTPHEADER => $cabeceras, CURLOPT_TIMEOUT => $tiempo]);
     if ($cuerpo !== null) curl_setopt($ch, CURLOPT_POSTFIELDS, $cuerpo);
     $r = curl_exec($ch);
     $codigo = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -286,36 +286,118 @@ function accesoDesdeClientes(string $correo, array $filas): ?array {
 }
 
 // ---------- códigos de ingreso ----------
-function limitarIntentos(string $clave, int $maximo, int $ventanaSeg): bool {
+/**
+ * Límite por ventana de tiempo. Con $anotar = true (por defecto) cuenta este intento; con false solo comprueba (para contar después, solo si de verdad se hizo).
+ * Devuelve false si ya se llegó al máximo.
+ */
+function limitarIntentos(string $clave, int $maximo, int $ventanaSeg, bool $anotar = true): bool {
     $l = leerJson('limites.json');
     $ahora = time();
     foreach ($l as $k => $v) $l[$k] = array_values(array_filter($v, fn($t) => $t > $ahora - 86400));
     $recientes = array_filter($l[$clave] ?? [], fn($t) => $t > $ahora - $ventanaSeg);
     if (count($recientes) >= $maximo) { escribirJson('limites.json', $l); return false; }
-    $l[$clave][] = $ahora;
+    if ($anotar) $l[$clave][] = $ahora;
     escribirJson('limites.json', $l);
     return true;
+}
+/**
+ * Códigos de ingreso vigentes de un correo: ['lista' => [['hash','exp'], …], 'intentos' => n]. Quita los vencidos; devuelve [] si no queda ninguno.
+ * Acepta también el formato anterior (un solo código con 'hash' y 'exp').
+ */
+function codigosVigentes($r): array {
+    if (!is_array($r) || !$r) return [];
+    $lista = $r['lista'] ?? (isset($r['hash']) ? [['hash' => $r['hash'], 'exp' => $r['exp'] ?? 0]] : []);
+    $lista = array_values(array_filter($lista, fn($i) => is_array($i) && isset($i['hash']) && ($i['exp'] ?? 0) >= time()));
+    return $lista ? ['lista' => $lista, 'intentos' => (int)($r['intentos'] ?? 0)] : [];
+}
+/** Anota un intento ya realizado (ver limitarIntentos con $anotar = false). */
+function anotarIntento(string $clave): void {
+    $l = leerJson('limites.json');
+    $ahora = time();
+    foreach ($l as $k => $v) $l[$k] = array_values(array_filter($v, fn($t) => $t > $ahora - 86400));
+    $l[$clave][] = $ahora;
+    escribirJson('limites.json', $l);
+}
+/** Minutos que faltan para que se libere un cupo de este límite (mínimo 1). */
+function minutosDeEspera(string $clave, int $maximo, int $ventanaSeg): int {
+    $l = leerJson('limites.json');
+    $ahora = time();
+    $recientes = array_values(array_filter($l[$clave] ?? [], fn($t) => $t > $ahora - $ventanaSeg));
+    if (count($recientes) < $maximo) return 1;
+    sort($recientes);
+    $liberaEn = $recientes[count($recientes) - $maximo] + $ventanaSeg - $ahora;
+    return max(1, (int)ceil($liberaEn / 60));
 }
 function claveHash(string $s): string {
     $sal = leerJson('sal.json');
     if (empty($sal['s'])) { $sal = ['s' => bin2hex(random_bytes(32))]; escribirJson('sal.json', $sal); }
     return hash_hmac('sha256', $s, $sal['s']);
 }
-function enviarCodigo(string $correo, string $nombre, string $codigo): void {
+/**
+ * Manda el código por correo. Config «envio» (opcional): 'auto' (por defecto: primero Microsoft 365 y, si no responde, el correo del propio servidor),
+ * 'microsoft' (solo Microsoft) o 'servidor' (solo el correo del servidor de cPanel, sin Microsoft). Devuelve por cuál salió.
+ */
+function enviarCodigo(string $correo, string $nombre, string $codigo): string {
     $c = cfg();
+    $modo = (string)($c['envio'] ?? 'auto');
     $minutos = (int)($c['codigo_minutos'] ?? 10);
+    $asunto = 'Su código de acceso — MD Abogados';
     $html = '<div style="font-family:Segoe UI,Arial,sans-serif;color:#1c2624;max-width:480px">'
         . '<p style="font-size:15px">' . ($nombre !== '' ? htmlspecialchars($nombre) . ', s' : 'S') . 'u código de acceso al portal de clientes de MD Abogados es:</p>'
         . '<p style="font-size:30px;font-weight:700;letter-spacing:6px;color:#004941;margin:14px 0">' . $codigo . '</p>'
         . '<p style="font-size:13px;color:#5c6b68">Vale ' . $minutos . ' minutos. Si usted no lo pidió, ignore este mensaje.</p></div>';
+    $falloMicrosoft = '';
+    if ($modo !== 'servidor') {
+        try { enviarPorMicrosoft($correo, $asunto, $html); return 'microsoft'; }
+        catch (Throwable $e) {
+            $falloMicrosoft = $e->getMessage();
+            registrarError('Envío por Microsoft a ' . $correo . ' — ' . $falloMicrosoft);
+            if ($modo === 'microsoft') throw $e;
+        }
+    }
+    if (!enviarPorServidor($correo, $asunto, $html, (string)($c['correo_envio'] ?? ''))) {
+        throw new RuntimeException('No se pudo enviar el correo' . ($falloMicrosoft !== '' ? ' (Microsoft: ' . $falloMicrosoft . ')' : '') . ' ni con el correo del servidor.');
+    }
+    return 'servidor';
+}
+function enviarPorMicrosoft(string $correo, string $asunto, string $html): void {
+    $c = cfg();
     $cuerpo = json_encode(['message' => [
-        'subject' => 'Su código de acceso — MD Abogados',
+        'subject' => $asunto,
         'body' => ['contentType' => 'HTML', 'content' => $html],
         'toRecipients' => [['emailAddress' => ['address' => $correo]]],
     ], 'saveToSentItems' => false], JSON_UNESCAPED_UNICODE);
+    // Si Microsoft no contesta en 10 s no se espera más (normalmente tarda 1 o 2 s): se pasa al correo del servidor sin hacer esperar al cliente.
     [$codigoHttp, $r] = http('POST', 'https://graph.microsoft.com/v1.0/users/' . rawurlencode($c['correo_envio']) . '/sendMail',
-        ['Authorization: Bearer ' . tokenGraph(), 'Content-Type: application/json'], $cuerpo);
-    if ($codigoHttp >= 300) throw new RuntimeException('No se pudo enviar el correo (' . $codigoHttp . ').');
+        ['Authorization: Bearer ' . tokenGraph(), 'Content-Type: application/json'], $cuerpo, 10);
+    if ($codigoHttp >= 300) {
+        $j = json_decode((string)$r, true);
+        $motivo = trim((string)($j['error']['code'] ?? '') . ' ' . (string)($j['error']['message'] ?? ''));
+        throw new RuntimeException('Microsoft no aceptó el envío del correo (HTTP ' . $codigoHttp . ($motivo !== '' ? ': ' . substr($motivo, 0, 200) : '') . ').');
+    }
+}
+/** Correo saliente del propio servidor (cPanel), sin Microsoft ni claves. Sale «de» el correo de envío del portal. */
+function enviarPorServidor(string $correo, string $asunto, string $html, string $desde): bool {
+    if (!filter_var($correo, FILTER_VALIDATE_EMAIL) || preg_match('/[\r\n]/', $correo)) return false;
+    if (!filter_var($desde, FILTER_VALIDATE_EMAIL)) $desde = 'portal@' . preg_replace('/^www\./', '', (string)($_SERVER['HTTP_HOST'] ?? 'localhost'));
+    // Mensaje «de verdad»: texto plano + HTML (los filtros de spam desconfían de los correos solo-HTML), cuerpo en base64 UTF-8 y Message-ID propio.
+    $texto = trim(html_entity_decode(strip_tags(preg_replace('#</(p|div)>#i', "\n", $html)), ENT_QUOTES, 'UTF-8'));
+    $dominio = substr(strrchr($desde, '@'), 1);
+    $limite = 'portal_' . bin2hex(random_bytes(8));
+    $cabeceras = "MIME-Version: 1.0\r\nContent-Type: multipart/alternative; boundary=\"" . $limite . "\"\r\nFrom: MD Abogados <" . $desde . ">\r\nReply-To: " . $desde
+        . "\r\nMessage-ID: <" . bin2hex(random_bytes(12)) . '@' . $dominio . ">\r\nX-Auto-Response-Suppress: All\r\nX-Mailer: portal-clientes";
+    $cuerpo = '--' . $limite . "\r\nContent-Type: text/plain; charset=UTF-8\r\nContent-Transfer-Encoding: base64\r\n\r\n" . chunk_split(base64_encode($texto))
+        . '--' . $limite . "\r\nContent-Type: text/html; charset=UTF-8\r\nContent-Transfer-Encoding: base64\r\n\r\n" . chunk_split(base64_encode($html))
+        . '--' . $limite . "--\r\n";
+    $asuntoCodificado = '=?UTF-8?B?' . base64_encode($asunto) . '?=';
+    if (!function_exists('mail')) return false;
+    $ok = @mail($correo, $asuntoCodificado, $cuerpo, $cabeceras, '-f' . $desde);
+    if (!$ok) $ok = @mail($correo, $asuntoCodificado, $cuerpo, $cabeceras);   // algunos servidores no permiten indicar el remitente de sobre
+    return (bool)$ok;
+}
+/** Deja el detalle técnico de un fallo en data/errores.log (carpeta protegida, nunca pública) para poder revisarlo sin mostrárselo al cliente. */
+function registrarError(string $mensaje): void {
+    @file_put_contents(dirDatos() . '/errores.log', '[' . date('Y-m-d H:i:s') . '] ' . $mensaje . "\n", FILE_APPEND | LOCK_EX);
 }
 
 // ---------- sesión ----------

@@ -12,7 +12,7 @@
     return fetch(url, opciones).then(function(r){ return r.json().catch(function(){ return { error: 'Respuesta no válida.' }; }).then(function(j){ j._estado = r.status; return j; }); });
   }
   function el(tag, clase, texto){ var e = document.createElement(tag); if(clase) e.className = clase; if(texto != null) e.textContent = texto; return e; }
-  function mostrar(vista){ $('vista-login').hidden = vista !== 'login'; $('vista-app').hidden = vista !== 'app'; }
+  function mostrar(vista){ $('vista-login').hidden = vista !== 'login'; $('vista-app').hidden = vista !== 'app'; var m = $('menu-sitio'); if(m) m.hidden = vista !== 'login'; }   // el menú principal del sitio solo en la pantalla de ingreso
   function errorLogin(t){ var e = $('login-error'); e.textContent = t || ''; e.hidden = !t; }
   function errorApp(t){ var e = $('app-error'); e.textContent = t || ''; e.hidden = !t; }
   function fechaCorta(iso){ var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || ''); return m ? m[3] + '/' + m[2] + '/' + m[1] : ''; }

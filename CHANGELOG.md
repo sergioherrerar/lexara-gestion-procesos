@@ -2,6 +2,12 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-11-13 (170)
+- **El menú principal de www.lexaraabogados.com ahora aparece igual en el inicio de cada sección** — pedido del usuario («clona ese menú principal para que aparezca en Portal Clientes, Lexara al Día, Portal Lexara y Redes Sociales… solo en el inicio de cada una»). Mismo menú del sitio (Inicio, ¿Quiénes somos?, Servicios con sus 5 opciones, Portal Clientes, Portal lexara, Lexara al Día, Redes Sociales), con tipografía Prompt (la del sitio), la sección actual subrayada en naranja y, en el celular, botón de tres rayas que abre la lista completa. Se ve en: la pantalla de ingreso del **Portal de clientes**, la pantalla de ingreso del **Portal Lexara** (esta app), la parte de arriba de **Lexara al Día** (con la campanita al lado) y la página de **Redes Sociales** (/links/). Al entrar al portal o a la app, el menú desaparece y queda la navegación de siempre.
+- Está en un solo lugar: carpeta `menu-sitio/` (`items.mjs` = los enlaces, `menu-sitio.css`/`.js` = diseño y comportamiento, `generar.mjs` = reparte el mismo menú a las páginas estáticas). Si el menú del sitio cambia, se cambia ahí y se corre `node menu-sitio/generar.mjs`. La app lo usa con el componente `SiteMenu.jsx`.
+- **Portal de clientes (envío del código, ya probado):** hasta 6 códigos por hora y correo (solo cuentan los que sí salieron; antes eran 5 y contaban los intentos fallidos), los últimos 3 códigos vigentes siguen sirviendo, y si Microsoft 365 no responde el código sale por el correo del propio servidor (opción `envio` en config.php: auto/microsoft/servidor). El detalle de los fallos queda en `data/errores.log`.
+- Para verlo en www.lexaraabogados.com hay que subir a cPanel: `portal-clientes`, `lexara-al-dia` y la página de enlaces (`public_html/links/`, que no está en git).
+
 ## 2026-11-12 (169)
 - **Informe «Redes sociales»: la fecha de Bustral queda al lado de «Publicada»** — pedido del usuario (captura con las dos columnas marcadas). El calendario del mes ahora va: Pieza, Aprobación, Cumplimiento, **Programada (Bustral)**, **Publicada**, Aprobar u objetar; así se compara de un vistazo (p. ej. «3 nov» frente a «4 nov»). En «Publicada» se agrega la hora cuando se conoce («4 nov · 8:23 a. m.»).
 
