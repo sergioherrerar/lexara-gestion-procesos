@@ -17,9 +17,12 @@ async function pedirRama(ruta) {
   const t = setTimeout(() => ctl.abort(), 20000);
   try {
     const res = await fetch(RAMA_BASE + ruta, { headers: { Accept: 'application/json', 'User-Agent': 'Mozilla/5.0 (compatible; LexaraConsulta/1.0)' }, signal: ctl.signal });
+    const texto = await res.text();
     let json = null;
-    try { json = await res.json(); } catch (e) { /* sin cuerpo válido */ }
-    return { json, codigo: res.status, falla: json === null ? 'respuesta no válida' : '' };
+    try { json = JSON.parse(texto); } catch (e) { /* sin cuerpo válido */ }
+    // Si la Rama no devuelve datos (bloqueo, error de página…) se informa el código y el comienzo de lo que contestó, para poder diagnosticarlo.
+    const resumen = String(texto).replace(/<[^>]*>/g, ' ').replace(/s+/g, ' ').trim().slice(0, 160);
+    return { json, codigo: res.status, falla: json === null ? 'respuesta no válida, código ' + res.status + (resumen ? ': «' + resumen + '»' : '') : '' };
   } catch (e) {
     return { json: null, codigo: 0, falla: e.name === 'AbortError' ? 'tiempo agotado' : (e.cause && e.cause.code) || e.message };
   } finally {

@@ -89,7 +89,8 @@ export const INITIAL_CONFIG = {
   // "Escrito con LexIA" desde el portal (Plan A, 2026-10-13): elegir el modelo y redactar la contestación u otros escritos con el menor gasto de créditos.
   ROBOT_ESCRITO_URL: "https://www.lexaraabogados.com/robot-tutelas/redactar-escrito.php",
   // Consulta de actuaciones en la Rama Judicial (2026-11-13): rama-judicial/consultar.php sube a public_html/rama-judicial/ (sin clave: lee la Consulta Nacional Unificada pública).
-  RAMA_JUDICIAL_URL: "https://www.lexaraabogados.com/rama-judicial/consultar.php",
+  // Plan B (2026-11-13): el hosting bloquea la salida por el puerto 448, así que la consulta corre en Netlify (rama-judicial/plan-b-netlify/). Si algún día el hosting abre el 448 se puede volver a https://www.lexaraabogados.com/rama-judicial/consultar.php
+  RAMA_JUDICIAL_URL: "https://fluffy-cendol-243176.netlify.app/.netlify/functions/consultar",
   ROBOT_SOLICITUD_PRUEBAS_URL: "https://www.lexaraabogados.com/robot-tutelas/solicitud-pruebas.php",
   SOLICITUD_PRUEBAS_FORMATO_NOMBRE: "FORMATO SOLICITUD DE PRUEBAS.docx",
   // "Guardar lectura de LexIA en OneDrive" (2026-09-29, pedido explícito del
