@@ -2,6 +2,10 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-11-13 (172)
+- **Papá Noel con su trineo halando el logo de Lexara, en las 4 secciones** — pedido del usuario («un papá Noel con su trineo pasando de izquierda a derecha halando el logo de Lexara Abogados apenas ingresen»). Aparece en la pantalla de ingreso del **Portal de clientes**, la del **Portal Lexara** (esta app), la parte de arriba de **Lexara al Día** y la página de **Redes Sociales**: Papá Noel en su trineo con dos renos que galopan (el de adelante con la nariz roja) cruza la pantalla de izquierda a derecha, debajo del menú, halando un cartel con el logo real de Lexara y «¡Felices fiestas!». Dura unos 14 s (11 s en celular), pasa una vez por visita a cada página (no se repite al recargar; con `?navidad=1` en la dirección se ve de nuevo), no recibe clics ni tapa nada, se retira solo y no se muestra con «reducir movimiento».
+- Una sola copia en la carpeta `navidad/` (`navidad.js` y `navidad.css`): `node menu-sitio/generar.mjs` la reparte a las páginas estáticas junto al menú y la app la usa con `src/components/NavidadSanta.jsx`.
+
 ## 2026-11-13 (171)
 - **Portal de clientes: la vista del equipo solo muestra los clientes que tienen procesos** — pedido del usuario. Un cliente sin procesos en el Portal Lexara ya no sale en la lista de «Equipo Lexara» (ni cuenta para Grupo Colmédica).
 - **Portal de clientes: procesos Vigentes y Terminados bien marcados** — cada tarjeta lleva la etiqueta VIGENTE (verde) o TERMINADO (gris) y, arriba, los filtros «Todos / Vigentes / Terminados» con su cantidad (solo si hay de ambos). Los informes de varios procesos siguen llevando los vigentes (como en la app); si el cliente elige «Terminados», el informe lleva los terminados.

@@ -11,6 +11,8 @@ const aqui = path.dirname(fileURLToPath(import.meta.url));
 const raiz = path.resolve(aqui, '..');
 const css = fs.readFileSync(path.join(aqui, 'menu-sitio.css'), 'utf8');
 const js = fs.readFileSync(path.join(aqui, 'menu-sitio.js'), 'utf8');
+const navCss = fs.readFileSync(path.join(raiz, 'navidad', 'navidad.css'), 'utf8');
+const navJs = fs.readFileSync(path.join(raiz, 'navidad', 'navidad.js'), 'utf8');
 const version = crypto.createHash('md5').update(css + js).digest('hex').slice(0, 8);
 const esc = t => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const FLECHA = '<svg class="msitio-flecha" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 4.2 6 8l4-3.8"/></svg>';
@@ -85,9 +87,20 @@ for(const d of destinos){
   const tagJs = `<script src="${d.jsRuta}?v=${version}"></script>`;
   if(/menu-sitio\.js/.test(html)) html = html.replace(/<script src="[^"]*menu-sitio\.js[^"]*"><\/script>/, () => tagJs);
   else html = html.replace('</body>', () => tagJs + '\n</body>');
+  // Papá Noel con su trineo halando el logo (navidad/): mismos archivos en cada carpeta, junto a los del menú.
+  const navCssRuta = d.cssRuta.replace('menu-sitio.css', 'navidad.css'), navJsRuta = d.jsRuta.replace('menu-sitio.js', 'navidad.js');
+  const navVersion = crypto.createHash('md5').update(navCss + navJs).digest('hex').slice(0, 8);
+  const navLink = `<link rel="stylesheet" href="${navCssRuta}?v=${navVersion}">`;
+  if(/navidad\.css/.test(html)) html = html.replace(/<link rel="stylesheet" href="[^"]*navidad\.css[^"]*">/, () => navLink);
+  else html = html.replace('</head>', () => navLink + '\n</head>');
+  const navTag = `<script src="${navJsRuta}?v=${navVersion}" data-logo="${d.logo}"></script>`;
+  if(/navidad\.js/.test(html)) html = html.replace(/<script src="[^"]*navidad\.js[^"]*"[^>]*><\/script>/, () => navTag);
+  else html = html.replace('</body>', () => navTag + '\n</body>');
   fs.writeFileSync(ruta, html);
   fs.writeFileSync(path.join(carpeta, d.cssRuta), css);
   fs.writeFileSync(path.join(carpeta, d.jsRuta), js);
+  fs.writeFileSync(path.join(carpeta, navCssRuta), navCss);
+  fs.writeFileSync(path.join(carpeta, navJsRuta), navJs);
   console.log('listo:', d.archivo, '(activo: ' + d.activo + ')');
 }
 console.log('versión', version);

@@ -1,10 +1,12 @@
 import logoLogin from '../assets/Logo verde OScuro.png';
 import SiteMenu from './SiteMenu';
+import NavidadSanta from './NavidadSanta';
 
 export default function LoginScreen({ config, onSignIn, onEnterDemo, onGoSetup, signingIn }){
   return (
     <>
     <SiteMenu activo="portal-lexara" />
+    <NavidadSanta />
     <div id="login-screen">
       <div className="login-visual">
         <div className="chevrons">
