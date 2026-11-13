@@ -129,8 +129,9 @@
   function pintarDestacada(){
     var cont = $('destacada'); cont.textContent = '';
     var d = estado.todas.filter(function(p){ return p.destacada; }).sort(function(a, b){ return (b.fecha || '').localeCompare(a.fecha || ''); })[0];
-    if(!d){ cont.hidden = true; return; }
-    cont.hidden = false;
+    var zona = cont.parentNode;   // «zona-destacada»: si no hay publicación destacada, el panel de juegos se muestra compacto
+    if(!d){ cont.hidden = true; if(zona) zona.classList.add('sin-destacada'); return; }
+    cont.hidden = false; if(zona) zona.classList.remove('sin-destacada');
     cont.appendChild(medioDe(d, abrir));
     var c = el('div', 'cuerpo');
     c.appendChild(el('span', 'rotulo', 'PUBLICACIÓN DESTACADA'));

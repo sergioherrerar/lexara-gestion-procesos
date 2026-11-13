@@ -1,4 +1,4 @@
-// «Pausa activa» — 4 juegos sencillos para desestresarse (Lexara al Día, 2026-11-13): Palabra del día, Memoria jurídica, Sopa de letras y Ahorcado de la balanza.
+// «Pausa activa» — 4 juegos sencillos para desestresarse (Lexara al Día, 2026-11-13): ¿Mito o verdad?, Memoria jurídica, Sopa de letras, Crucigrama y Ahorcado de la balanza.
 // Todo corre en el navegador (sin servidor, sin cuentas); el contenido sale de data/juegos.json. Solo se carga cuando alguien abre «Pausa activa».
 (function(){
   'use strict';
@@ -12,6 +12,21 @@
   function leer(k){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ return null; } }
   function hoyClave(){ var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
   function diaNumero(){ var d = new Date(); return Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000); }
+  // Copia la ilustración (el «muñeco») del botón de la página para usarla también dentro de la ventana.
+  function escena(clave){ var e = document.querySelector('.pausa-lateral [data-juego="' + clave + '"] .jg-escena'); return e ? e.cloneNode(true) : null; }
+  // Al ganar: unas manos aplauden y el logo de Lexara sube tres veces (izquierda, centro y derecha) dentro de la ventana del juego.
+  function celebrar(){
+    var caja = overlay && overlay.querySelector('.jg-caja'); if(!caja) return;
+    var viejo = caja.querySelector('.jg-fiesta'); if(viejo) viejo.parentNode.removeChild(viejo);
+    var f = el('div', 'jg-fiesta'); f.setAttribute('aria-hidden', 'true');
+    f.appendChild(el('div', 'jg-manos', '\uD83D\uDC4F'));
+    ['izq', 'cen', 'der'].forEach(function(lado, k){
+      var w = el('div', 'jg-logo-sube ' + lado); w.style.animationDelay = (0.35 + k * 1.05) + 's';
+      var im = el('img'); im.src = 'assets/img/logo.png'; im.alt = ''; w.appendChild(im); f.appendChild(w);
+    });
+    caja.appendChild(f);
+    setTimeout(function(){ if(f.parentNode) f.parentNode.removeChild(f); }, 4600);
+  }
   function aviso(cont, texto, clase){ var a = el('div', 'jg-aviso' + (clase ? ' ' + clase : ''), texto); cont.appendChild(a); return a; }
 
   // ---------- ventana ----------
@@ -55,12 +70,14 @@
     cuerpo.appendChild(el('p', 'jg-intro', 'Un respiro entre expedientes. Elija un juego: no hay tiempo ni puntaje que cuidar.'));
     var rej = el('div', 'jg-menu');
     [
-      ['Palabra del día', 'Adivine la palabra jurídica de hoy en 6 intentos.', 'palabra'],
+      ['¿Mito o verdad?', 'Seis afirmaciones laborales: ¿cuáles son ciertas?', 'mito'],
       ['Memoria jurídica', 'Encuentre cada término con su significado.', 'memoria'],
       ['Sopa de letras', 'Busque las palabras de la última publicación.', 'sopa'],
+      ['Crucigrama', 'Palabras cruzadas de la última publicación.', 'crucigrama'],
       ['Ahorcado de la balanza', 'Adivine el término antes de que se incline la balanza.', 'ahorcado']
     ].forEach(function(j){
       var b = el('button', 'jg-op jg-op-' + j[2]); b.type = 'button';
+      var esc = escena(j[2]); if(esc) b.appendChild(esc);
       b.appendChild(el('strong', null, j[0])); b.appendChild(el('span', null, j[1]));
       b.addEventListener('click', function(){ ir(j[2]); });
       rej.appendChild(b);
@@ -68,76 +85,48 @@
     cuerpo.appendChild(rej);
   }
 
-  // ---------- 1. Palabra del día (estilo Wordle) ----------
-  function palabraDelDia(cont){
-    var lista = DATOS.palabras, item = lista[diaNumero() % lista.length], objetivo = normaliza(item.p), clave = 'lexaraJuegos.palabra.' + hoyClave();
-    var estado = leer(clave) || { intentos: [], fin: false, gano: false }, actual = '', teclas = {};
-    var tablero = el('div', 'jg-tablero'), filas = [], msg = el('div', 'jg-msg'), teclado = el('div', 'jg-teclado');
-    for(var r = 0; r < 6; r++){ var f = el('div', 'jg-fila'); filas.push(f); for(var c = 0; c < 5; c++) f.appendChild(el('div', 'jg-casilla')); tablero.appendChild(f); }
-    function colores(intento){
-      var res = ['n', 'n', 'n', 'n', 'n'], resto = {};
-      for(var i = 0; i < 5; i++){ if(intento[i] === objetivo[i]) res[i] = 'v'; else resto[objetivo[i]] = (resto[objetivo[i]] || 0) + 1; }
-      for(var k = 0; k < 5; k++){ if(res[k] !== 'v' && resto[intento[k]] > 0){ res[k] = 'a'; resto[intento[k]]--; } }
-      return res;
-    }
+  // ---------- 1. ¿Mito o verdad? ----------
+  function mito(cont){
+    var todas = mezclar(DATOS.mitos || []).slice(0, 6), i = 0, aciertos = 0, respondida = false;
+    if(!todas.length){ cont.textContent = 'No hay afirmaciones disponibles por ahora.'; return; }
+    var buho = escena('mito'); if(buho){ buho.setAttribute('class', 'jg-escena jg-escena-juego'); cont.appendChild(buho); }
+    var zona = el('div', 'jg-mito');
+    var prog = el('div', 'jg-suave jg-prog'), tarjeta = el('div', 'jg-mito-tarjeta'), botones = el('div', 'jg-vm'), exp = el('div', 'jg-exp'), sig = el('button', 'jg-btn', 'Siguiente');
+    var bv = el('button', 'jg-vm-b verdad', '✓ Verdad'), bm = el('button', 'jg-vm-b mito', '✗ Mito');
+    bv.type = 'button'; bm.type = 'button'; sig.type = 'button'; botones.appendChild(bv); botones.appendChild(bm);
     function pintar(){
-      teclas = {};
-      estado.intentos.forEach(function(w, i){
-        var col = colores(w);
-        for(var k = 0; k < 5; k++){
-          var cs = filas[i].children[k]; cs.textContent = w[k]; cs.className = 'jg-casilla ' + col[k];
-          var rango = { v: 3, a: 2, n: 1 }, prev = teclas[w[k]]; if(!prev || rango[col[k]] > rango[prev]) teclas[w[k]] = col[k];
-        }
-      });
-      var fi = estado.intentos.length;
-      for(var j = fi; j < 6; j++) for(var q = 0; q < 5; q++){ var c2 = filas[j].children[q]; c2.className = 'jg-casilla'; c2.textContent = (j === fi && !estado.fin) ? (actual[q] || '') : ''; if(j === fi && actual[q] && !estado.fin) c2.classList.add('lleno'); }
-      Array.prototype.forEach.call(teclado.querySelectorAll('button[data-t]'), function(b){ var t = b.getAttribute('data-t'); b.className = 'jg-tecla' + (b.getAttribute('data-ancha') ? ' ancha' : '') + (teclas[t] ? ' ' + teclas[t] : ''); });
+      var p = todas[i]; respondida = false;
+      prog.textContent = 'Afirmación ' + (i + 1) + ' de ' + todas.length + ' · Aciertos: ' + aciertos;
+      tarjeta.textContent = '«' + p.a + '»';
+      exp.textContent = ''; exp.className = 'jg-exp'; exp.hidden = true; sig.hidden = true;
+      bv.disabled = false; bm.disabled = false; bv.classList.remove('correcta'); bm.classList.remove('correcta'); bv.classList.remove('elegida'); bm.classList.remove('elegida');
+    }
+    function responder(eligeVerdad){
+      if(respondida) return; respondida = true;
+      var p = todas[i], ok = (eligeVerdad === p.v); if(ok) aciertos++;
+      (eligeVerdad ? bv : bm).classList.add('elegida'); (p.v ? bv : bm).classList.add('correcta');
+      bv.disabled = true; bm.disabled = true;
+      exp.className = 'jg-exp ' + (ok ? 'ok' : 'mal'); exp.hidden = false;
+      exp.textContent = (ok ? '¡Correcto! ' : 'Casi. ') + 'Es ' + (p.v ? 'verdad' : 'un mito') + '. ' + p.e;
+      prog.textContent = 'Afirmación ' + (i + 1) + ' de ' + todas.length + ' · Aciertos: ' + aciertos;
+      sig.textContent = (i + 1 < todas.length) ? 'Siguiente' : 'Ver resultado'; sig.hidden = false;
+      try{ sig.focus(); }catch(e){}
     }
     function final(){
-      msg.textContent = ''; msg.className = 'jg-msg';
-      var caja = el('div', 'jg-fin');
-      caja.appendChild(el('strong', null, estado.gano ? '¡Muy bien! La palabra era ' + objetivo + '.' : 'La palabra de hoy era ' + objetivo + '.'));
-      caja.appendChild(el('p', null, item.d));
-      var cp = el('button', 'jg-btn', 'Copiar mi resultado'); cp.type = 'button';
-      cp.addEventListener('click', function(){
-        var emoji = { v: '🟩', a: '🟨', n: '⬛' };
-        var txt = 'Palabra del día · Lexara al Día ' + hoyClave().split('-').reverse().join('/') + ' ' + (estado.gano ? estado.intentos.length : 'X') + '/6\n' +
-          estado.intentos.map(function(w){ return colores(w).map(function(x){ return emoji[x]; }).join(''); }).join('\n') + '\nwww.lexaraabogados.com/lexara-al-dia';
-        var listo = function(){ cp.textContent = 'Copiado'; };
-        if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(listo, function(){ cp.textContent = 'No se pudo copiar'; }); else cp.textContent = 'No se pudo copiar';
-      });
-      caja.appendChild(cp); caja.appendChild(el('small', 'jg-suave', 'Mañana habrá una palabra nueva.'));
-      msg.appendChild(caja);
+      zona.textContent = '';
+      var n = todas.length, msg = aciertos === n ? '¡Perfecto! Domina estos temas.' : aciertos >= n - 2 ? '¡Muy bien! Casi no se le escapa ninguno.' : aciertos >= n / 2 ? 'Buen resultado. Siempre hay algo nuevo por aprender.' : 'Buen intento: ahora ya sabe algo más.';
+      var caja = el('div', 'jg-fin'); caja.appendChild(el('strong', null, aciertos + ' de ' + n + ' aciertos')); caja.appendChild(el('p', null, msg));
+      var otra = el('button', 'jg-btn', 'Jugar otra vez'); otra.type = 'button'; otra.addEventListener('click', function(){ entrar('¿Mito o verdad?', mito); });
+      caja.appendChild(otra); zona.appendChild(caja);
+      if(aciertos >= Math.ceil(n * 2 / 3)) celebrar();
     }
-    function enviar(){
-      if(estado.fin) return;
-      if(actual.length < 5){ msg.textContent = 'Escriba las 5 letras.'; msg.className = 'jg-msg'; return; }
-      msg.textContent = ''; estado.intentos.push(actual);
-      if(actual === objetivo){ estado.fin = true; estado.gano = true; } else if(estado.intentos.length >= 6){ estado.fin = true; estado.gano = false; }
-      actual = ''; guardar(clave, estado); pintar(); if(estado.fin) final();
-    }
-    function tecla(t){
-      if(estado.fin) return;
-      if(t === 'ENTER') enviar(); else if(t === 'BORRAR') actual = actual.slice(0, -1); else if(actual.length < 5 && /^[A-ZÑ]$/.test(t)) actual += t;
-      if(t !== 'ENTER'){ msg.textContent = ''; pintar(); }
-    }
-    ['QWERTYUIOP', 'ASDFGHJKLÑ', 'ZXCVBNM'].forEach(function(fila, i){
-      var d = el('div', 'jg-teclas');
-      if(i === 2){ var e = el('button', 'jg-tecla ancha', 'Enter'); e.type = 'button'; e.setAttribute('data-t', 'ENTER'); e.setAttribute('data-ancha', '1'); d.appendChild(e); }
-      fila.split('').forEach(function(l){ var b = el('button', 'jg-tecla', l); b.type = 'button'; b.setAttribute('data-t', l); d.appendChild(b); });
-      if(i === 2){ var bo = el('button', 'jg-tecla ancha', '⌫'); bo.type = 'button'; bo.setAttribute('data-t', 'BORRAR'); bo.setAttribute('data-ancha', '1'); bo.setAttribute('aria-label', 'Borrar'); d.appendChild(bo); }
-      teclado.appendChild(d);
-    });
-    teclado.addEventListener('click', function(ev){ var b = ev.target.closest('button[data-t]'); if(b) tecla(b.getAttribute('data-t')); });
-    function fisico(ev){
-      if(ev.ctrlKey || ev.metaKey || ev.altKey) return;
-      if(ev.key === 'Enter'){ ev.preventDefault(); tecla('ENTER'); } else if(ev.key === 'Backspace'){ ev.preventDefault(); tecla('BORRAR'); } else { var k = normaliza(ev.key); if(/^[A-Z]$/.test(k) || ev.key.toLowerCase() === 'ñ') tecla(ev.key.toLowerCase() === 'ñ' ? 'Ñ' : k); }
-    }
-    document.addEventListener('keydown', fisico);
-    cont.appendChild(el('p', 'jg-intro', 'Una palabra jurídica de 5 letras, nueva cada día. Verde: letra bien ubicada. Amarillo: está, pero en otro lugar. Gris: no está.'));
-    cont.appendChild(tablero); cont.appendChild(msg); cont.appendChild(teclado);
-    pintar(); if(estado.fin) final();
-    return function(){ document.removeEventListener('keydown', fisico); };
+    bv.addEventListener('click', function(){ responder(true); });
+    bm.addEventListener('click', function(){ responder(false); });
+    sig.addEventListener('click', function(){ i++; if(i < todas.length) pintar(); else final(); });
+    cont.appendChild(el('p', 'jg-intro', 'Lea cada afirmación y decida si es verdad o un mito. Después verá la explicación.'));
+    zona.appendChild(prog); zona.appendChild(tarjeta); zona.appendChild(botones); zona.appendChild(exp); zona.appendChild(sig);
+    cont.appendChild(zona);
+    pintar();
   }
 
   // ---------- 2. Memoria jurídica ----------
@@ -150,7 +139,8 @@
     pares.forEach(function(p, i){ cartas.push({ id: i, texto: p.t, tipo: 't' }); cartas.push({ id: i, texto: p.d, tipo: 'd' }); });
     mezclar(cartas).forEach(function(c){
       var b = el('button', 'jg-carta'); b.type = 'button'; b.setAttribute('aria-label', 'Carta');
-      var in1 = el('span', 'jg-carta-in'), frente = el('span', 'jg-cara frente', 'L'), dorso = el('span', 'jg-cara dorso ' + c.tipo, c.texto);
+      var in1 = el('span', 'jg-carta-in'), frente = el('span', 'jg-cara frente'), dorso = el('span', 'jg-cara dorso ' + c.tipo, c.texto);
+      var logo = el('img'); logo.src = 'assets/img/logo-blanco.png'; logo.alt = ''; logo.draggable = false; frente.appendChild(logo);
       in1.appendChild(frente); in1.appendChild(dorso); b.appendChild(in1); b._c = c;
       b.addEventListener('click', function(){
         if(bloqueo || b.classList.contains('abierta') || b.classList.contains('lista')) return;
@@ -159,7 +149,7 @@
           movs++; cuenta.textContent = 'Movimientos: ' + movs;
           var a = abiertas[0], z = abiertas[1];
           if(a._c.id === z._c.id && a._c.tipo !== z._c.tipo){ a.classList.add('lista'); z.classList.add('lista'); abiertas = []; hechas++;
-            if(hechas === pares.length){ msg.textContent = '¡Listo! Lo logró en ' + movs + ' movimientos.'; msg.className = 'jg-msg ok'; } }
+            if(hechas === pares.length){ msg.textContent = '¡Listo! Lo logró en ' + movs + ' movimientos.'; msg.className = 'jg-msg ok'; celebrar(); } }
           else { bloqueo = true; setTimeout(function(){ a.classList.remove('abierta'); z.classList.remove('abierta'); abiertas = []; bloqueo = false; }, 950); }
         }
       });
@@ -221,11 +211,141 @@
       var rev = txt.split('').reverse().join(''), w = objetivo.filter(function(p){ return !halladas[p] && (p === txt || p === rev); })[0];
       limpiarSel();
       if(w){ halladas[w] = true; cs.forEach(function(cc){ cc.classList.add('hallada'); }); etiquetas[w].classList.add('hecha');
-        if(Object.keys(halladas).length === objetivo.length){ msg.textContent = '¡Encontró todas las palabras!'; msg.className = 'jg-msg ok'; } }
+        if(Object.keys(halladas).length === objetivo.length){ msg.textContent = '¡Encontró todas las palabras!'; msg.className = 'jg-msg ok'; celebrar(); } }
     });
     var nuevo = el('button', 'jg-btn peq', 'Nueva sopa'); nuevo.type = 'button'; nuevo.addEventListener('click', function(){ entrar('Sopa de letras', sopa); });
     cont.appendChild(el('p', 'jg-intro', ult ? 'Palabras de la última publicación: «' + ult.titulo + '». Toque la primera letra y luego la última de cada palabra (en línea recta).' : 'Toque la primera letra y luego la última de una palabra (en línea recta).'));
     cont.appendChild(tabla); cont.appendChild(lista); cont.appendChild(msg); cont.appendChild(nuevo);
+  }
+
+  // ---------- 5. Crucigrama pequeño con las palabras de la última publicación ----------
+  // Coloca las palabras cruzadas en una cuadrícula (sin que se toquen de lado) y prueba varias veces para quedarse con la mejor.
+  function armarCrucigrama(pub, extra){
+    var MAX = 9, mejor = null;
+    function intentar(){
+      var orden = pub.concat(mezclar(extra)), puestas = [], mapa = {};
+      function k(r, c){ return r + ',' + c; }
+      function cabe(w, r, c, h){
+        var dr = h ? 0 : 1, dc = h ? 1 : 0, cruces = 0;
+        if(mapa[k(r - dr, c - dc)]) return -1;
+        if(mapa[k(r + dr * w.length, c + dc * w.length)]) return -1;
+        for(var i = 0; i < w.length; i++){
+          var rr = r + dr * i, cc = c + dc * i, ex = mapa[k(rr, cc)];
+          if(ex){ if(ex.l !== w[i] || (h ? ex.h : ex.v)) return -1; cruces++; }
+          else if(mapa[k(rr + dc, cc + dr)] || mapa[k(rr - dc, cc - dr)]) return -1;
+        }
+        return cruces;
+      }
+      function poner(o, r, c, h){
+        var dr = h ? 0 : 1, dc = h ? 1 : 0;
+        for(var i = 0; i < o.w.length; i++){ var q = k(r + dr * i, c + dc * i); if(!mapa[q]) mapa[q] = { l: o.w[i], h: false, v: false }; if(h) mapa[q].h = true; else mapa[q].v = true; }
+        puestas.push({ o: o, r: r, c: c, h: h });
+      }
+      orden.forEach(function(o, idx){
+        if(puestas.length >= 5) return;
+        if(!puestas.length){ poner(o, 0, 0, true); return; }
+        var cand = [];
+        puestas.forEach(function(p){
+          for(var j = 0; j < p.o.w.length; j++) for(var i = 0; i < o.w.length; i++) if(p.o.w[j] === o.w[i]){
+            var h = !p.h, r = p.h ? p.r - i : p.r + j, c = p.h ? p.c + j : p.c - i;
+            if(cabe(o.w, r, c, h) >= 1) cand.push([r, c, h]);
+          }
+        });
+        if(cand.length){ var x = cand[azar(cand.length)]; poner(o, x[0], x[1], x[2]); }
+      });
+      var r0 = 1e9, c0 = 1e9, r1 = -1e9, c1 = -1e9;
+      puestas.forEach(function(p){ var n = p.o.w.length; r0 = Math.min(r0, p.r); c0 = Math.min(c0, p.c); r1 = Math.max(r1, p.r + (p.h ? 0 : n - 1)); c1 = Math.max(c1, p.c + (p.h ? n - 1 : 0)); });
+      var H = r1 - r0 + 1, W = c1 - c0 + 1; if(H > MAX || W > MAX || puestas.length < 3) return null;
+      var dePub = puestas.filter(function(p){ return p.o.pub; }).length;
+      return { puestas: puestas.map(function(p){ return { o: p.o, r: p.r - r0, c: p.c - c0, h: p.h }; }), H: H, W: W, puntos: dePub * 3 + puestas.length * 4 - H * W / 12 };
+    }
+    for(var t = 0; t < 120; t++){ var x = intentar(); if(x && (!mejor || x.puntos > mejor.puntos)) mejor = x; }
+    return mejor;
+  }
+  function crucigrama(cont){
+    var ult = ultimaPublicacion(), pistas = DATOS.pistas || {}, vistos = {};
+    function item(w, pub){
+      var inicial = w.charAt(0), clave = pistas[w];
+      return { w: w, pub: pub, pista: clave || ('Palabra de la última publicación que empieza por ' + inicial) };
+    }
+    var delaPub = [];
+    palabrasDe(ult).forEach(function(w){ if(w.length >= 3 && w.length <= 11 && !vistos[w]){ vistos[w] = true; delaPub.push(item(w, !!ult && !pistas[w] ? true : true)); } });
+    // las de la publicación que no están en la lista de pistas se mantienen, pero también se suman términos con pista para poder cruzar
+    var extra = [];
+    Object.keys(pistas).forEach(function(w){ var n = normaliza(w); if(!vistos[n] && n.length >= 3 && n.length <= 11){ extra.push(item(n, false)); } });
+    delaPub = mezclar(delaPub).sort(function(a, b){ return b.w.length - a.w.length; });
+    var cru = armarCrucigrama(delaPub, extra);
+    if(!cru){ cont.textContent = 'No se pudo armar el crucigrama. Intente de nuevo.'; return; }
+    // numeración
+    var inicios = {}, lista = cru.puestas.slice().sort(function(a, b){ return a.r - b.r || a.c - b.c; }), n = 0;
+    lista.forEach(function(p){ var q = p.r + ',' + p.c; if(!inicios[q]) inicios[q] = ++n; p.n = inicios[q]; });
+    var celdas = {}, inputs = [];
+    cru.puestas.forEach(function(p){ for(var i = 0; i < p.o.w.length; i++){ var r = p.r + (p.h ? 0 : i), c = p.c + (p.h ? i : 0), q = r + ',' + c; if(!celdas[q]) celdas[q] = { r: r, c: c, l: p.o.w[i], pal: {} }; celdas[q].pal[p.h ? 'h' : 'v'] = p; } });
+    var tabla = el('div', 'jg-cru'); tabla.style.setProperty('--n', cru.W);
+    var actual = null, dir = 'h', msg = el('div', 'jg-msg'), ganado = false;
+    function celdaEn(r, c){ return celdas[r + ',' + c] || null; }
+    function palabraActiva(ce){ return ce.pal[dir] || ce.pal[dir === 'h' ? 'v' : 'h']; }
+    function marcar(){
+      inputs.forEach(function(ce){ ce.div.classList.remove('act', 'foco'); });
+      if(!actual) return;
+      var p = palabraActiva(actual); if(!p) return;
+      for(var i = 0; i < p.o.w.length; i++){ var c = celdaEn(p.r + (p.h ? 0 : i), p.c + (p.h ? i : 0)); if(c) c.div.classList.add('act'); }
+      actual.div.classList.add('foco');
+      Array.prototype.forEach.call(pistasCont.querySelectorAll('li'), function(li){ li.classList.toggle('on', li._p === p); });
+    }
+    function ir(ce, d){ if(!ce) return; actual = ce; if(d) dir = d; ce.inp.focus(); try{ ce.inp.select(); }catch(e){} marcar(); }
+    function sigCelda(ce, paso){
+      var p = palabraActiva(ce); if(!p) return null;
+      var h = p.h; return celdaEn(ce.r + (h ? 0 : paso), ce.c + (h ? paso : 0));
+    }
+    function revisar(){
+      var todas = inputs.every(function(ce){ return normaliza(ce.inp.value) === ce.l; });
+      if(todas && !ganado){ ganado = true; msg.textContent = '¡Crucigrama resuelto!'; msg.className = 'jg-msg ok'; inputs.forEach(function(ce){ ce.inp.readOnly = true; ce.div.classList.remove('mal'); ce.div.classList.add('ok'); }); celebrar(); }
+    }
+    Object.keys(celdas).forEach(function(q){
+      var ce = celdas[q], d = el('div', 'jg-cx'), inp = el('input'); inp.type = 'text'; inp.maxLength = 1; inp.setAttribute('autocomplete', 'off'); inp.setAttribute('autocapitalize', 'characters'); inp.setAttribute('aria-label', 'Letra, fila ' + (ce.r + 1) + ', columna ' + (ce.c + 1));
+      d.style.gridRow = String(ce.r + 1); d.style.gridColumn = String(ce.c + 1);
+      var nn = inicios[q]; if(nn) d.appendChild(el('i', null, String(nn)));
+      d.appendChild(inp); ce.div = d; ce.inp = inp; inputs.push(ce); tabla.appendChild(d);
+      inp.addEventListener('focus', function(){ if(actual === ce && ce.pal.h && ce.pal.v){ /* un segundo toque cambia de dirección */ } actual = ce; marcar(); });
+      inp.addEventListener('click', function(){ if(actual === ce && ce.pal.h && ce.pal.v && ce._clic){ dir = dir === 'h' ? 'v' : 'h'; marcar(); } ce._clic = true; setTimeout(function(){ ce._clic = false; }, 700); try{ inp.select(); }catch(e){} });
+      inp.addEventListener('input', function(){
+        var v = normaliza(inp.value).replace(/[^A-ZÑ]/g, ''); inp.value = v.slice(-1); ce.div.classList.remove('mal');
+        if(inp.value){ var sg = sigCelda(ce, 1); if(sg) ir(sg); }
+        revisar();
+      });
+      inp.addEventListener('keydown', function(ev){
+        var k = ev.key;
+        if(k === 'Backspace' && !inp.value){ var an = sigCelda(ce, -1); if(an){ ev.preventDefault(); an.inp.value = ''; ir(an); } }
+        else if(k === 'ArrowRight'){ ev.preventDefault(); ir(celdaEn(ce.r, ce.c + 1) || ce, 'h'); }
+        else if(k === 'ArrowLeft'){ ev.preventDefault(); ir(celdaEn(ce.r, ce.c - 1) || ce, 'h'); }
+        else if(k === 'ArrowDown'){ ev.preventDefault(); ir(celdaEn(ce.r + 1, ce.c) || ce, 'v'); }
+        else if(k === 'ArrowUp'){ ev.preventDefault(); ir(celdaEn(ce.r - 1, ce.c) || ce, 'v'); }
+      });
+    });
+    var pistasCont = el('div', 'jg-pistas');
+    [['h', 'Horizontales'], ['v', 'Verticales']].forEach(function(g){
+      var col = el('div', 'jg-pistas-col'); col.appendChild(el('strong', null, g[1])); var ul = el('ul');
+      lista.filter(function(p){ return (g[0] === 'h') === p.h; }).forEach(function(p){
+        var li = el('li'); li._p = p; li.appendChild(el('b', null, p.n + '. ')); li.appendChild(document.createTextNode(p.o.pista + ' (' + p.o.w.length + ')'));
+        li.addEventListener('click', function(){ var ce = celdaEn(p.r, p.c); if(ce) ir(ce, p.h ? 'h' : 'v'); });
+        ul.appendChild(li);
+      });
+      col.appendChild(ul); pistasCont.appendChild(col);
+    });
+    var comp = el('button', 'jg-btn peq', 'Comprobar'); comp.type = 'button';
+    comp.addEventListener('click', function(){
+      var mal = 0; inputs.forEach(function(ce){ var v = normaliza(ce.inp.value); var no = v && v !== ce.l; ce.div.classList.toggle('mal', !!no); if(no) mal++; });
+      msg.textContent = ganado ? '¡Crucigrama resuelto!' : (mal ? 'Hay ' + mal + (mal === 1 ? ' letra' : ' letras') + ' por corregir (en rojo).' : 'Va bien: lo escrito hasta ahora es correcto.'); msg.className = 'jg-msg' + (!mal ? ' ok' : '');
+    });
+    var pis = el('button', 'jg-btn peq', 'Pista: revelar letra'); pis.type = 'button';
+    pis.addEventListener('click', function(){ if(ganado) return; var ce = actual && !actual.inp.value ? actual : inputs.filter(function(c){ return !c.inp.value; })[0]; if(!ce) return; ce.inp.value = ce.l; ce.div.classList.remove('mal'); revisar(); });
+    var nuevo = el('button', 'jg-btn peq', 'Otro crucigrama'); nuevo.type = 'button'; nuevo.addEventListener('click', function(){ entrar('Crucigrama', crucigrama); });
+    var barra = el('div', 'jg-barra'); barra.appendChild(comp); barra.appendChild(pis); barra.appendChild(nuevo);
+    cont.appendChild(el('p', 'jg-intro', ult ? 'Crucigrama con palabras de la última publicación: «' + ult.titulo + '». Toque una casilla y escriba; toque otra vez para cambiar de dirección.' : 'Toque una casilla y escriba; toque otra vez para cambiar de dirección.'));
+    var marco = el('div', 'jg-cru-marco'); marco.appendChild(tabla);
+    cont.appendChild(marco); cont.appendChild(msg); cont.appendChild(barra); cont.appendChild(pistasCont);
+    var primera = celdaEn(lista[0].r, lista[0].c); if(primera){ actual = primera; dir = lista[0].h ? 'h' : 'v'; marcar(); }
   }
 
   // ---------- 4. Ahorcado de la balanza ----------
@@ -253,7 +373,7 @@
       if(fin || usadas[l]) return; usadas[l] = true;
       if(palabra.indexOf(l) < 0) errores++;
       var gano = palabra.split('').every(function(ch){ return ch === ' ' || usadas[ch]; });
-      if(gano){ fin = true; msg.textContent = '¡Equilibrada! Era «' + item.t + '».'; msg.className = 'jg-msg ok'; }
+      if(gano){ fin = true; msg.textContent = '¡Equilibrada! Era «' + item.t + '».'; msg.className = 'jg-msg ok'; celebrar(); }
       else if(errores >= MAX){ fin = true; msg.textContent = 'La balanza se inclinó. Era «' + item.t + '».'; msg.className = 'jg-msg'; }
       pintar();
     }
@@ -269,7 +389,7 @@
     return function(){ document.removeEventListener('keydown', fisico); };
   }
 
-  JUEGOS = { palabra: ['Palabra del día', palabraDelDia], memoria: ['Memoria jurídica', memoria], sopa: ['Sopa de letras', sopa], ahorcado: ['Ahorcado de la balanza', ahorcado] };
+  JUEGOS = { mito: ['¿Mito o verdad?', mito], memoria: ['Memoria jurídica', memoria], sopa: ['Sopa de letras', sopa], crucigrama: ['Crucigrama', crucigrama], ahorcado: ['Ahorcado de la balanza', ahorcado] };
 
   // ---------- los botones de la página (junto a la última publicación) ----------
   document.addEventListener('click', function(ev){

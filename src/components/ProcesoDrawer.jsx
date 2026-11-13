@@ -17,6 +17,7 @@ import { useEscapeToClose } from '../hooks/useEscapeToClose';
 import { ICON_SVG, RUTAS_CARPETAS_ENTIDAD } from '../config';
 import { DEPARTAMENTOS_COLOMBIA, municipiosDe } from '../lib/colombiaGeo';
 import { AudienciasTerminosDelProceso } from './AudienciasTerminosTab';
+import RamaJudicialTab from './RamaJudicialTab';
 
 const TABS = [
   {key:'datos', label:'Datos generales'},
@@ -29,6 +30,8 @@ const TABS = [
   // judiciales en cada proceso debe quedar las audiencias y los términos,
   // por eso las relaciones" — misma relación por ID que Desistimientos.
   {key:'audienciasTerminos', label:'Audiencias/Términos'},
+  // Agregada 2026-11-13, pedido del usuario: leer las actuaciones del proceso en la Rama Judicial y pasarlas al Histórico por renglones.
+  {key:'rama', label:'Rama Judicial'},
 ];
 
 function fechaOrdenable(row){
@@ -812,6 +815,15 @@ export default function ProcesoDrawer({ proceso, clientes, colaboradores, factur
                 onCreateTipoTermino={onCreateTipoTermino}
               />
             </div>
+          )}
+          {activeTab === 'rama' && (
+            <RamaJudicialTab
+              proceso={proceso} historico={form.Historico || ''} fechaEstado={form.FechaUltimoEstado} canWrite={canWrite} config={config} notify={notify}
+              onAgregarAlHistorico={html => setField('Historico', (form.Historico || '') + html)}
+              onActualizar={({ historicoHtml, estado, fechaEstado }) => {
+                setForm(prev => ({ ...prev, Historico: (prev.Historico || '') + historicoHtml, ...(estado !== null ? { Estado: estado, FechaUltimoEstado: fechaEstado } : {}) }));
+              }}
+            />
           )}
           {activeTab === 'datos' && FIELD_SECTIONS.map(sec => (
             <div className="field-section" key={sec.title}>

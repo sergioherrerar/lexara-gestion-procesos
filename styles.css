@@ -2211,3 +2211,38 @@
   @media (max-width:760px){
     .redes-modal-cuerpo{grid-template-columns:1fr;}
   }
+
+  /* Pestaña «Rama Judicial» de la ficha del proceso (2026-11-13) */
+  .rama-tab{display:flex; flex-direction:column; gap:14px;}
+  .rama-fuente{margin:0; font-size:12.5px; color:var(--texto-suave); line-height:1.5;}
+  .rama-filtro{display:flex; align-items:center; gap:8px; font-size:13px; color:var(--texto-suave); cursor:pointer;}
+  .rama-bloque{border:1px solid var(--gris-claro, #e5ecea); border-radius:12px; padding:14px; background:#fff;}
+  .rama-cab{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px;}
+  .rama-cab h4{margin:0; font-size:14px; letter-spacing:.02em; word-break:break-all;}
+  .rama-btn{padding:6px 12px; font-size:12.5px; white-space:nowrap;}
+  .rama-cargando{color:var(--texto-suave); font-size:13px; padding:8px 0;}
+  .rama-error{background:#fbe4e2; color:#a3281c; border-radius:8px; padding:9px 12px; font-size:13px; margin:6px 0;}
+  .rama-datos{display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:8px 16px; margin:0 0 10px;}
+  .rama-datos dt{font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--texto-suave);}
+  .rama-datos dd{margin:2px 0 0; font-size:13.5px; line-height:1.4;}
+  .rama-datos .rama-ancho{grid-column:1 / -1;}
+  .rama-resumen{display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin:6px 0 10px; font-size:13px; color:var(--texto-suave);}
+  .rama-hay-nuevas{color:#b3590a;}
+  .rama-al-dia{color:var(--verde-oscuro); font-weight:600;}
+  .rama-tabla{width:100%; font-size:13px;}
+  .rama-tabla td, .rama-tabla th{vertical-align:top;}
+  .rama-fecha{white-space:nowrap; font-variant-numeric:tabular-nums;}
+  .rama-act strong{display:block; font-weight:600;}
+  .rama-nuevo{margin-top:4px; display:inline-block;}
+  .rama-ya{display:block; font-size:11.5px; color:var(--texto-suave); margin-top:3px;}
+  .rama-nota{line-height:1.45; min-width:200px;}
+  .rama-mas{border:0; background:none; color:var(--verde-oscuro); text-decoration:underline; cursor:pointer; font:inherit; font-size:12px; margin-left:6px; padding:0;}
+  .rama-tramite{opacity:.7;}
+  .rama-acc{text-align:right; white-space:nowrap;}
+  @media (max-width:760px){ .rama-datos{grid-template-columns:1fr;} }
+  .rama-ultima{margin:0; font-size:12.5px; font-weight:600; color:var(--verde-oscuro);}
+  .rama-tipo{display:inline-block; margin-right:6px; padding:2px 8px; border-radius:99px; background:var(--gris-claro); color:var(--texto-suave); font-size:11px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; vertical-align:middle;}
+  .rama-tipo.principal{background:#d7f2e4; color:var(--verde-oscuro);}
+  .rama-hist-aviso{display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px; padding:10px 12px; border-radius:10px; background:#eef7f5; font-size:13px; color:var(--texto-suave);}
+  .rama-bloque-pendiente{padding:10px 14px;}
+  .rama-bloque-pendiente .rama-cab{margin:0;}

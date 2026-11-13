@@ -1,79 +1,251 @@
 {
-  "_nota": "Contenido de «Pausa activa» (juegos de Lexara al Día). Se puede editar a mano: palabras de 5 letras sin tilde para la «Palabra del día»; términos (con su definición corta) para Memoria y Ahorcado; palabras sueltas de 4 a 9 letras para la Sopa de letras. Revisar con los abogados antes de agregar nuevas.",
-  "palabras": [
-    { "p": "CAUSA", "d": "Motivo legal que justifica un acto, por ejemplo el despido con justa causa." },
-    { "p": "FALLO", "d": "Decisión con la que el juez resuelve el proceso." },
-    { "p": "FUERO", "d": "Protección especial contra el despido: maternidad, salud o sindical." },
-    { "p": "ACTOR", "d": "Persona que presenta la demanda." },
-    { "p": "PRIMA", "d": "Pago adicional al salario: la prima de servicios se paga en junio y diciembre." },
-    { "p": "PLAZO", "d": "Tiempo fijado para cumplir una obligación o actuar en un proceso." },
-    { "p": "NORMA", "d": "Regla jurídica que obliga a cumplirla." },
-    { "p": "AUTOS", "d": "Providencias del juez que impulsan el proceso." },
-    { "p": "CUOTA", "d": "Parte de un pago que se hace por períodos, como la cuota de aportes." },
-    { "p": "DEUDA", "d": "Obligación de pagar algo a otra persona." },
-    { "p": "ETAPA", "d": "Cada fase de un proceso judicial." },
-    { "p": "HECHO", "d": "Lo que sucedió y se narra en la demanda." },
-    { "p": "HORAS", "d": "Unidad de la jornada: las horas extras se pagan con recargo." },
-    { "p": "LEGAL", "d": "Conforme a la ley." },
-    { "p": "LEYES", "d": "Normas aprobadas por el Congreso." },
-    { "p": "MULTA", "d": "Sanción en dinero." },
-    { "p": "ORDEN", "d": "Mandato de una autoridad que debe cumplirse." },
-    { "p": "PENAL", "d": "Rama del derecho que castiga los delitos." },
-    { "p": "PODER", "d": "Documento con el que se autoriza a un abogado para actuar." },
-    { "p": "QUEJA", "d": "Recurso que se presenta cuando el juez niega otro recurso." },
-    { "p": "SALDO", "d": "Lo que queda por pagar o por recibir." },
-    { "p": "VIGOR", "d": "Estar en vigor es estar vigente y obligar." },
-    { "p": "VISTA", "d": "Audiencia pública en la que se escucha a las partes." },
-    { "p": "ACTAS", "d": "Documentos que dejan constancia de lo ocurrido, como las actas de conciliación." },
-    { "p": "CARGO", "d": "Puesto o función que desempeña el trabajador." },
-    { "p": "DEBER", "d": "Obligación que impone la ley o el contrato." },
-    { "p": "DIGNO", "d": "El trabajo digno respeta los derechos de la persona." },
-    { "p": "EXTRA", "d": "Las horas extra son las que exceden la jornada máxima." },
-    { "p": "FIRMA", "d": "Marca con la que una persona acepta un documento." },
-    { "p": "FONDO", "d": "Entidad que administra las pensiones o las cesantías." },
-    { "p": "GRADO", "d": "Nivel de decisión: el grado de consulta lo hace un juez superior." },
-    { "p": "GRAVE", "d": "Una falta grave puede justificar el despido." },
-    { "p": "JUEZA", "d": "Funcionaria que decide los procesos." },
-    { "p": "LABOR", "d": "Trabajo que se contrata y se realiza." },
-    { "p": "MORAL", "d": "El daño moral afecta los sentimientos o la dignidad." },
-    { "p": "PACTO", "d": "Acuerdo; el pacto colectivo se firma con trabajadores no sindicalizados." },
-    { "p": "PARTE", "d": "Cada una de las personas que intervienen en un proceso." },
-    { "p": "REGLA", "d": "Norma que indica cómo actuar." },
-    { "p": "SALUD", "d": "Sistema al que se aporta para recibir atención médica." },
-    { "p": "TRATO", "d": "El trato digno es un derecho en el trabajo." },
-    { "p": "VALOR", "d": "Monto en dinero de una pretensión o una obligación." },
-    { "p": "VENIA", "d": "Permiso o autorización para hacer algo." },
-    { "p": "RENTA", "d": "Ingreso que se declara y sobre el que se pagan impuestos." },
-    { "p": "TURNO", "d": "Horario asignado a un trabajador dentro de la jornada." },
-    { "p": "PAGOS", "d": "Los pagos laborales deben hacerse a tiempo y completos." }
-  ],
+  "_nota": "Contenido de «Pausa activa» (juegos de Lexara al Día). Se puede editar a mano: afirmaciones para «¿Mito o verdad?» (a = afirmación, v = true si es verdad / false si es mito, e = explicación corta); términos (con su definición corta) para Memoria y Ahorcado; palabras sueltas de 4 a 9 letras para la Sopa de letras. Las afirmaciones son una primera propuesta: revisar con los abogados antes de publicarlas y de agregar nuevas.",
   "terminos": [
-    { "t": "CESANTIAS", "d": "Ahorro por cada año trabajado" },
-    { "t": "PRIMA DE SERVICIOS", "d": "Pago extra de junio y diciembre" },
-    { "t": "VACACIONES", "d": "Descanso anual pagado" },
-    { "t": "JUSTA CAUSA", "d": "Razón legal para terminar el contrato" },
-    { "t": "INDEMNIZACION", "d": "Pago por despido sin justa causa" },
-    { "t": "TUTELA", "d": "Acción para proteger derechos fundamentales" },
-    { "t": "FUERO DE MATERNIDAD", "d": "Protección a la trabajadora embarazada" },
-    { "t": "LIQUIDACION", "d": "Cuentas finales al terminar el contrato" },
-    { "t": "HORAS EXTRAS", "d": "Trabajo más allá de la jornada" },
-    { "t": "PERIODO DE PRUEBA", "d": "Tiempo inicial para evaluar al trabajador" },
-    { "t": "SINDICATO", "d": "Asociación para defender a los trabajadores" },
-    { "t": "PENSION", "d": "Pago mensual tras jubilarse" },
-    { "t": "AUDIENCIA", "d": "Cita ante el juez para el proceso" },
-    { "t": "DEMANDA", "d": "Escrito con el que se inicia el proceso" },
-    { "t": "CONCILIACION", "d": "Acuerdo entre las partes sin juicio" },
-    { "t": "CONTRATO A TERMINO FIJO", "d": "Contrato con fecha de finalización" },
-    { "t": "SALARIO MINIMO", "d": "Pago mensual mínimo fijado por ley" },
-    { "t": "AUXILIO DE TRANSPORTE", "d": "Ayuda para llegar al trabajo" },
-    { "t": "EMBARGO", "d": "Retención de bienes para pagar una deuda" },
-    { "t": "SENTENCIA", "d": "Decisión final del juez" },
-    { "t": "APELACION", "d": "Recurso para que revise un juez superior" },
-    { "t": "PRESCRIPCION", "d": "Pérdida de un derecho por el paso del tiempo" },
-    { "t": "DEBIDO PROCESO", "d": "Derecho a ser oído antes de ser sancionado" },
-    { "t": "ACOSO LABORAL", "d": "Maltrato persistente en el trabajo" },
-    { "t": "REFORMA PENSIONAL", "d": "Cambio al sistema de pensiones" },
-    { "t": "EPS", "d": "Entidad que presta el servicio de salud" }
+    {
+      "t": "CESANTIAS",
+      "d": "Ahorro por cada año trabajado"
+    },
+    {
+      "t": "PRIMA DE SERVICIOS",
+      "d": "Pago extra de junio y diciembre"
+    },
+    {
+      "t": "VACACIONES",
+      "d": "Descanso anual pagado"
+    },
+    {
+      "t": "JUSTA CAUSA",
+      "d": "Razón legal para terminar el contrato"
+    },
+    {
+      "t": "INDEMNIZACION",
+      "d": "Pago por despido sin justa causa"
+    },
+    {
+      "t": "TUTELA",
+      "d": "Acción para proteger derechos fundamentales"
+    },
+    {
+      "t": "FUERO DE MATERNIDAD",
+      "d": "Protección a la trabajadora embarazada"
+    },
+    {
+      "t": "LIQUIDACION",
+      "d": "Cuentas finales al terminar el contrato"
+    },
+    {
+      "t": "HORAS EXTRAS",
+      "d": "Trabajo más allá de la jornada"
+    },
+    {
+      "t": "PERIODO DE PRUEBA",
+      "d": "Tiempo inicial para evaluar al trabajador"
+    },
+    {
+      "t": "SINDICATO",
+      "d": "Asociación para defender a los trabajadores"
+    },
+    {
+      "t": "PENSION",
+      "d": "Pago mensual tras jubilarse"
+    },
+    {
+      "t": "AUDIENCIA",
+      "d": "Cita ante el juez para el proceso"
+    },
+    {
+      "t": "DEMANDA",
+      "d": "Escrito con el que se inicia el proceso"
+    },
+    {
+      "t": "CONCILIACION",
+      "d": "Acuerdo entre las partes sin juicio"
+    },
+    {
+      "t": "CONTRATO A TERMINO FIJO",
+      "d": "Contrato con fecha de finalización"
+    },
+    {
+      "t": "SALARIO MINIMO",
+      "d": "Pago mensual mínimo fijado por ley"
+    },
+    {
+      "t": "AUXILIO DE TRANSPORTE",
+      "d": "Ayuda para llegar al trabajo"
+    },
+    {
+      "t": "EMBARGO",
+      "d": "Retención de bienes para pagar una deuda"
+    },
+    {
+      "t": "SENTENCIA",
+      "d": "Decisión final del juez"
+    },
+    {
+      "t": "APELACION",
+      "d": "Recurso para que revise un juez superior"
+    },
+    {
+      "t": "PRESCRIPCION",
+      "d": "Pérdida de un derecho por el paso del tiempo"
+    },
+    {
+      "t": "DEBIDO PROCESO",
+      "d": "Derecho a ser oído antes de ser sancionado"
+    },
+    {
+      "t": "ACOSO LABORAL",
+      "d": "Maltrato persistente en el trabajo"
+    },
+    {
+      "t": "REFORMA PENSIONAL",
+      "d": "Cambio al sistema de pensiones"
+    },
+    {
+      "t": "EPS",
+      "d": "Entidad que presta el servicio de salud"
+    }
   ],
-  "sopa": ["CESANTIAS", "PRIMA", "TUTELA", "DEMANDA", "FUERO", "DESPIDO", "SALARIO", "PENSION", "AUDIENCIA", "SENTENCIA", "CONTRATO", "SINDICATO", "HUELGA", "JORNADA", "APELACION", "PRUEBA", "ALEGATO", "EMBARGO", "NOMINA"]
+  "sopa": [
+    "CESANTIAS",
+    "PRIMA",
+    "TUTELA",
+    "DEMANDA",
+    "FUERO",
+    "DESPIDO",
+    "SALARIO",
+    "PENSION",
+    "AUDIENCIA",
+    "SENTENCIA",
+    "CONTRATO",
+    "SINDICATO",
+    "HUELGA",
+    "JORNADA",
+    "APELACION",
+    "PRUEBA",
+    "ALEGATO",
+    "EMBARGO",
+    "NOMINA"
+  ],
+  "mitos": [
+    {
+      "a": "Un contrato de trabajo verbal es válido.",
+      "v": true,
+      "e": "No necesita estar por escrito: si hay trabajo personal, subordinación y salario, existe contrato de trabajo."
+    },
+    {
+      "a": "Durante el período de prueba no hay derecho a prestaciones sociales.",
+      "v": false,
+      "e": "Desde el primer día se causan prestaciones, vacaciones y los aportes a seguridad social."
+    },
+    {
+      "a": "Las cesantías equivalen a un mes de salario por cada año trabajado.",
+      "v": true,
+      "e": "Y se liquidan de forma proporcional cuando el tiempo es menor a un año."
+    },
+    {
+      "a": "La prima de servicios se paga una sola vez al año.",
+      "v": false,
+      "e": "Se paga en dos partes: la primera a más tardar el 30 de junio y la segunda a más tardar el 20 de diciembre."
+    },
+    {
+      "a": "Para presentar una tutela es obligatorio tener abogado.",
+      "v": false,
+      "e": "Cualquier persona puede presentarla por sí misma, sin abogado y sin formato especial."
+    },
+    {
+      "a": "El juez debe resolver una tutela en un plazo máximo de 10 días.",
+      "v": true,
+      "e": "Es un trámite preferente y sumario: la Constitución fija ese plazo para decidir."
+    },
+    {
+      "a": "Una trabajadora embarazada puede ser despedida sin ninguna autorización.",
+      "v": false,
+      "e": "Tiene fuero de maternidad: para despedirla se necesita el permiso del Ministerio del Trabajo."
+    },
+    {
+      "a": "Los derechos mínimos laborales se pueden renunciar firmando un documento.",
+      "v": false,
+      "e": "Son irrenunciables: aunque el trabajador firme, esa renuncia no tiene validez."
+    },
+    {
+      "a": "Las vacaciones son de 15 días hábiles por cada año de servicio.",
+      "v": true,
+      "e": "Se causan por cada año trabajado y deben concederse, no solo pagarse en dinero."
+    },
+    {
+      "a": "Un derecho de petición, por regla general, se responde en 15 días hábiles.",
+      "v": true,
+      "e": "Es el plazo general; algunas solicitudes, como las de documentos o las consultas, tienen plazos distintos."
+    },
+    {
+      "a": "Si me despiden sin justa causa con contrato indefinido, tengo derecho a una indemnización.",
+      "v": true,
+      "e": "La ley la reconoce y se calcula según el salario y el tiempo de servicio."
+    },
+    {
+      "a": "Las horas extras diurnas se pagan con un recargo del 25 %.",
+      "v": true,
+      "e": "Las extras nocturnas tienen un recargo mayor: 75 %."
+    },
+    {
+      "a": "El auxilio de transporte se paga a quienes ganan hasta dos salarios mínimos.",
+      "v": true,
+      "e": "Quienes ganan más de ese tope no lo reciben."
+    },
+    {
+      "a": "El fallo de una tutela no se puede impugnar.",
+      "v": false,
+      "e": "Se puede impugnar dentro de los 3 días siguientes a su notificación."
+    },
+    {
+      "a": "Solo las personas naturales pueden presentar una tutela.",
+      "v": false,
+      "e": "Las personas jurídicas, como una empresa, también pueden hacerlo cuando se vulneran sus derechos fundamentales."
+    },
+    {
+      "a": "Si no se cumple una orden de tutela, puede abrirse un incidente de desacato.",
+      "v": true,
+      "e": "El juez puede sancionar con arresto y multa a quien incumple."
+    }
+  ],
+  "pistas": {
+    "CESANTIAS": "Ahorro por cada año trabajado",
+    "PRIMA": "Pago extra de junio y diciembre",
+    "TUTELA": "Acción para proteger derechos fundamentales",
+    "DEMANDA": "Escrito con el que se inicia el proceso",
+    "FUERO": "Protección especial contra el despido",
+    "DESPIDO": "Terminación del contrato por parte del empleador",
+    "SALARIO": "Pago que recibe el trabajador por su labor",
+    "PENSION": "Pago mensual tras jubilarse",
+    "AUDIENCIA": "Cita ante el juez para escuchar a las partes",
+    "SENTENCIA": "Decisión final del juez",
+    "CONTRATO": "Acuerdo entre trabajador y empleador",
+    "SINDICATO": "Asociación para defender a los trabajadores",
+    "HUELGA": "Suspensión colectiva del trabajo",
+    "JORNADA": "Horas de trabajo en el día",
+    "APELACION": "Recurso para que revise un juez superior",
+    "PRUEBA": "Medio para demostrar un hecho",
+    "ALEGATO": "Argumentos finales de una de las partes",
+    "EMBARGO": "Retención de bienes para pagar una deuda",
+    "NOMINA": "Planilla de pagos a los trabajadores",
+    "CAUSA": "Motivo que justifica un acto",
+    "FALLO": "Decisión con la que el juez resuelve",
+    "PLAZO": "Tiempo fijado para cumplir una obligación",
+    "NORMA": "Regla jurídica que obliga",
+    "DEUDA": "Obligación de pagar algo",
+    "MULTA": "Sanción en dinero",
+    "PODER": "Documento con el que se autoriza a un abogado",
+    "SALDO": "Lo que queda por pagar",
+    "VACACIONES": "Descanso anual pagado",
+    "INDEMNIZACION": "Pago por despido sin justa causa",
+    "LIQUIDACION": "Cuentas finales al terminar el contrato",
+    "CONCILIACION": "Acuerdo entre las partes sin juicio",
+    "REFORMA": "Cambio que se hace a una ley",
+    "LABORAL": "Relativo al trabajo",
+    "PROCESO": "Conjunto de etapas ante un juez",
+    "DERECHO": "Conjunto de normas y facultades de las personas",
+    "JUEZ": "Quien decide el proceso",
+    "LEY": "Norma aprobada por el Congreso"
+  }
 }
