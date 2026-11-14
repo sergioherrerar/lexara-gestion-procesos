@@ -1,20 +1,20 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { stripHtml } from '../lib/graph';
 import {
   numerosDelProceso, consultarRama, fechaDMA, resumenAnotacion, esDeTramite, yaEstaEnHistorico,
   actuacionesNuevas, htmlRenglones, renglonHistorico, actualizacionDesdeRama, ultimaActualizacionDesdeRama, abrirEnRamaJudicial,
-  agregarLineasAlEstado, fechaMasRecienteDelEstado,
+  agregarLineasAlEstado, fechaMasRecienteDelEstado, mezclarActuaciones, anotacionLimpia,
 } from '../lib/ramaJudicial';
 
 // Pestaña «Rama Judicial» de la ficha del proceso (2026-11-13): lee las actuaciones del proceso en la Consulta Nacional Unificada de la Rama
 // (por el «No. completo» y los números del «Histórico números completos») y permite pasarlas al Histórico en el mismo formato por renglones
 // («DD-MM-AAAA Actuación: anotación»). Nunca guarda sola: agrega los renglones al Histórico del formulario y se guardan con «Guardar cambios».
-const POR_PAGINA = 25;
+const POR_PAGINA = 50;
 
 function FilaActuacion({ act, nuevo, enHistorico, canWrite, onAgregar }){
   const [abierta, setAbierta] = useState(false);
   const nota = String(act.anotacion || '').replace(/\s+/g, ' ').trim();
-  const corta = nota.length > 140 ? nota.slice(0, 137).replace(/\s+\S*$/, '') + '…' : nota;
+  const corta = anotacionLimpia(nota, 140) || '—';   // la lista muestra la anotación limpia; «ver más» el texto completo de la Rama
   return (
     <tr className={esDeTramite(act) ? 'rama-tramite' : ''}>
       <td className="rama-fecha">{fechaDMA(act.fecha)}</td>
@@ -24,9 +24,12 @@ function FilaActuacion({ act, nuevo, enHistorico, canWrite, onAgregar }){
         {enHistorico && <span className="rama-ya">ya en el Histórico</span>}
       </td>
       <td className="rama-nota">
-        {abierta ? nota : corta}
-        {nota.length > 140 && <button type="button" className="rama-mas" onClick={() => setAbierta(v => !v)}>{abierta ? 'ver menos' : 'ver más'}</button>}
+        {abierta ? (nota || '—') : corta}
+        {nota.length > corta.length && <button type="button" className="rama-mas" onClick={() => setAbierta(v => !v)}>{abierta ? 'ver menos' : 'ver más'}</button>}
       </td>
+      <td className="rama-term">{fechaDMA(act.fechaInicial) || ''}</td>
+      <td className="rama-term">{fechaDMA(act.fechaFinal) || ''}</td>
+      <td className="rama-term">{fechaDMA(act.registro) || ''}</td>
       <td className="rama-acc">
         {canWrite && !enHistorico && <button type="button" className="btn-secondary rama-btn" onClick={() => onAgregar(act)} title="Agrega este renglón al final del Histórico y lo pone también en Estado y Fecha Estado">Al Histórico</button>}
       </td>
@@ -40,18 +43,49 @@ export default function RamaJudicialTab({ proceso, historico, estadoActual, fech
   const [buscarHist, setBuscarHist] = useState(false);   // false: solo el número principal; true: también los del histórico
   const [resultados, setResultados] = useState({});   // radicado -> { cargando, error, datos }
   const [verTodo, setVerTodo] = useState({});
+  const [completando, setCompletando] = useState({});   // radicado -> true mientras se traen las actuaciones que faltan
+  const [filtroFecha, setFiltroFecha] = useState({ desde: '', hasta: '' });
   const [conTramite, setConTramite] = useState(false);
   const url = config?.RAMA_JUDICIAL_URL;
+
+  // La Rama entrega las actuaciones de 40 en 40: se piden las primeras páginas y, en segundo plano, el resto hasta tenerlas todas.
+  const completar = useCallback(async (rad, inicial) => {
+    let datos = inicial;
+    try{
+      for(let vuelta = 0; vuelta < 8; vuelta++){
+        const p = datos.procesos?.[0];
+        if(!p || p.esPrivado || !p.totalActuaciones || p.actuaciones.length >= p.totalActuaciones) break;
+        setCompletando(prev => ({ ...prev, [rad]: true }));
+        const desde = Math.floor(p.actuaciones.length / 40) + 1;
+        const mas = await consultarRama(url, rad, { forzar: true, paginas: 3, desde });
+        const q = mas.procesos?.[0];
+        const unidas = mezclarActuaciones(p.actuaciones, q?.actuaciones || []);
+        if(unidas.length <= p.actuaciones.length){
+          // El servidor es la versión anterior de la consulta (ignora «desde»): se piden de una vez las páginas que permita.
+          const todo = await consultarRama(url, rad, { forzar: true, paginas: 6 });
+          const t = todo.procesos?.[0];
+          const u2 = mezclarActuaciones(p.actuaciones, t?.actuaciones || []);
+          if(u2.length > p.actuaciones.length) datos = { ...datos, procesos: [{ ...p, actuaciones: u2 }, ...datos.procesos.slice(1)] };
+          setResultados(prev => ({ ...prev, [rad]: { ...(prev[rad] || {}), datos } }));
+          break;
+        }
+        datos = { ...datos, procesos: [{ ...p, actuaciones: unidas }, ...datos.procesos.slice(1)] };
+        setResultados(prev => ({ ...prev, [rad]: { ...(prev[rad] || {}), datos } }));
+      }
+    }catch(e){ /* se queda con lo ya cargado */ }
+    finally{ setCompletando(prev => ({ ...prev, [rad]: false })); }
+  }, [url]);
 
   const cargar = useCallback(async (rad, forzar) => {
     setResultados(prev => ({ ...prev, [rad]: { ...(prev[rad] || {}), cargando: true, error: '' } }));
     try{
       const datos = await consultarRama(url, rad, { forzar });
       setResultados(prev => ({ ...prev, [rad]: { cargando: false, error: '', datos } }));
+      completar(rad, datos);
     }catch(e){
       setResultados(prev => ({ ...prev, [rad]: { cargando: false, error: e.message || String(e), datos: prev[rad]?.datos } }));
     }
-  }, [url]);
+  }, [url, completar]);
 
   // Al abrir la pestaña se consulta primero el número principal (el servidor limita las consultas y se recuerdan 10 minutos).
   useEffect(() => { if(principal) cargar(principal, false); }, [principal, cargar]);
@@ -109,6 +143,11 @@ export default function RamaJudicialTab({ proceso, historico, estadoActual, fech
     <div className="field-section rama-tab">
       <p className="rama-fuente">Fuente: Consulta Nacional Unificada de la Rama Judicial (pública). Aquí solo se lee; «Al Histórico» deja la actuación en el Histórico y en el Estado, y luego se guarda con «Guardar cambios».</p>
       <p className="rama-ultima">{ultimaRev ? `Última actualización desde la Rama Judicial: ${ultimaRev}.` : 'Este proceso aún no se ha actualizado desde la Rama Judicial.'}</p>
+      <div className="rama-fechas">
+        <label>Desde <input type="date" value={filtroFecha.desde} onChange={e => setFiltroFecha(f => ({ ...f, desde: e.target.value }))} /></label>
+        <label>Hasta <input type="date" value={filtroFecha.hasta} onChange={e => setFiltroFecha(f => ({ ...f, hasta: e.target.value }))} /></label>
+        {(filtroFecha.desde || filtroFecha.hasta) && <button type="button" className="rama-mas" onClick={() => setFiltroFecha({ desde: '', hasta: '' })}>Quitar filtro</button>}
+      </div>
       <label className="rama-filtro"><input type="checkbox" checked={conTramite} onChange={e => setConTramite(e.target.checked)} /> Mostrar también actuaciones de trámite (envíos, recibos, notificaciones por estado)</label>
       {historicos.length > 0 && !buscarHist && (
         <div className="rama-hist-aviso">
@@ -149,7 +188,7 @@ export default function RamaJudicialTab({ proceso, historico, estadoActual, fech
               const acts = p.actuaciones || [];
               const nuevas = actuacionesNuevas(acts, historico);
               const idsNuevas = new Set(nuevas.map(a => a.consecutivo));
-              const visibles = acts.filter(a => conTramite || !esDeTramite(a));
+              const visibles = acts.filter(a => (conTramite || !esDeTramite(a)) && (!filtroFecha.desde || String(a.fecha || '').slice(0, 10) >= filtroFecha.desde) && (!filtroFecha.hasta || String(a.fecha || '').slice(0, 10) <= filtroFecha.hasta));
               const tope = verTodo[rad + p.idProceso] ? visibles.length : POR_PAGINA;
               return (
                 <div key={p.idProceso} className="rama-proceso">
@@ -165,7 +204,7 @@ export default function RamaJudicialTab({ proceso, historico, estadoActual, fech
                   {!p.esPrivado && (
                     <>
                       <div className="rama-resumen">
-                        <span>{p.totalActuaciones} actuaciones en la Rama{acts.length < p.totalActuaciones ? ` (se muestran las ${acts.length} más recientes)` : ''}.</span>
+                        <span>{p.totalActuaciones} actuaciones en la Rama{completando[rad] ? ` (cargando el resto: ${acts.length} de ${p.totalActuaciones}…)` : acts.length < p.totalActuaciones ? ` (se muestran las ${acts.length} más recientes: para ver todas hay que actualizar la consulta en Netlify)` : ''}.</span>
                         {nuevas.length > 0 && <strong className="rama-hay-nuevas">{nuevas.length} {nuevas.length === 1 ? 'novedad' : 'novedades'} para el Histórico</strong>}
                         {canWrite && (() => {
                           const u = actualizacionDesdeRama(acts, historico, fechaEstado, estadoActual);
@@ -176,7 +215,7 @@ export default function RamaJudicialTab({ proceso, historico, estadoActual, fech
                       </div>
                       <div className="table-wrap">
                         <table className="rama-tabla">
-                          <thead><tr><th>Fecha</th><th>Actuación</th><th>Anotación</th><th></th></tr></thead>
+                          <thead><tr><th>Fecha</th><th>Actuación</th><th>Anotación</th><th>Inicia término</th><th>Finaliza término</th><th>Registro</th><th></th></tr></thead>
                           <tbody>
                             {visibles.slice(0, tope).map(a => (
                               <FilaActuacion

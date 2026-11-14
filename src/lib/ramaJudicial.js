@@ -50,20 +50,20 @@ export function abrirConsultaPublicaRama(){ window.open(URL_CONSULTA_RAMA, '_bla
 const cache = new Map();   // radicado -> { t, datos }   (10 minutos, para no repetir consultas al abrir y cerrar la ficha)
 const VIGENCIA_MS = 10 * 60 * 1000;
 
-export async function consultarRama(url, radicado, { forzar = false, paginas = 3 } = {}){
+export async function consultarRama(url, radicado, { forzar = false, paginas = 3, desde = 1 } = {}){
   if(!url) throw new Error('Falta instalar la consulta a la Rama Judicial (RAMA_JUDICIAL_URL en config.js).');
   const guardado = cache.get(radicado);
-  if(!forzar && guardado && Date.now() - guardado.t < VIGENCIA_MS) return guardado.datos;
+  if(!forzar && desde === 1 && guardado && Date.now() - guardado.t < VIGENCIA_MS) return guardado.datos;
   let res;
   try{
-    res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ radicado, paginas }) });
+    res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ radicado, paginas, desde }) });
   }catch(e){
     throw new Error('No se pudo comunicar con el servidor de consulta. Revise la conexión e intente de nuevo.');
   }
   let datos = null;
   try{ datos = await res.json(); }catch(e){ /* sin cuerpo válido */ }
   if(!res.ok || !datos?.ok) throw new Error(datos?.error || `La consulta falló (código ${res.status}).`);
-  cache.set(radicado, { t: Date.now(), datos });
+  if(desde === 1) cache.set(radicado, { t: Date.now(), datos });
   return datos;
 }
 
@@ -200,3 +200,12 @@ export function agregarLineasAlEstado(estado, lineas){
   const nuevas = (lineas || []).filter(l => l && !claveActual.includes(claveTexto(l).replace(/[.…]$/, '')));
   return [actual, ...nuevas].filter(Boolean).join('\n');
 }
+
+// Une dos listas de actuaciones (sin repetir) y las deja de la más reciente a la más antigua, como las entrega la Rama.
+export function mezclarActuaciones(a, b){
+  const mapa = new Map();
+  [...(a || []), ...(b || [])].forEach(x => { mapa.set(String(x.consecutivo ?? '') + '|' + String(x.fecha ?? '') + '|' + String(x.actuacion ?? ''), x); });
+  return [...mapa.values()].sort((x, y) => (Number(y.consecutivo) || 0) - (Number(x.consecutivo) || 0) || String(y.fecha || '').localeCompare(String(x.fecha || '')));
+}
+// Anotación para mostrar en la lista: sin iniciales del funcionario, enlaces ni firma electrónica (el texto completo sigue disponible con «ver más»).
+export function anotacionLimpia(texto, max = 140){ return resumenAnotacion(texto, max); }

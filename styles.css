@@ -2266,3 +2266,7 @@
   .boton-rama-texto{display:flex; flex-direction:column; align-items:flex-start; line-height:1.15; text-align:left;}
   .boton-rama-texto strong{font-size:13px; font-weight:700; color:var(--verde-oscuro);}
   .boton-rama-texto small{font-size:11px; color:var(--texto-suave);}
+  .rama-fechas{display:flex; flex-wrap:wrap; align-items:center; gap:14px; font-size:13px; color:var(--texto-suave);}
+  .rama-fechas label{display:inline-flex; align-items:center; gap:6px;}
+  .rama-fechas input{font:inherit; font-size:13px; padding:5px 8px; border:1px solid var(--gris-linea); border-radius:8px;}
+  .rama-term{white-space:nowrap; font-variant-numeric:tabular-nums; font-size:12.5px; color:var(--texto-suave);}

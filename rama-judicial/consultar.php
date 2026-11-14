@@ -59,7 +59,8 @@ $entrada = json_decode(file_get_contents('php://input'), true);
 if(!is_array($entrada)) responder(400, ['ok' => false, 'error' => 'Solicitud inválida.']);
 $radicado = preg_replace('/\D+/', '', (string)($entrada['radicado'] ?? ''));
 if(strlen($radicado) !== 23) responder(400, ['ok' => false, 'error' => 'El número de radicación debe tener 23 dígitos (el «No. completo» del proceso).']);
-$maxPaginas = max(1, min(6, (int)($entrada['paginas'] ?? 3)));
+$maxPaginas = max(1, min(10, (int)($entrada['paginas'] ?? 3)));
+$desde = max(1, (int)($entrada['desde'] ?? 1));   // página inicial: la app pide el resto de las actuaciones por tandas
 limitarUso();
 
 list($lista, $cod, $falla) = pedirRama('/Procesos/Consulta/NumeroRadicacion?numero=' . $radicado . '&SoloActivos=false&pagina=1');
@@ -76,9 +77,9 @@ foreach(array_slice($lista['procesos'], 0, 3) as $p){
         'esPrivado' => !empty($p['esPrivado']), 'totalActuaciones' => 0, 'actuaciones' => [],
     ];
     if($id && empty($p['esPrivado'])){
-        for($pg = 1; $pg <= $maxPaginas; $pg++){
+        for($pg = $desde; $pg < $desde + $maxPaginas; $pg++){
             list($act, $c2, $f2) = pedirRama('/Proceso/Actuaciones/' . $id . '?pagina=' . $pg);
-            if($act === null || $c2 >= 400 || !isset($act['actuaciones'])){ if($pg === 1) $item['error'] = 'No se pudieron leer las actuaciones' . ($f2 ? ' (' . $f2 . ')' : '') . '.'; break; }
+            if($act === null || $c2 >= 400 || !isset($act['actuaciones'])){ if($pg === $desde) $item['error'] = 'No se pudieron leer las actuaciones' . ($f2 ? ' (' . $f2 . ')' : '') . '.'; break; }
             foreach($act['actuaciones'] as $a){
                 $item['actuaciones'][] = [
                     'consecutivo' => $a['consActuacion'] ?? null, 'fecha' => $a['fechaActuacion'] ?? null, 'registro' => $a['fechaRegistro'] ?? null,

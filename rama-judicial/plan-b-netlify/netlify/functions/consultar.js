@@ -61,7 +61,8 @@ exports.handler = async (event) => {
   }
   const radicado = String(entrada.radicado || '').replace(/\D+/g, '');
   if (radicado.length !== 23) return responder(400, { ok: false, error: 'El número de radicación debe tener 23 dígitos (el «No. completo» del proceso).' });
-  const maxPaginas = Math.max(1, Math.min(6, parseInt(entrada.paginas, 10) || 3));
+  const maxPaginas = Math.max(1, Math.min(10, parseInt(entrada.paginas, 10) || 3));
+  const desde = Math.max(1, parseInt(entrada.desde, 10) || 1);   // página inicial: así la app va pidiendo el resto de las actuaciones por tandas
 
   const lista = await pedirRama('/Procesos/Consulta/NumeroRadicacion?numero=' + radicado + '&SoloActivos=false&pagina=1');
   if (lista.json === null || lista.codigo >= 400 || !lista.json.procesos) {
@@ -77,9 +78,9 @@ exports.handler = async (event) => {
       esPrivado: !!p.esPrivado, totalActuaciones: 0, actuaciones: [],
     };
     if (id && !p.esPrivado) {
-      for (let pg = 1; pg <= maxPaginas; pg++) {
+      for (let pg = desde; pg < desde + maxPaginas; pg++) {
         const r = await pedirRama('/Proceso/Actuaciones/' + id + '?pagina=' + pg);
-        if (r.json === null || r.codigo >= 400 || !r.json.actuaciones) { if (pg === 1) item.error = 'No se pudieron leer las actuaciones' + (r.falla ? ' (' + r.falla + ')' : '') + '.'; break; }
+        if (r.json === null || r.codigo >= 400 || !r.json.actuaciones) { if (pg === desde) item.error = 'No se pudieron leer las actuaciones' + (r.falla ? ' (' + r.falla + ')' : '') + '.'; break; }
         for (const a of r.json.actuaciones) {
           item.actuaciones.push({
             consecutivo: a.consActuacion ?? null, fecha: a.fechaActuacion ?? null, registro: a.fechaRegistro ?? null,
