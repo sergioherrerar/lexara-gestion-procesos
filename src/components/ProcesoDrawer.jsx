@@ -18,7 +18,7 @@ import { ICON_SVG, RUTAS_CARPETAS_ENTIDAD } from '../config';
 import { DEPARTAMENTOS_COLOMBIA, municipiosDe } from '../lib/colombiaGeo';
 import { AudienciasTerminosDelProceso } from './AudienciasTerminosTab';
 import RamaJudicialTab from './RamaJudicialTab';
-import { abrirEnRamaJudicial, abrirEnSIUGJ } from '../lib/ramaJudicial';
+import { abrirEnRamaJudicial } from '../lib/ramaJudicial';
 
 const TABS = [
   {key:'datos', label:'Datos generales'},
@@ -725,7 +725,6 @@ export default function ProcesoDrawer({ pestanaInicial, onRamaVista, proceso, cl
           <h2>{proceso.Cliente || "Sin nombre"}</h2>
           <span className={"badge badge-truncate " + estadoBadgeClass(proceso.EstadoVT, proceso.FechaUltimoEstado, proceso.Estado)}>{stripHtml(proceso.Estado) || "—"}</span>
           <div className="drawer-head-acciones">
-            <IconTextButton icon="open" variant="secondary" onClick={() => abrirEnSIUGJ(proceso, notify)}>Abrir en SIUGJ</IconTextButton>
             <IconTextButton icon="open" variant="secondary" onClick={() => abrirEnRamaJudicial(proceso, notify)}>Consulta pública de la Rama</IconTextButton>
           </div>
         </div>
@@ -823,10 +822,10 @@ export default function ProcesoDrawer({ pestanaInicial, onRamaVista, proceso, cl
           )}
           {activeTab === 'rama' && (
             <RamaJudicialTab
-              proceso={proceso} historico={form.Historico || ''} fechaEstado={form.FechaUltimoEstado} canWrite={canWrite} config={config} notify={notify} onRamaVista={onRamaVista}
+              proceso={proceso} historico={form.Historico || ''} estadoActual={form.Estado || ''} fechaEstado={form.FechaUltimoEstado} canWrite={canWrite} config={config} notify={notify} onRamaVista={onRamaVista}
               onAgregarAlHistorico={html => setField('Historico', (form.Historico || '') + html)}
               onActualizar={({ historicoHtml, estado, fechaEstado }) => {
-                setForm(prev => ({ ...prev, Historico: (prev.Historico || '') + historicoHtml, ...(estado !== null ? { Estado: estado, FechaUltimoEstado: fechaEstado } : {}) }));
+                setForm(prev => ({ ...prev, Historico: (prev.Historico || '') + historicoHtml, ...(estado !== null ? { Estado: estado, ...(fechaEstado ? { FechaUltimoEstado: fechaEstado } : {}) } : {}) }));
               }}
             />
           )}

@@ -2256,7 +2256,13 @@
   .balanza-item:hover{background:#f1f8f6;}
   .balanza-pie{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 16px; border-top:1px solid var(--gris-linea); background:var(--gris-claro); font-size:11.5px; color:var(--texto-suave); line-height:1.4;}
   .drawer-head-acciones{display:flex; flex-wrap:wrap; gap:8px;}
-  /* botón con el logo de SIUGJ: ocupa el ancho de la fila de acciones */
-  .icon-btn-siugj{grid-column:1 / -1; width:100%; height:42px; background:#fff; border:1px solid var(--gris-linea);}
-  .icon-btn-siugj:hover{background:#eef3fb; border-color:#2a4e9b;}
-  .icon-btn .icon-siugj-img{width:calc(100% - 14px); height:auto; max-height:32px; object-fit:contain; display:block;}
+
+  /* Accesos a la Rama Judicial en la cabecera de Procesos judiciales: SIUGJ y la consulta pública, del mismo tamaño */
+  .view-header-acciones{display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:flex-end;}
+  .boton-rama{display:inline-flex; align-items:center; justify-content:center; gap:8px; width:148px; height:46px; padding:6px 12px; box-sizing:border-box; border-radius:10px; background:#fff; border:1px solid var(--gris-linea); cursor:pointer; font:inherit; color:var(--texto); transition:background .15s, border-color .15s, box-shadow .15s;}
+  .boton-rama:hover{background:#f1f6fc; border-color:#2a4e9b; box-shadow:0 2px 8px rgba(0,30,80,.12);}
+  .boton-rama:focus-visible{outline:2px solid var(--verde-claro); outline-offset:2px;}
+  .boton-rama img{display:block; max-width:100%; max-height:100%; width:auto; height:auto; object-fit:contain;}
+  .boton-rama-texto{display:flex; flex-direction:column; align-items:flex-start; line-height:1.15; text-align:left;}
+  .boton-rama-texto strong{font-size:13px; font-weight:700; color:var(--verde-oscuro);}
+  .boton-rama-texto small{font-size:11px; color:var(--texto-suave);}

@@ -2,7 +2,8 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { stripHtml } from '../lib/graph';
 import {
   numerosDelProceso, consultarRama, fechaDMA, resumenAnotacion, esDeTramite, yaEstaEnHistorico,
-  actuacionesNuevas, htmlRenglones, actualizacionDesdeRama, ultimaActualizacionDesdeRama, abrirEnRamaJudicial,
+  actuacionesNuevas, htmlRenglones, renglonHistorico, actualizacionDesdeRama, ultimaActualizacionDesdeRama, abrirEnRamaJudicial,
+  agregarLineasAlEstado, fechaMasRecienteDelEstado,
 } from '../lib/ramaJudicial';
 
 // Pestaña «Rama Judicial» de la ficha del proceso (2026-11-13): lee las actuaciones del proceso en la Consulta Nacional Unificada de la Rama
@@ -27,13 +28,13 @@ function FilaActuacion({ act, nuevo, enHistorico, canWrite, onAgregar }){
         {nota.length > 140 && <button type="button" className="rama-mas" onClick={() => setAbierta(v => !v)}>{abierta ? 'ver menos' : 'ver más'}</button>}
       </td>
       <td className="rama-acc">
-        {canWrite && !enHistorico && <button type="button" className="btn-secondary rama-btn" onClick={() => onAgregar(act)} title="Agrega este renglón al final del Histórico">Al Histórico</button>}
+        {canWrite && !enHistorico && <button type="button" className="btn-secondary rama-btn" onClick={() => onAgregar(act)} title="Agrega este renglón al final del Histórico y lo pone también en Estado y Fecha Estado">Al Histórico</button>}
       </td>
     </tr>
   );
 }
 
-export default function RamaJudicialTab({ proceso, historico, fechaEstado, canWrite, config, notify, onAgregarAlHistorico, onActualizar, onRamaVista }){
+export default function RamaJudicialTab({ proceso, historico, estadoActual, fechaEstado, canWrite, config, notify, onAgregarAlHistorico, onActualizar, onRamaVista }){
   const { principal, historicos } = useMemo(() => numerosDelProceso(proceso), [proceso]);
   const radicados = useMemo(() => [principal, ...historicos].filter(Boolean), [principal, historicos]);
   const [buscarHist, setBuscarHist] = useState(false);   // false: solo el número principal; true: también los del histórico
@@ -79,6 +80,14 @@ export default function RamaJudicialTab({ proceso, historico, fechaEstado, canWr
     return <div className="empty-state empty-state-compact">Este proceso no tiene un «No. completo» de 23 dígitos, así que no se puede consultar en la Rama Judicial.</div>;
   }
 
+  // «Al Histórico» de una fila (2026-11-13, pedido del usuario: «este botón también coloca el dato en Estado»): el renglón va al final del Histórico y la actuación pasa a ser el Estado,
+  // con su fecha en Fecha Estado. Al guardar, el Estado anterior se archiva solo en el Histórico, como siempre.
+  function agregarUno(act){
+    const estado = agregarLineasAlEstado(estadoActual, [renglonHistorico(act, 140)]);
+    onActualizar({ historicoHtml: htmlRenglones([act]), estado, fechaEstado: fechaMasRecienteDelEstado(estado) || String(act.fecha || '').slice(0, 10) || null });
+    notify?.('Se agregó al Histórico y como línea nueva del Estado, y la Fecha Estado quedó en la más reciente. Presione «Guardar cambios» para guardarlo.', 'success');
+  }
+
   function agregar(acts){
     if(!acts.length) return;
     onAgregarAlHistorico(htmlRenglones(acts));
@@ -87,18 +96,18 @@ export default function RamaJudicialTab({ proceso, historico, fechaEstado, canWr
 
   // Actualización completa: renglones nuevos en el Histórico + Estado y Fecha Estado con lo más reciente + marca de «Actualizado desde la Rama».
   function actualizarTodo(acts){
-    const r = actualizacionDesdeRama(acts, historico, fechaEstado);
+    const r = actualizacionDesdeRama(acts, historico, fechaEstado, estadoActual);
     onActualizar({ historicoHtml: r.historicoHtml, estado: r.estado, fechaEstado: r.fechaEstado });
     const partes = [];
     if(r.nuevas.length) partes.push(r.nuevas.length === 1 ? '1 renglón nuevo en el Histórico' : `${r.nuevas.length} renglones nuevos en el Histórico`);
-    if(r.estado) partes.push('Estado y Fecha Estado actualizados');
+    if(r.estado) partes.push('líneas nuevas en el Estado y Fecha Estado actualizada');
     notify?.((partes.length ? partes.join(' y ') : 'Sin novedades; se anotó la revisión en el Histórico') + '. Presione «Guardar cambios» para guardarlo.', 'success');
   }
   const ultimaRev = ultimaActualizacionDesdeRama(historico);
 
   return (
     <div className="field-section rama-tab">
-      <p className="rama-fuente">Fuente: Consulta Nacional Unificada de la Rama Judicial (pública). Aquí solo se lee; para dejar algo en el Histórico use «Al Histórico» y luego «Guardar cambios».</p>
+      <p className="rama-fuente">Fuente: Consulta Nacional Unificada de la Rama Judicial (pública). Aquí solo se lee; «Al Histórico» deja la actuación en el Histórico y en el Estado, y luego se guarda con «Guardar cambios».</p>
       <p className="rama-ultima">{ultimaRev ? `Última actualización desde la Rama Judicial: ${ultimaRev}.` : 'Este proceso aún no se ha actualizado desde la Rama Judicial.'}</p>
       <label className="rama-filtro"><input type="checkbox" checked={conTramite} onChange={e => setConTramite(e.target.checked)} /> Mostrar también actuaciones de trámite (envíos, recibos, notificaciones por estado)</label>
       {historicos.length > 0 && !buscarHist && (
@@ -159,7 +168,7 @@ export default function RamaJudicialTab({ proceso, historico, fechaEstado, canWr
                         <span>{p.totalActuaciones} actuaciones en la Rama{acts.length < p.totalActuaciones ? ` (se muestran las ${acts.length} más recientes)` : ''}.</span>
                         {nuevas.length > 0 && <strong className="rama-hay-nuevas">{nuevas.length} {nuevas.length === 1 ? 'novedad' : 'novedades'} para el Histórico</strong>}
                         {canWrite && (() => {
-                          const u = actualizacionDesdeRama(acts, historico, fechaEstado);
+                          const u = actualizacionDesdeRama(acts, historico, fechaEstado, estadoActual);
                           return u.hayCambios
                             ? <button type="button" className="btn-primary rama-btn" onClick={() => actualizarTodo(acts)} title="Agrega los renglones nuevos al Histórico y pone en Estado y Fecha Estado lo más reciente de la Rama">Actualizar Histórico y Estado{nuevas.length ? ` (${nuevas.length})` : ''}</button>
                             : <span className="rama-al-dia">Estado e Histórico al día</span>;
@@ -173,7 +182,7 @@ export default function RamaJudicialTab({ proceso, historico, fechaEstado, canWr
                               <FilaActuacion
                                 key={a.consecutivo + '-' + a.fecha} act={a} canWrite={canWrite}
                                 nuevo={idsNuevas.has(a.consecutivo)} enHistorico={yaEstaEnHistorico(a, historico)}
-                                onAgregar={x => agregar([x])}
+                                onAgregar={agregarUno}
                               />
                             ))}
                           </tbody>

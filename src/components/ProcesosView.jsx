@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { ICON_SVG } from '../config';
 import { stripHtml, fmtFechaDMA, estadoComoTexto, estadoBadgeClass, ultimoWordEnCarpeta, mensajeError } from '../lib/graph';
-import { abrirEnSIUGJ } from '../lib/ramaJudicial';
+import { abrirSIUGJ, abrirConsultaPublicaRama } from '../lib/ramaJudicial';
+import logoSiugj from '../assets/Logo SIUGJ.svg';
 import IconButton, { IconTextButton } from './IconButton';
 import ColumnHeaderMenu from './ColumnHeaderMenu';
 import { useColumnFilters } from '../hooks/useColumnFilters';
@@ -158,7 +159,16 @@ export default function ProcesosView({ procesos, currentFilter, setFilter, searc
           <h1>Procesos judiciales</h1>
           <p>{rows.length} de {procesos.length} procesos{hasActiveFilters && <> · <button type="button" className="clear-filters-link" onClick={clearFilters}>Limpiar filtros de columna</button></>}</p>
         </div>
-        {canWrite && <IconTextButton icon="add" variant="primary" onClick={onCreateProceso}>Nuevo proceso judicial</IconTextButton>}
+        <div className="view-header-acciones">
+          {/* Dos accesos a la Rama Judicial, del mismo tamaño (2026-11-13, pedido del usuario): SIUGJ (radicar documentos, inicia sesión) y la consulta pública de procesos. */}
+          <button type="button" className="boton-rama boton-rama-siugj" onClick={abrirSIUGJ} title="SIUGJ — radicar documentos y consultas (inicie sesión)" aria-label="Abrir SIUGJ de la Rama Judicial">
+            <img src={logoSiugj} alt="SIUGJ" draggable={false} />
+          </button>
+          <button type="button" className="boton-rama boton-rama-consulta" onClick={abrirConsultaPublicaRama} title="Consulta de procesos de la Rama Judicial (pública, por número de radicación)" aria-label="Abrir la consulta de procesos de la Rama Judicial">
+            <span className="boton-rama-texto"><strong>Rama Judicial</strong><small>Consulta de procesos</small></span>
+          </button>
+          {canWrite && <IconTextButton icon="add" variant="primary" onClick={onCreateProceso}>Nuevo proceso judicial</IconTextButton>}
+        </div>
       </div>
       <div className="toolbar">
         {filterChips.map(f => (
@@ -263,7 +273,6 @@ export default function ProcesosView({ procesos, currentFilter, setFilter, searc
                     <IconButton icon="word" variant="word" label="Descargar Impulso Procesal en Word" spinning={generandoWord===p.id} onClick={e => { e.stopPropagation(); handleGenerarImpulsoWord(p); }} />
                     <IconButton icon="mail" variant="mail" label="Crear borrador de correo — Impulso Procesal al Despacho" spinning={generandoCorreo===p.id} onClick={e => { e.stopPropagation(); handleAbrirCorreoImpulso(p); }} />
                     <IconButton icon="search" variant="word" label="Buscar y abrir el último Word de la carpeta del proceso" spinning={buscandoWord===p.id} onClick={e => { e.stopPropagation(); handleBuscarUltimoWord(p); }} />
-                    <IconButton icon="siugj" variant="siugj" label="Abrir en SIUGJ (Rama Judicial) para iniciar sesión — copia el número del proceso" onClick={e => { e.stopPropagation(); abrirEnSIUGJ(p, notify); }} />
                   </div>
                 </td>
               </tr>

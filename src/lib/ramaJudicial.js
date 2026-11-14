@@ -2,7 +2,7 @@
 // sus anotaciones… que se llene el histórico así por líneas como lo llevamos»). La consulta la hace rama-judicial/consultar.php (cPanel), que lee
 // la Consulta Nacional Unificada de la Rama (pública, por radicado de 23 dígitos, sin usuario ni contraseña). Aquí solo se arma la petición y
 // se convierten las actuaciones en renglones del Histórico («DD-MM-AAAA Actuación: anotación»), sin repetir los que ya estén.
-import { stripHtml, normalize, numeroCortoDeRadicadoLargo } from './graph';
+import { stripHtml, normalize, numeroCortoDeRadicadoLargo, estadoComoTexto } from './graph';
 
 // Radicados de 23 dígitos del proceso: el «No. completo» y los del «Histórico números completos» (sin repetir).
 export function radicadosDelProceso(proceso){
@@ -41,26 +41,11 @@ export function abrirEnRamaJudicial(proceso, notify, radicadoElegido){
   return true;
 }
 
-// Abre SIUGJ (el portal de la Rama donde ya tienen usuario) para iniciar sesión y consultar el proceso. SIUGJ no deja prellenar la búsqueda desde la dirección,
-// así que se copia el consecutivo del proceso (los 5 dígitos, p. ej. 00398) y se avisa el año: en «Consulta de demandas» van como «Año del Proceso» y «No. de Proceso».
+// SIUGJ (el portal de la Rama donde se radican demandas y documentos): se abre para iniciar sesión. No deja buscar un proceso por su número desde la dirección ni desde la búsqueda
+// de la cuenta (2026-11-13), así que el botón vive en la cabecera de Procesos judiciales y solo abre el portal.
 export const URL_SIUGJ = 'https://siugj.ramajudicial.gov.co/principalPortal/index.php';
-export function abrirEnSIUGJ(proceso, notify){
-  window.open(URL_SIUGJ, '_blank', 'noopener,noreferrer');
-  const radicado = numerosDelProceso(proceso).principal;
-  const corto = (radicado && numeroCortoDeRadicadoLargo(radicado)) || String(proceso?.Radicado || '');
-  const m = /^(\d{4})-(\d{5})$/.exec(corto);
-  if(!m){
-    notify?.('SIUGJ abierto: inicie sesión y busque el proceso en «Consulta de demandas».', 'info');
-    return;
-  }
-  const [, anio, consecutivo] = m;
-  const aviso = copiado => notify?.(
-    `SIUGJ abierto: inicie sesión y en «Consulta de demandas» elija el año ${anio} y el No. de Proceso ${consecutivo}${copiado ? ' (ya copiado: péguelo con Ctrl+V)' : ''}.`, copiado ? 'success' : 'info');
-  try{
-    if(navigator.clipboard?.writeText) navigator.clipboard.writeText(consecutivo).then(() => aviso(true), () => aviso(false));
-    else aviso(false);
-  }catch(e){ aviso(false); }
-}
+export function abrirSIUGJ(){ window.open(URL_SIUGJ, '_blank', 'noopener,noreferrer'); }
+export function abrirConsultaPublicaRama(){ window.open(URL_CONSULTA_RAMA, '_blank', 'noopener,noreferrer'); }
 
 const cache = new Map();   // radicado -> { t, datos }   (10 minutos, para no repetir consultas al abrir y cerrar la ficha)
 const VIGENCIA_MS = 10 * 60 * 1000;
@@ -163,21 +148,55 @@ function hoyDMA(){ const d = new Date(); return `${String(d.getDate()).padStart(
 
 // Estado = las 2 actuaciones de fondo más recientes (cada una con su fecha, una por línea, como se lleva); Fecha Estado = la fecha de la más reciente.
 // Solo se cambia si esa actuación es posterior a la Fecha Estado que ya tenía el proceso.
-export function actualizacionDesdeRama(actuaciones, historicoHtml, fechaEstadoActual){
+export function actualizacionDesdeRama(actuaciones, historicoHtml, fechaEstadoActual, estadoActual = ''){
   const nuevas = actuacionesNuevas(actuaciones, historicoHtml);
   const fondo = (actuaciones || []).filter(a => !esDeTramite(a) && a.fecha)
     .slice().sort((a, b) => String(b.fecha).localeCompare(String(a.fecha)) || (b.consecutivo || 0) - (a.consecutivo || 0));
   const providencias = fondo.filter(a => /^(auto|sentencia|audiencia|fallo|providencia|decreto)/.test(normalize(a.actuacion || '').trim()));
-  const recientes = (providencias.length ? providencias : fondo).slice(0, 2).reverse();
-  const fechaNueva = recientes.length ? String(recientes[recientes.length - 1].fecha).slice(0, 10) : '';
-  const cambiaEstado = !!fechaNueva && fechaNueva > String(fechaEstadoActual || '').slice(0, 10);
-  const estado = cambiaEstado ? recientes.map(a => renglonHistorico(a, 140)).join('\n') : null;
+  const base = providencias.length ? providencias : fondo;
+  // Al Estado se le AGREGAN líneas nuevas (nunca se borra lo que ya tiene): las providencias posteriores a la Fecha Estado actual que aún no estén escritas en el Estado
+  // (hasta las 3 más recientes; si el proceso no tiene Estado todavía, las 2 más recientes). La Fecha Estado pasa a ser la fecha más reciente que quede en el Estado.
+  const desde = String(fechaEstadoActual || '').slice(0, 10);
+  const pendientes = base.filter(a => !desde || String(a.fecha).slice(0, 10) > desde).filter(a => !yaEstaEnEstado(a, estadoActual)).slice(0, desde ? 3 : 2).reverse();
+  const nuevoEstado = pendientes.length ? agregarLineasAlEstado(estadoActual, pendientes.map(a => renglonHistorico(a, 140))) : null;
+  const fechaNueva = nuevoEstado ? fechaMasRecienteDelEstado(nuevoEstado) : '';
+  const cambiaEstado = !!nuevoEstado && (!desde || fechaNueva > desde || nuevoEstado !== estadoComoTexto(estadoActual));
+  const estado = cambiaEstado ? nuevoEstado : null;
   const n = nuevas.length;
   const detalle = n ? ` (${n} ${n === 1 ? 'actuación nueva' : 'actuaciones nuevas'})` : ' (sin actuaciones nuevas)';
   const marca = `${hoyDMA()} Actualizado desde la Rama Judicial${detalle}.`;
   return {
-    nuevas, estado, fechaEstado: cambiaEstado ? fechaNueva : null,
+    nuevas, estado, fechaEstado: cambiaEstado ? (fechaNueva || null) : null,
     historicoHtml: htmlRenglones(nuevas) + `<div>${esc(marca)}</div>`,
     hayCambios: n > 0 || cambiaEstado,
   };
+}
+
+// ---------- Estado: líneas nuevas y Fecha Estado ----------
+// Fechas «DD-MM-AAAA» con las que empieza cada actuación del Estado (no cuentan las fechas escritas con «/» dentro del texto, como la de una audiencia futura).
+const RE_FECHA_ESTADO = /(?<![\d/-])(\d{1,2})-(\d{1,2})-(\d{4})(?=\s+[A-Za-zÁÉÍÓÚÑáéíóúñ])/g;
+export function fechaMasRecienteDelEstado(estado){
+  const t = estadoComoTexto(estado || '');
+  let mayor = '';
+  let m;
+  RE_FECHA_ESTADO.lastIndex = 0;
+  while((m = RE_FECHA_ESTADO.exec(t))){
+    const iso = `${m[3]}-${String(m[2]).padStart(2, '0')}-${String(m[1]).padStart(2, '0')}`;
+    if(iso > mayor) mayor = iso;
+  }
+  return mayor;
+}
+const claveTexto = t => normalize(String(t || '')).replace(/\s+/g, ' ').trim();
+export function yaEstaEnEstado(act, estado){
+  const t = claveTexto(estadoComoTexto(estado || ''));
+  const f = fechaDMA(act.fecha);
+  const nombre = claveTexto(act.actuacion).slice(0, 14);
+  return !!t && !!f && t.includes(f) && nombre.length >= 4 && t.includes(nombre);
+}
+// Agrega las líneas al final del Estado, cada una en su renglón, sin repetir las que ya estén y sin tocar lo anterior.
+export function agregarLineasAlEstado(estado, lineas){
+  const actual = estadoComoTexto(estado || '').replace(/\s+$/, '');
+  const claveActual = claveTexto(actual);
+  const nuevas = (lineas || []).filter(l => l && !claveActual.includes(claveTexto(l).replace(/[.…]$/, '')));
+  return [actual, ...nuevas].filter(Boolean).join('\n');
 }
