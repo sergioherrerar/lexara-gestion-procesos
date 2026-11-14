@@ -1,4 +1,5 @@
 import miniVerdeOscuro from '../assets/Mini verde oscuro.png';
+import logoSiugj from '../assets/Logo SIUGJ.svg';   // logo oficial de SIUGJ (Rama Judicial), tomado de siugj.ramajudicial.gov.co (2026-11-13)
 
 export const ICONS = {
   edit: (
@@ -153,6 +154,7 @@ export const ICONS = {
       <path d="M7 4.5v15l13-7.5z"/>
     </svg>
   ),
+  siugj: <img src={logoSiugj} alt="" className="icon-siugj-img" draggable={false} />,
 };
 
 // Muchos links vienen de SharePoint sin "https://" delante (o con espacios

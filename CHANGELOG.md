@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-11-13 (181)
+- **Procesos judiciales → el botón de SIUGJ lleva el logo oficial de SIUGJ** — pedido del usuario («mejor el ícono de la página»; autorizó la descarga). Se guardó `src/assets/Logo SIUGJ.svg` (13 KB, tomado de `siugj.ramajudicial.gov.co/principalPortal/assets/images/logo_siugj.svg`, SVG sin scripts) y el botón de la fila lo muestra (cubos verdes con «SIUGJ» en azul), ocupando el ancho de la columna de acciones en su propia fila para distinguirlo de los demás íconos. Nuevo ícono `siugj` en `IconButton.jsx`. Sigue abriendo SIUGJ y copiando el número del proceso.
+
 ## 2026-11-13 (180)
 - **Procesos judiciales → el botón de la fila abre SIUGJ para iniciar sesión** — pedido del usuario (captura con el botón marcado: «este botón debe abrir SIUGJ, de una, dentro del proceso, que lo envíe allá e inicie sesión» y «tenga copiado en el portapapeles el número»). El ícono nuevo de las acciones de cada fila abre `siugj.ramajudicial.gov.co/principalPortal/index.php` en una pestaña nueva y **copia al portapapeles el consecutivo del proceso** (p. ej. `00398`, sacado del «No. completo»), avisando el año: en «Consulta de demandas» de SIUGJ van como «Año del Proceso» y «No. de Proceso» (SIUGJ no deja prellenar la búsqueda desde la dirección ni se puede automatizar: usa reCAPTCHA). En la ficha del proceso hay dos botones: «Abrir en SIUGJ» (igual) y «Consulta pública de la Rama» (la consulta por número de radicación, sin inicio de sesión, que copia el radicado completo). Pendiente: cambiar el ícono del botón por el logo de SIUGJ (a la espera de autorizar la descarga del archivo oficial).
 

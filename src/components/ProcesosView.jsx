@@ -263,7 +263,7 @@ export default function ProcesosView({ procesos, currentFilter, setFilter, searc
                     <IconButton icon="word" variant="word" label="Descargar Impulso Procesal en Word" spinning={generandoWord===p.id} onClick={e => { e.stopPropagation(); handleGenerarImpulsoWord(p); }} />
                     <IconButton icon="mail" variant="mail" label="Crear borrador de correo — Impulso Procesal al Despacho" spinning={generandoCorreo===p.id} onClick={e => { e.stopPropagation(); handleAbrirCorreoImpulso(p); }} />
                     <IconButton icon="search" variant="word" label="Buscar y abrir el último Word de la carpeta del proceso" spinning={buscandoWord===p.id} onClick={e => { e.stopPropagation(); handleBuscarUltimoWord(p); }} />
-                    <IconButton icon="open" variant="open" label="Abrir en SIUGJ (Rama Judicial) para iniciar sesión — copia el número del proceso" onClick={e => { e.stopPropagation(); abrirEnSIUGJ(p, notify); }} />
+                    <IconButton icon="siugj" variant="siugj" label="Abrir en SIUGJ (Rama Judicial) para iniciar sesión — copia el número del proceso" onClick={e => { e.stopPropagation(); abrirEnSIUGJ(p, notify); }} />
                   </div>
                 </td>
               </tr>

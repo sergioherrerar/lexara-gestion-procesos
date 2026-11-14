@@ -2256,3 +2256,7 @@
   .balanza-item:hover{background:#f1f8f6;}
   .balanza-pie{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 16px; border-top:1px solid var(--gris-linea); background:var(--gris-claro); font-size:11.5px; color:var(--texto-suave); line-height:1.4;}
   .drawer-head-acciones{display:flex; flex-wrap:wrap; gap:8px;}
+  /* botón con el logo de SIUGJ: ocupa el ancho de la fila de acciones */
+  .icon-btn-siugj{grid-column:1 / -1; width:100%; height:36px; background:#fff; border:1px solid var(--gris-linea);}
+  .icon-btn-siugj:hover{background:#eef3fb; border-color:#2a4e9b;}
+  .icon-siugj-img{height:26px; width:auto; max-width:100%; display:block;}
