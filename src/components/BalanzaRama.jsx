@@ -67,7 +67,7 @@ export default function BalanzaRama({ novedades, revisando, onAbrir, onRevisar, 
                   <span className="badge badge-gris">{fechaCorta(x.fecha)}</span>
                 </div>
                 <div className="campana-item-texto">{x.cliente || '—'}</div>
-                <div className="campana-item-meta">{x.numeroCorto || x.radicado}</div>
+                <div className="campana-item-meta">{x.numeroCorto || x.radicado}{x.instancia ? ` · instancia ${x.instancia}` : ''}</div>
               </button>
             ))}
           </div>

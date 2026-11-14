@@ -57,6 +57,27 @@ function pedirRama($ruta){
 
 $entrada = json_decode(file_get_contents('php://input'), true);
 if(!is_array($entrada)) responder(400, ['ok' => false, 'error' => 'Solicitud inválida.']);
+// Detalle completo (2026-11-14): { "idProceso": N } → datos del proceso, sujetos procesales y documentos.
+if(!empty($entrada['idProceso'])){
+    $id = (int)$entrada['idProceso'];
+    if($id <= 0) responder(400, ['ok' => false, 'error' => 'idProceso inválido.']);
+    limitarUso();
+    // La Rama a veces falla en una de varias consultas seguidas: se reintenta (hasta 3 veces) cada una.
+    $pedirReint = function($ruta){ for($i = 0; $i < 3; $i++){ $r = pedirRama($ruta); if($r[0] !== null && $r[1] < 500) return $r; usleep(350000 * ($i + 1)); } return $r; };
+    list($det, $c1, $f1) = $pedirReint('/Proceso/Detalle/' . $id);
+    list($suj, $c2, $f2) = $pedirReint('/Proceso/Sujetos/' . $id . '?pagina=1');
+    list($doc, $c3, $f3) = $pedirReint('/Proceso/Documentos/' . $id);
+    if($det === null && $suj === null && $doc === null) responder(502, ['ok' => false, 'error' => 'La Rama Judicial no respondió el detalle del proceso (' . ($f1 ?: 'sin respuesta') . '). Intente de nuevo en unos minutos.']);
+    $sujetos = is_array($suj['sujetos'] ?? null) ? $suj['sujetos'] : [];
+    $d = is_array($det) ? $det : [];
+    responder(200, [
+        'ok' => true,
+        'errores' => ['detalle' => $det === null, 'sujetos' => $suj === null, 'documentos' => $doc === null],
+        'detalle' => $det ? ['despacho' => $d['despacho'] ?? '', 'ponente' => $d['ponente'] ?? '', 'tipoProceso' => $d['tipoProceso'] ?? '', 'claseProceso' => $d['claseProceso'] ?? '', 'subclaseProceso' => $d['subclaseProceso'] ?? '', 'recurso' => $d['recurso'] ?? '', 'ubicacion' => $d['ubicacion'] ?? '', 'contenidoRadicacion' => $d['contenidoRadicacion'] ?? '', 'fechaProceso' => $d['fechaProceso'] ?? null, 'ultimaActualizacion' => $d['ultimaActualizacion'] ?? null] : null,
+        'sujetos' => array_map(function($s){ return ['tipo' => $s['tipoSujeto'] ?? '', 'nombre' => $s['nombreRazonSocial'] ?? '', 'identificacion' => $s['identificacion'] ?? '', 'emplazado' => !empty($s['esEmplazado'])]; }, $sujetos),
+        'documentos' => is_array($doc) ? array_map(function($x){ return ['nombre' => $x['nombre'] ?? '', 'descripcion' => $x['descripcion'] ?? '', 'tipo' => $x['tipo'] ?? '', 'fechaCarga' => $x['fechaCarga'] ?? null, 'consecutivo' => $x['consActuacion'] ?? null]; }, $doc) : [],
+    ]);
+}
 $radicado = preg_replace('/\D+/', '', (string)($entrada['radicado'] ?? ''));
 if(strlen($radicado) !== 23) responder(400, ['ok' => false, 'error' => 'El número de radicación debe tener 23 dígitos (el «No. completo» del proceso).']);
 $maxPaginas = max(1, min(10, (int)($entrada['paginas'] ?? 3)));

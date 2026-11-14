@@ -73,6 +73,18 @@ export async function descubrirHermanos(url, rad){
   return existentes;
 }
 
+// Detalle completo de un proceso (ponente, tipo y clase, ubicación del expediente, sujetos procesales y documentos) por su idProceso.
+export async function consultarDetalle(url, idProceso){
+  if(!url) throw new Error('Falta instalar la consulta a la Rama Judicial (RAMA_JUDICIAL_URL en config.js).');
+  let res;
+  try{ res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ idProceso }) }); }
+  catch(e){ throw new Error('No se pudo comunicar con el servidor de consulta. Revise la conexión e intente de nuevo.'); }
+  const datos = await res.json().catch(() => null);
+  if(res.status === 400 && /23 d[ií]gitos/i.test(datos?.error || '')) throw new Error('Para ver el detalle completo hay que actualizar la consulta en Netlify (subir otra vez la carpeta rama-planb-netlify).');
+  if(!res.ok || !datos?.ok) throw new Error(datos?.error || `La consulta falló (código ${res.status}).`);
+  return datos;
+}
+
 const cache = new Map();   // radicado -> { t, datos }   (10 minutos, para no repetir consultas al abrir y cerrar la ficha)
 const VIGENCIA_MS = 10 * 60 * 1000;
 

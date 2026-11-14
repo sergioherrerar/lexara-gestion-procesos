@@ -3,6 +3,7 @@ import { ICON_SVG } from '../config';
 import { stripHtml, fmtFechaDMA, estadoComoTexto, estadoBadgeClass, ultimoWordEnCarpeta, mensajeError } from '../lib/graph';
 import { abrirSIUGJ, abrirConsultaPublicaRama } from '../lib/ramaJudicial';
 import logoSiugj from '../assets/Logo SIUGJ.svg';
+import escudoColombia from '../assets/Escudo Colombia.png';   // escudo de Colombia (Wikimedia Commons, dominio público)
 import IconButton, { IconTextButton } from './IconButton';
 import ColumnHeaderMenu from './ColumnHeaderMenu';
 import { useColumnFilters } from '../hooks/useColumnFilters';
@@ -165,7 +166,8 @@ export default function ProcesosView({ procesos, currentFilter, setFilter, searc
             <img src={logoSiugj} alt="SIUGJ" draggable={false} />
           </button>
           <button type="button" className="boton-rama boton-rama-consulta" onClick={abrirConsultaPublicaRama} title="Consulta de procesos de la Rama Judicial (pública, por número de radicación)" aria-label="Abrir la consulta de procesos de la Rama Judicial">
-            <span className="boton-rama-texto"><strong>Rama Judicial</strong><small>Consulta de procesos</small></span>
+            <img className="boton-rama-escudo" src={escudoColombia} alt="" draggable={false} />
+            <span className="boton-rama-texto"><strong>Rama Judicial</strong><small>Consulta pública</small></span>
           </button>
           {canWrite && <IconTextButton icon="add" variant="primary" onClick={onCreateProceso}>Nuevo proceso judicial</IconTextButton>}
         </div>

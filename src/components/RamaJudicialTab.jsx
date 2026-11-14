@@ -3,13 +3,50 @@ import { stripHtml } from '../lib/graph';
 import {
   numerosDelProceso, consultarRama, fechaDMA, resumenAnotacion, esDeTramite, yaEstaEnHistorico,
   actuacionesNuevas, htmlRenglones, renglonHistorico, actualizacionDesdeRama, ultimaActualizacionDesdeRama, abrirEnRamaJudicial,
-  agregarLineasAlEstado, fechaMasRecienteDelEstado, mezclarActuaciones, anotacionLimpia, descubrirHermanos,
+  agregarLineasAlEstado, fechaMasRecienteDelEstado, mezclarActuaciones, anotacionLimpia, descubrirHermanos, consultarDetalle,
 } from '../lib/ramaJudicial';
 
 // Pestaña «Rama Judicial» de la ficha del proceso (2026-11-13): lee las actuaciones del proceso en la Consulta Nacional Unificada de la Rama
 // (por el «No. completo» y los números del «Histórico números completos») y permite pasarlas al Histórico en el mismo formato por renglones
 // («DD-MM-AAAA Actuación: anotación»). Nunca guarda sola: agrega los renglones al Histórico del formulario y se guardan con «Guardar cambios».
 const POR_PAGINA = 50;
+
+// Detalle completo del proceso (2026-11-14): datos de la Rama, sujetos procesales y documentos del expediente.
+function DetalleProceso({ datos, onReintentar }){
+  const d = datos.detalle || {};
+  const campos = [['Ponente', d.ponente], ['Tipo de proceso', d.tipoProceso], ['Clase de proceso', d.claseProceso], ['Subclase', d.subclaseProceso], ['Recurso', d.recurso], ['Ubicación del expediente', d.ubicacion], ['Contenido de radicación', d.contenidoRadicacion], ['Actualizado en la Rama', d.ultimaActualizacion ? fechaDMA(d.ultimaActualizacion) : '']].filter(([, v]) => v);
+  const [verDocs, setVerDocs] = useState(false);
+  const docs = datos.documentos || [];
+  const docsVisibles = verDocs ? docs : docs.slice(0, 15);
+  const err = datos.errores || {};
+  const fallas = [err.detalle && 'los datos del proceso', err.sujetos && 'los sujetos procesales', err.documentos && 'los documentos'].filter(Boolean);
+  return (
+    <div className="rama-detalle-cuerpo">
+      {fallas.length > 0 && <div className="rama-error" role="alert">La Rama no respondió {fallas.join(', ')}. <button type="button" className="rama-mas" onClick={onReintentar}>Volver a intentar</button></div>}
+      {campos.length > 0 && <dl className="rama-datos">{campos.map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}</dl>}
+      <h5>Sujetos procesales ({(datos.sujetos || []).length})</h5>
+      <div className="table-wrap">
+        <table className="rama-tabla">
+          <thead><tr><th>Tipo</th><th>Nombre o razón social</th><th>Identificación</th></tr></thead>
+          <tbody>{(datos.sujetos || []).map((s, i) => <tr key={i}><td>{s.tipo}</td><td>{s.nombre}{s.emplazado ? ' (emplazado)' : ''}</td><td>{s.identificacion || '—'}</td></tr>)}</tbody>
+        </table>
+      </div>
+      <h5>Documentos del proceso ({docs.length})</h5>
+      {docs.length === 0 ? <p className="rama-fuente">La Rama no lista documentos para este proceso.</p> : (
+        <>
+          <div className="table-wrap">
+            <table className="rama-tabla">
+              <thead><tr><th>Fecha de carga</th><th>Descripción</th><th>Nombre</th></tr></thead>
+              <tbody>{docsVisibles.map((x, i) => <tr key={i}><td className="rama-fecha">{fechaDMA(x.fechaCarga)}</td><td>{x.descripcion || '—'}</td><td className="rama-term">{x.nombre}</td></tr>)}</tbody>
+            </table>
+          </div>
+          {docs.length > docsVisibles.length && <button type="button" className="btn-secondary rama-btn" onClick={() => setVerDocs(true)}>Ver los {docs.length - docsVisibles.length} documentos restantes</button>}
+        </>
+      )}
+      <p className="rama-fuente">La Rama solo lista los documentos; para abrirlos hay que entrar a su consulta pública.</p>
+    </div>
+  );
+}
 
 function FilaActuacion({ act, nuevo, enHistorico, canWrite, onAgregar }){
   const [abierta, setAbierta] = useState(false);
@@ -40,6 +77,7 @@ function FilaActuacion({ act, nuevo, enHistorico, canWrite, onAgregar }){
 export default function RamaJudicialTab({ proceso, historico, estadoActual, fechaEstado, canWrite, config, notify, onAgregarAlHistorico, onActualizar, onRamaVista }){
   const { principal, historicos } = useMemo(() => numerosDelProceso(proceso), [proceso]);
   const radicados = useMemo(() => [principal, ...historicos].filter(Boolean), [principal, historicos]);
+  const [detalles, setDetalles] = useState({});   // idProceso -> { cargando, error, datos } (detalle completo, a pedido)
   const [hermanos, setHermanos] = useState({});   // radicado -> otras terminaciones (00-03) que existen en la Rama
   const descubiertos = useRef(new Set());
   const pedidosHermanos = useRef(new Set());
@@ -95,6 +133,16 @@ export default function RamaJudicialTab({ proceso, historico, estadoActual, fech
     }
   }, [url, completar, radicados]);
 
+  const cargarDetalle = useCallback(async (idProceso) => {
+    setDetalles(prev => ({ ...prev, [idProceso]: { cargando: true, error: '' } }));
+    try{
+      const datos = await consultarDetalle(url, idProceso);
+      setDetalles(prev => ({ ...prev, [idProceso]: { cargando: false, error: '', datos } }));
+    }catch(e){
+      setDetalles(prev => ({ ...prev, [idProceso]: { cargando: false, error: e.message || String(e) } }));
+    }
+  }, [url]);
+
   // Las otras terminaciones que existen se consultan una tras otra, apenas se descubren.
   useEffect(() => {
     const nuevos = Object.values(hermanos).flat().filter(h => !pedidosHermanos.current.has(h) && !radicados.includes(h));
@@ -108,11 +156,14 @@ export default function RamaJudicialTab({ proceso, historico, estadoActual, fech
   // Al abrir la pestaña se consulta primero el número principal (el servidor limita las consultas y se recuerdan 10 minutos).
   useEffect(() => { if(principal) cargar(principal, false); }, [principal, cargar]);
 
-  // Al ver la Rama del proceso, su novedad en la balanza de la cabecera se da por vista.
+  // Al ver la Rama del proceso (el número principal y sus otras instancias), sus novedades en la balanza de la cabecera se dan por vistas.
   useEffect(() => {
-    const fecha = resultados[principal]?.datos?.procesos?.[0]?.fechaUltimaActuacion;
-    if(principal && fecha && onRamaVista) onRamaVista(principal, fecha);
-  }, [resultados, principal, onRamaVista]);
+    if(!principal || !onRamaVista) return;
+    [principal, ...(hermanos[principal] || [])].forEach(rad => {
+      const fecha = resultados[rad]?.datos?.procesos?.[0]?.fechaUltimaActuacion;
+      if(fecha) onRamaVista(rad, fecha);
+    });
+  }, [resultados, principal, hermanos, onRamaVista]);
 
   // Si el principal no aparece en la Rama, se pasa solo a los números del histórico.
   const resPrincipal = resultados[principal];
@@ -224,6 +275,16 @@ export default function RamaJudicialTab({ proceso, historico, estadoActual, fech
                     <div><dt>Última actuación</dt><dd>{fechaDMA(p.fechaUltimaActuacion) || '—'}</dd></div>
                     <div className="rama-ancho"><dt>Sujetos procesales</dt><dd>{p.sujetos || '—'}</dd></div>
                   </dl>
+                  {!p.esPrivado && p.idProceso && (() => {
+                    const dt = detalles[p.idProceso];
+                    return (
+                      <div className="rama-detalle">
+                        {!dt?.datos && <button type="button" className="btn-secondary rama-btn" onClick={() => cargarDetalle(p.idProceso)} disabled={dt?.cargando}>{dt?.cargando ? 'Cargando el detalle…' : 'Ver detalle completo del proceso'}</button>}
+                        {dt?.error && <div className="rama-error" role="alert">{dt.error}</div>}
+                        {dt?.datos && <DetalleProceso datos={dt.datos} onReintentar={() => cargarDetalle(p.idProceso)} />}
+                      </div>
+                    );
+                  })()}
                   {p.esPrivado && <div className="rama-error">Este proceso es privado (reserva): la Rama no muestra sus actuaciones.</div>}
                   {p.error && <div className="rama-error">{p.error}</div>}
                   {!p.esPrivado && (

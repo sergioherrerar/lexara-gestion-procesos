@@ -30,6 +30,17 @@ async function pedirRama(ruta) {
   }
 }
 
+// La Rama a veces falla en una de varias consultas seguidas: para el detalle se reintenta (hasta 3 veces) cada una, de a una.
+async function pedirConReintento(ruta, intentos = 3) {
+  let r = null;
+  for (let i = 0; i < intentos; i++) {
+    r = await pedirRama(ruta);
+    if (r.json !== null && r.codigo < 500) return r;
+    await new Promise(res => setTimeout(res, 350 * (i + 1)));
+  }
+  return r;
+}
+
 exports.handler = async (event) => {
   const origen = (event.headers && (event.headers.origin || event.headers.Origin)) || '';
   const H = cabeceras(origen);
@@ -40,6 +51,29 @@ exports.handler = async (event) => {
   let entrada = null;
   try { entrada = JSON.parse(event.body || ''); } catch (e) { /* inválida */ }
   if (!entrada || typeof entrada !== 'object') return responder(400, { ok: false, error: 'Solicitud inválida.' });
+  // Detalle completo (2026-11-14): { "idProceso": N } → datos del proceso (ponente, tipo y clase, ubicación del expediente…), sujetos procesales y documentos.
+  if (entrada.idProceso) {
+    const id = parseInt(entrada.idProceso, 10);
+    if (!id) return responder(400, { ok: false, error: 'idProceso inválido.' });
+    const det = await pedirConReintento('/Proceso/Detalle/' + id);
+    const suj = await pedirConReintento('/Proceso/Sujetos/' + id + '?pagina=1');
+    const doc = await pedirConReintento('/Proceso/Documentos/' + id);
+    let sujetos = suj.json && Array.isArray(suj.json.sujetos) ? suj.json.sujetos : [];
+    const paginas = suj.json && suj.json.paginacion ? parseInt(suj.json.paginacion.cantidadPaginas, 10) || 1 : 1;
+    for (let pg = 2; pg <= Math.min(paginas, 6); pg++) {
+      const m = await pedirConReintento('/Proceso/Sujetos/' + id + '?pagina=' + pg);
+      if (m.json && Array.isArray(m.json.sujetos)) sujetos = sujetos.concat(m.json.sujetos);
+    }
+    if (det.json === null && suj.json === null && doc.json === null) return responder(502, { ok: false, error: 'La Rama Judicial no respondió el detalle del proceso (' + (det.falla || 'sin respuesta') + '). Intente de nuevo en unos minutos.' });
+    const d = det.json || {};
+    return responder(200, {
+      ok: true,
+      errores: { detalle: det.json === null, sujetos: suj.json === null, documentos: doc.json === null },
+      detalle: det.json ? { despacho: d.despacho || '', ponente: d.ponente || '', tipoProceso: d.tipoProceso || '', claseProceso: d.claseProceso || '', subclaseProceso: d.subclaseProceso || '', recurso: d.recurso || '', ubicacion: d.ubicacion || '', contenidoRadicacion: d.contenidoRadicacion || '', fechaProceso: d.fechaProceso || null, ultimaActualizacion: d.ultimaActualizacion || null } : null,
+      sujetos: sujetos.map(s => ({ tipo: s.tipoSujeto || '', nombre: s.nombreRazonSocial || '', identificacion: s.identificacion || '', emplazado: !!s.esEmplazado })),
+      documentos: Array.isArray(doc.json) ? doc.json.map(x => ({ nombre: x.nombre || '', descripcion: x.descripcion || '', tipo: x.tipo || '', fechaCarga: x.fechaCarga || null, consecutivo: x.consActuacion ?? null })) : [],
+    });
+  }
   // Modo lote (2026-11-13, novedades de la campana): { "radicados": [...hasta 20] } → solo la fecha de la última actuación de cada uno (una consulta por radicado).
   if (Array.isArray(entrada.radicados)) {
     const lista = [...new Set(entrada.radicados.map(r => String(r || '').replace(/\D+/g, '')).filter(r => r.length === 23))].slice(0, 20);

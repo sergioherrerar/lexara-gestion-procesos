@@ -3,7 +3,7 @@
 // (con el número principal, en lotes de 15 y solo cuando hay conexión real). Si esa fecha es posterior a la que ya había visto, aparece en la campana.
 // Lo ya visto se guarda en este navegador, por persona: la PRIMERA revisión solo toma la foto de partida (no avisa de lo que ya existía) y se avisa de lo que cambie después.
 // Al abrir la pestaña «Rama Judicial» del proceso la novedad se da por vista. No escribe nada en SharePoint.
-import { consultarRama, numerosDelProceso } from './ramaJudicial';
+import { consultarRama, numerosDelProceso, familiaDelRadicado } from './ramaJudicial';
 import { nombreAbogadoCanonico, stripHtml } from './graph';
 
 const LLAVE = 'lexara.rama.novedades.v1';
@@ -16,8 +16,8 @@ function cargar(usuario){
   try{
     const todo = JSON.parse(localStorage.getItem(LLAVE) || '{}');
     const u = todo[clave(usuario)] || {};
-    return { revisado: u.revisado || '', vistos: u.vistos || {}, novedades: u.novedades || {} };
-  }catch(e){ return { revisado: '', vistos: {}, novedades: {} }; }
+    return { revisado: u.revisado || '', vistos: u.vistos || {}, novedades: u.novedades || {}, familia: u.familia || {}, familiaDia: u.familiaDia || '' };
+  }catch(e){ return { revisado: '', vistos: {}, novedades: {}, familia: {}, familiaDia: '' }; }
 }
 function guardar(usuario, estado){
   try{
@@ -37,10 +37,13 @@ export function procesosParaRevisar(procesos, nombre, todos = false){
 
 export function novedadesGuardadas(usuario, lista){
   const est = cargar(usuario);
-  const porRad = new Map((lista || []).map(x => [x.radicado, x]));
+  // Cada proceso se revisa con todas sus instancias (terminaciones 00-03 que existen); una novedad en cualquiera de ellas lleva al proceso.
+  const dueno = new Map();
+  (lista || []).forEach(x => { (est.familia[x.radicado] || [x.radicado]).forEach(v => dueno.set(v, x)); });
   return Object.entries(est.novedades).map(([rad, n]) => {
-    const p = porRad.get(rad);
-    return { radicado: rad, procesoId: p ? p.id : n.id, cliente: p ? p.cliente : (n.cliente || ''), numeroCorto: p ? p.numeroCorto : (n.numeroCorto || ''), fecha: n.fecha, detectada: n.detectada };
+    const p = dueno.get(rad);
+    const instancia = p ? (rad !== p.radicado ? rad.slice(-2) : '') : (n.instancia || '');
+    return { radicado: rad, procesoId: p ? p.id : n.id, cliente: p ? p.cliente : (n.cliente || ''), numeroCorto: p ? p.numeroCorto : (n.numeroCorto || ''), fecha: n.fecha, detectada: n.detectada, instancia };
   }).filter(n => n.procesoId != null);
 }
 
@@ -67,21 +70,35 @@ export async function revisarRama({ url, lista, usuario, forzar = false }){
   const est = cargar(usuario);
   const hoy = hoyISO();
   if(!url || !lista.length || (!forzar && est.revisado === hoy)) return novedadesGuardadas(usuario, lista);
+  // Se revisan el número principal y sus otras instancias (terminaciones 00-03 que existan). La primera vez se prueban las cuatro y se recuerda cuáles existen.
+  // Cada 14 días se vuelven a probar las cuatro terminaciones (por si apareció una instancia nueva).
+  if(est.familiaDia && (new Date(hoy) - new Date(est.familiaDia)) / 86400000 > 14){ est.familia = {}; est.familiaDia = ''; }
+  const consultas = [];
+  const vistosRad = new Set();
+  lista.forEach(x => { (est.familia[x.radicado] || familiaDelRadicado(x.radicado)).forEach(v => { if(!vistosRad.has(v)){ vistosRad.add(v); consultas.push({ rad: v, x }); } }); });
+  const resultados = {};
   let respondieron = 0;
-  for(let i = 0; i < lista.length; i += 15){
-    const lote = lista.slice(i, i + 15);
-    const res = await resumenesDeLote(url, lote.map(x => x.radicado));
-    lote.forEach(x => {
-      const r = res[x.radicado];
+  for(let i = 0; i < consultas.length; i += 15){
+    const lote = consultas.slice(i, i + 15);
+    const res = await resumenesDeLote(url, lote.map(c => c.rad));
+    lote.forEach(c => {
+      const r = res[c.rad];
+      resultados[c.rad] = r || { ok: false };
       if(!r || !r.ok) return;
       respondieron++;
       const fecha = soloFecha(r.fechaUltimaActuacion);
-      if(!fecha) return;
-      const visto = est.vistos[x.radicado];
-      if(!visto){ est.vistos[x.radicado] = fecha; return; }               // primera vez: foto de partida, sin aviso
-      if(fecha > visto) est.novedades[x.radicado] = { id: x.id, cliente: x.cliente, numeroCorto: x.numeroCorto, fecha, detectada: hoy };
+      if(!fecha){ if(est.vistos[c.rad] === undefined) est.vistos[c.rad] = '0000-00-00'; return; }   // no existe, o aún no tiene actuaciones: si luego aparece la primera, avisa
+      const visto = est.vistos[c.rad];
+      if(!visto){ est.vistos[c.rad] = fecha; return; }                      // primera vez: foto de partida, sin aviso
+      if(fecha > visto) est.novedades[c.rad] = { id: c.x.id, cliente: c.x.cliente, numeroCorto: c.x.numeroCorto, fecha, detectada: hoy, instancia: c.rad !== c.x.radicado ? c.rad.slice(-2) : '' };
     });
   }
+  // Se recuerda qué terminaciones existen de cada proceso (solo si las cuatro respondieron), para no volver a probar las que no existen.
+  lista.forEach(x => {
+    if(est.familia[x.radicado]) return;
+    const fam = familiaDelRadicado(x.radicado);
+    if(fam.every(v => resultados[v]?.ok)){ est.familia[x.radicado] = fam.filter(v => v === x.radicado || !!soloFecha(resultados[v].fechaUltimaActuacion)); if(!est.familiaDia) est.familiaDia = hoy; }
+  });
   if(respondieron > 0) est.revisado = hoy;                                 // si la Rama no respondió (caída), se vuelve a intentar
   guardar(usuario, est);
   return novedadesGuardadas(usuario, lista);
