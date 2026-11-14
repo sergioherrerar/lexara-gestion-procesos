@@ -45,7 +45,7 @@ export default function RamaJudicialTab({ proceso, historico, estadoActual, fech
   const [verTodo, setVerTodo] = useState({});
   const [completando, setCompletando] = useState({});   // radicado -> true mientras se traen las actuaciones que faltan
   const [filtroFecha, setFiltroFecha] = useState({ desde: '', hasta: '' });
-  const [conTramite, setConTramite] = useState(false);
+  const [conTramite, setConTramite] = useState(true);   // por defecto se ven TODAS las actuaciones (las de trámite salen atenuadas), como en la página de la Rama
   const url = config?.RAMA_JUDICIAL_URL;
 
   // La Rama entrega las actuaciones de 40 en 40: se piden las primeras páginas y, en segundo plano, el resto hasta tenerlas todas.

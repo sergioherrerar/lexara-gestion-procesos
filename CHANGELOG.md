@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-11-13 (185)
+- **Pestaña «Rama Judicial»: por defecto se ven TODAS las actuaciones, también las de trámite** — el usuario comparó con la página de la Rama («sigue igual»): la lista empezaba en el 31-08-2026 porque la casilla «Mostrar también actuaciones de trámite» venía apagada y escondía el «Envío de Comunicación» y la «Notificación por estado» del 01-09-2026. Ahora viene encendida (las de trámite salen atenuadas) y la lista queda en el mismo orden que la Rama, con el término de la notificación por estado (01-09-2026 → 01-09-2026). «Actualizar Histórico y Estado» sigue ignorando lo de trámite. Con la función nueva ya publicada en Netlify se traen las 247 actuaciones del proceso de SOS.
+
 ## 2026-11-13 (184)
 - **Pestaña «Rama Judicial»: trae TODAS las actuaciones, con las columnas de término y filtro por fechas** — pregunta del usuario («¿por qué no están todas las actuaciones?», comparando con la página de la Rama). La Rama entrega las actuaciones de 40 en 40 y la consulta pedía solo las 3 primeras páginas (120 de 247). Ahora la pestaña pide el resto en segundo plano («cargando el resto: 120 de 247…») hasta tenerlas todas.
   - **Consulta (Netlify y PHP):** acepta `desde` (página inicial) y hasta 10 páginas por llamada; la app pide por tandas de 3. Probado con el radicado de SOS: 120 + 120 + 7 = 247 actuaciones sin repetir. **Hay que volver a subir `rama-judicial/plan-b-netlify/` a Netlify** (Deploys → arrastrar la carpeta); mientras tanto, con la versión anterior, la pestaña llega a las 240 más recientes y avisa que hay que actualizar la consulta.
