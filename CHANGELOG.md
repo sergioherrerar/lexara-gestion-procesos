@@ -2,6 +2,10 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-11-13 (182)
+- **El logo de SIUGJ del botón de cada proceso se ve del tamaño del botón** — pedido del usuario («se ve muy pequeño, ajústalo al tamaño del botón»). Una regla general de los botones de ícono (`.icon-btn img`, 16 px) le ganaba a la del logo; ahora el logo ocupa 80 × 32 px dentro de un botón de 108 × 42 px.
+- **Revisado SIUGJ con la sesión del usuario (solo lectura), sin cambios en la app:** la lupa de «Consulta de demandas» abre una «Búsqueda de Procesos Avanzada» (Despacho, Especialidad, Tipo y Estado de proceso, Fecha de registro) que **no filtra por número de proceso**; la lista de la cuenta trae solo los procesos radicados por SIUGJ entre 2023 y 2026 con su «Código Único de Proceso» (23 dígitos), no los antiguos. Por eso no se automatiza la búsqueda en SIUGJ y las actuaciones siguen viniendo de la consulta pública de la Rama.
+
 ## 2026-11-13 (181)
 - **Procesos judiciales → el botón de SIUGJ lleva el logo oficial de SIUGJ** — pedido del usuario («mejor el ícono de la página»; autorizó la descarga). Se guardó `src/assets/Logo SIUGJ.svg` (13 KB, tomado de `siugj.ramajudicial.gov.co/principalPortal/assets/images/logo_siugj.svg`, SVG sin scripts) y el botón de la fila lo muestra (cubos verdes con «SIUGJ» en azul), ocupando el ancho de la columna de acciones en su propia fila para distinguirlo de los demás íconos. Nuevo ícono `siugj` en `IconButton.jsx`. Sigue abriendo SIUGJ y copiando el número del proceso.
 
