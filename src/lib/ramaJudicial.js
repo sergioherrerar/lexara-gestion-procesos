@@ -47,6 +47,32 @@ export const URL_SIUGJ = 'https://siugj.ramajudicial.gov.co/principalPortal/inde
 export function abrirSIUGJ(){ window.open(URL_SIUGJ, '_blank', 'noopener,noreferrer'); }
 export function abrirConsultaPublicaRama(){ window.open(URL_CONSULTA_RAMA, '_blank', 'noopener,noreferrer'); }
 
+// Los dos últimos dígitos del radicado (00, 01, 02, 03…) son la instancia: cada terminación es un proceso DISTINTO (p. ej. ...569 00 el Juzgado, ...569 01 el Tribunal, ...569 02 la Sala de
+// Casación). Pedido del usuario (2026-11-13): al buscar un número se prueban también sus otras terminaciones.
+export const TERMINACIONES = ['00', '01', '02', '03'];
+export function familiaDelRadicado(rad){ const base = String(rad || '').slice(0, 21); return TERMINACIONES.map(t => base + t); }
+const cacheHermanos = new Map();
+// Devuelve las otras terminaciones (00-03) del radicado que SÍ existen en la Rama (con actuaciones). Una consulta en lote; si la función es la versión anterior, una por una.
+export async function descubrirHermanos(url, rad){
+  if(!url || String(rad || '').length !== 23) return [];
+  if(cacheHermanos.has(rad)) return cacheHermanos.get(rad);
+  const candidatos = familiaDelRadicado(rad).filter(r => r !== rad);
+  let existentes = null;
+  try{
+    const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ radicados: candidatos }) });
+    const datos = await res.json().catch(() => null);
+    if(res.ok && datos?.ok && datos.resultados) existentes = candidatos.filter(r => { const x = datos.resultados[r]; return x && x.ok && !x.sinProceso && !!x.fechaUltimaActuacion; });
+  }catch(e){ /* se intenta uno por uno */ }
+  if(existentes === null){
+    existentes = [];
+    for(const r of candidatos){
+      try{ const d = await consultarRama(url, r, { paginas: 1 }); const p = d.procesos?.[0]; if(p && p.fechaUltimaActuacion) existentes.push(r); }catch(e){ /* sigue con la siguiente */ }
+    }
+  }
+  cacheHermanos.set(rad, existentes);
+  return existentes;
+}
+
 const cache = new Map();   // radicado -> { t, datos }   (10 minutos, para no repetir consultas al abrir y cerrar la ficha)
 const VIGENCIA_MS = 10 * 60 * 1000;
 

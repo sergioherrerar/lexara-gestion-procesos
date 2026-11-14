@@ -3,7 +3,7 @@ import { stripHtml } from '../lib/graph';
 import {
   numerosDelProceso, consultarRama, fechaDMA, resumenAnotacion, esDeTramite, yaEstaEnHistorico,
   actuacionesNuevas, htmlRenglones, renglonHistorico, actualizacionDesdeRama, ultimaActualizacionDesdeRama, abrirEnRamaJudicial,
-  agregarLineasAlEstado, fechaMasRecienteDelEstado, mezclarActuaciones, anotacionLimpia,
+  agregarLineasAlEstado, fechaMasRecienteDelEstado, mezclarActuaciones, anotacionLimpia, descubrirHermanos,
 } from '../lib/ramaJudicial';
 
 // Pestaña «Rama Judicial» de la ficha del proceso (2026-11-13): lee las actuaciones del proceso en la Consulta Nacional Unificada de la Rama
@@ -40,6 +40,9 @@ function FilaActuacion({ act, nuevo, enHistorico, canWrite, onAgregar }){
 export default function RamaJudicialTab({ proceso, historico, estadoActual, fechaEstado, canWrite, config, notify, onAgregarAlHistorico, onActualizar, onRamaVista }){
   const { principal, historicos } = useMemo(() => numerosDelProceso(proceso), [proceso]);
   const radicados = useMemo(() => [principal, ...historicos].filter(Boolean), [principal, historicos]);
+  const [hermanos, setHermanos] = useState({});   // radicado -> otras terminaciones (00-03) que existen en la Rama
+  const descubiertos = useRef(new Set());
+  const pedidosHermanos = useRef(new Set());
   const [buscarHist, setBuscarHist] = useState(false);   // false: solo el número principal; true: también los del histórico
   const [resultados, setResultados] = useState({});   // radicado -> { cargando, error, datos }
   const [verTodo, setVerTodo] = useState({});
@@ -82,10 +85,25 @@ export default function RamaJudicialTab({ proceso, historico, estadoActual, fech
       const datos = await consultarRama(url, rad, { forzar });
       setResultados(prev => ({ ...prev, [rad]: { cargando: false, error: '', datos } }));
       completar(rad, datos);
+      // Cada número completo (principal o del histórico) se busca también con sus otras terminaciones 00, 01, 02 y 03: son procesos distintos.
+      if(radicados.includes(rad) && !descubiertos.current.has(rad)){
+        descubiertos.current.add(rad);
+        descubrirHermanos(url, rad).then(h => { if(h.length) setHermanos(prev => ({ ...prev, [rad]: h })); });
+      }
     }catch(e){
       setResultados(prev => ({ ...prev, [rad]: { cargando: false, error: e.message || String(e), datos: prev[rad]?.datos } }));
     }
-  }, [url, completar]);
+  }, [url, completar, radicados]);
+
+  // Las otras terminaciones que existen se consultan una tras otra, apenas se descubren.
+  useEffect(() => {
+    const nuevos = Object.values(hermanos).flat().filter(h => !pedidosHermanos.current.has(h) && !radicados.includes(h));
+    if(!nuevos.length) return undefined;
+    let cancelado = false;
+    (async () => { for(const h of nuevos){ if(cancelado) break; pedidosHermanos.current.add(h); await cargar(h, false); } })();
+    return () => { cancelado = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hermanos]);
 
   // Al abrir la pestaña se consulta primero el número principal (el servidor limita las consultas y se recuerdan 10 minutos).
   useEffect(() => { if(principal) cargar(principal, false); }, [principal, cargar]);
@@ -109,6 +127,13 @@ export default function RamaJudicialTab({ proceso, historico, estadoActual, fech
     (async () => { for(const h of historicos){ if(cancelado) break; await cargar(h, false); } })();
     return () => { cancelado = true; };
   }, [buscarHist, historicos, cargar]);
+
+  // Cada número con sus otras terminaciones (00-03) que existen, justo debajo.
+  const entradas = [];
+  radicados.forEach(r => {
+    entradas.push({ rad: r, base: r, esBase: true });
+    (hermanos[r] || []).filter(h => !radicados.includes(h) && !entradas.some(e => e.rad === h)).forEach(h => entradas.push({ rad: h, base: r, esBase: false }));
+  });
 
   if(!radicados.length){
     return <div className="empty-state empty-state-compact">Este proceso no tiene un «No. completo» de 23 dígitos, así que no se puede consultar en la Rama Judicial.</div>;
@@ -141,7 +166,7 @@ export default function RamaJudicialTab({ proceso, historico, estadoActual, fech
 
   return (
     <div className="field-section rama-tab">
-      <p className="rama-fuente">Fuente: Consulta Nacional Unificada de la Rama Judicial (pública). Aquí solo se lee; «Al Histórico» deja la actuación en el Histórico y en el Estado, y luego se guarda con «Guardar cambios».</p>
+      <p className="rama-fuente">Fuente: Consulta Nacional Unificada de la Rama Judicial (pública). Aquí solo se lee; «Al Histórico» deja la actuación en el Histórico y en el Estado, y luego se guarda con «Guardar cambios». De cada número también se buscan las terminaciones 00, 01, 02 y 03 (son procesos distintos: instancias) y salen debajo si existen.</p>
       <p className="rama-ultima">{ultimaRev ? `Última actualización desde la Rama Judicial: ${ultimaRev}.` : 'Este proceso aún no se ha actualizado desde la Rama Judicial.'}</p>
       <div className="rama-fechas">
         <label>Desde <input type="date" value={filtroFecha.desde} onChange={e => setFiltroFecha(f => ({ ...f, desde: e.target.value }))} /></label>
@@ -155,9 +180,9 @@ export default function RamaJudicialTab({ proceso, historico, estadoActual, fech
           <button type="button" className="btn-secondary rama-btn" onClick={() => setBuscarHist(true)}>Consultar también {historicos.length === 1 ? 'el número del histórico' : 'los números del histórico'}</button>
         </div>
       )}
-      {radicados.map(rad => {
+      {entradas.map(({ rad, base, esBase }) => {
         const esPrincipal = rad === principal;
-        if(!esPrincipal && !resultados[rad] && !buscarHist){
+        if(esBase && !esPrincipal && !resultados[rad] && !buscarHist){
           return (
             <div key={rad} className="rama-bloque rama-bloque-pendiente">
               <div className="rama-cab">
@@ -175,7 +200,7 @@ export default function RamaJudicialTab({ proceso, historico, estadoActual, fech
         return (
           <div key={rad} className="rama-bloque">
             <div className="rama-cab">
-              <h4><span className={'rama-tipo' + (esPrincipal ? ' principal' : '')}>{esPrincipal ? 'Número principal' : 'Número del histórico'}</span> {rad}</h4>
+              <h4><span className={'rama-tipo' + (esPrincipal ? ' principal' : '')} title={esBase ? '' : 'Es un proceso distinto: la misma radicación con otra terminación (instancia)'}>{esBase ? (esPrincipal ? 'Número principal' : 'Número del histórico') : `${base === principal ? 'Principal' : 'Histórico'} · termina en ${rad.slice(-2)}`}</span> {rad}</h4>
               <span className="rama-cab-acc">
                 <button type="button" className="btn-secondary rama-btn" onClick={() => abrirEnRamaJudicial(proceso, notify, rad)} title="Abre la consulta de la Rama Judicial y copia este radicado">Abrir en la Rama</button>
                 <button type="button" className="btn-secondary rama-btn" onClick={() => cargar(rad, true)} disabled={r.cargando}>{r.cargando ? 'Consultando…' : 'Actualizar'}</button>
