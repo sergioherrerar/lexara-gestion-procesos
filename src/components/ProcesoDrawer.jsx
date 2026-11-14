@@ -18,7 +18,7 @@ import { ICON_SVG, RUTAS_CARPETAS_ENTIDAD } from '../config';
 import { DEPARTAMENTOS_COLOMBIA, municipiosDe } from '../lib/colombiaGeo';
 import { AudienciasTerminosDelProceso } from './AudienciasTerminosTab';
 import RamaJudicialTab from './RamaJudicialTab';
-import { abrirEnRamaJudicial } from '../lib/ramaJudicial';
+import { abrirEnRamaJudicial, abrirEnSIUGJ } from '../lib/ramaJudicial';
 
 const TABS = [
   {key:'datos', label:'Datos generales'},
@@ -725,7 +725,8 @@ export default function ProcesoDrawer({ pestanaInicial, onRamaVista, proceso, cl
           <h2>{proceso.Cliente || "Sin nombre"}</h2>
           <span className={"badge badge-truncate " + estadoBadgeClass(proceso.EstadoVT, proceso.FechaUltimoEstado, proceso.Estado)}>{stripHtml(proceso.Estado) || "—"}</span>
           <div className="drawer-head-acciones">
-            <IconTextButton icon="open" variant="secondary" onClick={() => abrirEnRamaJudicial(proceso, notify)}>Abrir en la Rama Judicial</IconTextButton>
+            <IconTextButton icon="open" variant="secondary" onClick={() => abrirEnSIUGJ(proceso, notify)}>Abrir en SIUGJ</IconTextButton>
+            <IconTextButton icon="open" variant="secondary" onClick={() => abrirEnRamaJudicial(proceso, notify)}>Consulta pública de la Rama</IconTextButton>
           </div>
         </div>
         <div className="drawer-tabs">

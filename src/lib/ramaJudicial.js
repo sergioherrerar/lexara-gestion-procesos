@@ -2,7 +2,7 @@
 // sus anotaciones… que se llene el histórico así por líneas como lo llevamos»). La consulta la hace rama-judicial/consultar.php (cPanel), que lee
 // la Consulta Nacional Unificada de la Rama (pública, por radicado de 23 dígitos, sin usuario ni contraseña). Aquí solo se arma la petición y
 // se convierten las actuaciones en renglones del Histórico («DD-MM-AAAA Actuación: anotación»), sin repetir los que ya estén.
-import { stripHtml, normalize } from './graph';
+import { stripHtml, normalize, numeroCortoDeRadicadoLargo } from './graph';
 
 // Radicados de 23 dígitos del proceso: el «No. completo» y los del «Histórico números completos» (sin repetir).
 export function radicadosDelProceso(proceso){
@@ -39,6 +39,27 @@ export function abrirEnRamaJudicial(proceso, notify, radicadoElegido){
     else aviso(false);
   }catch(e){ aviso(false); }
   return true;
+}
+
+// Abre SIUGJ (el portal de la Rama donde ya tienen usuario) para iniciar sesión y consultar el proceso. SIUGJ no deja prellenar la búsqueda desde la dirección,
+// así que se copia el consecutivo del proceso (los 5 dígitos, p. ej. 00398) y se avisa el año: en «Consulta de demandas» van como «Año del Proceso» y «No. de Proceso».
+export const URL_SIUGJ = 'https://siugj.ramajudicial.gov.co/principalPortal/index.php';
+export function abrirEnSIUGJ(proceso, notify){
+  window.open(URL_SIUGJ, '_blank', 'noopener,noreferrer');
+  const radicado = numerosDelProceso(proceso).principal;
+  const corto = (radicado && numeroCortoDeRadicadoLargo(radicado)) || String(proceso?.Radicado || '');
+  const m = /^(\d{4})-(\d{5})$/.exec(corto);
+  if(!m){
+    notify?.('SIUGJ abierto: inicie sesión y busque el proceso en «Consulta de demandas».', 'info');
+    return;
+  }
+  const [, anio, consecutivo] = m;
+  const aviso = copiado => notify?.(
+    `SIUGJ abierto: inicie sesión y en «Consulta de demandas» elija el año ${anio} y el No. de Proceso ${consecutivo}${copiado ? ' (ya copiado: péguelo con Ctrl+V)' : ''}.`, copiado ? 'success' : 'info');
+  try{
+    if(navigator.clipboard?.writeText) navigator.clipboard.writeText(consecutivo).then(() => aviso(true), () => aviso(false));
+    else aviso(false);
+  }catch(e){ aviso(false); }
 }
 
 const cache = new Map();   // radicado -> { t, datos }   (10 minutos, para no repetir consultas al abrir y cerrar la ficha)

@@ -2255,3 +2255,4 @@
   .balanza-item{display:block; width:100%; text-align:left; background:#fff; border:0; border-bottom:1px solid var(--gris-linea); cursor:pointer; font:inherit;}
   .balanza-item:hover{background:#f1f8f6;}
   .balanza-pie{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 16px; border-top:1px solid var(--gris-linea); background:var(--gris-claro); font-size:11.5px; color:var(--texto-suave); line-height:1.4;}
+  .drawer-head-acciones{display:flex; flex-wrap:wrap; gap:8px;}
