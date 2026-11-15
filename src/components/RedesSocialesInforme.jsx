@@ -111,7 +111,13 @@ export default function RedesSocialesInforme({ liveMode, notify }){
             })}
           </select>
         </label>
-        <span className="redes-leido">Datos leídos de Bustral el {fechaLarga(datos.leido)}</span>
+        {(() => {
+          // Los datos son una lectura manual de Bustral: si tienen días, los estados (programada / publicada) pueden estar desactualizados.
+          const dias = Math.floor((Date.now() - new Date(datos.leido + 'T12:00:00').getTime()) / 86400000);
+          return dias >= 1
+            ? <span className="redes-leido redes-leido-viejo" role="status">Datos leídos de Bustral el {fechaLarga(datos.leido)} (hace {dias} {dias === 1 ? 'día' : 'días'}): los estados pueden haber cambiado. Pida «actualiza redes» para refrescarlos.</span>
+            : <span className="redes-leido">Datos leídos de Bustral el {fechaLarga(datos.leido)}</span>;
+        })()}
       </div>
 
       <div className="redes-acciones">

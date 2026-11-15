@@ -378,6 +378,22 @@
         "tiktok": "https://www.tiktok.com/@lexara.abogados/video/7704306579704745223"
       },
       "hora": "8:23 a. m."
+    },
+    {
+      "fecha": "2026-11-12",
+      "redes": [
+        "instagram"
+      ],
+      "titulo": "Tus ahorros de pensión: se cae el tope del 30 % a la inversión en el exterior (Decreto 1490 de 2026)",
+      "copy": "Publicada el 12 de noviembre en Instagram (dato dado por el equipo de Lexara). El texto exacto de la publicación se completa en la próxima lectura de Bustral."
+    },
+    {
+      "fecha": "2026-11-14",
+      "redes": [
+        "instagram"
+      ],
+      "titulo": "El proceso monitorio laboral: cobrar lo que te deben, rápido",
+      "copy": "Desde abril de 2026, el nuevo Código Procesal del Trabajo trae el proceso monitorio laboral: sirve para cobrar deudas laborales claras, exigibles y de hasta 20 salarios mínimos, con 5 días para que el deudor pague o se oponga.\n\nSi eres trabajador, es la vía rápida para tu liquidación. Si eres empleador y te llega un requerimiento, no lo ignores: cinco días se van volando.\n\n#DerechoLaboral #ProcesoMonitorio #Liquidación #LexaraAbogados"
     }
   ],
   "programadas": [
@@ -424,7 +440,8 @@
       "estado": "video_objetado",
       "destino": "Instagram",
       "tieneVideo": true,
-      "copy": "Material grabado: carpeta 03_TUS AHORROS MEJORA CALIDAD.mp4 (Drive Lexara).\nGancho (0:00–0:07): «Tus ahorros de pensión en un fondo privado ya no tienen que regresar obligatoriamente a Colombia. El Gobierno acaba de eliminar esa regla.»\n[0:07–0:28] «En abril de este año, el gobierno anterior expidió el Decreto 369: los fondos privados solo podían tener invertido en el exterior, como máximo, el 30 %…»\n[0:28–0:50] «Este 6 de octubre, el nuevo Gobierno expidió el Decreto 1490, que elimina ese tope…»"
+      "copy": "Material grabado: carpeta 03_TUS AHORROS MEJORA CALIDAD.mp4 (Drive Lexara).\nGancho (0:00–0:07): «Tus ahorros de pensión en un fondo privado ya no tienen que regresar obligatoriamente a Colombia. El Gobierno acaba de eliminar esa regla.»\n[0:07–0:28] «En abril de este año, el gobierno anterior expidió el Decreto 369: los fondos privados solo podían tener invertido en el exterior, como máximo, el 30 %…»\n[0:28–0:50] «Este 6 de octubre, el nuevo Gobierno expidió el Decreto 1490, que elimina ese tope…»",
+      "publicadaComo": "2026-11-12"
     },
     {
       "fecha": "2026-11-16",
@@ -433,7 +450,8 @@
       "estado": "video_aprobado",
       "destino": "Instagram",
       "tieneVideo": true,
-      "copy": "Material grabado: carpeta 04_Proceso Monitoreo laboral (Drive Lexara).\nGancho (0:00–0:07): «¿Te deben salarios o tu liquidación y no es mucha plata? Hay un proceso nuevo, rápido y sin tantos trámites, para cobrarlo. Se llama proceso monitorio.»\n[0:07–0:25] «Desde abril de 2026 rige el nuevo Código Procesal del Trabajo, y trae el proceso monitorio laboral: sirve para cobrar deudas de una relación de trabajo o de seguridad social que sean claras, exigibles y no superen 20 salarios mínimos…»"
+      "copy": "Material grabado: carpeta 04_Proceso Monitoreo laboral (Drive Lexara).\nGancho (0:00–0:07): «¿Te deben salarios o tu liquidación y no es mucha plata? Hay un proceso nuevo, rápido y sin tantos trámites, para cobrarlo. Se llama proceso monitorio.»\n[0:07–0:25] «Desde abril de 2026 rige el nuevo Código Procesal del Trabajo, y trae el proceso monitorio laboral: sirve para cobrar deudas de una relación de trabajo o de seguridad social que sean claras, exigibles y no superen 20 salarios mínimos…»",
+      "publicadaComo": "2026-11-14"
     },
     {
       "fecha": "2026-11-19",
@@ -483,5 +501,11 @@
       "spotify": null
     }
   ],
-  "notaFechasBustral": "Bustral solo registra el estado actual de cada video (aprobado u objetado), no cuándo se aprobó u objetó; las piezas programadas figuran a las 12:00 a. m. (sin hora). La hora de publicación solo está donde Bustral la muestra. Se pueden anotar a mano «aprobadoEl» / «objetadoEl» («AAAA-MM-DD» o «AAAA-MM-DD HH:MM») y «horaPublicada» en cada pieza."
+  "notaFechasBustral": "Bustral solo registra el estado actual de cada video (aprobado u objetado), no cuándo se aprobó u objetó; las piezas programadas figuran a las 12:00 a. m. (sin hora). La hora de publicación solo está donde Bustral la muestra. Se pueden anotar a mano «aprobadoEl» / «objetadoEl» («AAAA-MM-DD» o «AAAA-MM-DD HH:MM») y «horaPublicada» en cada pieza.",
+  "ajustesManuales": [
+    {
+      "anotado": "2026-11-15",
+      "texto": "Reel 4 (proceso monitorio laboral): visto publicado en Instagram «hace un día» (≈14-nov), antes de su fecha programada (16-nov); hora y enlace pendientes. Reel 3: publicado el 12-nov en Instagram según el equipo. Estos dos datos se agregaron a mano; la próxima lectura de Bustral los confirma o corrige."
+    }
+  ]
 }

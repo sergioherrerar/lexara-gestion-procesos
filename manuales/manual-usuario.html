@@ -275,6 +275,8 @@
     <a href="#pj-lista">La lista de Procesos</a>
     <a href="#pj-informe-cliente">Informe para un cliente</a>
     <a href="#pj-formulario">El formulario del proceso</a>
+    <a href="#pj-rama">Rama Judicial: las actuaciones</a>
+    <a href="#pj-balanza">La balanza de la Rama Judicial</a>
     <a href="#pj-preguntas">Preguntas frecuentes</a>
 
     <div class="toc-group-label">Vencimientos</div>
@@ -282,6 +284,7 @@
     <a href="#ve-pestanas">Audiencias, Términos y Pendientes</a>
     <a href="#ve-semana">Vencimientos de esta semana</a>
     <a href="#ve-calendario">El mini calendario</a>
+    <a href="#ve-campana">La campana de pendientes</a>
     <a href="#ve-preguntas">Preguntas frecuentes</a>
 
     <div class="toc-group-label">Dashboard</div>
@@ -326,6 +329,7 @@
     <a href="#inf-entidad">Detalle por Entidad</a>
     <a href="#inf-revision">Revisión de Procesos</a>
     <a href="#inf-cruce">Cruce de archivos</a>
+    <a href="#inf-redes">Redes sociales</a>
   </nav>
 
   <main class="content">
@@ -667,6 +671,7 @@
       <ul>
         <li><strong>Ver terminados (N)</strong> — a la derecha de los chips de Entidad, alterna entre ver los procesos vigentes o los ya terminados.</li>
         <li>El ícono de <strong>carpeta</strong> en la columna homónima abre el link a la carpeta del proceso, si está registrado.</li>
+        <li><strong>Dos accesos a la Rama Judicial</strong>, del mismo tamaño, arriba junto a «Nuevo proceso judicial»: <strong>SIUGJ</strong> (con su logo) abre el portal SIUGJ de la Rama para iniciar sesión y radicar documentos, y <strong>Rama Judicial</strong> (con el escudo de Colombia) abre la consulta pública de procesos de la Rama. Ninguno busca el proceso por ti: SIUGJ no permite buscar por número de proceso y solo contiene lo que se radicó por ahí; para ver las actuaciones de un proceso usa su pestaña «Rama Judicial» (ver más abajo).</li>
         <li>Por fila: <strong>ojo</strong> (ver, solo consulta), <strong>lápiz</strong> (editar, si tienes permiso), <strong>PDF</strong> (descarga una ficha de una página con los datos principales del proceso).</li>
       </ul>
 
@@ -679,6 +684,7 @@
         <li><strong>Nunca se borra nada del Histórico</strong>: si cambias o dejas vacío el Estado, el Histórico queda completo.</li>
         <li>En el formulario, pestaña <strong>Trazabilidad</strong>, el Histórico abre mostrando las <strong>últimas líneas</strong> (lo más reciente va abajo).</li>
         <li>Cuando <strong>pegas</strong> texto en el Histórico o en Observaciones, se pega solo el texto, limpio (sin colores ni caracteres extraños de Excel o Word).</li>
+        <li>También se alimenta desde la pestaña <strong>Rama Judicial</strong> del proceso, que trae las actuaciones tal como están en la Rama (ver la sección «Rama Judicial: las actuaciones»).</li>
       </ul>
     </section>
 
@@ -714,13 +720,13 @@
     <section id="pj-formulario">
       <span class="step-num">3</span>
       <h2>El formulario del proceso</h2>
-      <p class="section-sub">Al abrir un proceso, la información está organizada en 6 pestañas.</p>
+      <p class="section-sub">Al abrir un proceso, la información está organizada en 8 pestañas.</p>
 
       <div class="screen">
         <div class="screen-bar"><span class="screen-dot"></span><span class="screen-dot"></span><span class="screen-dot"></span><span class="screen-label">2024-00088</span></div>
         <div class="screen-pad">
           <div class="ss-tab-bar">
-            <span class="ss-tab active">Datos generales</span><span class="ss-tab">Trazabilidad</span><span class="ss-tab">Facturas</span><span class="ss-tab">Órdenes de compra</span><span class="ss-tab">Formas de pago</span><span class="ss-tab">Desistimientos</span>
+            <span class="ss-tab active">Datos generales</span><span class="ss-tab">Trazabilidad</span><span class="ss-tab">Facturas</span><span class="ss-tab">Órdenes de compra</span><span class="ss-tab">Formas de pago</span><span class="ss-tab">Desistimientos</span><span class="ss-tab">Audiencias/Términos</span><span class="ss-tab">Rama Judicial</span>
           </div>
           <div class="ss-field-grid">
             <div class="ss-field"><div class="ss-field-label">No. Completo</div><div class="ss-field-value">2024-00088</div></div>
@@ -738,6 +744,8 @@
         <tr><td>Órdenes de compra</td><td>Igual que Facturas, pero con las órdenes de compra asociadas.</td></tr>
         <tr><td>Formas de pago</td><td>Hasta 6 pagos por contrato, cada uno con su etapa procesal, valor y factura asociada.</td></tr>
         <tr><td>Desistimientos</td><td>Los desistimientos registrados para este proceso, si los hay.</td></tr>
+        <tr><td>Audiencias/Términos</td><td>Las audiencias y los términos de este proceso, con la cuenta regresiva de días hábiles.</td></tr>
+        <tr><td>Rama Judicial</td><td>Las actuaciones del proceso en la Rama Judicial, con sus instancias, y botones para pasarlas al Histórico y al Estado (ver la siguiente sección).</td></tr>
       </table>
 
       <h3>Selects dependientes</h3>
@@ -746,6 +754,75 @@
       <div class="callout tip">
         <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
         <div>El formulario solo envía a SharePoint los campos que de verdad cambiaste — no reescribe todo el proceso cada vez que guardas.</div>
+      </div>
+    </section>
+
+    <section id="pj-rama">
+      <span class="step-num">4</span>
+      <h2>Rama Judicial: las actuaciones del proceso</h2>
+      <p class="section-sub">La última pestaña del proceso lee las actuaciones directamente de la <strong>Consulta de Procesos de la Rama Judicial</strong> (pública, por el número de radicación de 23 dígitos — no pide usuario ni contraseña) y te deja pasarlas al Histórico y al Estado.</p>
+
+      <div class="screen">
+        <div class="screen-bar"><span class="screen-dot"></span><span class="screen-dot"></span><span class="screen-dot"></span><span class="screen-label">2009-01102 · Rama Judicial</span></div>
+        <div class="screen-pad">
+          <div class="ss-sub" style="margin-bottom:8px;">247 actuaciones en la Rama · <strong>2 novedades para el Histórico</strong></div>
+          <table class="ss-table">
+            <thead><tr><th>Fecha</th><th>Actuación</th><th>Anotación</th><th>Inicia término</th><th>Finaliza término</th><th></th></tr></thead>
+            <tbody>
+              <tr><td>01-09-2026</td><td>Notificación por estado</td><td>—</td><td>01-09-2026</td><td>01-09-2026</td><td></td></tr>
+              <tr><td>31-08-2026</td><td>Auto fija fecha <span class="ss-chip green">Nueva</span></td><td>Audiencia de pruebas el 25 de febrero de 2027…</td><td></td><td></td><td><span class="ss-btn secondary">Al Histórico</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="caption">Pestaña «Rama Judicial» (recortada)</div>
+      </div>
+
+      <h3>Qué trae</h3>
+      <ul>
+        <li><strong>Datos del proceso:</strong> despacho, departamento, fecha de radicación, última actuación y los sujetos procesales.</li>
+        <li><strong>Todas las actuaciones.</strong> La Rama las entrega de 40 en 40: la pestaña trae las primeras y, en segundo plano, el resto (verás «cargando el resto: 120 de 247…»). Se muestran de la más reciente a la más antigua, 50 por tanda.</li>
+        <li><strong>Columnas de término</strong> («Inicia término» y «Finaliza término») y la fecha de <strong>Registro</strong>, como en la página de la Rama.</li>
+        <li><strong>Filtro «Desde / Hasta»</strong> por fecha de actuación, con «Quitar filtro».</li>
+        <li>La casilla <strong>«Mostrar también actuaciones de trámite»</strong> (envíos, recibos, memoriales, notificaciones por estado) viene encendida: esas filas salen atenuadas. Si la apagas, ves solo lo de fondo.</li>
+        <li>La anotación se muestra <strong>limpia</strong> (sin las iniciales del funcionario, enlaces ni firma electrónica); «ver más» abre el texto completo de la Rama.</li>
+      </ul>
+
+      <h3>Los números del proceso y sus instancias</h3>
+      <ul>
+        <li>Primero se consulta el <strong>número principal</strong> (el «No. completo»). Los del <strong>Histórico números completos</strong> se consultan cuando lo pides, con «Consultar también los números del histórico» o con «Consultar este número».</li>
+        <li><strong>Los dos últimos dígitos del radicado son la instancia</strong> (00, 01, 02, 03): cada terminación es un proceso distinto. Por ejemplo, el <em>…569 00</em> es el Juzgado, el <em>…569 01</em> el Tribunal Superior y el <em>…569 02</em> la Sala de Casación. De cada número se buscan las cuatro terminaciones y las que existen salen como bloques aparte, debajo del número («Principal · termina en 01»).</li>
+        <li>Cada bloque tiene su propio <strong>«Abrir en la Rama»</strong> (abre la consulta pública y copia el radicado para que lo pegues con Ctrl + V; en procesos antiguos marca «Todos los Procesos») y su botón <strong>«Actualizar»</strong>.</li>
+        <li><strong>«Ver detalle completo del proceso»</strong> trae el ponente, el tipo, la clase y la subclase de proceso, el recurso, la ubicación del expediente y el contenido de la radicación, la lista de <strong>sujetos procesales</strong> y los <strong>documentos</strong> del expediente (fecha de carga, descripción y nombre). La Rama solo lista los documentos: para abrirlos hay que entrar a su consulta pública.</li>
+      </ul>
+
+      <h3>Pasar las actuaciones al Histórico y al Estado</h3>
+      <ul>
+        <li><strong>«Al Histórico»</strong> (en cada fila): agrega la actuación al final del Histórico y, además, como <strong>línea nueva al final del Estado</strong> — lo que el Estado ya tenía no se borra. La <strong>Fecha Estado</strong> queda en la fecha más reciente de las que empiezan una línea del Estado (en formato 31-08-2026; no cuentan las fechas escritas con diagonal dentro del texto, como la de una audiencia futura).</li>
+        <li><strong>«Actualizar Histórico y Estado (N)»</strong>: agrega de una vez las actuaciones nuevas al Histórico, agrega al Estado las providencias (autos, sentencias, audiencias) posteriores a la Fecha Estado que aún no estén escritas — hasta las 3 más recientes — y deja en el Histórico una línea «Actualizado desde la Rama Judicial (N actuaciones nuevas)». Arriba de la pestaña verás la fecha de la última actualización. Si todo está al día, el botón no aparece y dice «Estado e Histórico al día».</li>
+        <li><strong>Nada se guarda hasta que presiones «Guardar cambios».</strong> Al guardar, el Estado anterior sigue archivándose en el Histórico, como siempre.</li>
+        <li>La etiqueta <strong>«Nueva»</strong> marca una actuación de fondo que <strong>no está todavía en el Histórico</strong> (el programa busca su fecha y las primeras letras de su nombre) y es de la fecha del último renglón fechado del Histórico o posterior. Si ya está, dice «ya en el Histórico». Como el Histórico se escribe a mano, a veces una actuación que ya tenías puede salir como «Nueva»: ignórala.</li>
+      </ul>
+
+      <div class="callout warn">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        <div>La consulta de la Rama es pública pero <strong>no es un servicio oficial documentado</strong>: a veces responde con error («502») por unos minutos — espera y presiona «Actualizar». Los procesos con reserva no muestran actuaciones. Y SIUGJ <strong>no</strong> es la fuente de esta pestaña: es el portal para radicar, no tiene los procesos antiguos.</div>
+      </div>
+    </section>
+
+    <section id="pj-balanza">
+      <span class="step-num">5</span>
+      <h2>La balanza de la Rama Judicial</h2>
+      <p class="section-sub">El ícono de balanza en la cabecera del portal, junto a la campana de pendientes — avisa cuando un proceso tuyo tiene una actuación nueva en la Rama.</p>
+      <ul>
+        <li><strong>Equilibrada</strong> = sin novedades. Por cada proceso con una actuación nueva se inclina un poco más y el plato se llena de naranja (hasta 6 se nota; más solo suma al número de la insignia).</li>
+        <li>Al hacer clic ves la lista: el cliente, el número del proceso, la fecha de la actuación y, si la novedad fue en otra instancia, «instancia 01». Al abrir una, el portal te lleva al proceso, <strong>directo a su pestaña «Rama Judicial»</strong>.</li>
+        <li>Revisa <strong>una vez al día</strong>, unos segundos después de abrir el portal, los procesos <strong>vigentes</strong> donde eres <strong>Apoderado o Abogado encargado</strong>, con todas sus instancias. Además hay un botón <strong>«Revisar ahora»</strong>.</li>
+        <li>La <strong>primera revisión no avisa de nada</strong>: solo toma la «foto de partida» de cada proceso. Desde la siguiente avisa de lo que cambie.</li>
+        <li>Al abrir el proceso y su pestaña «Rama Judicial», esa novedad se da por vista y sale de la balanza.</li>
+      </ul>
+      <div class="callout tip">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        <div>Lo que ya viste se guarda en <strong>tu navegador</strong>, por persona. Si entras desde otro computador o borras los datos del navegador, la balanza vuelve a tomar su foto de partida. La balanza no escribe nada en SharePoint.</div>
       </div>
     </section>
 
@@ -771,6 +848,22 @@
         <div class="faq-item">
           <h4>¿Por qué no veo a alguien en "Apoderado" o "Abogado encargado"?</h4>
           <p>Esos 2 campos solo muestran colaboradores de Equipo MD que estén <strong>activos</strong> y cuyo <strong>Cargo</strong> contenga la palabra "abogado" (Abogado Procesos, Abogado Especialista) — alguien con otro cargo (Contador, Analista de Help Desk) no aparece ahí a propósito. Si falta un abogado nuevo, revisa que ya esté creado en Administración → Colaboradores MD con el cargo correcto.</p>
+        </div>
+        <div class="faq-item">
+          <h4>La pestaña «Rama Judicial» dice que la Rama no respondió</h4>
+          <p>La consulta de la Rama falla a veces por unos minutos (error 502). Presiona <strong>«Actualizar»</strong> pasado un rato. Si es un proceso con reserva, la Rama no muestra sus actuaciones.</p>
+        </div>
+        <div class="faq-item">
+          <h4>¿Por qué no aparece el botón de SIUGJ en la ficha del proceso, ni busca mi proceso?</h4>
+          <p>El botón de SIUGJ está en la cabecera de la lista de procesos y solo abre el portal para que inicies sesión. SIUGJ no deja buscar un proceso por su número y solo guarda lo que se radicó por ahí. Para ver las actuaciones usa la pestaña «Rama Judicial».</p>
+        </div>
+        <div class="faq-item">
+          <h4>La balanza no se mueve</h4>
+          <p>La primera vez solo toma la foto de partida, así que no avisa de lo que ya existía. Revisa una vez al día y solo los procesos vigentes donde eres Apoderado o Abogado encargado. Prueba «Revisar ahora»; si la Rama está caída, lo vuelve a intentar la próxima vez.</p>
+        </div>
+        <div class="faq-item">
+          <h4>«Ver detalle completo del proceso» dice que hay que actualizar la consulta</h4>
+          <p>La consulta a la Rama corre en un servicio aparte (Netlify) y ese servicio necesita la versión nueva para entregar el detalle. Avisa a soporte para que la actualicen.</p>
         </div>
       </div>
     </section>
@@ -864,6 +957,21 @@
       <div class="callout tip">
         <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
         <div>Este mini calendario es siempre visible para cualquiera que haya iniciado sesión, igual que Dashboard e Informes — no depende de los módulos permitidos de cada persona.</div>
+      </div>
+    </section>
+
+    <section id="ve-campana">
+      <span class="step-num">4</span>
+      <h2>La campana de pendientes</h2>
+      <p class="section-sub">El ícono de campana en la cabecera, junto al buscador — te dice cuánto tienes por atender y funciona en cualquier pantalla.</p>
+      <ul>
+        <li>El <strong>número</strong> es lo que tú tienes pendiente: <strong>Audiencias</strong> y <strong>Términos</strong> de hoy en adelante, los <strong>Pendientes</strong> que siguen vigentes (aunque su fecha ya pasó, porque son tareas sin hacer) y las <strong>Tutelas</strong> que te tocan contestar mientras no estén contestadas.</li>
+        <li>Cada fila dice el tipo, cuánto falta (o «Vencido»), el texto, la fecha y el proceso o cliente. Abajo, «Ver todo en Vencimientos» te lleva al módulo.</li>
+        <li>Un Administrador o un Jefe puede alternar entre <strong>«Mis pendientes»</strong> y <strong>«Todo el equipo»</strong>, con un resumen por colaborador (al hacer clic en una persona, la lista se limita a ella).</li>
+      </ul>
+      <div class="callout tip">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        <div>No confundas la campana con la <strong>balanza de la Rama Judicial</strong> (a su lado): la campana avisa de fechas límite propias; la balanza, de actuaciones nuevas en los procesos.</div>
       </div>
     </section>
 
@@ -1153,7 +1261,7 @@
     <section id="inf-que-es">
       <div class="doc-eyebrow"><span class="dot"></span>Módulo 9 de 9 · Informes</div>
       <h2>Qué es este módulo</h2>
-      <p>Informes formales por Entidad, herramientas para Tutelas, y 2 utilidades de análisis (Revisión de Procesos y Cruce de archivos). <strong>Dashboard e Informes son los dos únicos módulos que ve cualquier persona que inicie sesión</strong>, sin importar sus permisos.</p>
+      <p>Informes formales por Entidad, herramientas para Tutelas, el informe de Redes sociales, y 2 utilidades de análisis (Revisión de Procesos y Cruce de archivos). <strong>Dashboard e Informes son los dos únicos módulos que ve cualquier persona que inicie sesión</strong>, sin importar sus permisos.</p>
     </section>
 
     <section id="inf-qr">
@@ -1222,9 +1330,22 @@
       </div>
     </section>
 
+    <section id="inf-redes">
+      <span class="step-num">8</span>
+      <h2>Redes sociales</h2>
+      <p>Una pestaña con el informe mensual de las publicaciones de Lexara en redes (Instagram, Facebook, YouTube, TikTok, LinkedIn y Spotify). Los datos salen de <strong>Bustral</strong> — la empresa que programa y publica los contenidos — más las vistas públicas de YouTube. <strong>No se actualiza sola</strong>: cuando quieras datos nuevos, pídele a soporte «actualiza redes».</p>
+      <ul>
+        <li>Elige el <strong>mes</strong> arriba. Cada publicación muestra su <strong>fecha programada en Bustral</strong>, su <strong>fecha de publicación</strong>, si fue <strong>aprobada u objetada</strong> y si se <strong>cumplió</strong> el calendario. «Aprobar u objetar en Bustral ↗» abre esa publicación allá.</li>
+        <li>Las tarjetas resumen el <strong>cumplimiento del calendario</strong>, cuántas se aprobaron u objetaron, y la publicación <strong>más vista</strong> y la <strong>menos vista</strong> (YouTube y TikTok).</li>
+        <li>Por red, la <strong>cantidad de seguidores actuales</strong> y los <strong>nuevos del mes</strong>, más las métricas de los últimos 30 días. Debajo del nombre de cada métrica hay una breve explicación de qué significa.</li>
+        <li>Botones: <strong>Excel</strong>, <strong>PDF</strong> y <strong>Crear borrador de correo</strong> — el borrador queda en tu carpeta de Borradores de Outlook con el asunto «Revisión de publicaciones de Lexara Abogados» y la lista de novedades del mes (qué se aprobó, objetó, publicó y qué videos no se publicaron), para que lo revises y lo envíes tú.</li>
+      </ul>
+    </section>
+
     <footer class="doc-footer">
       Manual de usuario — Lexara Gestión de Procesos · MD Abogados SAS<br>
-      Guía completa de los 9 módulos — se irá actualizando a medida que la aplicación cambie.
+      Guía completa de los 9 módulos — se irá actualizando a medida que la aplicación cambie.<br>
+      Última actualización: 14 de noviembre de 2026 (Rama Judicial, balanza, campana de pendientes y Redes sociales).
     </footer>
   </main>
 </div>
