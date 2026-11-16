@@ -2,6 +2,13 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-11-16 (189)
+- **Botón «Actualizar redes» con lectura en vivo de lo publicado** — pedido del usuario («coloca el botón sin restricción de perfiles que todos puedan actualizar»; «por lo menos la publicación para saber qué hay publicado actualmente»).
+  - **Informes → Redes sociales:** botón «Actualizar redes» visible para todos los perfiles. Recarga la última lectura de Bustral y muestra el cuadro «Publicado actualmente» con las últimas publicaciones de YouTube (con vistas) y Spotify leídas en vivo, cada una con su enlace.
+  - **Función de Netlify** (`rama-judicial/plan-b-netlify/netlify/functions/consultar.js`): nuevo modo `{ "redes": true }` (RSS abierto del canal de YouTube + episodio más reciente de Spotify). Ya desplegada en Netlify y probada. Instagram solo se lee si existe la variable `INSTAGRAM_TOKEN` en Netlify (clave oficial de Meta); sin ella el cuadro avisa que Instagram, Facebook, TikTok y LinkedIn salen de la lectura de Bustral.
+  - **Aviso de datos viejos:** la instrucción «Pida "actualiza redes"» ahora la ve solo el Administrador; los demás perfiles ven «El Administrador los actualiza desde Bustral».
+  - Pendiente: la clave de Instagram (INSTAGRAM_TOKEN en Netlify, dura 60 días); anotar a mano una publicación como «ya salió» necesita un lugar compartido (lista de SharePoint) — sin decidir.
+
 ## 2026-11-15 (188)
 - **Manual de usuario actualizado y datos de Redes sociales al día** — pedido del usuario («importante, actualiza el manual»; «en Instagram se publicó hace un día este video y no está»).
   - **Manual** (`public/manuales/manual-usuario.html`): Procesos judiciales → secciones nuevas «Rama Judicial: las actuaciones del proceso» (todas las actuaciones, columnas de término, filtro por fechas, instancias 00-03, detalle completo, «Al Histórico», «Actualizar Histórico y Estado», qué significa «Nueva») y «La balanza de la Rama Judicial»; la lista explica los botones SIUGJ y Rama Judicial de la cabecera; el formulario pasa a 8 pestañas (Audiencias/Términos y Rama Judicial); 4 preguntas frecuentes nuevas. Vencimientos → «La campana de pendientes» (existía desde el 3 de noviembre y no estaba explicada). Informes → «Redes sociales». Menú lateral y pie con fecha de actualización; verificados los 51 enlaces del menú y el contraste de las vistas simuladas en modo oscuro. (El Artifact de claude.ai del manual ya no se puede leer: queda solo la versión dentro de la app.)

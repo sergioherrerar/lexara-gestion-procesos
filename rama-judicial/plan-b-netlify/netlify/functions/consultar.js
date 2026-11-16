@@ -51,6 +51,58 @@ exports.handler = async (event) => {
   let entrada = null;
   try { entrada = JSON.parse(event.body || ''); } catch (e) { /* inválida */ }
   if (!entrada || typeof entrada !== 'object') return responder(400, { ok: false, error: 'Solicitud inválida.' });
+  // Publicado actualmente (2026-11-16): { "redes": true } → lo último que hay en YouTube (RSS abierto del canal, con vistas) y en Spotify (episodio más reciente).
+  // Instagram, Facebook, TikTok y LinkedIn no tienen lectura abierta: esas siguen saliendo de Bustral.
+  if (entrada.redes) {
+    const decodificar = t => String(t || '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'");
+    const pedirTexto = async url => {
+      const ctl = new AbortController();
+      const t = setTimeout(() => ctl.abort(), 15000);
+      try { const r = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; LexaraConsulta/1.0)', 'Accept-Language': 'es-CO,es;q=0.9' }, signal: ctl.signal }); return { codigo: r.status, texto: await r.text() }; }
+      catch (e) { return { codigo: 0, texto: '', falla: e.name === 'AbortError' ? 'tiempo agotado' : e.message }; }
+      finally { clearTimeout(t); }
+    };
+    const publicaciones = [];
+    const fuentes = {};
+    const yt = await pedirTexto('https://www.youtube.com/feeds/videos.xml?channel_id=UCcJbAvJdFZyJl4aNhFUyGPA');
+    if (yt.codigo === 200) {
+      fuentes.youtube = true;
+      for (const m of yt.texto.matchAll(/<entry>([\s\S]*?)<\/entry>/g)) {
+        const e = m[1];
+        const id = (e.match(/<yt:videoId>([\w-]+)<\/yt:videoId>/) || [])[1];
+        if (!id) continue;
+        const enlace = (e.match(/<link[^>]*href="([^"]+)"/) || [])[1] || 'https://www.youtube.com/watch?v=' + id;
+        publicaciones.push({
+          red: 'youtube', titulo: decodificar((e.match(/<title>([\s\S]*?)<\/title>/) || [])[1]).trim(), fecha: ((e.match(/<published>([^<]+)<\/published>/) || [])[1] || '').slice(0, 10),
+          publicadoEn: (e.match(/<published>([^<]+)<\/published>/) || [])[1] || null, url: enlace, vistas: parseInt((e.match(/<media:statistics[^>]*views="(\d+)"/) || [])[1], 10) || 0,
+        });
+      }
+    } else { fuentes.youtube = false; fuentes.errorYoutube = yt.falla || 'código ' + yt.codigo; }
+    const sp = await pedirTexto('https://open.spotify.com/embed/show/7lRO8jZVSDx4qcMiIOdjjL');
+    try {
+      const nd = sp.texto.match(/<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/);
+      const ent = nd ? JSON.parse(nd[1]).props.pageProps.state.data.entity : null;
+      if (ent && ent.type === 'episode' && ent.id) {
+        fuentes.spotify = true;
+        publicaciones.push({ red: 'spotify', titulo: String(ent.title || '').trim(), fecha: String((ent.releaseDate && ent.releaseDate.isoString) || '').slice(0, 10), publicadoEn: (ent.releaseDate && ent.releaseDate.isoString) || null, url: 'https://open.spotify.com/episode/' + ent.id, vistas: null });
+      } else { fuentes.spotify = false; fuentes.errorSpotify = 'sin datos del programa'; }
+    } catch (e) { fuentes.spotify = false; fuentes.errorSpotify = sp.falla || 'código ' + sp.codigo; }
+    // Instagram: solo con la clave oficial de Meta (variable INSTAGRAM_TOKEN en Netlify). Sin ella Instagram no entrega nada público.
+    const tokenIg = process.env.INSTAGRAM_TOKEN || '';
+    if (tokenIg) {
+      const ig = await pedirTexto('https://graph.instagram.com/me/media?fields=id,caption,media_type,media_product_type,permalink,timestamp,like_count,comments_count&limit=12&access_token=' + encodeURIComponent(tokenIg));
+      let j = null; try { j = JSON.parse(ig.texto); } catch (e) { /* sin JSON */ }
+      if (ig.codigo === 200 && j && Array.isArray(j.data)) {
+        fuentes.instagram = true;
+        for (const it of j.data) {
+          const cap = String(it.caption || '').split(/\r?\n/)[0].trim();
+          publicaciones.push({ red: 'instagram', titulo: (cap || (it.media_product_type === 'REELS' ? 'Reel' : 'Publicación')).slice(0, 110), fecha: String(it.timestamp || '').slice(0, 10), publicadoEn: it.timestamp || null, url: it.permalink, vistas: null, meGusta: it.like_count ?? null, comentarios: it.comments_count ?? null });
+        }
+      } else { fuentes.instagram = false; fuentes.errorInstagram = (j && j.error && j.error.message) || ig.falla || 'código ' + ig.codigo; }
+    } else { fuentes.instagram = false; fuentes.errorInstagram = 'sin clave'; }
+    publicaciones.sort((a, b) => String(b.publicadoEn || b.fecha).localeCompare(String(a.publicadoEn || a.fecha)));
+    return responder(200, { ok: true, leidoEn: new Date().toISOString(), fuentes, publicaciones: publicaciones.slice(0, 24) });
+  }
   // Detalle completo (2026-11-14): { "idProceso": N } → datos del proceso (ponente, tipo y clase, ubicación del expediente…), sujetos procesales y documentos.
   if (entrada.idProceso) {
     const id = parseInt(entrada.idProceso, 10);

@@ -35,7 +35,7 @@ function idYoutube(url){
   const m = String(url || '').match(/[?&]v=([\w-]{6,})/);
   return m ? m[1] : null;
 }
-export default function RedesSocialesInforme({ liveMode, notify }){
+export default function RedesSocialesInforme({ liveMode, notify, esAdministrador, urlConsulta }){
   const [datos, setDatos] = useState(null);
   const [error, setError] = useState('');
   const [mes, setMes] = useState('');
@@ -43,14 +43,43 @@ export default function RedesSocialesInforme({ liveMode, notify }){
   const [para, setPara] = useState('');
   const [accion, setAccion] = useState('');   // '' | 'excel' | 'pdf' | 'correo'
 
+  const [recargando, setRecargando] = useState(false);
+  const [enVivo, setEnVivo] = useState(null);   // lo que hay publicado ahora en YouTube y Spotify (lectura abierta, sin Bustral)
+  const cargar = () => fetch(`${import.meta.env.BASE_URL}data/redes-sociales.json?v=${Date.now()}`, { cache: 'no-store' })
+    .then(r => { if(!r.ok) throw new Error('HTTP ' + r.status); return r.json(); });
+
   useEffect(() => {
     let vivo = true;
-    fetch(`${import.meta.env.BASE_URL}data/redes-sociales.json?v=${Date.now()}`)
-      .then(r => { if(!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    cargar()
       .then(j => { if(vivo) setDatos(j); })
       .catch(() => { if(vivo) setError('No se pudo cargar el archivo de redes sociales (data/redes-sociales.json).'); });
     return () => { vivo = false; };
   }, []);
+
+  // Botón «Actualizar redes» (visible para todos los perfiles): (1) vuelve a pedir la última lectura guardada de Bustral y (2) lee en vivo lo que hay
+  // publicado ahora en YouTube (con vistas) y Spotify. Bustral, Instagram, Facebook, TikTok y LinkedIn piden inicio de sesión o clave: esos se leen cuando se pide «actualiza redes».
+  async function actualizarRedes(){
+    if(recargando) return;
+    setRecargando(true);
+    try{
+      const [j, vivo] = await Promise.all([
+        cargar(),
+        urlConsulta
+          ? fetch(urlConsulta, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ redes: true }) }).then(r => r.json()).catch(() => null)
+          : Promise.resolve(null),
+      ]);
+      setDatos(j);
+      if(vivo && vivo.ok){
+        setEnVivo(vivo);
+        notify?.('Redes actualizadas: ' + vivo.publicaciones.length + ' publicaciones leídas en vivo de YouTube y Spotify.', 'info');
+      }else{
+        notify?.('Se recargó la última lectura de Bustral (' + fechaLarga(j.leido) + '), pero no se pudo leer YouTube/Spotify en vivo. Revisa que la consulta en Netlify tenga la última versión.', 'info');
+      }
+    }catch(err){
+      console.error(err);
+      notify?.('No se pudo actualizar: ' + (err?.message || err), 'error');
+    }finally{ setRecargando(false); }
+  }
 
   useEffect(() => {
     if(!abierta) return;
@@ -115,7 +144,7 @@ export default function RedesSocialesInforme({ liveMode, notify }){
           // Los datos son una lectura manual de Bustral: si tienen días, los estados (programada / publicada) pueden estar desactualizados.
           const dias = Math.floor((Date.now() - new Date(datos.leido + 'T12:00:00').getTime()) / 86400000);
           return dias >= 1
-            ? <span className="redes-leido redes-leido-viejo" role="status">Datos leídos de Bustral el {fechaLarga(datos.leido)} (hace {dias} {dias === 1 ? 'día' : 'días'}): los estados pueden haber cambiado. Pida «actualiza redes» para refrescarlos.</span>
+            ? <span className="redes-leido redes-leido-viejo" role="status">Datos leídos de Bustral el {fechaLarga(datos.leido)} (hace {dias} {dias === 1 ? 'día' : 'días'}): los estados pueden haber cambiado.{esAdministrador ? ' Pida «actualiza redes» para refrescarlos.' : ' El Administrador los actualiza desde Bustral.'}</span>
             : <span className="redes-leido">Datos leídos de Bustral el {fechaLarga(datos.leido)}</span>;
         })()}
       </div>
@@ -123,12 +152,32 @@ export default function RedesSocialesInforme({ liveMode, notify }){
       <div className="redes-acciones">
         <IconTextButton icon="excel" variant="secondary" onClick={() => ejecutar('excel', () => generarInformeRedesExcel(datos, mes))} disabled={!!accion}>{accion === 'excel' ? 'Generando…' : 'Excel'}</IconTextButton>
         <IconTextButton icon="pdf" variant="secondary" onClick={() => ejecutar('pdf', () => generarInformeRedesPDF(datos, mes))} disabled={!!accion}>{accion === 'pdf' ? 'Generando…' : 'PDF'}</IconTextButton>
+        <IconTextButton icon="refresh" variant="secondary" onClick={actualizarRedes} disabled={recargando || !!accion}>{recargando ? 'Actualizando…' : 'Actualizar redes'}</IconTextButton>
         <span className="redes-acciones-correo">
           <input type="text" inputMode="email" value={para} onChange={e => setPara(e.target.value)} placeholder="Para (opcional): correo@empresa.com" aria-label="Destinatario del borrador (opcional)" />
           <IconTextButton icon="mail" variant="primary" onClick={crearCorreo} disabled={!!accion}>{accion === 'correo' ? 'Creando borrador…' : 'Crear borrador de correo'}</IconTextButton>
         </span>
       </div>
       <p className="save-hint" style={{margin:'-6px 0 0'}}>El correo «Revisión de publicaciones de Lexara Abogados» queda en los Borradores de tu Outlook, con la lista de novedades de {MESES[mm - 1]} (fecha programada, aprobación, fecha y hora de publicación, y lo que no se publicó). No se envía solo.</p>
+
+      {enVivo && (
+        <section className="redes-envivo" aria-label="Publicado actualmente">
+          <div className="redes-envivo-cab">
+            <h3>Publicado actualmente</h3>
+            <span className="redes-leido">Leído en vivo de {enVivo.fuentes?.instagram ? 'Instagram, ' : ''}YouTube y Spotify el {new Date(enVivo.leidoEn).toLocaleString('es-CO', { day:'numeric', month:'long', hour:'numeric', minute:'2-digit' })}</span>
+          </div>
+          <ul className="redes-envivo-lista">
+            {enVivo.publicaciones.slice(0, 8).map((p, i) => (
+              <li key={p.url + i}>
+                <span className={'redes-envivo-red redes-envivo-' + p.red}>{RED_NOMBRE[p.red] || p.red}</span>
+                <a href={p.url} target="_blank" rel="noopener noreferrer">{p.titulo}</a>
+                <span className="redes-envivo-meta">{p.fecha ? fechaCorta(p.fecha) : ''}{p.vistas != null ? ' · ' + fmt(p.vistas) + ' vistas' : ''}{p.meGusta != null ? ' · ' + fmt(p.meGusta) + ' me gusta' : ''}</span>
+              </li>
+            ))}
+          </ul>
+          <p className="save-hint" style={{margin:0}}>{enVivo.fuentes?.instagram ? 'Facebook, TikTok y LinkedIn' : 'Instagram, Facebook, TikTok y LinkedIn'} no se pueden leer en vivo: sus publicaciones salen de la última lectura de Bustral.</p>
+        </section>
+      )}
 
       <div className="redes-kpis">
         <div className="redes-kpi">

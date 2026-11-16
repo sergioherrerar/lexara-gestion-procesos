@@ -102,7 +102,7 @@ const SUBTABS_HERRAMIENTAS = [
   {key:'diligenciamientoFormatos', label:'Diligenciamiento Formatos Empresas'},
 ];
 
-export default function InformesView({ procesos, clientes, facturas, desistimientos, tutelas, valoresEntidad, notify, liveMode, config, requestConfirm, corregirEntidadFaltanteTutelas, colaboradores, onCreateHoraExtra, onEditarHoraExtra, onEliminarHoraExtra, horasExtras, vacacionesPeriodos, onSolicitarVacaciones, onEditarPeriodoVacaciones, onEliminarPeriodoVacaciones, onReenviarSolicitudVacaciones, tasasInteres, ipcMensual, onCrearTasaInteres, onEditarTasaInteres, onEliminarTasaInteres, onCrearIPC, onEditarIPC, onEliminarIPC }){
+export default function InformesView({ procesos, clientes, facturas, desistimientos, tutelas, valoresEntidad, notify, liveMode, config, requestConfirm, corregirEntidadFaltanteTutelas, colaboradores, onCreateHoraExtra, onEditarHoraExtra, onEliminarHoraExtra, horasExtras, vacacionesPeriodos, onSolicitarVacaciones, onEditarPeriodoVacaciones, onEliminarPeriodoVacaciones, onReenviarSolicitudVacaciones, tasasInteres, ipcMensual, onCrearTasaInteres, onEditarTasaInteres, onEliminarTasaInteres, onCrearIPC, onEditarIPC, onEliminarIPC, role }){
   const [tab, setTab] = useState('clientesPagos');
   const [subTabClientesPagos, setSubTabClientesPagos] = useState('informeCliente');
   const [subTabTutelas, setSubTabTutelas] = useState('informeDiario');
@@ -586,7 +586,7 @@ export default function InformesView({ procesos, clientes, facturas, desistimien
       </div>
       )}
 
-      {tab==='redesSociales' && <RedesSocialesInforme liveMode={liveMode} notify={notify} />}
+      {tab==='redesSociales' && <RedesSocialesInforme liveMode={liveMode} notify={notify} esAdministrador={role === 'Administrador'} urlConsulta={config?.RAMA_JUDICIAL_URL} />}
 
       {tab==='horasExtras' && (
       <div>
