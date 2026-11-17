@@ -2,6 +2,11 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-11-17 (190)
+- **Redes sociales: Reel 5 (negociación colectiva, Decreto 234) anotado como publicado** — pedido del usuario («salió esta de negociación colectiva pero el portal no lo muestra»).
+  - `public/data/redes-sociales.json`: el Reel 5 pasa de «Pendiente» a publicado el 16-nov (3 días antes de lo programado) en Instagram (con su enlace) y YouTube Shorts (224 vistas). Noviembre pasa de 4 a 5 piezas publicadas y de 4 a 5 programadas cumplidas de 9. Se anotó a mano en `ajustesManuales`; falta la hora de publicación y la próxima lectura de Bustral lo confirma o corrige.
+  - Por qué no salía: la tabla de calendario sale de la lectura de Bustral del 12-nov y Instagram no se puede leer en vivo sin la clave (pendiente).
+
 ## 2026-11-16 (189)
 - **Botón «Actualizar redes» con lectura en vivo de lo publicado** — pedido del usuario («coloca el botón sin restricción de perfiles que todos puedan actualizar»; «por lo menos la publicación para saber qué hay publicado actualmente»).
   - **Informes → Redes sociales:** botón «Actualizar redes» visible para todos los perfiles. Recarga la última lectura de Bustral y muestra el cuadro «Publicado actualmente» con las últimas publicaciones de YouTube (con vistas) y Spotify leídas en vivo, cada una con su enlace.
