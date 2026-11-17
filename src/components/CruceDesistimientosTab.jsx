@@ -215,7 +215,7 @@ export default function CruceDesistimientosTab({ notify, config, liveMode }){
             <div style={{ marginBottom: 14 }}>
               <IconTextButton icon="excel" variant="secondary" onClick={descargar} disabled={generando}>{generando ? 'Generando…' : 'Descargar Excel'}</IconTextButton>
             </div>
-            {d && <p className="save-hint">El Excel trae «Resumen» y la hoja «{d.hoja}» con {d.proceso ? 'todos los desistimientos del proceso' : 'los desistimientos que coinciden'} y, al final, la columna «Anotación: vigente o no en la base de la demanda».</p>}
+            {d && <p className="save-hint">El Excel trae «Resumen» y la hoja «{d.hoja}» con {d.proceso ? 'todos los desistimientos del proceso' : 'los desistimientos que coinciden'} y, al final, la columna «Anotación: vigente o no en la base de la demanda». A la derecha, en la misma hoja, va una tabla con el resultado de las anotaciones (por anotación y por oficio).</p>}
           </>
         )}
       </div>

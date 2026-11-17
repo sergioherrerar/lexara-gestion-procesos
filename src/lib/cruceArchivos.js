@@ -333,7 +333,11 @@ export function armarHojasEspeciales(archivos, procesoCorto = ''){
     if(setPeri) extras.push({ key: '__enPeritaje', header: 'En el peritaje' });
     otros.forEach((o, i) => extras.push({ key: '__otro' + i, header: 'En ' + o.nombre }));
     const colADesistir = des.columnas.find(c => /valor a desistir/.test(normalize(c)));
-    hojas.push({ nombre: porProceso ? 'Desistimientos ' + claveBuscada : 'Desistimientos cruzados', columnas: des.columnas, extras, filas, columnaLlave: des.columnaLlave, columnaValor: colADesistir || des.columnaValor || '' });
+    const colVigenteD = des.columnas.find(c => /valor vigente/.test(normalize(c)));
+    const colOficioD = des.columnas.find(c => /cantidad de oficio/.test(normalize(c)));
+    const colPronD = des.columnas.find(c => /pronunciamiento/.test(normalize(c)));
+    hojas.push({ nombre: porProceso ? 'Desistimientos ' + claveBuscada : 'Desistimientos cruzados', columnas: des.columnas, extras, filas, columnaLlave: des.columnaLlave, columnaValor: colADesistir || des.columnaValor || '',
+      resumenAnotaciones: setBase ? { keyAnot: '__vigente', colADesistir: colADesistir || '', colVigente: colVigenteD || '', colOficio: colOficioD || '', colPron: colPronD || '' } : null });
     const colDesistir = des.columnas.find(c => /valor a desistir/.test(normalize(c))), colVigente = des.columnas.find(c => /valor vigente/.test(normalize(c)));
     const colOficio = des.columnas.find(c => /cantidad de oficio/.test(normalize(c))), colPron = des.columnas.find(c => /pronunciamiento/.test(normalize(c)));
     const grupos = new Map();
@@ -414,6 +418,85 @@ export function compararArchivos(archivos){
   });
 
   return { resumen, porArchivo };
+}
+
+// Tabla tipo «tabla dinámica» con el RESULTADO DE LAS ANOTACIONES (2026-11-17, pedido del usuario: «agrega en la misma hoja una tabla dinámica con el resultado de anotaciones»): va en la misma hoja
+// de desistimientos, a la derecha de los datos (una columna en blanco de por medio), arriba, para verla sin bajar. Son fórmulas de Excel (CONTAR.SI / SUMAR.SI), así que se recalculan si se
+// corrige alguna fila. Primero el resultado por anotación (recobros, valor a desistir y valor vigente) y debajo el detalle por oficio y anotación, como la tabla dinámica del usuario.
+function escribirTablaAnotaciones(ws, cols, filas, meta){
+  const colDe = k => cols.findIndex(c => c.key === k) + 1;
+  const colHeader = h => (h ? cols.findIndex(c => c.header === h) + 1 : 0);
+  const cAnot = colDe(meta.keyAnot);
+  if(!cAnot || !filas.length) return;
+  const cDes = colHeader(meta.colADesistir), cVig = colHeader(meta.colVigente), cOf = colHeader(meta.colOficio), cPr = colHeader(meta.colPron);
+  const ult = filas.length + 1;
+  const L = n => ws.getColumn(n).letter;
+  const rng = n => '$' + L(n) + '$2:$' + L(n) + '$' + ult;
+  const ini = cols.length + 2;
+  const val = (f, h) => (h ? numero(f[h]) : 0);
+  const sinFiltro = f => String(f[meta.keyAnot] ?? '').trim() || '(sin anotación)';
+  const estiloTitulo = c => { c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLOR_ENCABEZADO } }; c.font = { name: 'Calibri', size: 11, bold: true, color: { argb: 'FFFFFFFF' } }; c.alignment = { horizontal: 'left', vertical: 'middle' }; };
+  const estiloEnc = c => { c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDCE9F7' } }; c.font = { name: 'Calibri', size: 11, bold: true }; c.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true }; c.border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } }; };
+  const estiloDato = c => { c.border = { top: { style: 'thin', color: { argb: 'FFB8CCE4' } }, bottom: { style: 'thin', color: { argb: 'FFB8CCE4' } }, left: { style: 'thin', color: { argb: 'FFB8CCE4' } }, right: { style: 'thin', color: { argb: 'FFB8CCE4' } } }; };
+  const celda = (r, n) => ws.getRow(r).getCell(n);
+  [ini, ini + 1, ini + 2, ini + 3, ini + 4].forEach((n, i) => { ws.getColumn(n).width = i === 0 ? 36 : (i === 1 ? 26 : 22); });
+
+  // ---- Bloque 1: resultado por anotación
+  let r = 1;
+  celda(r, ini).value = 'Resultado de las anotaciones'; for(let k = 0; k < 4; k++) estiloTitulo(celda(r, ini + k));
+  r++;
+  ['Anotación', 'Recobros', 'Valor a desistir', 'Valor vigente'].forEach((t, k) => { const c = celda(r, ini + k); c.value = t; estiloEnc(c); });
+  const anots = [...new Set(filas.map(sinFiltro))].sort((a, b) => (/^vigente/i.test(a) ? 0 : 1) - (/^vigente/i.test(b) ? 0 : 1) || a.localeCompare(b, 'es'));
+  const primera = r + 1;
+  anots.forEach(a => {
+    r++;
+    const dels = filas.filter(f => sinFiltro(f) === a);
+    const cA = celda(r, ini); cA.value = a; estiloDato(cA);
+    const cN = celda(r, ini + 1); cN.value = { formula: 'COUNTIF(' + rng(cAnot) + ',' + L(ini) + r + ')', result: dels.length }; estiloDato(cN);
+    const cD = celda(r, ini + 2); cD.value = cDes ? { formula: 'SUMIF(' + rng(cAnot) + ',' + L(ini) + r + ',' + rng(cDes) + ')', result: dels.reduce((t, f) => t + val(f, meta.colADesistir), 0) } : 0; cD.numFmt = FORMATO_DINERO; estiloDato(cD);
+    const cV = celda(r, ini + 3); cV.value = cVig ? { formula: 'SUMIF(' + rng(cAnot) + ',' + L(ini) + r + ',' + rng(cVig) + ')', result: dels.reduce((t, f) => t + val(f, meta.colVigente), 0) } : 0; cV.numFmt = FORMATO_DINERO; estiloDato(cV);
+  });
+  r++;
+  const ultimaA = r - 1;
+  const tot = [['Total general', null], ['', 'B'], ['', 'C'], ['', 'D']];
+  celda(r, ini).value = 'Total general';
+  [1, 2, 3].forEach(k => {
+    const c = celda(r, ini + k);
+    const suma = anots.reduce((t, a) => { const dels = filas.filter(f => sinFiltro(f) === a); return t + (k === 1 ? dels.length : dels.reduce((x, f) => x + val(f, k === 2 ? meta.colADesistir : meta.colVigente), 0)); }, 0);
+    c.value = { formula: 'SUM(' + L(ini + k) + primera + ':' + L(ini + k) + ultimaA + ')', result: suma };
+    if(k > 1) c.numFmt = FORMATO_DINERO;
+  });
+  for(let k = 0; k < 4; k++){ const c = celda(r, ini + k); c.font = { name: 'Calibri', size: 11, bold: true }; c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE3EFEE' } }; estiloDato(c); }
+
+  // ---- Bloque 2: por oficio y anotación (como la tabla dinámica del usuario)
+  if(cOf){
+    r += 2;
+    celda(r, ini).value = 'Por oficio y anotación'; for(let k = 0; k < 5; k++) estiloTitulo(celda(r, ini + k));
+    r++;
+    ['Oficio', 'Pronunciamiento del juez', 'Anotación', 'Recobros', 'Valor a desistir'].forEach((t, k) => { const c = celda(r, ini + k); c.value = t; estiloEnc(c); });
+    const grupos = new Map();
+    filas.forEach(f => {
+      const of = String(f[meta.colOficio] ?? '').trim() || '(sin oficio)', pr = cPr ? String(f[meta.colPron] ?? '').trim() : '', an = sinFiltro(f);
+      const k = of + '|' + pr + '|' + an;
+      if(!grupos.has(k)) grupos.set(k, { of, pr, an, n: 0, v: 0 });
+      const g = grupos.get(k); g.n++; g.v += val(f, meta.colADesistir);
+    });
+    const lista = [...grupos.values()].sort((a, b) => a.of.localeCompare(b.of, 'es', { numeric: true }) || a.pr.localeCompare(b.pr, 'es') || (/^vigente/i.test(b.an) ? 1 : 0) - (/^vigente/i.test(a.an) ? 1 : 0));
+    const ini2 = r + 1;
+    lista.forEach(g => {
+      r++;
+      [g.of, g.pr, g.an].forEach((t, k) => { const c = celda(r, ini + k); c.value = t; estiloDato(c); });
+      const a1 = L(ini) + r, a2 = L(ini + 1) + r, a3 = L(ini + 2) + r;
+      const crit = rng(cOf) + ',' + a1 + (cPr ? ',' + rng(cPr) + ',' + a2 : '') + ',' + rng(cAnot) + ',' + a3;
+      const cN = celda(r, ini + 3); cN.value = { formula: 'COUNTIFS(' + crit + ')', result: g.n }; estiloDato(cN);
+      const cV = celda(r, ini + 4); cV.value = cDes ? { formula: 'SUMIFS(' + rng(cDes) + ',' + crit + ')', result: g.v } : 0; cV.numFmt = FORMATO_DINERO; estiloDato(cV);
+    });
+    r++;
+    celda(r, ini).value = 'Total general';
+    const c4 = celda(r, ini + 3); c4.value = { formula: 'SUM(' + L(ini + 3) + ini2 + ':' + L(ini + 3) + (r - 1) + ')', result: lista.reduce((t, g) => t + g.n, 0) };
+    const c5 = celda(r, ini + 4); c5.value = { formula: 'SUM(' + L(ini + 4) + ini2 + ':' + L(ini + 4) + (r - 1) + ')', result: lista.reduce((t, g) => t + g.v, 0) }; c5.numFmt = FORMATO_DINERO;
+    for(let k = 0; k < 5; k++){ const c = celda(r, ini + k); c.font = { name: 'Calibri', size: 11, bold: true }; c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE3EFEE' } }; estiloDato(c); }
+  }
 }
 
 function encabezarHoja(ws, columnas){
@@ -581,6 +664,7 @@ export async function generarExcelCruce(nombreArchivo, archivos, { resumen, porA
     const colsEsp = [...h.columnas.map(c => ({ header: c, key: c, width: 18 })), ...h.extras.map(x => ({ header: x.header, key: x.key, width: 34 }))];
     encabezarHoja(ws, colsEsp);
     escribirDatosConPie(ws, colsEsp, h.filas, { columnaLlave: h.columnaLlave, columnaValor: h.columnaValor });
+    if(h.resumenAnotaciones) escribirTablaAnotaciones(ws, colsEsp, h.filas, h.resumenAnotaciones);
   });
 
   const buffer = await wb.xlsx.writeBuffer();

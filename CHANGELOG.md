@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-11-17 (199)
+- **Hoja de desistimientos: tabla tipo «tabla dinámica» con el resultado de las anotaciones** — pedido del usuario («agrega en la misma hoja una tabla dinámica con el resultado de anotaciones»). En la misma hoja «Desistimientos <proceso>» (Cruce de Archivos y Cruce Desistimientos), a la derecha de los datos y arriba (una columna en blanco de por medio): (1) «Resultado de las anotaciones» — por cada anotación (Vigente / No está en la base de la demanda) los recobros, el valor a desistir y el valor vigente, con total general; (2) «Por oficio y anotación» — oficio, pronunciamiento del juez, anotación, recobros y valor a desistir, con total general. Son fórmulas de Excel (CONTAR.SI/SUMAR.SI, COUNTIFS/SUMIFS) que se recalculan si se corrige una fila; no es una tabla dinámica nativa de Excel. Con los archivos reales de SOS (proceso 2010-00398): 83 vigentes ($140.036.413) y 38 que no están ($45.033.390), total $185.069.803 y 121 recobros.
+
 ## 2026-11-17 (198)
 - **Cruce de Archivos y Cruce Desistimientos: el total de la hoja de desistimientos suma «Valor a desistir»** — reclamo del usuario («no lo está haciendo bien en ninguno de los dos lados… hay 5 oficios y suman 185 millones y mira lo que trae: 121 recobros por un millón»).
   - **Error:** el pie de la hoja «Desistimientos <proceso>» sumaba «Valor vigente» ($1.232.396) en vez de «Valor a desistir» ($185.069.803, 121 recobros). Ahora la columna de valor propuesta para los desistimientos es «Valor a desistir» y la hoja la totaliza siempre que exista, en los dos cruces.
