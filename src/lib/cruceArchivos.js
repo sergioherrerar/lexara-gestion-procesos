@@ -115,6 +115,14 @@ export function leerHoja(workbook, nombreHoja){
 
   let filaEncabezado = 1;
   while(filaEncabezado < 10 && filaEsAgrupadora(ws, filaEncabezado)) filaEncabezado++;
+  // Hojas con un TÍTULO suelto en la fila 1 (p. ej. el nombre de la EPS en A1, sin combinar): si esa fila trae menos de 3 celdas con texto, el encabezado real es la primera de las
+  // siguientes (hasta la 12) que traiga 3 o más (2026-11-17: «PENDIENTE DE ADMISIÓN reforma 2017-00008», hoja «Cabezote Demanda»).
+  const celdasConTexto = n => { let c = 0; ws.getRow(n).eachCell(cell => { if(valorCelda(cell.value).trim()) c++; }); return c; };
+  if(celdasConTexto(filaEncabezado) < 3){
+    for(let n = filaEncabezado + 1; n <= 12; n++){ if(celdasConTexto(n) >= 3){ filaEncabezado = n; break; } }
+  }
+  // Si la fila hallada es de agrupación (celdas combinadas), el encabezado real es la que sigue.
+  while(filaEncabezado < 12 && filaEsAgrupadora(ws, filaEncabezado)) filaEncabezado++;
 
   const columnas = [];
   const vistos = new Map();
@@ -180,7 +188,7 @@ export function sugerirHoja(hojas, rol){
 /** La columna llave más probable: «Ultimo Radicado MYT0102», «RADICADO O ENTREGA» o «RADICADO» (en ese orden); '' si ninguna se parece. */
 export function sugerirColumnaLlave(columnas){
   const n = columnas.map(c => ({ c, t: normalize(c) }));
-  const patrones = [/ultimo radicado.*myt\s*0102/, /ultimo radicado/, /radicado o entrega/, /^radicado( \(\d+\))?$/, /radicado/];
+  const patrones = [/ultimo rad(icado)?.*myt\s*0?1\s*0?2/, /ultimo radicado.*myt\s*0102/, /ultimo radicado/, /radicado o entrega/, /^radicado( \(\d+\))?$/, /radicado/];
   for(const re of patrones){ const hallada = n.find(x => re.test(x.t)); if(hallada) return hallada.c; }
   return '';
 }
@@ -192,8 +200,10 @@ export function sugerirColumnaCumplimiento(columnas){
 }
 
 /** La columna del VALOR ACTUAL de cada recobro, para los subtotales: «Valor de cartera Actual» (peritaje), «VALOR ACTUAL» (base), «VALOR VIGENTE» (desistimientos) o parecida; '' si ninguna se parece. */
-export function sugerirColumnaValor(columnas){
+export function sugerirColumnaValor(columnas, rol){
   const n = columnas.map(c => ({ c, t: normalize(c).replace(/\s+/g, ' ') }));
+  // En los desistimientos lo que se suma es lo que se va a desistir (2026-11-17: el subtotal salía de «Valor vigente» y daba $1,2 millones en vez de $185 millones del proceso).
+  if(rol === 'desistimientos'){ const h = n.find(x => /valor a desistir/.test(x.t)); if(h) return h.c; }
   const patrones = [/valor de cartera actual/, /cartera actual/, /^(\d+\.\s*)?valor actual$/, /valor actual/, /valor vigente/, /saldo actual/];
   for(const re of patrones){ const hallada = n.find(x => re.test(x.t)); if(hallada) return hallada.c; }
   return '';
@@ -237,6 +247,22 @@ export function sugerirProcesoCorto(archivos){
     if(col){ const cuenta = new Map(); peri.filas.forEach(f => { const k = claveProceso(f[col]); if(k) cuenta.set(k, (cuenta.get(k) || 0) + 1); }); const top = [...cuenta.entries()].sort((a, b) => b[1] - a[1])[0]; if(top) return top[0]; }
   }
   return '';
+}
+
+/**
+ * El proceso de los desistimientos que corresponde a esta demanda: el que más radicados de la base de la demanda tiene en la columna «RADICACIÓN PROCESO» del archivo de desistimientos.
+ * Sirve cuando el número del nombre del archivo es el de una reforma o de otro proceso (p. ej. «reforma 2017-00008», cuyos desistimientos están bajo el 2010-00398).
+ */
+export function sugerirProcesoDesdeDesistimientos(base, des){
+  if(!base || !des || !base.filas || !des.filas) return '';
+  const col = columnaProceso(des.columnas || []);
+  if(!col) return '';
+  const llaves = new Set();
+  base.filas.forEach(f => { const k = normalizarLlave(f[base.columnaLlave]); if(k) llaves.add(k); });
+  const cuenta = new Map();
+  des.filas.forEach(f => { const k = normalizarLlave(f[des.columnaLlave]); if(!k || !llaves.has(k)) return; const p = claveProceso(f[col]); if(p) cuenta.set(p, (cuenta.get(p) || 0) + 1); });
+  const top = [...cuenta.entries()].sort((a, b) => b[1] - a[1])[0];
+  return top ? top[0] : '';
 }
 
 /** Análisis tipo analista de datos de los archivos que se cruzan entre sí (sin los de desistimientos): por archivo, cuántas filas, llaves únicas, repetidas y vacías; y en cuántos archivos está cada llave. */
@@ -306,9 +332,19 @@ export function armarHojasEspeciales(archivos, procesoCorto = ''){
     if(setBase) extras.push({ key: '__vigente', header: 'Anotación: vigente o no en la base de la demanda' });
     if(setPeri) extras.push({ key: '__enPeritaje', header: 'En el peritaje' });
     otros.forEach((o, i) => extras.push({ key: '__otro' + i, header: 'En ' + o.nombre }));
-    hojas.push({ nombre: porProceso ? 'Desistimientos ' + claveBuscada : 'Desistimientos cruzados', columnas: des.columnas, extras, filas, columnaLlave: des.columnaLlave, columnaValor: des.columnaValor || '' });
+    const colADesistir = des.columnas.find(c => /valor a desistir/.test(normalize(c)));
+    hojas.push({ nombre: porProceso ? 'Desistimientos ' + claveBuscada : 'Desistimientos cruzados', columnas: des.columnas, extras, filas, columnaLlave: des.columnaLlave, columnaValor: colADesistir || des.columnaValor || '' });
     const colDesistir = des.columnas.find(c => /valor a desistir/.test(normalize(c))), colVigente = des.columnas.find(c => /valor vigente/.test(normalize(c)));
-    info.desistimientos = { archivo: des.nombre, proceso: porProceso ? claveBuscada : '', sinColumnaProceso: !!procesoCorto && !colProceso, hoja: porProceso ? 'Desistimientos ' + claveBuscada : 'Desistimientos cruzados', filasTotales: des.filas.length, cruzan: filas.length, vigentes: filas.filter(f => String(f.__vigente).startsWith('Vigente')).length,
+    const colOficio = des.columnas.find(c => /cantidad de oficio/.test(normalize(c))), colPron = des.columnas.find(c => /pronunciamiento/.test(normalize(c)));
+    const grupos = new Map();
+    if(colOficio) filas.forEach(f => {
+      const oficio = String(f[colOficio] ?? '').trim() || '(sin oficio)', pron = colPron ? String(f[colPron] ?? '').trim() : '';
+      const k = oficio + '|' + pron;
+      if(!grupos.has(k)) grupos.set(k, { oficio, pronunciamiento: pron, recobros: 0, valorADesistir: 0 });
+      const g = grupos.get(k); g.recobros++; if(colADesistir) g.valorADesistir += numero(f[colADesistir]);
+    });
+    const porOficio = [...grupos.values()].sort((x, y) => x.oficio.localeCompare(y.oficio, 'es', { numeric: true }));
+    info.desistimientos = { archivo: des.nombre, porOficio, proceso: porProceso ? claveBuscada : '', sinColumnaProceso: !!procesoCorto && !colProceso, hoja: porProceso ? 'Desistimientos ' + claveBuscada : 'Desistimientos cruzados', filasTotales: des.filas.length, cruzan: filas.length, vigentes: filas.filter(f => String(f.__vigente).startsWith('Vigente')).length,
       noEstanEnBase: filas.filter(f => String(f.__vigente).startsWith('No está')).length, valorADesistir: colDesistir ? filas.reduce((s, f) => s + numero(f[colDesistir]), 0) : null, valorVigente: colVigente ? filas.reduce((s, f) => s + numero(f[colVigente]), 0) : null };
   }
   return { hojas, info };
@@ -475,6 +511,13 @@ export async function generarExcelCruce(nombreArchivo, archivos, { resumen, porA
       if(d.sinColumnaProceso) ws.addRow(['Ojo: el archivo no trae una columna «RADICACIÓN PROCESO»; se cruzó por radicado.']);
       if(d.valorADesistir != null){ const r = ws.addRow(['Suma de «Valor a desistir» de esas filas', nf(d.valorADesistir)]); r.getCell(2).numFmt = '"$" #,##0.00'; }
       if(d.valorVigente != null){ const r = ws.addRow(['Suma de «Valor vigente» de esas filas', nf(d.valorVigente)]); r.getCell(2).numFmt = '"$" #,##0.00'; }
+      if(d.porOficio && d.porOficio.length){
+        ws.addRow([]);
+        encab('Por oficio', 'Pronunciamiento del juez', 'Recobros', 'Suma de Valor a desistir');
+        d.porOficio.forEach(g => { const r = ws.addRow([g.oficio, g.pronunciamiento, g.recobros, g.valorADesistir]); r.getCell(4).numFmt = '"$" #,##0.00'; });
+        const tot = ws.addRow(['Total general', '', d.porOficio.reduce((s, g) => s + g.recobros, 0), d.porOficio.reduce((s, g) => s + g.valorADesistir, 0)]);
+        tot.font = { bold: true }; tot.getCell(4).numFmt = '"$" #,##0.00';
+      }
     }
   }
 

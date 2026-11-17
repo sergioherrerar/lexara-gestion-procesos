@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { mensajeError, listarExcelDesistimientosSOS, descargarArchivoSharePoint, RUTA_DESISTIMIENTOS_SOS } from '../lib/graph';
+import { mensajeError, fmtMonto, listarExcelDesistimientosSOS, descargarArchivoSharePoint, RUTA_DESISTIMIENTOS_SOS } from '../lib/graph';
 import {
-  cargarWorkbook, nombresDeHojas, leerHoja, sugerirHoja, sugerirColumnaLlave, sugerirColumnaValor, sugerirProcesoCorto, procesosDelArchivo, analizarArchivos, armarHojasEspeciales, generarExcelCruce,
+  cargarWorkbook, nombresDeHojas, leerHoja, sugerirHoja, sugerirColumnaLlave, sugerirColumnaValor, sugerirProcesoCorto, procesosDelArchivo, analizarArchivos, armarHojasEspeciales, generarExcelCruce, sugerirProcesoDesdeDesistimientos,
 } from '../lib/cruceArchivos';
 import { IconTextButton } from './IconButton';
 
@@ -10,24 +10,24 @@ import { IconTextButton } from './IconButton';
 // Es el mismo cálculo del «Cruce de Archivos» (lib/cruceArchivos.js → armarHojasEspeciales), con solo estos dos pasos.
 const VACIO = { file: null, workbook: null, hojas: [], hoja: '', columnas: [], columnaLlave: '', columnaValor: '', filas: null, leyendo: false };
 
-function conHoja(base, workbook, hoja){
+function conHoja(base, workbook, hoja, rol){
   const { columnas, filas } = leerHoja(workbook, hoja);
-  return { ...base, hoja, columnas, filas, columnaLlave: sugerirColumnaLlave(columnas), columnaValor: sugerirColumnaValor(columnas) };
+  return { ...base, hoja, columnas, filas, columnaLlave: sugerirColumnaLlave(columnas), columnaValor: sugerirColumnaValor(columnas, rol) };
 }
 async function leerArchivo(file, rol){
   const workbook = await cargarWorkbook(file);
   const hojas = nombresDeHojas(workbook);
   let slot = { ...VACIO, file, workbook, hojas };
   const propuesta = sugerirHoja(hojas, rol);
-  if(propuesta){ try{ slot = conHoja(slot, workbook, propuesta); }catch(err){ console.error(err); } }
+  if(propuesta){ try{ slot = conHoja(slot, workbook, propuesta, rol); }catch(err){ console.error(err); } }
   return slot;
 }
 const aArchivo = (s, rol) => ({ nombre: s.file.name.replace(/\.xlsx$/i, ''), nombreHoja: '', rol, columnaLlave: s.columnaLlave, columnaCumplimiento: '', columnaValor: s.columnaValor, columnas: s.columnas, filas: s.filas });
 
-function Selectores({ slot, onChange, notify }){
+function Selectores({ slot, onChange, notify, rol }){
   function cambiarHoja(hoja){
     if(!hoja){ onChange({ ...slot, hoja: '', columnas: [], columnaLlave: '', columnaValor: '', filas: null }); return; }
-    try{ onChange(conHoja(slot, slot.workbook, hoja)); }
+    try{ onChange(conHoja(slot, slot.workbook, hoja, rol)); }
     catch(err){ console.error(err); notify?.('No se pudo leer la hoja: ' + mensajeError(err), 'error'); }
   }
   return (
@@ -66,9 +66,11 @@ export default function CruceDesistimientosTab({ notify, config, liveMode }){
 
   const demArchivo = dem.file && dem.filas ? aArchivo(dem, 'base') : null;
   const desArchivo = des.file && des.filas ? aArchivo(des, 'desistimientos') : null;
-  const procesoSugerido = demArchivo ? sugerirProcesoCorto([demArchivo]) : '';
-  const procesoCorto = procesoManual.trim() || procesoSugerido;
   const procesosDelDes = desArchivo ? procesosDelArchivo(desArchivo) : [];
+  // El número del nombre del archivo solo sirve si ese proceso existe en los desistimientos; si no (p. ej. una reforma), se propone el que más radicados de la demanda tiene.
+  const procesoDeNombre = demArchivo ? sugerirProcesoCorto([demArchivo]) : '';
+  const procesoSugerido = (procesosDelDes.some(p => p.proceso === procesoDeNombre) ? procesoDeNombre : '') || sugerirProcesoDesdeDesistimientos(demArchivo, desArchivo) || procesoDeNombre;
+  const procesoCorto = procesoManual.trim() || procesoSugerido;
   const listo = !!(dem.hoja && dem.columnaLlave && dem.filas && des.hoja && des.columnaLlave && des.filas);
 
   async function subirDemanda(e){
@@ -138,7 +140,7 @@ export default function CruceDesistimientosTab({ notify, config, liveMode }){
                 <input type="file" accept=".xlsx" onChange={subirDemanda} disabled={leyendoDem} style={{ display: 'none' }} />
               </label>
             </div>
-            <Selectores slot={dem} onChange={s => { setDem(s); setResultado(null); }} notify={notify} />
+            <Selectores slot={dem} rol="base" onChange={s => { setDem(s); setResultado(null); }} notify={notify} />
           </div>
           {dem.hojas.length > 1 && !dem.hoja && <p className="save-hint" style={{ margin: '0 16px 12px' }}>Elija la hoja que tiene la lista de la demanda (por ejemplo, «Base depurada» si es la lista final).</p>}
         </div>
@@ -161,7 +163,7 @@ export default function CruceDesistimientosTab({ notify, config, liveMode }){
             {!trayendo && des.file && (
               <>
                 <span className="badge badge-verde">{des.file.name}</span>
-                <Selectores slot={des} onChange={s => { setDes(s); setResultado(null); }} notify={notify} />
+                <Selectores slot={des} rol="desistimientos" onChange={s => { setDes(s); setResultado(null); }} notify={notify} />
                 <button type="button" className="btn-secondary" onClick={() => { setDes(VACIO); setResultado(null); }}>Cambiar archivo</button>
               </>
             )}
@@ -196,8 +198,20 @@ export default function CruceDesistimientosTab({ notify, config, liveMode }){
                 <span className="badge badge-naranja">{d.cruzan} desistimiento(s){d.proceso ? ' del proceso ' + d.proceso : ' que coinciden'}</span>
                 <span className="badge badge-verde">{d.vigentes} vigentes en la demanda</span>
                 <span className="badge badge-gris">{d.noEstanEnBase} no están en la demanda</span>
+                {d.valorADesistir != null && <span className="badge badge-verde">$ {fmtMonto(d.valorADesistir)} a desistir</span>}
               </div>
             ) : <p className="save-hint" style={{ color: '#b3590a' }}>No se armó la hoja de desistimientos: revise la hoja y la columna del radicado.</p>}
+            {d && d.porOficio && d.porOficio.length > 0 && (
+              <div className="table-wrap" style={{ marginBottom: 14 }}>
+                <table className="table-compact">
+                  <thead><tr><th>Oficio</th><th>Pronunciamiento del juez</th><th style={{ textAlign: 'right' }}>Recobros</th><th style={{ textAlign: 'right' }}>Valor a desistir</th></tr></thead>
+                  <tbody>
+                    {d.porOficio.map(g => <tr key={g.oficio + g.pronunciamiento}><td>{g.oficio}</td><td>{g.pronunciamiento}</td><td style={{ textAlign: 'right' }}>{g.recobros}</td><td style={{ textAlign: 'right' }}>$ {fmtMonto(g.valorADesistir)}</td></tr>)}
+                    <tr><td colSpan={2}><strong>Total general</strong></td><td style={{ textAlign: 'right' }}><strong>{d.porOficio.reduce((s, g) => s + g.recobros, 0)}</strong></td><td style={{ textAlign: 'right' }}><strong>$ {fmtMonto(d.porOficio.reduce((s, g) => s + g.valorADesistir, 0))}</strong></td></tr>
+                  </tbody>
+                </table>
+              </div>
+            )}
             <div style={{ marginBottom: 14 }}>
               <IconTextButton icon="excel" variant="secondary" onClick={descargar} disabled={generando}>{generando ? 'Generando…' : 'Descargar Excel'}</IconTextButton>
             </div>

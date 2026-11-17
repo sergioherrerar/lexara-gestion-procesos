@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { mensajeError, fmtMonto, listarExcelDesistimientosSOS, descargarArchivoSharePoint, RUTA_DESISTIMIENTOS_SOS } from '../lib/graph';
 import {
   cargarWorkbook, nombresDeHojas, leerHoja, compararArchivos, generarExcelCruce,
-  ROLES_CRUCE, detectarRol, sugerirColumnaValor, sugerirProcesoCorto, procesosDelArchivo, sugerirHoja, sugerirColumnaLlave, sugerirColumnaCumplimiento, analizarArchivos, armarHojasEspeciales,
+  ROLES_CRUCE, detectarRol, sugerirColumnaValor, sugerirProcesoCorto, procesosDelArchivo, sugerirHoja, sugerirColumnaLlave, sugerirColumnaCumplimiento, analizarArchivos, armarHojasEspeciales, sugerirProcesoDesdeDesistimientos,
 } from '../lib/cruceArchivos';
 import { IconTextButton } from './IconButton';
 
@@ -20,7 +20,7 @@ function Slot({ indice, slot, onChange, onQuitar, puedeQuitar, notify, config, l
   function conHoja(base, workbook, hoja, rol){
     const { columnas, filas } = leerHoja(workbook, hoja);
     const llave = sugerirColumnaLlave(columnas);
-    return { ...base, hoja, columnas, filas, columnaLlave: llave, columnaCumplimiento: rol === 'peritaje' ? sugerirColumnaCumplimiento(columnas) : "", columnaValor: sugerirColumnaValor(columnas), sugerida: !!llave };
+    return { ...base, hoja, columnas, filas, columnaLlave: llave, columnaCumplimiento: rol === 'peritaje' ? sugerirColumnaCumplimiento(columnas) : "", columnaValor: sugerirColumnaValor(columnas, rol), sugerida: !!llave };
   }
 
   async function procesarArchivo(file){
@@ -54,7 +54,7 @@ function Slot({ indice, slot, onChange, onQuitar, puedeQuitar, notify, config, l
     }
   }
   function handleRol(rol){
-    onChange({ ...slot, rol, columnaCumplimiento: rol === 'peritaje' && slot.columnas.length ? sugerirColumnaCumplimiento(slot.columnas) : "" });
+    onChange({ ...slot, rol, columnaCumplimiento: rol === 'peritaje' && slot.columnas.length ? sugerirColumnaCumplimiento(slot.columnas) : "", columnaValor: slot.columnas.length ? sugerirColumnaValor(slot.columnas, rol) : slot.columnaValor });
   }
   async function listarSharePoint(){
     setCargandoSP(true);
@@ -185,9 +185,11 @@ export default function CruceArchivosTab({ notify, config, liveMode }){
   }
 
   const archivosLeidos = slots.filter(s => s.file && s.filas).map(aArchivo);
-  const procesoSugerido = sugerirProcesoCorto(archivosLeidos);
   const archivoDes = archivosLeidos.find(a => a.rol === 'desistimientos');
   const procesosDelDes = archivoDes ? procesosDelArchivo(archivoDes) : [];
+  // El número del nombre del archivo solo sirve si ese proceso existe en los desistimientos; si no (p. ej. una reforma), se propone el que más radicados de la demanda tiene.
+  const procesoDeNombre = sugerirProcesoCorto(archivosLeidos);
+  const procesoSugerido = (procesosDelDes.some(p => p.proceso === procesoDeNombre) ? procesoDeNombre : '') || sugerirProcesoDesdeDesistimientos(archivosLeidos.find(a => a.rol === 'base'), archivoDes) || procesoDeNombre;
   const procesoCorto = procesoManual.trim() || procesoSugerido;
 
   function handleComparar(){
@@ -271,6 +273,7 @@ export default function CruceArchivosTab({ notify, config, liveMode }){
               {peri && <span className="badge badge-verde">{peri.cumple} fila(s) CUMPLEN de {peri.filasTotales}</span>}
               {des && <span className="badge badge-naranja">{des.cruzan} desistimiento(s){des.proceso ? ' del proceso ' + des.proceso : ' cruzan'}</span>}
               {des && <span className="badge badge-verde">{des.vigentes} vigentes en la base</span>}
+              {des && des.valorADesistir != null && <span className="badge badge-verde">$ {fmtMonto(des.valorADesistir)} a desistir</span>}
               {des && <span className="badge badge-gris">{des.noEstanEnBase} no están en la base</span>}
             </div>
             <div className="table-wrap" style={{marginBottom:14}}>
