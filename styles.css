@@ -2281,6 +2281,11 @@
   .rama-tipo{display:inline-block; margin-right:6px; padding:2px 8px; border-radius:99px; background:var(--gris-claro); color:var(--texto-suave); font-size:11px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; vertical-align:middle;}
   .rama-tipo.principal{background:#d7f2e4; color:var(--verde-oscuro);}
   .rama-term-select{font:inherit; font-weight:700; color:inherit; margin-left:2px; padding:1px 4px; border:1px solid var(--gris-linea); border-radius:6px; background:var(--superficie, #fff); cursor:pointer;}
+  .rama-copiar{display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; margin-left:6px; padding:0; vertical-align:middle; border-radius:8px; border:1px solid #9fd9c8; background:linear-gradient(180deg,#f1faf6,#d9f0e6); color:#00463e; cursor:pointer; box-shadow:0 1px 3px rgba(0,50,45,.12); transition:transform .12s ease, box-shadow .12s ease;}
+  .rama-copiar svg{width:14px; height:14px;}
+  .rama-copiar:hover{transform:translateY(-1px); box-shadow:0 3px 7px rgba(0,50,45,.18);}
+  .rama-copiar:active{transform:none;}
+  .rama-copiar:focus-visible{outline:2px solid var(--verde-oscuro); outline-offset:2px;}
   .rama-term-select:focus-visible{outline:2px solid var(--verde-oscuro); outline-offset:2px;}
   .rama-hist-aviso{display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px; padding:10px 12px; border-radius:10px; background:#eef7f5; font-size:13px; color:var(--texto-suave);}
   .rama-bloque-pendiente{padding:10px 14px;}

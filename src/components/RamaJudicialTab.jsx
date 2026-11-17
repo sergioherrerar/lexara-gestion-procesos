@@ -14,7 +14,20 @@ const ICONOS = {
   refrescar: 'M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7',
   documento: 'M7 3h7l5 5v13H7zM14 3v5h5M10 13h6M10 17h6',
   buscar: 'M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM21 21l-4.3-4.3',
+  copiar: 'M9 9h11v11H9zM5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1',
 };
+// Copia el radicado de 23 dígitos (el que está elegido en la lista de terminaciones) al portapapeles. Solo copia: no cambia nada del proceso.
+function CopiarNumero({ num, notify }){
+  async function copiar(){
+    let ok = false;
+    try{ await navigator.clipboard.writeText(num); ok = true; }
+    catch(e){
+      try{ const ta = document.createElement('textarea'); ta.value = num; ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select(); ok = document.execCommand('copy'); document.body.removeChild(ta); }catch(e2){ ok = false; }
+    }
+    notify?.(ok ? 'Radicado ' + num + ' copiado.' : 'No se pudo copiar solo. Radicado: ' + num, ok ? 'success' : 'info');
+  }
+  return <button type="button" className="rama-copiar" onClick={copiar} title="Copiar el número completo (23 dígitos)" aria-label={'Copiar el número ' + num}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={ICONOS.copiar} /></svg></button>;
+}
 function Ico({ n }){
   if(n === 'escudo') return <img className="rama-btn-ico rama-btn-escudo" src={escudoColombia} alt="" />;
   return <svg className="rama-btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={ICONOS[n]} /></svg>;
@@ -299,7 +312,7 @@ export default function RamaJudicialTab({ proceso, historico, estadoActual, fech
           return (
             <div key={rad} className="rama-bloque rama-bloque-pendiente">
               <div className="rama-cab">
-                <h4><span className="rama-tipo">Número del histórico</span> {rad.slice(0, 21)}<select className="rama-term-select" value={terminacion[rad] || rad.slice(21)} onChange={e => setTerminacion(prev => ({ ...prev, [rad]: e.target.value }))} aria-label="Terminación del número (instancia): 00, 01, 02 o 03" title="Terminación del radicado (instancia). Cada una es un proceso distinto: elija la que quiera consultar.">{[...new Set([rad.slice(21), ...TERMINACIONES])].sort().map(x => <option key={x} value={x}>{x}</option>)}</select></h4>
+                <h4><span className="rama-tipo">Número del histórico</span> {rad.slice(0, 21)}<select className="rama-term-select" value={terminacion[rad] || rad.slice(21)} onChange={e => setTerminacion(prev => ({ ...prev, [rad]: e.target.value }))} aria-label="Terminación del número (instancia): 00, 01, 02 o 03" title="Terminación del radicado (instancia). Cada una es un proceso distinto: elija la que quiera consultar.">{[...new Set([rad.slice(21), ...TERMINACIONES])].sort().map(x => <option key={x} value={x}>{x}</option>)}</select><CopiarNumero num={rad.slice(0, 21) + (terminacion[rad] || rad.slice(21))} notify={notify} /></h4>
                 <span className="rama-cab-acc">
                   <button type="button" className="rama-btn rama-btn--rama" onClick={() => abrirEnRamaJudicial(proceso, notify, rad.slice(0, 21) + (terminacion[rad] || rad.slice(21)))} title="Abre la consulta de la Rama Judicial y copia este radicado"><Ico n="escudo" />Abrir en la Rama</button>
                   <button type="button" className="rama-btn rama-btn--pub" onClick={() => abrirPublicacionesProcesales(rad.slice(0, 21) + (terminacion[rad] || rad.slice(21)))} title="Abre Publicaciones Procesales de la Rama (estados, traslados, edictos y autos de todos los despachos) ya buscado con este radicado"><Ico n="documento" />Publicaciones procesales</button>
@@ -318,7 +331,7 @@ export default function RamaJudicialTab({ proceso, historico, estadoActual, fech
         return (
           <div key={rad} className="rama-bloque">
             <div className="rama-cab">
-              <h4><span className={'rama-tipo' + (esPrincipal ? ' principal' : '')} title={esBase ? '' : 'Es un proceso distinto: la misma radicación con otra terminación (instancia)'}>{esBase ? (esPrincipal ? 'Número principal' : 'Número del histórico') : `${base === principal ? 'Principal' : 'Histórico'} · termina en ${rad.slice(-2)}`}</span> {rad.slice(0, 21)}<select className="rama-term-select" value={terminacion[rad] || rad.slice(21)} onChange={e => setTerminacion(prev => ({ ...prev, [rad]: e.target.value }))} aria-label="Terminación del número (instancia): 00, 01, 02 o 03" title="Cada terminación del radicado es un proceso distinto (instancia). Elija una y presione «Consultar este número»; solo es para consultar, no cambia el proceso.">{[...new Set([rad.slice(21), ...TERMINACIONES])].sort().map(x => <option key={x} value={x}>{x}</option>)}</select></h4>
+              <h4><span className={'rama-tipo' + (esPrincipal ? ' principal' : '')} title={esBase ? '' : 'Es un proceso distinto: la misma radicación con otra terminación (instancia)'}>{esBase ? (esPrincipal ? 'Número principal' : 'Número del histórico') : `${base === principal ? 'Principal' : 'Histórico'} · termina en ${rad.slice(-2)}`}</span> {rad.slice(0, 21)}<select className="rama-term-select" value={terminacion[rad] || rad.slice(21)} onChange={e => setTerminacion(prev => ({ ...prev, [rad]: e.target.value }))} aria-label="Terminación del número (instancia): 00, 01, 02 o 03" title="Cada terminación del radicado es un proceso distinto (instancia). Elija una y presione «Consultar este número»; solo es para consultar, no cambia el proceso.">{[...new Set([rad.slice(21), ...TERMINACIONES])].sort().map(x => <option key={x} value={x}>{x}</option>)}</select><CopiarNumero num={radSel} notify={notify} /></h4>
               <span className="rama-cab-acc">
                 <button type="button" className="rama-btn rama-btn--rama" onClick={() => abrirEnRamaJudicial(proceso, notify, radSel)} title="Abre la consulta de la Rama Judicial y copia este radicado"><Ico n="escudo" />Abrir en la Rama</button>
                   <button type="button" className="rama-btn rama-btn--pub" onClick={() => abrirPublicacionesProcesales(radSel)} title="Abre Publicaciones Procesales de la Rama (estados, traslados, edictos y autos de todos los despachos) ya buscado con este radicado"><Ico n="documento" />Publicaciones procesales</button>

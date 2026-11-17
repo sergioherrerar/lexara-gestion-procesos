@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-11-17 (194)
+- **Pestaña Rama: icono para copiar el número** — pedido del usuario («coloca aquí un icono de copiar número»; «igual en el resto»). Un botón pequeño junto a la lista de terminaciones, en todos los bloques de número (principal, histórico y otras terminaciones), copia el radicado de 23 dígitos con la terminación elegida y avisa «Radicado … copiado» (si el navegador no deja copiar, muestra el número). Solo copia: no consulta ni cambia nada del proceso.
+
 ## 2026-11-17 (193)
 - **Pestaña Rama: botones con color y diseño, lista de terminaciones solo para consultar, SAMAI según cada radicado y error 403 explicado** — pedido del usuario («un poco más de color a estos botones, más diseño»; «cuando se cambian los dos números finales no realizar la búsqueda… aquí solo es para consulta, no debe cambiar el campo»; «qué es el error»).
   - **Botones** con un color por función, icono y relieve suave: Abrir en la Rama (verde, con el escudo real), Publicaciones procesales (turquesa), Abrir en SAMAI y Expediente en SAMAI (azul), Solicitar acceso por correo (naranja), En el Consejo de Estado (morado suave), Actualizar y Consultar este número (verde oscuro, acciones principales).
