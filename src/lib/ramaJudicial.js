@@ -49,6 +49,24 @@ export const URL_SIUGJ = 'https://siugj.ramajudicial.gov.co/principalPortal/inde
 export const URL_PUBLICACIONES_PROCESALES = 'https://publicacionesprocesales.ramajudicial.gov.co/web/publicaciones-procesales/search?q=';
 export function urlPublicacionesProcesales(radicado){ return URL_PUBLICACIONES_PROCESALES + encodeURIComponent(String(radicado || '').replace(/\D/g, '')); }
 export function abrirPublicacionesProcesales(radicado){ window.open(urlPublicacionesProcesales(radicado), '_blank', 'noopener,noreferrer'); }
+// SIUGJ identifica los procesos por el CUP: el radicado de 23 dígitos con un guion después de los 12 primeros (p. ej. 110013334003-20230057900). Su «Consultar procesos» público pide reCAPTCHA y no
+// recibe el número por la dirección (2026-11-17), así que el botón copia el CUP ya formateado y abre la página: solo queda pegar, marcar «No soy un robot» y buscar.
+export const URL_SIUGJ_CONSULTA = 'https://siugj.ramajudicial.gov.co/principalPortal/consultarProceso.php';
+export function cupSiugj(radicado){
+  const d = String(radicado || '').replace(/\D/g, '');
+  return d.length === 23 ? d.slice(0, 12) + '-' + d.slice(12) : '';
+}
+export function abrirSiugjConCup(radicado, notify){
+  const cup = cupSiugj(radicado);
+  if(!cup){ notify?.('Este número no tiene los 23 dígitos para armar el CUP de SIUGJ.', 'error'); return false; }
+  window.open(URL_SIUGJ_CONSULTA, '_blank', 'noopener,noreferrer');
+  const aviso = copiado => notify?.((copiado ? 'CUP ' + cup + ' copiado. ' : 'CUP: ' + cup + '. ') + 'En SIUGJ péguelo (Ctrl+V), marque «No soy un robot» y presione «Buscar».', copiado ? 'success' : 'info');
+  try{
+    if(navigator.clipboard?.writeText) navigator.clipboard.writeText(cup).then(() => aviso(true), () => aviso(false));
+    else aviso(false);
+  }catch(e){ aviso(false); }
+  return true;
+}
 export function abrirSIUGJ(){ window.open(URL_SIUGJ, '_blank', 'noopener,noreferrer'); }
 export function abrirConsultaPublicaRama(){ window.open(URL_CONSULTA_RAMA, '_blank', 'noopener,noreferrer'); }
 

@@ -2235,27 +2235,29 @@
   .rama-cab h4{margin:0; font-size:14px; letter-spacing:.02em; word-break:break-all;}
   .rama-btn{padding:6px 12px; font-size:12.5px; white-space:nowrap;}
   /* Botones de la pestaña Rama: píldoras con color por función, icono y relieve suave (mismo aire que las pestañas de la ficha). */
-  .rama-btn--rama, .rama-btn--pub, .rama-btn--samai, .rama-btn--exp, .rama-btn--acceso, .rama-btn--ce, .rama-btn--act{
+  .rama-btn--rama, .rama-btn--pub, .rama-btn--siugj, .rama-btn--samai, .rama-btn--exp, .rama-btn--acceso, .rama-btn--ce, .rama-btn--act{
     display:inline-flex; align-items:center; gap:7px; padding:7px 15px; border-radius:999px; border:1px solid transparent;
     font-weight:600; letter-spacing:.01em; cursor:pointer; box-shadow:0 2px 5px rgba(0,50,45,.10), inset 0 1px 0 rgba(255,255,255,.7);
     transition:transform .12s ease, box-shadow .12s ease, filter .12s ease;
   }
-  .rama-btn--rama:hover, .rama-btn--pub:hover, .rama-btn--samai:hover, .rama-btn--exp:hover, .rama-btn--acceso:hover, .rama-btn--ce:hover, .rama-btn--act:hover{
+  .rama-btn--rama:hover, .rama-btn--pub:hover, .rama-btn--siugj:hover, .rama-btn--samai:hover, .rama-btn--exp:hover, .rama-btn--acceso:hover, .rama-btn--ce:hover, .rama-btn--act:hover{
     transform:translateY(-1px); box-shadow:0 5px 10px rgba(0,50,45,.16), inset 0 1px 0 rgba(255,255,255,.7); filter:saturate(1.08);
   }
-  .rama-btn--rama:active, .rama-btn--pub:active, .rama-btn--samai:active, .rama-btn--exp:active, .rama-btn--acceso:active, .rama-btn--ce:active, .rama-btn--act:active{transform:translateY(0); box-shadow:0 1px 2px rgba(0,50,45,.14);}
-  .rama-btn--rama:disabled, .rama-btn--pub:disabled, .rama-btn--samai:disabled, .rama-btn--exp:disabled, .rama-btn--acceso:disabled, .rama-btn--ce:disabled, .rama-btn--act:disabled{opacity:.6; cursor:default; transform:none; box-shadow:none;}
+  .rama-btn--rama:active, .rama-btn--pub:active, .rama-btn--siugj:active, .rama-btn--samai:active, .rama-btn--exp:active, .rama-btn--acceso:active, .rama-btn--ce:active, .rama-btn--act:active{transform:translateY(0); box-shadow:0 1px 2px rgba(0,50,45,.14);}
+  .rama-btn--rama:disabled, .rama-btn--pub:disabled, .rama-btn--siugj:disabled, .rama-btn--samai:disabled, .rama-btn--exp:disabled, .rama-btn--acceso:disabled, .rama-btn--ce:disabled, .rama-btn--act:disabled{opacity:.6; cursor:default; transform:none; box-shadow:none;}
   .rama-btn-ico{width:15px; height:15px; flex:none;}
   .rama-btn-escudo{width:16px; height:16px; object-fit:contain;}
   .rama-btn--rama{background:linear-gradient(180deg,#f1faf6,#d9f0e6); color:#00463e; border-color:#9fd9c8;}
   .rama-btn--pub{background:linear-gradient(180deg,#eefafa,#cfeeee); color:#0b5f61; border-color:#8fd3d3;}
+  .rama-btn--siugj{background:linear-gradient(180deg,#f6fbf3,#e1f1d8); color:#2c5a1d; border-color:#b4d9a2;}
+  .rama-btn-logo{height:15px; width:auto; max-width:56px; flex:none;}
   .rama-btn--samai{background:linear-gradient(180deg,#f1f6fe,#dbe8fb); color:#24558f; border-color:#a9c4ee;}
   .rama-btn--exp{background:linear-gradient(180deg,#eaf1fd,#cddff8); color:#1d4a82; border-color:#8fb2e6;}
   .rama-btn--acceso{background:linear-gradient(180deg,#fff6ea,#fde3c6); color:#a24d05; border-color:#f2c18a;}
   .rama-btn--ce{background:linear-gradient(180deg,#f4f2fc,#e2ddf6); color:#47398a; border-color:#c3baeb;}
   .rama-btn--act{background:linear-gradient(180deg,#0a6a60,#004941); color:#fff; border-color:#003630; box-shadow:0 2px 6px rgba(0,73,65,.30), inset 0 1px 0 rgba(255,255,255,.25);}
   .rama-btn--act:hover{box-shadow:0 6px 12px rgba(0,73,65,.35), inset 0 1px 0 rgba(255,255,255,.25);}
-  .rama-btn--rama:focus-visible, .rama-btn--pub:focus-visible, .rama-btn--samai:focus-visible, .rama-btn--exp:focus-visible, .rama-btn--acceso:focus-visible, .rama-btn--ce:focus-visible, .rama-btn--act:focus-visible{outline:2px solid var(--verde-oscuro); outline-offset:2px;}
+  .rama-btn--rama:focus-visible, .rama-btn--pub:focus-visible, .rama-btn--siugj:focus-visible, .rama-btn--samai:focus-visible, .rama-btn--exp:focus-visible, .rama-btn--acceso:focus-visible, .rama-btn--ce:focus-visible, .rama-btn--act:focus-visible{outline:2px solid var(--verde-oscuro); outline-offset:2px;}
   .rama-cab-acc{display:flex; flex-wrap:wrap; gap:8px; justify-content:flex-end;}
   .rama-cargando{color:var(--texto-suave); font-size:13px; padding:8px 0;}
   .rama-error{background:#fbe4e2; color:#a3281c; border-radius:8px; padding:9px 12px; font-size:13px; margin:6px 0;}

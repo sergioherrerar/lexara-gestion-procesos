@@ -1,9 +1,10 @@
-import { urlsSamai, abrirEnSamai, CORPORACION_CONSEJO_ESTADO } from '../lib/samai';
+import { urlsSamai, abrirEnSamai, CORPORACION_CONSEJO_ESTADO, esJurisdiccionOrdinaria } from '../lib/samai';
 import { construirCorreoSolicitudAcceso, CORREO_GERENCIA_ACCESO, CATEGORIA_SOLICITUD_ACCESO } from '../lib/solicitudAccesoExpediente';
 import { getAccount, crearBorradorConImagenesInline, firmaComoImagenInline } from '../lib/graph';
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { stripHtml } from '../lib/graph';
-import escudoColombia from '../assets/Escudo Colombia.png';   // escudo de Colombia (el mismo del botón «Rama Judicial» de Procesos)
+import escudoColombia from '../assets/Escudo Colombia.png';
+import logoSiugj from '../assets/Logo SIUGJ.svg';   // logo oficial de SIUGJ (el mismo del botón de la cabecera de Procesos)   // escudo de Colombia (el mismo del botón «Rama Judicial» de Procesos)
 
 // Iconos de línea de los botones de la pestaña Rama (2026-11-17, pedido del usuario: «un poco más de color a estos botones, más diseño»).
 const ICONOS = {
@@ -28,14 +29,20 @@ function CopiarNumero({ num, notify }){
   }
   return <button type="button" className="rama-copiar" onClick={copiar} title="Copiar el número completo (23 dígitos)" aria-label={'Copiar el número ' + num}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={ICONOS.copiar} /></svg></button>;
 }
+// «Copiar CUP» (SIUGJ) solo sale en los procesos de la jurisdicción ordinaria; los de lo contencioso administrativo van por SAMAI (2026-11-17: «si tiene SAMAI que lo vea y si no, que no lo vea»).
+function BotonSiugj({ rad, despacho, notify }){
+  if(!esJurisdiccionOrdinaria(rad, despacho)) return null;
+  return <button type="button" className="rama-btn rama-btn--siugj" onClick={() => abrirSiugjConCup(rad, notify)} title="Copia el CUP de SIUGJ (radicado con guion después de los 12 primeros dígitos) y abre «Consultar procesos» de SIUGJ: péguelo, marque el captcha y busque."><Ico n="siugj" />Copiar CUP</button>;
+}
 function Ico({ n }){
+  if(n === 'siugj') return <img className="rama-btn-logo" src={logoSiugj} alt="SIUGJ" />;
   if(n === 'escudo') return <img className="rama-btn-ico rama-btn-escudo" src={escudoColombia} alt="" />;
   return <svg className="rama-btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={ICONOS[n]} /></svg>;
 }
 import { TERMINACIONES,
   numerosDelProceso, consultarRama, fechaDMA, resumenAnotacion, esDeTramite, yaEstaEnHistorico,
   actuacionesNuevas, htmlRenglones, renglonHistorico, actualizacionDesdeRama, ultimaActualizacionDesdeRama, abrirEnRamaJudicial,
-  agregarLineasAlEstado, abrirPublicacionesProcesales, fechaMasRecienteDelEstado, mezclarActuaciones, anotacionLimpia, descubrirHermanos, consultarDetalle,
+  agregarLineasAlEstado, abrirPublicacionesProcesales, abrirSiugjConCup, fechaMasRecienteDelEstado, mezclarActuaciones, anotacionLimpia, descubrirHermanos, consultarDetalle,
 } from '../lib/ramaJudicial';
 
 // Pestaña «Rama Judicial» de la ficha del proceso (2026-11-13): lee las actuaciones del proceso en la Consulta Nacional Unificada de la Rama
@@ -316,6 +323,7 @@ export default function RamaJudicialTab({ proceso, historico, estadoActual, fech
                 <span className="rama-cab-acc">
                   <button type="button" className="rama-btn rama-btn--rama" onClick={() => abrirEnRamaJudicial(proceso, notify, rad.slice(0, 21) + (terminacion[rad] || rad.slice(21)))} title="Abre la consulta de la Rama Judicial y copia este radicado"><Ico n="escudo" />Abrir en la Rama</button>
                   <button type="button" className="rama-btn rama-btn--pub" onClick={() => abrirPublicacionesProcesales(rad.slice(0, 21) + (terminacion[rad] || rad.slice(21)))} title="Abre Publicaciones Procesales de la Rama (estados, traslados, edictos y autos de todos los despachos) ya buscado con este radicado"><Ico n="documento" />Publicaciones procesales</button>
+                  <BotonSiugj rad={rad.slice(0, 21) + (terminacion[rad] || rad.slice(21))} despacho="" notify={notify} />
                   <BotonesSamai rad={rad.slice(0, 21) + (terminacion[rad] || rad.slice(21))} despacho="" onSolicitarAcceso={solicitarAcceso} solicitando={solicitandoAcceso} />
                   <button type="button" className="rama-btn rama-btn--act" onClick={() => consultarConTerminacion(rad, rad.slice(0, 21) + (terminacion[rad] || rad.slice(21)))}><Ico n="buscar" />Consultar este número</button>
                 </span>
@@ -335,6 +343,7 @@ export default function RamaJudicialTab({ proceso, historico, estadoActual, fech
               <span className="rama-cab-acc">
                 <button type="button" className="rama-btn rama-btn--rama" onClick={() => abrirEnRamaJudicial(proceso, notify, radSel)} title="Abre la consulta de la Rama Judicial y copia este radicado"><Ico n="escudo" />Abrir en la Rama</button>
                   <button type="button" className="rama-btn rama-btn--pub" onClick={() => abrirPublicacionesProcesales(radSel)} title="Abre Publicaciones Procesales de la Rama (estados, traslados, edictos y autos de todos los despachos) ya buscado con este radicado"><Ico n="documento" />Publicaciones procesales</button>
+                  <BotonSiugj rad={radSel} despacho={cambiado ? '' : ((resultados[rad]?.datos?.procesos?.[0]?.despacho) || (rad === principal ? proceso?.Despacho : ''))} notify={notify} />
                   <BotonesSamai rad={radSel} despacho={cambiado ? '' : ((resultados[rad]?.datos?.procesos?.[0]?.despacho) || (rad === principal ? proceso?.Despacho : ''))} onSolicitarAcceso={solicitarAcceso} solicitando={solicitandoAcceso} />
                 {cambiado && <button type="button" className="rama-btn rama-btn--act" onClick={() => consultarConTerminacion(rad, radSel)}><Ico n="buscar" />Consultar este número</button>}
                 <button type="button" className="rama-btn rama-btn--act" onClick={() => cargar(rad, true)} disabled={r.cargando}><Ico n="refrescar" />{r.cargando ? 'Consultando…' : 'Actualizar'}</button>

@@ -2,6 +2,12 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-11-17 (195)
+- **Pestaña Rama: «Copiar CUP» de SIUGJ y botones según el tipo de cada proceso** — pedido del usuario («se puede hacer lo mismo con el SIUGJ»; «que siempre se activen los botones que son de cada proceso: si tiene SAMAI que lo vea y si no, que no lo vea»).
+  - **Copiar CUP** (con el logo oficial de SIUGJ): copia el radicado en formato CUP (12 dígitos, guion y el resto; p. ej. 110013334003-20230057900) y abre «Consultar procesos» de SIUGJ, que pide reCAPTCHA y no recibe el número por la dirección: solo queda pegar, marcar «No soy un robot» y buscar. Usa la terminación elegida en la lista.
+  - **Regla por número:** los procesos de lo contencioso administrativo (juzgado o tribunal administrativo, Consejo de Estado) muestran los botones de SAMAI y «Solicitar acceso por correo» y NO «Copiar CUP»; los de la jurisdicción ordinaria (laboral, civil, familia, Tribunal Superior…) muestran «Copiar CUP» y NO los de SAMAI; un número sin 23 dígitos no muestra ninguno. «Abrir en la Rama», «Publicaciones procesales» y el icono de copiar el número salen siempre que haya radicado. Se decide por el radicado de cada número, no por el del proceso principal.
+  - SIUGJ con sesión: su «Consulta» es del historial de lo radicado por la cuenta, no una búsqueda general; no se confirmó si hay enlaces directos al proceso.
+
 ## 2026-11-17 (194)
 - **Pestaña Rama: icono para copiar el número** — pedido del usuario («coloca aquí un icono de copiar número»; «igual en el resto»). Un botón pequeño junto a la lista de terminaciones, en todos los bloques de número (principal, histórico y otras terminaciones), copia el radicado de 23 dígitos con la terminación elegida y avisa «Radicado … copiado» (si el navegador no deja copiar, muestra el número). Solo copia: no consulta ni cambia nada del proceso.
 

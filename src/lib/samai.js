@@ -40,3 +40,8 @@ export function urlsSamai(radicado, despacho, conCorporacion){
 }
 
 export function abrirEnSamai(url){ window.open(url, '_blank', 'noopener,noreferrer'); }
+
+/** ¿Es de la jurisdicción ordinaria (civil, laboral, familia, penal, Corte Suprema…), o sea, de lo que se radica y consulta por SIUGJ? Es todo radicado de 23 dígitos que NO es de lo contencioso administrativo (ese va por SAMAI). */
+export function esJurisdiccionOrdinaria(radicado, despacho){
+  return soloDigitos(radicado).length === 23 && !esContenciosoAdministrativo(radicado, despacho);
+}
