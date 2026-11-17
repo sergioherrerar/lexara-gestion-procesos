@@ -4,7 +4,9 @@ import BalanzaRama from './BalanzaRama';
 import MiniCalendarioAudienciasTerminos from './MiniCalendarioAudienciasTerminos';
 import miniVerdeOscuro from '../assets/Mini verde oscuro.png';
 import { pendientesDePersona } from '../lib/pendientesPersona';
-import { nombreAbogadoCanonico } from '../lib/graph';
+import { nombreAbogadoCanonico, cuentaDelPortal } from '../lib/graph';
+import { filasFijasDelMes } from '../lib/pendientesFijosMes';
+import usePendientesFijos from '../hooks/usePendientesFijos';
 
 // "informes"/"tutelas" faltaban acá desde que se agregaron esos módulos (el
 // <h2> caía al fallback TITLES[view]||view y mostraba el string crudo en
@@ -67,7 +69,9 @@ const TIPOS_CAMPANA = {
   terminos:   { label: 'Término',   plural: 'Términos',   cls: 'badge-tipo-termino' },
   pendientes: { label: 'Pendiente', plural: 'Pendientes', cls: 'badge-tipo-pendiente' },
   tutelas:    { label: 'Tutela',    plural: 'Tutelas',    cls: 'badge-tipo-termino' },
+  fijos:      { label: 'Mensual',   plural: 'Mensuales',  cls: 'badge-tipo-pendiente' },   // pendientes fijos de cada mes de Soporte (ver pendientesFijosMes.js)
 };
+const CUENTA_SOPORTE = 'soporte@lexaraabogados.com';
 function fechaCorta(iso){ const [y, m, d] = String(iso || '').split('-'); return y && m && d ? `${d}/${m}/${y}` : 'Sin fecha'; }
 
 function CampanaPendientes({ nombre, esDemo, puedeVerEquipo, audiencias, terminos, pendientes, procesos, tutelas, onIrAVencimientos }){
@@ -82,7 +86,16 @@ function CampanaPendientes({ nombre, esDemo, puedeVerEquipo, audiencias, termino
     document.addEventListener('keydown', onKeyDown);
     return () => { document.removeEventListener('mousedown', onDocPointer); document.removeEventListener('keydown', onKeyDown); };
   }, [abierto]);
-  const filas = useMemo(() => pendientesDePersona({ nombre: (verEquipo && puedeVerEquipo) || (esDemo && !nombre) ? '' : (nombre || '~sin-persona-reconocida~'), audiencias, terminos, pendientes, procesos, tutelas }), [nombre, verEquipo, audiencias, terminos, pendientes, procesos, tutelas]);
+  // Pendientes fijos de cada mes: solo para el perfil de Soporte (y en modo demo, para poder verlos).
+  const esSoporte = esDemo || cuentaDelPortal() === CUENTA_SOPORTE;
+  const fijos = usePendientesFijos(esSoporte && !esDemo);
+  const filasBase = useMemo(() => pendientesDePersona({ nombre: (verEquipo && puedeVerEquipo) || (esDemo && !nombre) ? '' : (nombre || '~sin-persona-reconocida~'), audiencias, terminos, pendientes, procesos, tutelas }), [nombre, verEquipo, audiencias, terminos, pendientes, procesos, tutelas]);
+  const filas = useMemo(() => {
+    if(!esSoporte) return filasBase;
+    const d = new Date();
+    const hoy = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    return [...filasFijasDelMes({ hoy, enviados: fijos.enviados, hechas: fijos.hechas }), ...filasBase];
+  }, [esSoporte, filasBase, fijos.enviados, fijos.hechas]);
   const urgentes = filas.filter(f => f.vencido || f.color === 'rojo').length;
   const conteo = tipo => filas.filter(f => f.tipo === tipo).length;
   // Resumen por colaborador (solo en «Todo el equipo»): quién tiene cuánto, y al hacer clic en una fila la lista se limita a esa persona.
@@ -95,7 +108,7 @@ function CampanaPendientes({ nombre, esDemo, puedeVerEquipo, audiencias, termino
     const m = new Map();
     filas.forEach(f => {
       const k = claveResp(f.responsable);
-      if(!m.has(k)) m.set(k, { k, nombre: nombreAbogadoCanonico(String(f.responsable || '').trim()) || 'Sin asignar', audiencias: 0, terminos: 0, pendientes: 0, tutelas: 0, total: 0, urgentes: 0 });
+      if(!m.has(k)) m.set(k, { k, nombre: nombreAbogadoCanonico(String(f.responsable || '').trim()) || 'Sin asignar', audiencias: 0, terminos: 0, pendientes: 0, tutelas: 0, fijos: 0, total: 0, urgentes: 0 });
       const g = m.get(k);
       g[f.tipo]++; g.total++;
       if(f.vencido || f.color === 'rojo') g.urgentes++;
@@ -105,7 +118,7 @@ function CampanaPendientes({ nombre, esDemo, puedeVerEquipo, audiencias, termino
   const filasVisibles = verTodos && persona ? filas.filter(f => claveResp(f.responsable) === persona) : filas;
   return (
     <div className="topbar-campana-wrap" ref={ref}>
-      <button type="button" className={"topbar-campana-btn" + (abierto ? " abierto" : "")} onClick={() => setAbierto(v => !v)}
+      <button type="button" className={"topbar-campana-btn" + (abierto ? " abierto" : "")} onClick={() => { if(!abierto && esSoporte) fijos.revisar(false); setAbierto(v => !v); }}
         aria-label={filas.length ? `Tienes ${filas.length} pendientes` : 'No tienes pendientes'} aria-expanded={abierto} title="Mis pendientes">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
         {filas.length > 0 && <span className={"topbar-campana-badge" + (urgentes ? " urgente" : "")}>{filas.length > 99 ? '99+' : filas.length}</span>}
@@ -135,6 +148,7 @@ function CampanaPendientes({ nombre, esDemo, puedeVerEquipo, audiencias, termino
                     {g.terminos > 0 && <span className="badge badge-tipo-termino">T {g.terminos}</span>}
                     {g.pendientes > 0 && <span className="badge badge-tipo-pendiente">P {g.pendientes}</span>}
                     {g.tutelas > 0 && <span className="badge badge-tipo-termino">Tut {g.tutelas}</span>}
+                    {g.fijos > 0 && <span className="badge badge-tipo-pendiente">M {g.fijos}</span>}
                   </span>
                   <span className={"campana-equipo-total" + (g.urgentes ? " urgente" : "")}>{g.total}</span>
                 </button>
@@ -150,9 +164,11 @@ function CampanaPendientes({ nombre, esDemo, puedeVerEquipo, audiencias, termino
                   <span className={"badge badge-" + f.color}>{f.etiqueta}</span>
                 </div>
                 <div className="campana-item-texto">{f.texto || '—'}</div>
+                {f.esFijo && f.donde && <div className="campana-item-meta">{f.donde}</div>}
                 <div className="campana-item-meta">
                   {fechaCorta(f.fecha)}{f.hora ? ' · ' + f.hora : ''}{f.radicado ? ' · ' + f.radicado : ''}{f.cliente ? ' · ' + f.cliente : ''}{verEquipo && f.responsable ? ' · ' + f.responsable : ''}
                 </div>
+                {f.esFijo && <button type="button" className="campana-hecho" onClick={() => { const d = new Date(); fijos.marcarHecha(f.clave, `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`); }}>Hecho</button>}
               </div>
             ))}
           </div>

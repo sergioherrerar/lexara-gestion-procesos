@@ -1,5 +1,45 @@
 [
     {
+        "id": "2026-11-16-decreto-234-negociacion-colectiva",
+        "tipo": "reel",
+        "titulo": "Suspendido el decreto de negociación colectiva por sectores (Decreto 234 de 2026)",
+        "descripcion": "El Consejo de Estado suspendió provisionalmente el Decreto 234 de 2026, que permitía negociar convenciones colectivas por grupo de empresas, rama o sector. Mientras dure la suspensión no se aplica; las convenciones vigentes y las negociaciones bajo el CST siguen igual. No es la decisión final, es una medida provisional.",
+        "fecha": "2026-11-16",
+        "red": "instagram",
+        "url": "https://www.instagram.com/reel/DfzvCisSAkr/",
+        "miniatura": "assets/img/miniaturas/youtube-Yr9s-j433iI.jpg",
+        "destacada": false,
+        "etiquetas": [
+            "Negociación colectiva",
+            "Derecho laboral",
+            "Consejo de Estado"
+        ],
+        "origen": "manual",
+        "tambien": [
+            {
+                "red": "youtube",
+                "url": "https://www.youtube.com/shorts/Yr9s-j433iI"
+            }
+        ]
+    },
+    {
+        "id": "2026-11-13-proceso-monitorio-laboral",
+        "tipo": "reel",
+        "titulo": "Desde abril de 2026, el nuevo Código Procesal del Trabajo: el proceso monitorio laboral",
+        "descripcion": "¿Le deben salarios o la liquidación y no es mucha plata? Desde abril de 2026 rige el nuevo Código Procesal del Trabajo, que trae el proceso monitorio laboral: un camino rápido y con menos trámites para cobrar deudas claras y exigibles de una relación de trabajo, hasta 20 salarios mínimos.",
+        "fecha": "2026-11-13",
+        "red": "youtube",
+        "url": "https://www.youtube.com/shorts/43u9MC0nO8A",
+        "miniatura": "assets/img/miniaturas/youtube-43u9MC0nO8A.jpg",
+        "destacada": false,
+        "etiquetas": [
+            "Proceso monitorio",
+            "Código Procesal del Trabajo",
+            "Derecho laboral"
+        ],
+        "origen": "manual"
+    },
+    {
         "id": "2026-11-06-sp-5eDbEa1B17jgAGtiBryqVf",
         "tipo": "podcast",
         "titulo": "No. 30 - Reforma laboral: lo que podría cambiar",
@@ -126,31 +166,5 @@
         "destacada": false,
         "etiquetas": [],
         "origen": "instagram"
-    },
-    {
-        "id": "2026-10-13-ig-Deb0G2KjQqR",
-        "tipo": "reel",
-        "titulo": "¿Estás pagando un cálculo actuarial para mejorar tu pensión?",
-        "descripcion": "¡Cuidado! Podrías estar tomando una decisión sin conocer todos los riesgos. La fecha de entrada en vigor de la reforma pensional sigue siendo un tema de debate, y además, dependiendo de tu situación, podría convenirte más el régimen anterior que el nuevo…",
-        "fecha": "2026-10-13",
-        "red": "instagram",
-        "url": "https://www.instagram.com/reel/Deb0G2KjQqR/",
-        "miniatura": "assets/img/miniaturas/instagram-Deb0G2KjQqR.jpg",
-        "destacada": false,
-        "etiquetas": [],
-        "origen": "instagram"
-    },
-    {
-        "id": "2026-10-10-yt-gtwjs2xJ-n4",
-        "tipo": "video",
-        "titulo": "No. 28. Sentencia a la reforma pensional",
-        "descripcion": "",
-        "fecha": "2026-10-10",
-        "red": "youtube",
-        "url": "https://www.youtube.com/watch?v=gtwjs2xJ-n4",
-        "miniatura": "assets/img/miniaturas/youtube-gtwjs2xJ-n4.jpg",
-        "destacada": false,
-        "etiquetas": [],
-        "origen": "youtube"
     }
 ]

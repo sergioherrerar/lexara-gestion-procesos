@@ -2,6 +2,13 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-11-17 (191)
+- **Pendientes fijos de cada mes para Soporte en la campana** — pedido del usuario («pendientes que son fijos todos los meses para el perfil de soporte… que quede la notificación y se quite cuando se haga»).
+  - **Campana de la cabecera:** solo para la cuenta Soporte (y el modo demo). Seis pendientes, cada uno desde el día que corresponde: primer día hábil (factura electrónica de SOS del mes anterior a Beatriz, $7.000.000, contrato GJU-31-03-2025-431; órdenes de compra de Colmédica; gastos del mes anterior con soportes), día 20 (pagos pendientes de ETB y Claro), día 27 (gastos de cuentas de cobro) y día 28 (novedades de nómina). El primer día hábil sale del calendario de festivos de Colombia.
+  - **Se quitan solos** cuando en «Elementos enviados» de Soporte hay un correo con la categoría del portal dentro del mes (Solicitud de factura electrónica con «SOS» en el asunto, Órdenes Colmédica, Pagos por realizar, Novedades de nómina, Gastos del mes), o con el botón «Hecho» (queda guardado en ese navegador, por mes). Cuentas de cobro es solo manual. Si un mes no se alcanzó a hacer, sigue visible hasta el día 7 del siguiente. Muestra «Hoy» y luego «Atrasado N días», con el lugar del portal donde hacerlo.
+  - Código: `src/lib/pendientesFijosMes.js`, `src/hooks/usePendientesFijos.js`, `Topbar.jsx`. Probado en modo demo; la detección de correos enviados no se probó con sesión real.
+- **Lexara al Día:** se agregaron dos publicaciones (Reel 5 del Decreto 234, 16-nov, y el proceso monitorio laboral, 13-nov, de YouTube Shorts) y se retiraron las dos más antiguas con sus miniaturas (límite de 10).
+
 ## 2026-11-17 (190)
 - **Redes sociales: Reel 5 (negociación colectiva, Decreto 234) anotado como publicado** — pedido del usuario («salió esta de negociación colectiva pero el portal no lo muestra»).
   - `public/data/redes-sociales.json`: el Reel 5 pasa de «Pendiente» a publicado el 16-nov (3 días antes de lo programado) en Instagram (con su enlace) y YouTube Shorts (224 vistas). Noviembre pasa de 4 a 5 piezas publicadas y de 4 a 5 programadas cumplidas de 9. Se anotó a mano en `ajustesManuales`; falta la hora de publicación y la próxima lectura de Bustral lo confirma o corrige.
