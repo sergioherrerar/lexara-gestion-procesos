@@ -1,9 +1,12 @@
+import { urlsSamai, abrirEnSamai, CORPORACION_CONSEJO_ESTADO } from '../lib/samai';
+import { construirCorreoSolicitudAcceso, CORREO_GERENCIA_ACCESO, CATEGORIA_SOLICITUD_ACCESO } from '../lib/solicitudAccesoExpediente';
+import { getAccount, crearBorradorConImagenesInline, firmaComoImagenInline } from '../lib/graph';
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { stripHtml } from '../lib/graph';
-import {
+import { TERMINACIONES,
   numerosDelProceso, consultarRama, fechaDMA, resumenAnotacion, esDeTramite, yaEstaEnHistorico,
   actuacionesNuevas, htmlRenglones, renglonHistorico, actualizacionDesdeRama, ultimaActualizacionDesdeRama, abrirEnRamaJudicial,
-  agregarLineasAlEstado, fechaMasRecienteDelEstado, mezclarActuaciones, anotacionLimpia, descubrirHermanos, consultarDetalle,
+  agregarLineasAlEstado, abrirPublicacionesProcesales, fechaMasRecienteDelEstado, mezclarActuaciones, anotacionLimpia, descubrirHermanos, consultarDetalle,
 } from '../lib/ramaJudicial';
 
 // Pestaña «Rama Judicial» de la ficha del proceso (2026-11-13): lee las actuaciones del proceso en la Consulta Nacional Unificada de la Rama
@@ -74,6 +77,20 @@ function FilaActuacion({ act, nuevo, enHistorico, canWrite, onAgregar }){
   );
 }
 
+// Los procesos de lo contencioso administrativo (juzgados y tribunales administrativos, Consejo de Estado) se consultan y sus documentos se bajan en SAMAI: enlaces directos armados con el radicado (ver lib/samai.js).
+function BotonesSamai({ rad, despacho, onSolicitarAcceso, solicitando }){
+  const u = urlsSamai(rad, despacho);
+  if(!u) return null;
+  return (
+    <>
+      <button type="button" className="btn-secondary rama-btn" onClick={() => abrirEnSamai(u.proceso)} title="Abre este proceso en SAMAI (inicie sesión en SAMAI si se lo pide)">Abrir en SAMAI</button>
+      <button type="button" className="btn-secondary rama-btn" onClick={() => abrirEnSamai(u.expediente)} title="Abre el expediente digital en SAMAI: autos, memoriales y demás documentos, por cuaderno. Lo que se ve depende de su acceso en SAMAI.">Expediente en SAMAI</button>
+      {onSolicitarAcceso && <button type="button" className="btn-secondary rama-btn" onClick={() => onSolicitarAcceso(rad, despacho)} disabled={solicitando} title="Si SAMAI solo le muestra algunos documentos, crea en los Borradores de Gerencia el correo al despacho pidiendo el reconocimiento de personería y el acceso al expediente. No se envía solo.">{solicitando ? 'Creando borrador…' : 'Solicitar acceso por correo'}</button>}
+      {!u.esConsejoEstado && <button type="button" className="btn-secondary rama-btn" onClick={() => abrirEnSamai(urlsSamai(rad, despacho, CORPORACION_CONSEJO_ESTADO).proceso)} title="Si el proceso subió en apelación, SAMAI lo tiene en el Consejo de Estado">En el Consejo de Estado</button>}
+    </>
+  );
+}
+
 export default function RamaJudicialTab({ proceso, historico, estadoActual, fechaEstado, canWrite, config, notify, onAgregarAlHistorico, onActualizar, onRamaVista }){
   const { principal, historicos } = useMemo(() => numerosDelProceso(proceso), [proceso]);
   const radicados = useMemo(() => [principal, ...historicos].filter(Boolean), [principal, historicos]);
@@ -82,6 +99,8 @@ export default function RamaJudicialTab({ proceso, historico, estadoActual, fech
   const descubiertos = useRef(new Set());
   const pedidosHermanos = useRef(new Set());
   const [buscarHist, setBuscarHist] = useState(false);   // false: solo el número principal; true: también los del histórico
+  const [terminacion, setTerminacion] = useState({});   // número del histórico -> terminación (instancia) elegida en la lista desplegable
+  const [elegidos, setElegidos] = useState([]);   // [{ rad, base }]: números con otra terminación que el usuario pidió consultar
   const [resultados, setResultados] = useState({});   // radicado -> { cargando, error, datos }
   const [verTodo, setVerTodo] = useState({});
   const [completando, setCompletando] = useState({});   // radicado -> true mientras se traen las actuaciones que faltan
@@ -184,7 +203,33 @@ export default function RamaJudicialTab({ proceso, historico, estadoActual, fech
   radicados.forEach(r => {
     entradas.push({ rad: r, base: r, esBase: true });
     (hermanos[r] || []).filter(h => !radicados.includes(h) && !entradas.some(e => e.rad === h)).forEach(h => entradas.push({ rad: h, base: r, esBase: false }));
+    elegidos.filter(e => e.base === r && !entradas.some(x => x.rad === e.rad)).forEach(e => entradas.push({ rad: e.rad, base: r, esBase: false }));
   });
+
+  // Borrador del correo que pide al despacho el reconocimiento de personería y el acceso al expediente digital (SAMAI): se crea en los Borradores de Gerencia; no se envía.
+  const [solicitandoAcceso, setSolicitandoAcceso] = useState(false);
+  async function solicitarAcceso(rad, despacho){
+    if(!getAccount()){ notify?.('El borrador se crea en el Outlook de Gerencia al iniciar sesión con Microsoft; en el modo demo no hay buzón.', 'info'); return; }
+    setSolicitandoAcceso(true);
+    try{
+      const firma = await firmaComoImagenInline('gerencia').catch(() => null);
+      const c = construirCorreoSolicitudAcceso({ proceso, radicado: rad, despacho, srcFirma: firma ? 'cid:' + firma.cid : '' });
+      const r = await crearBorradorConImagenesInline({ to: c.para, subject: c.asunto, htmlBody: c.html, imagenes: firma ? [firma] : [], categorias: [CATEGORIA_SOLICITUD_ACCESO + ' (borrador)'], buzon: CORREO_GERENCIA_ACCESO, caerAlBuzonPropio: true });
+      const dest = c.para.length ? ' dirigido a ' + c.para.join(', ') : ' (sin destinatario: agregue el correo del despacho)';
+      notify?.(r.enBuzonPropio
+        ? '⚠ No pude crear el borrador en ' + CORREO_GERENCIA_ACCESO + '. Quedó en TUS Borradores' + dest + ': complete la cédula y la tarjeta profesional, y cambie el «De» a Gerencia si tiene permiso.'
+        : '✓ Borrador «Solicitud de acceso al expediente» creado en los Borradores de ' + CORREO_GERENCIA_ACCESO + dest + '. Complete la cédula y la tarjeta profesional, adjunte el poder y envíelo.', r.enBuzonPropio ? 'info' : 'success');
+    }catch(err){
+      console.error(err);
+      notify?.('No se pudo crear el borrador: ' + (err?.message || err), 'error');
+    }finally{ setSolicitandoAcceso(false); }
+  }
+
+  // «Consultar este número» con la terminación elegida: si es otra distinta a la que trae el número, se agrega como un proceso más debajo.
+  function consultarConTerminacion(rad, radSel){
+    if(radSel !== rad) setElegidos(prev => (prev.some(e => e.rad === radSel) ? prev : [...prev, { rad: radSel, base: rad }]));
+    cargar(radSel, false);
+  }
 
   if(!radicados.length){
     return <div className="empty-state empty-state-compact">Este proceso no tiene un «No. completo» de 23 dígitos, así que no se puede consultar en la Rama Judicial.</div>;
@@ -237,10 +282,12 @@ export default function RamaJudicialTab({ proceso, historico, estadoActual, fech
           return (
             <div key={rad} className="rama-bloque rama-bloque-pendiente">
               <div className="rama-cab">
-                <h4><span className="rama-tipo">Número del histórico</span> {rad}</h4>
+                <h4><span className="rama-tipo">Número del histórico</span> {rad.slice(0, 21)}<select className="rama-term-select" value={terminacion[rad] || rad.slice(21)} onChange={e => setTerminacion(prev => ({ ...prev, [rad]: e.target.value }))} aria-label="Terminación del número (instancia): 00, 01, 02 o 03" title="Terminación del radicado (instancia). Cada una es un proceso distinto: elija la que quiera consultar.">{[...new Set([rad.slice(21), ...TERMINACIONES])].sort().map(x => <option key={x} value={x}>{x}</option>)}</select></h4>
                 <span className="rama-cab-acc">
-                  <button type="button" className="btn-secondary rama-btn" onClick={() => abrirEnRamaJudicial(proceso, notify, rad)} title="Abre la consulta de la Rama Judicial y copia este radicado">Abrir en la Rama</button>
-                  <button type="button" className="btn-secondary rama-btn" onClick={() => cargar(rad, false)}>Consultar este número</button>
+                  <button type="button" className="btn-secondary rama-btn" onClick={() => abrirEnRamaJudicial(proceso, notify, rad.slice(0, 21) + (terminacion[rad] || rad.slice(21)))} title="Abre la consulta de la Rama Judicial y copia este radicado">Abrir en la Rama</button>
+                  <button type="button" className="btn-secondary rama-btn" onClick={() => abrirPublicacionesProcesales(rad.slice(0, 21) + (terminacion[rad] || rad.slice(21)))} title="Abre Publicaciones Procesales de la Rama (estados, traslados, edictos y autos de todos los despachos) ya buscado con este radicado">Publicaciones procesales</button>
+                  <BotonesSamai rad={rad.slice(0, 21) + (terminacion[rad] || rad.slice(21))} despacho={proceso?.Despacho} onSolicitarAcceso={solicitarAcceso} solicitando={solicitandoAcceso} />
+                  <button type="button" className="btn-secondary rama-btn" onClick={() => consultarConTerminacion(rad, rad.slice(0, 21) + (terminacion[rad] || rad.slice(21)))}>Consultar este número</button>
                 </span>
               </div>
             </div>
@@ -251,9 +298,11 @@ export default function RamaJudicialTab({ proceso, historico, estadoActual, fech
         return (
           <div key={rad} className="rama-bloque">
             <div className="rama-cab">
-              <h4><span className={'rama-tipo' + (esPrincipal ? ' principal' : '')} title={esBase ? '' : 'Es un proceso distinto: la misma radicación con otra terminación (instancia)'}>{esBase ? (esPrincipal ? 'Número principal' : 'Número del histórico') : `${base === principal ? 'Principal' : 'Histórico'} · termina en ${rad.slice(-2)}`}</span> {rad}</h4>
+              <h4><span className={'rama-tipo' + (esPrincipal ? ' principal' : '')} title={esBase ? '' : 'Es un proceso distinto: la misma radicación con otra terminación (instancia)'}>{esBase ? (esPrincipal ? 'Número principal' : 'Número del histórico') : `${base === principal ? 'Principal' : 'Histórico'} · termina en ${rad.slice(-2)}`}</span> {rad.slice(0, 21)}<select className="rama-term-select" value={rad.slice(21)} onChange={e => { if(e.target.value !== rad.slice(21)) consultarConTerminacion(rad, rad.slice(0, 21) + e.target.value); }} aria-label="Consultar otra terminación del número (instancia): 00, 01, 02 o 03" title="Cada terminación del radicado es un proceso distinto (instancia). Al elegir otra se consulta y sale debajo.">{[...new Set([rad.slice(21), ...TERMINACIONES])].sort().map(x => <option key={x} value={x}>{x}</option>)}</select></h4>
               <span className="rama-cab-acc">
                 <button type="button" className="btn-secondary rama-btn" onClick={() => abrirEnRamaJudicial(proceso, notify, rad)} title="Abre la consulta de la Rama Judicial y copia este radicado">Abrir en la Rama</button>
+                  <button type="button" className="btn-secondary rama-btn" onClick={() => abrirPublicacionesProcesales(rad)} title="Abre Publicaciones Procesales de la Rama (estados, traslados, edictos y autos de todos los despachos) ya buscado con este radicado">Publicaciones procesales</button>
+                  <BotonesSamai rad={rad} despacho={(resultados[rad]?.datos?.procesos?.[0]?.despacho) || proceso?.Despacho} onSolicitarAcceso={solicitarAcceso} solicitando={solicitandoAcceso} />
                 <button type="button" className="btn-secondary rama-btn" onClick={() => cargar(rad, true)} disabled={r.cargando}>{r.cargando ? 'Consultando…' : 'Actualizar'}</button>
               </span>
             </div>

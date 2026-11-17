@@ -44,6 +44,11 @@ export function abrirEnRamaJudicial(proceso, notify, radicadoElegido){
 // SIUGJ (el portal de la Rama donde se radican demandas y documentos): se abre para iniciar sesión. No deja buscar un proceso por su número desde la dirección ni desde la búsqueda
 // de la cuenta (2026-11-13), así que el botón vive en la cabecera de Procesos judiciales y solo abre el portal.
 export const URL_SIUGJ = 'https://siugj.ramajudicial.gov.co/principalPortal/index.php';
+// Publicaciones Procesales (https://publicacionesprocesales.ramajudicial.gov.co, 2026-11-17): portal único con las publicaciones de TODOS los despachos desde el 14-may-2024 (estados, traslados, edictos,
+// fijaciones, notificaciones, autos, sentencias…; lo anterior está en su «Consulta histórica»). Se busca por radicado con una dirección simple, sin sesión ni captcha: no hace falta copiar ni pegar nada.
+export const URL_PUBLICACIONES_PROCESALES = 'https://publicacionesprocesales.ramajudicial.gov.co/web/publicaciones-procesales/search?q=';
+export function urlPublicacionesProcesales(radicado){ return URL_PUBLICACIONES_PROCESALES + encodeURIComponent(String(radicado || '').replace(/\D/g, '')); }
+export function abrirPublicacionesProcesales(radicado){ window.open(urlPublicacionesProcesales(radicado), '_blank', 'noopener,noreferrer'); }
 export function abrirSIUGJ(){ window.open(URL_SIUGJ, '_blank', 'noopener,noreferrer'); }
 export function abrirConsultaPublicaRama(){ window.open(URL_CONSULTA_RAMA, '_blank', 'noopener,noreferrer'); }
 

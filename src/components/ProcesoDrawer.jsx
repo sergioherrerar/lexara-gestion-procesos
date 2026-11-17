@@ -18,7 +18,8 @@ import { ICON_SVG, RUTAS_CARPETAS_ENTIDAD } from '../config';
 import { DEPARTAMENTOS_COLOMBIA, municipiosDe } from '../lib/colombiaGeo';
 import { AudienciasTerminosDelProceso } from './AudienciasTerminosTab';
 import RamaJudicialTab from './RamaJudicialTab';
-import { abrirEnRamaJudicial } from '../lib/ramaJudicial';
+import { abrirEnRamaJudicial, numerosDelProceso } from '../lib/ramaJudicial';
+import { urlsSamai, abrirEnSamai } from '../lib/samai';
 
 const TABS = [
   {key:'datos', label:'Datos generales'},
@@ -726,6 +727,7 @@ export default function ProcesoDrawer({ pestanaInicial, onRamaVista, proceso, cl
           <span className={"badge badge-truncate " + estadoBadgeClass(proceso.EstadoVT, proceso.FechaUltimoEstado, proceso.Estado)}>{stripHtml(proceso.Estado) || "—"}</span>
           <div className="drawer-head-acciones">
             <IconTextButton icon="open" variant="secondary" onClick={() => abrirEnRamaJudicial(proceso, notify)}>Consulta pública de la Rama</IconTextButton>
+            {(() => { const u = urlsSamai(numerosDelProceso(proceso).principal, proceso.Despacho); return u ? <IconTextButton icon="open" variant="secondary" onClick={() => abrirEnSamai(u.proceso)}>Abrir en SAMAI</IconTextButton> : null; })()}
           </div>
         </div>
         <div className="drawer-tabs">
