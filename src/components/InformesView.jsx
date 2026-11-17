@@ -21,6 +21,7 @@ import { clasificarHorasExtra, soloFecha, redondear, filtrarHorasExtrasPorMes } 
 import SolicitudVacacionesTab from './SolicitudVacacionesTab';
 import RevisionProcesosTab from './RevisionProcesosTab';
 import CruceArchivosTab from './CruceArchivosTab';
+import CruceDesistimientosTab from './CruceDesistimientosTab';
 import CrearLinkCompartirTab from './CrearLinkCompartirTab';
 import LiquidacionInteresesTab from './LiquidacionInteresesTab';
 import DiligenciamientoFormatosTab from './DiligenciamientoFormatosTab';
@@ -98,6 +99,7 @@ const SUBTABS_HERRAMIENTAS = [
   {key:'crearLink', label:'Crear link para compartir'},
   {key:'revisionProcesos', label:'Revisión de Procesos'},
   {key:'cruceArchivos', label:'Cruce de Archivos'},
+  {key:'cruceDesistimientos', label:'Cruce Desistimientos'},
   {key:'liquidacionIntereses', label:'Liquidación Intereses'},
   {key:'diligenciamientoFormatos', label:'Diligenciamiento Formatos Empresas'},
 ];
@@ -959,6 +961,7 @@ export default function InformesView({ procesos, clientes, facturas, desistimien
           </div>
         )}
         {subTabHerramientas==='cruceArchivos' && <CruceArchivosTab notify={notify} config={config} liveMode={liveMode} />}
+        {subTabHerramientas==='cruceDesistimientos' && <CruceDesistimientosTab notify={notify} config={config} liveMode={liveMode} />}
         {subTabHerramientas==='liquidacionIntereses' && (
           <LiquidacionInteresesTab
             notify={notify} tasasInteres={tasasInteres} ipcMensual={ipcMensual} config={config}

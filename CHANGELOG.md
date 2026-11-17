@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-11-17 (197)
+- **Informes → Herramientas → «Cruce Desistimientos»** — pedido del usuario («una sección pequeña donde se coloca primero el archivo de la demanda y se cruza con los desistimientos; una nueva hoja con todos los desistimientos y una anotación de cuáles están vigentes en la demanda»). Sub-pestaña nueva (`src/components/CruceDesistimientosTab.jsx`) con dos pasos: el archivo de la demanda (hoja y columna del radicado propuestas por el portal) y los desistimientos (con sesión real se traen solos de SharePoint, el archivo «final»; o se suben a mano). El portal propone el número corto del proceso (p. ej. 2015-00826) y el Excel trae «Resumen» y la hoja «Desistimientos <proceso>» con TODOS los desistimientos del proceso y la columna final «Anotación: vigente o no en la base de la demanda». Usa el mismo cálculo del «Cruce de Archivos» (`armarHojasEspeciales`). Probado con los archivos reales de SOS: 277 desistimientos del 2015-00826; con «Base depurada» 2 vigentes, con «Base original» 27. La hoja «Revisión» ya no se genera cuando no hay llaves que revisar. Sin probar la subida/descarga en el navegador ni la traída desde SharePoint.
+
 ## 2026-11-17 (196)
 - **Procesos judiciales: botón de SAMAI en la cabecera** — pedido del usuario («incluye SAMAI»). La fila de accesos de la cabecera queda con tres botones del mismo tamaño: SIUGJ, SAMAI (logo oficial, `src/assets/Logo SAMAI.png`, bajado con permiso de samai.consejodeestado.gov.co, 22 KB) y Rama Judicial · Consulta pública. Abre la consulta de procesos de SAMAI (`/Vistas/Casos/procesos.aspx`; se busca por radicado y corporación). Es global: dentro de cada proceso siguen los botones de SAMAI que abren ese proceso directo, solo en los administrativos.
 

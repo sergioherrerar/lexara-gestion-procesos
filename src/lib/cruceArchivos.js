@@ -478,6 +478,8 @@ export async function generarExcelCruce(nombreArchivo, archivos, { resumen, porA
     }
   }
 
+  // La hoja «Revisión» solo se arma si hay llaves que revisar (con un solo archivo cruzado, como en «Cruce Desistimientos», no hay nada que revisar).
+  if(resumen.length){
   const wsRevision = wb.addWorksheet("Revisión");
   const columnasRevision = [
     { header:"Llave", key:"llave", width:24 },
@@ -492,6 +494,7 @@ export async function generarExcelCruce(nombreArchivo, archivos, { resumen, porA
     pie.getCell(1).value = 'TOTAL (' + resumen.length + ' llaves)';
     archivos.forEach((a, i) => { const n = i + 2, c = pie.getCell(n); c.value = { formula: 'SUBTOTAL(109,' + wsRevision.getColumn(n).letter + '2:' + wsRevision.getColumn(n).letter + ult + ')', result: resumen.reduce((s, f) => s + (f['cantidad_' + i] || 0), 0) }; });
     pie.eachCell({ includeEmpty: true }, (c, n) => { if(n <= archivos.length + 2){ c.font = { name: 'Calibri', bold: true }; c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE3EFEE' } }; } });
+  }
   }
 
   // Bug real 2026-09-03, reportado por el usuario ("Worksheet name already
