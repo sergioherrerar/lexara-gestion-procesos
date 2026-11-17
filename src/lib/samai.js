@@ -40,6 +40,9 @@ export function urlsSamai(radicado, despacho, conCorporacion){
 }
 
 export function abrirEnSamai(url){ window.open(url, '_blank', 'noopener,noreferrer'); }
+// Consulta pública de procesos de SAMAI (botón de la cabecera de Procesos judiciales): se busca por radicado y corporación; no recibe el número por la dirección.
+export const URL_SAMAI_CONSULTA = URL_SAMAI + 'Vistas/Casos/procesos.aspx';
+export function abrirConsultaSamai(){ window.open(URL_SAMAI_CONSULTA, '_blank', 'noopener,noreferrer'); }
 
 /** ¿Es de la jurisdicción ordinaria (civil, laboral, familia, penal, Corte Suprema…), o sea, de lo que se radica y consulta por SIUGJ? Es todo radicado de 23 dígitos que NO es de lo contencioso administrativo (ese va por SAMAI). */
 export function esJurisdiccionOrdinaria(radicado, despacho){

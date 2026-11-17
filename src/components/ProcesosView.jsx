@@ -3,6 +3,8 @@ import { ICON_SVG } from '../config';
 import { stripHtml, fmtFechaDMA, estadoComoTexto, estadoBadgeClass, ultimoWordEnCarpeta, mensajeError } from '../lib/graph';
 import { abrirSIUGJ, abrirConsultaPublicaRama } from '../lib/ramaJudicial';
 import logoSiugj from '../assets/Logo SIUGJ.svg';
+import logoSamai from '../assets/Logo SAMAI.png';   // logo oficial de SAMAI (samai.consejodeestado.gov.co/Imagenes/oficial/samailogo_BH71.png)
+import { abrirConsultaSamai } from '../lib/samai';
 import escudoColombia from '../assets/Escudo Colombia.png';   // escudo de Colombia (Wikimedia Commons, dominio público)
 import IconButton, { IconTextButton } from './IconButton';
 import ColumnHeaderMenu from './ColumnHeaderMenu';
@@ -161,9 +163,12 @@ export default function ProcesosView({ procesos, currentFilter, setFilter, searc
           <p>{rows.length} de {procesos.length} procesos{hasActiveFilters && <> · <button type="button" className="clear-filters-link" onClick={clearFilters}>Limpiar filtros de columna</button></>}</p>
         </div>
         <div className="view-header-acciones">
-          {/* Dos accesos a la Rama Judicial, del mismo tamaño (2026-11-13, pedido del usuario): SIUGJ (radicar documentos, inicia sesión) y la consulta pública de procesos. */}
+          {/* Tres accesos, del mismo tamaño: SIUGJ (radicar documentos, inicia sesión), SAMAI (lo contencioso administrativo, 2026-11-17) y la consulta pública de procesos de la Rama (2026-11-13). */}
           <button type="button" className="boton-rama boton-rama-siugj" onClick={abrirSIUGJ} title="SIUGJ — radicar documentos y consultas (inicie sesión)" aria-label="Abrir SIUGJ de la Rama Judicial">
             <img src={logoSiugj} alt="SIUGJ" draggable={false} />
+          </button>
+          <button type="button" className="boton-rama boton-rama-samai" onClick={abrirConsultaSamai} title="SAMAI — consulta de procesos de lo contencioso administrativo (juzgados y tribunales administrativos, Consejo de Estado)" aria-label="Abrir la consulta de procesos de SAMAI">
+            <img src={logoSamai} alt="SAMAI" draggable={false} />
           </button>
           <button type="button" className="boton-rama boton-rama-consulta" onClick={abrirConsultaPublicaRama} title="Consulta de procesos de la Rama Judicial (pública, por número de radicación)" aria-label="Abrir la consulta de procesos de la Rama Judicial">
             <img className="boton-rama-escudo" src={escudoColombia} alt="" draggable={false} />

@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-11-17 (196)
+- **Procesos judiciales: botón de SAMAI en la cabecera** — pedido del usuario («incluye SAMAI»). La fila de accesos de la cabecera queda con tres botones del mismo tamaño: SIUGJ, SAMAI (logo oficial, `src/assets/Logo SAMAI.png`, bajado con permiso de samai.consejodeestado.gov.co, 22 KB) y Rama Judicial · Consulta pública. Abre la consulta de procesos de SAMAI (`/Vistas/Casos/procesos.aspx`; se busca por radicado y corporación). Es global: dentro de cada proceso siguen los botones de SAMAI que abren ese proceso directo, solo en los administrativos.
+
 ## 2026-11-17 (195)
 - **Pestaña Rama: «Copiar CUP» de SIUGJ y botones según el tipo de cada proceso** — pedido del usuario («se puede hacer lo mismo con el SIUGJ»; «que siempre se activen los botones que son de cada proceso: si tiene SAMAI que lo vea y si no, que no lo vea»).
   - **Copiar CUP** (con el logo oficial de SIUGJ): copia el radicado en formato CUP (12 dígitos, guion y el resto; p. ej. 110013334003-20230057900) y abre «Consultar procesos» de SIUGJ, que pide reCAPTCHA y no recibe el número por la dirección: solo queda pegar, marcar «No soy un robot» y buscar. Usa la terminación elegida en la lista.
