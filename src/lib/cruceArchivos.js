@@ -348,7 +348,23 @@ export function armarHojasEspeciales(archivos, procesoCorto = ''){
       const g = grupos.get(k); g.recobros++; if(colADesistir) g.valorADesistir += numero(f[colADesistir]);
     });
     const porOficio = [...grupos.values()].sort((x, y) => x.oficio.localeCompare(y.oficio, 'es', { numeric: true }));
-    info.desistimientos = { archivo: des.nombre, porOficio, proceso: porProceso ? claveBuscada : '', sinColumnaProceso: !!procesoCorto && !colProceso, hoja: porProceso ? 'Desistimientos ' + claveBuscada : 'Desistimientos cruzados', filasTotales: des.filas.length, cruzan: filas.length, vigentes: filas.filter(f => String(f.__vigente).startsWith('Vigente')).length,
+    // Resultado de las anotaciones (mismo contenido de la tabla de la hoja de desistimientos): por anotación, y por oficio + pronunciamiento + anotación.
+    const anotDe = f => String(f.__vigente ?? '').trim() || '(sin anotación)';
+    const grAnot = new Map(), grOfAnot = new Map();
+    filas.forEach(f => {
+      const a = anotDe(f);
+      if(!grAnot.has(a)) grAnot.set(a, { anotacion: a, recobros: 0, valorADesistir: 0, valorVigente: 0 });
+      const g = grAnot.get(a); g.recobros++; if(colADesistir) g.valorADesistir += numero(f[colADesistir]); if(colVigente) g.valorVigente += numero(f[colVigente]);
+      if(colOficio){
+        const of = String(f[colOficio] ?? '').trim() || '(sin oficio)', pr = colPron ? String(f[colPron] ?? '').trim() : '', k = of + '|' + pr + '|' + a;
+        if(!grOfAnot.has(k)) grOfAnot.set(k, { oficio: of, pronunciamiento: pr, anotacion: a, recobros: 0, valorADesistir: 0 });
+        const h = grOfAnot.get(k); h.recobros++; if(colADesistir) h.valorADesistir += numero(f[colADesistir]);
+      }
+    });
+    const esVig = a => (/^vigente/i.test(a) ? 0 : 1);
+    const porAnotacion = [...grAnot.values()].sort((x, y) => esVig(x.anotacion) - esVig(y.anotacion) || x.anotacion.localeCompare(y.anotacion, 'es'));
+    const porOficioAnotacion = [...grOfAnot.values()].sort((x, y) => x.oficio.localeCompare(y.oficio, 'es', { numeric: true }) || x.pronunciamiento.localeCompare(y.pronunciamiento, 'es') || esVig(x.anotacion) - esVig(y.anotacion));
+    info.desistimientos = { archivo: des.nombre, porOficio, porAnotacion, porOficioAnotacion, proceso: porProceso ? claveBuscada : '', sinColumnaProceso: !!procesoCorto && !colProceso, hoja: porProceso ? 'Desistimientos ' + claveBuscada : 'Desistimientos cruzados', filasTotales: des.filas.length, cruzan: filas.length, vigentes: filas.filter(f => String(f.__vigente).startsWith('Vigente')).length,
       noEstanEnBase: filas.filter(f => String(f.__vigente).startsWith('No está')).length, valorADesistir: colDesistir ? filas.reduce((s, f) => s + numero(f[colDesistir]), 0) : null, valorVigente: colVigente ? filas.reduce((s, f) => s + numero(f[colVigente]), 0) : null };
   }
   return { hojas, info };
@@ -558,7 +574,7 @@ function escribirDatosConPie(ws, cols, filas, { columnaLlave, columnaValor }){
 export async function generarExcelCruce(nombreArchivo, archivos, { resumen, porArchivo }, extra = {}){
   const { default: ExcelJS } = await import('exceljs');
   const wb = new ExcelJS.Workbook();
-  const { analisis, hojasEspeciales, infoEspecial } = extra;
+  const { analisis, hojasEspeciales, infoEspecial, copias } = extra;
 
   // Hoja «Resumen» (lo primero que se ve): lo que encontró el análisis, en renglones simples.
   if(analisis || infoEspecial){
@@ -600,6 +616,20 @@ export async function generarExcelCruce(nombreArchivo, archivos, { resumen, porA
         d.porOficio.forEach(g => { const r = ws.addRow([g.oficio, g.pronunciamiento, g.recobros, g.valorADesistir]); r.getCell(4).numFmt = '"$" #,##0.00'; });
         const tot = ws.addRow(['Total general', '', d.porOficio.reduce((s, g) => s + g.recobros, 0), d.porOficio.reduce((s, g) => s + g.valorADesistir, 0)]);
         tot.font = { bold: true }; tot.getCell(4).numFmt = '"$" #,##0.00';
+      }
+      if(d.porAnotacion && d.porAnotacion.length){
+        ws.addRow([]);
+        encab('Resultado de las anotaciones', 'Recobros', 'Valor a desistir', 'Valor vigente');
+        d.porAnotacion.forEach(g => { const r = ws.addRow([g.anotacion, g.recobros, g.valorADesistir, g.valorVigente]); r.getCell(3).numFmt = '"$" #,##0.00'; r.getCell(4).numFmt = '"$" #,##0.00'; });
+        const t2 = ws.addRow(['Total general', d.porAnotacion.reduce((s, g) => s + g.recobros, 0), d.porAnotacion.reduce((s, g) => s + g.valorADesistir, 0), d.porAnotacion.reduce((s, g) => s + g.valorVigente, 0)]);
+        t2.font = { bold: true }; t2.getCell(3).numFmt = '"$" #,##0.00'; t2.getCell(4).numFmt = '"$" #,##0.00';
+      }
+      if(d.porOficioAnotacion && d.porOficioAnotacion.length){
+        ws.addRow([]);
+        encab('Por oficio y anotación', 'Pronunciamiento del juez', 'Anotación', 'Recobros', 'Valor a desistir');
+        d.porOficioAnotacion.forEach(g => { const r = ws.addRow([g.oficio, g.pronunciamiento, g.anotacion, g.recobros, g.valorADesistir]); r.getCell(5).numFmt = '"$" #,##0.00'; });
+        const t3 = ws.addRow(['Total general', '', '', d.porOficioAnotacion.reduce((s, g) => s + g.recobros, 0), d.porOficioAnotacion.reduce((s, g) => s + g.valorADesistir, 0)]);
+        t3.font = { bold: true }; t3.getCell(5).numFmt = '"$" #,##0.00';
       }
     }
   }
@@ -665,6 +695,22 @@ export async function generarExcelCruce(nombreArchivo, archivos, { resumen, porA
     encabezarHoja(ws, colsEsp);
     escribirDatosConPie(ws, colsEsp, h.filas, { columnaLlave: h.columnaLlave, columnaValor: h.columnaValor });
     if(h.resumenAnotaciones) escribirTablaAnotaciones(ws, colsEsp, h.filas, h.resumenAnotaciones);
+  });
+
+  // Copias originales (2026-11-17, «debe haber una hoja con el archivo que se cruza, en este caso la base de la demanda, copia original»): la hoja analizada del archivo tal cual, con sus
+  // columnas y filas, sin la columna de observación ni pie (los valores en pesos con formato de pesos).
+  (copias || []).forEach(h => {
+    const ws = wb.addWorksheet(nombreDeHojaUnico(h.nombre));
+    const colsCopia = h.columnas.map(c => ({ header: c, key: c, width: 18 }));
+    encabezarHoja(ws, colsCopia);
+    const dineroCopia = h.columnas.filter(esColumnaDinero);
+    h.filas.forEach(f => {
+      const fila = { ...f };
+      dineroCopia.forEach(k => { const n = aNumero(fila[k]); if(n !== null) fila[k] = n; });
+      const row = ws.addRow(fila);
+      dineroCopia.forEach(k => { const c = row.getCell(h.columnas.indexOf(k) + 1); if(typeof c.value === 'number'){ c.numFmt = FORMATO_DINERO; c.alignment = { horizontal: 'right' }; } });
+    });
+    ws.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: h.columnas.length } };
   });
 
   const buffer = await wb.xlsx.writeBuffer();

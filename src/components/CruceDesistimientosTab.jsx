@@ -115,7 +115,7 @@ export default function CruceDesistimientosTab({ notify, config, liveMode }){
     setGenerando(true);
     try{
       const hoy = new Date().toISOString().slice(0, 10);
-      await generarExcelCruce(`${resultado.procesoCorto || 'Cruce'} Desistimientos ${hoy}`, [aArchivo(dem, 'base')], { resumen: [], porArchivo: [] }, { analisis: resultado.analisis, hojasEspeciales: resultado.hojas, infoEspecial: resultado.info });
+      await generarExcelCruce(`${resultado.procesoCorto || 'Cruce'} Desistimientos ${hoy}`, [aArchivo(dem, 'base')], { resumen: [], porArchivo: [] }, { analisis: resultado.analisis, hojasEspeciales: resultado.hojas, infoEspecial: resultado.info, copias: [{ nombre: 'Demanda (copia original)', columnas: dem.columnas, filas: dem.filas }] });
     }catch(err){ console.error(err); notify?.('No se pudo generar el Excel: ' + mensajeError(err), 'error'); }
     finally{ setGenerando(false); }
   }
@@ -215,7 +215,7 @@ export default function CruceDesistimientosTab({ notify, config, liveMode }){
             <div style={{ marginBottom: 14 }}>
               <IconTextButton icon="excel" variant="secondary" onClick={descargar} disabled={generando}>{generando ? 'Generando…' : 'Descargar Excel'}</IconTextButton>
             </div>
-            {d && <p className="save-hint">El Excel trae «Resumen» y la hoja «{d.hoja}» con {d.proceso ? 'todos los desistimientos del proceso' : 'los desistimientos que coinciden'} y, al final, la columna «Anotación: vigente o no en la base de la demanda». A la derecha, en la misma hoja, va una tabla con el resultado de las anotaciones (por anotación y por oficio).</p>}
+            {d && <p className="save-hint">El Excel trae «Resumen», la hoja «{d.hoja}» y «Demanda (copia original)» (la hoja de la demanda tal cual), con {d.proceso ? 'todos los desistimientos del proceso' : 'los desistimientos que coinciden'} y, al final, la columna «Anotación: vigente o no en la base de la demanda». A la derecha, en la misma hoja, va una tabla con el resultado de las anotaciones (por anotación y por oficio).</p>}
           </>
         )}
       </div>

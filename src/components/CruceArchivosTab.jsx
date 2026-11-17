@@ -209,7 +209,7 @@ export default function CruceArchivosTab({ notify, config, liveMode }){
     try{
       const hoyISO = new Date().toISOString().slice(0,10);
       // Nombre del archivo (pedido del usuario 2026-11-09): número corto del proceso + «Análisis» + la fecha, p. ej. «2015-00826 Análisis 2026-11-09».
-      await generarExcelCruce(`${resultado.procesoCorto || 'Cruce de archivos'} Análisis ${hoyISO}`, resultado.entreSi, resultado.cruce, { analisis: resultado.analisis, hojasEspeciales: resultado.hojasEspeciales, infoEspecial: resultado.infoEspecial });
+      await generarExcelCruce(`${resultado.procesoCorto || 'Cruce de archivos'} Análisis ${hoyISO}`, resultado.entreSi, resultado.cruce, { analisis: resultado.analisis, hojasEspeciales: resultado.hojasEspeciales, infoEspecial: resultado.infoEspecial, copias: resultado.cruce.porArchivo.length ? undefined : resultado.entreSi.map(a => ({ nombre: 'Copia original · ' + (a.nombreHoja ? a.nombre + ' · ' + a.nombreHoja : a.nombre), columnas: a.columnas, filas: a.filas })) });
     }catch(err){
       console.error(err);
       notify?.("No se pudo generar el Excel del cruce: " + mensajeError(err), 'error');
