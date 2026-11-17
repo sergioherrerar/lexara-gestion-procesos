@@ -97,15 +97,26 @@ export async function consultarRama(url, radicado, { forzar = false, paginas = 3
   if(!url) throw new Error('Falta instalar la consulta a la Rama Judicial (RAMA_JUDICIAL_URL en config.js).');
   const guardado = cache.get(radicado);
   if(!forzar && desde === 1 && guardado && Date.now() - guardado.t < VIGENCIA_MS) return guardado.datos;
-  let res;
-  try{
-    res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ radicado, paginas, desde }) });
-  }catch(e){
-    throw new Error('No se pudo comunicar con el servidor de consulta. Revise la conexión e intente de nuevo.');
+  // La Rama protege su servicio con un cortafuegos (Azure Application Gateway) que a ratos rechaza con «403 Forbidden» las consultas que llegan desde nuestro servidor, sobre todo si hay
+  // varias seguidas; casi siempre pasa solo en un par de minutos. Se reintenta una vez a los pocos segundos y, si sigue, se explica en claro (2026-11-17).
+  let res = null, datos = null;
+  for(let intento = 0; intento < 2; intento++){
+    try{
+      res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ radicado, paginas, desde }) });
+    }catch(e){
+      throw new Error('No se pudo comunicar con el servidor de consulta. Revise la conexión e intente de nuevo.');
+    }
+    datos = null;
+    try{ datos = await res.json(); }catch(e){ /* sin cuerpo válido */ }
+    if(res.ok && datos?.ok) break;
+    if(intento === 0 && /\b403\b|forbidden/i.test(String(datos?.error || ''))) { await new Promise(r => setTimeout(r, 4000)); continue; }
+    break;
   }
-  let datos = null;
-  try{ datos = await res.json(); }catch(e){ /* sin cuerpo válido */ }
-  if(!res.ok || !datos?.ok) throw new Error(datos?.error || `La consulta falló (código ${res.status}).`);
+  if(!res.ok || !datos?.ok){
+    const msg = String(datos?.error || '');
+    if(/\b403\b|forbidden/i.test(msg)) throw new Error('La Rama Judicial bloqueó por un momento la consulta (error 403 de su cortafuegos). Suele pasar al hacer varias consultas seguidas y se quita solo: espere uno o dos minutos y presione «Actualizar».');
+    throw new Error(msg || `La consulta falló (código ${res.status}).`);
+  }
   if(desde === 1) cache.set(radicado, { t: Date.now(), datos });
   return datos;
 }
