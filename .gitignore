@@ -25,3 +25,7 @@ lexara-al-dia/privado/*
 !lexara-al-dia/privado/.htaccess
 lexara-al-dia/data/*.bak
 lexara-al-dia/data/*.tmp
+
+# Respaldo de tutelas: claves reales (Azure y Gmail) y registros solo en el servidor
+respaldo-tutelas/config.php
+respaldo-tutelas/privado/
