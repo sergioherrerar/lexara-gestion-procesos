@@ -10,7 +10,7 @@ import { CORREO_GERENCIA_NOVEDADES, dma } from '../lib/novedadesNomina';
 const REMITENTE_SOPORTE = 'soporte@lexaraabogados.com';
 const CLAVE_LOCAL = 'lexara-pagos-por-realizar-enviados';
 
-export default function PagosPorRealizarModal({ registros, proveedores, liveMode, notify, onClose }){
+export default function PagosPorRealizarModal({ registros, proveedores, liveMode, notify, onClose, onEnviado }){
   const [dia, setDia] = useState(() => diaInicialPagos(registros));
   const [firma, setFirma] = useState(null);
   const [confirmando, setConfirmando] = useState(false);
@@ -44,7 +44,9 @@ export default function PagosPorRealizarModal({ registros, proveedores, liveMode
       const registro = { ...envioLocal, [dia]: { fecha: new Date().toISOString(), para: [CORREO_GERENCIA_NOVEDADES] } };
       setEnvioLocal(registro);
       try{ localStorage.setItem(CLAVE_LOCAL, JSON.stringify(registro)); }catch(e){ /* sin almacenamiento */ }
-      notify?.('✓ Pagos por realizar del ' + clave + ' enviados a Gerencia (' + CORREO_GERENCIA_NOVEDADES + '), desde ' + REMITENTE_SOPORTE + '.', 'success');
+      // El correo ya salió: se le deja el pendiente a Gerencia (lista Pendientes). Si esto falla, el correo no se pierde: solo se avisa.
+      try{ await onEnviado?.(dia); }catch(err){ console.error(err); notify?.('El correo salió, pero no se pudo crear el pendiente para Gerencia: ' + mensajeError(err), 'error'); }
+      notify?.('✓ Pagos por realizar del ' + clave + ' enviados a Gerencia (' + CORREO_GERENCIA_NOVEDADES + '), desde ' + REMITENTE_SOPORTE + '. Quedó el pendiente para Gerencia.', 'success');
       onClose?.();
     }catch(err){
       console.error(err); notify?.('No se pudo enviar el correo: ' + mensajeError(err), 'error');

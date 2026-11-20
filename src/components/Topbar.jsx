@@ -74,7 +74,7 @@ const TIPOS_CAMPANA = {
 const CUENTA_SOPORTE = 'soporte@lexaraabogados.com';
 function fechaCorta(iso){ const [y, m, d] = String(iso || '').split('-'); return y && m && d ? `${d}/${m}/${y}` : 'Sin fecha'; }
 
-function CampanaPendientes({ nombre, esDemo, puedeVerEquipo, audiencias, terminos, pendientes, procesos, tutelas, onIrAVencimientos }){
+function CampanaPendientes({ nombre, esDemo, puedeVerEquipo, audiencias, terminos, pendientes, procesos, tutelas, onIrAVencimientos, onEditarPendiente, onCrearPendiente, canWrite, notify }){
   const [abierto, setAbierto] = useState(false);
   const [verEquipo, setVerEquipo] = useState(false);   // Administrador y Jefe pueden ver lo de todo el equipo
   const ref = useRef(null);
@@ -116,6 +116,27 @@ function CampanaPendientes({ nombre, esDemo, puedeVerEquipo, audiencias, termino
     return [...m.values()].sort((a, b) => b.total - a.total || a.nombre.localeCompare(b.nombre));
   }, [filas, verTodos]);
   const filasVisibles = verTodos && persona ? filas.filter(f => claveResp(f.responsable) === persona) : filas;
+  // «Hecho» en un Pendiente (2026-11-20, pedido del usuario: «esto funciona como un pendiente… dar un aviso de que el pendiente está hecho»): pasa a Terminado en la lista Pendientes y,
+  // si lo asignó otra persona (p. ej. Soporte → Gerencia con «Pagos por realizar»), a esa persona le queda un pendiente de aviso «Hecho por …». Los avisos no se contestan con otro aviso.
+  const [marcando, setMarcando] = useState(null);
+  async function marcarHecho(f){
+    if(marcando || !f.id) return;
+    setMarcando(f.clave);
+    try{
+      await onEditarPendiente?.(f.id, { Estado: 'Terminado' });
+      const de = String(f.de || '').trim();
+      const esAviso = /^hecho por /i.test(String(f.texto || ''));
+      if(de && nombre && !esAviso && claveResp(de) !== claveResp(nombre)){
+        const d = new Date();
+        const hoy = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        await onCrearPendiente?.({ Pendiente: 'Hecho por ' + nombre + ': ' + f.texto, PendienteDe: nombre, PendientePara: de, FechaPendiente: hoy, Estado: 'Vigente', Observacion: 'Aviso automático: ' + nombre + ' marcó como hecho el pendiente «' + f.texto + '». Márquelo como hecho cuando lo vea.' });
+        notify?.('Marcado como hecho. Se le avisó a ' + de + '.', 'success');
+      }else{
+        notify?.('Marcado como hecho.', 'success');
+      }
+    }catch(err){ console.error(err); notify?.('No se pudo marcar como hecho: ' + (err?.message || err), 'error'); }
+    finally{ setMarcando(null); }
+  }
   return (
     <div className="topbar-campana-wrap" ref={ref}>
       <button type="button" className={"topbar-campana-btn" + (abierto ? " abierto" : "")} onClick={() => { if(!abierto && esSoporte) fijos.revisar(false); setAbierto(v => !v); }}
@@ -168,6 +189,7 @@ function CampanaPendientes({ nombre, esDemo, puedeVerEquipo, audiencias, termino
                 <div className="campana-item-meta">
                   {fechaCorta(f.fecha)}{f.hora ? ' · ' + f.hora : ''}{f.radicado ? ' · ' + f.radicado : ''}{f.cliente ? ' · ' + f.cliente : ''}{verEquipo && f.responsable ? ' · ' + f.responsable : ''}
                 </div>
+                {f.tipo === 'pendientes' && f.id && canWrite && onEditarPendiente && <button type="button" className="campana-hecho" onClick={() => marcarHecho(f)} disabled={!!marcando}>{marcando === f.clave ? 'Guardando…' : 'Hecho'}</button>}
                 {f.esFijo && <button type="button" className="campana-hecho" onClick={() => { const d = new Date(); fijos.marcarHecha(f.clave, `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`); }}>Hecho</button>}
               </div>
             ))}
@@ -179,7 +201,7 @@ function CampanaPendientes({ nombre, esDemo, puedeVerEquipo, audiencias, termino
   );
 }
 
-export default function Topbar({ novedadesRama, revisandoRama, ramaDisponible, onAbrirProcesoRama, onRevisarRama, nombreActual, puedeVerEquipo, tutelas, onIrAVencimientos, view, liveMode, searchQuery, onSearch, onOpenMobileNav, onRefresh, refreshing, cargandoInicial, audiencias, terminos, pendientes, procesos, tiposAccion, colaboradores, onCrearEventoPersonalizado, onListarOtrosEventosDelMes, onCrearAudiencia, onCrearTermino, onCreateTipoTermino, onCrearPendiente, canWrite, notify }){
+export default function Topbar({ onEditarPendiente, novedadesRama, revisandoRama, ramaDisponible, onAbrirProcesoRama, onRevisarRama, nombreActual, puedeVerEquipo, tutelas, onIrAVencimientos, view, liveMode, searchQuery, onSearch, onOpenMobileNav, onRefresh, refreshing, cargandoInicial, audiencias, terminos, pendientes, procesos, tiposAccion, colaboradores, onCrearEventoPersonalizado, onListarOtrosEventosDelMes, onCrearAudiencia, onCrearTermino, onCreateTipoTermino, onCrearPendiente, canWrite, notify }){
   const cargando = refreshing || cargandoInicial;
   // Búsqueda con espera de 250ms: el texto del cuadro se actualiza al instante,
   // pero el filtrado de las tablas (miles de filas, y todo App se vuelve a
@@ -233,7 +255,7 @@ export default function Topbar({ novedadesRama, revisandoRama, ramaDisponible, o
       />
       <div className="topbar-derecha">
       <BalanzaRama disponible={ramaDisponible} novedades={novedadesRama} revisando={revisandoRama} onAbrir={onAbrirProcesoRama} onRevisar={onRevisarRama} />
-      <CampanaPendientes nombre={nombreActual} esDemo={!liveMode} puedeVerEquipo={puedeVerEquipo} tutelas={tutelas} audiencias={audiencias} terminos={terminos} pendientes={pendientes} procesos={procesos} onIrAVencimientos={onIrAVencimientos} />
+      <CampanaPendientes nombre={nombreActual} esDemo={!liveMode} puedeVerEquipo={puedeVerEquipo} tutelas={tutelas} audiencias={audiencias} terminos={terminos} pendientes={pendientes} procesos={procesos} onIrAVencimientos={onIrAVencimientos} onEditarPendiente={onEditarPendiente} onCrearPendiente={onCrearPendiente} canWrite={canWrite} notify={notify} />
       <div className="search-bar">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
         <input

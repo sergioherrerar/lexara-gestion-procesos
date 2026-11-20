@@ -2152,6 +2152,18 @@ export function useLexaraApp(){
     afterEliminar: (id) => !liveMode ? null : Graph.eliminarEventoCalendario(configConCalendario, { tipo:'pendiente', id }),
   });
   const crearPendiente = crudPendientes.crear;
+  // «Pagos por realizar» (2026-11-20, pedido del usuario): al enviar el correo de Soporte a Gerencia se crea un Pendiente real (lista Pendientes) para la gerente — Mónica Paola Quintero —,
+  // asignado por quien lo envía; aparece en su campana con el botón «Hecho» y, al marcarlo, a quien lo envió le queda el aviso. No duplica si ese día ya tiene uno vigente.
+  async function asignarPagosAGerencia(diaISO){
+    const n = t => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    const gerente = (colaboradores || []).find(c => /monica/.test(n(c.Nombre)) && /quintero/.test(n(c.Nombre)));
+    const para = gerente?.Nombre || 'Mónica Paola Quintero Jiménez';
+    const de = colaboradorActual?.Nombre || 'Soporte';
+    const [a, m, d] = String(diaISO || '').slice(0, 10).split('-');
+    const texto = 'Hacer los pagos del ' + d + '/' + m + '/' + a + ' (correo «Pagos por realizar» de Soporte)';
+    if((pendientes || []).some(p => p.Estado !== 'Terminado' && p.Pendiente === texto)) return null;
+    return crearPendiente({ Pendiente: texto, PendienteDe: de, PendientePara: para, FechaPendiente: String(diaISO).slice(0, 10), Estado: 'Vigente', Observacion: 'Creado al enviar el correo «Pagos por realizar» a Gerencia.' });
+  }
   const editarPendiente = crudPendientes.editar;
   const eliminarPendiente = crudPendientes.eliminar;
 
@@ -2197,7 +2209,7 @@ export function useLexaraApp(){
     audiencias, terminos, pendientes,
     crearAudiencia, editarAudiencia, eliminarAudiencia,
     crearTermino, editarTermino, eliminarTermino,
-    crearPendiente, editarPendiente, eliminarPendiente,
+    crearPendiente, editarPendiente, eliminarPendiente, asignarPagosAGerencia,
     crearEventoCalendarioPersonalizado, listarOtrosEventosDelMes,
     currentFilter, setFilter: setCurrentFilter, searchQuery, setSearchQuery: setSearchQuery,
     onSearch: setSearchQuery,

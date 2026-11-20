@@ -51,7 +51,7 @@ export function pendientesDePersona({ nombre, audiencias, terminos, pendientes, 
     if(pe.Estado === 'Terminado') return;
     if(filtrar && !mismaPersona(pe.PendientePara, nombre)) return;
     const p = procesoPorId.get(String(pe.ProcesoMD ?? pe.Proceso));
-    agregar({ clave: 'p' + pe.id, tipo: 'pendientes', fecha: soloFechaISO(pe.FechaPendiente), hora: '', texto: pe.Pendiente || '', radicado: p?.Radicado || '', cliente: p?.Cliente || '', responsable: pe.PendientePara || '' });
+    agregar({ clave: 'p' + pe.id, id: pe.id, de: pe.PendienteDe || '', tipo: 'pendientes', fecha: soloFechaISO(pe.FechaPendiente), hora: '', texto: pe.Pendiente || '', radicado: p?.Radicado || '', cliente: p?.Cliente || '', responsable: pe.PendientePara || '' });
   });
   const limite = (() => { const d = new Date(); d.setDate(d.getDate() - 3); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); })();
   (tutelas || []).forEach(tu => {

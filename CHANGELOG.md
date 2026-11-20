@@ -2,6 +2,12 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-11-20 (201)
+- **«Pagos por realizar» queda como Pendiente de Gerencia, con botón «Hecho» y aviso a quien lo envió** — pedido del usuario («cuando se envíe el correo para Gerencia también se active la notificación para que ella haga los pagos… esto funciona como un pendiente: Sergio se lo coloca a Mónica y un aviso de que está hecho»).
+  - **Al enviar el correo «Pagos por realizar»** (Administración → Egresos → Gastos), el portal crea un Pendiente real en la lista Pendientes: «Hacer los pagos del DD/MM/AAAA (correo "Pagos por realizar" de Soporte)», de quien lo envía (Sergio) para Mónica Paola Quintero (se busca en Colaboradores por «Monica» y «Quintero»), con la fecha de los pagos y Estado Vigente. No duplica si ese día ya tiene uno vigente; si la creación falla, el correo no se pierde y solo se avisa.
+  - **Campana:** los Pendientes ahora tienen botón «Hecho» (si la persona puede escribir): pasa el pendiente a Terminado y, si lo asignó otra persona, a ella le queda un pendiente de aviso «Hecho por <nombre>: …»; los avisos no se contestan con otro aviso. Mónica ve «Marcado como hecho. Se le avisó a Sergio».
+  - Reemplaza la idea inicial de detectar el correo en la bandeja de gerencia@ (no se publicó): así no depende de permisos de buzón ni del navegador de quien lo marca. Probado en modo demo (botón, contador y mensaje); sin probar con las sesiones reales de Soporte y Gerencia.
+
 ## 2026-11-17 (200)
 - **Cruces con desistimientos: hoja con la copia original de la demanda y la dinámica de anotaciones en el Resumen** — pedido del usuario («debe haber una hoja con el archivo que se cruza, en este caso la base de la demanda, copia original… la de resumen también con la dinámica de las anotaciones… igual en los dos cruces»).
   - **Hoja de la copia original:** el Excel de «Cruce Desistimientos» trae ahora «Resumen», «Desistimientos <proceso>» y «Demanda (copia original)» (la hoja de la demanda tal cual, todas sus columnas y filas, sin observación ni pie; valores en pesos con formato de pesos y filtros). En «Cruce de Archivos», cuando se cruza la base con los desistimientos (un solo archivo entre sí) también faltaba la hoja de la base: sale como «Copia original · nombre»; con 2 o más archivos cruzados entre sí siguen las hojas por archivo con su observación.

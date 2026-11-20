@@ -145,6 +145,7 @@ export default function App(){
           onCrearTermino={app.crearTermino}
           onCreateTipoTermino={app.createTipoTermino}
           onCrearPendiente={app.crearPendiente}
+          onEditarPendiente={app.editarPendiente}
           canWrite={app.canWrite}
           notify={app.notify}
         />
@@ -297,6 +298,7 @@ export default function App(){
             cuentasCobroGastos={app.cuentasCobroGastos}
             pagosPorRealizar={app.pagosPorRealizar}
             gastos={app.gastos}
+            onAsignarPagosGerencia={app.asignarPagosAGerencia}
             onCrearProveedorGastos={app.crearProveedorGastos}
             onEditarProveedorGastos={app.editarProveedorGastos}
             onEliminarProveedorGastos={app.eliminarProveedorGastos}

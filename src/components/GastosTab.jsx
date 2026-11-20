@@ -509,7 +509,7 @@ function RegistrosSection({ nombreLista, registros, proveedores, conNumero, conT
           )}
         </div>
       </div>
-      {enviandoPagos && <PagosPorRealizarModal registros={registros} proveedores={proveedores} liveMode={liveMode} notify={notify} onClose={() => setEnviandoPagos(false)} />}
+      {enviandoPagos && <PagosPorRealizarModal registros={registros} proveedores={proveedores} liveMode={liveMode} notify={notify} onEnviado={onAsignarPagosGerencia} onClose={() => setEnviandoPagos(false)} />}
       {avisoMes && (
         <div className="confirm-overlay" onClick={() => setAvisoMes(false)}>
           <div className="confirm-box" onClick={e => e.stopPropagation()} role="alertdialog" aria-modal="true">
@@ -585,7 +585,7 @@ function RegistrosSection({ nombreLista, registros, proveedores, conNumero, conT
 
 export default function GastosTab({ config, proveedoresGastos, gastos,
   onCrearProveedorGastos, onEditarProveedorGastos, onEliminarProveedorGastos,
-  onCrearGasto, onEditarGasto, onEliminarGasto, canWrite, notify, colaboradores, liveMode }){
+  onCrearGasto, onEditarGasto, onEliminarGasto, canWrite, notify, colaboradores, liveMode, onAsignarPagosGerencia }){
   const [subTab, setSubTab] = useState('proveedores');
   const shareUrl = config?.GASTOS_SOPORTES_SHARE_URL;
   const siguienteNumero = siguienteNumeroConsecutivo(gastos);
