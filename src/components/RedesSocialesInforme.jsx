@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { Fragment, useState, useEffect, useMemo } from 'react';
 import { MESES, RED_NOMBRE, ESTADO, BUSTRAL_CALENDARIO, REDES_ORDEN, mesDe, fechaLarga, fechaCorta, totalVistas, nuevosDe, calcularVistaMes, mesesDisponibles } from '../lib/redesSociales';
 import { IconTextButton } from './IconButton';
 import { generarInformeRedesExcel, generarInformeRedesPDF, crearBorradorRevisionRedes } from '../lib/informeRedes';
@@ -219,7 +219,7 @@ export default function RedesSocialesInforme({ liveMode, notify, esAdministrador
 
       <div className="redes-seccion">
         <h3>Calendario de {MESES[mm - 1]} {anio}: lo programado frente a lo publicado</h3>
-        <p className="save-hint" style={{margin:'0 0 8px'}}>Haz clic en una fila para ver el copy y el video. «Programada» es la fecha que tiene la pieza en el calendario de Bustral. Aprobar u objetar se hace en Bustral con tu sesión: el enlace abre su calendario.</p>
+        <p className="save-hint" style={{margin:'0 0 8px'}}>Haz clic en una fila para ver el copy y el video. «Programada» es la fecha que tiene la pieza en el calendario de Bustral. Aprobar u objetar se hace en Bustral con tu sesión: el enlace abre su calendario.{datos.bustralPanel && <> Debajo del título de cada pieza objetada se ve la nota que dejó quien la objetó en Bustral (leída el {fechaLarga(datos.bustralPanel.leido)}; se actualiza al pedir «actualiza redes»). Por aprobar hoy: {datos.bustralPanel.porAprobar}.</>}</p>
         <div className="table-wrap">
           <table className="redes-tabla redes-tabla-cal">
             <thead><tr><th>Pieza</th><th>Aprobación</th><th>Cumplimiento</th><th>Programada (Bustral)</th><th>Publicada</th><th>Aprobar u objetar</th></tr></thead>
@@ -232,7 +232,8 @@ export default function RedesSocialesInforme({ liveMode, notify, esAdministrador
                   : f.real ? (f.real.redes || []).map(r => RED_NOMBRE[r] || r)
                   : f.g.publicadaEn ? Object.keys(f.g.publicadaEn).map(r => RED_NOMBRE[r] || r) : [];
                 return (
-                  <tr key={f.tipo + f.fecha + f.titulo} className="redes-fila" tabIndex={0} onClick={() => abrir(f)} onKeyDown={e => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); abrir(f); } }}>
+                  <Fragment key={f.tipo + f.fecha + f.titulo}>
+                  <tr className={"redes-fila" + (f.tipo === 'programada' && f.g.objecion ? " redes-fila-con-nota" : "")} tabIndex={0} onClick={() => abrir(f)} onKeyDown={e => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); abrir(f); } }}>
                     <td className="redes-titulo">{f.titulo}</td>
                     <td>{est ? <span className={"badge " + est.clase}>{est.texto}</span> : <span className="redes-sin">Publicada en Bustral</span>}</td>
                     <td>{f.cumpl ? <span className={"badge " + f.cumpl.clase}>{f.cumpl.texto}</span> : <span className="redes-sin">Sin programación en el calendario</span>}</td>
@@ -246,6 +247,12 @@ export default function RedesSocialesInforme({ liveMode, notify, esAdministrador
                         : <span className="redes-sin">—</span>}
                     </td>
                   </tr>
+                  {f.tipo === 'programada' && f.g.objecion && (
+                    <tr className="redes-fila-nota" onClick={() => abrir(f)}>
+                      <td colSpan={6}><span className="redes-nota-bustral"><b>Nota de Bustral:</b> «{f.g.objecion}»</span></td>
+                    </tr>
+                  )}
+                  </Fragment>
                 );
               })}
             </tbody>
@@ -324,6 +331,7 @@ function DetalleRedes({ f, onClose }){
               {g ? <>Programada: {fechaLarga(g.fecha)}</> : <>Publicada: {fechaLarga(f.fecha)}</>}
               {f.salioEn && f.salioEn !== f.fecha && <> · Salió el {fechaLarga(f.salioEn)}</>}
             </div>
+            {g && g.objecion && <p className="redes-motivo"><b>Motivo de la objeción:</b> «{g.objecion}»</p>}
             <div className="redes-modal-badges">
               {est && <span className={"badge " + est.clase}>{est.texto}</span>}
               {f.cumpl && <span className={"badge " + f.cumpl.clase}>{f.cumpl.texto}</span>}

@@ -2,6 +2,13 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-11-23 (205)
+- **Informe de redes: las notas de Bustral de las piezas objetadas se ven en cada publicación** — pedido del usuario (revisó el panel nuevo de Bustral «Objetados, en corrección» y pidió «una nota en cada publicación, así se vieran esas anotaciones de Bustral… que la nota ocupe toda la línea de la publicación»).
+  - **Calendario (Informes → Redes sociales):** debajo de cada pieza objetada hay una fila que ocupa todo el ancho de la tabla con «Nota de Bustral: «…»» (el motivo que dejó quien la objetó); al hacer clic se abre el detalle, que también muestra «Motivo de la objeción». El texto de arriba de la tabla dice cuándo se leyeron las notas y cuántas piezas hay por aprobar. Las piezas aprobadas no traen nota (Bustral solo la guarda al objetar).
+  - **Excel, PDF y borrador de correo del informe:** el Excel tiene la columna nueva «Nota de Bustral (objeción)»; en el PDF y en el correo la nota sale junto al estado de aprobación.
+  - **Datos:** los 5 motivos (Reels 1, 2, 3, 6 y 7) se leyeron del panel de Bustral el 23-nov-2026 y se guardaron en `redes-sociales.json` (`objecion` por pieza y `bustralPanel`: por aprobar 0, con error 0). El resto de cifras (seguidores, vistas, TikTok) sigue siendo la lectura del 12-nov: se refrescan con «actualiza redes».
+  - **Lo que trae Bustral ahora (revisado, sin cambiar nada):** Analytics ya mide TikTok (311 seguidores, 2.526 me gusta, 92 videos, 9.963 vistas) y hay «Generar reporte» (solo publicaciones, 7/30/90/365 días); no hay API ni exportación de datos de redes. Probado en el portal local (modo demo); las notas en el portal publicado salen al recargar.
+
 ## 2026-11-23 (204)
 - **Links de carpeta rotos (404) y botón «Actualizar todos los links»** — pedido del usuario (reorganizó las carpetas de procesos: ahora una carpeta junta varios procesos, p. ej. «2008-00536  2017-00687  2018-00200»; al abrir «Carpeta» daba 404 y pidió «actualizarlos todos desde el botón»).
   - **Causa del 404:** el formulario del proceso guardaba los links como «URL, URL» (la dirección y su descripción iguales) aunque las columnas son de texto plano desde el 2026-09-07; el navegador recibía las dos direcciones pegadas. Ahora el formulario guarda solo la URL, y al leer el portal deja solo la primera dirección de cualquier valor «URL, URL» (los que ya están guardados dejan de fallar sin tocarlos).

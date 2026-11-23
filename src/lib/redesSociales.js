@@ -122,6 +122,7 @@ export function novedadesDelMes(datos, mes){
       estadoClave: g ? g.estado : null,
       objetadoEl: g?.objetadoEl || null,
       aprobadoEl: g?.aprobadoEl || null,
+      nota: g?.objecion || null,   // lo que escribió quien objetó la pieza en Bustral
       publicadaEl: salioEl || null,
       hora: (pub && pub.hora) || (g && g.horaPublicada) || null,
       redes: redes.map(r => RED_NOMBRE[r] || r),

@@ -28,13 +28,13 @@ export async function generarInformeRedesExcel(datos, mes){
   const wb = new ExcelJS.Workbook();
 
   const ws = wb.addWorksheet('Calendario');
-  const columnas = ['Programada (Bustral)', 'Pieza', 'Estado de aprobación', 'Fecha de objeción', 'Fecha de aprobación', 'Publicada el', 'Hora de publicación', 'Redes', 'Cumplimiento', 'Vistas (YouTube + TikTok)'];
-  ws.columns = [16, 58, 20, 18, 18, 14, 14, 30, 30, 16].map(width => ({ width }));
+  const columnas = ['Programada (Bustral)', 'Pieza', 'Estado de aprobación', 'Fecha de objeción', 'Fecha de aprobación', 'Publicada el', 'Hora de publicación', 'Redes', 'Cumplimiento', 'Vistas (YouTube + TikTok)', 'Nota de Bustral (objeción)'];
+  ws.columns = [16, 58, 20, 18, 18, 14, 14, 30, 30, 16, 60].map(width => ({ width }));
   estilizarEncabezadoXlsx(ws.addRow(columnas));
   filas.forEach(x => {
     const r = ws.addRow([
       fechaISOaExcel(x.programada), x.titulo, x.estado, x.objetadoEl ? fechaDMA(x.objetadoEl) : 'No la registra Bustral', x.aprobadoEl ? fechaDMA(x.aprobadoEl) : 'No la registra Bustral',
-      fechaISOaExcel(x.publicadaEl), x.hora || (x.publicadaEl ? 'No disponible' : ''), x.redes.join(' · '), x.cumplimiento, x.vistas,
+      fechaISOaExcel(x.publicadaEl), x.hora || (x.publicadaEl ? 'No disponible' : ''), x.redes.join(' · '), x.cumplimiento, x.vistas, x.nota || '',
     ]);
     r.eachCell(c => { c.alignment = { vertical: 'middle', wrapText: true, horizontal: 'left' }; });
     [1, 6].forEach(i => { r.getCell(i).numFmt = 'dd/mm/yyyy'; r.getCell(i).alignment = { vertical: 'middle', horizontal: 'center' }; });
@@ -99,7 +99,7 @@ export async function generarInformeRedesPDF(datos, mes){
   autoTable(doc, {
     ...estilos, startY: y,
     head: [['Programada (Bustral)', 'Pieza', 'Aprobación', 'Publicada (fecha y hora)', 'Cumplimiento']],
-    body: filas.map(x => [x.programada ? dma(x.programada) : 'Sin programar', x.titulo, aprobacionTexto(x), x.publicadaEl ? `${publicadaTexto(x)}\n${x.redes.join(' · ')}` : 'Aún no se ha publicado', x.cumplimiento]),
+    body: filas.map(x => [x.programada ? dma(x.programada) : 'Sin programar', x.titulo, aprobacionTexto(x) + (x.nota ? '\nNota de Bustral: «' + x.nota + '»' : ''), x.publicadaEl ? `${publicadaTexto(x)}\n${x.redes.join(' · ')}` : 'Aún no se ha publicado', x.cumplimiento]),
     columnStyles: { 0: { cellWidth: 24, halign: 'center' }, 2: { cellWidth: 28 }, 3: { cellWidth: 34 }, 4: { cellWidth: 28 } },
   });
   y = doc.lastAutoTable.finalY + 8;
@@ -155,7 +155,7 @@ export function construirCorreoRevisionRedes(datos, mes, { fecha = new Date(), s
   const filasHtml = filas.map(x => `<tr>
     <td style="${TD} white-space:nowrap;">${x.programada ? dma(x.programada) : 'Sin programar'}</td>
     <td style="${TD} font-weight:600;">${esc(x.titulo)}</td>
-    <td style="${TD}">${esc(x.estado)}${x.objetadoEl ? `<br><span style="color:#a3281c;">Objetado el ${dma(x.objetadoEl)}</span>` : ''}${x.aprobadoEl ? `<br><span style="color:#14753f;">Aprobado el ${dma(x.aprobadoEl)}</span>` : ''}</td>
+    <td style="${TD}">${esc(x.estado)}${x.objetadoEl ? `<br><span style="color:#a3281c;">Objetado el ${dma(x.objetadoEl)}</span>` : ''}${x.aprobadoEl ? `<br><span style="color:#14753f;">Aprobado el ${dma(x.aprobadoEl)}</span>` : ''}${x.nota ? `<br><span style="color:#a3281c;font-style:italic;">Nota de Bustral: «${esc(x.nota)}»</span>` : ''}</td>
     <td style="${TD}">${x.publicadaEl ? `${dma(x.publicadaEl)}${x.hora ? ' · ' + esc(x.hora) : ''}<br><span style="color:#5c6b68; font-size:12px;">${esc(x.redes.join(' · '))}</span>` : '<span style="color:#a3281c;">Aún no se ha publicado</span>'}</td>
     <td style="${TD} color:${color(x.claseCumplimiento)}; font-weight:600;">${esc(x.cumplimiento)}</td>
   </tr>`).join('');

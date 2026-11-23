@@ -412,12 +412,19 @@
       }
     }
   ],
+  "bustralPanel": {
+    "leido": "2026-11-23",
+    "porAprobar": 0,
+    "conError": 0,
+    "nota": "Leído del panel de Redes Sociales de Bustral (tareas pendientes): Por aprobar 0, Objetados en corrección 5, Con error 0. Bustral se cierra solo: lo que está por aprobar y no se decide en 2 días se aprueba automáticamente."
+  },
   "programadas": [
     {
       "fecha": "2026-11-03",
       "titulo": "Reel 1 · Incidente de impacto fiscal (Parte 1): ¿se aplaza la reforma pensional?",
       "tipo": "reel",
       "estado": "video_objetado",
+      "objecion": "La imagen de la portada y el sonido tienen edición de IA. Se ve y suena raro. Favor corregirlo. Además, cambiar la imagen que queda congelada desde el segundo 40 del video.",
       "destino": "Instagram",
       "tieneVideo": true,
       "copy": "Material grabado: carpeta 01_REEL_incidente-impacto-fiscal-parte1 (Drive Lexara). Guion ajustado a lo que se grabó.\nGancho (0:00–0:07): «La reforma pensional empieza a regir en abril de 2027… pero el Ministerio de Hacienda le pidió a la Corte revisar si hay plata para arrancar. ¿Qué significa eso?»\n[0:07–0:30] «Se llama incidente de impacto fiscal y está en el artículo 334 de la Constitución. Es una herramienta para que un ministro o el Procurador le pidan a la Corte que module cómo se va a implementar una sentencia que afecta las finanzas públicas…»",
@@ -445,6 +452,7 @@
       "titulo": "Reel 2 · Incidente de impacto fiscal (Parte 2): ¿qué pasa con tu régimen de transición?",
       "tipo": "reel",
       "estado": "video_objetado",
+      "objecion": "No lo puedo revisar, no estoy de acuerdo con haber dividido los videos, de lo poco que se oye el sonido es rarísimo.",
       "destino": "Instagram",
       "tieneVideo": true,
       "copy": "Material grabado: carpeta 02_PARTE 2.mp4 (Drive Lexara). Guion ajustado a lo que se grabó.\nGancho (0:00–0:07): «El Ministerio de Hacienda le pidió a la Corte revisar si hay plata para la reforma pensional. ¿Y eso qué significa para tu régimen de transición? Te lo explico.»\n[0:07–0:27] «¿Y qué pasa con el régimen de transición? Por ahora, nada. Pero hay que estar muy pendientes: si se mueve la fecha de entrada en vigencia, también podría ampliarse el plazo para completar las 750 semanas si eres mujer o las 900 si eres hombre…»\n[0:27–0:45] «Descarga tu historia laboral y revisa cuántas semanas tienes. En Lexara Abogados te orientamos.»"
@@ -454,6 +462,7 @@
       "titulo": "Reel 3 · Tus ahorros de pensión: se cae el tope del 30 % a la inversión en el exterior (Decreto 1490 de 2026)",
       "tipo": "reel",
       "estado": "video_objetado",
+      "objecion": "La imagen con IA del inicio parece otra persona. Sugiero dejar la original. El final está cortado, favor verificar que no se haya quitado una parte sustancial del contenido.",
       "destino": "Instagram",
       "tieneVideo": true,
       "copy": "Material grabado: carpeta 03_TUS AHORROS MEJORA CALIDAD.mp4 (Drive Lexara).\nGancho (0:00–0:07): «Tus ahorros de pensión en un fondo privado ya no tienen que regresar obligatoriamente a Colombia. El Gobierno acaba de eliminar esa regla.»\n[0:07–0:28] «En abril de este año, el gobierno anterior expidió el Decreto 369: los fondos privados solo podían tener invertido en el exterior, como máximo, el 30 %…»\n[0:28–0:50] «Este 6 de octubre, el nuevo Gobierno expidió el Decreto 1490, que elimina ese tope…»",
@@ -493,6 +502,7 @@
       "titulo": "Reel 6 · 4 empleados directos y 168 temporales: el Consejo de Estado confirma la sanción a una clínica",
       "tipo": "reel",
       "estado": "video_objetado",
+      "objecion": "Corregir portada con IA, parece otra persona.",
       "destino": "Instagram",
       "tieneVideo": true,
       "copy": "Material grabado: carpeta 06_168 TEMPORALES MEJORA DE CALIDAD (Drive Lexara).\nGancho (0:00–0:07): «Una clínica en Cartagena tenía 4 trabajadores directos… y 168 por temporal. Durante años. El Consejo de Estado dejó en firme la sanción.»\n[0:07–0:28] «El Ministerio del Trabajo sancionó a una clínica de Cartagena porque prestaba sus servicios con trabajadores en misión, con contratos que se renovaban uno tras otro durante varios años…»"
@@ -502,6 +512,7 @@
       "titulo": "Reel 7 · ¿El inspector de trabajo te sanciona de una vez? Desde octubre, no necesariamente (Circular 110 de 2026)",
       "tipo": "reel",
       "estado": "video_objetado",
+      "objecion": "Modificar portada con IA, parece otra persona. Verificar que no se haya cortado una parte sustancial del video sobre el final.",
       "destino": "Instagram",
       "tieneVideo": true,
       "copy": "Material grabado: carpeta 07_TE SANCIONAN MEJORA CALIDAD (Drive Lexara).\nGancho (0:00–0:07): «Empresario: si el inspector de trabajo encuentra un incumplimiento en tu empresa, ¿te sanciona de una vez? Desde octubre, no necesariamente.»\n[0:07–0:30] «El Ministerio de Trabajo expidió la Circular 110 de 2026. No crea nuevas obligaciones ni multas: unifica cómo los inspectores usan una facultad que ya tenían, la de advertir y aconsejar antes de iniciar un proceso sancionatorio…»"
