@@ -5,7 +5,7 @@
 //
 //   php respaldo.php                      → lee SharePoint y envía el correo
 //   php respaldo.php --solo-mostrar       → lee SharePoint y guarda privado/ultimo-respaldo.html y .csv, SIN enviar (para revisar)
-//   php respaldo.php --probar-correo      → envía un correo corto de prueba (verifica la clave de Gmail), sin tocar SharePoint
+//   php respaldo.php --probar-correo      → envía un correo corto de prueba (verifica el envío), sin tocar SharePoint
 //   php respaldo.php --simular=ejemplo.json [--solo-mostrar]   → usa datos de un archivo en vez de SharePoint (pruebas)
 //
 // Reglas: «pendiente» = no contestada y con vencimiento hasta 10 días atrás o en el futuro. Lo que vence hoy, mañana y pasado va primero; lo vencido sin contestar (últimos 10 días) se marca en rojo.
@@ -52,10 +52,16 @@ function tokenGraph(): string {
     static $token = null, $exp = 0;
     if ($token !== null && $exp > time() + 120) return $token;
     $c = cfg();
+    $secreto = trim((string)($c['client_secret'] ?? ''), " \t\n\r\0\x0B\"'");   // quita espacios, saltos de línea y comillas que sobren al pegar
     [$codigo, $r] = http('POST', 'https://login.microsoftonline.com/' . $c['tenant_id'] . '/oauth2/v2.0/token', ['Content-Type: application/x-www-form-urlencoded'],
-        http_build_query(['client_id' => $c['client_id'], 'client_secret' => $c['client_secret'], 'scope' => 'https://graph.microsoft.com/.default', 'grant_type' => 'client_credentials']));
+        http_build_query(['client_id' => $c['client_id'], 'client_secret' => $secreto, 'scope' => 'https://graph.microsoft.com/.default', 'grant_type' => 'client_credentials']));
     $j = json_decode($r, true);
-    if ($codigo !== 200 || empty($j['access_token'])) throw new RuntimeException('Microsoft no entregó el token (' . $codigo . '): ' . substr((string)($j['error_description'] ?? $r), 0, 200));
+    if ($codigo !== 200 || empty($j['access_token'])) {
+        // Pista sin mostrar la clave: un secreto verdadero de Azure mide ~40 caracteres y no es un GUID (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx = el «Id. de secreto», que NO sirve).
+        $esGuid = (bool)preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $secreto);
+        $pista = ' [Clave en config.php: ' . strlen($secreto) . ' caracteres, empieza con «' . substr($secreto, 0, 3) . '» y termina en «' . substr($secreto, -2) . '», aplicación ' . substr((string)($c['client_id'] ?? ''), 0, 8) . '…' .($esGuid ? ', PARECE EL ID DEL SECRETO (con guiones), hay que poner el VALOR' : (str_contains($secreto, 'PEGA_AQUI') ? ', sigue el texto de ejemplo' : (strlen($secreto) < 30 ? ', MUY CORTA, quedó incompleta' : ''))) . '.]';
+        throw new RuntimeException('Microsoft no entregó el token (' . $codigo . '): ' . substr((string)($j['error_description'] ?? $r), 0, 90) . $pista);
+    }
     $token = $j['access_token']; $exp = time() + (int)($j['expires_in'] ?? 3000);
     return $token;
 }
@@ -195,7 +201,32 @@ function armarCorreo(array $filas, string $hoy, string $generado): array {
     return [$asunto, $html, $csv];
 }
 
-// ---------- envío por Gmail (SMTP con clave de aplicación; no usa Microsoft) ----------
+// ---------- envío del correo ----------
+// Dos formas (config «envio»), ninguna usa Microsoft:
+//   · 'servidor' (por defecto): sale directo desde el servidor de cPanel con mail(), «de» una dirección @lexaraabogados.com. El SPF de lexaraabogados.com ya incluye la IP de ese servidor
+//     (190.8.176.243) y el DMARC lo exige alineado: por eso Gmail lo acepta sin clave alguna. No necesita contraseñas.
+//   · 'gmail': SMTP de Gmail con una clave de aplicación (si Google deja crearla).
+//   · 'archivo': solo para pruebas: guarda el correo en privado/ultimo-correo.eml sin enviarlo.
+/** Arma el correo (MIME): HTML en el cuerpo y, si hay, el CSV adjunto. Devuelve [cabeceras sin Para/Asunto, cuerpo]. */
+function armarMime(string $desde, string $nombre, string $html, ?string $csv, string $nombreCsv): array {
+    $lim = 'lexara_' . bin2hex(random_bytes(8));
+    $dominio = substr(strrchr($desde, '@'), 1) ?: 'localhost';
+    $cab = "From: =?UTF-8?B?" . base64_encode($nombre) . "?= <" . $desde . ">\r\nReply-To: " . $desde . "\r\nDate: " . date('r') . "\r\nMessage-ID: <" . bin2hex(random_bytes(12)) . '@' . $dominio . ">\r\nX-Auto-Response-Suppress: All\r\nMIME-Version: 1.0";
+    $texto = trim(html_entity_decode(strip_tags(preg_replace('#</(p|div|tr|h\d)>#i', "\n", $html)), ENT_QUOTES, 'UTF-8'));
+    if ($csv !== null) {
+        $cab .= "\r\nContent-Type: multipart/mixed; boundary=\"$lim\"";
+        $alt = 'alt_' . bin2hex(random_bytes(6));
+        $cuerpo = "--$lim\r\nContent-Type: multipart/alternative; boundary=\"$alt\"\r\n\r\n"
+            . "--$alt\r\nContent-Type: text/plain; charset=UTF-8\r\nContent-Transfer-Encoding: base64\r\n\r\n" . chunk_split(base64_encode($texto))
+            . "--$alt\r\nContent-Type: text/html; charset=UTF-8\r\nContent-Transfer-Encoding: base64\r\n\r\n" . chunk_split(base64_encode($html)) . "--$alt--\r\n"
+            . "--$lim\r\nContent-Type: text/csv; charset=UTF-8; name=\"$nombreCsv\"\r\nContent-Disposition: attachment; filename=\"$nombreCsv\"\r\nContent-Transfer-Encoding: base64\r\n\r\n" . chunk_split(base64_encode($csv)) . "--$lim--\r\n";
+    } else {
+        $cab .= "\r\nContent-Type: multipart/alternative; boundary=\"$lim\"";
+        $cuerpo = "--$lim\r\nContent-Type: text/plain; charset=UTF-8\r\nContent-Transfer-Encoding: base64\r\n\r\n" . chunk_split(base64_encode($texto))
+            . "--$lim\r\nContent-Type: text/html; charset=UTF-8\r\nContent-Transfer-Encoding: base64\r\n\r\n" . chunk_split(base64_encode($html)) . "--$lim--\r\n";
+    }
+    return [$cab, $cuerpo];
+}
 function smtpLeer($f): string {
     $r = '';
     while (($l = fgets($f, 1024)) !== false) { $r .= $l; if (strlen($l) < 4 || $l[3] === ' ') break; }
@@ -207,42 +238,58 @@ function smtpCmd($f, string $cmd, array $esperados): string {
     if (!in_array((int)substr($r, 0, 3), $esperados, true)) throw new RuntimeException('Gmail respondió «' . trim(substr($r, 0, 200)) . '» a ' . (str_starts_with($cmd, 'AUTH') || $cmd === '' ? 'la conexión' : strtok($cmd, ' ')) . '.');
     return $r;
 }
-function enviarGmail(string $asunto, string $html, ?string $csv, string $nombreCsv): void {
+function enviarCorreo(string $asunto, string $html, ?string $csv, string $nombreCsv): void {
+    global $privado;
     $c = cfg();
-    $usuario = (string)($c['gmail_usuario'] ?? ''); $clave = str_replace(' ', '', (string)($c['gmail_clave_app'] ?? ''));
-    if ($usuario === '' || $clave === '' || str_contains($clave, 'PEGA_AQUI')) throw new RuntimeException('Faltan gmail_usuario y gmail_clave_app en config.php.');
-    $para = array_values(array_filter(array_map('trim', (array)($c['destinatarios'] ?? [$usuario]))));
-    if (!$para) $para = [$usuario];
-    $host = (string)($c['smtp_host'] ?? 'smtp.gmail.com'); $puerto = (int)($c['smtp_puerto'] ?? 465); $seguro = ($c['smtp_seguro'] ?? true) !== false;
-    $f = @stream_socket_client(($seguro ? 'ssl://' : 'tcp://') . $host . ':' . $puerto, $errno, $errstr, 30);
-    if (!$f) throw new RuntimeException('No se pudo conectar con ' . $host . ': ' . $errstr);
-    stream_set_timeout($f, 40);
-    try {
-        smtpCmd($f, '', [220]);
-        smtpCmd($f, 'EHLO respaldo.lexaraabogados.com', [250]);
-        smtpCmd($f, 'AUTH LOGIN', [334]); smtpCmd($f, base64_encode($usuario), [334]); smtpCmd($f, base64_encode($clave), [235]);
-        smtpCmd($f, 'MAIL FROM:<' . $usuario . '>', [250]);
-        foreach ($para as $p) smtpCmd($f, 'RCPT TO:<' . $p . '>', [250, 251]);
-        smtpCmd($f, 'DATA', [354]);
-        $lim = 'lexara_' . bin2hex(random_bytes(8));
-        $nombre = (string)($c['nombre_remitente'] ?? 'Respaldo Tutelas Lexara');
-        $m = "From: =?UTF-8?B?" . base64_encode($nombre) . "?= <" . $usuario . ">\r\nTo: " . implode(', ', $para) . "\r\nSubject: =?UTF-8?B?" . base64_encode($asunto) . "?=\r\nDate: " . date('r') . "\r\nMIME-Version: 1.0\r\n";
-        if ($csv !== null) {
-            $m .= "Content-Type: multipart/mixed; boundary=\"$lim\"\r\n\r\n--$lim\r\nContent-Type: text/html; charset=UTF-8\r\nContent-Transfer-Encoding: base64\r\n\r\n" . chunk_split(base64_encode($html)) . "\r\n";
-            $m .= "--$lim\r\nContent-Type: text/csv; charset=UTF-8; name=\"$nombreCsv\"\r\nContent-Disposition: attachment; filename=\"$nombreCsv\"\r\nContent-Transfer-Encoding: base64\r\n\r\n" . chunk_split(base64_encode($csv)) . "\r\n--$lim--\r\n";
-        } else {
-            $m .= "Content-Type: text/html; charset=UTF-8\r\nContent-Transfer-Encoding: base64\r\n\r\n" . chunk_split(base64_encode($html)) . "\r\n";
-        }
-        $m = preg_replace('/^\./m', '..', $m);   // «dot-stuffing»
-        fwrite($f, $m . "\r\n.\r\n");
-        smtpCmd($f, '', [250]);
-        smtpCmd($f, 'QUIT', [221]);
-    } finally { fclose($f); }
+    $modo = (string)($c['envio'] ?? 'servidor');
+    $nombre = (string)($c['nombre_remitente'] ?? 'Respaldo Tutelas Lexara');
+    $para = array_values(array_filter(array_map('trim', (array)($c['destinatarios'] ?? [])), fn($p) => filter_var($p, FILTER_VALIDATE_EMAIL)));
+    if (!$para) throw new RuntimeException('Falta destinatarios en config.php (los correos a los que llega el respaldo).');
+    $asuntoCod = '=?UTF-8?B?' . base64_encode($asunto) . '?=';
+
+    if ($modo === 'gmail') {
+        $usuario = (string)($c['gmail_usuario'] ?? ''); $clave = str_replace(' ', '', (string)($c['gmail_clave_app'] ?? ''));
+        if ($usuario === '' || $clave === '' || str_contains($clave, 'PEGA_AQUI')) throw new RuntimeException('Faltan gmail_usuario y gmail_clave_app en config.php.');
+        [$cab, $cuerpo] = armarMime($usuario, $nombre, $html, $csv, $nombreCsv);
+        $host = (string)($c['smtp_host'] ?? 'smtp.gmail.com'); $puerto = (int)($c['smtp_puerto'] ?? 465); $seguro = ($c['smtp_seguro'] ?? true) !== false;
+        $f = @stream_socket_client(($seguro ? 'ssl://' : 'tcp://') . $host . ':' . $puerto, $errno, $errstr, 30);
+        if (!$f) throw new RuntimeException('No se pudo conectar con ' . $host . ': ' . $errstr);
+        stream_set_timeout($f, 40);
+        try {
+            smtpCmd($f, '', [220]); smtpCmd($f, 'EHLO respaldo.lexaraabogados.com', [250]);
+            smtpCmd($f, 'AUTH LOGIN', [334]); smtpCmd($f, base64_encode($usuario), [334]); smtpCmd($f, base64_encode($clave), [235]);
+            smtpCmd($f, 'MAIL FROM:<' . $usuario . '>', [250]);
+            foreach ($para as $p) smtpCmd($f, 'RCPT TO:<' . $p . '>', [250, 251]);
+            smtpCmd($f, 'DATA', [354]);
+            $m = 'To: ' . implode(', ', $para) . "\r\nSubject: " . $asuntoCod . "\r\n" . $cab . "\r\n\r\n" . $cuerpo;
+            $m = preg_replace('/^\./m', '..', $m);   // «dot-stuffing»
+            fwrite($f, $m . "\r\n.\r\n");
+            smtpCmd($f, '', [250]); smtpCmd($f, 'QUIT', [221]);
+        } finally { fclose($f); }
+        return;
+    }
+
+    $desde = (string)($c['remitente'] ?? 'tutelas@lexaraabogados.com');
+    if (!filter_var($desde, FILTER_VALIDATE_EMAIL)) throw new RuntimeException('El remitente de config.php no es un correo válido.');
+    [$cab, $cuerpo] = armarMime($desde, $nombre, $html, $csv, $nombreCsv);
+    if ($modo === 'archivo') {
+        file_put_contents($privado . '/ultimo-correo.eml', 'To: ' . implode(', ', $para) . "\r\nSubject: " . $asuntoCod . "\r\n" . $cab . "\r\n\r\n" . $cuerpo);
+        return;
+    }
+    if (!function_exists('mail')) throw new RuntimeException('Este servidor no tiene la función mail() de PHP.');
+    // Se envía a cada destinatario por separado (así un correo mal escrito no frena a los demás). «-f» fija el remitente de sobre (el SPF se evalúa contra él).
+    $fallos = [];
+    foreach ($para as $p) {
+        $ok = @mail($p, $asuntoCod, $cuerpo, $cab, '-f' . $desde);
+        if (!$ok) $ok = @mail($p, $asuntoCod, $cuerpo, $cab);   // algunos servidores no permiten indicar el remitente de sobre
+        if (!$ok) $fallos[] = $p;
+    }
+    if ($fallos) throw new RuntimeException('El servidor no aceptó el correo para: ' . implode(', ', $fallos) . '.');
 }
 
 // ---------- programa principal ----------
 if (isset($opc['probar-correo'])) {
-    try { enviarGmail('Prueba del respaldo de Tutelas', '<p style="font-family:Arial;">Si lee este correo, la clave de Gmail del respaldo funciona. ' . e(date('d/m/Y H:i')) . '</p>', null, ''); registrar('Correo de prueba enviado.'); exit(0); }
+    try { enviarCorreo('Prueba del respaldo de Tutelas', '<p style="font-family:Arial;">Si lee este correo, el envío del respaldo de Tutelas funciona.' . e(date('d/m/Y H:i')) . '</p>', null, ''); registrar('Correo de prueba enviado.'); exit(0); }
     catch (Throwable $x) { terminar('No se pudo enviar el correo de prueba: ' . $x->getMessage()); }
 }
 try {
@@ -264,7 +311,7 @@ try {
         registrar('Guardado privado/ultimo-respaldo.html y .csv (' . count($filas) . ' tutelas pendientes). No se envió.');
         exit(0);
     }
-    enviarGmail($asunto, $html, $csv, $nombreCsv);
+    enviarCorreo($asunto, $html, $csv, $nombreCsv);
     registrar('Respaldo enviado (' . count($filas) . ' tutelas pendientes): ' . $asunto);
 } catch (Throwable $x) {
     terminar($x->getMessage());
