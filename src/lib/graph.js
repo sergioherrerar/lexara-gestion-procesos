@@ -3422,7 +3422,15 @@ export async function crearLinkCompartidoSoporte(driveId, itemId){
 // puede editar) — usado para "Link Carpeta" cuando se elige a mano una
 // carpeta en el explorador manual (ver ProcesoDrawer.jsx), mismo criterio
 // que ya usa generarLinksCarpetaProceso para la búsqueda automática.
+// 2026-11-23: «Link a la carpeta» ahora guarda la DIRECCIÓN DIRECTA de la carpeta en SharePoint (su webUrl) en vez de un enlace de compartir «organización/edición». Reporte real del usuario:
+// el enlace de compartir de la organización daba «No tienes permiso para acceder a este elemento» al abrirlo (mientras el de lectura para el cliente sí abría). La dirección directa la abre cualquier
+// persona del equipo con acceso al sitio, sin depender de con qué cuenta tenga iniciada la sesión el navegador. Si por algún motivo supera los 250 caracteres (la columna es de texto de 255),
+// se usa el enlace de compartir como antes. Ojo: la dirección directa depende del nombre de la carpeta; si la renombran hay que volver a pulsar «Actualizar todos los links».
 export async function crearLinkEdicionOrganizacion(driveId, itemId){
+  try{
+    const item = await graphFetch(`/drives/${driveId}/items/${itemId}?$select=webUrl`);
+    if(item && item.webUrl && item.webUrl.length <= 250) return item.webUrl;
+  }catch(err){ console.warn('No se pudo leer la dirección directa de la carpeta; se usa un enlace de compartir:', err); }
   const res = await graphFetch(`/drives/${driveId}/items/${itemId}/createLink`, {
     method: "POST",
     body: JSON.stringify({ type: "edit", scope: "organization" }),
@@ -3731,9 +3739,7 @@ export async function generarLinksCarpetaProceso(config, rutasEntidad, proceso){
   const encontrado = await buscarCarpetaDelProceso(config, rutasEntidad, proceso);
   if(encontrado.status !== 'ok') return encontrado;
   const [linkCarpeta, linkCliente] = await Promise.all([
-    graphFetch(`/drives/${encontrado.driveId}/items/${encontrado.itemId}/createLink`, {
-      method:"POST", body: JSON.stringify({ type:"edit", scope:"organization" }),
-    }).then(r => r.link.webUrl),
+    crearLinkEdicionOrganizacion(encontrado.driveId, encontrado.itemId),
     graphFetch(`/drives/${encontrado.driveId}/items/${encontrado.itemId}/createLink`, {
       method:"POST", body: JSON.stringify({ type:"view", scope:"anonymous" }),
     }).then(r => r.link.webUrl),

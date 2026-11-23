@@ -2,6 +2,11 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-11-23 (207)
+- **«Link a la carpeta» usa la dirección directa de la carpeta (el enlace de compartir de la organización daba «No tienes permiso»)** — reporte del usuario tras correr «Actualizar todos los links»: «Link cliente» abría perfecto pero «Link a la carpeta» mostraba «No se puede acceder a este sitio / No tienes permiso para acceder a este elemento» (la pantalla de detalles solo trae un código de correlación, sin la cuenta ni el motivo).
+  - **Cambio:** `crearLinkEdicionOrganizacion` (búsqueda automática, botón masivo y elegir carpeta a mano) ahora devuelve el `webUrl` de la carpeta en SharePoint; si supera 250 caracteres (la columna es de texto de 255) o falla, usa el enlace de compartir «organización/edición» como antes. «Link cliente» (lectura, anónimo) no cambia.
+  - **Para aplicarlo a todos:** después de publicar, presionar «Actualizar todos los links» (Procesos judiciales): reescribe el link de carpeta de cada proceso. **Ojo:** la dirección directa depende del nombre de la carpeta; si la renombran hay que volver a pulsar el botón (los enlaces de compartir sí sobrevivían a un cambio de nombre). Compila; sin probar contra el SharePoint real.
+
 ## 2026-11-23 (206)
 - **Informe de redes: «Estadísticas por publicación» (vistas, me gusta y comentarios de cada una)** — pedido del usuario («las estadísticas por publicación, como vistas de cada una, reacciones; pueden ser las últimas 10 con opción de poder mirar más»).
   - **Informes → Redes sociales:** tabla nueva con las últimas 10 publicaciones, de la más reciente a la más antigua, con Vistas, Me gusta y Comentarios (total y desglose por red) y botones «Ver 10 más», «Ver todas (17)» y «Ver solo las últimas 10». Al hacer clic en una fila se abre el detalle (copy y enlaces). Un guion largo significa que esa red no entrega el dato por publicación.
