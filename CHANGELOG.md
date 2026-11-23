@@ -2,6 +2,12 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-11-23 (206)
+- **Informe de redes: «Estadísticas por publicación» (vistas, me gusta y comentarios de cada una)** — pedido del usuario («las estadísticas por publicación, como vistas de cada una, reacciones; pueden ser las últimas 10 con opción de poder mirar más»).
+  - **Informes → Redes sociales:** tabla nueva con las últimas 10 publicaciones, de la más reciente a la más antigua, con Vistas, Me gusta y Comentarios (total y desglose por red) y botones «Ver 10 más», «Ver todas (17)» y «Ver solo las últimas 10». Al hacer clic en una fila se abre el detalle (copy y enlaces). Un guion largo significa que esa red no entrega el dato por publicación.
+  - **Datos leídos el 23-nov-2026 de las páginas públicas** (guardados en `redes-sociales.json`: `reacciones` por publicación y `estadisticas`): YouTube (vistas y me gusta de cada video; se actualizaron las vistas), Instagram (me gusta y comentarios que muestra cada reel) y TikTok (vistas del perfil; «impacto fiscal» ya va en 6.046). Se refrescan al pedir «actualiza redes».
+  - **Límites:** TikTok y Facebook no entregan me gusta ni comentarios por publicación sin sesión (TikTok no abre el detalle de cada video); Instagram y Facebook no entregan vistas por publicación; los reels de «monitorio laboral» y «ahorros de pensión» no tienen enlace guardado. El enlace de Instagram de la pieza del 16-nov abre en realidad el reel del Consejo de Estado (13-nov): parece mal asociado y por eso no se muestran sus me gusta. Probado en el portal local (modo demo).
+
 ## 2026-11-23 (205)
 - **Informe de redes: las notas de Bustral de las piezas objetadas se ven en cada publicación** — pedido del usuario (revisó el panel nuevo de Bustral «Objetados, en corrección» y pidió «una nota en cada publicación, así se vieran esas anotaciones de Bustral… que la nota ocupe toda la línea de la publicación»).
   - **Calendario (Informes → Redes sociales):** debajo de cada pieza objetada hay una fila que ocupa todo el ancho de la tabla con «Nota de Bustral: «…»» (el motivo que dejó quien la objetó); al hacer clic se abre el detalle, que también muestra «Motivo de la objeción». El texto de arriba de la tabla dice cuándo se leyeron las notas y cuántas piezas hay por aprobar. Las piezas aprobadas no traen nota (Bustral solo la guarda al objetar).

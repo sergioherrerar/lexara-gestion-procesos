@@ -146,3 +146,15 @@ export function nuevosDe(datos, red, s){
   return { valor: null, texto: 'Aún no se puede medir: el conteo de hoy queda guardado y el próximo mes se calcula solo.' };
 }
 export const REDES_ORDEN = ['facebook', 'instagram', 'tiktok', 'youtube', 'spotify', 'linkedin'];
+
+// Estadísticas por publicación (2026-11-23): de la más reciente a la más antigua, con vistas, me gusta y comentarios por red donde la red los entrega.
+export function estadisticasPorPublicacion(datos){
+  const suma = arr => arr.reduce((s, [, n]) => s + (Number(n) || 0), 0);
+  return (datos.publicadas || []).slice().sort((a, b) => String(b.fecha).localeCompare(String(a.fecha))).map(p => {
+    const vistas = Object.entries(p.vistas || {}).filter(([, n]) => n != null);
+    const reac = Object.entries(p.reacciones || {}).filter(([, r]) => r);
+    const meGusta = reac.filter(([, r]) => r.meGusta != null).map(([red, r]) => [red, r.meGusta]);
+    const comentarios = reac.filter(([, r]) => r.comentarios != null).map(([red, r]) => [red, r.comentarios]);
+    return { p, titulo: p.titulo, fecha: p.fecha, redes: p.redes || [], vistas, totalVistas: suma(vistas), meGusta, totalMeGusta: suma(meGusta), comentarios, totalComentarios: suma(comentarios) };
+  });
+}

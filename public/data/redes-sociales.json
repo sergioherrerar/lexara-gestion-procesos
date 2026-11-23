@@ -148,6 +148,11 @@
       },
       "urls": {
         "youtube": "https://www.youtube.com/watch?v=x9j_2YSZpZ8"
+      },
+      "reacciones": {
+        "youtube": {
+          "meGusta": 14
+        }
       }
     },
     {
@@ -167,6 +172,11 @@
       "urls": {
         "youtube": "https://www.youtube.com/watch?v=Ze41e6-Ty8c",
         "tiktok": "https://www.tiktok.com/@lexara.abogados/video/7681840204633640210"
+      },
+      "reacciones": {
+        "youtube": {
+          "meGusta": 0
+        }
       }
     },
     {
@@ -183,6 +193,11 @@
       },
       "urls": {
         "youtube": "https://www.youtube.com/watch?v=CRs3WXkOpAk"
+      },
+      "reacciones": {
+        "youtube": {
+          "meGusta": 0
+        }
       }
     },
     {
@@ -199,6 +214,11 @@
       },
       "urls": {
         "youtube": "https://www.youtube.com/watch?v=XQ-s31988RY"
+      },
+      "reacciones": {
+        "youtube": {
+          "meGusta": 0
+        }
       }
     },
     {
@@ -212,13 +232,22 @@
       "titulo": "Se radicó el Estatuto del Trabajo. Esto es lo que cambiaría",
       "copy": "Se radicó el Estatuto del Trabajo. Esto es lo que cambiaría:\n💰 Salario vital, no solo mínimo — calculado según costo de vida real, no solo inflación.\n🛡️ Más estabilidad laboral y garantías para organizarse sindicalmente.\n🤖 Si un algoritmo toma una decisión sobre tu trabajo, tienes derecho a saber cómo se tomó — y a pedir que una persona la revise.\nSigue en trámite en el Congreso. Te contamos qué sigue.",
       "vistas": {
-        "youtube": 3,
+        "youtube": 4,
         "tiktok": 198
       },
       "urls": {
         "instagram": "https://www.instagram.com/reel/Dd2bOkOgZA8/",
         "youtube": "https://www.youtube.com/watch?v=SoC74LPGTcA",
         "tiktok": "https://www.tiktok.com/@lexara.abogados/video/7690741025849068808"
+      },
+      "reacciones": {
+        "youtube": {
+          "meGusta": 0
+        },
+        "instagram": {
+          "meGusta": 8,
+          "comentarios": 0
+        }
       }
     },
     {
@@ -232,13 +261,22 @@
       "titulo": "Reforma pensional y régimen de transición",
       "copy": "La razón que exponen: la entidad requiere un año adicional para completar los ajustes tecnológicos, operativos, financieros e institucionales necesarios para implementar la nueva ley. Al 31 de agosto, Colpensiones había identificado 84 requerimientos pendientes. Además, Hacienda solicitó abrir un incidente de impacto fiscal: la reforma requeriría al menos $5 billones adicionales no incluidos en el Presupuesto 2027.\nLo importante: la reforma no ha sido aplazada; la fecha vigente sigue siendo el 1 de abril de 2027. ¿Está usted próximo a pensionarse? Escríbanos.",
       "vistas": {
-        "youtube": 460,
+        "youtube": 466,
         "tiktok": 224
       },
       "urls": {
         "instagram": "https://www.instagram.com/reel/DeAgdLpCgtj/",
         "youtube": "https://www.youtube.com/watch?v=Zp_mv9TR7GE",
         "tiktok": "https://www.tiktok.com/@lexara.abogados/video/7691673884281638162"
+      },
+      "reacciones": {
+        "youtube": {
+          "meGusta": 6
+        },
+        "instagram": {
+          "meGusta": 14,
+          "comentarios": 0
+        }
       }
     },
     {
@@ -256,6 +294,12 @@
       "urls": {
         "instagram": "https://www.instagram.com/reel/DeK_6zXOgq0/",
         "tiktok": "https://www.tiktok.com/@lexara.abogados/video/7693912747523771655"
+      },
+      "reacciones": {
+        "instagram": {
+          "meGusta": 9,
+          "comentarios": 0
+        }
       }
     },
     {
@@ -273,6 +317,12 @@
       "urls": {
         "instagram": "https://www.instagram.com/reel/Deb0G2KjQqR/",
         "tiktok": "https://www.tiktok.com/@lexara.abogados/video/7696129221265001735"
+      },
+      "reacciones": {
+        "instagram": {
+          "meGusta": 22,
+          "comentarios": 4
+        }
       }
     },
     {
@@ -290,6 +340,12 @@
       "urls": {
         "instagram": "https://www.instagram.com/reel/DekjnniAHZW/",
         "tiktok": "https://www.tiktok.com/@lexara.abogados/video/7697265736569523474"
+      },
+      "reacciones": {
+        "instagram": {
+          "meGusta": 8,
+          "comentarios": 0
+        }
       }
     },
     {
@@ -316,13 +372,22 @@
       "titulo": "¿Te pensionas con la ley vieja o con la nueva?",
       "copy": "¿Te pensionas con la ley vieja o con la nueva? 🤔\nLa reforma pensional trae cambios en muchas materias, y una de las más importantes es el régimen de transición: la regla que define si tu pensión se liquida con la Ley 100 o con la nueva ley. La clave está en tus semanas cotizadas al 1 de abril de 2027: mujeres, 750 semanas; hombres, 900 semanas.\nSi las acreditas, conservas los mismos requisitos de la Ley 100. Si no, tu pensión se rige por la reforma.",
       "vistas": {
-        "youtube": 38
+        "youtube": 39
       },
       "urls": {
         "instagram": "https://www.instagram.com/reel/DfCyyrcALVj/",
         "youtube": "https://www.youtube.com/watch?v=YOt2Be8619c"
       },
-      "nota": "En Bustral figura solo en YouTube; también salió en Instagram."
+      "nota": "En Bustral figura solo en YouTube; también salió en Instagram.",
+      "reacciones": {
+        "youtube": {
+          "meGusta": 1
+        },
+        "instagram": {
+          "meGusta": 9,
+          "comentarios": 0
+        }
+      }
     },
     {
       "fecha": "2026-10-29",
@@ -339,6 +404,12 @@
       "urls": {
         "instagram": "https://www.instagram.com/reel/DfGPrZDjQMR/",
         "tiktok": "https://www.tiktok.com/@lexara.abogados/video/7702244015663582482"
+      },
+      "reacciones": {
+        "instagram": {
+          "meGusta": 6,
+          "comentarios": 0
+        }
       }
     },
     {
@@ -356,6 +427,12 @@
       "urls": {
         "instagram": "https://www.instagram.com/reel/DfLp7hSmnW8/",
         "tiktok": "https://www.tiktok.com/@lexara.abogados/video/7703023636973636916"
+      },
+      "reacciones": {
+        "instagram": {
+          "meGusta": 10,
+          "comentarios": 0
+        }
       }
     },
     {
@@ -369,15 +446,24 @@
       "titulo": "Reforma pensional: ¿hay plata para arrancar?",
       "copy": "Reforma pensional: ¿hay plata para arrancar? 💰\nColpensiones le pidió al Ministerio de Hacienda certificar si existen los recursos para poner en marcha la reforma. Y ahí aparece una figura clave: el incidente de impacto fiscal (artículo 334 de la Constitución).\nLa Corte no puede cambiar el sentido de su decisión ni limitar derechos fundamentales por el factor económico; solo puede ajustar el cómo y el desde cuándo se cumple.\nEn otras palabras: el incidente de impacto fiscal no frena la reforma, pero sí puede mover sus tiempos.",
       "vistas": {
-        "youtube": 161,
-        "tiktok": 4135
+        "youtube": 171,
+        "tiktok": 6046
       },
       "urls": {
         "instagram": "https://www.instagram.com/reel/DfUjor7HEwd/",
         "youtube": "https://www.youtube.com/watch?v=EKT_Z2-R3kQ",
         "tiktok": "https://www.tiktok.com/@lexara.abogados/video/7704306579704745223"
       },
-      "hora": "8:23 a. m."
+      "hora": "8:23 a. m.",
+      "reacciones": {
+        "youtube": {
+          "meGusta": 10
+        },
+        "instagram": {
+          "meGusta": 14,
+          "comentarios": 0
+        }
+      }
     },
     {
       "fecha": "2026-11-12",
@@ -404,11 +490,16 @@
       "titulo": "Suspendido el decreto de negociación colectiva por sectores (Decreto 234 de 2026)",
       "copy": "El Consejo de Estado suspendió provisionalmente el Decreto 234 de 2026, que permitía negociar convenciones colectivas por grupo de empresas, rama o sector.\n\nMientras dure la suspensión no se aplica; las convenciones vigentes y las negociaciones bajo el CST siguen igual. Ojo: no es la decisión final, es una medida provisional.",
       "vistas": {
-        "youtube": 224
+        "youtube": 355
       },
       "urls": {
         "instagram": "https://www.instagram.com/reel/DfzvCisSAkr/",
         "youtube": "https://www.youtube.com/shorts/Yr9s-j433iI"
+      },
+      "reacciones": {
+        "youtube": {
+          "meGusta": 3
+        }
       }
     }
   ],
@@ -539,5 +630,9 @@
       "anotado": "2026-11-17",
       "texto": "Reel 5 (negociación colectiva, Decreto 234): publicado el 16-nov en Instagram (visto «hace 20 h» por el equipo) y en YouTube Shorts (224 vistas, leído en vivo), tres días antes de su fecha programada (19-nov). Se agregó a mano; falta la hora de publicación. La próxima lectura de Bustral lo confirma o corrige."
     }
-  ]
+  ],
+  "estadisticas": {
+    "leido": "2026-11-23",
+    "nota": "Vistas, me gusta y comentarios por publicación leídos de las páginas públicas: YouTube (vistas y me gusta), Instagram (me gusta y comentarios) y TikTok (vistas del perfil). Instagram y Facebook no entregan vistas por publicación; TikTok y Facebook no entregan me gusta por publicación sin sesión."
+  }
 }

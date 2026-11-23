@@ -1,5 +1,5 @@
 import { Fragment, useState, useEffect, useMemo } from 'react';
-import { MESES, RED_NOMBRE, ESTADO, BUSTRAL_CALENDARIO, REDES_ORDEN, mesDe, fechaLarga, fechaCorta, totalVistas, nuevosDe, calcularVistaMes, mesesDisponibles } from '../lib/redesSociales';
+import { MESES, RED_NOMBRE, ESTADO, BUSTRAL_CALENDARIO, REDES_ORDEN, mesDe, fechaLarga, fechaCorta, totalVistas, nuevosDe, calcularVistaMes, mesesDisponibles, estadisticasPorPublicacion } from '../lib/redesSociales';
 import { IconTextButton } from './IconButton';
 import { generarInformeRedesExcel, generarInformeRedesPDF, crearBorradorRevisionRedes } from '../lib/informeRedes';
 
@@ -42,6 +42,7 @@ export default function RedesSocialesInforme({ liveMode, notify, esAdministrador
   const [abierta, setAbierta] = useState(null);
   const [para, setPara] = useState('');
   const [accion, setAccion] = useState('');   // '' | 'excel' | 'pdf' | 'correo'
+  const [filasEstad, setFilasEstad] = useState(10);   // cuántas publicaciones muestra «Estadísticas por publicación»
 
   const [recargando, setRecargando] = useState(false);
   const [enVivo, setEnVivo] = useState(null);   // lo que hay publicado ahora en YouTube y Spotify (lectura abierta, sin Bustral)
@@ -107,6 +108,7 @@ export default function RedesSocialesInforme({ liveMode, notify, esAdministrador
 
   const [anio, mm] = mes.split('-').map(Number);
   const pct = vista.programadas ? Math.round(vista.cumplidas / vista.programadas * 100) : null;
+  const estad = estadisticasPorPublicacion(datos);
 
   function abrir(f){ setAbierta(f); }
 
@@ -218,6 +220,34 @@ export default function RedesSocialesInforme({ liveMode, notify, esAdministrador
       </div>
 
       <div className="redes-seccion">
+        <h3>Estadísticas por publicación</h3>
+        <p className="save-hint" style={{margin:'0 0 8px'}}>Vistas, me gusta y comentarios de cada publicación, de la más reciente a la más antigua. Haz clic en una fila para ver el copy y los enlaces. {datos.estadisticas && <>Leído el {fechaLarga(datos.estadisticas.leido)} de las páginas públicas de YouTube (vistas y me gusta), Instagram (me gusta y comentarios) y TikTok (vistas); se actualiza al pedir «actualiza redes».</>} Un guion largo (—) significa que esa red no entrega ese dato por publicación.</p>
+        <div className="table-wrap">
+          <table className="redes-tabla redes-tabla-estad">
+            <thead><tr><th>Publicación</th><th className="redes-num">Vistas</th><th className="redes-num">Me gusta</th><th className="redes-num">Comentarios</th></tr></thead>
+            <tbody>
+              {estad.slice(0, filasEstad).map(e => (
+                <tr key={e.fecha + e.titulo} className="redes-fila" tabIndex={0} onClick={() => abrir({ tipo: 'publicada', p: e.p, titulo: e.titulo, fecha: e.fecha })} onKeyDown={ev => { if(ev.key === 'Enter' || ev.key === ' '){ ev.preventDefault(); abrir({ tipo: 'publicada', p: e.p, titulo: e.titulo, fecha: e.fecha }); } }}>
+                  <td className="redes-titulo">{e.titulo}<small className="redes-sub">{fechaCorta(e.fecha)}{e.redes.length > 0 && ' · ' + e.redes.map(r => RED_NOMBRE[r] || r).join(' · ')}</small></td>
+                  <td className="redes-num"><CeldaEstad total={e.totalVistas} partes={e.vistas} /></td>
+                  <td className="redes-num"><CeldaEstad total={e.totalMeGusta} partes={e.meGusta} /></td>
+                  <td className="redes-num"><CeldaEstad total={e.totalComentarios} partes={e.comentarios} /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div className="redes-vermas">
+          <span className="redes-sin">Mostrando {Math.min(filasEstad, estad.length)} de {estad.length} publicaciones</span>
+          {filasEstad < estad.length && <>
+            <button type="button" className="btn-secondary" onClick={() => setFilasEstad(n => n + 10)}>Ver 10 más</button>
+            <button type="button" className="btn-secondary" onClick={() => setFilasEstad(estad.length)}>Ver todas ({estad.length})</button>
+          </>}
+          {filasEstad > 10 && <button type="button" className="btn-secondary" onClick={() => setFilasEstad(10)}>Ver solo las últimas 10</button>}
+        </div>
+      </div>
+
+      <div className="redes-seccion">
         <h3>Calendario de {MESES[mm - 1]} {anio}: lo programado frente a lo publicado</h3>
         <p className="save-hint" style={{margin:'0 0 8px'}}>Haz clic en una fila para ver el copy y el video. «Programada» es la fecha que tiene la pieza en el calendario de Bustral. Aprobar u objetar se hace en Bustral con tu sesión: el enlace abre su calendario.{datos.bustralPanel && <> Debajo del título de cada pieza objetada se ve la nota que dejó quien la objetó en Bustral (leída el {fechaLarga(datos.bustralPanel.leido)}; se actualiza al pedir «actualiza redes»). Por aprobar hoy: {datos.bustralPanel.porAprobar}.</>}</p>
         <div className="table-wrap">
@@ -300,6 +330,12 @@ export default function RedesSocialesInforme({ liveMode, notify, esAdministrador
       {abierta && <DetalleRedes f={abierta} onClose={() => setAbierta(null)} />}
     </div>
   );
+}
+
+// Una celda de «Estadísticas por publicación»: el total y, debajo, cuánto fue de cada red; un guion largo si ninguna red entregó el dato.
+function CeldaEstad({ total, partes }){
+  if(!partes.length) return <span className="redes-sin">—</span>;
+  return <><b>{fmt(total)}</b>{partes.length > 0 && <small className="redes-explica">{partes.map(([r, n]) => (RED_NOMBRE[r] || r) + ' ' + fmt(n)).join(' · ')}</small>}</>;
 }
 
 // Las dos fechas de una pieza: la que tiene en el calendario de Bustral (programada) y la del día en que quedó publicada.

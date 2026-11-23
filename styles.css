@@ -2168,6 +2168,10 @@
   .redes-envivo-red{font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--texto-suave);}
   .redes-envivo-meta{font-size:12px; color:var(--texto-suave); white-space:nowrap;}
   @media (max-width:600px){ .redes-envivo-lista li{grid-template-columns:1fr; gap:1px;} .redes-envivo-meta{white-space:normal;} }
+  .redes-sub{display:block; margin-top:2px; font-size:12px; font-weight:400; color:var(--texto-suave);}
+  .redes-tabla-estad td.redes-num b{font-size:15px; color:var(--verde-oscuro);}
+  .redes-tabla-estad td.redes-num small{display:block; margin-top:1px; white-space:normal; text-align:right;}
+  .redes-vermas{display:flex; flex-wrap:wrap; align-items:center; gap:8px 10px; margin-top:10px;}
   .redes-fila-con-nota td{border-bottom:none;}
   .redes-fila-nota{cursor:pointer;}
   .redes-fila-nota td{padding:0 12px 10px;}
