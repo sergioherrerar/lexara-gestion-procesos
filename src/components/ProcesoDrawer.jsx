@@ -515,7 +515,8 @@ export default function ProcesoDrawer({ pestanaInicial, onRamaVista, proceso, cl
         : type==='date' ? soloFechaISO(proceso[key])
         : (proceso[key] ?? "");
       const cambio = type==='money' ? actual !== original : String(actual) !== String(original ?? "");
-      if(cambio) payload[key] = type==='link' && actual ? { Url: actual, Description: actual } : actual;
+      // Los links son columnas de texto plano desde 2026-09-07: se guarda solo la URL. (Antes se mandaba {Url, Description} y quedaba «URL, URL» en SharePoint → el enlace daba 404.)
+      if(cambio) payload[key] = actual;
     }));
     if(payload.Estado !== undefined){
       // Al guardar se AGREGAN al final del Histórico las actuaciones del Estado anterior que

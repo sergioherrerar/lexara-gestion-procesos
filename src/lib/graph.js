@@ -2604,13 +2604,28 @@ export function coerceFieldValue(raw){
   return String(raw);
 }
 
+// Bug real 2026-11-23 (404 al abrir «Carpeta»): el formulario del proceso guardaba los links como «URL, URL» (la URL y su descripción iguales) aunque las columnas ya son de texto
+// plano. Al abrirlo, el navegador recibía las dos direcciones pegadas. Aquí se deja solo la primera, así se ven bien aunque SharePoint todavía tenga el valor doble.
+const RE_LINK_DOBLE = /^(https?:\/\/\S+?),\s*https?:\/\//i;
+export function limpiarLinkDoble(v){
+  if(typeof v !== 'string') return v;
+  const m = RE_LINK_DOBLE.exec(v.trim());
+  return m ? m[1] : v;
+}
+
 export function transformListItems(list){
   return (list.rawItems||[]).map(it => {
     // createdDateTime es metadato propio del ítem de SharePoint (cuándo se
     // creó el registro), no un campo de negocio — viene siempre en la
     // respuesta de Graph junto a "fields", nunca hay que mapearlo.
     const obj = { id: it.id, _graphId: it.id, createdDateTime: it.createdDateTime };
-    list.semanticFields.forEach(f => { if(list.mapping[f.key]) obj[f.key] = coerceFieldValue(it.fields[list.mapping[f.key]] ?? ""); });
+    list.semanticFields.forEach(f => {
+      if(!list.mapping[f.key]) return;
+      const valor = coerceFieldValue(it.fields[list.mapping[f.key]] ?? "");
+      const limpio = limpiarLinkDoble(valor);
+      if(limpio !== valor) obj._linkDoble = (obj._linkDoble || []).concat(f.key);   // para que «Actualizar todos los links» también lo corrija en SharePoint
+      obj[f.key] = limpio;
+    });
     return obj;
   });
 }
@@ -3500,14 +3515,27 @@ export async function resolverDriveIdPrincipal(config){
 // Lista las SUBCARPETAS (no archivos) de una carpeta, dada por su ruta
 // relativa a la raíz de la biblioteca — devuelve [] si la ruta no existe
 // todavía (ej. una Entidad sin ninguna carpeta creada, como "Umd" hoy).
+// 2026-11-23: (1) sigue las páginas de Graph (antes solo leía las primeras 200 carpetas: una Entidad con más carpetas dejaba procesos «sin coincidencia»); (2) memoria temporal
+// opcional para el botón «Actualizar todos los links», que busca la carpeta de ~170 procesos y no debe volver a listar la misma carpeta de Entidad cada vez.
+let cacheSubcarpetas = null;
+export function iniciarCacheCarpetas(){ cacheSubcarpetas = new Map(); }
+export function terminarCacheCarpetas(){ cacheSubcarpetas = null; }
 async function listarSubcarpetas(driveId, rutaRelativa){
+  const clave = driveId + '|' + rutaRelativa;
+  if(cacheSubcarpetas && cacheSubcarpetas.has(clave)) return cacheSubcarpetas.get(clave);
+  const carpetas = [];
   try{
-    const res = await graphFetch(`/drives/${driveId}/root:/${encodeURIComponent(rutaRelativa)}:/children?$select=id,name,folder&$top=200`);
-    return (res.value||[]).filter(it => it.folder);
+    let url = `/drives/${driveId}/root:/${encodeURIComponent(rutaRelativa)}:/children?$select=id,name,folder&$top=200`;
+    while(url){
+      const res = await graphFetch(url);
+      (res.value||[]).forEach(it => { if(it.folder) carpetas.push(it); });
+      url = res['@odata.nextLink'] || null;
+    }
   }catch(err){
-    if(/^Graph 404/.test(err.message||"")) return [];
-    throw err;
+    if(!/^Graph 404/.test(err.message||"")) throw err;   // ruta que todavía no existe: se devuelve lo que haya (nada)
   }
+  if(cacheSubcarpetas) cacheSubcarpetas.set(clave, carpetas);
+  return carpetas;
 }
 // Igual que listarSubcarpetas pero trae TAMBIÉN archivos — usado por el
 // explorador manual (ver "Buscar manualmente" en ProcesoDrawer.jsx): a

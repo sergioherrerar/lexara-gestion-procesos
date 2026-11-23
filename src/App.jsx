@@ -170,6 +170,7 @@ export default function App(){
             config={app.config}
             requestConfirm={app.requestConfirm}
             vincularLinksProcesosMasivo={app.vincularLinksProcesosMasivo}
+            actualizarLinksProcesosTodos={app.actualizarLinksProcesosTodos}
             audiencias={app.audiencias}
             terminos={app.terminos}
             guardarEstadoRapidoProceso={app.guardarEstadoRapidoProceso}

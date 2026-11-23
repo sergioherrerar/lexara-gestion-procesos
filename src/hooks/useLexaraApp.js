@@ -857,6 +857,60 @@ export function useLexaraApp(){
     return { actualizados, sinCoincidencia, fallidos };
   }
 
+  // Botón «Actualizar todos los links» — pedido del usuario 2026-11-23 (reorganizó las carpetas: ahora una carpeta junta varios procesos, p. ej. «2008-00536  2017-00687  2018-00200», y
+  // varios links quedaron rotos o dobles). A diferencia de vincularLinksProcesosMasivo (que solo llena los vacíos), este vuelve a buscar la carpeta de TODOS los procesos, también los
+  // que ya tienen link, y reescribe Link Carpeta / Link Cliente / Link Contrato cuando el resultado cambia. Si no hay coincidencia clara (sin carpeta o carpetas empatadas) NO toca el link que ya
+  // tenía; solo limpia los que estaban «URL, URL». createLink devuelve el mismo enlace si ya existía, así que repetir el botón no cambia nada que ya esté bien.
+  async function actualizarLinksProcesosTodos(onProgreso){
+    const lista = procesos.slice();
+    if(!lista.length){ notify?.("No hay procesos para actualizar.", 'info'); return null; }
+    setSaving(true);
+    Graph.iniciarCacheCarpetas();
+    const list = listByKey('procesos');
+    const siteIdReal = list.siteId || siteId;
+    const informe = { total: lista.length, actualizados: 0, sinCambio: 0, sinCoincidencia: [], ambiguos: [], sinDatos: [], fallidos: [] };
+    const cambiosPorId = new Map();
+    try{
+      for(let i = 0; i < lista.length; i++){
+        const p = lista[i];
+        onProgreso?.(i + 1, lista.length);
+        const nombre = p.Radicado || String(p.id);
+        try{
+          const updates = {};
+          const enc = await Graph.generarLinksCarpetaProceso(config, RUTAS_CARPETAS_ENTIDAD, p);
+          if(enc.status === 'ok'){
+            if(enc.linkCarpeta !== p.LinkCarpeta) updates.LinkCarpeta = enc.linkCarpeta;
+            if(enc.linkCliente !== p.LinkCliente) updates.LinkCliente = enc.linkCliente;
+            const rc = await Graph.generarLinkContratoProceso(config, RUTAS_CARPETAS_ENTIDAD, p);
+            if(rc.status === 'ok' && rc.link !== p.LinkContrato) updates.LinkContrato = rc.link;
+          }
+          else if(enc.status === 'ambiguo') informe.ambiguos.push(nombre + ' (' + (enc.candidatas || []).slice(0, 3).join(' / ') + ')');
+          else if(enc.status === 'sin-coincidencia') informe.sinCoincidencia.push(nombre);
+          else informe.sinDatos.push(nombre);
+          (p._linkDoble || []).forEach(k => { if(updates[k] === undefined && p[k]) updates[k] = p[k]; });
+          if(!Object.keys(updates).length){ informe.sinCambio++; continue; }
+          const graphBody = await Graph.graphFieldsFromUpdates(siteIdReal, list, updates);
+          await Graph.graphFetch(`/sites/${siteIdReal}/lists/${list.listId}/items/${p._graphId || p.id}/fields`, { method:"PATCH", body: JSON.stringify(graphBody) });
+          cambiosPorId.set(p.id, updates);
+          informe.actualizados++;
+        }catch(err){ console.error('Actualizar links falló para el proceso', nombre, err); informe.fallidos.push(nombre); }
+      }
+    } finally {
+      Graph.terminarCacheCarpetas();
+      setProcesos(prev => prev.map(p => cambiosPorId.has(p.id) ? { ...p, ...cambiosPorId.get(p.id), _linkDoble: undefined } : p));
+      setSaving(false);
+    }
+    const nombres = (arr) => arr.slice(0, 8).join(', ') + (arr.length > 8 ? `… (+${arr.length - 8})` : '');
+    const partes = [`${informe.actualizados} proceso(s) con links actualizados, ${informe.sinCambio} ya estaban bien`];
+    if(informe.sinCoincidencia.length) partes.push(`${informe.sinCoincidencia.length} sin carpeta encontrada (se dejaron igual): ${nombres(informe.sinCoincidencia)}`);
+    if(informe.ambiguos.length) partes.push(`${informe.ambiguos.length} con varias carpetas posibles (se dejaron igual): ${nombres(informe.ambiguos)}`);
+    if(informe.sinDatos.length) partes.push(`${informe.sinDatos.length} sin Entidad o sin número para buscar: ${nombres(informe.sinDatos)}`);
+    if(informe.fallidos.length) partes.push(`${informe.fallidos.length} fallaron (puede repetir el botón): ${nombres(informe.fallidos)}`);
+    console.log('[Lexara] Actualizar todos los links', informe);
+    notify?.(partes.join(' — ') + '.', (informe.fallidos.length || informe.sinCoincidencia.length || informe.ambiguos.length) ? 'info' : 'success');
+    return informe;
+  }
+
   function openCliente(id){ setDraftCliente(null); setActiveClienteId(id); }
   function closeClienteDrawer(){ setDraftCliente(null); setActiveClienteId(null); }
   // Pedido explícito del usuario 2026-10-05: "no tengo cómo agregar un cliente
@@ -2213,7 +2267,7 @@ export function useLexaraApp(){
     crearEventoCalendarioPersonalizado, listarOtrosEventosDelMes,
     currentFilter, setFilter: setCurrentFilter, searchQuery, setSearchQuery: setSearchQuery,
     onSearch: setSearchQuery,
-    activeProceso, openProceso, newProceso, closeDrawer, saveProceso, procesoViewOnly, rememberReturnToProceso, vincularLinksProcesosMasivo, guardarEstadoRapidoProceso,
+    activeProceso, openProceso, newProceso, closeDrawer, saveProceso, procesoViewOnly, rememberReturnToProceso, vincularLinksProcesosMasivo, actualizarLinksProcesosTodos, guardarEstadoRapidoProceso,
     activeCliente, openCliente, closeClienteDrawer, saveCliente, deleteCliente, createCliente, updateCliente, newCliente,
     correoDocumento, cerrarCorreoDocumento: () => setCorreoDocumento(null),
     activeFactura, openFactura, newFactura, duplicateFactura, abrirBorradorFactura, closeFacturaDrawer, saveFactura,

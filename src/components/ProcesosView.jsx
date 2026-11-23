@@ -43,7 +43,7 @@ const COLUMNS = [
   {key:'acciones', label:'Acciones', filterable:false},
 ];
 
-export default function ProcesosView({ procesos, currentFilter, setFilter, searchQuery, onOpenProceso, onCreateProceso, canWrite = true, liveMode, notify, config, requestConfirm, vincularLinksProcesosMasivo, audiencias, terminos, guardarEstadoRapidoProceso }){
+export default function ProcesosView({ procesos, currentFilter, setFilter, searchQuery, onOpenProceso, onCreateProceso, canWrite = true, liveMode, notify, config, requestConfirm, vincularLinksProcesosMasivo, actualizarLinksProcesosTodos, audiencias, terminos, guardarEstadoRapidoProceso }){
   const [showTerminados, setShowTerminados] = useState(false);
   // "Edición rápida" de Estado/Fecha Estado (2026-10-01, pedido explícito
   // del usuario: "un editar que sea de rápido acceso... que no nos lleve a
@@ -80,6 +80,13 @@ export default function ProcesosView({ procesos, currentFilter, setFilter, searc
     setVinculandoLinks(true);
     try{ await vincularLinksProcesosMasivo?.(); }
     finally{ setVinculandoLinks(false); }
+  }
+  // «Actualizar todos los links» (2026-11-23): vuelve a buscar la carpeta de TODOS los procesos (también los que ya tienen link) tras renombrar/unir carpetas. Ver actualizarLinksProcesosTodos.
+  const [progresoLinks, setProgresoLinks] = useState(null);   // {n, total} mientras corre
+  async function handleActualizarTodosLinks(){
+    setProgresoLinks({ n: 0, total: procesos.length });
+    try{ await actualizarLinksProcesosTodos?.((n, total) => setProgresoLinks({ n, total })); }
+    finally{ setProgresoLinks(null); }
   }
   const { filters, setFilter: setColFilter, clearFilters, rowMatches, hasActiveFilters } = useColumnFilters();
   const { sort, setSortKey, sortRows } = useColumnSort();
@@ -193,6 +200,20 @@ export default function ProcesosView({ procesos, currentFilter, setFilter, searc
               solo dejelo un boton pequeño sin el mensaje... junto a Ver
               terminados") — el conteo y la explicación completa quedan en el
               tooltip y en el diálogo de confirmación, no siempre visibles. */}
+          {canWrite && (
+            <button
+              type="button"
+              className="filter-chip filter-chip-vincular"
+              disabled={vinculandoLinks || !!progresoLinks}
+              title="Vuelve a buscar la carpeta de TODOS los procesos (también los que ya tienen link) y actualiza Link Carpeta, Link Cliente y Link Contrato si cambiaron. Úselo después de renombrar o unir carpetas."
+              onClick={() => requestConfirm(
+                `¿Buscar de nuevo la carpeta de los ${procesos.length} procesos y actualizar sus links (Carpeta/Cliente/Contrato), también los que ya tienen? Si una carpeta no se encuentra o hay varias posibles, ese proceso se deja igual. Tarda unos minutos; no cierre la página. Actualiza SharePoint de una vez.`,
+                handleActualizarTodosLinks
+              )}
+            >
+              {progresoLinks ? `Actualizando ${progresoLinks.n}/${progresoLinks.total}…` : "Actualizar todos los links"}
+            </button>
+          )}
           {canWrite && procesosSinLinks > 0 && (
             <button
               type="button"
