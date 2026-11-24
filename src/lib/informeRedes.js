@@ -155,7 +155,7 @@ export function construirCorreoRevisionRedes(datos, mes, { fecha = new Date(), s
   const filasHtml = filas.map(x => `<tr>
     <td style="${TD} white-space:nowrap;">${x.programada ? dma(x.programada) : 'Sin programar'}</td>
     <td style="${TD} font-weight:600;">${esc(x.titulo)}</td>
-    <td style="${TD}">${esc(x.estado)}${x.objetadoEl ? `<br><span style="color:#a3281c;">Objetado el ${dma(x.objetadoEl)}</span>` : ''}${x.aprobadoEl ? `<br><span style="color:#14753f;">Aprobado el ${dma(x.aprobadoEl)}</span>` : ''}${x.nota ? `<br><span style="color:#a3281c;font-style:italic;">Nota de Bustral: «${esc(x.nota)}»</span>` : ''}</td>
+    <td style="${TD}">${esc(x.estado)}${x.objetadoEl ? `<br><span style="color:#a3281c;">Objetado el ${dma(x.objetadoEl)}</span>` : ''}${x.aprobadoEl ? `<br><span style="color:#14753f;">Aprobado el ${dma(x.aprobadoEl)}</span>` : ''}${x.nota ? `<br><span style="color:#5c6b68;font-style:italic;">Nota de Bustral: «${esc(x.nota)}»</span>` : ''}</td>
     <td style="${TD}">${x.publicadaEl ? `${dma(x.publicadaEl)}${x.hora ? ' · ' + esc(x.hora) : ''}<br><span style="color:#5c6b68; font-size:12px;">${esc(x.redes.join(' · '))}</span>` : '<span style="color:#a3281c;">Aún no se ha publicado</span>'}</td>
     <td style="${TD} color:${color(x.claseCumplimiento)}; font-weight:600;">${esc(x.cumplimiento)}</td>
   </tr>`).join('');

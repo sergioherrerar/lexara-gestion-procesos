@@ -2199,9 +2199,9 @@
   .redes-tabla-cal .redes-fila.redes-g:hover > td{background:var(--gris-claro);}
   .redes-tabla-cal .redes-g-sep td{height:14px; padding:0; border:none; background:transparent;}
   .redes-tabla-cal tr:last-child.redes-g-sep{display:none;}
-  .redes-nota-bustral{display:block; padding:7px 10px; border-radius:6px; background:#fdf1ef; border:1px solid #f0c8c3; color:#8c2a1f; font-size:12px; font-weight:400; font-style:italic; line-height:1.35; overflow-wrap:anywhere;}
+  .redes-nota-bustral{display:block; padding:7px 10px; border-radius:6px; background:transparent; border:1px solid var(--gris-linea,#d9e2e0); color:inherit; font-size:12px; font-weight:400; font-style:italic; line-height:1.35; overflow-wrap:anywhere;}
   .redes-nota-bustral b{font-style:normal; font-weight:700;}
-  .redes-motivo{margin:8px 0 0; padding:8px 10px; border-radius:8px; background:#fdf1ef; border:1px solid #f0c8c3; font-size:13px;}
+  .redes-motivo{margin:8px 0 0; padding:8px 10px; border-radius:8px; background:transparent; border:1px solid var(--gris-linea,#d9e2e0); font-size:13px;}
   .redes-leido-viejo{color:#8a4b0a; background:#fdece0; border-radius:8px; padding:5px 10px; font-weight:600;}
   .redes-kpis{display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:12px;}
   .redes-kpi{background:#fff; border:1px solid var(--gris-linea); border-top:3px solid var(--verde-oscuro); border-radius:var(--radius); box-shadow:var(--shadow); padding:14px 16px; display:flex; flex-direction:column; gap:4px; min-width:0;}

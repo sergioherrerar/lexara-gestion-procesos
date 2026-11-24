@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-11-23 (210)
+- **Informe de redes: las notas de Bustral sin color** — pedido del usuario («quítale el color a las notas de Bustral, no me gustan»). La nota del calendario y el «Motivo de la objeción» del detalle pasan a texto normal con borde gris suave (sin fondo rosado ni texto rojo); en el borrador de correo del informe la nota pasa de rojo a gris. La franja de color de cada tarjeta (estado de aprobación) no cambia.
+
 ## 2026-11-23 (209)
 - **Informe de redes: «Estadísticas por publicación» al final de la hoja (todas, con ordenar y filtrar, sin nota) y publicaciones del calendario como tarjetas** — pedido del usuario («mejor dejarlas de últimas en la hoja, que se puedan mostrar todas, ordenar, filtrar, sin la anotación de Bustral»; «un separador de publicación para identificarlas más fácil, como en 3D, que se vean ordenadas»).
   - **Tabla al final de Informes → Redes sociales:** muestra las 17 publicaciones (sin «Ver más») con Publicación, Fecha, Redes, Vistas, Me gusta y Comentarios; cada encabezado tiene el menú de las demás tablas del portal (A→Z / Z→A, filtro por texto y por lista de valores), «N de 17 publicaciones» y «Limpiar filtros de columna». Ya no lleva la nota de Bustral (esa se ve solo en el calendario, junto con las estadísticas de cada pieza ya publicada).
