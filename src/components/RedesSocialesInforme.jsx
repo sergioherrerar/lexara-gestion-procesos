@@ -104,17 +104,45 @@ export default function RedesSocialesInforme({ liveMode, notify, esAdministrador
     return () => window.removeEventListener('keydown', onKey);
   }, [abierta]);
 
+  // Lista de meses SIN huecos: desde el primero con datos hasta el último con datos, y como mínimo hasta dos meses después de hoy (así el mes que viene siempre se puede elegir, aunque aún no haya lectura).
   const meses = useMemo(() => {
     if(!datos) return [];
     const s = new Set();
     datos.publicadas.forEach(p => s.add(mesDe(p.fecha)));
     datos.programadas.forEach(p => s.add(mesDe(p.fecha)));
-    return [...s].sort();
+    const base = [...s].sort();
+    if(!base.length) return [];
+    const hoy = new Date();
+    const mesHoy = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}`;
+    const [ya, ym] = mesHoy.split('-').map(Number);
+    const fin = new Date(ya, ym - 1 + 2, 1);
+    const topeHoy = `${fin.getFullYear()}-${String(fin.getMonth() + 1).padStart(2, '0')}`;
+    const ultimo = base[base.length - 1] > topeHoy ? base[base.length - 1] : topeHoy;
+    const salida = [];
+    let [a, m] = base[0].split('-').map(Number);
+    for(let guardia = 0; guardia < 120; guardia++){
+      const clave = `${a}-${String(m).padStart(2, '0')}`;
+      salida.push(clave);
+      if(clave >= ultimo) break;
+      m += 1; if(m > 12){ m = 1; a += 1; }
+    }
+    return salida;
   }, [datos]);
 
+  // Mes que se abre al entrar: el mes de hoy si está en la lista; si no, el último con datos.
   useEffect(() => {
-    if(datos && !mes && meses.length) setMes(meses[meses.length - 1]);
+    if(datos && !mes && meses.length){
+      const hoy = new Date();
+      const mesHoy = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}`;
+      setMes(meses.includes(mesHoy) ? mesHoy : meses[meses.length - 1]);
+    }
   }, [datos, meses, mes]);
+
+  // Al cambiar de mes se vuelve a leer el archivo de datos y se pinta de nuevo lo de ese mes (así se ve siempre lo último publicado).
+  function cambiarMes(nuevo){
+    setMes(nuevo);
+    cargar().then(j => setDatos(j)).catch(() => { /* si falla, se sigue con lo que ya estaba cargado */ });
+  }
 
   const vista = useMemo(() => (datos && mes ? calcularVistaMes(datos, mes) : null), [datos, mes]);
 
@@ -152,7 +180,7 @@ export default function RedesSocialesInforme({ liveMode, notify, esAdministrador
       <div className="redes-barra">
         <label className="redes-mes">
           <span>Mes</span>
-          <select value={mes} onChange={e => setMes(e.target.value)}>
+          <select value={mes} onChange={e => cambiarMes(e.target.value)}>
             {meses.map(m => {
               const [a, n] = m.split('-').map(Number);
               return <option key={m} value={m}>{MESES[n - 1][0].toUpperCase() + MESES[n - 1].slice(1)} {a}</option>;
@@ -160,11 +188,23 @@ export default function RedesSocialesInforme({ liveMode, notify, esAdministrador
           </select>
         </label>
         {(() => {
-          // Los datos son una lectura manual de Bustral: si tienen días, los estados (programada / publicada) pueden estar desactualizados.
-          const dias = Math.floor((Date.now() - new Date(datos.leido + 'T12:00:00').getTime()) / 86400000);
-          return dias >= 1
-            ? <span className="redes-leido redes-leido-viejo" role="status">Datos leídos de Bustral el {fechaLarga(datos.leido)} (hace {dias} {dias === 1 ? 'día' : 'días'}): los estados pueden haber cambiado.{esAdministrador ? ' Pida «actualiza redes» para refrescarlos.' : ' El Administrador los actualiza desde Bustral.'}</span>
-            : <span className="redes-leido">Datos leídos de Bustral el {fechaLarga(datos.leido)}</span>;
+          // Aviso de qué tan viejos están los datos de Bustral. El botón «Actualizar redes» NO lee Bustral (pide sesión): recarga lo guardado y lee YouTube y Spotify en vivo; la lectura de Bustral
+          // la hace Claude cuando se lo piden en el chat («actualiza redes»). El texto lo dice con esas palabras para no confundirlo con el botón.
+          const diasDesde = f => Math.floor((Date.now() - new Date(f + 'T12:00:00').getTime()) / 86400000);
+          const plural = n => (n === 1 ? 'día' : 'días');
+          const calendarioLeido = datos.bustralPanel?.calendarioLeido || datos.leido;
+          const diasCal = diasDesde(calendarioLeido);
+          const diasMet = diasDesde(datos.leido);
+          if(diasCal < 1 && diasMet < 1) return <span className="redes-leido">Datos leídos de Bustral el {fechaLarga(calendarioLeido)}</span>;
+          return (
+            <span className="redes-leido redes-leido-viejo" role="status">
+              Calendario y notas de Bustral leídos el {fechaLarga(calendarioLeido)}{diasCal >= 1 ? ` (hace ${diasCal} ${plural(diasCal)})` : ''}
+              {calendarioLeido !== datos.leido && <>; seguidores y métricas, el {fechaLarga(datos.leido)} (hace {diasMet} {plural(diasMet)})</>}. Los estados pueden haber cambiado.
+              {esAdministrador
+                ? ' El botón «Actualizar redes» solo recarga lo guardado y lee YouTube y Spotify en vivo; para volver a leer Bustral, escríbele a Claude en el chat: «actualiza redes».'
+                : ' El Administrador los actualiza desde Bustral.'}
+            </span>
+          );
         })()}
       </div>
 
@@ -243,7 +283,7 @@ export default function RedesSocialesInforme({ liveMode, notify, esAdministrador
           <table className="redes-tabla redes-tabla-cal">
             <thead><tr><th>Pieza</th><th>Aprobación</th><th>Cumplimiento</th><th>Programada (Bustral)</th><th>Publicada</th><th>Aprobar u objetar</th></tr></thead>
             <tbody>
-              {vista.filas.length === 0 && <tr><td colSpan={6} className="redes-vacio">No hay publicaciones ni programación en este mes.</td></tr>}
+              {vista.filas.length === 0 && <tr><td colSpan={6} className="redes-vacio">No hay publicaciones ni programación de este mes en la última lectura de Bustral. Cuando haya, se pide «actualiza redes» y aparecen aquí.</td></tr>}
               {vista.filas.map(f => {
                 const est = f.tipo === 'programada' ? ESTADO[f.g.estado] : null;
                 const redes = f.tipo === 'publicada'

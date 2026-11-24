@@ -507,7 +507,9 @@
     "leido": "2026-11-23",
     "porAprobar": 0,
     "conError": 0,
-    "nota": "Leído del panel de Redes Sociales de Bustral (tareas pendientes): Por aprobar 0, Objetados en corrección 5, Con error 0. Bustral se cierra solo: lo que está por aprobar y no se decide en 2 días se aprueba automáticamente."
+    "nota": "Leído del panel de Redes Sociales de Bustral (tareas pendientes): Por aprobar 0, Objetados en corrección 5, Con error 0. Bustral se cierra solo: lo que está por aprobar y no se decide en 2 días se aprueba automáticamente.",
+    "calendarioLeido": "2026-11-23",
+    "notaCalendario": "Calendario de noviembre y diciembre releído de Bustral el 23-nov-2026 (los estados coinciden); diciembre trae 12 publicaciones con guion aprobado, aún por grabar."
   },
   "programadas": [
     {
@@ -607,6 +609,114 @@
       "destino": "Instagram",
       "tieneVideo": true,
       "copy": "Material grabado: carpeta 07_TE SANCIONAN MEJORA CALIDAD (Drive Lexara).\nGancho (0:00–0:07): «Empresario: si el inspector de trabajo encuentra un incumplimiento en tu empresa, ¿te sanciona de una vez? Desde octubre, no necesariamente.»\n[0:07–0:30] «El Ministerio de Trabajo expidió la Circular 110 de 2026. No crea nuevas obligaciones ni multas: unifica cómo los inspectores usan una facultad que ya tenían, la de advertir y aconsejar antes de iniciar un proceso sancionatorio…»"
+    },
+    {
+      "fecha": "2026-12-01",
+      "titulo": "Contratar gente para diciembre: el contrato a término fijo, paso a paso",
+      "tipo": "publicacion",
+      "estado": "guion_aprobado",
+      "destino": "Otro",
+      "tieneVideo": false,
+      "copy": "Guion aprobado en Bustral, por grabar. Esta lectura del calendario solo trae el título y la fecha; el guion completo está en Bustral."
+    },
+    {
+      "fecha": "2026-12-04",
+      "titulo": "Corto podcast 1 diciembre",
+      "tipo": "podcast",
+      "estado": "guion_aprobado",
+      "destino": "Otro",
+      "tieneVideo": false,
+      "copy": "Guion aprobado en Bustral, por grabar. Esta lectura del calendario solo trae el título y la fecha; el guion completo está en Bustral."
+    },
+    {
+      "fecha": "2026-12-07",
+      "titulo": "Vacaciones colectivas: cómo cerrar tu negocio en diciembre sin enredarte",
+      "tipo": "publicacion",
+      "estado": "guion_aprobado",
+      "destino": "Otro",
+      "tieneVideo": false,
+      "copy": "Guion aprobado en Bustral, por grabar. Esta lectura del calendario solo trae el título y la fecha; el guion completo está en Bustral."
+    },
+    {
+      "fecha": "2026-12-10",
+      "titulo": "Dotación: ¿puedes darle plata a tu trabajador en vez de la dotación?",
+      "tipo": "publicacion",
+      "estado": "guion_aprobado",
+      "destino": "Otro",
+      "tieneVideo": false,
+      "copy": "Guion aprobado en Bustral, por grabar. Esta lectura del calendario solo trae el título y la fecha; el guion completo está en Bustral."
+    },
+    {
+      "fecha": "2026-12-11",
+      "titulo": "Café Laboral",
+      "tipo": "podcast",
+      "estado": "guion_aprobado",
+      "destino": "Otro",
+      "tieneVideo": false,
+      "copy": "Guion aprobado en Bustral, por grabar. Esta lectura del calendario solo trae el título y la fecha; el guion completo está en Bustral."
+    },
+    {
+      "fecha": "2026-12-14",
+      "titulo": "Salario mínimo 2027: quién propone qué, qué pasa si no hay acuerdo y mi pronóstico",
+      "tipo": "publicacion",
+      "estado": "guion_aprobado",
+      "destino": "Otro",
+      "tieneVideo": false,
+      "copy": "Guion aprobado en Bustral, por grabar. Esta lectura del calendario solo trae el título y la fecha; el guion completo está en Bustral."
+    },
+    {
+      "fecha": "2026-12-17",
+      "titulo": "Prima de servicios: el 20 de diciembre es domingo",
+      "tipo": "publicacion",
+      "estado": "guion_aprobado",
+      "destino": "Otro",
+      "tieneVideo": false,
+      "copy": "Guion aprobado en Bustral, por grabar. Esta lectura del calendario solo trae el título y la fecha; el guion completo está en Bustral."
+    },
+    {
+      "fecha": "2026-12-18",
+      "titulo": "Corto podcast 2 diciembre",
+      "tipo": "podcast",
+      "estado": "guion_aprobado",
+      "destino": "Otro",
+      "tieneVideo": false,
+      "copy": "Guion aprobado en Bustral, por grabar. Esta lectura del calendario solo trae el título y la fecha; el guion completo está en Bustral."
+    },
+    {
+      "fecha": "2026-12-22",
+      "titulo": "Bono de Navidad: cómo dárselo a tu equipo sin llevarte sorpresas",
+      "tipo": "publicacion",
+      "estado": "guion_aprobado",
+      "destino": "Otro",
+      "tieneVideo": false,
+      "copy": "Guion aprobado en Bustral, por grabar. Esta lectura del calendario solo trae el título y la fecha; el guion completo está en Bustral."
+    },
+    {
+      "fecha": "2026-12-24",
+      "titulo": "Feliz navidad",
+      "tipo": "publicacion",
+      "estado": "guion_aprobado",
+      "destino": "Otro",
+      "tieneVideo": false,
+      "copy": "Guion aprobado en Bustral, por grabar. Esta lectura del calendario solo trae el título y la fecha; el guion completo está en Bustral."
+    },
+    {
+      "fecha": "2026-12-25",
+      "titulo": "Café Laboral",
+      "tipo": "podcast",
+      "estado": "guion_aprobado",
+      "destino": "Otro",
+      "tieneVideo": false,
+      "copy": "Guion aprobado en Bustral, por grabar. Esta lectura del calendario solo trae el título y la fecha; el guion completo está en Bustral."
+    },
+    {
+      "fecha": "2026-12-31",
+      "titulo": "Feliz año nuevo",
+      "tipo": "publicacion",
+      "estado": "guion_aprobado",
+      "destino": "Otro",
+      "tieneVideo": false,
+      "copy": "Guion aprobado en Bustral, por grabar. Esta lectura del calendario solo trae el título y la fecha; el guion completo está en Bustral."
     }
   ],
   "historialSeguidores": [
