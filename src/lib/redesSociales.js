@@ -155,8 +155,6 @@ export function estadisticasPorPublicacion(datos){
     const reac = Object.entries(p.reacciones || {}).filter(([, r]) => r);
     const meGusta = reac.filter(([, r]) => r.meGusta != null).map(([red, r]) => [red, r.meGusta]);
     const comentarios = reac.filter(([, r]) => r.comentarios != null).map(([red, r]) => [red, r.comentarios]);
-    // La nota de Bustral de la pieza programada que salió publicada ese día (si fue objetada), para verla también en esta tabla.
-    const prog = (datos.programadas || []).find(g => g.publicadaComo === p.fecha && g.objecion);
-    return { p, nota: prog ? prog.objecion : null, titulo: p.titulo, fecha: p.fecha, redes: p.redes || [], vistas, totalVistas: suma(vistas), meGusta, totalMeGusta: suma(meGusta), comentarios, totalComentarios: suma(comentarios) };
+    return { p, titulo: p.titulo, fecha: p.fecha, redes: p.redes || [], vistas, totalVistas: suma(vistas), meGusta, totalMeGusta: suma(meGusta), comentarios, totalComentarios: suma(comentarios) };
   });
 }

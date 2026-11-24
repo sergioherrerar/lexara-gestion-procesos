@@ -2,6 +2,11 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-11-23 (209)
+- **Informe de redes: «Estadísticas por publicación» al final de la hoja (todas, con ordenar y filtrar, sin nota) y publicaciones del calendario como tarjetas** — pedido del usuario («mejor dejarlas de últimas en la hoja, que se puedan mostrar todas, ordenar, filtrar, sin la anotación de Bustral»; «un separador de publicación para identificarlas más fácil, como en 3D, que se vean ordenadas»).
+  - **Tabla al final de Informes → Redes sociales:** muestra las 17 publicaciones (sin «Ver más») con Publicación, Fecha, Redes, Vistas, Me gusta y Comentarios; cada encabezado tiene el menú de las demás tablas del portal (A→Z / Z→A, filtro por texto y por lista de valores), «N de 17 publicaciones» y «Limpiar filtros de columna». Ya no lleva la nota de Bustral (esa se ve solo en el calendario, junto con las estadísticas de cada pieza ya publicada).
+  - **Calendario:** cada publicación (fila + nota + estadísticas) se ve como una tarjeta con borde, esquinas redondeadas, relieve (sombra y base más gruesa) y separación entre tarjetas; la franja de la izquierda cambia de color según el estado (verde aprobado, rojo objetado, naranja por aprobar, gris sin programar). Probado en el portal local (modo demo): 9 tarjetas, orden por Vistas y filtro por red.
+
 ## 2026-11-23 (208)
 - **Informe de redes: estadísticas debajo de cada publicación del calendario, y la nota de Bustral también en «Estadísticas por publicación»** — pedido del usuario («esta parte [la nota] igual déjala debajo de cada publicación»; «debajo de la nota coloca su estadística; si no ha sido publicada aún no mostrará nada»).
   - **Calendario (Informes → Redes sociales):** debajo de cada pieza ya publicada, y debajo de su nota si la tiene, hay una línea con Vistas, Me gusta y Comentarios (total y desglose por red). Si la pieza aún no se ha publicado no se muestra nada; si ya salió pero no hay datos leídos dice «Aún no hay estadísticas leídas de esta publicación». Las piezas programadas que ya salieron sin fila en publicadas (podcasts) usan las vistas guardadas en la programación.

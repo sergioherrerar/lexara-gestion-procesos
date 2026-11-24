@@ -1,6 +1,9 @@
 import { Fragment, useState, useEffect, useMemo } from 'react';
 import { MESES, RED_NOMBRE, ESTADO, BUSTRAL_CALENDARIO, REDES_ORDEN, mesDe, fechaLarga, fechaCorta, totalVistas, nuevosDe, calcularVistaMes, mesesDisponibles, estadisticasPorPublicacion } from '../lib/redesSociales';
 import { IconTextButton } from './IconButton';
+import ColumnHeaderMenu from './ColumnHeaderMenu';
+import { useColumnFilters } from '../hooks/useColumnFilters';
+import { useColumnSort } from '../hooks/useColumnSort';
 import { generarInformeRedesExcel, generarInformeRedesPDF, crearBorradorRevisionRedes } from '../lib/informeRedes';
 
 // Informe de redes sociales (2026-11-12). Los datos salen de Bustral (la
@@ -31,6 +34,15 @@ const GLOSARIO = {
   'youtube|Me gusta': 'Veces que le dieron «me gusta» a tus videos.',
 };
 const fmt = n => (n == null ? '—' : Number(n).toLocaleString('es-CO'));
+// Columnas de «Estadísticas por publicación» (al final de la hoja): se pueden ordenar y filtrar desde el menú de cada encabezado, como en las demás tablas del portal.
+const COLUMNAS_ESTAD = [
+  { key: 'titulo', label: 'Publicación', value: e => e.titulo },
+  { key: 'fecha', label: 'Fecha', value: e => e.fecha },
+  { key: 'redes', label: 'Redes', value: e => e.redes.map(r => RED_NOMBRE[r] || r).join(', ') },
+  { key: 'vistas', label: 'Vistas', value: e => (e.vistas.length ? String(e.totalVistas) : '') },
+  { key: 'meGusta', label: 'Me gusta', value: e => (e.meGusta.length ? String(e.totalMeGusta) : '') },
+  { key: 'comentarios', label: 'Comentarios', value: e => (e.comentarios.length ? String(e.totalComentarios) : '') },
+];
 function idYoutube(url){
   const m = String(url || '').match(/[?&]v=([\w-]{6,})/);
   return m ? m[1] : null;
@@ -42,7 +54,8 @@ export default function RedesSocialesInforme({ liveMode, notify, esAdministrador
   const [abierta, setAbierta] = useState(null);
   const [para, setPara] = useState('');
   const [accion, setAccion] = useState('');   // '' | 'excel' | 'pdf' | 'correo'
-  const [filasEstad, setFilasEstad] = useState(10);   // cuántas publicaciones muestra «Estadísticas por publicación»
+  const { filters: filtrosEst, setFilter: setFiltroEst, clearFilters: limpiarFiltrosEst, rowMatches: coincideEst, hasActiveFilters: hayFiltrosEst } = useColumnFilters();
+  const { sort: ordenEst, setSortKey: setOrdenEst, sortRows: ordenarEst } = useColumnSort();
 
   const [recargando, setRecargando] = useState(false);
   const [enVivo, setEnVivo] = useState(null);   // lo que hay publicado ahora en YouTube y Spotify (lectura abierta, sin Bustral)
@@ -109,6 +122,7 @@ export default function RedesSocialesInforme({ liveMode, notify, esAdministrador
   const [anio, mm] = mes.split('-').map(Number);
   const pct = vista.programadas ? Math.round(vista.cumplidas / vista.programadas * 100) : null;
   const estad = estadisticasPorPublicacion(datos);
+  const estadVisibles = ordenarEst(estad.filter(e => coincideEst(e, COLUMNAS_ESTAD)), COLUMNAS_ESTAD);
   const estadPorFecha = new Map(estad.map(e => [e.fecha, e]));   // para mostrar las estadísticas de cada pieza ya publicada debajo de su fila del calendario
 
   function abrir(f){ setAbierta(f); }
@@ -221,41 +235,6 @@ export default function RedesSocialesInforme({ liveMode, notify, esAdministrador
       </div>
 
       <div className="redes-seccion">
-        <h3>Estadísticas por publicación</h3>
-        <p className="save-hint" style={{margin:'0 0 8px'}}>Vistas, me gusta y comentarios de cada publicación, de la más reciente a la más antigua. Haz clic en una fila para ver el copy y los enlaces. {datos.estadisticas && <>Leído el {fechaLarga(datos.estadisticas.leido)} de las páginas públicas de YouTube (vistas y me gusta), Instagram (me gusta y comentarios) y TikTok (vistas); se actualiza al pedir «actualiza redes».</>} Un guion largo (—) significa que esa red no entrega ese dato por publicación.</p>
-        <div className="table-wrap">
-          <table className="redes-tabla redes-tabla-estad">
-            <thead><tr><th>Publicación</th><th className="redes-num">Vistas</th><th className="redes-num">Me gusta</th><th className="redes-num">Comentarios</th></tr></thead>
-            <tbody>
-              {estad.slice(0, filasEstad).map(e => (
-                <Fragment key={e.fecha + e.titulo}>
-                <tr className={"redes-fila" + (e.nota ? " redes-fila-con-nota" : "")} tabIndex={0} onClick={() => abrir({ tipo: 'publicada', p: e.p, titulo: e.titulo, fecha: e.fecha })} onKeyDown={ev => { if(ev.key === 'Enter' || ev.key === ' '){ ev.preventDefault(); abrir({ tipo: 'publicada', p: e.p, titulo: e.titulo, fecha: e.fecha }); } }}>
-                  <td className="redes-titulo">{e.titulo}<small className="redes-sub">{fechaCorta(e.fecha)}{e.redes.length > 0 && ' · ' + e.redes.map(r => RED_NOMBRE[r] || r).join(' · ')}</small></td>
-                  <td className="redes-num"><CeldaEstad total={e.totalVistas} partes={e.vistas} /></td>
-                  <td className="redes-num"><CeldaEstad total={e.totalMeGusta} partes={e.meGusta} /></td>
-                  <td className="redes-num"><CeldaEstad total={e.totalComentarios} partes={e.comentarios} /></td>
-                </tr>
-                {e.nota && (
-                  <tr className="redes-fila-nota" onClick={() => abrir({ tipo: 'publicada', p: e.p, titulo: e.titulo, fecha: e.fecha })}>
-                    <td colSpan={4}><span className="redes-nota-bustral"><b>Nota de Bustral:</b> «{e.nota}»</span></td>
-                  </tr>
-                )}
-                </Fragment>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <div className="redes-vermas">
-          <span className="redes-sin">Mostrando {Math.min(filasEstad, estad.length)} de {estad.length} publicaciones</span>
-          {filasEstad < estad.length && <>
-            <button type="button" className="btn-secondary" onClick={() => setFilasEstad(n => n + 10)}>Ver 10 más</button>
-            <button type="button" className="btn-secondary" onClick={() => setFilasEstad(estad.length)}>Ver todas ({estad.length})</button>
-          </>}
-          {filasEstad > 10 && <button type="button" className="btn-secondary" onClick={() => setFilasEstad(10)}>Ver solo las últimas 10</button>}
-        </div>
-      </div>
-
-      <div className="redes-seccion">
         <h3>Calendario de {MESES[mm - 1]} {anio}: lo programado frente a lo publicado</h3>
         <p className="save-hint" style={{margin:'0 0 8px'}}>Haz clic en una fila para ver el copy y el video. «Programada» es la fecha que tiene la pieza en el calendario de Bustral. Aprobar u objetar se hace en Bustral con tu sesión: el enlace abre su calendario.{datos.bustralPanel && <> Debajo del título de cada pieza objetada se ve la nota que dejó quien la objetó en Bustral (leída el {fechaLarga(datos.bustralPanel.leido)}; se actualiza al pedir «actualiza redes»). Por aprobar hoy: {datos.bustralPanel.porAprobar}.</>}</p>
         <div className="table-wrap">
@@ -271,9 +250,12 @@ export default function RedesSocialesInforme({ liveMode, notify, esAdministrador
                   : f.g.publicadaEn ? Object.keys(f.g.publicadaEn).map(r => RED_NOMBRE[r] || r) : [];
                 const fechaPub = f.tipo === 'publicada' ? f.fecha : f.salioEn;
                 const vistasProg = f.tipo === 'programada' ? Object.entries(f.g.vistas || {}).filter(([, n]) => n != null) : []; const estPub = fechaPub ? (estadPorFecha.get(fechaPub) || (f.tipo === 'programada' ? { vistas: vistasProg, totalVistas: vistasProg.reduce((s, [, n]) => s + (Number(n) || 0), 0), meGusta: [], totalMeGusta: 0, comentarios: [], totalComentarios: 0 } : null)) : null;
+                // Cada publicación (su fila + nota + estadísticas) se dibuja como una tarjeta con relieve; la franja de la izquierda lleva el color del estado de aprobación.
+                const hayNota = f.tipo === 'programada' && !!f.g.objecion;
+                const acento = f.tipo !== 'programada' ? 'redes-g-sin' : f.g.estado === 'video_objetado' ? 'redes-g-obj' : f.g.estado === 'por_aprobar' ? 'redes-g-pend' : 'redes-g-ok';
                 return (
                   <Fragment key={f.tipo + f.fecha + f.titulo}>
-                  <tr className={"redes-fila" + ((f.tipo === 'programada' && f.g.objecion) || estPub ? " redes-fila-con-nota" : "")} tabIndex={0} onClick={() => abrir(f)} onKeyDown={e => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); abrir(f); } }}>
+                  <tr className={"redes-fila redes-g redes-g-ini " + acento + (!hayNota && !estPub ? " redes-g-fin" : "")} tabIndex={0} onClick={() => abrir(f)} onKeyDown={e => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); abrir(f); } }}>
                     <td className="redes-titulo">{f.titulo}</td>
                     <td>{est ? <span className={"badge " + est.clase}>{est.texto}</span> : <span className="redes-sin">Publicada en Bustral</span>}</td>
                     <td>{f.cumpl ? <span className={"badge " + f.cumpl.clase}>{f.cumpl.texto}</span> : <span className="redes-sin">Sin programación en el calendario</span>}</td>
@@ -288,12 +270,12 @@ export default function RedesSocialesInforme({ liveMode, notify, esAdministrador
                     </td>
                   </tr>
                   {f.tipo === 'programada' && f.g.objecion && (
-                    <tr className={"redes-fila-nota" + (estPub ? " redes-fila-nota-sigue" : "")} onClick={() => abrir(f)}>
+                    <tr className={"redes-fila-nota redes-g " + acento + (estPub ? "" : " redes-g-fin")} onClick={() => abrir(f)}>
                       <td colSpan={6}><span className="redes-nota-bustral"><b>Nota de Bustral:</b> «{f.g.objecion}»</span></td>
                     </tr>
                   )}
                   {estPub && (
-                    <tr className="redes-fila-stats" onClick={() => abrir(f)}>
+                    <tr className={"redes-fila-stats redes-g redes-g-fin " + acento} onClick={() => abrir(f)}>
                       <td colSpan={6}>
                         <div className="redes-stats-linea">
                           {estPub.vistas.length || estPub.meGusta.length || estPub.comentarios.length
@@ -307,6 +289,7 @@ export default function RedesSocialesInforme({ liveMode, notify, esAdministrador
                       </td>
                     </tr>
                   )}
+                  <tr className="redes-g-sep" aria-hidden="true"><td colSpan={6} /></tr>
                   </Fragment>
                 );
               })}
@@ -350,11 +333,47 @@ export default function RedesSocialesInforme({ liveMode, notify, esAdministrador
         </div>
       </div>
 
+      <div className="redes-seccion">
+        <h3>Estadísticas por publicación</h3>
+        <p className="save-hint" style={{margin:'0 0 8px'}}>Vistas, me gusta y comentarios de todas las publicaciones, de la más reciente a la más antigua. Usa el menú de cada encabezado para ordenar o filtrar. Haz clic en una fila para ver el copy y los enlaces. {datos.estadisticas && <>Leído el {fechaLarga(datos.estadisticas.leido)} de las páginas públicas de YouTube (vistas y me gusta), Instagram (me gusta y comentarios) y TikTok (vistas); se actualiza al pedir «actualiza redes».</>} Un guion largo (—) significa que esa red no entrega ese dato por publicación.</p>
+        <p className="save-hint" style={{margin:'0 0 8px'}}>{estadVisibles.length} de {estad.length} publicaciones{hayFiltrosEst && <> · <button type="button" className="clear-filters-link" onClick={limpiarFiltrosEst}>Limpiar filtros de columna</button></>}</p>
+        <div className="table-wrap">
+          <table className="redes-tabla redes-tabla-estad">
+            <thead>
+              <tr>
+                {COLUMNAS_ESTAD.map(col => (
+                  <ColumnHeaderMenu key={col.key} column={col} sort={ordenEst} onSort={setOrdenEst} filterValue={filtrosEst[col.key]} onFilterChange={setFiltroEst} rows={estad} />
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {estadVisibles.length === 0 && <tr><td colSpan={6} className="redes-vacio">Ninguna publicación coincide con los filtros.</td></tr>}
+              {estadVisibles.map(e => (
+                <tr key={e.fecha + e.titulo} className="redes-fila" tabIndex={0} onClick={() => abrir({ tipo: 'publicada', p: e.p, titulo: e.titulo, fecha: e.fecha })} onKeyDown={ev => { if(ev.key === 'Enter' || ev.key === ' '){ ev.preventDefault(); abrir({ tipo: 'publicada', p: e.p, titulo: e.titulo, fecha: e.fecha }); } }}>
+                  <td className="redes-titulo">{e.titulo}</td>
+                  <td className="redes-fecha">{fechaCorta(e.fecha)}</td>
+                  <td>{e.redes.map(r => RED_NOMBRE[r] || r).join(' · ') || '—'}</td>
+                  <td className="redes-num"><CeldaEstad total={e.totalVistas} partes={e.vistas} /></td>
+                  <td className="redes-num"><CeldaEstad total={e.totalMeGusta} partes={e.meGusta} /></td>
+                  <td className="redes-num"><CeldaEstad total={e.totalComentarios} partes={e.comentarios} /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       <p className="save-hint">{datos.fuente} Las vistas por publicación solo se ven en YouTube y TikTok (Bustral, Facebook e Instagram no las entregan por pieza; Bustral tampoco mide TikTok, LinkedIn ni Spotify). «Nuevos seguidores del mes» de Instagram se podrá medir cuando se guarde un conteo mensual.</p>
 
       {abierta && <DetalleRedes f={abierta} onClose={() => setAbierta(null)} />}
     </div>
   );
+}
+
+// Una celda de «Estadísticas por publicación»: el total y, debajo, cuánto fue de cada red; un guion largo si ninguna red entregó el dato.
+function CeldaEstad({ total, partes }){
+  if(!partes.length) return <span className="redes-sin">—</span>;
+  return <><b>{fmt(total)}</b><small className="redes-explica">{partes.map(([r, n]) => (RED_NOMBRE[r] || r) + ' ' + fmt(n)).join(' · ')}</small></>;
 }
 
 // Una cifra de la línea de estadísticas bajo cada pieza ya publicada del calendario: «Vistas 355 (YouTube 355)»; un guion largo si ninguna red entregó el dato.
@@ -367,12 +386,6 @@ function EstadLinea({ etiqueta, total, partes }){
         : <span className="redes-sin">—</span>}
     </span>
   );
-}
-
-// Una celda de «Estadísticas por publicación»: el total y, debajo, cuánto fue de cada red; un guion largo si ninguna red entregó el dato.
-function CeldaEstad({ total, partes }){
-  if(!partes.length) return <span className="redes-sin">—</span>;
-  return <><b>{fmt(total)}</b>{partes.length > 0 && <small className="redes-explica">{partes.map(([r, n]) => (RED_NOMBRE[r] || r) + ' ' + fmt(n)).join(' · ')}</small>}</>;
 }
 
 // Las dos fechas de una pieza: la que tiene en el calendario de Bustral (programada) y la del día en que quedó publicada.
