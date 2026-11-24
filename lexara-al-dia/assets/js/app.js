@@ -30,7 +30,10 @@
   }
   function miniaturaDe(p){
     if(p.miniatura) return p.miniatura;
-    var yt = idYoutube(p.url); return yt ? 'https://img.youtube.com/vi/' + yt + '/hqdefault.jpg' : '';
+    // Sin miniatura guardada: la del video de YouTube, sea el enlace principal o el de «También en YouTube» (2026-11-24: las tarjetas de Instagram/TikTok que también están en YouTube).
+    var urls = [p.url].concat((p.tambien || []).map(function(t){ return t.url; }));
+    for(var i = 0; i < urls.length; i++){ var yt = idYoutube(urls[i]); if(yt) return 'https://img.youtube.com/vi/' + yt + '/hqdefault.jpg'; }
+    return '';
   }
   var SVG = {
     play: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>',

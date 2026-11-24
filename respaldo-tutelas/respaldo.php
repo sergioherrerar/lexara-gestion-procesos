@@ -138,7 +138,8 @@ function aBogota(string $v): array {
     try { $d = new DateTime($v); $d->setTimezone(new DateTimeZone('America/Bogota')); }
     catch (Throwable $e) { return ['', '']; }
     $hora = $d->format('H:i');
-    return [$d->format('Y-m-d'), $hora === '00:00' ? '' : $hora];
+    // Una fecha SIN hora llega de SharePoint como la medianoche de la zona del sitio: 00:00 en Bogotá, o 03:00 cuando el sitio está en hora del Pacífico (08:00 UTC). Ninguna de las dos es una hora real de vencimiento: solo se muestra la fecha.
+    return [$d->format('Y-m-d'), in_array($hora, ['00:00', '03:00'], true) ? '' : $hora];
 }
 function dma(string $iso): string { return preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $iso, $m) ? "$m[3]/$m[2]/$m[1]" : ''; }
 function esSi(string $v): bool { return in_array(mb_strtolower(trim($v)), ['si', 'sí', 'true', '1', 'yes'], true); }
@@ -182,7 +183,7 @@ function armarCorreo(array $filas, string $hoy, string $generado): array {
     $proximas = array_values(array_filter($filas, fn($f) => $f['dias'] >= 1 && $f['dias'] <= 2));
     $resto = array_values(array_filter($filas, fn($f) => $f['dias'] > 2));
     $asunto = 'Respaldo Tutelas - ' . dma($hoy) . ' - ' . count($hoyF) . ' vencen hoy, ' . count($vencidas) . ' vencidas sin contestar';
-    $html = '<div style="font-family:\'Segoe UI\',Arial,sans-serif;color:#1c2624;max-width:960px;">'
+    $html = '<div lang="es" style="font-family:\'Segoe UI\',Arial,sans-serif;color:#1c2624;max-width:960px;">'
         . '<p style="margin:0 0 6px;font-size:16px;font-weight:700;color:#004941;">Respaldo diario de Tutelas</p>'
         . '<p style="margin:0 0 14px;font-size:13px;color:#5c6b68;">Generado el ' . e($generado) . ' (hora de Colombia) desde SharePoint. Si Microsoft está caído, esta es la última lista disponible: puede estar desactualizada desde esa hora.</p>'
         . '<p style="margin:0 0 14px;font-size:14px;"><strong>' . count($hoyF) . '</strong> vencen hoy · <strong>' . count($proximas) . '</strong> vencen mañana o pasado · <strong style="color:#a3281c;">' . count($vencidas) . '</strong> vencidas sin contestar (últimos 10 días) · <strong>' . count($resto) . '</strong> con más plazo.</p>'
@@ -211,7 +212,7 @@ function armarCorreo(array $filas, string $hoy, string $generado): array {
 function armarMime(string $desde, string $nombre, string $html, ?string $csv, string $nombreCsv): array {
     $lim = 'lexara_' . bin2hex(random_bytes(8));
     $dominio = substr(strrchr($desde, '@'), 1) ?: 'localhost';
-    $cab = "From: =?UTF-8?B?" . base64_encode($nombre) . "?= <" . $desde . ">\r\nReply-To: " . $desde . "\r\nDate: " . date('r') . "\r\nMessage-ID: <" . bin2hex(random_bytes(12)) . '@' . $dominio . ">\r\nX-Auto-Response-Suppress: All\r\nMIME-Version: 1.0";
+    $cab = "From: =?UTF-8?B?" . base64_encode($nombre) . "?= <" . $desde . ">\r\nReply-To: " . $desde . "\r\nDate: " . date('r') . "\r\nMessage-ID: <" . bin2hex(random_bytes(12)) . '@' . $dominio . ">\r\nX-Auto-Response-Suppress: All\r\nContent-Language: es\r\nMIME-Version: 1.0";
     $texto = trim(html_entity_decode(strip_tags(preg_replace('#</(p|div|tr|h\d)>#i', "\n", $html)), ENT_QUOTES, 'UTF-8'));
     if ($csv !== null) {
         $cab .= "\r\nContent-Type: multipart/mixed; boundary=\"$lim\"";
