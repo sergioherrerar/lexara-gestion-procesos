@@ -2,6 +2,11 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-11-23 (211)
+- **Informe de redes: cada publicación del calendario en una sola línea, que se despliega al hacer clic** — pedido del usuario («deja todo como en una línea y al darle clic que muestre las notas y el contenido de estadísticas»; «siempre la primera vista cerrado»).
+  - **Calendario (Informes → Redes sociales):** cada publicación es una línea (con flecha ▸/▾ si tiene algo que mostrar); al hacer clic se despliega su nota de Bustral (si fue objetada), la línea de Vistas · Me gusta · Comentarios y el botón «Ver copy y enlaces» (el detalle ya no se abre con el clic de la fila). Se pueden dejar varias desplegadas; otro clic las cierra. Si la pieza no tiene nada que desplegar (sin publicar ni objetar), el clic abre el detalle como antes.
+  - **Siempre se empieza cerrado:** al entrar, al cambiar de mes y al recargar los datos («Actualizar redes») todo vuelve a quedar cerrado. Probado en el portal local (modo demo).
+
 ## 2026-11-23 (210)
 - **Informe de redes: las notas de Bustral sin color** — pedido del usuario («quítale el color a las notas de Bustral, no me gustan»). La nota del calendario y el «Motivo de la objeción» del detalle pasan a texto normal con borde gris suave (sin fondo rosado ni texto rojo); en el borrador de correo del informe la nota pasa de rojo a gris. La franja de color de cada tarjeta (estado de aprobación) no cambia.
 

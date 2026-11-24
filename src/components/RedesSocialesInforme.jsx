@@ -52,6 +52,8 @@ export default function RedesSocialesInforme({ liveMode, notify, esAdministrador
   const [error, setError] = useState('');
   const [mes, setMes] = useState('');
   const [abierta, setAbierta] = useState(null);
+  const [desplegadas, setDesplegadas] = useState(() => new Set());   // publicaciones del calendario con su nota y estadísticas a la vista
+  const alternarFila = clave => setDesplegadas(prev => { const s = new Set(prev); if(s.has(clave)) s.delete(clave); else s.add(clave); return s; }); useEffect(() => { setDesplegadas(new Set()); }, [mes, datos]);   // siempre se empieza con todo cerrado: al entrar, al cambiar de mes y al recargar los datos
   const [para, setPara] = useState('');
   const [accion, setAccion] = useState('');   // '' | 'excel' | 'pdf' | 'correo'
   const { filters: filtrosEst, setFilter: setFiltroEst, clearFilters: limpiarFiltrosEst, rowMatches: coincideEst, hasActiveFilters: hayFiltrosEst } = useColumnFilters();
@@ -236,7 +238,7 @@ export default function RedesSocialesInforme({ liveMode, notify, esAdministrador
 
       <div className="redes-seccion">
         <h3>Calendario de {MESES[mm - 1]} {anio}: lo programado frente a lo publicado</h3>
-        <p className="save-hint" style={{margin:'0 0 8px'}}>Haz clic en una fila para ver el copy y el video. «Programada» es la fecha que tiene la pieza en el calendario de Bustral. Aprobar u objetar se hace en Bustral con tu sesión: el enlace abre su calendario.{datos.bustralPanel && <> Debajo del título de cada pieza objetada se ve la nota que dejó quien la objetó en Bustral (leída el {fechaLarga(datos.bustralPanel.leido)}; se actualiza al pedir «actualiza redes»). Por aprobar hoy: {datos.bustralPanel.porAprobar}.</>}</p>
+        <p className="save-hint" style={{margin:'0 0 8px'}}>Haz clic en una publicación para desplegar su nota de Bustral y sus estadísticas (y desde ahí ver el copy y los enlaces). «Programada» es la fecha que tiene la pieza en el calendario de Bustral. Aprobar u objetar se hace en Bustral con tu sesión: el enlace abre su calendario.{datos.bustralPanel && <> Las notas que dejó quien objetó cada pieza en Bustral se leyeron el {fechaLarga(datos.bustralPanel.leido)} y se actualizan al pedir «actualiza redes». Por aprobar hoy: {datos.bustralPanel.porAprobar}.</>}</p>
         <div className="table-wrap">
           <table className="redes-tabla redes-tabla-cal">
             <thead><tr><th>Pieza</th><th>Aprobación</th><th>Cumplimiento</th><th>Programada (Bustral)</th><th>Publicada</th><th>Aprobar u objetar</th></tr></thead>
@@ -252,11 +254,15 @@ export default function RedesSocialesInforme({ liveMode, notify, esAdministrador
                 const vistasProg = f.tipo === 'programada' ? Object.entries(f.g.vistas || {}).filter(([, n]) => n != null) : []; const estPub = fechaPub ? (estadPorFecha.get(fechaPub) || (f.tipo === 'programada' ? { vistas: vistasProg, totalVistas: vistasProg.reduce((s, [, n]) => s + (Number(n) || 0), 0), meGusta: [], totalMeGusta: 0, comentarios: [], totalComentarios: 0 } : null)) : null;
                 // Cada publicación (su fila + nota + estadísticas) se dibuja como una tarjeta con relieve; la franja de la izquierda lleva el color del estado de aprobación.
                 const hayNota = f.tipo === 'programada' && !!f.g.objecion;
+                const clave = f.tipo + f.fecha + f.titulo;
+                const desplegable = hayNota || !!estPub;
+                const abiertaFila = desplegable && desplegadas.has(clave);
+                const accionFila = () => (desplegable ? alternarFila(clave) : abrir(f));
                 const acento = f.tipo !== 'programada' ? 'redes-g-sin' : f.g.estado === 'video_objetado' ? 'redes-g-obj' : f.g.estado === 'por_aprobar' ? 'redes-g-pend' : 'redes-g-ok';
                 return (
                   <Fragment key={f.tipo + f.fecha + f.titulo}>
-                  <tr className={"redes-fila redes-g redes-g-ini " + acento + (!hayNota && !estPub ? " redes-g-fin" : "")} tabIndex={0} onClick={() => abrir(f)} onKeyDown={e => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); abrir(f); } }}>
-                    <td className="redes-titulo">{f.titulo}</td>
+                  <tr className={"redes-fila redes-g redes-g-ini " + acento + (abiertaFila ? "" : " redes-g-fin")} tabIndex={0} aria-expanded={desplegable ? abiertaFila : undefined} onClick={accionFila} onKeyDown={e => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); accionFila(); } }}>
+                    <td className="redes-titulo">{desplegable && <span className="redes-chev" aria-hidden="true">{abiertaFila ? '▾' : '▸'}</span>}{f.titulo}</td>
                     <td>{est ? <span className={"badge " + est.clase}>{est.texto}</span> : <span className="redes-sin">Publicada en Bustral</span>}</td>
                     <td>{f.cumpl ? <span className={"badge " + f.cumpl.clase}>{f.cumpl.texto}</span> : <span className="redes-sin">Sin programación en el calendario</span>}</td>
                     <td className="redes-fecha">{f.tipo === 'programada' ? fechaCorta(f.g.fecha) : <span className="redes-sin">Sin programar</span>}</td>
@@ -269,22 +275,23 @@ export default function RedesSocialesInforme({ liveMode, notify, esAdministrador
                         : <span className="redes-sin">—</span>}
                     </td>
                   </tr>
-                  {f.tipo === 'programada' && f.g.objecion && (
-                    <tr className={"redes-fila-nota redes-g " + acento + (estPub ? "" : " redes-g-fin")} onClick={() => abrir(f)}>
-                      <td colSpan={6}><span className="redes-nota-bustral"><b>Nota de Bustral:</b> «{f.g.objecion}»</span></td>
-                    </tr>
-                  )}
-                  {estPub && (
-                    <tr className={"redes-fila-stats redes-g redes-g-fin " + acento} onClick={() => abrir(f)}>
+                  {abiertaFila && (
+                    <tr className={"redes-fila-exp redes-g redes-g-fin " + acento}>
                       <td colSpan={6}>
-                        <div className="redes-stats-linea">
-                          {estPub.vistas.length || estPub.meGusta.length || estPub.comentarios.length
-                            ? <>
-                                <EstadLinea etiqueta="Vistas" total={estPub.totalVistas} partes={estPub.vistas} />
-                                <EstadLinea etiqueta="Me gusta" total={estPub.totalMeGusta} partes={estPub.meGusta} />
-                                <EstadLinea etiqueta="Comentarios" total={estPub.totalComentarios} partes={estPub.comentarios} />
-                              </>
-                            : <span className="redes-sin">Aún no hay estadísticas leídas de esta publicación.</span>}
+                        <div className="redes-exp">
+                          {hayNota && <span className="redes-nota-bustral"><b>Nota de Bustral:</b> «{f.g.objecion}»</span>}
+                          {estPub && (
+                            <div className="redes-stats-linea">
+                              {estPub.vistas.length || estPub.meGusta.length || estPub.comentarios.length
+                                ? <>
+                                    <EstadLinea etiqueta="Vistas" total={estPub.totalVistas} partes={estPub.vistas} />
+                                    <EstadLinea etiqueta="Me gusta" total={estPub.totalMeGusta} partes={estPub.meGusta} />
+                                    <EstadLinea etiqueta="Comentarios" total={estPub.totalComentarios} partes={estPub.comentarios} />
+                                  </>
+                                : <span className="redes-sin">Aún no hay estadísticas leídas de esta publicación.</span>}
+                            </div>
+                          )}
+                          <div><button type="button" className="btn-secondary" onClick={() => abrir(f)}>Ver copy y enlaces</button></div>
                         </div>
                       </td>
                     </tr>
