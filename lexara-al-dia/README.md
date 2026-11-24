@@ -1,6 +1,6 @@
 # Lexara al Día — www.lexaraabogados.com/lexara-al-dia
 
-Página que reúne las **últimas 10 publicaciones** de MD Abogados: reels, videos, podcast (Café Laboral), noticias y publicaciones de redes sociales, con enlace directo a cada una. Cuando sale una nueva, **la más antigua se retira**.
+Página que reúne **todas las publicaciones** de MD Abogados (se muestran de a 12, con el botón «Ver más»): reels, videos, podcast (Café Laboral), noticias y publicaciones de redes sociales, con enlace directo a cada una. Cuando sale una nueva, **la más antigua se retira**.
 
 ## Estructura
 
@@ -13,7 +13,7 @@ lexara-al-dia/
 │   ├── css/estilos.css · js/app.js
 │   └── img/ (logos y miniaturas/)
 ├── data/
-│   ├── sitio.json             Nombre, redes, fuentes y «maximo» de publicaciones (10)
+│   ├── sitio.json             Nombre, redes, fuentes y «maximo» de publicaciones (150)
 │   └── publicaciones.json     El contenido que se muestra
 ├── herramientas/agregar.cjs   Agregar una publicación desde su enlace (TikTok, Facebook, LinkedIn…)
 └── privado/                   Clave renovada y registro de la actualización (nunca público)
@@ -21,7 +21,7 @@ lexara-al-dia/
 
 ## Actualización automática (todos los días, 6:00 a. m.)
 
-`actualizar.php` revisa estas fuentes y deja las **10 publicaciones más recientes de todas las redes juntas** (el número está en `data/sitio.json` → `"maximo"`):
+`actualizar.php` revisa estas fuentes y guarda las **150 publicaciones más recientes de todas las redes juntas** (el número está en `data/sitio.json` → `"maximo"`; el tope del programa es 200). Desde el 23-nov-2026 la lista ya trae todo lo publicado desde agosto en YouTube, Instagram y TikTok, y cada día se suman las nuevas:
 
 | Fuente | Qué lee | Qué necesita |
 |---|---|---|

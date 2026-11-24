@@ -3,7 +3,7 @@
   "lema": "Noticias, videos, reels y publicaciones de MD Abogados en un solo lugar.",
   "descripcion": "Todo lo que publicamos en nuestras redes y medios, ordenado por fecha y por tema. Sígalo desde aquí o entre directo a la publicación en cada red social.",
   "inicioUrl": "https://www.lexaraabogados.com",
-  "maximo": 10,
+  "maximo": 150,
   "fuentes": {
     "instagram": { "usuario": "lexaraabogados" },
     "youtube": { "canal": "UCcJbAvJdFZyJl4aNhFUyGPA", "nombre": "Café Laboral" },

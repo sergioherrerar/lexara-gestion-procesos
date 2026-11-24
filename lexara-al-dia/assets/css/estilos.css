@@ -247,3 +247,11 @@ a.red:hover{filter:brightness(1.08)}
 @keyframes wa-late{ 0%{ box-shadow:0 4px 14px rgba(0,0,0,.28), 0 0 0 0 rgba(37,211,102,.55); } 70%,100%{ box-shadow:0 4px 14px rgba(0,0,0,.28), 0 0 0 18px rgba(37,211,102,0); } }
 @media (max-width:560px){ .wa-flotante{ right:14px; bottom:14px; width:54px; height:54px; } .wa-flotante svg{ width:30px; height:30px; } }
 @media (prefers-reduced-motion:reduce){ .wa-flotante{ animation:none; transition:none; } .wa-flotante:hover{ transform:none; } }
+
+/* «Ver más publicaciones» (2026-11-23): la lista ya trae todas las publicaciones de las redes y se muestran de a 12. */
+.ver-mas-zona{display:flex; justify-content:center; margin:22px 0 4px;}
+.boton-mas{font:inherit; font-weight:600; cursor:pointer; padding:12px 26px; border-radius:999px; border:1px solid var(--verde-oscuro, #004941); background:#fff; color:var(--verde-oscuro, #004941); box-shadow:0 3px 0 rgba(0,73,65,.25); transition:transform .08s ease, box-shadow .08s ease, background .15s ease;}
+.boton-mas:hover{background:#eef7f6;}
+.boton-mas:active{transform:translateY(2px); box-shadow:0 1px 0 rgba(0,73,65,.25);}
+.boton-mas:focus-visible{outline:3px solid #52bbb5; outline-offset:3px;}
+.boton-mas[hidden]{display:none;}

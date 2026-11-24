@@ -38,10 +38,10 @@ const fmt = n => (n == null ? '—' : Number(n).toLocaleString('es-CO'));
 const COLUMNAS_ESTAD = [
   { key: 'titulo', label: 'Publicación', value: e => e.titulo },
   { key: 'fecha', label: 'Fecha', value: e => e.fecha },
-  { key: 'redes', label: 'Redes', value: e => e.redes.map(r => RED_NOMBRE[r] || r).join(', ') },
-  { key: 'vistas', label: 'Vistas', value: e => (e.vistas.length ? String(e.totalVistas) : '') },
-  { key: 'meGusta', label: 'Me gusta', value: e => (e.meGusta.length ? String(e.totalMeGusta) : '') },
-  { key: 'comentarios', label: 'Comentarios', value: e => (e.comentarios.length ? String(e.totalComentarios) : '') },
+  { key: 'red', label: 'Red', value: e => RED_NOMBRE[e.red] || e.red },
+  { key: 'vistas', label: 'Vistas', value: e => (e.vistas == null ? '' : String(e.vistas)) },
+  { key: 'meGusta', label: 'Me gusta', value: e => (e.meGusta == null ? '' : String(e.meGusta)) },
+  { key: 'comentarios', label: 'Comentarios', value: e => (e.comentarios == null ? '' : String(e.comentarios)) },
 ];
 function idYoutube(url){
   const m = String(url || '').match(/[?&]v=([\w-]{6,})/);
@@ -61,8 +61,12 @@ export default function RedesSocialesInforme({ liveMode, notify, esAdministrador
 
   const [recargando, setRecargando] = useState(false);
   const [enVivo, setEnVivo] = useState(null);   // lo que hay publicado ahora en YouTube y Spotify (lectura abierta, sin Bustral)
-  const cargar = () => fetch(`${import.meta.env.BASE_URL}data/redes-sociales.json?v=${Date.now()}`, { cache: 'no-store' })
-    .then(r => { if(!r.ok) throw new Error('HTTP ' + r.status); return r.json(); });
+  const cargar = () => Promise.all([
+    fetch(`${import.meta.env.BASE_URL}data/redes-sociales.json?v=${Date.now()}`, { cache: 'no-store' })
+      .then(r => { if(!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }),
+    fetch(`${import.meta.env.BASE_URL}data/redes-publicaciones.json?v=${Date.now()}`, { cache: 'no-store' })
+      .then(r => (r.ok ? r.json() : null)).catch(() => null),
+  ]).then(([principal, todas]) => (todas ? { ...principal, publicacionesRedes: todas } : principal));
 
   useEffect(() => {
     let vivo = true;
@@ -152,7 +156,8 @@ export default function RedesSocialesInforme({ liveMode, notify, esAdministrador
   const [anio, mm] = mes.split('-').map(Number);
   const pct = vista.programadas ? Math.round(vista.cumplidas / vista.programadas * 100) : null;
   const estad = estadisticasPorPublicacion(datos);
-  const estadVisibles = ordenarEst(estad.filter(e => coincideEst(e, COLUMNAS_ESTAD)), COLUMNAS_ESTAD);
+  const todasRedes = (datos.publicacionesRedes && datos.publicacionesRedes.publicaciones) || [];
+  const estadVisibles = ordenarEst(todasRedes.filter(e => coincideEst(e, COLUMNAS_ESTAD)), COLUMNAS_ESTAD);
   const estadPorFecha = new Map(estad.map(e => [e.fecha, e]));   // para mostrar las estadísticas de cada pieza ya publicada debajo de su fila del calendario
 
   function abrir(f){ setAbierta(f); }
@@ -380,47 +385,43 @@ export default function RedesSocialesInforme({ liveMode, notify, esAdministrador
         </div>
       </div>
 
-      <div className="redes-seccion">
-        <h3>Estadísticas por publicación</h3>
-        <p className="save-hint" style={{margin:'0 0 8px'}}>Vistas, me gusta y comentarios de todas las publicaciones, de la más reciente a la más antigua. Usa el menú de cada encabezado para ordenar o filtrar. Haz clic en una fila para ver el copy y los enlaces. {datos.estadisticas && <>Leído el {fechaLarga(datos.estadisticas.leido)} de las páginas públicas de YouTube (vistas y me gusta), Instagram (me gusta y comentarios) y TikTok (vistas); se actualiza al pedir «actualiza redes».</>} Un guion largo (—) significa que esa red no entrega ese dato por publicación.</p>
-        <p className="save-hint" style={{margin:'0 0 8px'}}>{estadVisibles.length} de {estad.length} publicaciones{hayFiltrosEst && <> · <button type="button" className="clear-filters-link" onClick={limpiarFiltrosEst}>Limpiar filtros de columna</button></>}</p>
-        <div className="table-wrap">
-          <table className="redes-tabla redes-tabla-estad">
-            <thead>
-              <tr>
-                {COLUMNAS_ESTAD.map(col => (
-                  <ColumnHeaderMenu key={col.key} column={col} sort={ordenEst} onSort={setOrdenEst} filterValue={filtrosEst[col.key]} onFilterChange={setFiltroEst} rows={estad} />
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {estadVisibles.length === 0 && <tr><td colSpan={6} className="redes-vacio">Ninguna publicación coincide con los filtros.</td></tr>}
-              {estadVisibles.map(e => (
-                <tr key={e.fecha + e.titulo} className="redes-fila" tabIndex={0} onClick={() => abrir({ tipo: 'publicada', p: e.p, titulo: e.titulo, fecha: e.fecha })} onKeyDown={ev => { if(ev.key === 'Enter' || ev.key === ' '){ ev.preventDefault(); abrir({ tipo: 'publicada', p: e.p, titulo: e.titulo, fecha: e.fecha }); } }}>
-                  <td className="redes-titulo">{e.titulo}</td>
-                  <td className="redes-fecha">{fechaCorta(e.fecha)}</td>
-                  <td>{e.redes.map(r => RED_NOMBRE[r] || r).join(' · ') || '—'}</td>
-                  <td className="redes-num"><CeldaEstad total={e.totalVistas} partes={e.vistas} /></td>
-                  <td className="redes-num"><CeldaEstad total={e.totalMeGusta} partes={e.meGusta} /></td>
-                  <td className="redes-num"><CeldaEstad total={e.totalComentarios} partes={e.comentarios} /></td>
+      {todasRedes.length > 0 && (
+        <div className="redes-seccion">
+          <h3>Todas las publicaciones de las redes</h3>
+          <p className="save-hint" style={{margin:'0 0 8px'}}>Cada publicación en cada red (YouTube, Instagram y TikTok) desde el 5 de agosto, con sus vistas, me gusta y comentarios. Usa el menú de cada encabezado para ordenar o filtrar; el título abre la publicación en su red. Un guion largo (—) significa que esa red no entrega ese dato (por ejemplo, Instagram no muestra vistas y TikTok no muestra me gusta sin sesión). Leído el {fechaLarga(datos.publicacionesRedes.leido)}; se actualiza al pedir «actualiza redes». Facebook y LinkedIn no se pueden leer sin sesión.</p>
+          <p className="save-hint" style={{margin:'0 0 8px'}}>{estadVisibles.length} de {todasRedes.length} publicaciones{hayFiltrosEst && <> · <button type="button" className="clear-filters-link" onClick={limpiarFiltrosEst}>Limpiar filtros de columna</button></>}</p>
+          <div className="table-wrap">
+            <table className="redes-tabla redes-tabla-estad">
+              <thead>
+                <tr>
+                  {COLUMNAS_ESTAD.map(col => (
+                    <ColumnHeaderMenu key={col.key} column={col} sort={ordenEst} onSort={setOrdenEst} filterValue={filtrosEst[col.key]} onFilterChange={setFiltroEst} rows={todasRedes} />
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {estadVisibles.length === 0 && <tr><td colSpan={6} className="redes-vacio">Ninguna publicación coincide con los filtros.</td></tr>}
+                {estadVisibles.map(e => (
+                  <tr key={e.url}>
+                    <td className="redes-titulo"><a href={e.url} target="_blank" rel="noopener noreferrer">{e.titulo}</a></td>
+                    <td className="redes-fecha">{fechaCorta(e.fecha)}</td>
+                    <td><span className={'redes-envivo-red redes-envivo-' + e.red}>{RED_NOMBRE[e.red] || e.red}</span></td>
+                    <td className="redes-num">{e.vistas == null ? <span className="redes-sin">—</span> : fmt(e.vistas)}</td>
+                    <td className="redes-num">{e.meGusta == null ? <span className="redes-sin">—</span> : fmt(e.meGusta)}</td>
+                    <td className="redes-num">{e.comentarios == null ? <span className="redes-sin">—</span> : fmt(e.comentarios)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      )}
 
       <p className="save-hint">{datos.fuente} Las vistas por publicación solo se ven en YouTube y TikTok (Bustral, Facebook e Instagram no las entregan por pieza; Bustral tampoco mide TikTok, LinkedIn ni Spotify). «Nuevos seguidores del mes» de Instagram se podrá medir cuando se guarde un conteo mensual.</p>
 
       {abierta && <DetalleRedes f={abierta} onClose={() => setAbierta(null)} />}
     </div>
   );
-}
-
-// Una celda de «Estadísticas por publicación»: el total y, debajo, cuánto fue de cada red; un guion largo si ninguna red entregó el dato.
-function CeldaEstad({ total, partes }){
-  if(!partes.length) return <span className="redes-sin">—</span>;
-  return <><b>{fmt(total)}</b><small className="redes-explica">{partes.map(([r, n]) => (RED_NOMBRE[r] || r) + ' ' + fmt(n)).join(' · ')}</small></>;
 }
 
 // Una cifra de la línea de estadísticas bajo cada pieza ya publicada del calendario: «Vistas 355 (YouTube 355)»; un guion largo si ninguna red entregó el dato.

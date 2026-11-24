@@ -1,5 +1,51 @@
 [
     {
+        "id": "2026-11-23-4-trabajadores-directos-y-168-en",
+        "tipo": "reel",
+        "titulo": "4 trabajadores directos y 168 en misión, durante años.",
+        "descripcion": "",
+        "fecha": "2026-11-23",
+        "red": "instagram",
+        "url": "https://www.instagram.com/reel/DgGMb9dSLT7/",
+        "miniatura": "",
+        "destacada": false,
+        "etiquetas": [],
+        "origen": "manual",
+        "tambien": [
+            {
+                "red": "youtube",
+                "url": "https://www.youtube.com/shorts/xP7NJ7eeIl4"
+            },
+            {
+                "red": "tiktok",
+                "url": "https://www.tiktok.com/@lexara.abogados/video/7711460284577123591"
+            }
+        ]
+    },
+    {
+        "id": "2026-11-19-el-decreto-1490-de-2026-elimino",
+        "tipo": "reel",
+        "titulo": "El Decreto 1490 de 2026 eliminó el tope del 30 % que limitaba cuánto podían invertir en el exterior",
+        "descripcion": "",
+        "fecha": "2026-11-19",
+        "red": "instagram",
+        "url": "https://www.instagram.com/reel/Df7doRvJrJR/",
+        "miniatura": "",
+        "destacada": false,
+        "etiquetas": [],
+        "origen": "manual",
+        "tambien": [
+            {
+                "red": "youtube",
+                "url": "https://www.youtube.com/shorts/ztcvPkQGZAQ"
+            },
+            {
+                "red": "tiktok",
+                "url": "https://www.tiktok.com/@lexara.abogados/video/7709914690587069704"
+            }
+        ]
+    },
+    {
         "id": "2026-11-16-decreto-234-negociacion-colectiva",
         "tipo": "reel",
         "titulo": "Suspendido el decreto de negociación colectiva por sectores (Decreto 234 de 2026)",
@@ -19,6 +65,10 @@
             {
                 "red": "youtube",
                 "url": "https://www.youtube.com/shorts/Yr9s-j433iI"
+            },
+            {
+                "red": "tiktok",
+                "url": "https://www.tiktok.com/@lexara.abogados/video/7708772162873609480"
             }
         ]
     },
@@ -37,7 +87,17 @@
             "Código Procesal del Trabajo",
             "Derecho laboral"
         ],
-        "origen": "manual"
+        "origen": "manual",
+        "tambien": [
+            {
+                "red": "instagram",
+                "url": "https://www.instagram.com/reel/DfsR3wcSL_E/"
+            },
+            {
+                "red": "tiktok",
+                "url": "https://www.tiktok.com/@lexara.abogados/video/7707727162794626311"
+            }
+        ]
     },
     {
         "id": "2026-11-06-sp-5eDbEa1B17jgAGtiBryqVf",
@@ -77,6 +137,10 @@
             {
                 "red": "youtube",
                 "url": "https://www.youtube.com/shorts/EKT_Z2-R3kQ"
+            },
+            {
+                "red": "tiktok",
+                "url": "https://www.tiktok.com/@lexara.abogados/video/7704306579704745223"
             }
         ]
     },
@@ -94,6 +158,12 @@
             "Derecho laboral",
             "Nómina",
             "Decreto 1417 de 2026"
+        ],
+        "tambien": [
+            {
+                "red": "tiktok",
+                "url": "https://www.tiktok.com/@lexara.abogados/video/7703023636973636916"
+            }
         ]
     },
     {
@@ -107,7 +177,13 @@
         "miniatura": "assets/img/miniaturas/instagram-DfGPrZDjQMR.jpg",
         "destacada": false,
         "etiquetas": [],
-        "origen": "instagram"
+        "origen": "instagram",
+        "tambien": [
+            {
+                "red": "tiktok",
+                "url": "https://www.tiktok.com/@lexara.abogados/video/7702244015663582482"
+            }
+        ]
     },
     {
         "id": "2026-10-28-yt-YOt2Be8619c",
@@ -142,6 +218,19 @@
         "origen": "youtube"
     },
     {
+        "id": "2026-10-18-la-reforma-pensional-cambio",
+        "tipo": "reel",
+        "titulo": "¿La reforma pensional cambió?",
+        "descripcion": "",
+        "fecha": "2026-10-18",
+        "red": "tiktok",
+        "url": "https://www.tiktok.com/@lexara.abogados/video/7697799025344417032",
+        "miniatura": "",
+        "destacada": false,
+        "etiquetas": [],
+        "origen": "manual"
+    },
+    {
         "id": "2026-10-16-ig-DekjnniAHZW",
         "tipo": "reel",
         "titulo": "¿Terminaste tu contrato y crees que ya no pueden reclamarte?",
@@ -152,7 +241,13 @@
         "miniatura": "assets/img/miniaturas/instagram-DekjnniAHZW.jpg",
         "destacada": false,
         "etiquetas": [],
-        "origen": "instagram"
+        "origen": "instagram",
+        "tambien": [
+            {
+                "red": "tiktok",
+                "url": "https://www.tiktok.com/@lexara.abogados/video/7697265736569523474"
+            }
+        ]
     },
     {
         "id": "2026-10-15-ig-DehViz_xmmR",
@@ -166,5 +261,366 @@
         "destacada": false,
         "etiquetas": [],
         "origen": "instagram"
+    },
+    {
+        "id": "2026-10-13-estas-pagando-un-calculo-actuarial-para",
+        "tipo": "reel",
+        "titulo": "¿Estás pagando un cálculo actuarial para mejorar tu pensión?",
+        "descripcion": "",
+        "fecha": "2026-10-13",
+        "red": "instagram",
+        "url": "https://www.instagram.com/reel/Deb0G2KjQqR/",
+        "miniatura": "",
+        "destacada": false,
+        "etiquetas": [],
+        "origen": "manual",
+        "tambien": [
+            {
+                "red": "tiktok",
+                "url": "https://www.tiktok.com/@lexara.abogados/video/7696129221265001735"
+            }
+        ]
+    },
+    {
+        "id": "2026-10-10-no-28-sentencia-a-la-reforma",
+        "tipo": "podcast",
+        "titulo": "No. 28. Sentencia a la reforma pensional",
+        "descripcion": "",
+        "fecha": "2026-10-10",
+        "red": "youtube",
+        "url": "https://www.youtube.com/watch?v=gtwjs2xJ-n4",
+        "miniatura": "",
+        "destacada": false,
+        "etiquetas": [],
+        "origen": "manual"
+    },
+    {
+        "id": "2026-10-06-y-si-todo-lo-que-te",
+        "tipo": "reel",
+        "titulo": "¿Y si todo lo que te dijeron sobre la nueva reforma pensional fuera mentira?",
+        "descripcion": "",
+        "fecha": "2026-10-06",
+        "red": "instagram",
+        "url": "https://www.instagram.com/reel/DeK_6zXOgq0/",
+        "miniatura": "",
+        "destacada": false,
+        "etiquetas": [],
+        "origen": "manual",
+        "tambien": [
+            {
+                "red": "tiktok",
+                "url": "https://www.tiktok.com/@lexara.abogados/video/7693912747523771655"
+            }
+        ]
+    },
+    {
+        "id": "2026-10-02-reforma-pensional-y-regimen-de-transicion",
+        "tipo": "reel",
+        "titulo": "Reforma pensional y régimen de transición: la entidad requiere un año adicional para completar los ajustes",
+        "descripcion": "",
+        "fecha": "2026-10-02",
+        "red": "instagram",
+        "url": "https://www.instagram.com/reel/DeAgdLpCgtj/",
+        "miniatura": "",
+        "destacada": false,
+        "etiquetas": [],
+        "origen": "manual",
+        "tambien": [
+            {
+                "red": "youtube",
+                "url": "https://www.youtube.com/shorts/Zp_mv9TR7GE"
+            },
+            {
+                "red": "tiktok",
+                "url": "https://www.tiktok.com/@lexara.abogados/video/7691673884281638162"
+            }
+        ]
+    },
+    {
+        "id": "2026-09-29-se-radico-el-estatuto-del-trabajo",
+        "tipo": "reel",
+        "titulo": "Se radicó el Estatuto del Trabajo.",
+        "descripcion": "",
+        "fecha": "2026-09-29",
+        "red": "instagram",
+        "url": "https://www.instagram.com/reel/Dd2bOkOgZA8/",
+        "miniatura": "",
+        "destacada": false,
+        "etiquetas": [],
+        "origen": "manual",
+        "tambien": [
+            {
+                "red": "youtube",
+                "url": "https://www.youtube.com/shorts/SoC74LPGTcA"
+            },
+            {
+                "red": "tiktok",
+                "url": "https://www.tiktok.com/@lexara.abogados/video/7690741025849068808"
+            }
+        ]
+    },
+    {
+        "id": "2026-09-25-no-27-reforma-pensional-resolucion-2708",
+        "tipo": "podcast",
+        "titulo": "No. 27 Reforma pensional: Resolución 2708",
+        "descripcion": "",
+        "fecha": "2026-09-25",
+        "red": "youtube",
+        "url": "https://www.youtube.com/watch?v=B5AKzgU3Eb0",
+        "miniatura": "",
+        "destacada": false,
+        "etiquetas": [],
+        "origen": "manual",
+        "tambien": [
+            {
+                "red": "tiktok",
+                "url": "https://www.tiktok.com/@lexara.abogados/video/7689591927498476807"
+            }
+        ]
+    },
+    {
+        "id": "2026-09-23-una-emergencia-tambien-puede-generar-decisiones",
+        "tipo": "reel",
+        "titulo": "Una emergencia también puede generar decisiones laborales que las empresas deben conocer.",
+        "descripcion": "",
+        "fecha": "2026-09-23",
+        "red": "instagram",
+        "url": "https://www.instagram.com/reel/DdpVa87Cnis/",
+        "miniatura": "",
+        "destacada": false,
+        "etiquetas": [],
+        "origen": "manual",
+        "tambien": [
+            {
+                "red": "youtube",
+                "url": "https://www.youtube.com/shorts/XQ-s31988RY"
+            }
+        ]
+    },
+    {
+        "id": "2026-09-15-el-ministerio-del-trabajo-con-la",
+        "tipo": "reel",
+        "titulo": "El Ministerio del Trabajo con la Resolución 2708 del 20 de agosto de 2026, derogó 11 circulares",
+        "descripcion": "",
+        "fecha": "2026-09-15",
+        "red": "instagram",
+        "url": "https://www.instagram.com/reel/DdUu8fdkobc/",
+        "miniatura": "",
+        "destacada": false,
+        "etiquetas": [],
+        "origen": "manual",
+        "tambien": [
+            {
+                "red": "youtube",
+                "url": "https://www.youtube.com/shorts/CRs3WXkOpAk"
+            }
+        ]
+    },
+    {
+        "id": "2026-09-08-una-emergencia-tambien-puede-generar-decisiones",
+        "tipo": "reel",
+        "titulo": "Una emergencia también puede generar decisiones laborales que las empresas deben conocer.",
+        "descripcion": "",
+        "fecha": "2026-09-08",
+        "red": "instagram",
+        "url": "https://www.instagram.com/reel/DdCtgEgAs9r/",
+        "miniatura": "",
+        "destacada": false,
+        "etiquetas": [],
+        "origen": "manual",
+        "tambien": [
+            {
+                "red": "youtube",
+                "url": "https://www.youtube.com/shorts/Ze41e6-Ty8c"
+            },
+            {
+                "red": "tiktok",
+                "url": "https://www.tiktok.com/@lexara.abogados/video/7681840204633640210"
+            }
+        ]
+    },
+    {
+        "id": "2026-09-04-cuatro-decretos-laborales-proferidos-al-final",
+        "tipo": "reel",
+        "titulo": "Cuatro decretos laborales proferidos al final del gobierno Petro. Esto trae cada uno",
+        "descripcion": "",
+        "fecha": "2026-09-04",
+        "red": "instagram",
+        "url": "https://www.instagram.com/reel/Dc4OmauE2UD/",
+        "miniatura": "",
+        "destacada": false,
+        "etiquetas": [],
+        "origen": "manual",
+        "tambien": [
+            {
+                "red": "tiktok",
+                "url": "https://www.tiktok.com/@lexara.abogados/video/7681839626377596178"
+            }
+        ]
+    },
+    {
+        "id": "2026-08-31-la-reforma-pensional-vuelve-a-estar",
+        "tipo": "reel",
+        "titulo": "La Reforma Pensional vuelve a estar en el centro de la conversación en Colombia.",
+        "descripcion": "",
+        "fecha": "2026-08-31",
+        "red": "instagram",
+        "url": "https://www.instagram.com/reel/DcuHyuvDvm2/",
+        "miniatura": "",
+        "destacada": false,
+        "etiquetas": [],
+        "origen": "manual",
+        "tambien": [
+            {
+                "red": "youtube",
+                "url": "https://www.youtube.com/shorts/x9j_2YSZpZ8"
+            }
+        ]
+    },
+    {
+        "id": "2026-08-27-que-cambia-para-los-trabajadores-de",
+        "tipo": "reel",
+        "titulo": "¿Qué cambia para los trabajadores de la cultura, el arte y el espectáculo con el Decreto 658 de 2026?",
+        "descripcion": "",
+        "fecha": "2026-08-27",
+        "red": "instagram",
+        "url": "https://www.instagram.com/reel/Dcj05YejsYu/",
+        "miniatura": "",
+        "destacada": false,
+        "etiquetas": [],
+        "origen": "manual",
+        "tambien": [
+            {
+                "red": "tiktok",
+                "url": "https://www.tiktok.com/@lexara.abogados/video/7673884939741318418"
+            }
+        ]
+    },
+    {
+        "id": "2026-08-19-que-pasa-con-los-soportes-de",
+        "tipo": "reel",
+        "titulo": "¿Qué pasa con los soportes de cesantías según la Sentencia SL245?",
+        "descripcion": "",
+        "fecha": "2026-08-19",
+        "red": "instagram",
+        "url": "https://www.instagram.com/reel/DcPOJOhjm8g/",
+        "miniatura": "",
+        "destacada": false,
+        "etiquetas": [],
+        "origen": "manual",
+        "tambien": [
+            {
+                "red": "tiktok",
+                "url": "https://www.tiktok.com/@lexara.abogados/video/7673883691109682450"
+            }
+        ]
+    },
+    {
+        "id": "2026-08-19-puede-una-pension-de-sobrevivientes-repartirse",
+        "tipo": "reel",
+        "titulo": "¿Puede una pensión de sobrevivientes repartirse entre dos compañeras permanentes?",
+        "descripcion": "",
+        "fecha": "2026-08-19",
+        "red": "instagram",
+        "url": "https://www.instagram.com/reel/DcPCAl5JZB_/",
+        "miniatura": "",
+        "destacada": false,
+        "etiquetas": [],
+        "origen": "manual"
+    },
+    {
+        "id": "2026-08-17-que-es-el-programa-de-empleo",
+        "tipo": "reel",
+        "titulo": "¿Qué es el Programa de Empleo Nocturno del Decreto 659 de 2026?",
+        "descripcion": "",
+        "fecha": "2026-08-17",
+        "red": "instagram",
+        "url": "https://www.instagram.com/reel/DcJ2M6TDuka/",
+        "miniatura": "",
+        "destacada": false,
+        "etiquetas": [],
+        "origen": "manual",
+        "tambien": [
+            {
+                "red": "tiktok",
+                "url": "https://www.tiktok.com/@lexara.abogados/video/7673882176470945031"
+            }
+        ]
+    },
+    {
+        "id": "2026-08-14-existe-proteccion-laboral-durante-la-etapa",
+        "tipo": "reel",
+        "titulo": "¿Existe protección laboral durante la etapa de lactancia?",
+        "descripcion": "",
+        "fecha": "2026-08-14",
+        "red": "instagram",
+        "url": "https://www.instagram.com/reel/DcCVfmADo2x/",
+        "miniatura": "",
+        "destacada": false,
+        "etiquetas": [],
+        "origen": "manual",
+        "tambien": [
+            {
+                "red": "tiktok",
+                "url": "https://www.tiktok.com/@lexara.abogados/video/7673880099153808658"
+            }
+        ]
+    },
+    {
+        "id": "2026-08-13-si-tu-empresa-trabaja-con-contratistas",
+        "tipo": "reel",
+        "titulo": "Si tu empresa trabaja con contratistas, esta información te interesa.",
+        "descripcion": "",
+        "fecha": "2026-08-13",
+        "red": "instagram",
+        "url": "https://www.instagram.com/reel/Db9uPKqptvo/",
+        "miniatura": "",
+        "destacada": false,
+        "etiquetas": [],
+        "origen": "manual",
+        "tambien": [
+            {
+                "red": "tiktok",
+                "url": "https://www.tiktok.com/@lexara.abogados/video/7673345730790067463"
+            }
+        ]
+    },
+    {
+        "id": "2026-08-07-el-decreto-660-de-2026-cambia",
+        "tipo": "reel",
+        "titulo": "¿El Decreto 660 de 2026 cambia las reglas para los community managers?",
+        "descripcion": "",
+        "fecha": "2026-08-07",
+        "red": "instagram",
+        "url": "https://www.instagram.com/reel/DbuLYkfJ442/",
+        "miniatura": "",
+        "destacada": false,
+        "etiquetas": [],
+        "origen": "manual",
+        "tambien": [
+            {
+                "red": "tiktok",
+                "url": "https://www.tiktok.com/@lexara.abogados/video/7671105677334547730"
+            }
+        ]
+    },
+    {
+        "id": "2026-08-05-cambio-el-subsidio-pensional-en-colombia",
+        "tipo": "reel",
+        "titulo": "¿Cambió el subsidio pensional en Colombia?",
+        "descripcion": "",
+        "fecha": "2026-08-05",
+        "red": "instagram",
+        "url": "https://www.instagram.com/reel/DbqRRrmJZHL/",
+        "miniatura": "",
+        "destacada": false,
+        "etiquetas": [],
+        "origen": "manual",
+        "tambien": [
+            {
+                "red": "tiktok",
+                "url": "https://www.tiktok.com/@lexara.abogados/video/7670543161038474504"
+            }
+        ]
     }
 ]

@@ -221,12 +221,12 @@ function guardarMiniatura(string $urlImagen, string $nombre): string {
 
 // ================= 1) reunir candidatas =================
 $sitio = leerSitio();
-$maximo = max(1, min(30, (int)($opc['maximo'] ?? $sitio['maximo'] ?? 5)));
+$maximo = max(1, min(200, (int)($opc['maximo'] ?? $sitio['maximo'] ?? 5)));   // 2026-11-23: antes el tope era 30; la página ahora muestra todas las publicaciones («Ver más»)
 $fuentes = $sitio['fuentes'] ?? [];
 $solo = isset($opc['solo']) ? array_filter(explode(',', $opc['solo'])) : ['instagram', 'youtube', 'spotify'];
 $cfg = configuracion();
 $candidatas = [];
-$margen = $maximo + 3;   // se lee un poco más que el máximo por si alguna es repetida de otra red
+$margen = min(25, $maximo + 3);   // se lee una ventana de las más recientes (las anteriores ya están en la lista); un poco más que el máximo por si alguna es repetida de otra red
 $tareas = [
     'instagram' => fn() => desdeInstagram($margen, $opc['simular'] ?? null),
     'youtube'   => fn() => empty($fuentes['youtube']['canal']) ? [] : desdeYoutube((string)$fuentes['youtube']['canal']),

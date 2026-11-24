@@ -11,7 +11,8 @@
   ];
   var REDES = { instagram: 'Instagram', facebook: 'Facebook', tiktok: 'TikTok', spotify: 'Spotify', youtube: 'YouTube', linkedin: 'LinkedIn', x: 'X', web: 'Sitio web' };
   var DEGRADADOS = { video: ['#1b5f8a', '#52bbb5'], reel: ['#a3306f', '#ef7d00'], podcast: ['#14753f', '#52bbb5'], noticia: ['#c46300', '#fbbc33'], publicacion: ['#5a3f96', '#52bbb5'] };
-  var estado = { sitio: {}, todas: [], tipo: '', red: '', texto: '', orden: 'reciente' };
+  var PASO = 12;   // cuántas tarjetas se muestran de una vez; «Ver más» agrega otras tantas
+  var estado = { sitio: {}, todas: [], tipo: '', red: '', texto: '', orden: 'reciente', mostrar: PASO };
 
   function el(tag, clase, texto){ var e = document.createElement(tag); if(clase) e.className = clase; if(texto != null) e.textContent = texto; return e; }
   function sinTildes(t){ return String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
@@ -148,7 +149,7 @@
     var q = sinTildes(estado.texto.trim());
     var l = estado.todas.filter(function(p){
       if(estado.tipo && p.tipo !== estado.tipo) return false;
-      if(estado.red && p.red !== estado.red) return false;
+      if(estado.red && p.red !== estado.red && !(p.tambien || []).some(function(t){ return t.red === estado.red; })) return false;   // cuenta también las redes de «También en …»
       return !q || sinTildes([p.titulo, p.descripcion, (p.etiquetas || []).join(' ')].join(' ')).indexOf(q) >= 0;
     });
     l.sort(function(a, b){ var c = (b.fecha || '').localeCompare(a.fecha || ''); return estado.orden === 'antigua' ? -c : c; });
@@ -156,9 +157,12 @@
   }
   function pintar(){
     var l = filtradas(), cont = $('rejilla'); cont.textContent = '';
-    l.forEach(function(p){ cont.appendChild(tarjeta(p)); });
+    l.slice(0, estado.mostrar).forEach(function(p){ cont.appendChild(tarjeta(p)); });
     $('vacio').hidden = l.length > 0;
-    $('conteo').textContent = l.length + (l.length === 1 ? ' publicación' : ' publicaciones');
+    var visibles = Math.min(estado.mostrar, l.length);
+    $('conteo').textContent = l.length > visibles ? 'Mostrando ' + visibles + ' de ' + l.length + ' publicaciones' : l.length + (l.length === 1 ? ' publicación' : ' publicaciones');
+    var mas = $('ver-mas'); mas.hidden = l.length <= estado.mostrar;
+    if(!mas.hidden) mas.textContent = 'Ver más publicaciones (' + (l.length - estado.mostrar) + ' más)';
   }
   function pintarTipos(){
     var cont = $('tipos'); cont.textContent = '';
@@ -167,7 +171,7 @@
       if(t.id && !n) return;   // no se muestra un tipo sin contenido
       var b = el('button', null, t.nombre); b.type = 'button'; b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', String(estado.tipo === t.id));
       b.appendChild(el('span', 'n', String(n)));
-      b.addEventListener('click', function(){ estado.tipo = t.id; pintarTipos(); pintar(); });
+      b.addEventListener('click', function(){ estado.tipo = t.id; estado.mostrar = PASO; pintarTipos(); pintar(); });
       cont.appendChild(b);
     });
   }
@@ -194,14 +198,15 @@
     });
     if(!redes.children.length) redes.hidden = true;
     var sel = $('filtro-red'); var usadas = {};
-    estado.todas.forEach(function(p){ if(p.red) usadas[p.red] = true; });
+    estado.todas.forEach(function(p){ if(p.red) usadas[p.red] = true; (p.tambien || []).forEach(function(t){ if(t.red) usadas[t.red] = true; }); });
     Object.keys(usadas).forEach(function(r){ var o = el('option', null, REDES[r] || r); o.value = r; sel.appendChild(o); });
     $('aviso-ejemplo').hidden = !estado.todas.some(function(p){ return p.ejemplo; });
   }
 
-  $('buscar').addEventListener('input', function(){ estado.texto = this.value; pintar(); });
-  $('filtro-red').addEventListener('change', function(){ estado.red = this.value; pintar(); });
-  $('orden').addEventListener('change', function(){ estado.orden = this.value; pintar(); });
+  $('buscar').addEventListener('input', function(){ estado.texto = this.value; estado.mostrar = PASO; pintar(); });
+  $('filtro-red').addEventListener('change', function(){ estado.red = this.value; estado.mostrar = PASO; pintar(); });
+  $('orden').addEventListener('change', function(){ estado.orden = this.value; estado.mostrar = PASO; pintar(); });
+  $('ver-mas').addEventListener('click', function(){ estado.mostrar += PASO; pintar(); });
 
   // ---------- campanita de publicaciones nuevas ----------
   // Es «nueva» la publicación que esta persona todavía no ha visto en este navegador (se recuerda en localStorage; no se envía nada a ningún servidor).
@@ -213,7 +218,7 @@
   var campana = { nuevas: [], vistas: [] };
   function porFechaDesc(a, b){ return String(b.fecha).localeCompare(String(a.fecha)); }
   function marcarVistas(){
-    var ids = estado.todas.map(idDe);   // solo se recuerdan las que siguen publicadas (la lista es de las 10 últimas)
+    var ids = estado.todas.map(idDe);   // solo se recuerdan las que siguen publicadas
     guardarVistas(ids); campana.vistas = ids; campana.nuevas = []; pintarCampana();
   }
   function cerrarCampana(marcar){
@@ -257,7 +262,9 @@
       vistas = estado.todas.filter(function(p){ return String(p.fecha) < c; }).map(idDe);
     }
     campana.vistas = vistas;
-    campana.nuevas = estado.todas.filter(function(p){ return !p.ejemplo && vistas.indexOf(idDe(p)) < 0; }).sort(porFechaDesc);
+    var c14 = new Date(); c14.setDate(c14.getDate() - 14);
+    var corte14 = c14.getFullYear() + '-' + ('0' + (c14.getMonth() + 1)).slice(-2) + '-' + ('0' + c14.getDate()).slice(-2);
+    campana.nuevas = estado.todas.filter(function(p){ return !p.ejemplo && vistas.indexOf(idDe(p)) < 0 && String(p.fecha) >= corte14; }).sort(porFechaDesc);
     $('campana').hidden = false; pintarCampana();
     $('campana-btn').addEventListener('click', function(ev){
       ev.stopPropagation();
