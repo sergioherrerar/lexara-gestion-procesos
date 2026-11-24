@@ -44,15 +44,39 @@ export function mesesDisponibles(datos){
   return [...s].sort();
 }
 
+// «Hoy» del calendario: la fecha de la lectura más reciente de los datos (el calendario de Bustral, las publicaciones de las redes o la última sincronización). Con ella se decide si una pieza programada ya
+// está vencida sin publicar; antes se usaba solo la fecha de la primera lectura (12-nov) y el calendario quedaba como si el tiempo no hubiera pasado.
+export function fechaCalendario(datos){
+  return [datos.leido, datos.bustralPanel && datos.bustralPanel.calendarioLeido, datos.publicacionesRedes && datos.publicacionesRedes.leido, datos.sincronizado && datos.sincronizado.fecha].filter(Boolean).sort().pop();
+}
+
+// Identificador de una publicación a partir de su enlace (YouTube, Instagram, TikTok): sirve para saber si dos enlaces son la misma publicación.
+function claveEnlace(u){
+  const s = String(u || ''); let r;
+  if((r = /(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/)|youtu\.be\/)([\w-]{11})/.exec(s))) return 'yt:' + r[1];
+  if((r = /instagram\.com\/(?:[\w.]+\/)?(?:reel|reels|p)\/([\w-]+)/.exec(s))) return 'ig:' + r[1];
+  if((r = /tiktok\.com\/.*\/video\/(\d+)/.exec(s))) return 'tt:' + r[1];
+  return s;
+}
+// La pieza realmente publicada de una pieza programada: por su enlace exacto («piezaUrl», lo seguro cuando hay varias piezas el mismo día) y, si no lo tiene, por la fecha en que salió («publicadaComo»).
+function piezaPublicadaDe(datos, g){
+  if(g.piezaUrl){
+    const k = claveEnlace(g.piezaUrl);
+    const p = datos.publicadas.find(x => Object.values(x.urls || {}).some(u => claveEnlace(u) === k));
+    if(p) return p;
+  }
+  return g.publicadaComo ? datos.publicadas.find(p => p.fecha === g.publicadaComo) || null : null;
+}
+
 // Todo lo del mes: filas del calendario (programadas cruzadas con lo realmente publicado + publicadas sin programar), indicadores y más/menos vista.
 export function calcularVistaMes(datos, mes){
-  const hoy = datos.leido;
+  const hoy = fechaCalendario(datos);
   const publicadasMes = datos.publicadas.filter(p => mesDe(p.fecha) === mes);
   const programadasMes = datos.programadas.filter(p => mesDe(p.fecha) === mes);
 
   // Cada programada se cruza con su publicación real (misma pieza, a veces otro día).
   const filasProg = programadasMes.map(g => {
-    const real = g.publicadaComo ? datos.publicadas.find(p => p.fecha === g.publicadaComo) : null;
+    const real = piezaPublicadaDe(datos, g);
     const salioEn = real ? real.fecha : (g.publicadaEn ? g.publicadaComo : null);
     let cumpl;
     if(salioEn){
@@ -131,7 +155,7 @@ export function novedadesDelMes(datos, mes){
       vistas: vistas || null,
     };
   });
-  return { vista, filas, noPublicadas: filas.filter(x => x.programada && !x.publicadaEl && x.programada < datos.leido) };
+  return { vista, filas, noPublicadas: filas.filter(x => x.programada && !x.publicadaEl && x.programada < fechaCalendario(datos)) };
 }
 
 // «Seguidores nuevos del mes»: si hay un conteo guardado de hace ~30 días se calcula solo (hoy − entonces); si no, el dato de Bustral o «sin medir».

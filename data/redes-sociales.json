@@ -135,11 +135,191 @@
   },
   "publicadas": [
     {
+      "fecha": "2026-08-05",
+      "redes": [
+        "instagram",
+        "tiktok"
+      ],
+      "titulo": "¿Cambió el subsidio pensional en Colombia?",
+      "copy": "",
+      "vistas": {
+        "tiktok": 200
+      },
+      "urls": {
+        "instagram": "https://www.instagram.com/reel/DbqRRrmJZHL/",
+        "tiktok": "https://www.tiktok.com/@lexara.abogados/video/7670543161038474504"
+      },
+      "reacciones": {
+        "instagram": {
+          "meGusta": 13,
+          "comentarios": 0
+        }
+      },
+      "hora": "8:41 a. m."
+    },
+    {
+      "fecha": "2026-08-06",
+      "redes": [
+        "instagram",
+        "tiktok"
+      ],
+      "titulo": "¿El Decreto 660 de 2026 cambia las reglas para los community managers?",
+      "copy": "",
+      "vistas": {
+        "tiktok": 214
+      },
+      "urls": {
+        "instagram": "https://www.instagram.com/reel/DbuLYkfJ442/",
+        "tiktok": "https://www.tiktok.com/@lexara.abogados/video/7671105677334547730"
+      },
+      "reacciones": {
+        "instagram": {
+          "meGusta": 18,
+          "comentarios": 0
+        }
+      },
+      "hora": "9:06 p. m."
+    },
+    {
+      "fecha": "2026-08-12",
+      "redes": [
+        "instagram",
+        "tiktok"
+      ],
+      "titulo": "Si tu empresa trabaja con contratistas, esta información te interesa.",
+      "copy": "",
+      "vistas": {
+        "tiktok": 1136
+      },
+      "urls": {
+        "instagram": "https://www.instagram.com/reel/Db9uPKqptvo/",
+        "tiktok": "https://www.tiktok.com/@lexara.abogados/video/7673345730790067463"
+      },
+      "reacciones": {
+        "instagram": {
+          "meGusta": 8,
+          "comentarios": 0
+        }
+      },
+      "hora": "10:00 p. m."
+    },
+    {
+      "fecha": "2026-08-14",
+      "redes": [
+        "instagram",
+        "tiktok"
+      ],
+      "titulo": "¿Qué cambia para los trabajadores de la cultura, el arte y el espectáculo con el Decreto 658 de 2026?",
+      "copy": "",
+      "vistas": {
+        "tiktok": 218
+      },
+      "urls": {
+        "instagram": "https://www.instagram.com/reel/Dcj05YejsYu/",
+        "tiktok": "https://www.tiktok.com/@lexara.abogados/video/7673884939741318418"
+      },
+      "reacciones": {
+        "instagram": {
+          "meGusta": 8,
+          "comentarios": 2
+        }
+      },
+      "hora": "8:52 a. m."
+    },
+    {
+      "fecha": "2026-08-14",
+      "redes": [
+        "instagram",
+        "tiktok"
+      ],
+      "titulo": "¿Qué pasa con los soportes de cesantías según la Sentencia SL245?",
+      "copy": "",
+      "vistas": {
+        "tiktok": 219
+      },
+      "urls": {
+        "instagram": "https://www.instagram.com/reel/DcPOJOhjm8g/",
+        "tiktok": "https://www.tiktok.com/@lexara.abogados/video/7673883691109682450"
+      },
+      "reacciones": {
+        "instagram": {
+          "meGusta": 10,
+          "comentarios": 0
+        }
+      },
+      "hora": "8:47 a. m."
+    },
+    {
+      "fecha": "2026-08-14",
+      "redes": [
+        "instagram",
+        "tiktok"
+      ],
+      "titulo": "¿Qué es el Programa de Empleo Nocturno del Decreto 659 de 2026?",
+      "copy": "",
+      "vistas": {
+        "tiktok": 211
+      },
+      "urls": {
+        "instagram": "https://www.instagram.com/reel/DcJ2M6TDuka/",
+        "tiktok": "https://www.tiktok.com/@lexara.abogados/video/7673882176470945031"
+      },
+      "reacciones": {
+        "instagram": {
+          "meGusta": 13,
+          "comentarios": 2
+        }
+      },
+      "hora": "8:42 a. m."
+    },
+    {
+      "fecha": "2026-08-14",
+      "redes": [
+        "instagram",
+        "tiktok"
+      ],
+      "titulo": "¿Existe protección laboral durante la etapa de lactancia?",
+      "copy": "",
+      "vistas": {
+        "tiktok": 387
+      },
+      "urls": {
+        "instagram": "https://www.instagram.com/reel/DcCVfmADo2x/",
+        "tiktok": "https://www.tiktok.com/@lexara.abogados/video/7673880099153808658"
+      },
+      "reacciones": {
+        "instagram": {
+          "meGusta": 8,
+          "comentarios": 0
+        }
+      },
+      "hora": "8:34 a. m."
+    },
+    {
+      "fecha": "2026-08-19",
+      "redes": [
+        "instagram"
+      ],
+      "titulo": "¿Puede una pensión de sobrevivientes repartirse entre dos compañeras permanentes?",
+      "copy": "",
+      "vistas": {},
+      "urls": {
+        "instagram": "https://www.instagram.com/reel/DcPCAl5JZB_/"
+      },
+      "reacciones": {
+        "instagram": {
+          "meGusta": 6,
+          "comentarios": 0
+        }
+      },
+      "hora": "3:19 p. m."
+    },
+    {
       "fecha": "2026-08-31",
       "redes": [
+        "instagram",
         "youtube",
-        "facebook",
-        "instagram"
+        "facebook"
       ],
       "titulo": "La Reforma Pensional vuelve a estar en el centro de la conversación",
       "copy": "La Reforma Pensional vuelve a estar en el centro de la conversación en Colombia. La Corte Constitucional avaló la mayor parte de la Ley 2381 de 2024, pero algunos de sus artículos deberán regresar a la Cámara de Representantes para corregir aspectos de su trámite. Entonces, ¿la reforma ya es una realidad? ¿Qué falta para su implementación? ¿Por qué su entrada en vigencia se proyecta ahora para 2027?",
@@ -147,21 +327,27 @@
         "youtube": 1261
       },
       "urls": {
-        "youtube": "https://www.youtube.com/watch?v=x9j_2YSZpZ8"
+        "instagram": "https://www.instagram.com/reel/DcuHyuvDvm2/",
+        "youtube": "https://www.youtube.com/shorts/x9j_2YSZpZ8"
       },
       "reacciones": {
+        "instagram": {
+          "meGusta": 7,
+          "comentarios": 0
+        },
         "youtube": {
           "meGusta": 14
         }
-      }
+      },
+      "hora": "5:06 p. m."
     },
     {
-      "fecha": "2026-09-08",
+      "fecha": "2026-09-04",
       "redes": [
         "instagram",
         "youtube",
-        "facebook",
-        "tiktok"
+        "tiktok",
+        "facebook"
       ],
       "titulo": "Una emergencia también puede generar decisiones laborales (Circular 0096)",
       "copy": "🚨 Una emergencia también puede generar decisiones laborales que las empresas deben conocer.\nLa Circular 0096 del 13 de agosto de 2026 establece orientaciones para empleadores, trabajadores del sector privado y Direcciones Territoriales del Ministerio del Trabajo, en el marco de la situación de desastre nacional declarada tras el sismo. Aborda trabajo en casa temporal, ausencias, vacaciones, retiro parcial de cesantías, licencias, anticipo de prima, fuerza mayor y suspensión del contrato, accidentes laborales y SG-SST.\n📩 Escríbenos si necesitas acompañamiento jurídico.",
@@ -170,21 +356,50 @@
         "tiktok": 181
       },
       "urls": {
-        "youtube": "https://www.youtube.com/watch?v=Ze41e6-Ty8c",
+        "instagram": "https://www.instagram.com/reel/DdCtgEgAs9r/",
+        "youtube": "https://www.youtube.com/shorts/Ze41e6-Ty8c",
         "tiktok": "https://www.tiktok.com/@lexara.abogados/video/7681840204633640210"
       },
       "reacciones": {
+        "instagram": {
+          "meGusta": 8,
+          "comentarios": 0
+        },
         "youtube": {
           "meGusta": 0
         }
-      }
+      },
+      "hora": "7:23 p. m."
+    },
+    {
+      "fecha": "2026-09-04",
+      "redes": [
+        "instagram",
+        "tiktok"
+      ],
+      "titulo": "Cuatro decretos laborales proferidos al final del gobierno Petro. Esto trae cada uno",
+      "copy": "",
+      "vistas": {
+        "tiktok": 185
+      },
+      "urls": {
+        "instagram": "https://www.instagram.com/reel/Dc4OmauE2UD/",
+        "tiktok": "https://www.tiktok.com/@lexara.abogados/video/7681839626377596178"
+      },
+      "reacciones": {
+        "instagram": {
+          "meGusta": 11,
+          "comentarios": 0
+        }
+      },
+      "hora": "3:18 p. m."
     },
     {
       "fecha": "2026-09-15",
       "redes": [
+        "instagram",
         "youtube",
-        "facebook",
-        "instagram"
+        "facebook"
       ],
       "titulo": "Resolución 2708 de 2026: el Ministerio del Trabajo derogó 11 circulares",
       "copy": "El Ministerio del Trabajo con la Resolución 2708 del 20 de agosto de 2026, derogó 11 circulares del gobierno Petro (jornada máxima, estabilidad laboral reforzada, libertad sindical, vigilancia y seguridad privada, debido proceso disciplinario, plataformas digitales de reparto, trabajo doméstico, entre otras).\nNo todas se derogan por el mismo motivo. Hay tres grupos: las que crearon obligaciones económicas sin respaldo legal, las que impusieron cargas a particulares disfrazadas de circular «interna», y las que tienen errores de referencia normativa.",
@@ -192,20 +407,26 @@
         "youtube": 64
       },
       "urls": {
-        "youtube": "https://www.youtube.com/watch?v=CRs3WXkOpAk"
+        "instagram": "https://www.instagram.com/reel/DdUu8fdkobc/",
+        "youtube": "https://www.youtube.com/shorts/CRs3WXkOpAk"
       },
       "reacciones": {
+        "instagram": {
+          "meGusta": 19,
+          "comentarios": 0
+        },
         "youtube": {
           "meGusta": 0
         }
-      }
+      },
+      "hora": "5:00 p. m."
     },
     {
       "fecha": "2026-09-23",
       "redes": [
+        "instagram",
         "youtube",
-        "facebook",
-        "instagram"
+        "facebook"
       ],
       "titulo": "Una emergencia también puede generar decisiones laborales (Circular 0096)",
       "copy": "🚨 Una emergencia también puede generar decisiones laborales que las empresas deben conocer.\nLa Circular 0096 del 13 de agosto de 2026 establece orientaciones para empleadores y trabajadores del sector privado en el marco de la situación de desastre nacional declarada tras el sismo. (Misma pieza publicada de nuevo; ver 8 de septiembre.)",
@@ -213,50 +434,80 @@
         "youtube": 2
       },
       "urls": {
-        "youtube": "https://www.youtube.com/watch?v=XQ-s31988RY"
+        "instagram": "https://www.instagram.com/reel/DdpVa87Cnis/",
+        "youtube": "https://www.youtube.com/shorts/XQ-s31988RY"
       },
       "reacciones": {
+        "instagram": {
+          "meGusta": 7,
+          "comentarios": 0
+        },
         "youtube": {
           "meGusta": 0
         }
-      }
+      },
+      "hora": "5:01 p. m."
+    },
+    {
+      "fecha": "2026-09-25",
+      "redes": [
+        "youtube",
+        "tiktok"
+      ],
+      "titulo": "No. 27 Reforma pensional: Resolución 2708",
+      "copy": "",
+      "vistas": {
+        "youtube": 47,
+        "tiktok": 206
+      },
+      "urls": {
+        "youtube": "https://www.youtube.com/watch?v=B5AKzgU3Eb0",
+        "tiktok": "https://www.tiktok.com/@lexara.abogados/video/7689591927498476807"
+      },
+      "reacciones": {
+        "youtube": {
+          "meGusta": 2
+        }
+      },
+      "hora": "4:43 p. m."
     },
     {
       "fecha": "2026-09-28",
       "redes": [
         "instagram",
-        "facebook",
         "youtube",
-        "tiktok"
+        "tiktok",
+        "facebook"
       ],
       "titulo": "Se radicó el Estatuto del Trabajo. Esto es lo que cambiaría",
       "copy": "Se radicó el Estatuto del Trabajo. Esto es lo que cambiaría:\n💰 Salario vital, no solo mínimo — calculado según costo de vida real, no solo inflación.\n🛡️ Más estabilidad laboral y garantías para organizarse sindicalmente.\n🤖 Si un algoritmo toma una decisión sobre tu trabajo, tienes derecho a saber cómo se tomó — y a pedir que una persona la revise.\nSigue en trámite en el Congreso. Te contamos qué sigue.",
       "vistas": {
         "youtube": 4,
-        "tiktok": 198
+        "tiktok": 199
       },
       "urls": {
         "instagram": "https://www.instagram.com/reel/Dd2bOkOgZA8/",
-        "youtube": "https://www.youtube.com/watch?v=SoC74LPGTcA",
+        "youtube": "https://www.youtube.com/shorts/SoC74LPGTcA",
         "tiktok": "https://www.tiktok.com/@lexara.abogados/video/7690741025849068808"
       },
       "reacciones": {
-        "youtube": {
-          "meGusta": 0
-        },
         "instagram": {
           "meGusta": 8,
           "comentarios": 0
+        },
+        "youtube": {
+          "meGusta": 0
         }
-      }
+      },
+      "hora": "7:02 p. m."
     },
     {
-      "fecha": "2026-10-02",
+      "fecha": "2026-10-01",
       "redes": [
-        "youtube",
-        "facebook",
         "instagram",
-        "tiktok"
+        "youtube",
+        "tiktok",
+        "facebook"
       ],
       "titulo": "Reforma pensional y régimen de transición",
       "copy": "La razón que exponen: la entidad requiere un año adicional para completar los ajustes tecnológicos, operativos, financieros e institucionales necesarios para implementar la nueva ley. Al 31 de agosto, Colpensiones había identificado 84 requerimientos pendientes. Además, Hacienda solicitó abrir un incidente de impacto fiscal: la reforma requeriría al menos $5 billones adicionales no incluidos en el Presupuesto 2027.\nLo importante: la reforma no ha sido aplazada; la fecha vigente sigue siendo el 1 de abril de 2027. ¿Está usted próximo a pensionarse? Escríbanos.",
@@ -266,30 +517,31 @@
       },
       "urls": {
         "instagram": "https://www.instagram.com/reel/DeAgdLpCgtj/",
-        "youtube": "https://www.youtube.com/watch?v=Zp_mv9TR7GE",
+        "youtube": "https://www.youtube.com/shorts/Zp_mv9TR7GE",
         "tiktok": "https://www.tiktok.com/@lexara.abogados/video/7691673884281638162"
       },
       "reacciones": {
-        "youtube": {
-          "meGusta": 6
-        },
         "instagram": {
           "meGusta": 14,
           "comentarios": 0
+        },
+        "youtube": {
+          "meGusta": 6
         }
-      }
+      },
+      "hora": "7:23 a. m."
     },
     {
       "fecha": "2026-10-06",
       "redes": [
-        "facebook",
         "instagram",
-        "tiktok"
+        "tiktok",
+        "facebook"
       ],
       "titulo": "¿Y si todo lo que te dijeron sobre la nueva reforma pensional fuera mentira?",
       "copy": "🚨 ¿Y si todo lo que te dijeron sobre la nueva reforma pensional fuera mentira?\nHay mucha desinformación circulando y, cuando se trata de tu futuro pensional, no puedes quedarte con lo que viste en un video o te contó alguien.\n👀 La pregunta realmente importante es: ¿qué ley te aplica a ti?\n💬 Cuéntanos: ¿ya sabes cuántas semanas tienes cotizadas?\n🎙️ Si quieres entenderlo sin enredos, te esperamos en Café Laboral.",
       "vistas": {
-        "tiktok": 241
+        "tiktok": 244
       },
       "urls": {
         "instagram": "https://www.instagram.com/reel/DeK_6zXOgq0/",
@@ -300,14 +552,34 @@
           "meGusta": 9,
           "comentarios": 0
         }
+      },
+      "hora": "6:47 p. m."
+    },
+    {
+      "fecha": "2026-10-10",
+      "redes": [
+        "youtube"
+      ],
+      "titulo": "No. 28. Sentencia a la reforma pensional",
+      "copy": "",
+      "vistas": {
+        "youtube": 155
+      },
+      "urls": {
+        "youtube": "https://www.youtube.com/watch?v=gtwjs2xJ-n4"
+      },
+      "reacciones": {
+        "youtube": {
+          "meGusta": 1
+        }
       }
     },
     {
       "fecha": "2026-10-13",
       "redes": [
-        "facebook",
         "instagram",
-        "tiktok"
+        "tiktok",
+        "facebook"
       ],
       "titulo": "¿Estás pagando un cálculo actuarial para mejorar tu pensión?",
       "copy": "💰 ¿Estás pagando un cálculo actuarial para mejorar tu pensión? ¡Cuidado! Podrías estar tomando una decisión sin conocer todos los riesgos.\nLa fecha de entrada en vigor de la reforma pensional sigue siendo un tema de debate y, dependiendo de tu situación, podría convenirte más el régimen anterior que el nuevo sistema.\n💬 Comenta «PENSIÓN» y te enviaremos los lineamientos que debes tener en cuenta antes de tomar una decisión.",
@@ -323,19 +595,39 @@
           "meGusta": 22,
           "comentarios": 4
         }
-      }
+      },
+      "hora": "7:31 a. m."
+    },
+    {
+      "fecha": "2026-10-15",
+      "redes": [
+        "instagram"
+      ],
+      "titulo": "La Ley 100 de 1993, en su versión original, no limitó el monto de las pensiones de alta cuantía.",
+      "copy": "",
+      "vistas": {},
+      "urls": {
+        "instagram": "https://www.instagram.com/reel/DehViz_xmmR/"
+      },
+      "reacciones": {
+        "instagram": {
+          "meGusta": 7,
+          "comentarios": 0
+        }
+      },
+      "hora": "10:59 a. m."
     },
     {
       "fecha": "2026-10-16",
       "redes": [
-        "facebook",
         "instagram",
-        "tiktok"
+        "tiktok",
+        "facebook"
       ],
       "titulo": "¿Terminaste tu contrato y crees que ya no pueden reclamarte?",
       "copy": "¿Terminaste tu contrato y crees que ya no pueden reclamarte? 👀⚖️\nNo necesariamente. En algunos casos, después de terminar la relación laboral todavía pueden existir reclamaciones por salarios, prestaciones sociales e intereses de mora. Además, es importante conocer cómo funciona la sanción moratoria y desde cuándo puede generarse.\n📌 ¿Tienes dudas sobre una liquidación laboral o una reclamación después de terminado tu contrato? Escríbenos.",
       "vistas": {
-        "tiktok": 286
+        "tiktok": 288
       },
       "urls": {
         "instagram": "https://www.instagram.com/reel/DekjnniAHZW/",
@@ -346,27 +638,48 @@
           "meGusta": 8,
           "comentarios": 0
         }
-      }
+      },
+      "hora": "9:02 a. m."
     },
     {
       "fecha": "2026-10-17",
       "redes": [
-        "instagram",
-        "facebook",
-        "tiktok"
+        "tiktok",
+        "facebook"
       ],
       "titulo": "¿La reforma pensional cambió? ¿Qué sigue ahora?",
       "copy": "🚨 ¿La reforma pensional cambió? ¿Qué sigue ahora?\nLa reciente sentencia sobre la reforma pensional abre importantes preguntas para trabajadores y futuros pensionados.\n⚖️ En nuestro nuevo episodio analizamos qué decidió la Corte, qué significa y qué debemos esperar.\n🎙️ Dale play al episodio completo. Encuéntralo en YouTube.",
       "vistas": {
-        "tiktok": 184
+        "tiktok": 189
       },
       "urls": {
         "tiktok": "https://www.tiktok.com/@lexara.abogados/video/7697799025344417032"
+      },
+      "hora": "7:31 p. m."
+    },
+    {
+      "fecha": "2026-10-26",
+      "redes": [
+        "youtube"
+      ],
+      "titulo": "No. 29 ¿Se acabó la reforma pensional?",
+      "copy": "",
+      "vistas": {
+        "youtube": 168
+      },
+      "urls": {
+        "youtube": "https://www.youtube.com/watch?v=foAkXEHoZxk"
+      },
+      "reacciones": {
+        "youtube": {
+          "meGusta": 1
+        }
       }
     },
     {
       "fecha": "2026-10-28",
       "redes": [
+        "instagram",
         "youtube"
       ],
       "titulo": "¿Te pensionas con la ley vieja o con la nueva?",
@@ -376,30 +689,30 @@
       },
       "urls": {
         "instagram": "https://www.instagram.com/reel/DfCyyrcALVj/",
-        "youtube": "https://www.youtube.com/watch?v=YOt2Be8619c"
+        "youtube": "https://www.youtube.com/shorts/YOt2Be8619c"
       },
-      "nota": "En Bustral figura solo en YouTube; también salió en Instagram.",
       "reacciones": {
-        "youtube": {
-          "meGusta": 1
-        },
         "instagram": {
           "meGusta": 9,
           "comentarios": 0
+        },
+        "youtube": {
+          "meGusta": 1
         }
-      }
+      },
+      "hora": "10:50 a. m."
     },
     {
       "fecha": "2026-10-29",
       "redes": [
-        "facebook",
         "instagram",
-        "tiktok"
+        "tiktok",
+        "facebook"
       ],
       "titulo": "Acoso y violencia laboral: intolerables (Decreto 1040 de 2026)",
       "copy": "Acoso y violencia laboral: intolerables. Y ahora, con obligaciones concretas para tu empresa. ⚠️\nEl Decreto 1040 de 2026 exige a los empleadores garantizar un entorno laboral libre de violencia y acoso. ¿Qué implica en la práctica?\n✅ Política de cero tolerancia. ✅ Un protocolo participativo con rutas de atención y canales seguros de denuncia. ✅ Incorporarlo en el reglamento interno y en los contratos. ✅ Medidas de protección para quien denuncia.",
       "vistas": {
-        "tiktok": 204
+        "tiktok": 206
       },
       "urls": {
         "instagram": "https://www.instagram.com/reel/DfGPrZDjQMR/",
@@ -410,19 +723,20 @@
           "meGusta": 6,
           "comentarios": 0
         }
-      }
+      },
+      "hora": "7:00 p. m."
     },
     {
       "fecha": "2026-10-31",
       "redes": [
-        "facebook",
         "instagram",
-        "tiktok"
+        "tiktok",
+        "facebook"
       ],
       "titulo": "¿Tu empresa fue golpeada por el terremoto? (Decreto 1417 de 2026)",
       "copy": "¿Tu empresa fue golpeada por el terremoto? El Gobierno te va a dar $700.362 al mes por cada trabajador que mantengas en nómina. 💼\nEl Decreto 1417 de 2026 trae tres medidas concretas: 1️⃣ Apoyo a la nómina. 2️⃣ Auxilio para quien perdió el empleo. 3️⃣ Herramientas para sostener el empleo.\n⏰ Las solicitudes se reciben hasta el 31 de diciembre de 2026.\n👉 Comenta «AUXILIOS» y te enviamos el análisis del decreto.",
       "vistas": {
-        "tiktok": 160
+        "tiktok": 163
       },
       "urls": {
         "instagram": "https://www.instagram.com/reel/DfLp7hSmnW8/",
@@ -433,74 +747,163 @@
           "meGusta": 10,
           "comentarios": 0
         }
-      }
+      },
+      "hora": "9:25 p. m."
     },
     {
       "fecha": "2026-11-04",
       "redes": [
-        "youtube",
-        "facebook",
         "instagram",
-        "tiktok"
+        "youtube",
+        "tiktok",
+        "facebook"
       ],
       "titulo": "Reforma pensional: ¿hay plata para arrancar?",
       "copy": "Reforma pensional: ¿hay plata para arrancar? 💰\nColpensiones le pidió al Ministerio de Hacienda certificar si existen los recursos para poner en marcha la reforma. Y ahí aparece una figura clave: el incidente de impacto fiscal (artículo 334 de la Constitución).\nLa Corte no puede cambiar el sentido de su decisión ni limitar derechos fundamentales por el factor económico; solo puede ajustar el cómo y el desde cuándo se cumple.\nEn otras palabras: el incidente de impacto fiscal no frena la reforma, pero sí puede mover sus tiempos.",
       "vistas": {
         "youtube": 171,
-        "tiktok": 6046
+        "tiktok": 6077
       },
       "urls": {
         "instagram": "https://www.instagram.com/reel/DfUjor7HEwd/",
-        "youtube": "https://www.youtube.com/watch?v=EKT_Z2-R3kQ",
+        "youtube": "https://www.youtube.com/shorts/EKT_Z2-R3kQ",
         "tiktok": "https://www.tiktok.com/@lexara.abogados/video/7704306579704745223"
       },
-      "hora": "8:23 a. m.",
       "reacciones": {
-        "youtube": {
-          "meGusta": 10
-        },
         "instagram": {
           "meGusta": 14,
           "comentarios": 0
+        },
+        "youtube": {
+          "meGusta": 10
+        }
+      },
+      "hora": "8:23 a. m."
+    },
+    {
+      "fecha": "2026-11-06",
+      "redes": [
+        "youtube",
+        "spotify"
+      ],
+      "titulo": "No. 30 - Reforma pensional: lo que podría cambiar",
+      "copy": "",
+      "vistas": {
+        "youtube": 62
+      },
+      "urls": {
+        "spotify": "https://open.spotify.com/episode/5eDbEa1B17jgAGtiBryqVf",
+        "youtube": "https://www.youtube.com/watch?v=stDrwdLIHNQ"
+      },
+      "reacciones": {
+        "youtube": {
+          "meGusta": 1
         }
       }
     },
     {
-      "fecha": "2026-11-12",
+      "fecha": "2026-11-13",
       "redes": [
-        "instagram"
-      ],
-      "titulo": "Tus ahorros de pensión: se cae el tope del 30 % a la inversión en el exterior (Decreto 1490 de 2026)",
-      "copy": "Publicada el 12 de noviembre en Instagram (dato dado por el equipo de Lexara). El texto exacto de la publicación se completa en la próxima lectura de Bustral."
-    },
-    {
-      "fecha": "2026-11-14",
-      "redes": [
-        "instagram"
+        "instagram",
+        "youtube",
+        "tiktok"
       ],
       "titulo": "El proceso monitorio laboral: cobrar lo que te deben, rápido",
-      "copy": "Desde abril de 2026, el nuevo Código Procesal del Trabajo trae el proceso monitorio laboral: sirve para cobrar deudas laborales claras, exigibles y de hasta 20 salarios mínimos, con 5 días para que el deudor pague o se oponga.\n\nSi eres trabajador, es la vía rápida para tu liquidación. Si eres empleador y te llega un requerimiento, no lo ignores: cinco días se van volando.\n\n#DerechoLaboral #ProcesoMonitorio #Liquidación #LexaraAbogados"
+      "copy": "Desde abril de 2026, el nuevo Código Procesal del Trabajo trae el proceso monitorio laboral: sirve para cobrar deudas laborales claras, exigibles y de hasta 20 salarios mínimos, con 5 días para que el deudor pague o se oponga.\n\nSi eres trabajador, es la vía rápida para tu liquidación. Si eres empleador y te llega un requerimiento, no lo ignores: cinco días se van volando.\n\n#DerechoLaboral #ProcesoMonitorio #Liquidación #LexaraAbogados",
+      "vistas": {
+        "youtube": 97,
+        "tiktok": 467
+      },
+      "urls": {
+        "instagram": "https://www.instagram.com/reel/DfsR3wcSL_E/",
+        "youtube": "https://www.youtube.com/shorts/43u9MC0nO8A",
+        "tiktok": "https://www.tiktok.com/@lexara.abogados/video/7707727162794626311"
+      },
+      "reacciones": {
+        "instagram": {
+          "meGusta": 13,
+          "comentarios": 0
+        },
+        "youtube": {
+          "meGusta": 1
+        }
+      },
+      "hora": "1:30 p. m."
     },
     {
       "fecha": "2026-11-16",
       "redes": [
         "instagram",
-        "youtube"
+        "youtube",
+        "tiktok"
       ],
       "titulo": "Suspendido el decreto de negociación colectiva por sectores (Decreto 234 de 2026)",
       "copy": "El Consejo de Estado suspendió provisionalmente el Decreto 234 de 2026, que permitía negociar convenciones colectivas por grupo de empresas, rama o sector.\n\nMientras dure la suspensión no se aplica; las convenciones vigentes y las negociaciones bajo el CST siguen igual. Ojo: no es la decisión final, es una medida provisional.",
       "vistas": {
-        "youtube": 355
+        "youtube": 355,
+        "tiktok": 192
       },
       "urls": {
         "instagram": "https://www.instagram.com/reel/DfzvCisSAkr/",
-        "youtube": "https://www.youtube.com/shorts/Yr9s-j433iI"
+        "youtube": "https://www.youtube.com/shorts/Yr9s-j433iI",
+        "tiktok": "https://www.tiktok.com/@lexara.abogados/video/7708772162873609480"
       },
       "reacciones": {
         "youtube": {
           "meGusta": 3
         }
-      }
+      },
+      "hora": "9:13 a. m."
+    },
+    {
+      "fecha": "2026-11-19",
+      "redes": [
+        "instagram",
+        "youtube",
+        "tiktok"
+      ],
+      "titulo": "Tus ahorros de pensión: se cae el tope del 30 % a la inversión en el exterior (Decreto 1490 de 2026)",
+      "copy": "Publicada el 12 de noviembre en Instagram (dato dado por el equipo de Lexara). El texto exacto de la publicación se completa en la próxima lectura de Bustral.",
+      "vistas": {
+        "youtube": 18,
+        "tiktok": 138
+      },
+      "urls": {
+        "instagram": "https://www.instagram.com/reel/Df7doRvJrJR/",
+        "youtube": "https://www.youtube.com/shorts/ztcvPkQGZAQ",
+        "tiktok": "https://www.tiktok.com/@lexara.abogados/video/7709914690587069704"
+      },
+      "reacciones": {
+        "youtube": {
+          "meGusta": 1
+        }
+      },
+      "hora": "11:02 a. m."
+    },
+    {
+      "fecha": "2026-11-23",
+      "redes": [
+        "instagram",
+        "youtube",
+        "tiktok"
+      ],
+      "titulo": "4 trabajadores directos y 168 en misión, durante años.",
+      "copy": "",
+      "vistas": {
+        "youtube": 0,
+        "tiktok": 48
+      },
+      "urls": {
+        "instagram": "https://www.instagram.com/reel/DgGMb9dSLT7/",
+        "youtube": "https://www.youtube.com/shorts/xP7NJ7eeIl4",
+        "tiktok": "https://www.tiktok.com/@lexara.abogados/video/7711460284577123591"
+      },
+      "reacciones": {
+        "youtube": {
+          "meGusta": 0
+        }
+      },
+      "hora": "3:03 p. m."
     }
   ],
   "bustralPanel": {
@@ -521,7 +924,8 @@
       "destino": "Instagram",
       "tieneVideo": true,
       "copy": "Material grabado: carpeta 01_REEL_incidente-impacto-fiscal-parte1 (Drive Lexara). Guion ajustado a lo que se grabó.\nGancho (0:00–0:07): «La reforma pensional empieza a regir en abril de 2027… pero el Ministerio de Hacienda le pidió a la Corte revisar si hay plata para arrancar. ¿Qué significa eso?»\n[0:07–0:30] «Se llama incidente de impacto fiscal y está en el artículo 334 de la Constitución. Es una herramienta para que un ministro o el Procurador le pidan a la Corte que module cómo se va a implementar una sentencia que afecta las finanzas públicas…»",
-      "publicadaComo": "2026-11-04"
+      "publicadaComo": "2026-11-04",
+      "piezaUrl": "https://www.instagram.com/reel/DfUjor7HEwd/"
     },
     {
       "fecha": "2026-11-06",
@@ -559,7 +963,8 @@
       "destino": "Instagram",
       "tieneVideo": true,
       "copy": "Material grabado: carpeta 03_TUS AHORROS MEJORA CALIDAD.mp4 (Drive Lexara).\nGancho (0:00–0:07): «Tus ahorros de pensión en un fondo privado ya no tienen que regresar obligatoriamente a Colombia. El Gobierno acaba de eliminar esa regla.»\n[0:07–0:28] «En abril de este año, el gobierno anterior expidió el Decreto 369: los fondos privados solo podían tener invertido en el exterior, como máximo, el 30 %…»\n[0:28–0:50] «Este 6 de octubre, el nuevo Gobierno expidió el Decreto 1490, que elimina ese tope…»",
-      "publicadaComo": "2026-11-12"
+      "publicadaComo": "2026-11-19",
+      "piezaUrl": "https://www.instagram.com/reel/Df7doRvJrJR/"
     },
     {
       "fecha": "2026-11-16",
@@ -569,7 +974,8 @@
       "destino": "Instagram",
       "tieneVideo": true,
       "copy": "Material grabado: carpeta 04_Proceso Monitoreo laboral (Drive Lexara).\nGancho (0:00–0:07): «¿Te deben salarios o tu liquidación y no es mucha plata? Hay un proceso nuevo, rápido y sin tantos trámites, para cobrarlo. Se llama proceso monitorio.»\n[0:07–0:25] «Desde abril de 2026 rige el nuevo Código Procesal del Trabajo, y trae el proceso monitorio laboral: sirve para cobrar deudas de una relación de trabajo o de seguridad social que sean claras, exigibles y no superen 20 salarios mínimos…»",
-      "publicadaComo": "2026-11-14"
+      "publicadaComo": "2026-11-13",
+      "piezaUrl": "https://www.instagram.com/reel/DfsR3wcSL_E/"
     },
     {
       "fecha": "2026-11-19",
@@ -579,7 +985,8 @@
       "destino": "Instagram",
       "tieneVideo": true,
       "copy": "Material grabado: carpeta 05_DECRETO 234.mp4 (Drive Lexara).\nGancho (0:00–0:07): «¿Te dijeron que los sindicatos ahora iban a poder negociar con todo tu sector a la vez? Pues el Consejo de Estado acaba de frenar esa norma.»\n[0:07–0:25] «En marzo de este año, el gobierno anterior sacó el Decreto 234, que permitía negociar con un grupo de empresas, una rama o todo un sector, en una sola mesa y con un solo pliego…»\n[0:25–0:50] «El 1 de octubre, el Consejo de Estado suspendió provisionalmente ese decreto…»",
-      "publicadaComo": "2026-11-16"
+      "publicadaComo": "2026-11-16",
+      "piezaUrl": "https://www.instagram.com/reel/DfzvCisSAkr/"
     },
     {
       "fecha": "2026-11-20",
@@ -598,7 +1005,9 @@
       "objecion": "Corregir portada con IA, parece otra persona.",
       "destino": "Instagram",
       "tieneVideo": true,
-      "copy": "Material grabado: carpeta 06_168 TEMPORALES MEJORA DE CALIDAD (Drive Lexara).\nGancho (0:00–0:07): «Una clínica en Cartagena tenía 4 trabajadores directos… y 168 por temporal. Durante años. El Consejo de Estado dejó en firme la sanción.»\n[0:07–0:28] «El Ministerio del Trabajo sancionó a una clínica de Cartagena porque prestaba sus servicios con trabajadores en misión, con contratos que se renovaban uno tras otro durante varios años…»"
+      "copy": "Material grabado: carpeta 06_168 TEMPORALES MEJORA DE CALIDAD (Drive Lexara).\nGancho (0:00–0:07): «Una clínica en Cartagena tenía 4 trabajadores directos… y 168 por temporal. Durante años. El Consejo de Estado dejó en firme la sanción.»\n[0:07–0:28] «El Ministerio del Trabajo sancionó a una clínica de Cartagena porque prestaba sus servicios con trabajadores en misión, con contratos que se renovaban uno tras otro durante varios años…»",
+      "publicadaComo": "2026-11-23",
+      "piezaUrl": "https://www.instagram.com/reel/DgGMb9dSLT7/"
     },
     {
       "fecha": "2026-11-26",
@@ -744,5 +1153,9 @@
   "estadisticas": {
     "leido": "2026-11-23",
     "nota": "Vistas, me gusta y comentarios por publicación leídos de las páginas públicas: YouTube (vistas y me gusta), Instagram (me gusta y comentarios) y TikTok (vistas del perfil). Instagram y Facebook no entregan vistas por publicación; TikTok y Facebook no entregan me gusta por publicación sin sesión."
+  },
+  "sincronizado": {
+    "fecha": "2026-11-24",
+    "nota": "Piezas publicadas recalculadas desde las publicaciones reales de YouTube, Instagram y TikTok (fechas de Instagram y TikTok en hora de Colombia). Herramienta: herramientas/redes/sincronizar-redes.cjs"
   }
 }

@@ -3,7 +3,7 @@
 import { estilizarEncabezadoXlsx, fechaISOaExcel } from './informeTutelas';
 import { prepararDocumentoPDF, dibujarResumenBox, VERDE_OSCURO, GRIS_SUAVE, TEXTO, BORDE_SUAVE, GRIS_ZEBRA, MARGEN, CONTENIDO_Y_INICIAL, CONTENIDO_Y_MAXIMO } from './informesPDF';
 import { firmaHtml, firmaComoImagenInline, crearBorradorConImagenesInline } from './graph';
-import { novedadesDelMes, nombreMes, fechaLarga, fechaDMA, nuevosDe, REDES_ORDEN, RED_NOMBRE, BUSTRAL_CALENDARIO } from './redesSociales';
+import { novedadesDelMes, nombreMes, fechaLarga, fechaDMA, nuevosDe, fechaCalendario, REDES_ORDEN, RED_NOMBRE, BUSTRAL_CALENDARIO } from './redesSociales';
 
 export const ASUNTO_REVISION_REDES = 'Revisión de publicaciones de Lexara Abogados';
 const NOTA_BUSTRAL = 'Bustral solo registra el estado actual de cada video (aprobado u objetado); no guarda la fecha ni la hora en que se aprobó u objetó. La hora de publicación se indica cuando está disponible.';
@@ -40,7 +40,7 @@ export async function generarInformeRedesExcel(datos, mes){
     [1, 6].forEach(i => { r.getCell(i).numFmt = 'dd/mm/yyyy'; r.getCell(i).alignment = { vertical: 'middle', horizontal: 'center' }; });
     r.getCell(10).alignment = { vertical: 'middle', horizontal: 'right' };   // los valores numéricos siempre a la derecha
     r.getCell(10).numFmt = '#,##0';
-    if(x.programada && !x.publicadaEl && x.programada < datos.leido) r.getCell(9).font = { bold: true, color: { argb: 'FFA3281C' } };
+    if(x.programada && !x.publicadaEl && x.programada < fechaCalendario(datos)) r.getCell(9).font = { bold: true, color: { argb: 'FFA3281C' } };
   });
   ws.views = [{ state: 'frozen', ySplit: 1 }];
   ws.addRow([]);

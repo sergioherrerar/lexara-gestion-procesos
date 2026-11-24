@@ -165,7 +165,7 @@
     {
       "red": "instagram",
       "tipo": "reel",
-      "fecha": "2026-11-01",
+      "fecha": "2026-10-31",
       "titulo": "¿Tu empresa fue golpeada por el terremoto?",
       "url": "https://www.instagram.com/reel/DfLp7hSmnW8/",
       "vistas": null,
@@ -175,7 +175,7 @@
     {
       "red": "tiktok",
       "tipo": "video",
-      "fecha": "2026-11-01",
+      "fecha": "2026-10-31",
       "titulo": "¿Tu empresa fue golpeada por el terremoto?",
       "url": "https://www.tiktok.com/@lexara.abogados/video/7703023636973636916",
       "vistas": 163,
@@ -185,7 +185,7 @@
     {
       "red": "instagram",
       "tipo": "reel",
-      "fecha": "2026-10-30",
+      "fecha": "2026-10-29",
       "titulo": "Acoso y violencia laboral: intolerables.",
       "url": "https://www.instagram.com/reel/DfGPrZDjQMR/",
       "vistas": null,
@@ -195,7 +195,7 @@
     {
       "red": "tiktok",
       "tipo": "video",
-      "fecha": "2026-10-30",
+      "fecha": "2026-10-29",
       "titulo": "Acoso y violencia laboral: intolerables.",
       "url": "https://www.tiktok.com/@lexara.abogados/video/7702244015663582482",
       "vistas": 206,
@@ -235,7 +235,7 @@
     {
       "red": "tiktok",
       "tipo": "video",
-      "fecha": "2026-10-18",
+      "fecha": "2026-10-17",
       "titulo": "¿La reforma pensional cambió?",
       "url": "https://www.tiktok.com/@lexara.abogados/video/7697799025344417032",
       "vistas": 189,
@@ -353,9 +353,19 @@
       "comentarios": null
     },
     {
+      "red": "youtube",
+      "tipo": "short",
+      "fecha": "2026-09-29",
+      "titulo": "Ojo con los cambios a nivel laboral",
+      "url": "https://www.youtube.com/shorts/SoC74LPGTcA",
+      "vistas": 4,
+      "meGusta": 0,
+      "comentarios": null
+    },
+    {
       "red": "instagram",
       "tipo": "reel",
-      "fecha": "2026-09-29",
+      "fecha": "2026-09-28",
       "titulo": "Se radicó el Estatuto del Trabajo.",
       "url": "https://www.instagram.com/reel/Dd2bOkOgZA8/",
       "vistas": null,
@@ -365,21 +375,11 @@
     {
       "red": "tiktok",
       "tipo": "video",
-      "fecha": "2026-09-29",
+      "fecha": "2026-09-28",
       "titulo": "Se radicó el Estatuto del Trabajo.",
       "url": "https://www.tiktok.com/@lexara.abogados/video/7690741025849068808",
       "vistas": 199,
       "meGusta": null,
-      "comentarios": null
-    },
-    {
-      "red": "youtube",
-      "tipo": "short",
-      "fecha": "2026-09-29",
-      "titulo": "Ojo con los cambios a nivel laboral",
-      "url": "https://www.youtube.com/shorts/SoC74LPGTcA",
-      "vistas": 4,
-      "meGusta": 0,
       "comentarios": null
     },
     {
@@ -463,9 +463,19 @@
       "comentarios": null
     },
     {
+      "red": "instagram",
+      "tipo": "reel",
+      "fecha": "2026-09-04",
+      "titulo": "Cuatro decretos laborales proferidos al final del gobierno Petro. Esto trae cada uno",
+      "url": "https://www.instagram.com/reel/Dc4OmauE2UD/",
+      "vistas": null,
+      "meGusta": 11,
+      "comentarios": 0
+    },
+    {
       "red": "tiktok",
       "tipo": "video",
-      "fecha": "2026-09-05",
+      "fecha": "2026-09-04",
       "titulo": "Una emergencia también puede generar decisiones laborales que las empresas deben conocer.",
       "url": "https://www.tiktok.com/@lexara.abogados/video/7681840204633640210",
       "vistas": 181,
@@ -475,22 +485,12 @@
     {
       "red": "tiktok",
       "tipo": "video",
-      "fecha": "2026-09-05",
+      "fecha": "2026-09-04",
       "titulo": "Cuatro decretos laborales proferidos al final del gobierno Petro. Esto trae cada uno",
       "url": "https://www.tiktok.com/@lexara.abogados/video/7681839626377596178",
       "vistas": 185,
       "meGusta": null,
       "comentarios": null
-    },
-    {
-      "red": "instagram",
-      "tipo": "reel",
-      "fecha": "2026-09-04",
-      "titulo": "Cuatro decretos laborales proferidos al final del gobierno Petro. Esto trae cada uno",
-      "url": "https://www.instagram.com/reel/Dc4OmauE2UD/",
-      "vistas": null,
-      "meGusta": 11,
-      "comentarios": 0
     },
     {
       "red": "instagram",
@@ -605,7 +605,7 @@
     {
       "red": "instagram",
       "tipo": "reel",
-      "fecha": "2026-08-13",
+      "fecha": "2026-08-12",
       "titulo": "Si tu empresa trabaja con contratistas, esta información te interesa.",
       "url": "https://www.instagram.com/reel/Db9uPKqptvo/",
       "vistas": null,
@@ -615,7 +615,7 @@
     {
       "red": "tiktok",
       "tipo": "video",
-      "fecha": "2026-08-13",
+      "fecha": "2026-08-12",
       "titulo": "Si tu empresa trabaja con contratistas, esta información te interesa.",
       "url": "https://www.tiktok.com/@lexara.abogados/video/7673345730790067463",
       "vistas": 1136,
@@ -625,7 +625,7 @@
     {
       "red": "instagram",
       "tipo": "reel",
-      "fecha": "2026-08-07",
+      "fecha": "2026-08-06",
       "titulo": "¿El Decreto 660 de 2026 cambia las reglas para los community managers?",
       "url": "https://www.instagram.com/reel/DbuLYkfJ442/",
       "vistas": null,
@@ -635,7 +635,7 @@
     {
       "red": "tiktok",
       "tipo": "video",
-      "fecha": "2026-08-07",
+      "fecha": "2026-08-06",
       "titulo": "¿El Decreto 660 de 2026 cambia las reglas para los community managers?",
       "url": "https://www.tiktok.com/@lexara.abogados/video/7671105677334547730",
       "vistas": 214,
