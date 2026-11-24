@@ -2,6 +2,12 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-11-23 (208)
+- **Informe de redes: estadísticas debajo de cada publicación del calendario, y la nota de Bustral también en «Estadísticas por publicación»** — pedido del usuario («esta parte [la nota] igual déjala debajo de cada publicación»; «debajo de la nota coloca su estadística; si no ha sido publicada aún no mostrará nada»).
+  - **Calendario (Informes → Redes sociales):** debajo de cada pieza ya publicada, y debajo de su nota si la tiene, hay una línea con Vistas, Me gusta y Comentarios (total y desglose por red). Si la pieza aún no se ha publicado no se muestra nada; si ya salió pero no hay datos leídos dice «Aún no hay estadísticas leídas de esta publicación». Las piezas programadas que ya salieron sin fila en publicadas (podcasts) usan las vistas guardadas en la programación.
+  - **Estadísticas por publicación:** las publicaciones cuya pieza fue objetada en Bustral (hoy Reel 1 y Reel 3) muestran su nota debajo, a todo el ancho de la fila. Los Reels 2, 6 y 7 siguen sin publicar: su nota se ve en el calendario.
+  - Probado en el portal local (modo demo).
+
 ## 2026-11-23 (207)
 - **«Link a la carpeta» usa la dirección directa de la carpeta (el enlace de compartir de la organización daba «No tienes permiso»)** — reporte del usuario tras correr «Actualizar todos los links»: «Link cliente» abría perfecto pero «Link a la carpeta» mostraba «No se puede acceder a este sitio / No tienes permiso para acceder a este elemento» (la pantalla de detalles solo trae un código de correlación, sin la cuenta ni el motivo).
   - **Cambio:** `crearLinkEdicionOrganizacion` (búsqueda automática, botón masivo y elegir carpeta a mano) ahora devuelve el `webUrl` de la carpeta en SharePoint; si supera 250 caracteres (la columna es de texto de 255) o falla, usa el enlace de compartir «organización/edición» como antes. «Link cliente» (lectura, anónimo) no cambia.

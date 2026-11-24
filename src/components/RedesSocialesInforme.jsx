@@ -109,6 +109,7 @@ export default function RedesSocialesInforme({ liveMode, notify, esAdministrador
   const [anio, mm] = mes.split('-').map(Number);
   const pct = vista.programadas ? Math.round(vista.cumplidas / vista.programadas * 100) : null;
   const estad = estadisticasPorPublicacion(datos);
+  const estadPorFecha = new Map(estad.map(e => [e.fecha, e]));   // para mostrar las estadísticas de cada pieza ya publicada debajo de su fila del calendario
 
   function abrir(f){ setAbierta(f); }
 
@@ -227,12 +228,19 @@ export default function RedesSocialesInforme({ liveMode, notify, esAdministrador
             <thead><tr><th>Publicación</th><th className="redes-num">Vistas</th><th className="redes-num">Me gusta</th><th className="redes-num">Comentarios</th></tr></thead>
             <tbody>
               {estad.slice(0, filasEstad).map(e => (
-                <tr key={e.fecha + e.titulo} className="redes-fila" tabIndex={0} onClick={() => abrir({ tipo: 'publicada', p: e.p, titulo: e.titulo, fecha: e.fecha })} onKeyDown={ev => { if(ev.key === 'Enter' || ev.key === ' '){ ev.preventDefault(); abrir({ tipo: 'publicada', p: e.p, titulo: e.titulo, fecha: e.fecha }); } }}>
+                <Fragment key={e.fecha + e.titulo}>
+                <tr className={"redes-fila" + (e.nota ? " redes-fila-con-nota" : "")} tabIndex={0} onClick={() => abrir({ tipo: 'publicada', p: e.p, titulo: e.titulo, fecha: e.fecha })} onKeyDown={ev => { if(ev.key === 'Enter' || ev.key === ' '){ ev.preventDefault(); abrir({ tipo: 'publicada', p: e.p, titulo: e.titulo, fecha: e.fecha }); } }}>
                   <td className="redes-titulo">{e.titulo}<small className="redes-sub">{fechaCorta(e.fecha)}{e.redes.length > 0 && ' · ' + e.redes.map(r => RED_NOMBRE[r] || r).join(' · ')}</small></td>
                   <td className="redes-num"><CeldaEstad total={e.totalVistas} partes={e.vistas} /></td>
                   <td className="redes-num"><CeldaEstad total={e.totalMeGusta} partes={e.meGusta} /></td>
                   <td className="redes-num"><CeldaEstad total={e.totalComentarios} partes={e.comentarios} /></td>
                 </tr>
+                {e.nota && (
+                  <tr className="redes-fila-nota" onClick={() => abrir({ tipo: 'publicada', p: e.p, titulo: e.titulo, fecha: e.fecha })}>
+                    <td colSpan={4}><span className="redes-nota-bustral"><b>Nota de Bustral:</b> «{e.nota}»</span></td>
+                  </tr>
+                )}
+                </Fragment>
               ))}
             </tbody>
           </table>
@@ -261,9 +269,11 @@ export default function RedesSocialesInforme({ liveMode, notify, esAdministrador
                   ? (f.p.redes || []).map(r => RED_NOMBRE[r] || r)
                   : f.real ? (f.real.redes || []).map(r => RED_NOMBRE[r] || r)
                   : f.g.publicadaEn ? Object.keys(f.g.publicadaEn).map(r => RED_NOMBRE[r] || r) : [];
+                const fechaPub = f.tipo === 'publicada' ? f.fecha : f.salioEn;
+                const vistasProg = f.tipo === 'programada' ? Object.entries(f.g.vistas || {}).filter(([, n]) => n != null) : []; const estPub = fechaPub ? (estadPorFecha.get(fechaPub) || (f.tipo === 'programada' ? { vistas: vistasProg, totalVistas: vistasProg.reduce((s, [, n]) => s + (Number(n) || 0), 0), meGusta: [], totalMeGusta: 0, comentarios: [], totalComentarios: 0 } : null)) : null;
                 return (
                   <Fragment key={f.tipo + f.fecha + f.titulo}>
-                  <tr className={"redes-fila" + (f.tipo === 'programada' && f.g.objecion ? " redes-fila-con-nota" : "")} tabIndex={0} onClick={() => abrir(f)} onKeyDown={e => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); abrir(f); } }}>
+                  <tr className={"redes-fila" + ((f.tipo === 'programada' && f.g.objecion) || estPub ? " redes-fila-con-nota" : "")} tabIndex={0} onClick={() => abrir(f)} onKeyDown={e => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); abrir(f); } }}>
                     <td className="redes-titulo">{f.titulo}</td>
                     <td>{est ? <span className={"badge " + est.clase}>{est.texto}</span> : <span className="redes-sin">Publicada en Bustral</span>}</td>
                     <td>{f.cumpl ? <span className={"badge " + f.cumpl.clase}>{f.cumpl.texto}</span> : <span className="redes-sin">Sin programación en el calendario</span>}</td>
@@ -278,8 +288,23 @@ export default function RedesSocialesInforme({ liveMode, notify, esAdministrador
                     </td>
                   </tr>
                   {f.tipo === 'programada' && f.g.objecion && (
-                    <tr className="redes-fila-nota" onClick={() => abrir(f)}>
+                    <tr className={"redes-fila-nota" + (estPub ? " redes-fila-nota-sigue" : "")} onClick={() => abrir(f)}>
                       <td colSpan={6}><span className="redes-nota-bustral"><b>Nota de Bustral:</b> «{f.g.objecion}»</span></td>
+                    </tr>
+                  )}
+                  {estPub && (
+                    <tr className="redes-fila-stats" onClick={() => abrir(f)}>
+                      <td colSpan={6}>
+                        <div className="redes-stats-linea">
+                          {estPub.vistas.length || estPub.meGusta.length || estPub.comentarios.length
+                            ? <>
+                                <EstadLinea etiqueta="Vistas" total={estPub.totalVistas} partes={estPub.vistas} />
+                                <EstadLinea etiqueta="Me gusta" total={estPub.totalMeGusta} partes={estPub.meGusta} />
+                                <EstadLinea etiqueta="Comentarios" total={estPub.totalComentarios} partes={estPub.comentarios} />
+                              </>
+                            : <span className="redes-sin">Aún no hay estadísticas leídas de esta publicación.</span>}
+                        </div>
+                      </td>
                     </tr>
                   )}
                   </Fragment>
@@ -329,6 +354,18 @@ export default function RedesSocialesInforme({ liveMode, notify, esAdministrador
 
       {abierta && <DetalleRedes f={abierta} onClose={() => setAbierta(null)} />}
     </div>
+  );
+}
+
+// Una cifra de la línea de estadísticas bajo cada pieza ya publicada del calendario: «Vistas 355 (YouTube 355)»; un guion largo si ninguna red entregó el dato.
+function EstadLinea({ etiqueta, total, partes }){
+  return (
+    <span className="redes-stat">
+      <b>{etiqueta}</b>{' '}
+      {partes.length
+        ? <>{fmt(total)} <small>({partes.map(([r, n]) => (RED_NOMBRE[r] || r) + ' ' + fmt(n)).join(' · ')})</small></>
+        : <span className="redes-sin">—</span>}
+    </span>
   );
 }
 

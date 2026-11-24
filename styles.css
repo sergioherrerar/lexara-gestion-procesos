@@ -2175,6 +2175,12 @@
   .redes-fila-con-nota td{border-bottom:none;}
   .redes-fila-nota{cursor:pointer;}
   .redes-fila-nota td{padding:0 12px 10px;}
+  .redes-fila-nota-sigue td{border-bottom:none; padding-bottom:6px;}
+  .redes-fila-stats{cursor:pointer;}
+  .redes-fila-stats td{padding:0 12px 10px;}
+  .redes-stats-linea{display:flex; flex-wrap:wrap; gap:4px 26px; padding:7px 10px; border-radius:6px; background:var(--turquesa-suave,#eef7f6); border:1px solid var(--gris-linea); font-size:12.5px;}
+  .redes-stat b{color:var(--verde-oscuro);}
+  .redes-stat small{color:var(--texto-suave); font-size:12px;}
   .redes-nota-bustral{display:block; padding:7px 10px; border-radius:6px; background:#fdf1ef; border:1px solid #f0c8c3; color:#8c2a1f; font-size:12px; font-weight:400; font-style:italic; line-height:1.35; overflow-wrap:anywhere;}
   .redes-nota-bustral b{font-style:normal; font-weight:700;}
   .redes-motivo{margin:8px 0 0; padding:8px 10px; border-radius:8px; background:#fdf1ef; border:1px solid #f0c8c3; font-size:13px;}
