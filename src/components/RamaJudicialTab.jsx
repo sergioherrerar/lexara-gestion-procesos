@@ -114,17 +114,22 @@ function FilaActuacion({ act, nuevo, enHistorico, canWrite, onAgregar }){
 }
 
 // Los procesos de lo contencioso administrativo (juzgados y tribunales administrativos, Consejo de Estado) se consultan y sus documentos se bajan en SAMAI: enlaces directos armados con el radicado (ver lib/samai.js).
-function BotonesSamai({ rad, despacho, onSolicitarAcceso, solicitando }){
+function BotonesSamai({ rad, despacho }){
   const u = urlsSamai(rad, despacho);
   if(!u) return null;
   return (
     <>
       <button type="button" className="rama-btn rama-btn--samai" onClick={() => abrirEnSamai(u.proceso)} title="Abre este proceso en SAMAI (inicie sesión en SAMAI si se lo pide)"><Ico n="externo" />Abrir en SAMAI</button>
       <button type="button" className="rama-btn rama-btn--exp" onClick={() => abrirEnSamai(u.expediente)} title="Abre el expediente digital en SAMAI: autos, memoriales y demás documentos, por cuaderno. Lo que se ve depende de su acceso en SAMAI."><Ico n="carpeta" />Expediente en SAMAI</button>
-      {onSolicitarAcceso && <button type="button" className="rama-btn rama-btn--acceso" onClick={() => onSolicitarAcceso(rad, despacho)} disabled={solicitando} title="Si SAMAI solo le muestra algunos documentos, crea en los Borradores de Gerencia el correo al despacho pidiendo el reconocimiento de personería y el acceso al expediente. No se envía solo."><Ico n="correo" />{solicitando ? 'Creando borrador…' : 'Solicitar acceso por correo'}</button>}
       {!u.esConsejoEstado && <button type="button" className="rama-btn rama-btn--ce" onClick={() => abrirEnSamai(urlsSamai(rad, despacho, CORPORACION_CONSEJO_ESTADO).proceso)} title="Si el proceso subió en apelación, SAMAI lo tiene en el Consejo de Estado"><Ico n="edificio" />En el Consejo de Estado</button>}
     </>
   );
+}
+
+// Los procesos de la jurisdicción ordinaria (laborales, etc.) piden el acceso al expediente digital y el reconocimiento de personería por CORREO al despacho; en SAMAI (contencioso administrativo) eso se pide dentro de SAMAI y no hay correo.
+function BotonAccesoCorreo({ rad, despacho, onSolicitarAcceso, solicitando }){
+  if(!onSolicitarAcceso || !esJurisdiccionOrdinaria(rad, despacho)) return null;
+  return <button type="button" className="rama-btn rama-btn--acceso" onClick={() => onSolicitarAcceso(rad, despacho)} disabled={solicitando} title="Crea en los Borradores de Gerencia el correo al despacho pidiendo el reconocimiento de personería y el acceso al expediente digital, ya con los datos de la apoderada principal (Mónica Paola Quintero Jiménez), el radicado, las partes y el correo del despacho. No se envía solo."><Ico n="correo" />{solicitando ? 'Creando borrador…' : 'Solicitar acceso por correo'}</button>;
 }
 
 export default function RamaJudicialTab({ proceso, historico, estadoActual, fechaEstado, canWrite, config, notify, onAgregarAlHistorico, onActualizar, onRamaVista }){
@@ -242,7 +247,7 @@ export default function RamaJudicialTab({ proceso, historico, estadoActual, fech
     elegidos.filter(e => e.base === r && !entradas.some(x => x.rad === e.rad)).forEach(e => entradas.push({ rad: e.rad, base: r, esBase: false }));
   });
 
-  // Borrador del correo que pide al despacho el reconocimiento de personería y el acceso al expediente digital (SAMAI): se crea en los Borradores de Gerencia; no se envía.
+  // Borrador del correo que pide al despacho el reconocimiento de personería y el acceso al expediente digital (procesos de la jurisdicción ordinaria, no SAMAI): se crea en los Borradores de Gerencia; no se envía.
   const [solicitandoAcceso, setSolicitandoAcceso] = useState(false);
   async function solicitarAcceso(rad, despacho){
     if(!getAccount()){ notify?.('El borrador se crea en el Outlook de Gerencia al iniciar sesión con Microsoft; en el modo demo no hay buzón.', 'info'); return; }
@@ -253,8 +258,8 @@ export default function RamaJudicialTab({ proceso, historico, estadoActual, fech
       const r = await crearBorradorConImagenesInline({ to: c.para, subject: c.asunto, htmlBody: c.html, imagenes: firma ? [firma] : [], categorias: [CATEGORIA_SOLICITUD_ACCESO + ' (borrador)'], buzon: CORREO_GERENCIA_ACCESO, caerAlBuzonPropio: true });
       const dest = c.para.length ? ' dirigido a ' + c.para.join(', ') : ' (sin destinatario: agregue el correo del despacho)';
       notify?.(r.enBuzonPropio
-        ? '⚠ No pude crear el borrador en ' + CORREO_GERENCIA_ACCESO + '. Quedó en TUS Borradores' + dest + ': complete la cédula y la tarjeta profesional, y cambie el «De» a Gerencia si tiene permiso.'
-        : '✓ Borrador «Solicitud de acceso al expediente» creado en los Borradores de ' + CORREO_GERENCIA_ACCESO + dest + '. Complete la cédula y la tarjeta profesional, adjunte el poder y envíelo.', r.enBuzonPropio ? 'info' : 'success');
+        ? '⚠ No pude crear el borrador en ' + CORREO_GERENCIA_ACCESO + '. Quedó en TUS Borradores' + dest + ': revíselo, adjunte el poder y cambie el «De» a Gerencia si tiene permiso.'
+        : '✓ Borrador «Solicitud de acceso al expediente» creado en los Borradores de ' + CORREO_GERENCIA_ACCESO + dest + '. Ya trae los datos de la apoderada: revíselo, adjunte el poder y envíelo.', r.enBuzonPropio ? 'info' : 'success');
     }catch(err){
       console.error(err);
       notify?.('No se pudo crear el borrador: ' + (err?.message || err), 'error');
@@ -324,7 +329,8 @@ export default function RamaJudicialTab({ proceso, historico, estadoActual, fech
                   <button type="button" className="rama-btn rama-btn--rama" onClick={() => abrirEnRamaJudicial(proceso, notify, rad.slice(0, 21) + (terminacion[rad] || rad.slice(21)))} title="Abre la consulta de la Rama Judicial y copia este radicado"><Ico n="escudo" />Abrir en la Rama</button>
                   <button type="button" className="rama-btn rama-btn--pub" onClick={() => abrirPublicacionesProcesales(rad.slice(0, 21) + (terminacion[rad] || rad.slice(21)))} title="Abre Publicaciones Procesales de la Rama (estados, traslados, edictos y autos de todos los despachos) ya buscado con este radicado"><Ico n="documento" />Publicaciones procesales</button>
                   <BotonSiugj rad={rad.slice(0, 21) + (terminacion[rad] || rad.slice(21))} despacho="" notify={notify} />
-                  <BotonesSamai rad={rad.slice(0, 21) + (terminacion[rad] || rad.slice(21))} despacho="" onSolicitarAcceso={solicitarAcceso} solicitando={solicitandoAcceso} />
+                  <BotonAccesoCorreo rad={rad.slice(0, 21) + (terminacion[rad] || rad.slice(21))} despacho="" onSolicitarAcceso={solicitarAcceso} solicitando={solicitandoAcceso} />
+                  <BotonesSamai rad={rad.slice(0, 21) + (terminacion[rad] || rad.slice(21))} despacho="" />
                   <button type="button" className="rama-btn rama-btn--act" onClick={() => consultarConTerminacion(rad, rad.slice(0, 21) + (terminacion[rad] || rad.slice(21)))}><Ico n="buscar" />Consultar este número</button>
                 </span>
               </div>
@@ -344,7 +350,8 @@ export default function RamaJudicialTab({ proceso, historico, estadoActual, fech
                 <button type="button" className="rama-btn rama-btn--rama" onClick={() => abrirEnRamaJudicial(proceso, notify, radSel)} title="Abre la consulta de la Rama Judicial y copia este radicado"><Ico n="escudo" />Abrir en la Rama</button>
                   <button type="button" className="rama-btn rama-btn--pub" onClick={() => abrirPublicacionesProcesales(radSel)} title="Abre Publicaciones Procesales de la Rama (estados, traslados, edictos y autos de todos los despachos) ya buscado con este radicado"><Ico n="documento" />Publicaciones procesales</button>
                   <BotonSiugj rad={radSel} despacho={cambiado ? '' : ((resultados[rad]?.datos?.procesos?.[0]?.despacho) || (rad === principal ? proceso?.Despacho : ''))} notify={notify} />
-                  <BotonesSamai rad={radSel} despacho={cambiado ? '' : ((resultados[rad]?.datos?.procesos?.[0]?.despacho) || (rad === principal ? proceso?.Despacho : ''))} onSolicitarAcceso={solicitarAcceso} solicitando={solicitandoAcceso} />
+                  <BotonAccesoCorreo rad={radSel} despacho={cambiado ? '' : ((resultados[rad]?.datos?.procesos?.[0]?.despacho) || (rad === principal ? proceso?.Despacho : ''))} onSolicitarAcceso={solicitarAcceso} solicitando={solicitandoAcceso} />
+                  <BotonesSamai rad={radSel} despacho={cambiado ? '' : ((resultados[rad]?.datos?.procesos?.[0]?.despacho) || (rad === principal ? proceso?.Despacho : ''))} />
                 {cambiado && <button type="button" className="rama-btn rama-btn--act" onClick={() => consultarConTerminacion(rad, radSel)}><Ico n="buscar" />Consultar este número</button>}
                 <button type="button" className="rama-btn rama-btn--act" onClick={() => cargar(rad, true)} disabled={r.cargando}><Ico n="refrescar" />{r.cargando ? 'Consultando…' : 'Actualizar'}</button>
               </span>
