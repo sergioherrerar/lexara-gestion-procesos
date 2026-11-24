@@ -2315,6 +2315,36 @@
   .rama-nota{line-height:1.45; min-width:200px;}
   .rama-mas{border:0; background:none; color:var(--verde-oscuro); text-decoration:underline; cursor:pointer; font:inherit; font-size:12px; margin-left:6px; padding:0;}
   .rama-tramite{opacity:.7;}
+  /* Resumen para el abogado + filtros por tipo de actuación (2026-11-24) */
+  .rama-resumen-card{border:1px solid var(--gris-linea); border-radius:var(--radius); background:#f7fbfa; padding:12px 14px; margin:0 0 12px;}
+  .rama-res-grid{display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:12px 18px;}
+  .rama-res-tile h5{margin:0 0 6px; font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--texto-suave);}
+  .rama-res-tile p{margin:0 0 6px; font-size:13.5px; line-height:1.45;}
+  .rama-res-linea{display:block;}
+  .rama-res-suave{color:var(--texto-suave); font-size:12.5px;}
+  .rama-res-ok{color:var(--verde-oscuro); font-weight:600; font-size:12.5px;}
+  .rama-res-alerta{color:#a3281c; font-size:12.5px;}
+  .rama-res-aviso{margin:10px 0 0; padding:8px 10px; border-radius:8px; background:#fdece0; color:#7a3b05; font-size:12.5px; line-height:1.45;}
+  .rama-res-aviso.ok{background:#d7f2e4; color:var(--verde-oscuro);}
+  .rama-res-nota{margin:10px 0 0; font-size:11.5px; color:var(--texto-suave);}
+  .rama-chips{display:flex; flex-wrap:wrap; gap:6px; margin:0 0 8px;}
+  .rama-chip{border:1px solid var(--gris-linea); background:#fff; color:var(--texto); border-radius:99px; padding:4px 11px; font:inherit; font-size:12.5px; cursor:pointer;}
+  .rama-chip span{color:var(--texto-suave); font-variant-numeric:tabular-nums; margin-left:3px;}
+  .rama-chip:hover{border-color:var(--verde-oscuro);}
+  .rama-chip.activo{background:var(--verde-oscuro); border-color:var(--verde-oscuro); color:#fff;}
+  .rama-chip.activo span{color:#cfe9e4;}
+  .rama-chip:focus-visible{outline:2px solid var(--verde-oscuro); outline-offset:2px;}
+  .rama-importante td{background:#f4faf8;}
+  .rama-importante td.rama-fecha{box-shadow:inset 3px 0 0 var(--verde-oscuro);}
+  .rama-cat{display:inline-block; margin-top:4px; padding:1px 8px; border-radius:99px; font-size:11px; font-weight:700; letter-spacing:.03em; background:#d7f2e4; color:var(--verde-oscuro);}
+  .rama-cat--sentencia{background:#fbe4e2; color:#a3281c;}
+  .rama-cat--audiencia{background:#fdece0; color:#b3590a;}
+  .rama-cat--traslado{background:#fff3cf; color:#7a5a00;}
+  .rama-acc .rama-btn{display:block; margin:0 0 4px auto;}
+  .rama-modal{background:#fff; border-radius:var(--radius); box-shadow:0 12px 36px rgba(0,20,18,.25); padding:22px 24px; width:100%; max-width:880px; max-height:90vh; overflow:auto;}
+  .rama-modal h4{margin:0 0 6px;}
+  .rama-modal .confirm-actions{margin-top:6px;}
+  @media (max-width:900px){ .rama-res-grid{grid-template-columns:1fr;} }
   .rama-acc{text-align:right; white-space:nowrap;}
   @media (max-width:760px){ .rama-datos{grid-template-columns:1fr;} }
   .rama-ultima{margin:0; font-size:12.5px; font-weight:600; color:var(--verde-oscuro);}

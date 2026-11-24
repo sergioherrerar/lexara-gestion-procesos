@@ -826,6 +826,8 @@ export default function ProcesoDrawer({ pestanaInicial, onRamaVista, proceso, cl
           {activeTab === 'rama' && (
             <RamaJudicialTab
               proceso={proceso} historico={form.Historico || ''} estadoActual={form.Estado || ''} fechaEstado={form.FechaUltimoEstado} canWrite={canWrite} config={config} notify={notify} onRamaVista={onRamaVista}
+              tiposAccion={tiposAccion} colaboradores={colaboradores} audiencias={audienciasRelacionadas} terminos={terminosRelacionados}
+              onCrearAudiencia={onCrearAudiencia} onCrearTermino={onCrearTermino} onCreateTipoTermino={onCreateTipoTermino}
               onAgregarAlHistorico={html => setField('Historico', (form.Historico || '') + html)}
               onActualizar={({ historicoHtml, estado, fechaEstado }) => {
                 setForm(prev => ({ ...prev, Historico: (prev.Historico || '') + historicoHtml, ...(estado !== null ? { Estado: estado, ...(fechaEstado ? { FechaUltimoEstado: fechaEstado } : {}) } : {}) }));

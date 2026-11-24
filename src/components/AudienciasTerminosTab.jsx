@@ -1,9 +1,10 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { mensajeError, opcionesTiposAccionParaAlerta, abogadosDisponibles } from '../lib/graph';
 import { diasHabilesRestantes, colorCuentaRegresiva, etiquetaCuentaRegresiva, sumarDiasHabilesJudiciales } from '../lib/audienciasTerminos';
 import { construirMensajeWhatsAppAudienciasTerminos } from '../lib/whatsappAudienciasTerminos';
 import { generarAudienciasTerminosExcel } from '../lib/informeAudienciasTerminosExcel';
 import IconButton, { IconTextButton } from './IconButton';
+import { sugerirDescripcion } from '../lib/ramaResumen';
 import { opcionesNumeroCorto, procesosConNumeroCorto, etiquetaProceso } from '../lib/procesosPorNumeroCorto';
 
 // Módulo "Audiencias Términos" (Informes > Procesos Judiciales, 2026-09-12) —
@@ -53,8 +54,10 @@ const NUEVO_TIPO_SENTINEL = '__nuevo_tipo_termino__';
 // término") — cuando este formulario se abre desde el panel de un día ya
 // elegido en el mini calendario, se precarga esa fecha en vez de dejarla
 // vacía; el usuario igual puede cambiarla.
-export function FormularioNuevo({ tipo, procesos, tiposAccion, colaboradores, notify, onCrear, procesoFijo, onCreateTipoTermino, fechaInicial }){
-  const vacio = { numeroCorto:'', proceso: procesoFijo ? procesoFijo.id : null, descripcion:'', fecha: fechaInicial || '', hora:'', diasHabiles:'', abogado:'', observacion:'' };
+// `inicial` (2026-11-24, pestaña Rama): datos que trae una actuación de la Rama Judicial (fecha, hora, días hábiles, observación y un texto para sugerir el tipo);
+// `onCreado` avisa cuando el registro ya se guardó (la pestaña Rama cierra con eso su ventana).
+export function FormularioNuevo({ tipo, procesos, tiposAccion, colaboradores, notify, onCrear, procesoFijo, onCreateTipoTermino, fechaInicial, inicial, onCreado }){
+  const vacio = { numeroCorto:'', proceso: procesoFijo ? procesoFijo.id : null, descripcion:'', fecha: inicial?.fecha || fechaInicial || '', hora: inicial?.hora || '', diasHabiles: inicial?.diasHabiles ? String(inicial.diasHabiles) : '', abogado:'', observacion: inicial?.observacion || '' };
   const [form, setForm] = useState(vacio);
   const [guardando, setGuardando] = useState(false);
   const [candidatos, setCandidatos] = useState([]);   // procesos con el número corto escrito, cuando hay más de uno hay que elegir cuál
@@ -77,6 +80,13 @@ export function FormularioNuevo({ tipo, procesos, tiposAccion, colaboradores, no
     [tiposAccion, tipoAccionProceso, tipo]
   );
   const mostrandoNuevoTipo = form.descripcion === NUEVO_TIPO_SENTINEL;
+  // Con datos de la Rama: si algún tipo de la lista se parece a la actuación, queda elegido (se puede cambiar).
+  useEffect(() => {
+    if(!inicial?.textoSugerencia) return;
+    const s = sugerirDescripcion(opciones, inicial.textoSugerencia);
+    if(s) setForm(prev => (prev.descripcion ? prev : { ...prev, descripcion: s }));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [opciones]);
 
   function buscarProceso(val){
     const iguales = procesosConNumeroCorto(procesos, val);
@@ -124,6 +134,7 @@ export function FormularioNuevo({ tipo, procesos, tiposAccion, colaboradores, no
         : { Proceso: form.proceso, Descripcion: form.descripcion, FechaNotificacion: form.fecha, DiasHabiles: form.diasHabiles, VencimientoTermino: vencimientoCalculado, Observacion: form.observacion };
       await onCrear?.(payload);
       setForm(vacio);
+      onCreado?.();
     }catch(err){ console.error(err); notify?.(mensajeError(err), 'error'); }
     finally{ setGuardando(false); }
   }

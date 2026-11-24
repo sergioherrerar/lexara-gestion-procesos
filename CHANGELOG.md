@@ -2,6 +2,13 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-11-24 (217)
+- **Pestaña Rama Judicial: resumen para el abogado y actuaciones clasificadas** — pedido del usuario («empieza por 1 y 2» de las mejoras de la pestaña).
+  - **Resumen al principio de cada proceso:** dónde va (última actuación, última importante, «al despacho desde…» cuando el expediente espera decisión), próxima audiencia (fecha, hora, tipo, virtual/presencial, días hábiles que faltan), términos que corren (fecha en que finalizan y días hábiles que faltan, con los colores de siempre), aviso de suspensión o reanudación de términos y si la audiencia o el término ya están en el portal. Avisa si hay una actuación posterior que habla de aplazar la audiencia.
+  - **Actuaciones clasificadas:** filtros por tipo con su cantidad (Todas, Importantes, Audiencias, Sentencias, Traslados y términos, Autos, Notificaciones, Memoriales, Trámite interno, Otras); las importantes salen resaltadas con su etiqueta. Sin elegir tipo sigue mandando la casilla de trámite de antes.
+  - **«Crear audiencia» / «Crear término»** desde el resumen y desde cada actuación que los trae: abre el formulario del portal ya lleno (fecha, hora, tipo sugerido si se parece a uno de la lista, observación con la actuación de la Rama). **No guarda nada hasta que se presiona «Agregar»**, y el aviso recuerda verificar contra el auto, porque de esto dependen los vencimientos y el calendario. Los días hábiles de un término salen de lo que marca la Rama (desde que inicia hasta que finaliza; la fecha de notificación es el último día hábil antes de que inicie) y el vencimiento calculado coincide con el de la Rama.
+  - Los días hábiles no descuentan suspensiones de términos (acuerdos del Consejo Superior): el resumen lo advierte. Probado con 4 procesos reales de la Rama (laboral, administrativos y tribunal) y en el portal local (modo demo).
+
 ## 2026-11-24 (216)
 - **Informe de redes: el calendario ahora refleja lo que de verdad se publicó (y una herramienta para mantenerlo al día)** — pregunta del usuario («¿por qué la información del calendario no está actualizada con las publicaciones hechas?»; «míralo a fondo y si puedes mejóralo»).
   - **Causa:** el cruce entre lo programado en Bustral y lo publicado se había llenado a mano con la primera lectura (12-nov) y no se recalculó; además el calendario tomaba el 12-nov como «hoy», así que nunca marcaba nada vencido. Ej.: el Reel 6 salió el 23-nov en las tres redes y decía «Pendiente / Aún no».

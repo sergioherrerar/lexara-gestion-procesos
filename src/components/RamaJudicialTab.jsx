@@ -3,6 +3,9 @@ import { construirCorreoSolicitudAcceso, CORREO_GERENCIA_ACCESO, CATEGORIA_SOLIC
 import { getAccount, crearBorradorConImagenesInline, firmaComoImagenInline } from '../lib/graph';
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { stripHtml } from '../lib/graph';
+import { colorCuentaRegresiva, etiquetaCuentaRegresiva } from '../lib/audienciasTerminos';
+import { CATEGORIAS, clasificarActuacion, resumenDeActuaciones, audienciaDeActuacion, terminoDeActuacion, datosParaTermino, audienciaRegistrada, terminoRegistrado, hoyISO } from '../lib/ramaResumen';
+import { FormularioNuevo } from './AudienciasTerminosTab';
 import escudoColombia from '../assets/Escudo Colombia.png';
 import logoSiugj from '../assets/Logo SIUGJ.svg';   // logo oficial de SIUGJ (el mismo del botón de la cabecera de Procesos)   // escudo de Colombia (el mismo del botón «Rama Judicial» de Procesos)
 
@@ -87,15 +90,93 @@ function DetalleProceso({ datos, onReintentar }){
   );
 }
 
-function FilaActuacion({ act, nuevo, enHistorico, canWrite, onAgregar }){
+// Resumen para el abogado (2026-11-24): lo que importa de un vistazo, sacado de las actuaciones de la Rama. Son datos SUGERIDOS por lo que dice la Rama:
+// nada se crea solo; «Crear audiencia / término» abre el formulario ya lleno y se guarda solo con «Agregar».
+function hace(n){ return n <= 0 ? 'hoy' : n === 1 ? 'ayer' : 'hace ' + n + ' días'; }
+function ResumenRama({ acts, audiencias, terminos, hoy, puedeCrear, onCrear }){
+  const r = useMemo(() => resumenDeActuaciones(acts, hoy), [acts, hoy]);
+  const au = r.audiencia;
+  const auReg = au && audienciaRegistrada(au, audiencias);
+  const terms = r.terminos.slice(0, 3);
+  return (
+    <div className="rama-resumen-card" aria-label="Resumen del proceso según la Rama Judicial">
+      <div className="rama-res-grid">
+        <div className="rama-res-tile">
+          <h5>Dónde va el proceso</h5>
+          {r.ultima ? <p><strong>{r.ultima.nombre}</strong><br /><span className="rama-res-suave">{fechaDMA(r.ultima.fecha)} · {hace(r.ultima.hace)}</span></p> : <p className="rama-res-suave">Sin actuaciones.</p>}
+          {r.ultimaImportante && r.ultimaImportante.act !== (r.ultima && r.ultima.act) && <p className="rama-res-linea"><span className="rama-res-suave">Última importante:</span> {r.ultimaImportante.nombre} · {fechaDMA(r.ultimaImportante.fecha)}</p>}
+          {r.alDespacho && <p className="rama-res-linea"><span className="badge badge-naranja">Al despacho</span> desde {fechaDMA(r.alDespacho.fecha)} ({hace(r.alDespacho.hace)}): espera decisión del juez.</p>}
+        </div>
+        <div className="rama-res-tile">
+          <h5>Próxima audiencia</h5>
+          {au ? (
+            <>
+              <p><strong>{fechaDMA(au.fecha)}{au.hora ? ' · ' + au.hora : ''}</strong><br /><span className="rama-res-suave">{[au.tipo, au.modalidad].filter(Boolean).join(' · ') || au.actuacion}</span></p>
+              <p className="rama-res-linea"><span className={'badge badge-' + colorCuentaRegresiva(au.restantes)}>{etiquetaCuentaRegresiva(au.restantes)}</span> {auReg ? <span className="rama-res-ok">Ya está en Audiencias del portal</span> : puedeCrear && <button type="button" className="btn-secondary rama-btn" onClick={() => onCrear('audiencias', au.act, au)}>Crear audiencia</button>}</p>
+              {au.posibleCambio && <p className="rama-res-alerta">Hay una actuación posterior que habla de aplazar o cambiar la audiencia: verifique la fecha.</p>}
+            </>
+          ) : <p className="rama-res-suave">Ninguna audiencia con fecha futura en las actuaciones.</p>}
+        </div>
+        <div className="rama-res-tile">
+          <h5>Términos que corren</h5>
+          {terms.length ? terms.map((x, i) => {
+            const reg = terminoRegistrado(x, terminos);
+            return (
+              <p key={i} className="rama-res-linea">
+                <strong>Finaliza {fechaDMA(x.finaliza)}</strong> <span className={'badge badge-' + colorCuentaRegresiva(x.restantes)}>{etiquetaCuentaRegresiva(x.restantes)}</span><br />
+                <span className="rama-res-suave">{x.actuacion} · {fechaDMA(x.fechaActuacion)}</span><br />
+                {reg ? <span className="rama-res-ok">Ya está en Términos del portal</span> : puedeCrear && <button type="button" className="btn-secondary rama-btn" onClick={() => onCrear('terminos', x.act, x)}>Crear término</button>}
+              </p>
+            );
+          }) : <p className="rama-res-suave">Ningún término corriendo según la Rama.</p>}
+        </div>
+      </div>
+      {r.suspension && <p className={'rama-res-aviso' + (r.suspension.reanudacion ? ' ok' : '')}><strong>{r.suspension.reanudacion ? 'Reanudación de términos' : 'Suspensión de términos'} ({fechaDMA(r.suspension.fecha)}):</strong> {r.suspension.texto.slice(0, 260)}{r.suspension.texto.length > 260 ? '…' : ''} <em>Los días hábiles de arriba no descuentan suspensiones: verifique en el despacho.</em></p>}
+      <p className="rama-res-nota">Según lo que publica la Rama (a veces con retraso). Verifique siempre contra el auto o el estado antes de confiar en una fecha.</p>
+    </div>
+  );
+}
+
+// Ventana para crear la audiencia o el término desde una actuación: el formulario del portal ya lleno; solo se guarda con «Agregar».
+function ModalCrearDesdeRama({ crear, proceso, tiposAccion, colaboradores, notify, onCrearAudiencia, onCrearTermino, onCreateTipoTermino, onCerrar }){
+  useEffect(() => {
+    const f = e => { if(e.key === 'Escape') onCerrar(); };
+    window.addEventListener('keydown', f); return () => window.removeEventListener('keydown', f);
+  }, [onCerrar]);
+  const esAud = crear.tipo === 'audiencias';
+  const base = esAud ? onCrearAudiencia : onCrearTermino;
+  const guardo = useRef(false);
+  const onCrear = async payload => { const r = await base(payload); guardo.current = !!r; return r; };
+  return (
+    <div className="confirm-overlay" onClick={e => { if(e.target === e.currentTarget) onCerrar(); }}>
+      <div className="rama-modal" role="dialog" aria-modal="true" aria-label={esAud ? 'Crear audiencia desde la Rama' : 'Crear término desde la Rama'}>
+        <h4>{esAud ? 'Crear audiencia' : 'Crear término'} desde la actuación de la Rama</h4>
+        <p className="rama-res-suave">{crear.act.actuacion} · {fechaDMA(crear.act.fecha)}. {esAud ? 'Fecha y hora salen del texto de la actuación' : 'La Rama marca que el término finaliza el ' + fechaDMA(crear.finaliza) + '; la fecha de notificación es el último día hábil antes de que inicie y los días hábiles son los del término'}. <strong>Verifíquelos contra el auto antes de agregar.</strong></p>
+        <FormularioNuevo
+          tipo={crear.tipo} procesos={[proceso]} procesoFijo={proceso} tiposAccion={tiposAccion} colaboradores={colaboradores} notify={notify}
+          inicial={crear.inicial} onCrear={onCrear} onCreateTipoTermino={onCreateTipoTermino}
+          onCreado={() => { if(guardo.current) onCerrar(); }}
+        />
+        <div className="confirm-actions"><button type="button" className="btn-secondary" onClick={onCerrar}>Cerrar sin guardar</button></div>
+      </div>
+    </div>
+  );
+}
+
+function FilaActuacion({ act, nuevo, enHistorico, canWrite, onAgregar, hoy, audiencias, terminos, puedeCrear, onCrear }){
   const [abierta, setAbierta] = useState(false);
+  const cl = clasificarActuacion(act);
+  const catInfo = CATEGORIAS.find(c => c.id === cl.categoria);
+  const au = puedeCrear ? audienciaDeActuacion(act, hoy) : null;
+  const term = puedeCrear ? terminoDeActuacion(act, hoy) : null;
   const nota = String(act.anotacion || '').replace(/\s+/g, ' ').trim();
   const corta = anotacionLimpia(nota, 140) || '—';   // la lista muestra la anotación limpia; «ver más» el texto completo de la Rama
   return (
-    <tr className={esDeTramite(act) ? 'rama-tramite' : ''}>
+    <tr className={(esDeTramite(act) ? 'rama-tramite' : '') + (cl.importante ? ' rama-importante' : '')}>
       <td className="rama-fecha">{fechaDMA(act.fecha)}</td>
       <td className="rama-act">
         <strong>{act.actuacion}</strong>
+        {cl.importante && catInfo && <span className={'rama-cat rama-cat--' + cl.categoria}>{catInfo.singular}</span>}
         {nuevo && <span className="badge badge-verde rama-nuevo">Nueva</span>}
         {enHistorico && <span className="rama-ya">ya en el Histórico</span>}
       </td>
@@ -108,6 +189,8 @@ function FilaActuacion({ act, nuevo, enHistorico, canWrite, onAgregar }){
       <td className="rama-term">{fechaDMA(act.registro) || ''}</td>
       <td className="rama-acc">
         {canWrite && !enHistorico && <button type="button" className="btn-secondary rama-btn" onClick={() => onAgregar(act)} title="Agrega este renglón al final del Histórico y lo pone también en Estado y Fecha Estado">Al Histórico</button>}
+        {au && !audienciaRegistrada(au, audiencias) && <button type="button" className="btn-secondary rama-btn" onClick={() => onCrear('audiencias', act, au)} title="Abre el formulario de Audiencias con la fecha y hora de esta actuación; no guarda hasta «Agregar»">Crear audiencia</button>}
+        {term && !terminoRegistrado(term, terminos) && <button type="button" className="btn-secondary rama-btn" onClick={() => onCrear('terminos', act, term)} title="Abre el formulario de Términos con la fecha de esta actuación y los días hábiles hasta el vencimiento que marca la Rama; no guarda hasta «Agregar»">Crear término</button>}
       </td>
     </tr>
   );
@@ -132,7 +215,19 @@ function BotonAccesoCorreo({ rad, despacho, onSolicitarAcceso, solicitando }){
   return <button type="button" className="rama-btn rama-btn--acceso" onClick={() => onSolicitarAcceso(rad, despacho)} disabled={solicitando} title="Crea en los Borradores de Gerencia el correo al despacho pidiendo el reconocimiento de personería y el acceso al expediente digital, ya con los datos de la apoderada principal (Mónica Paola Quintero Jiménez), el radicado, las partes y el correo del despacho. No se envía solo."><Ico n="correo" />{solicitando ? 'Creando borrador…' : 'Solicitar acceso por correo'}</button>;
 }
 
-export default function RamaJudicialTab({ proceso, historico, estadoActual, fechaEstado, canWrite, config, notify, onAgregarAlHistorico, onActualizar, onRamaVista }){
+export default function RamaJudicialTab({ proceso, historico, estadoActual, fechaEstado, canWrite, config, notify, onAgregarAlHistorico, onActualizar, onRamaVista, tiposAccion, colaboradores, audiencias, terminos, onCrearAudiencia, onCrearTermino, onCreateTipoTermino }){
+  const hoy = hoyISO();
+  const [filtroCat, setFiltroCat] = useState('todas');   // 'todas' | 'importantes' | id de categoría
+  const [crear, setCrear] = useState(null);   // { tipo, act, inicial, finaliza }: ventana de crear audiencia/término desde una actuación
+  const puedeCrear = !!(canWrite && onCrearAudiencia && onCrearTermino);
+  function abrirCrear(tipo, act, dato){
+    const fechaAct = String(act.fecha || '').slice(0, 10);
+    const sufijo = ' · ' + (act.actuacion || '');
+    const inicial = tipo === 'audiencias'
+      ? { fecha: dato.fecha, hora: dato.hora || '', observacion: ('Rama ' + fechaDMA(fechaAct) + sufijo + (dato.modalidad ? ' — ' + dato.modalidad : '')).slice(0, 250), textoSugerencia: dato.tipo || act.actuacion }
+      : { ...(() => { const x = datosParaTermino(fechaAct, dato.inicia, dato.finaliza); return { fecha: x.fecha, diasHabiles: x.dias }; })(), observacion: ('Rama ' + fechaDMA(fechaAct) + sufijo + ' — término del ' + (dato.inicia ? fechaDMA(dato.inicia) : '…') + ' al ' + fechaDMA(dato.finaliza)).slice(0, 250), textoSugerencia: (act.actuacion || '') + ' ' + (act.anotacion || '') };
+    setCrear({ tipo, act, inicial, finaliza: dato.finaliza });
+  }
   const { principal, historicos } = useMemo(() => numerosDelProceso(proceso), [proceso]);
   const radicados = useMemo(() => [principal, ...historicos].filter(Boolean), [principal, historicos]);
   const [detalles, setDetalles] = useState({});   // idProceso -> { cargando, error, datos } (detalle completo, a pedido)
@@ -363,10 +458,19 @@ export default function RamaJudicialTab({ proceso, historico, estadoActual, fech
               const acts = p.actuaciones || [];
               const nuevas = actuacionesNuevas(acts, historico);
               const idsNuevas = new Set(nuevas.map(a => a.consecutivo));
-              const visibles = acts.filter(a => (conTramite || !esDeTramite(a)) && (!filtroFecha.desde || String(a.fecha || '').slice(0, 10) >= filtroFecha.desde) && (!filtroFecha.hasta || String(a.fecha || '').slice(0, 10) <= filtroFecha.hasta));
+              const cats = acts.map(a => clasificarActuacion(a));
+              const conteo = { importantes: cats.filter(c => c.importante).length };
+              CATEGORIAS.forEach(c => { conteo[c.id] = cats.filter(x => x.categoria === c.id).length; });
+              const pasaCat = a => {
+                if(filtroCat === 'todas') return conTramite || !esDeTramite(a);   // sin elegir categoría, manda la casilla de trámite
+                const c = clasificarActuacion(a);
+                return filtroCat === 'importantes' ? c.importante : c.categoria === filtroCat;
+              };
+              const visibles = acts.filter(a => pasaCat(a) && (!filtroFecha.desde || String(a.fecha || '').slice(0, 10) >= filtroFecha.desde) && (!filtroFecha.hasta || String(a.fecha || '').slice(0, 10) <= filtroFecha.hasta));
               const tope = verTodo[rad + p.idProceso] ? visibles.length : POR_PAGINA;
               return (
                 <div key={p.idProceso} className="rama-proceso">
+                  {!p.esPrivado && acts.length > 0 && <ResumenRama acts={acts} audiencias={audiencias || []} terminos={terminos || []} hoy={hoy} puedeCrear={puedeCrear} onCrear={abrirCrear} />}
                   <dl className="rama-datos">
                     <div><dt>Despacho</dt><dd>{p.despacho || '—'}</dd></div>
                     <div><dt>Departamento</dt><dd>{p.departamento || '—'}</dd></div>
@@ -398,6 +502,11 @@ export default function RamaJudicialTab({ proceso, historico, estadoActual, fech
                             : <span className="rama-al-dia">Estado e Histórico al día</span>;
                         })()}
                       </div>
+                      <div className="rama-chips" role="group" aria-label="Filtrar las actuaciones por tipo">
+                        {[{ id: 'todas', nombre: 'Todas', n: acts.length }, { id: 'importantes', nombre: 'Importantes', n: conteo.importantes }, ...CATEGORIAS.filter(c => conteo[c.id] > 0).map(c => ({ id: c.id, nombre: c.nombre, n: conteo[c.id] }))].map(c => (
+                          <button key={c.id} type="button" className={'rama-chip' + (filtroCat === c.id ? ' activo' : '')} aria-pressed={filtroCat === c.id} onClick={() => setFiltroCat(c.id)}>{c.nombre} <span>{c.n}</span></button>
+                        ))}
+                      </div>
                       <div className="table-wrap">
                         <table className="rama-tabla">
                           <thead><tr><th>Fecha</th><th>Actuación</th><th>Anotación</th><th>Inicia término</th><th>Finaliza término</th><th>Registro</th><th></th></tr></thead>
@@ -407,6 +516,7 @@ export default function RamaJudicialTab({ proceso, historico, estadoActual, fech
                                 key={a.consecutivo + '-' + a.fecha} act={a} canWrite={canWrite}
                                 nuevo={idsNuevas.has(a.consecutivo)} enHistorico={yaEstaEnHistorico(a, historico)}
                                 onAgregar={agregarUno}
+                                hoy={hoy} audiencias={audiencias || []} terminos={terminos || []} puedeCrear={puedeCrear} onCrear={abrirCrear}
                               />
                             ))}
                           </tbody>
@@ -421,6 +531,7 @@ export default function RamaJudicialTab({ proceso, historico, estadoActual, fech
           </div>
         );
       })}
+      {crear && <ModalCrearDesdeRama crear={crear} proceso={proceso} tiposAccion={tiposAccion} colaboradores={colaboradores} notify={notify} onCrearAudiencia={onCrearAudiencia} onCrearTermino={onCrearTermino} onCreateTipoTermino={onCreateTipoTermino} onCerrar={() => setCrear(null)} />}
     </div>
   );
 }
