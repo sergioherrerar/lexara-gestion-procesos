@@ -1269,7 +1269,11 @@ export async function leerCorreosBandeja(correoBuzon, desdeISO, maxCorreos = 300
     const pedir = async () => fetch(url, { headers: { Authorization: `Bearer ${await getMailToken()}` } });
     let res = await pedir();
     if(res.status === 403 && !mailCompartido){ usarPermisoCorreoCompartido(); res = await pedir(); }
-    if(!res.ok) throw new Error(`Graph ${res.status} al leer la bandeja: ${(await res.text()).substring(0, 240)}`);
+    if(!res.ok){
+      const cuerpo = await res.text();
+      if(carpetaPorDefectoInexistente(res.status, cuerpo)) return salida;   // el buzón aún no tiene bandeja de entrada (Microsoft la crea con el primer correo que llega)
+      throw new Error(`Graph ${res.status} al leer la bandeja: ${cuerpo.substring(0, 240)}`);
+    }
     const datos = await res.json();
     (datos.value || []).forEach(m => salida.push({
       id: m.id, asunto: m.subject || '(sin asunto)', remitente: m.from?.emailAddress?.address || m.sender?.emailAddress?.address || '', remitenteNombre: m.from?.emailAddress?.name || m.sender?.emailAddress?.name || '',

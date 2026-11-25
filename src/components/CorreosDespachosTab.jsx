@@ -70,18 +70,19 @@ export default function CorreosDespachosTab({ procesos, liveMode, notify }){
 
   return (
     <div className="field-section">
-      <p className="rama-fuente">Lee la bandeja de entrada de Gerencia, donde llegan reenviados los correos de los despachos (<code>@cendoj.ramajudicial.gov.co</code>). Solo lectura: no marca como leído, no mueve ni borra nada. Identifica de qué proceso del portal habla cada correo y qué clase es. Todavía no crea nada en el portal.</p>
+      <p className="rama-fuente">Aquí aparecen los correos que los juzgados y despachos envían a nuestro correo de notificaciones (Gerencia). El portal los lee, dice de qué proceso es cada uno y de qué se trata (auto, audiencia, traslado…). <strong>Solo lee: no borra, no mueve ni cambia nada del correo.</strong> Por ahora tampoco crea nada en el portal: sirve para ver qué llegó y revisarlo.</p>
       <div className="rama-fechas">
         <label>Buzón <input type="text" value={buzon} onChange={e => setBuzon(e.target.value)} style={{ minWidth: 260 }} /></label>
         <label>Desde <input type="date" value={desde} onChange={e => setDesde(e.target.value)} /></label>
         <button type="button" className="btn-primary rama-btn" onClick={leer} disabled={cargando}>{cargando ? 'Leyendo…' : (liveMode ? 'Leer correo de Gerencia' : 'Ver ejemplo (modo demo)')}</button>
       </div>
-      {error && <div className="rama-error" role="alert">{error} {/403|Access is denied/i.test(error) ? 'La persona que inició sesión necesita acceso al buzón de Gerencia (acceso total en Exchange).' : ''}</div>}
+      {error && <div className="rama-error" role="alert"><strong>No se pudo leer el correo de Gerencia.</strong> {/403|Access is denied/i.test(error) ? 'Su usuario no tiene permiso para ver ese correo: pídale a Soporte que le dé acceso.' : 'Intente de nuevo en un momento; si sigue igual, avise a Soporte.'}<br /><span className="rama-res-suave">Detalle técnico: {error}</span></div>}
       {mensajes && (
         <>
           <div className="rama-chips" role="group" aria-label="Filtrar los correos">
             {FILTROS.map(([id, nombre]) => <button key={id} type="button" className={'rama-chip' + (filtro === id ? ' activo' : '')} aria-pressed={filtro === id} onClick={() => setFiltro(id)}>{nombre} <span>{conteo[id === 'acuses' ? 'acuses' : id]}</span></button>)}
           </div>
+          {liveMode && mensajes.length === 0 && <div className="rama-hist-aviso"><span><strong>Todavía no hay correos para mostrar.</strong> Puede ser que aún no haya llegado ninguno desde que se activó el reenvío, o que el rango de fechas sea muy corto: pruebe con una fecha «Desde» más antigua. Si sabe que un despacho ya escribió y no aparece, avise a Soporte.</span></div>}
           {visibles.length === 0 ? <div className="empty-state empty-state-compact">No hay correos en esta vista.</div> : (
             <div className="table-wrap">
               <table className="rama-tabla">
@@ -105,7 +106,7 @@ export default function CorreosDespachosTab({ procesos, liveMode, notify }){
               </table>
             </div>
           )}
-          <p className="rama-res-nota">La vista previa del correo es corta: la fecha o los días que se detectan son una pista y hay que verificarlos en el auto.</p>
+          <p className="rama-res-nota">Las fechas de audiencia y los días de término que se muestran salen del texto del correo y son solo una guía: confírmelos siempre en el auto o el oficio antes de registrarlos.</p>
         </>
       )}
     </div>

@@ -2,6 +2,12 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-11-25 (219)
+- **«Correo de despachos» pasa a Informes y ya no da error con el buzón vacío** — pedido del usuario: «no puede quedar en Administración, debe ser en Informes porque todos pueden colaborar con la tarea».
+  - La pestaña salió de Administración (solo administradores) y ahora está en **Informes → «Correo de despachos»**, a la vista de todo el equipo.
+  - **Error corregido:** al leer Gerencia salía «Graph 404 … Default folder Inbox not found». Significa que el buzón todavía no tiene bandeja de entrada (Microsoft la crea con el primer correo que llega, es decir, aún no ha llegado nada por el reenvío). Ahora se toma como bandeja vacía y la pantalla explica qué revisar (regla de Hotmail guardada, que haya llegado un correo de un despacho, o probar con una fecha «Desde» más atrás).
+  - **Mensajes más claros para todo el equipo:** la explicación de arriba, el aviso de «sin correos», el error (con el detalle técnico aparte, en gris) y la nota sobre las fechas están escritos en lenguaje sencillo y dicen qué hacer (probar otra fecha, pedir acceso o avisar a Soporte).
+
 ## 2026-11-25 (218)
 - **Correo de despachos (fase 1: leer el buzón de Gerencia)** — pedido del usuario: los despachos escriben al correo de la apoderada (Hotmail) y una regla reenvía todo lo de `@cendoj.ramajudicial.gov.co` a Gerencia; el portal debe leer lo nuevo y avisar de audiencias y términos.
   - **Administración → «Correo de despachos»:** lee la bandeja de entrada de Gerencia (**solo lectura**: no marca como leído, no mueve ni borra) con el mismo permiso de correo compartido que ya usa Tutelas@; elige desde qué fecha (por defecto, 7 días).
