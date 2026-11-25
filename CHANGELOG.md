@@ -2,6 +2,12 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-11-25 (222)
+- **Tutelas / LexIA: Julieth en medicina laboral y prestaciones económicas, correo diario para María Gabriela y nueva remitente** — recomendaciones de los abogados.
+  - **Solicitud de pruebas (robot de LexIA), regla 26 — tutela 28516 y todas las parecidas:** cuando el correo lleva el bloque «Área médica PRESTACIONES ECONÓMICAS» (o «medicina laboral y prestaciones económicas»: pérdida de capacidad laboral, incapacidades, rehabilitación), «para» incluye SIEMPRE a **Julieth Andrea Ruiz Molano (Juliethrm@colmedica.com)**, de esa área en la agenda del formato. Antes el modelo armaba el bloque pero no ponía a nadie del área, y si la tutela solo señalaba a Aliansalud la red de seguridad quitaba los correos de Colmédica. Ahora el robot la agrega aunque el modelo no lo haga (después de esa red) y lo anota en las notas; si el bloque no va, no se agrega. **Requiere subir el robot a cPanel.**
+  - **Correo de tutelas notificadas y vencimientos:** ahora va **para María Gabriela Charris (Mgabrielac@aliansalud.com.co), con copia a Dania Carolina Pachón (daniacp@aliansalud.com.co)** y a los de siempre (asesoría jurídica, Gerencia y la apoderada). Sigue saliendo del buzón de Tutelas, tanto en el borrador de Outlook como en el respaldo por mailto.
+  - **Nueva remitente de notificaciones de tutelas:** Shirley Ximena Velandia Castillo (SximenaV@aliansalud.com.co y SximenaV@colmedica.com) queda entre los remitentes que «Leer correo de Tutelas (IA)» reconoce, como Dania, María Gabriela y Yessica.
+
 ## 2026-11-25 (221)
 - **Rama Judicial: filtros, filas y botones más vistosos** — pedido del usuario («más vistosos los botones y separadores entre actuaciones»).
   - **Filtros por tipo:** cada uno con su color (el mismo de su etiqueta), punto de color, contador en píldora y relieve; el elegido se llena de color; «Importantes» lleva una estrella y los que están en 0 se ven más tenues.

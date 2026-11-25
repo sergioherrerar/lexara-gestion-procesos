@@ -159,8 +159,9 @@ export async function generarInformeTutelasPDF(tutelas, fechaNotificacionISO, fe
 // que sea) las respeta como una tabla real, no como texto. Si el navegador
 // no soporta copiar HTML (o el usuario le niega el permiso), cae de vuelta
 // al cuerpo de solo texto que ya existía, para no perder la información.
-const DESTINATARIO_TO = "daniacp@aliansalud.com.co";
-const DESTINATARIOS_CC = ["asesoriajuridica@lexaraabogados.com", "Gerencia@lexaraabogados.com", "myd.abogados.monica@hotmail.com"];
+// Desde 2026-11-25 (pedido de los abogados): el correo de tutelas notificadas y vencimientos va PARA María Gabriela Charris, con copia a Dania Carolina Pachón (y a los de siempre). Sale del buzón de Tutelas, igual que antes.
+const DESTINATARIO_TO = "Mgabrielac@aliansalud.com.co";
+const DESTINATARIOS_CC = ["daniacp@aliansalud.com.co", "asesoriajuridica@lexaraabogados.com", "Gerencia@lexaraabogados.com", "myd.abogados.monica@hotmail.com"];
 // Firma: desde 2026-11-05 (pedido del usuario: «para que todos los correos que salen de Tutelas la tomen») es la tarjeta de Ariana del portal (src/assets/Firma Ariana.jpg, «Abogada»),
 // la misma de los demás correos de Tutelas: adjunta en línea (cid) en el borrador de Graph y como imagen incrustada en el HTML que se copia al portapapeles. La imagen de SharePoint
 // que usaba la macro de Access original queda solo como respaldo si no se pudiera leer la del portal.

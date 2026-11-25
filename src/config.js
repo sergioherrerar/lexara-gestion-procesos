@@ -138,6 +138,8 @@ export const TUTELAS_REMITENTES_PERMITIDOS = [
   "daniacp@colmedica.com", "daniacp@aliansalud.com.co", "daniacp@umd.com.co",
   "Mgabrielac@aliansalud.com.co", "Mgabrielac@colmedica.com",
   "YessicaB@aliansalud.com.co", "YessicaB@colmedica.com",
+  // 2026-11-25: Shirley Ximena Velandia Castillo (área jurídica del grupo Colmédica) también envía notificaciones de tutelas (p. ej. 28532); escribe desde los dos dominios.
+  "SximenaV@aliansalud.com.co", "SximenaV@colmedica.com",
 ];
 
 // "Diligenciamiento Formatos Empresas" (Informes > Herramientas) — agregada
