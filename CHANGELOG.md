@@ -2,6 +2,12 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-11-25 (226)
+- **Filtros de columna rediseñados: ya no se cortan ni se cierran solos** — pedido del usuario («al dar clic se desaparece, no muestra el filtro completo»; visto en «Todas las publicaciones de las redes»). Aplica a todas las tablas con el menú de columna (Procesos, Facturas, Órdenes, Tutelas, Redes, etc.).
+  - **Causa:** el menú se ponía justo debajo del encabezado sin mirar si cabía en la pantalla (con la tabla cerca del borde inferior se salía y quedaba cortado), y se cerraba con cualquier movimiento de la página; el navegador mueve la página solo cuando el cuadro de texto queda fuera de la vista, así que el menú se cerraba apenas se abría.
+  - **Ahora:** se mide y se abre hacia abajo o hacia arriba según donde quepa; si no cabe en ninguno ocupa la pantalla con su propio desplazamiento. Al mover la página el menú sigue al encabezado (solo se cierra si el encabezado sale de la pantalla). El cuadro de texto toma el foco sin mover la página (en el celular no, para no abrir el teclado encima).
+  - **Diseño:** encabezado con el nombre de la columna, etiqueta «Filtrada» y botón de cerrar; botones de orden «↑ De la A a la Z» / «↓ De la Z a la A» (el activo se marca); lista con «(Seleccionar todo)» y contador de elegidos; árbol Año > Mes > Día igual que antes; **pie fijo con «Quitar filtro» y «Listo»** siempre a la vista, aunque la lista sea larga. Escape cierra y devuelve el foco al encabezado.
+
 ## 2026-11-25 (225)
 - **Propuesta de servicios: saludo del correo más cercano** — el cuerpo del borrador empieza ahora «Estimada Yessica, me complace mucho saludarte.» (con el primer nombre de quien se escribió en «Atención de»; «Estimado …» si es Dr.; «Estimados señores, me complace mucho saludarlos.» si es «Señores»). La carta en PDF conserva su saludo formal («Respetada Doctora:»).
 

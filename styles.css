@@ -1017,7 +1017,27 @@
      para que no lo recorte el overflow-x:auto de .table-wrap — acá se
      posiciona con "fixed" y coordenadas calculadas en JS en vez de
      "absolute" relativo al botón. */
-  .col-header-menu-portal{position:fixed; top:auto; left:auto; margin-top:0;}
+  .col-header-menu-portal{position:fixed; top:auto; left:auto; margin-top:0; padding:0; gap:0; overflow:hidden; z-index:60; max-width:calc(100vw - 16px); border-radius:12px; box-shadow:0 14px 36px rgba(0,20,18,.22), 0 2px 6px rgba(0,20,18,.10);}
+  /* Menú de columna rediseñado (2026-11-25): encabezado y pie fijos, contenido con su propio desplazamiento, siempre dentro de la pantalla. */
+  .chm-cab{display:flex; align-items:center; gap:8px; padding:10px 12px; flex:none; background:linear-gradient(180deg,#f3f8f6,#e4efea); border-bottom:1px solid var(--gris-linea);}
+  .chm-titulo{flex:1; min-width:0; font-size:12px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--verde-oscuro); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .chm-estado{font-size:11px; font-weight:700; background:#fdece0; color:#b3590a; border-radius:99px; padding:2px 9px; flex:none;}
+  .chm-cerrar{width:28px; height:28px; flex:none; border-radius:8px; border:1px solid var(--gris-linea); background:#fff; color:var(--texto-suave); font-size:13px; line-height:1; cursor:pointer; font-family:inherit;}
+  .chm-cerrar:hover{background:var(--gris-claro); color:var(--texto);}
+  .chm-cuerpo{flex:1 1 auto; min-height:0; overflow-y:auto; overscroll-behavior:contain; padding:10px; display:flex; flex-direction:column; gap:3px;}
+  .chm-orden{display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:2px;}
+  .chm-orden-btn{display:flex; align-items:center; justify-content:center; gap:6px; padding:8px 6px; border-radius:8px; border:1px solid var(--gris-linea); background:#fff; color:var(--texto); font-size:12.5px; font-weight:600; cursor:pointer; font-family:var(--font-body); text-transform:none; letter-spacing:normal;}
+  .chm-orden-btn span{color:var(--verde-oscuro); font-weight:800;}
+  .chm-orden-btn:hover{background:#eef6f3; border-color:#9fd9c8;}
+  .chm-orden-btn.activo{background:var(--verde-oscuro); color:#fff; border-color:var(--verde-oscuro);}
+  .chm-orden-btn.activo span{color:#fff;}
+  .chm-pie{display:flex; gap:8px; justify-content:space-between; padding:10px 12px; flex:none; border-top:1px solid var(--gris-linea); background:#fafaf8;}
+  .chm-quitar, .chm-listo{padding:8px 14px; border-radius:999px; font-size:12.5px; font-weight:700; cursor:pointer; font-family:var(--font-body); text-transform:none; letter-spacing:normal;}
+  .chm-quitar{background:#fff; color:#a3281c; border:1px solid #f0b9b3;}
+  .chm-quitar:hover:not(:disabled){background:#fbe4e2;}
+  .chm-quitar:disabled{opacity:.45; cursor:default;}
+  .chm-listo{background:linear-gradient(180deg,#0a6a60,#004941); color:#fff; border:1px solid #003630; box-shadow:0 2px 6px rgba(0,73,65,.28);}
+  .chm-listo:hover{filter:brightness(1.08);}
   .col-header-menu-item{
     text-align:left; background:none; border:none; cursor:pointer; padding:8px 10px;
     border-radius:6px; font-size:13px; font-weight:600; color:var(--texto);
@@ -1042,7 +1062,7 @@
      bug real reportado por el usuario ("se da clic para seleccionar
      cualquier elemento de la fila y se quita el filtro"). Esto contiene el
      scroll dentro del propio checklist, nunca se lo pasa a la página. */
-  .col-header-menu-checklist{max-height:160px; overflow-y:auto; overscroll-behavior:contain; display:flex; flex-direction:column; gap:1px; margin:0 2px 2px;}
+  .col-header-menu-checklist{max-height:min(260px, 34vh); overflow-y:auto; overscroll-behavior:contain; display:flex; flex-direction:column; gap:1px; margin:0 2px 2px;}
   .col-header-menu-check{
     display:flex; align-items:center; gap:8px; padding:6px 8px; border-radius:6px;
     font-size:13px; color:var(--texto); cursor:pointer;
@@ -1054,7 +1074,7 @@
      explícito del usuario: "que en fecha sea igual a Excel en todas las
      tablas que contengas fechas") — mismo AutoFiltro de Excel, con
      casillas de 3 estados y flechita para colapsar cada rama. */
-  .col-header-menu-arbol-fecha{max-height:220px;}
+  .col-header-menu-arbol-fecha{max-height:min(280px, 38vh);}
   .col-header-menu-arbol-fila{display:flex; align-items:center;}
   .col-header-menu-arbol-fila .col-header-menu-check{flex:1; min-width:0;}
   .col-header-menu-arbol-flecha{

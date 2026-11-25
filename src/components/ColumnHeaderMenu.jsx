@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useLayoutEffect, useMemo } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { clavePorDia } from '../lib/graph';
 import { MESES_NOMBRES } from '../lib/horasExtras';
@@ -43,11 +43,42 @@ function CasillaTresEstados({ checked, indeterminate, onChange, children }){
 // valores realmente presentes en esa columna; sin ese prop, el menú sigue
 // funcionando igual que antes (solo texto libre), así que es
 // retrocompatible en las tablas donde todavía no se haya conectado.
+// 2026-11-25 (pedido del usuario: «al dar clic se desaparece, no muestra el filtro completo; mejóralo lo mejor que puedas»): dos causas en la tabla «Todas las publicaciones de las redes»
+// (y en cualquier tabla cerca del borde inferior). (1) El menú se ponía justo debajo del encabezado sin mirar si cabía en la pantalla, así que se salía por abajo y quedaba cortado.
+// (2) Se cerraba con CUALQUIER movimiento de la página, y el navegador mueve la página solo cuando el cuadro de texto (autoFocus) queda fuera de la vista: el menú se cerraba apenas abría.
+// Ahora: se mide el menú y se abre hacia abajo o hacia arriba según donde quepa (si no cabe en ninguno, ocupa la pantalla con su propio desplazamiento); el encabezado y el pie
+// (Quitar filtro / Listo) quedan siempre a la vista; al mover la página el menú se reacomoda en vez de cerrarse (solo se cierra si el encabezado sale de la pantalla); y el cuadro de
+// texto toma el foco sin mover la página (en el celular no, para no abrir el teclado encima).
 export default function ColumnHeaderMenu({ column, sort, onSort, filterValue, onFilterChange, rows }){
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState(null);
   const btnRef = useRef(null);
   const menuRef = useRef(null);
+  const cabRef = useRef(null);
+  const cuerpoRef = useRef(null);
+  const pieRef = useRef(null);
+  const inputRef = useRef(null);
+
+  const calcular = useCallback(() => {
+    const btn = btnRef.current;
+    if(!btn) return;
+    const r = btn.getBoundingClientRect();
+    const vh = window.innerHeight, vw = window.innerWidth, M = 8;
+    const ancho = Math.min(310, vw - M * 2);
+    const left = Math.max(M, Math.min(r.left, vw - ancho - M));
+    // Alto natural del menú (encabezado + contenido completo + pie), sin importar el tope que tenga ahora.
+    const natural = (cabRef.current?.offsetHeight || 0) + (cuerpoRef.current?.scrollHeight || 0) + (pieRef.current?.offsetHeight || 0) + 2;
+    const abajo = vh - r.bottom - M - 4;
+    const arriba = r.top - M - 4;
+    let top, maxHeight;
+    if(natural <= abajo){ top = r.bottom + 4; maxHeight = abajo; }
+    else if(natural <= arriba){ top = r.top - 4 - natural; maxHeight = natural; }
+    else if(Math.max(abajo, arriba) < 280){ top = M; maxHeight = vh - M * 2; }   // ni arriba ni abajo hay sitio: usa la pantalla entera
+    else if(abajo >= arriba){ top = r.bottom + 4; maxHeight = abajo; }
+    else { maxHeight = arriba; top = r.top - 4 - arriba; }
+    setPos(prev => (prev && prev.top === top && prev.left === left && prev.maxHeight === maxHeight && prev.ancho === ancho) ? prev : { top, left, maxHeight, ancho });
+    return r;
+  }, []);
 
   useEffect(() => {
     if(!open) return;
@@ -56,50 +87,40 @@ export default function ColumnHeaderMenu({ column, sort, onSort, filterValue, on
       if(menuRef.current?.contains(e.target)) return;
       setOpen(false);
     }
-    function onKeyDown(e){ if(e.key === 'Escape') setOpen(false); }
-    // Cierra al hacer scroll (en vez de recalcular posición) — más simple y
-    // evita que el menú quede "flotando" en un lugar equivocado si el
-    // usuario mueve la tabla o la página mientras está abierto.
-    //
-    // BUG REAL corregido 2026-09-19 (reportado por el usuario: "se da clic
-    // para seleccionar cualquier elemento de la fila y se quita el filtro"):
-    // el checklist de "O elige de la lista" (o el árbol de fechas) puede
-    // necesitar su propio scroll interno cuando hay muchos valores — como el
-    // evento "scroll" no burbujea pero SÍ pasa por la fase de captura, este
-    // listener en `window` con `capture:true` también se disparaba al
-    // desplazarse DENTRO del propio menú, cerrándolo antes de que el clic en
-    // la casilla llegara a registrarse. Se ignora el scroll que viene de
-    // dentro del menú mismo.
-    function onScroll(e){
-      // e.target no siempre es un elemento real (el resize no trae target
-      // usable, y algunos scroll sintéticos tampoco) — .contains() exige un
-      // Node de verdad o truena.
-      if(e.target instanceof Node && menuRef.current?.contains(e.target)) return;
-      setOpen(false);
+    function onKeyDown(e){ if(e.key === 'Escape'){ setOpen(false); btnRef.current?.focus(); } }
+    // El menú sigue al encabezado cuando la página se mueve o cambia de tamaño; solo se cierra si el encabezado sale por completo de la pantalla.
+    // El desplazamiento DENTRO del menú (su lista) se ignora, para que marcar casillas nunca lo cierre (bug del 2026-09-19).
+    function onMover(e){
+      if(e && e.target instanceof Node && menuRef.current?.contains(e.target)) return;
+      const r = btnRef.current?.getBoundingClientRect();
+      if(!r || r.bottom < 0 || r.top > window.innerHeight){ setOpen(false); return; }
+      calcular();
     }
     document.addEventListener('mousedown', onDocPointer);
     document.addEventListener('keydown', onKeyDown);
-    window.addEventListener('scroll', onScroll, true);
-    window.addEventListener('resize', onScroll);
+    window.addEventListener('scroll', onMover, true);
+    window.addEventListener('resize', onMover);
     return () => {
       document.removeEventListener('mousedown', onDocPointer);
       document.removeEventListener('keydown', onKeyDown);
-      window.removeEventListener('scroll', onScroll, true);
-      window.removeEventListener('resize', onScroll);
+      window.removeEventListener('scroll', onMover, true);
+      window.removeEventListener('resize', onMover);
     };
-  }, [open]);
+  }, [open, calcular]);
 
+  // Primera medida al abrir (el menú ya está en pantalla pero oculto hasta tener posición).
   useLayoutEffect(() => {
-    if(!open || !btnRef.current) return;
-    const r = btnRef.current.getBoundingClientRect();
-    // El menú mide mínimo 210px (ver .col-header-menu en styles.css) — con
-    // el botón cerca del borde derecho (frecuente en columnas angostas de
-    // celular) se recorta el margen si se deja "left: r.left" a secas.
-    const ANCHO_MENU = 210;
-    const MARGEN = 8;
-    const left = Math.max(MARGEN, Math.min(r.left, window.innerWidth - ANCHO_MENU - MARGEN));
-    setPos({ top: r.bottom + 4, left });
-  }, [open]);
+    if(open) calcular(); else setPos(null);
+  }, [open, calcular]);
+  // El cuadro de texto toma el foco sin mover la página (en pantallas táctiles no, para no abrir el teclado encima del menú).
+  const yaEnfocado = useRef(false);
+  useEffect(() => {
+    if(!open){ yaEnfocado.current = false; return; }
+    if(pos && !yaEnfocado.current){
+      yaEnfocado.current = true;
+      if(!window.matchMedia?.('(pointer: coarse)').matches) inputRef.current?.focus({ preventScroll: true });
+    }
+  }, [open, pos]);
 
   const valoresDisponibles = useMemo(() => {
     if(!rows || !rows.length || column.filterable === false || typeof column.value !== 'function') return [];
@@ -186,23 +207,34 @@ export default function ColumnHeaderMenu({ column, sort, onSort, filterValue, on
             <path d="M6 9l6 6 6-6"/>
           </svg>
         </button>
-        {open && pos && createPortal(
-          <div className="col-header-menu col-header-menu-portal" ref={menuRef} style={{ top: pos.top, left: pos.left }}>
-            <button type="button" className="col-header-menu-item" onClick={() => { onSort(column.key, 'asc'); setOpen(false); }}>De la A a la Z</button>
-            <button type="button" className="col-header-menu-item" onClick={() => { onSort(column.key, 'desc'); setOpen(false); }}>De la Z a la A</button>
-            {isSorted && (
-              <button type="button" className="col-header-menu-item col-header-menu-item-muted" onClick={() => { onSort(null); setOpen(false); }}>Quitar orden</button>
-            )}
-            <div className="col-header-menu-divider" />
-            <label className="col-header-menu-label">Filtrar por</label>
-            <input
-              type="text"
-              className="col-header-menu-input"
-              placeholder={esColumnaFecha ? "dd/mm/aaaa…" : "Escribe para filtrar…"}
-              autoFocus
-              value={texto}
-              onChange={e => onFilterChange(column.key, { texto: e.target.value })}
-            />
+        {open && createPortal(
+          <div
+            className="col-header-menu col-header-menu-portal" ref={menuRef} role="dialog" aria-label={'Ordenar y filtrar ' + column.label}
+            style={{ top: pos ? pos.top : 0, left: pos ? pos.left : 0, width: pos ? pos.ancho : 310, maxHeight: pos ? pos.maxHeight : undefined, visibility: pos ? 'visible' : 'hidden' }}
+          >
+            <div className="chm-cab" ref={cabRef}>
+              <span className="chm-titulo">{column.label}</span>
+              {isFiltered && <span className="chm-estado">Filtrada</span>}
+              <button type="button" className="chm-cerrar" onClick={() => { setOpen(false); btnRef.current?.focus(); }} aria-label="Cerrar">✕</button>
+            </div>
+            <div className="chm-cuerpo" ref={cuerpoRef}>
+              <div className="chm-orden">
+                <button type="button" className={'chm-orden-btn' + (isSorted && sort.dir === 'asc' ? ' activo' : '')} onClick={() => { onSort(column.key, 'asc'); setOpen(false); }}><span aria-hidden="true">↑</span> De la A a la Z</button>
+                <button type="button" className={'chm-orden-btn' + (isSorted && sort.dir === 'desc' ? ' activo' : '')} onClick={() => { onSort(column.key, 'desc'); setOpen(false); }}><span aria-hidden="true">↓</span> De la Z a la A</button>
+              </div>
+              {isSorted && (
+                <button type="button" className="col-header-menu-item col-header-menu-item-muted" onClick={() => { onSort(null); setOpen(false); }}>Quitar orden</button>
+              )}
+              <div className="col-header-menu-divider" />
+              <label className="col-header-menu-label">Filtrar por</label>
+              <input
+                ref={inputRef}
+                type="text"
+                className="col-header-menu-input"
+                placeholder={esColumnaFecha ? "dd/mm/aaaa…" : "Escribe para filtrar…"}
+                value={texto}
+                onChange={e => onFilterChange(column.key, { texto: e.target.value })}
+              />
             {esColumnaFecha && arbolFechas && (
               <>
                 <label className="col-header-menu-label">O elige de la lista</label>
@@ -260,10 +292,17 @@ export default function ColumnHeaderMenu({ column, sort, onSort, filterValue, on
             )}
             {!esColumnaFecha && valoresDisponibles.length > 0 && (
               <>
-                <label className="col-header-menu-label">O elige de la lista</label>
+                <label className="col-header-menu-label">O elige de la lista{valoresElegidos.length ? ' · ' + valoresElegidos.length + ' elegidos' : ''}</label>
                 <div className="col-header-menu-checklist">
+                  {valoresDisponibles.length > 4 && (
+                    <CasillaTresEstados
+                      checked={valoresElegidos.length === valoresDisponibles.length}
+                      indeterminate={valoresElegidos.length > 0}
+                      onChange={() => alternarGrupo(valoresDisponibles)}
+                    >(Seleccionar todo)</CasillaTresEstados>
+                  )}
                   {valoresDisponibles.map(v => (
-                    <label key={v} className="col-header-menu-check">
+                    <label key={v} className="col-header-menu-check" title={v}>
                       <input type="checkbox" checked={valoresElegidos.includes(v)} onChange={() => alternarValor(v)} />
                       <span>{v}</span>
                     </label>
@@ -271,9 +310,11 @@ export default function ColumnHeaderMenu({ column, sort, onSort, filterValue, on
                 </div>
               </>
             )}
-            {isFiltered && (
-              <button type="button" className="col-header-menu-item col-header-menu-item-muted" onClick={() => onFilterChange(column.key, { texto: "", valores: [] })}>Quitar filtro</button>
-            )}
+            </div>
+            <div className="chm-pie" ref={pieRef}>
+              <button type="button" className="chm-quitar" disabled={!isFiltered} onClick={() => onFilterChange(column.key, { texto: "", valores: [] })}>Quitar filtro</button>
+              <button type="button" className="chm-listo" onClick={() => { setOpen(false); btnRef.current?.focus(); }}>Listo</button>
+            </div>
           </div>,
           document.body
         )}
