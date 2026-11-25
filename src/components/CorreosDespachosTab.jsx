@@ -12,7 +12,7 @@ function fechaHora(iso){
   try{ return new Date(iso).toLocaleString('es-CO', { timeZone: 'America/Bogota', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }); }catch(e){ return String(iso).slice(0, 16); }
 }
 function dma(iso){ const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || ''); return m ? `${m[3]}-${m[2]}-${m[1]}` : ''; }
-const COLOR_TIPO = { audiencia: 'naranja', sentencia: 'rojo', traslado: 'naranja', auto: 'verde', oficio: 'verde', notificacion: 'gris', acuse: 'gris', otro: 'gris' };
+const COLOR_TIPO = { audiencia: 'naranja', desistimiento: 'naranja', sentencia: 'rojo', traslado: 'naranja', auto: 'verde', oficio: 'verde', notificacion: 'gris', acuse: 'gris', otro: 'gris' };
 
 function esDeDespacho(m, radicados){
   return /ramajudicial|cendoj/i.test(m.remitente + ' ' + m.resumen) || radicados.c21.length > 0 || /^(juzgado|tribunal|oficina|secretar|sala|corte|centro de servicios)/i.test(m.remitenteNombre || '');

@@ -16,6 +16,7 @@ function dias(a, b){ return Math.round((new Date(b + 'T12:00:00') - new Date(a +
 export const CATEGORIAS = [
   { id: 'sentencia', nombre: 'Sentencias', singular: 'Sentencia' },
   { id: 'audiencia', nombre: 'Audiencias', singular: 'Audiencia' },
+  { id: 'desistimiento', nombre: 'Desistimientos', singular: 'Desistimiento' },
   { id: 'traslado', nombre: 'Traslados y términos', singular: 'Traslado' },
   { id: 'auto', nombre: 'Autos', singular: 'Auto' },
   { id: 'notificacion', nombre: 'Notificaciones', singular: 'Notificación' },
@@ -31,6 +32,8 @@ export function clasificarActuacion(act){
   const nota = norm(act && act.anotacion);
   const dev = (categoria, importante = false) => ({ categoria, importante });
   if(/audiencia|fija fecha|fijar fecha|diligencia/.test(nombre)) return dev('audiencia', true);
+  // Desistimientos (2026-11-25, pedido del usuario, sobre todo en los procesos de SOS): casi siempre se nombran en la anotación («Decide sobre desistimiento parcial de las pretensiones», «poder expreso para desistir»).
+  if(/desist/.test(nombre + ' ' + nota)) return dev('desistimiento', true);
   if(/^al despacho|^a la secretaria|^constancia secretarial|^pendiente de tramite|^recibo providencia|^reparto|^radicacion|^expediente digital|^envio expediente|^recepcion expediente|^remitidos|^devolucion|^gastos/.test(nombre)) return dev('secretaria');
   if(/^(sentencia|fallo)|sentencia de (primera|segunda|unica) instancia|^se profiere sentencia/.test(nombre)) return dev('sentencia', true);
   if(/traslado|corre traslado/.test(nombre) && !/^envio/.test(nombre)) return dev('traslado', true);
@@ -148,6 +151,14 @@ export function sugerirDescripcion(opciones, texto){
 }
 
 // ---------- resumen del proceso ----------
+// La parte de la anotación que habla del desistimiento (unos 150 caracteres alrededor), para mostrarla en el resumen.
+function anotacionCorta(anotacion){
+  const t = String(anotacion || '').replace(/\s+/g, ' ').trim();
+  const i = t.toLowerCase().search(/desist/);
+  if(i < 0) return t.slice(0, 150);
+  const ini = Math.max(0, i - 50);
+  return (ini > 0 ? '…' : '') + t.slice(ini, ini + 170) + (ini + 170 < t.length ? '…' : '');
+}
 const RUIDO = /^(constancia secretarial|recibe memorial|recibo memorial|recepcion memorial|envio de (comunicacion|notificacion)|recibo providencia|a la secretaria|pendiente de tramite)/;
 function ordenar(acts){
   return (acts || []).slice().sort((a, b) => iso(b.fecha).localeCompare(iso(a.fecha)) || Number(b.consecutivo || 0) - Number(a.consecutivo || 0));
@@ -190,7 +201,9 @@ export function resumenDeActuaciones(acts, hoy = hoyISO()){
   // Suspensión o reanudación de términos (acuerdos del Consejo Superior), en los últimos 90 días: se muestra la más reciente.
   const sus = lista.find(a => dias(iso(a.fecha), hoy) <= 90 && /suspension de terminos|suspender.{0,40}terminos|suspension de los terminos|reanudacion de terminos|reanudan los terminos/.test(norm(a.actuacion + ' ' + a.anotacion)));
   const suspension = sus ? { fecha: iso(sus.fecha), reanudacion: /reanudacion|reanudan/.test(norm(sus.actuacion + ' ' + sus.anotacion)) && !/suspension de terminos/.test(norm(sus.anotacion).slice(0, 60)), texto: String(sus.anotacion || '').replace(/\s+/g, ' ').trim() } : null;
-  return { total: lista.length, ultima, ultimaImportante, alDespacho, audiencia, terminos, suspension };
+  const desists = lista.filter(a => clasificarActuacion(a).categoria === 'desistimiento');
+  const desistimiento = desists.length ? { total: desists.length, fecha: iso(desists[0].fecha), hace: dias(iso(desists[0].fecha), hoy), nombre: String(desists[0].actuacion || '').trim(), texto: anotacionCorta(desists[0].anotacion) } : null;
+  return { total: lista.length, ultima, ultimaImportante, alDespacho, audiencia, terminos, suspension, desistimiento };
 }
 
 // ---------- correos de los despachos (2026-11-24: lectura del buzón de Gerencia, donde llegan por reenvío) ----------
@@ -210,7 +223,7 @@ export function radicadosEnTexto(texto){
 }
 
 export const TIPOS_CORREO = {
-  audiencia: 'Audiencia', sentencia: 'Sentencia', traslado: 'Traslado o término', auto: 'Auto', oficio: 'Oficio',
+  audiencia: 'Audiencia', desistimiento: 'Desistimiento', sentencia: 'Sentencia', traslado: 'Traslado o término', auto: 'Auto', oficio: 'Oficio',
   notificacion: 'Notificación', acuse: 'Acuse o respuesta automática', otro: 'Otro',
 };
 /**
@@ -225,6 +238,7 @@ export function clasificarCorreo(asunto, vista, remitente, hoy = hoyISO()){
   let tipo = 'otro';
   if(ruido) tipo = 'acuse';
   else if(/audiencia|diligencia|^cancelado/.test(a)) tipo = 'audiencia';
+  else if(/desist/.test(t)) tipo = 'desistimiento';
   else if(/sentencia|fallo/.test(a)) tipo = 'sentencia';
   else if(/traslado|termino|corre traslado/.test(a)) tipo = 'traslado';
   else if(/\bauto\b|providencia|requiere|admite|niega|decreta|ordena|rechaza|resuelve/.test(a)) tipo = 'auto';
@@ -237,7 +251,7 @@ export function clasificarCorreo(asunto, vista, remitente, hoy = hoyISO()){
   }
   const m = !ruido && /(?:termino|plazo|traslado|dentro de)[^.]{0,60}?\b(\d{1,2})\s*(?:\(\d+\)\s*)?dias(?:\s+habiles)?/.exec(t);
   const terminoDias = m ? +m[1] : 0;
-  return { tipo, ruido, importante: !ruido && (['audiencia', 'sentencia', 'traslado', 'auto'].includes(tipo) || !!audiencia || !!terminoDias), audiencia, terminoDias };
+  return { tipo, ruido, importante: !ruido && (['audiencia', 'desistimiento', 'sentencia', 'traslado', 'auto'].includes(tipo) || !!audiencia || !!terminoDias), audiencia, terminoDias };
 }
 
 /** Los procesos del portal a los que apunta un correo: por el radicado de 21 dígitos (No. completo o Histórico) y, si no hay, por el número corto cuando es único. */

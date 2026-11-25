@@ -2,6 +2,13 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-11-25 (220)
+- **Rama Judicial: se detectan los desistimientos (sobre todo en los procesos de SOS)** — pedido del usuario: «que detecte los desistimientos… coloca esa pestaña Desistimientos».
+  - **Filtro «Desistimientos»** junto a Importantes, Audiencias, Autos…, con su cantidad (aparece siempre, aunque sea 0). Las actuaciones que lo mencionan salen resaltadas con la etiqueta «Desistimiento» y cuentan como importantes.
+  - **Cómo lo detecta:** busca «desist…» en el nombre de la actuación y en su anotación (en la Rama casi siempre está en la anotación: «Decide sobre desistimiento parcial de las pretensiones», «traslado del desistimiento», «poder expreso para desistir»). Probado con el proceso real de SOS 2009-01102: 13 actuaciones; y con otro proceso administrativo: 4.
+  - **En el resumen del proceso:** una línea «Desistimiento» con cuántas actuaciones lo mencionan y la última (fecha, actuación y el pedazo de la anotación que habla del desistimiento).
+  - **También en Correo de despachos:** un correo cuyo asunto o texto habla de desistimiento sale como clase «Desistimiento» e importante.
+
 ## 2026-11-25 (219)
 - **«Correo de despachos» pasa a Informes y ya no da error con el buzón vacío** — pedido del usuario: «no puede quedar en Administración, debe ser en Informes porque todos pueden colaborar con la tarea».
   - La pestaña salió de Administración (solo administradores) y ahora está en **Informes → «Correo de despachos»**, a la vista de todo el equipo.

@@ -105,6 +105,7 @@ function ResumenRama({ acts, audiencias, terminos, hoy, puedeCrear, onCrear }){
           <h5>Dónde va el proceso</h5>
           {r.ultima ? <p><strong>{r.ultima.nombre}</strong><br /><span className="rama-res-suave">{fechaDMA(r.ultima.fecha)} · {hace(r.ultima.hace)}</span></p> : <p className="rama-res-suave">Sin actuaciones.</p>}
           {r.ultimaImportante && r.ultimaImportante.act !== (r.ultima && r.ultima.act) && <p className="rama-res-linea"><span className="rama-res-suave">Última importante:</span> {r.ultimaImportante.nombre} · {fechaDMA(r.ultimaImportante.fecha)}</p>}
+          {r.desistimiento && <p className="rama-res-linea"><span className="rama-cat rama-cat--desistimiento">Desistimiento</span> {r.desistimiento.total === 1 ? 'Una actuación lo menciona' : r.desistimiento.total + ' actuaciones lo mencionan'}; la última, el {fechaDMA(r.desistimiento.fecha)} ({r.desistimiento.nombre}): <span className="rama-res-suave">{r.desistimiento.texto}</span> <span className="rama-res-suave">Vea el filtro «Desistimientos».</span></p>}
           {r.alDespacho && <p className="rama-res-linea"><span className="badge badge-naranja">Al despacho</span> desde {fechaDMA(r.alDespacho.fecha)} ({hace(r.alDespacho.hace)}): espera decisión del juez.</p>}
         </div>
         <div className="rama-res-tile">
@@ -503,7 +504,7 @@ export default function RamaJudicialTab({ proceso, historico, estadoActual, fech
                         })()}
                       </div>
                       <div className="rama-chips" role="group" aria-label="Filtrar las actuaciones por tipo">
-                        {[{ id: 'todas', nombre: 'Todas', n: acts.length }, { id: 'importantes', nombre: 'Importantes', n: conteo.importantes }, ...CATEGORIAS.filter(c => conteo[c.id] > 0).map(c => ({ id: c.id, nombre: c.nombre, n: conteo[c.id] }))].map(c => (
+                        {[{ id: 'todas', nombre: 'Todas', n: acts.length }, { id: 'importantes', nombre: 'Importantes', n: conteo.importantes }, ...CATEGORIAS.filter(c => conteo[c.id] > 0 || c.id === 'desistimiento').map(c => ({ id: c.id, nombre: c.nombre, n: conteo[c.id] }))].map(c => (
                           <button key={c.id} type="button" className={'rama-chip' + (filtroCat === c.id ? ' activo' : '')} aria-pressed={filtroCat === c.id} onClick={() => setFiltroCat(c.id)}>{c.nombre} <span>{c.n}</span></button>
                         ))}
                       </div>
