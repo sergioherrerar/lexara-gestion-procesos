@@ -2,6 +2,12 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-11-25 (225)
+- **Propuesta de servicios: saludo del correo más cercano** — el cuerpo del borrador empieza ahora «Estimada Yessica, me complace mucho saludarte.» (con el primer nombre de quien se escribió en «Atención de»; «Estimado …» si es Dr.; «Estimados señores, me complace mucho saludarlos.» si es «Señores»). La carta en PDF conserva su saludo formal («Respetada Doctora:»).
+
+## 2026-11-25 (224)
+- **Propuesta de servicios: datos predeterminados para Aliansalud y el grupo Colmédica** — pedido del usuario. Al elegir como cliente Aliansalud, Colmédica o UMD, el formulario queda con la Dra. Yessica Paola Bernal Saavedra (Abogada Senior de Asuntos Judiciales y Entes de Control) como atención, su correo (YessicaB@aliansalud.com.co para Aliansalud; YessicaB@colmedica.com para Colmédica y UMD) y el nombre corto «la EPS» (o «la compañía» para Colmédica y UMD). Se puede cambiar a mano. Si después se elige un cliente de otro grupo, esos datos se borran solo si siguen siendo los predeterminados (no se pisa lo escrito a mano).
+
 ## 2026-11-25 (223)
 - **Administración → «Propuesta de servicios»: generador de propuestas de prestación de servicios (PDF y correo)** — pedido del usuario, con el modelo de la última propuesta (Aliansalud 2026-00062).
   - **Sin datos de un proceso del portal:** se elige el cliente de la lista del portal o «Otra entidad» (escrita a mano), y se llenan, si se conocen, el tipo y número del proceso, demandante, demandado, despacho y la parte que se representará (con la opción «en caso de ser vinculada»). El **asunto** y el **texto de presentación** se arman solos con esos datos (queda igual al del modelo: «…COMO PARTE VINCULADA AL PROCESO ORDINARIO LABORAL No. …, PROMOVIDO POR …, DE CONOCIMIENTO DEL …») y se pueden cambiar a mano; también el tratamiento (Dra./Dr./Señores), quién atiende y su cargo.

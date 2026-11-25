@@ -4,7 +4,7 @@ import { getAccount, crearBorradorConImagenesInline, firmaComoImagenInline, firm
 import { CORREO_GERENCIA_ACCESO } from '../lib/solicitudAccesoExpediente';
 import {
   EQUIPO_LEXARA, ETAPAS_POR_SALARIOS, FRASE_ETAPA, etiquetaEtapa, textoSalarios, textoAsunto, textoPresentacion, serviciosPorDefecto, conceptoPorDefecto,
-  CONDICIONES_POR_DEFECTO, CLIENTES_POR_DEFECTO, CIERRE_POR_DEFECTO, generarPropuestaPDF, propuestaComoAdjunto, propuestaComoURL,
+  CONDICIONES_POR_DEFECTO, CLIENTES_POR_DEFECTO, CIERRE_POR_DEFECTO, contactoPredeterminado, CONTACTO_GRUPO_COLMEDICA, generarPropuestaPDF, propuestaComoAdjunto, propuestaComoURL,
 } from '../lib/propuestaServicios';
 
 // Administración → «Propuesta de servicios» (2026-11-25, pedido del usuario): arma la carta de propuesta de servicios profesionales con el modelo de la última propuesta (Aliansalud 2026-00062).
@@ -24,6 +24,13 @@ function inicial(){
   };
 }
 const SALUDOS = { 'Dra.': 'Respetada Doctora:', 'Dr.': 'Respetado Doctor:', 'Señores': 'Respetados señores:' };
+// Saludo del CUERPO DEL CORREO (más cercano que el de la carta; pedido del usuario, 2026-11-25): «Estimada Yessica, me complace mucho saludarte.»
+function saludoCorreo(tratamiento, atteNombre){
+  const primero = String(atteNombre || '').trim().split(/\s+/)[0];
+  if(tratamiento === 'Dra.') return primero ? `Estimada ${primero}, me complace mucho saludarte.` : 'Estimada doctora, me complace mucho saludarla.';
+  if(tratamiento === 'Dr.') return primero ? `Estimado ${primero}, me complace mucho saludarte.` : 'Estimado doctor, me complace mucho saludarlo.';
+  return 'Estimados señores, me complace mucho saludarlos.';
+}
 
 function Campo({ etiqueta, ayuda, children, ancho }){
   return <div className="field" style={ancho ? { gridColumn: 'span ' + ancho } : undefined}><label>{etiqueta}</label>{children}{ayuda && <div className="field-info" style={{ marginTop: 4 }}>{ayuda}</div>}</div>;
@@ -48,9 +55,16 @@ export default function PropuestaServiciosTab({ clientes, liveMode, notify }){
   // Lo que recibe el generador del PDF.
   const datos = { ...f, asunto, presentacion, concepto, servicios, saludo: SALUDOS[f.tratamiento], atteNombre: f.atteNombre ? (f.tratamiento === 'Señores' ? '' : f.tratamiento + ' ') + f.atteNombre : '' };
 
+  // Aliansalud o el grupo Colmédica: quedan llenos los datos de siempre (Dra. Yessica Bernal, su cargo y su correo). Si luego se elige otro cliente, se borran solo si siguen siendo esos mismos (no se pisa lo escrito a mano).
   function elegirCliente(valor){
-    if(valor && valor !== '__otro__') setF(prev => ({ ...prev, clienteSel: valor, entidad: valor.toUpperCase() }));
-    else setF(prev => ({ ...prev, clienteSel: valor }));
+    if(!valor || valor === '__otro__'){ setF(prev => ({ ...prev, clienteSel: valor })); return; }
+    const pre = contactoPredeterminado(valor);
+    setF(prev => {
+      const eraPredeterminado = prev.atteNombre === CONTACTO_GRUPO_COLMEDICA.atteNombre;
+      const base = { ...prev, clienteSel: valor, entidad: valor.toUpperCase() };
+      if(pre) return { ...base, tratamiento: pre.tratamiento, atteNombre: pre.atteNombre, atteCargo: pre.atteCargo, correoPara: pre.correo, entidadCorta: pre.corta };
+      return eraPredeterminado ? { ...base, atteNombre: '', atteCargo: '', correoPara: '', entidadCorta: 'la entidad' } : base;
+    });
   }
   function cambiarFila(i, cambios){ setF(prev => ({ ...prev, honorarios: prev.honorarios.map((h, j) => j === i ? { ...h, ...cambios } : h) })); }
   function elegirEtapa(i, etapa){ cambiarFila(i, { etapa, frase: FRASE_ETAPA[etapa] || '' }); }
@@ -86,7 +100,7 @@ export default function PropuestaServiciosTab({ clientes, liveMode, notify }){
       const proceso = f.numeroProceso ? ` en el proceso ${f.tipoProceso ? f.tipoProceso.toLowerCase() + ' ' : ''}No. ${f.numeroProceso}` : '';
       const esc = t => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
       const htmlBody = `<html><body style="font-family:Calibri,Arial,sans-serif;font-size:14px;color:#1c2624;">` +
-        `<p>${esc(SALUDOS[f.tratamiento])}</p>` +
+        `<p>${esc(saludoCorreo(f.tratamiento, f.atteNombre))}</p>` +
         `<p>Adjuntamos la propuesta de prestación de servicios profesionales para la representación judicial de ${esc(ent)}${esc(proceso)}.</p>` +
         `<p>Quedamos atentos a sus comentarios.</p><p>Cordial saludo,</p>` + (firma ? firmaHtml('gerencia', 'cid:' + firma.cid) : '') + `</body></html>`;
       const r = await crearBorradorConImagenesInline({ to: f.correoPara.trim() ? [f.correoPara.trim()] : [], subject: asuntoCorreo, htmlBody, imagenes: firma ? [firma] : [], adjuntos: [adjunto], categorias: ['Propuesta de servicios (borrador)'], buzon: CORREO_GERENCIA_ACCESO, caerAlBuzonPropio: true });

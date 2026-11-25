@@ -69,6 +69,17 @@ export function etiquetaEtapa(e){
   return t ? t.charAt(0).toUpperCase() + t.slice(1) : '';
 }
 
+// ---------- contacto predeterminado del grupo Colmédica ----------
+// Al elegir Aliansalud o cualquier entidad del grupo Colmédica (Colmédica, UMD), la propuesta va a la Dra. Yessica Paola Bernal Saavedra (pedido del usuario, 2026-11-25).
+export const CONTACTO_GRUPO_COLMEDICA = { tratamiento: 'Dra.', atteNombre: 'Yessica Paola Bernal Saavedra', atteCargo: 'Abogada Senior de Asuntos Judiciales y Entes de Control' };
+export function esGrupoColmedica(nombre){ return /aliansalud|colm[eé]dica|\bumd\b|unidad m[eé]dica/i.test(String(nombre || '')); }
+/** Datos predeterminados según la entidad elegida, o null si no es del grupo. Aliansalud usa su dominio; Colmédica y UMD, el de Colmédica. */
+export function contactoPredeterminado(nombre){
+  if(!esGrupoColmedica(nombre)) return null;
+  const aliansalud = /aliansalud/i.test(nombre);
+  return { ...CONTACTO_GRUPO_COLMEDICA, correo: aliansalud ? 'YessicaB@aliansalud.com.co' : 'YessicaB@colmedica.com', corta: /eps|aliansalud|promotora/i.test(nombre) ? 'la EPS' : 'la compañía' };
+}
+
 // ---------- textos del modelo ----------
 const ES_GRUPO_COLMEDICA = /aliansalud|colm[eé]dica|umd|unidad m[eé]dica/i;
 export function textoPresentacion({ entidad, rolFrase, vinculada }){
