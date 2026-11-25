@@ -192,3 +192,65 @@ export function resumenDeActuaciones(acts, hoy = hoyISO()){
   const suspension = sus ? { fecha: iso(sus.fecha), reanudacion: /reanudacion|reanudan/.test(norm(sus.actuacion + ' ' + sus.anotacion)) && !/suspension de terminos/.test(norm(sus.anotacion).slice(0, 60)), texto: String(sus.anotacion || '').replace(/\s+/g, ' ').trim() } : null;
   return { total: lista.length, ultima, ultimaImportante, alDespacho, audiencia, terminos, suspension };
 }
+
+// ---------- correos de los despachos (2026-11-24: lectura del buzón de Gerencia, donde llegan por reenvío) ----------
+/** Radicados que cita un texto: { c21: [primeros 21 dígitos de los números completos], cortos: ['AAAA-NNNNN', …] }. */
+export function radicadosEnTexto(texto){
+  const t = String(texto || '');
+  const limpio = t
+    .replace(/(\d{5})-(\d{2})-(\d{2})-(\d{3})-(\d{4})-(\d{5})-(\d{2})/g, '$1$2$3$4$5$6$7')
+    .replace(/(\d{12})\s*-\s*(\d{4})\s*-?\s*(\d{5})\s*-?\s*(\d{2})/g, '$1$2$3$4')
+    .replace(/(\d{5})-(\d{2})-(\d{2})-(\d{3})-(\d{4})-(\d{5})\b/g, '$1$2$3$4$5$6');
+  const c21 = new Set();
+  (limpio.match(/\b\d{23}\b/g) || []).forEach(x => c21.add(x.slice(0, 21)));
+  (limpio.match(/\b\d{21}\b/g) || []).forEach(x => c21.add(x));
+  const cortos = new Set();
+  (t.match(/\b(?:19|20)\d{2}[-\s]?\d{5}\b/g) || []).forEach(s => cortos.add(s.replace(/\s/, '-').replace(/^(\d{4})(\d{5})$/, '$1-$2')));
+  return { c21: [...c21], cortos: [...cortos] };
+}
+
+export const TIPOS_CORREO = {
+  audiencia: 'Audiencia', sentencia: 'Sentencia', traslado: 'Traslado o término', auto: 'Auto', oficio: 'Oficio',
+  notificacion: 'Notificación', acuse: 'Acuse o respuesta automática', otro: 'Otro',
+};
+/**
+ * Qué clase de correo es, por su asunto y vista previa. { tipo, ruido, importante, audiencia, terminoDias }:
+ * ruido = acuses de entrega/lectura, respuestas automáticas y acuses de SAMAI (no son actuaciones); audiencia = fecha futura que cita el texto;
+ * terminoDias = «N días (hábiles)» si el texto los menciona (solo una pista: la verificación es de la persona).
+ */
+export function clasificarCorreo(asunto, vista, remitente, hoy = hoyISO()){
+  const a = norm(asunto), v = norm(vista), r = norm(remitente), t = a + ' ' + v;
+  const ruido = /^(respuesta automatica|automatic reply|delivered|entregado|relayed|retransmitido|undeliverable|leido:|read:|aceptado|rechazado|provisional)|postmaster|no se pudo entregar/.test(a) || /postmaster|mailer-daemon/.test(r)
+    || /notificaciones samai|acuse de recibo|validacion de autenticacion/.test(a + ' ' + r);
+  let tipo = 'otro';
+  if(ruido) tipo = 'acuse';
+  else if(/audiencia|diligencia|^cancelado/.test(a)) tipo = 'audiencia';
+  else if(/sentencia|fallo/.test(a)) tipo = 'sentencia';
+  else if(/traslado|termino|corre traslado/.test(a)) tipo = 'traslado';
+  else if(/\bauto\b|providencia|requiere|admite|niega|decreta|ordena|rechaza|resuelve/.test(a)) tipo = 'auto';
+  else if(/oficio/.test(a)) tipo = 'oficio';
+  else if(/notificacion|estado|edicto|citacion|comunicacion/.test(a)) tipo = 'notificacion';
+  let audiencia = null;
+  if(!ruido && /audiencia|diligencia/.test(t)){
+    const futuras = fechasEnTexto(String(asunto || '') + ' ' + String(vista || '')).filter(x => x.fecha >= hoy).sort((p, q) => p.fecha.localeCompare(q.fecha));
+    if(futuras.length) audiencia = { fecha: futuras[0].fecha, hora: futuras[0].hora, tipo: tipoDeAudiencia(t), modalidad: modalidadDeAudiencia(t), cancelada: /^cancelado|cancel/.test(a) };
+  }
+  const m = !ruido && /(?:termino|plazo|traslado|dentro de)[^.]{0,60}?\b(\d{1,2})\s*(?:\(\d+\)\s*)?dias(?:\s+habiles)?/.exec(t);
+  const terminoDias = m ? +m[1] : 0;
+  return { tipo, ruido, importante: !ruido && (['audiencia', 'sentencia', 'traslado', 'auto'].includes(tipo) || !!audiencia || !!terminoDias), audiencia, terminoDias };
+}
+
+/** Los procesos del portal a los que apunta un correo: por el radicado de 21 dígitos (No. completo o Histórico) y, si no hay, por el número corto cuando es único. */
+export function procesosDeCorreo(textoRadicados, procesos){
+  const { c21, cortos } = radicadosEnTexto(textoRadicados);
+  const dig = v => String(v || '').split(/\s+/).map(p => p.replace(/\D/g, '')).filter(d => d.length >= 21).map(d => d.slice(0, 21));
+  const hallados = new Map();
+  (procesos || []).forEach(p => {
+    const nums = new Set([...dig(p.NoCompleto), ...dig(p.HistoricoNumerosCompletos)]);
+    if(c21.some(x => nums.has(x))) hallados.set(p.id, p);
+  });
+  if(!hallados.size){
+    cortos.forEach(c => { const m = (procesos || []).filter(p => p.Radicado === c); if(m.length === 1) hallados.set(m[0].id, m[0]); });
+  }
+  return [...hallados.values()];
+}

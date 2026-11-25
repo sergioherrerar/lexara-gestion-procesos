@@ -1254,6 +1254,32 @@ export async function leerCorreosTutelas(correoBuzon, remitentesPermitidos, top 
     }));
 }
 
+// Bandeja de entrada de un buzón compartido (Gerencia@, donde llegan por reenvío los correos de los despachos, 2026-11-24): SOLO LEE (no marca como leído, no mueve ni borra).
+// Del más reciente al más antiguo desde `desdeISO` (yyyy-mm-dd): [{ id, asunto, remitente, remitenteNombre, fecha, resumen, tieneAdjuntos, leido, enlace }]. 403 en el buzón compartido: activa el permiso «.Shared» y reintenta una vez.
+export async function leerCorreosBandeja(correoBuzon, desdeISO, maxCorreos = 300){
+  const params = new URLSearchParams({
+    $select: 'id,subject,from,sender,receivedDateTime,hasAttachments,bodyPreview,isRead,webLink',
+    $top: '100',
+    $filter: `receivedDateTime ge ${desdeISO}T00:00:00Z`,
+    $orderby: 'receivedDateTime desc',
+  });
+  let url = `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(String(correoBuzon).trim())}/mailFolders/inbox/messages?${params.toString()}`;
+  const salida = [];
+  for(let pagina = 0; url && pagina < 10 && salida.length < maxCorreos; pagina++){
+    const pedir = async () => fetch(url, { headers: { Authorization: `Bearer ${await getMailToken()}` } });
+    let res = await pedir();
+    if(res.status === 403 && !mailCompartido){ usarPermisoCorreoCompartido(); res = await pedir(); }
+    if(!res.ok) throw new Error(`Graph ${res.status} al leer la bandeja: ${(await res.text()).substring(0, 240)}`);
+    const datos = await res.json();
+    (datos.value || []).forEach(m => salida.push({
+      id: m.id, asunto: m.subject || '(sin asunto)', remitente: m.from?.emailAddress?.address || m.sender?.emailAddress?.address || '', remitenteNombre: m.from?.emailAddress?.name || m.sender?.emailAddress?.name || '',
+      fecha: m.receivedDateTime || '', resumen: m.bodyPreview || '', tieneAdjuntos: !!m.hasAttachments, leido: !!m.isRead, enlace: m.webLink || '',
+    }));
+    url = datos['@odata.nextLink'] || null;
+  }
+  return salida;
+}
+
 // Fecha de notificación de una tutela (2026-10-07, pedido explícito del usuario:
 // "la fecha de notificación la tomamos cuando se envíe el primer correo por parte
 // de los correos que ya tienes filtrados"): el instante en que llegó el PRIMER

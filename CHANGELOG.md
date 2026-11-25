@@ -2,6 +2,13 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-11-25 (218)
+- **Correo de despachos (fase 1: leer el buzón de Gerencia)** — pedido del usuario: los despachos escriben al correo de la apoderada (Hotmail) y una regla reenvía todo lo de `@cendoj.ramajudicial.gov.co` a Gerencia; el portal debe leer lo nuevo y avisar de audiencias y términos.
+  - **Administración → «Correo de despachos»:** lee la bandeja de entrada de Gerencia (**solo lectura**: no marca como leído, no mueve ni borra) con el mismo permiso de correo compartido que ya usa Tutelas@; elige desde qué fecha (por defecto, 7 días).
+  - **Identifica cada correo:** el radicado (23 o 21 dígitos, con o sin guiones, o el número corto si es único) y a qué proceso del portal corresponde (No. completo o Histórico de números); la clase (auto, audiencia, sentencia, traslado o término, oficio, notificación) y separa los acuses de entrega, respuestas automáticas y acuses de SAMAI; si el texto trae una audiencia con fecha y hora, o «N días hábiles», lo muestra como pista para verificar. Filtros: correos de despachos, importantes, con proceso, sin proceso, acuses y todos; «Abrir correo» lleva al mensaje en Outlook.
+  - **Todavía no crea nada en el portal:** es para comprobar que la lectura y el cruce funcionan. Siguiente: lista «Novedades Correo», avisos en la campana para todo el equipo (cualquiera registra la novedad y queda quién la registró) y botones de crear audiencia o término con el formulario ya lleno.
+  - Probado en modo demo (correos de ejemplo) y con asuntos reales de los despachos; la lectura real del buzón se prueba en vivo.
+
 ## 2026-11-24 (217)
 - **Pestaña Rama Judicial: resumen para el abogado y actuaciones clasificadas** — pedido del usuario («empieza por 1 y 2» de las mejoras de la pestaña).
   - **Resumen al principio de cada proceso:** dónde va (última actuación, última importante, «al despacho desde…» cuando el expediente espera decisión), próxima audiencia (fecha, hora, tipo, virtual/presencial, días hábiles que faltan), términos que corren (fecha en que finalizan y días hábiles que faltan, con los colores de siempre), aviso de suspensión o reanudación de términos y si la audiencia o el término ya están en el portal. Avisa si hay una actuación posterior que habla de aplazar la audiencia.
