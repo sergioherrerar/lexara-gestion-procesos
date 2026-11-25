@@ -2327,20 +2327,50 @@
   .rama-res-aviso{margin:10px 0 0; padding:8px 10px; border-radius:8px; background:#fdece0; color:#7a3b05; font-size:12.5px; line-height:1.45;}
   .rama-res-aviso.ok{background:#d7f2e4; color:var(--verde-oscuro);}
   .rama-res-nota{margin:10px 0 0; font-size:11.5px; color:var(--texto-suave);}
-  .rama-chips{display:flex; flex-wrap:wrap; gap:6px; margin:0 0 8px;}
-  .rama-chip{border:1px solid var(--gris-linea); background:#fff; color:var(--texto); border-radius:99px; padding:4px 11px; font:inherit; font-size:12.5px; cursor:pointer;}
-  .rama-chip span{color:var(--texto-suave); font-variant-numeric:tabular-nums; margin-left:3px;}
-  .rama-chip:hover{border-color:var(--verde-oscuro);}
-  .rama-chip.activo{background:var(--verde-oscuro); border-color:var(--verde-oscuro); color:#fff;}
-  .rama-chip.activo span{color:#cfe9e4;}
-  .rama-chip:focus-visible{outline:2px solid var(--verde-oscuro); outline-offset:2px;}
-  .rama-importante td{background:#f4faf8;}
-  .rama-importante td.rama-fecha{box-shadow:inset 3px 0 0 var(--verde-oscuro);}
+  /* Filtros por tipo: cada uno con su color (el mismo de su etiqueta y de la franja de la fila), punto de color, contador en píldora y relieve; el elegido se llena de color. */
+  .rama-chips{display:flex; flex-wrap:wrap; gap:8px; margin:4px 0 12px;}
+  .rama-chip{--c:#004941; --bg:#e6f2ee; display:inline-flex; align-items:center; gap:7px; border:1.5px solid var(--c); background:var(--bg); color:var(--c); border-radius:999px; padding:6px 8px 6px 12px; font:inherit; font-size:13px; font-weight:600; cursor:pointer; box-shadow:0 2px 5px rgba(0,50,45,.10), inset 0 1px 0 rgba(255,255,255,.7); transition:transform .12s ease, box-shadow .12s ease, background .12s ease, color .12s ease;}
+  .rama-chip::before{content:""; width:9px; height:9px; border-radius:50%; background:var(--c); flex:none;}
+  .rama-chip span{background:#fff; color:var(--c); border-radius:999px; min-width:22px; padding:1px 7px; text-align:center; font-size:12px; font-weight:700; font-variant-numeric:tabular-nums; box-shadow:inset 0 0 0 1px rgba(0,0,0,.06);}
+  .rama-chip:hover{transform:translateY(-1px); box-shadow:0 6px 12px rgba(0,50,45,.18), inset 0 1px 0 rgba(255,255,255,.7);}
+  .rama-chip.activo{background:var(--c); color:#fff; box-shadow:0 5px 12px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.25); transform:translateY(-1px);}
+  .rama-chip.activo::before{background:#fff;}
+  .rama-chip.vacio:not(.activo){opacity:.6;}
+  .rama-chip:focus-visible{outline:3px solid var(--c); outline-offset:2px;}
+  .rama-chip svg{width:14px; height:14px; flex:none; margin:0 -2px 0 -3px;}
+  .rama-chip--importantes{--c:#9a6b00; --bg:#fff1c9;}
+  .rama-chip--importantes::before{display:none;}
+  .rama-chip--sentencia{--c:#a3281c; --bg:#fbe4e2;}
+  .rama-chip--audiencia{--c:#b3590a; --bg:#fdece0;}
+  .rama-chip--desistimiento{--c:#5b2f9e; --bg:#ece3f7;}
+  .rama-chip--traslado{--c:#6d6a00; --bg:#f4f1bf;}
+  .rama-chip--auto{--c:#0a6a60; --bg:#dff3ee;}
+  .rama-chip--notificacion{--c:#1f6f9f; --bg:#dff0fa;}
+  .rama-chip--memorial{--c:#3d5a73; --bg:#e4ebf1;}
+  .rama-chip--secretaria, .rama-chip--otro{--c:#5c6b68; --bg:#eff1ef;}
+  /* Filas de actuaciones: separador visible entre una y otra, franja de color por tipo a la izquierda, fondo alterno y resalte al pasar el mouse. */
+  .rama-tabla tbody td{border-bottom:2px solid #d5e3df; padding-top:12px; padding-bottom:12px;}
+  .rama-tabla tbody tr:nth-child(even) td{background:#f8fbfa;}
+  .rama-tabla tbody tr:hover td{background:#eaf5f1;}
+  .rama-fila td:first-child{box-shadow:inset 5px 0 0 var(--franja, #cfd6d4);}
+  .rama-fila--sentencia{--franja:#c0392b;} .rama-fila--audiencia{--franja:#ef7d00;} .rama-fila--desistimiento{--franja:#7a45c4;} .rama-fila--traslado{--franja:#c9b800;}
+  .rama-fila--auto{--franja:#0a6a60;} .rama-fila--notificacion{--franja:#3b97cf;} .rama-fila--memorial{--franja:#6c8aa3;}
+  .rama-importante td{background:#f1f9f6;}
+  .rama-importante td.rama-fecha{font-weight:700;}
+  /* Botones de cada actuación y del resumen, en píldora como los demás de la pestaña. */
+  .rama-btn--hist, .rama-btn--crear{display:inline-flex; align-items:center; gap:8px; padding:6px 14px; font-size:12.5px; border-radius:999px; border:1px solid transparent; font-weight:600; cursor:pointer; box-shadow:0 2px 5px rgba(0,50,45,.12), inset 0 1px 0 rgba(255,255,255,.7); transition:transform .12s ease, box-shadow .12s ease, filter .12s ease;}
+  .rama-btn--hist:hover, .rama-btn--crear:hover{transform:translateY(-1px); box-shadow:0 5px 10px rgba(0,50,45,.18), inset 0 1px 0 rgba(255,255,255,.7); filter:saturate(1.1);}
+  .rama-btn--hist:active, .rama-btn--crear:active{transform:none; box-shadow:0 1px 2px rgba(0,50,45,.14);}
+  .rama-btn--hist{background:linear-gradient(180deg,#f1faf6,#d3eee3); color:#00463e; border-color:#8fd3bb;}
+  .rama-btn--crear{background:linear-gradient(180deg,#ffb23d,#ef7d00); color:#fff; border-color:#c96a00; text-shadow:0 1px 0 rgba(0,0,0,.18);}
+  .rama-btn--hist:focus-visible, .rama-btn--crear:focus-visible{outline:2px solid var(--verde-oscuro); outline-offset:2px;}
+  .rama-btn--hist .rama-btn-ico, .rama-btn--crear .rama-btn-ico{width:14px; height:14px;}
   .rama-cat{display:inline-block; margin-top:4px; padding:1px 8px; border-radius:99px; font-size:11px; font-weight:700; letter-spacing:.03em; background:#d7f2e4; color:var(--verde-oscuro);}
   .rama-cat--sentencia{background:#fbe4e2; color:#a3281c;}
   .rama-cat--audiencia{background:#fdece0; color:#b3590a;}
   .rama-cat--traslado{background:#fff3cf; color:#7a5a00;}
   .rama-cat--desistimiento{background:#ece3f7; color:#4d2a85;}
+  .rama-cat--notificacion{background:#dff0fa; color:#1f6f9f;} .rama-cat--memorial{background:#e4ebf1; color:#3d5a73;}
   .rama-acc .rama-btn{display:block; margin:0 0 4px auto;}
   .rama-modal{background:#fff; border-radius:var(--radius); box-shadow:0 12px 36px rgba(0,20,18,.25); padding:22px 24px; width:100%; max-width:880px; max-height:90vh; overflow:auto;}
   .rama-modal h4{margin:0 0 6px;}

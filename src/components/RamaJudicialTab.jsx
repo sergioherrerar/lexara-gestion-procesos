@@ -19,6 +19,9 @@ const ICONOS = {
   documento: 'M7 3h7l5 5v13H7zM14 3v5h5M10 13h6M10 17h6',
   buscar: 'M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM21 21l-4.3-4.3',
   copiar: 'M9 9h11v11H9zM5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1',
+  mas: 'M12 5v14M5 12h14',
+  historico: 'M3 12a9 9 0 1 0 3-6.7M3 4v5h5M12 8v5l3 2',
+  estrella: 'M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z',
 };
 // Copia el radicado de 23 dígitos (el que está elegido en la lista de terminaciones) al portapapeles. Solo copia: no cambia nada del proceso.
 function CopiarNumero({ num, notify }){
@@ -113,7 +116,7 @@ function ResumenRama({ acts, audiencias, terminos, hoy, puedeCrear, onCrear }){
           {au ? (
             <>
               <p><strong>{fechaDMA(au.fecha)}{au.hora ? ' · ' + au.hora : ''}</strong><br /><span className="rama-res-suave">{[au.tipo, au.modalidad].filter(Boolean).join(' · ') || au.actuacion}</span></p>
-              <p className="rama-res-linea"><span className={'badge badge-' + colorCuentaRegresiva(au.restantes)}>{etiquetaCuentaRegresiva(au.restantes)}</span> {auReg ? <span className="rama-res-ok">Ya está en Audiencias del portal</span> : puedeCrear && <button type="button" className="btn-secondary rama-btn" onClick={() => onCrear('audiencias', au.act, au)}>Crear audiencia</button>}</p>
+              <p className="rama-res-linea"><span className={'badge badge-' + colorCuentaRegresiva(au.restantes)}>{etiquetaCuentaRegresiva(au.restantes)}</span> {auReg ? <span className="rama-res-ok">Ya está en Audiencias del portal</span> : puedeCrear && <button type="button" className="rama-btn rama-btn--crear" onClick={() => onCrear('audiencias', au.act, au)}><Ico n="mas" />Crear audiencia</button>}</p>
               {au.posibleCambio && <p className="rama-res-alerta">Hay una actuación posterior que habla de aplazar o cambiar la audiencia: verifique la fecha.</p>}
             </>
           ) : <p className="rama-res-suave">Ninguna audiencia con fecha futura en las actuaciones.</p>}
@@ -126,7 +129,7 @@ function ResumenRama({ acts, audiencias, terminos, hoy, puedeCrear, onCrear }){
               <p key={i} className="rama-res-linea">
                 <strong>Finaliza {fechaDMA(x.finaliza)}</strong> <span className={'badge badge-' + colorCuentaRegresiva(x.restantes)}>{etiquetaCuentaRegresiva(x.restantes)}</span><br />
                 <span className="rama-res-suave">{x.actuacion} · {fechaDMA(x.fechaActuacion)}</span><br />
-                {reg ? <span className="rama-res-ok">Ya está en Términos del portal</span> : puedeCrear && <button type="button" className="btn-secondary rama-btn" onClick={() => onCrear('terminos', x.act, x)}>Crear término</button>}
+                {reg ? <span className="rama-res-ok">Ya está en Términos del portal</span> : puedeCrear && <button type="button" className="rama-btn rama-btn--crear" onClick={() => onCrear('terminos', x.act, x)}><Ico n="mas" />Crear término</button>}
               </p>
             );
           }) : <p className="rama-res-suave">Ningún término corriendo según la Rama.</p>}
@@ -173,7 +176,7 @@ function FilaActuacion({ act, nuevo, enHistorico, canWrite, onAgregar, hoy, audi
   const nota = String(act.anotacion || '').replace(/\s+/g, ' ').trim();
   const corta = anotacionLimpia(nota, 140) || '—';   // la lista muestra la anotación limpia; «ver más» el texto completo de la Rama
   return (
-    <tr className={(esDeTramite(act) ? 'rama-tramite' : '') + (cl.importante ? ' rama-importante' : '')}>
+    <tr className={'rama-fila rama-fila--' + cl.categoria + (esDeTramite(act) ? ' rama-tramite' : '') + (cl.importante ? ' rama-importante' : '')}>
       <td className="rama-fecha">{fechaDMA(act.fecha)}</td>
       <td className="rama-act">
         <strong>{act.actuacion}</strong>
@@ -189,9 +192,9 @@ function FilaActuacion({ act, nuevo, enHistorico, canWrite, onAgregar, hoy, audi
       <td className="rama-term">{fechaDMA(act.fechaFinal) || ''}</td>
       <td className="rama-term">{fechaDMA(act.registro) || ''}</td>
       <td className="rama-acc">
-        {canWrite && !enHistorico && <button type="button" className="btn-secondary rama-btn" onClick={() => onAgregar(act)} title="Agrega este renglón al final del Histórico y lo pone también en Estado y Fecha Estado">Al Histórico</button>}
-        {au && !audienciaRegistrada(au, audiencias) && <button type="button" className="btn-secondary rama-btn" onClick={() => onCrear('audiencias', act, au)} title="Abre el formulario de Audiencias con la fecha y hora de esta actuación; no guarda hasta «Agregar»">Crear audiencia</button>}
-        {term && !terminoRegistrado(term, terminos) && <button type="button" className="btn-secondary rama-btn" onClick={() => onCrear('terminos', act, term)} title="Abre el formulario de Términos con la fecha de esta actuación y los días hábiles hasta el vencimiento que marca la Rama; no guarda hasta «Agregar»">Crear término</button>}
+        {canWrite && !enHistorico && <button type="button" className="rama-btn rama-btn--hist" onClick={() => onAgregar(act)} title="Agrega este renglón al final del Histórico y lo pone también en Estado y Fecha Estado"><Ico n="historico" />Al Histórico</button>}
+        {au && !audienciaRegistrada(au, audiencias) && <button type="button" className="rama-btn rama-btn--crear" onClick={() => onCrear('audiencias', act, au)} title="Abre el formulario de Audiencias con la fecha y hora de esta actuación; no guarda hasta «Agregar»"><Ico n="mas" />Crear audiencia</button>}
+        {term && !terminoRegistrado(term, terminos) && <button type="button" className="rama-btn rama-btn--crear" onClick={() => onCrear('terminos', act, term)} title="Abre el formulario de Términos con la fecha de esta actuación y los días hábiles hasta el vencimiento que marca la Rama; no guarda hasta «Agregar»"><Ico n="mas" />Crear término</button>}
       </td>
     </tr>
   );
@@ -505,7 +508,7 @@ export default function RamaJudicialTab({ proceso, historico, estadoActual, fech
                       </div>
                       <div className="rama-chips" role="group" aria-label="Filtrar las actuaciones por tipo">
                         {[{ id: 'todas', nombre: 'Todas', n: acts.length }, { id: 'importantes', nombre: 'Importantes', n: conteo.importantes }, ...CATEGORIAS.filter(c => conteo[c.id] > 0 || c.id === 'desistimiento').map(c => ({ id: c.id, nombre: c.nombre, n: conteo[c.id] }))].map(c => (
-                          <button key={c.id} type="button" className={'rama-chip' + (filtroCat === c.id ? ' activo' : '')} aria-pressed={filtroCat === c.id} onClick={() => setFiltroCat(c.id)}>{c.nombre} <span>{c.n}</span></button>
+                          <button key={c.id} type="button" className={'rama-chip rama-chip--' + c.id + (filtroCat === c.id ? ' activo' : '') + (c.n === 0 ? ' vacio' : '')} aria-pressed={filtroCat === c.id} onClick={() => setFiltroCat(c.id)}>{c.id === 'importantes' && <Ico n="estrella" />}{c.nombre} <span>{c.n}</span></button>
                         ))}
                       </div>
                       <div className="table-wrap">

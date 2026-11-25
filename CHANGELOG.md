@@ -2,6 +2,12 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-11-25 (221)
+- **Rama Judicial: filtros, filas y botones más vistosos** — pedido del usuario («más vistosos los botones y separadores entre actuaciones»).
+  - **Filtros por tipo:** cada uno con su color (el mismo de su etiqueta), punto de color, contador en píldora y relieve; el elegido se llena de color; «Importantes» lleva una estrella y los que están en 0 se ven más tenues.
+  - **Separadores entre actuaciones:** línea gruesa entre una y otra, franja de color a la izquierda según el tipo (audiencia naranja, desistimiento morado, sentencia roja, traslado amarillo, auto verde, notificación azul, memorial gris azulado), fondo alterno y resalte al pasar el mouse.
+  - **Botones de cada actuación y del resumen:** «Al Histórico» en píldora verde con icono y «Crear audiencia / Crear término» en naranja con signo más, como los demás botones de la pestaña.
+
 ## 2026-11-25 (220)
 - **Rama Judicial: se detectan los desistimientos (sobre todo en los procesos de SOS)** — pedido del usuario: «que detecte los desistimientos… coloca esa pestaña Desistimientos».
   - **Filtro «Desistimientos»** junto a Importantes, Audiencias, Autos…, con su cantidad (aparece siempre, aunque sea 0). Las actuaciones que lo mencionan salen resaltadas con la etiqueta «Desistimiento» y cuentan como importantes.
