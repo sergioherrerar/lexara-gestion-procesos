@@ -2,6 +2,13 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-11-25 (227)
+- **Informe de redes: la tabla «Todas las publicaciones de las redes» ahora encuentra la publicación por su nombre de Bustral** — pregunta del usuario («¿por qué no me ubica la publicación?»: buscó «Incidente de impacto fiscal» y no salía nada).
+  - **Causa:** Bustral y las redes nombran distinto la misma pieza. El Reel 1 del calendario es «Reel 1 · Incidente de impacto fiscal (Parte 1): ¿se aplaza la reforma pensional?», pero en Instagram, TikTok y YouTube salió como «Reforma pensional: ¿hay plata para arrancar?»; la tabla solo buscaba por el título de la red.
+  - **Ahora:** cada publicación se enlaza, por su enlace exacto, con su pieza del calendario de Bustral. El filtro de texto de la columna «Publicación» busca en los dos nombres (el de la red y el de Bustral) y, debajo del título, se ve «En Bustral: …» cuando son distintos. Buscar «Incidente de impacto fiscal» trae las 3 publicaciones del Reel 1 (Instagram, TikTok y YouTube).
+  - Las piezas del calendario que aún no se han publicado (por ejemplo el Reel 2, Parte 2) no están en esta tabla porque todavía no existen en ninguna red.
+  - Los filtros de columna aceptan ahora una búsqueda de texto más amplia que lo que se ve (opción «busqueda» por columna), sin cambiar las demás tablas.
+
 ## 2026-11-25 (226)
 - **Filtros de columna rediseñados: ya no se cortan ni se cierran solos** — pedido del usuario («al dar clic se desaparece, no muestra el filtro completo»; visto en «Todas las publicaciones de las redes»). Aplica a todas las tablas con el menú de columna (Procesos, Facturas, Órdenes, Tutelas, Redes, etc.).
   - **Causa:** el menú se ponía justo debajo del encabezado sin mirar si cabía en la pantalla (con la tabla cerca del borde inferior se salía y quedaba cortado), y se cerraba con cualquier movimiento de la página; el navegador mueve la página solo cuando el cuadro de texto queda fuera de la vista, así que el menú se cerraba apenas se abría.

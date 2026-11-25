@@ -53,7 +53,9 @@ export function useColumnFilters(){
       if(f.valores && f.valores.length) return f.valores.includes(clavePorDia(valorCrudo));
       const texto = (f.texto || "").trim();
       if(!texto) return true;
-      return normalize(paraCompararTexto(valorCrudo)).includes(normalize(texto));
+      // `col.busqueda(row)` (opcional, 2026-11-25): lo que se compara con el texto escrito cuando la fila tiene más de un nombre (p. ej. una publicación de redes: el título en la red y el de Bustral).
+      const aBuscar = col.busqueda ? String(col.busqueda(row) ?? "").trim() : valorCrudo;
+      return normalize(paraCompararTexto(aBuscar)).includes(normalize(texto));
     });
   }
   const hasActiveFilters = Object.values(filters).some(f => (f?.texto || "").trim() || (f?.valores || []).length);

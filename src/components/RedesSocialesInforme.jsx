@@ -1,5 +1,5 @@
 import { Fragment, useState, useEffect, useMemo } from 'react';
-import { MESES, RED_NOMBRE, ESTADO, BUSTRAL_CALENDARIO, REDES_ORDEN, mesDe, fechaLarga, fechaCorta, totalVistas, nuevosDe, calcularVistaMes, mesesDisponibles, estadisticasPorPublicacion } from '../lib/redesSociales';
+import { MESES, RED_NOMBRE, ESTADO, BUSTRAL_CALENDARIO, REDES_ORDEN, mesDe, fechaLarga, fechaCorta, totalVistas, nuevosDe, calcularVistaMes, mesesDisponibles, estadisticasPorPublicacion, titulosBustralPorEnlace, claveEnlace } from '../lib/redesSociales';
 import { IconTextButton } from './IconButton';
 import ColumnHeaderMenu from './ColumnHeaderMenu';
 import { useColumnFilters } from '../hooks/useColumnFilters';
@@ -36,7 +36,7 @@ const GLOSARIO = {
 const fmt = n => (n == null ? '—' : Number(n).toLocaleString('es-CO'));
 // Columnas de «Estadísticas por publicación» (al final de la hoja): se pueden ordenar y filtrar desde el menú de cada encabezado, como en las demás tablas del portal.
 const COLUMNAS_ESTAD = [
-  { key: 'titulo', label: 'Publicación', value: e => e.titulo },
+  { key: 'titulo', label: 'Publicación', value: e => e.titulo, busqueda: e => e.titulo + ' ' + (e.tituloBustral || '') },
   { key: 'fecha', label: 'Fecha', value: e => e.fecha },
   { key: 'red', label: 'Red', value: e => RED_NOMBRE[e.red] || e.red },
   { key: 'vistas', label: 'Vistas', value: e => (e.vistas == null ? '' : String(e.vistas)) },
@@ -156,7 +156,14 @@ export default function RedesSocialesInforme({ liveMode, notify, esAdministrador
   const [anio, mm] = mes.split('-').map(Number);
   const pct = vista.programadas ? Math.round(vista.cumplidas / vista.programadas * 100) : null;
   const estad = estadisticasPorPublicacion(datos);
-  const todasRedes = (datos.publicacionesRedes && datos.publicacionesRedes.publicaciones) || [];
+  // Cada publicación con el título que tiene en el calendario de Bustral (si es una pieza programada): se puede buscar por cualquiera de los dos nombres.
+  const todasRedes = (() => {
+    const mapa = titulosBustralPorEnlace(datos);
+    return ((datos.publicacionesRedes && datos.publicacionesRedes.publicaciones) || []).map(e => {
+      const tb = mapa.get(claveEnlace(e.url)) || '';
+      return tb && tb !== e.titulo ? { ...e, tituloBustral: tb } : e;
+    });
+  })();
   const estadVisibles = ordenarEst(todasRedes.filter(e => coincideEst(e, COLUMNAS_ESTAD)), COLUMNAS_ESTAD);
   const estadPorFecha = new Map(estad.map(e => [e.fecha, e]));   // para mostrar las estadísticas de cada pieza ya publicada debajo de su fila del calendario
 
@@ -388,7 +395,7 @@ export default function RedesSocialesInforme({ liveMode, notify, esAdministrador
       {todasRedes.length > 0 && (
         <div className="redes-seccion">
           <h3>Todas las publicaciones de las redes</h3>
-          <p className="save-hint" style={{margin:'0 0 8px'}}>Cada publicación en cada red (YouTube, Instagram y TikTok) desde el 5 de agosto, con sus vistas, me gusta y comentarios. Usa el menú de cada encabezado para ordenar o filtrar; el título abre la publicación en su red. Un guion largo (—) significa que esa red no entrega ese dato (por ejemplo, Instagram no muestra vistas y TikTok no muestra me gusta sin sesión). Leído el {fechaLarga(datos.publicacionesRedes.leido)}; se actualiza al pedir «actualiza redes». Facebook y LinkedIn no se pueden leer sin sesión.</p>
+          <p className="save-hint" style={{margin:'0 0 8px'}}>Cada publicación en cada red (YouTube, Instagram y TikTok) desde el 5 de agosto, con sus vistas, me gusta y comentarios. Usa el menú de cada encabezado para ordenar o filtrar (en «Publicación» se busca por el título de la red y también por el de Bustral); el título abre la publicación en su red. Un guion largo (—) significa que esa red no entrega ese dato (por ejemplo, Instagram no muestra vistas y TikTok no muestra me gusta sin sesión). Leído el {fechaLarga(datos.publicacionesRedes.leido)}; se actualiza al pedir «actualiza redes». Facebook y LinkedIn no se pueden leer sin sesión.</p>
           <p className="save-hint" style={{margin:'0 0 8px'}}>{estadVisibles.length} de {todasRedes.length} publicaciones{hayFiltrosEst && <> · <button type="button" className="clear-filters-link" onClick={limpiarFiltrosEst}>Limpiar filtros de columna</button></>}</p>
           <div className="table-wrap">
             <table className="redes-tabla redes-tabla-estad">
@@ -403,7 +410,7 @@ export default function RedesSocialesInforme({ liveMode, notify, esAdministrador
                 {estadVisibles.length === 0 && <tr><td colSpan={6} className="redes-vacio">Ninguna publicación coincide con los filtros.</td></tr>}
                 {estadVisibles.map(e => (
                   <tr key={e.url}>
-                    <td className="redes-titulo"><a href={e.url} target="_blank" rel="noopener noreferrer">{e.titulo}</a></td>
+                    <td className="redes-titulo"><a href={e.url} target="_blank" rel="noopener noreferrer">{e.titulo}</a>{e.tituloBustral && <small className="redes-nombre-bustral">En Bustral: {e.tituloBustral}</small>}</td>
                     <td className="redes-fecha">{fechaCorta(e.fecha)}</td>
                     <td><span className={'redes-envivo-red redes-envivo-' + e.red}>{RED_NOMBRE[e.red] || e.red}</span></td>
                     <td className="redes-num">{e.vistas == null ? <span className="redes-sin">—</span> : fmt(e.vistas)}</td>

@@ -51,7 +51,7 @@ export function fechaCalendario(datos){
 }
 
 // Identificador de una publicación a partir de su enlace (YouTube, Instagram, TikTok): sirve para saber si dos enlaces son la misma publicación.
-function claveEnlace(u){
+export function claveEnlace(u){
   const s = String(u || ''); let r;
   if((r = /(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/)|youtu\.be\/)([\w-]{11})/.exec(s))) return 'yt:' + r[1];
   if((r = /instagram\.com\/(?:[\w.]+\/)?(?:reel|reels|p)\/([\w-]+)/.exec(s))) return 'ig:' + r[1];
@@ -66,6 +66,18 @@ function piezaPublicadaDe(datos, g){
     if(p) return p;
   }
   return g.publicadaComo ? datos.publicadas.find(p => p.fecha === g.publicadaComo) || null : null;
+}
+
+// Título que tiene en el calendario de Bustral cada publicación real, por su enlace (clave del enlace → título). Bustral y las redes nombran distinto la misma pieza (p. ej. «Reel 1 · Incidente de impacto
+// fiscal (Parte 1)…» en Bustral y «Reforma pensional: ¿hay plata para arrancar?» en las redes), así que la tabla de todas las publicaciones los junta para poder buscar por cualquiera de los dos nombres.
+export function titulosBustralPorEnlace(datos){
+  const mapa = new Map();
+  (datos.programadas || []).forEach(g => {
+    const p = piezaPublicadaDe(datos, g);
+    if(!p) return;
+    Object.values(p.urls || {}).forEach(u => { if(u) mapa.set(claveEnlace(u), g.titulo); });
+  });
+  return mapa;
 }
 
 // Todo lo del mes: filas del calendario (programadas cruzadas con lo realmente publicado + publicadas sin programar), indicadores y más/menos vista.
