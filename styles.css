@@ -2442,3 +2442,6 @@
   .rama-detalle{margin:8px 0 12px;}
   .rama-detalle-cuerpo h5{margin:14px 0 6px; font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--texto-suave);}
   .redes-nombre-bustral{display:block; margin-top:3px; font-size:11.5px; font-weight:500; color:var(--texto-suave); line-height:1.35;}
+  .redes-aviso-pendiente{margin:10px 0 0; padding:10px 14px; border-radius:10px; background:#fdece0; border:1px solid #f2c18a; color:#7a3b05; font-size:13px; line-height:1.5;}
+  .redes-aviso-pendiente p{margin:0 0 4px;}
+  .redes-aviso-pendiente p:last-child{margin:0;}

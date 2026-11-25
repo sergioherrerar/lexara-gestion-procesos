@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-11-25 (228)
+- **Informe de redes: aviso de piezas programadas que todavía no están publicadas** — pedido del usuario. Al escribir en el filtro de «Publicación» de «Todas las publicaciones de las redes», si el texto coincide con piezas del calendario de Bustral que aún no aparecen publicadas en ninguna red, debajo de la tabla sale un aviso naranja: «Reel 2 · Incidente de impacto fiscal (Parte 2)… está en el calendario de Bustral para el 10 nov y todavía no aparece publicada en ninguna red (la fecha programada ya pasó)». Sale aunque la tabla traiga resultados (por ejemplo, al buscar «Incidente de impacto fiscal» muestra las 3 publicaciones del Reel 1 y avisa del Reel 2), y si no hay resultados la fila vacía remite al aviso.
+
 ## 2026-11-25 (227)
 - **Informe de redes: la tabla «Todas las publicaciones de las redes» ahora encuentra la publicación por su nombre de Bustral** — pregunta del usuario («¿por qué no me ubica la publicación?»: buscó «Incidente de impacto fiscal» y no salía nada).
   - **Causa:** Bustral y las redes nombran distinto la misma pieza. El Reel 1 del calendario es «Reel 1 · Incidente de impacto fiscal (Parte 1): ¿se aplaza la reforma pensional?», pero en Instagram, TikTok y YouTube salió como «Reforma pensional: ¿hay plata para arrancar?»; la tabla solo buscaba por el título de la red.

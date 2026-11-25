@@ -1,5 +1,5 @@
 import { Fragment, useState, useEffect, useMemo } from 'react';
-import { MESES, RED_NOMBRE, ESTADO, BUSTRAL_CALENDARIO, REDES_ORDEN, mesDe, fechaLarga, fechaCorta, totalVistas, nuevosDe, calcularVistaMes, mesesDisponibles, estadisticasPorPublicacion, titulosBustralPorEnlace, claveEnlace } from '../lib/redesSociales';
+import { MESES, RED_NOMBRE, ESTADO, BUSTRAL_CALENDARIO, REDES_ORDEN, mesDe, fechaLarga, fechaCorta, totalVistas, nuevosDe, calcularVistaMes, mesesDisponibles, estadisticasPorPublicacion, titulosBustralPorEnlace, claveEnlace, piezasSinPublicarQueCoinciden } from '../lib/redesSociales';
 import { IconTextButton } from './IconButton';
 import ColumnHeaderMenu from './ColumnHeaderMenu';
 import { useColumnFilters } from '../hooks/useColumnFilters';
@@ -164,6 +164,8 @@ export default function RedesSocialesInforme({ liveMode, notify, esAdministrador
       return tb && tb !== e.titulo ? { ...e, tituloBustral: tb } : e;
     });
   })();
+  // Lo que se escribió en el filtro de «Publicación»: si coincide con piezas del calendario que aún no están publicadas, se avisa debajo de la tabla.
+  const pendientesBusqueda = piezasSinPublicarQueCoinciden(datos, filtrosEst.titulo?.texto);
   const estadVisibles = ordenarEst(todasRedes.filter(e => coincideEst(e, COLUMNAS_ESTAD)), COLUMNAS_ESTAD);
   const estadPorFecha = new Map(estad.map(e => [e.fecha, e]));   // para mostrar las estadísticas de cada pieza ya publicada debajo de su fila del calendario
 
@@ -407,7 +409,7 @@ export default function RedesSocialesInforme({ liveMode, notify, esAdministrador
                 </tr>
               </thead>
               <tbody>
-                {estadVisibles.length === 0 && <tr><td colSpan={6} className="redes-vacio">Ninguna publicación coincide con los filtros.</td></tr>}
+                {estadVisibles.length === 0 && <tr><td colSpan={6} className="redes-vacio">Ninguna publicación coincide con los filtros.{pendientesBusqueda.length > 0 ? ' Mira el aviso de abajo.' : ''}</td></tr>}
                 {estadVisibles.map(e => (
                   <tr key={e.url}>
                     <td className="redes-titulo"><a href={e.url} target="_blank" rel="noopener noreferrer">{e.titulo}</a>{e.tituloBustral && <small className="redes-nombre-bustral">En Bustral: {e.tituloBustral}</small>}</td>
@@ -421,6 +423,15 @@ export default function RedesSocialesInforme({ liveMode, notify, esAdministrador
               </tbody>
             </table>
           </div>
+          {pendientesBusqueda.length > 0 && (
+            <div className="redes-aviso-pendiente" role="status">
+              {pendientesBusqueda.map(p => (
+                <p key={p.titulo + p.fecha}>
+                  <strong>{p.titulo}</strong> está en el calendario de Bustral para el {fechaCorta(p.fecha)} y <strong>todavía no aparece publicada en ninguna red</strong>{p.vencida ? ' (la fecha programada ya pasó)' : ''}.
+                </p>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

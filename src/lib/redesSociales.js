@@ -80,6 +80,19 @@ export function titulosBustralPorEnlace(datos){
   return mapa;
 }
 
+// Piezas del calendario de Bustral que coinciden con un texto buscado y que TODAVÍA NO aparecen publicadas en ninguna red (2026-11-25, pedido del usuario: al buscar «…(Parte 2)» en la tabla de todas las
+// publicaciones, saber que esa pieza está programada pero sin publicar). Devuelve [{ titulo, fecha, estado, vencida }], de la más próxima a la más lejana.
+const sinTildes = s => String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim();
+export function piezasSinPublicarQueCoinciden(datos, texto){
+  const t = sinTildes(texto);
+  if(!t) return [];
+  const hoy = fechaCalendario(datos) || '';
+  return (datos.programadas || [])
+    .filter(g => sinTildes(g.titulo).includes(t) && !piezaPublicadaDe(datos, g))
+    .map(g => ({ titulo: g.titulo, fecha: g.fecha, estado: g.estado, vencida: !!g.fecha && !!hoy && String(g.fecha) < String(hoy).slice(0, 10) }))
+    .sort((a, b) => String(a.fecha).localeCompare(String(b.fecha)));
+}
+
 // Todo lo del mes: filas del calendario (programadas cruzadas con lo realmente publicado + publicadas sin programar), indicadores y más/menos vista.
 export function calcularVistaMes(datos, mes){
   const hoy = fechaCalendario(datos);
