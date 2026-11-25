@@ -2,6 +2,14 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-11-25 (230)
+- **Informe de redes: Bustral movió tres piezas en su calendario; el informe muestra la fecha de hoy y conserva la original** — hallazgo del usuario («el informe dice 12 nov para el Reel 3 pero en Bustral no hay nada el 12»). Se releyó el calendario de Bustral con la sesión del usuario (solo lectura): hoy el **Reel 4 está el 13 de noviembre, el Reel 5 el 16 y el Reel 3 el 19**; el informe tenía 16, 19 y 12 (lectura del 12-nov; el 23-nov solo se revisaron los estados). Son exactamente los días en que se publicaron: Bustral las movió en su calendario después de publicarlas.
+  - En la columna «Programada (Bustral)» ahora sale la fecha de hoy en Bustral y debajo, en naranja, «Bustral la movió · fecha original 12 nov». El **cumplimiento se sigue midiendo contra la fecha original** (así el Reel 3 sigue «publicada con 7 días de retraso»), y al pasar el mouse por la etiqueta se explica contra qué fecha se mide.
+  - Datos: cada pieza movida guarda `fechaActual` además de su fecha original; `bustralPanel.calendarioLeido` pasó al 25-nov con la nota del hallazgo. Las demás piezas (Reels 1, 2, 6 y 7, Cafés) coinciden con Bustral.
+
+## 2026-11-25 (229)
+- **Informe de redes: las piezas vencidas sin publicar se marcan en rojo con los días de retraso** — pedido del usuario («ya pasó harto tiempo y nada que se publica; que se note que pasó la fecha»). En «Calendario del mes: lo programado frente a lo publicado», una pieza programada cuya fecha ya pasó y que no está en ninguna red: toda la fila sale teñida de rojo, la fecha programada va en rojo y negrita, la celda «Publicada» dice «Aún no» con «Debió salir el 10 nov: lleva 15 días de retraso», y la etiqueta de cumplimiento pasa de «Sin publicar (fecha vencida)» a «Sin publicar · vencida hace 15 días». Los días se cuentan hasta hoy de verdad (no solo hasta la última lectura de Bustral), así que crecen solos cada día. La etiqueta con los días también sale en el PDF, el Excel y el correo del informe.
+
 ## 2026-11-25 (228)
 - **Informe de redes: aviso de piezas programadas que todavía no están publicadas** — pedido del usuario. Al escribir en el filtro de «Publicación» de «Todas las publicaciones de las redes», si el texto coincide con piezas del calendario de Bustral que aún no aparecen publicadas en ninguna red, debajo de la tabla sale un aviso naranja: «Reel 2 · Incidente de impacto fiscal (Parte 2)… está en el calendario de Bustral para el 10 nov y todavía no aparece publicada en ninguna red (la fecha programada ya pasó)». Sale aunque la tabla traiga resultados (por ejemplo, al buscar «Incidente de impacto fiscal» muestra las 3 publicaciones del Reel 1 y avisa del Reel 2), y si no hay resultados la fila vacía remite al aviso.
 

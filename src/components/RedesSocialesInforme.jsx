@@ -313,15 +313,23 @@ export default function RedesSocialesInforme({ liveMode, notify, esAdministrador
                 const abiertaFila = desplegable && desplegadas.has(clave);
                 const accionFila = () => (desplegable ? alternarFila(clave) : abrir(f));
                 const acento = f.tipo !== 'programada' ? 'redes-g-sin' : f.g.estado === 'video_objetado' ? 'redes-g-obj' : f.g.estado === 'por_aprobar' ? 'redes-g-pend' : 'redes-g-ok';
+                // Pieza programada cuya fecha ya pasó y que no está en ninguna red: toda la fila se marca en rojo con los días que lleva vencida.
+                const vencida = f.tipo === 'programada' && !f.salioEn && f.diasVencida != null;
+                // Bustral movió la pieza en su calendario: la columna «Programada» muestra la fecha de hoy en Bustral y debajo la original (contra la que se mide el cumplimiento).
+                const movida = f.tipo === 'programada' && !!f.g.fechaActual && f.g.fechaActual !== f.g.fecha;
                 return (
                   <Fragment key={f.tipo + f.fecha + f.titulo}>
-                  <tr className={"redes-fila redes-g redes-g-ini " + acento + (abiertaFila ? "" : " redes-g-fin")} tabIndex={0} aria-expanded={desplegable ? abiertaFila : undefined} onClick={accionFila} onKeyDown={e => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); accionFila(); } }}>
+                  <tr className={"redes-fila redes-g redes-g-ini " + acento + (vencida ? " redes-g-venc" : "") + (abiertaFila ? "" : " redes-g-fin")} tabIndex={0} aria-expanded={desplegable ? abiertaFila : undefined} onClick={accionFila} onKeyDown={e => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); accionFila(); } }}>
                     <td className="redes-titulo">{desplegable && <span className="redes-chev" aria-hidden="true">{abiertaFila ? '▾' : '▸'}</span>}{f.titulo}</td>
                     <td>{est ? <span className={"badge " + est.clase}>{est.texto}</span> : <span className="redes-sin">Publicada en Bustral</span>}</td>
-                    <td>{f.cumpl ? <span className={"badge " + f.cumpl.clase}>{f.cumpl.texto}</span> : <span className="redes-sin">Sin programación en el calendario</span>}</td>
-                    <td className="redes-fecha">{f.tipo === 'programada' ? fechaCorta(f.g.fecha) : <span className="redes-sin">Sin programar</span>}</td>
+                    <td>{f.cumpl ? <span className={"badge " + f.cumpl.clase} title={f.cumpl.nota}>{f.cumpl.texto}</span> : <span className="redes-sin">Sin programación en el calendario</span>}</td>
+                    <td className="redes-fecha">{f.tipo === 'programada'
+                      ? (movida
+                        ? <>{fechaCorta(f.g.fechaActual)}<small className="redes-movida">Bustral la movió · fecha original {fechaCorta(f.g.fecha)}</small></>
+                        : (vencida ? <span className="redes-fecha-venc">{fechaCorta(f.g.fecha)}</span> : fechaCorta(f.g.fecha)))
+                      : <span className="redes-sin">Sin programar</span>}</td>
                     <td className="redes-fecha">
-                      {(f.tipo === 'publicada' || f.salioEn) ? <>{fechaCorta(f.tipo === 'publicada' ? f.fecha : f.salioEn)}{((f.tipo === 'publicada' ? f.p : f.real)?.hora) && <> · {(f.tipo === 'publicada' ? f.p : f.real).hora}</>}{redes.length > 0 && <small>{redes.join(' · ')}</small>}</> : <span className="redes-sin">Aún no</span>}
+                      {(f.tipo === 'publicada' || f.salioEn) ? <>{fechaCorta(f.tipo === 'publicada' ? f.fecha : f.salioEn)}{((f.tipo === 'publicada' ? f.p : f.real)?.hora) && <> · {(f.tipo === 'publicada' ? f.p : f.real).hora}</>}{redes.length > 0 && <small>{redes.join(' · ')}</small>}</> : vencida ? <span className="redes-aun-venc">Aún no<small>Debió salir el {fechaCorta(f.g.fecha)}: lleva {f.diasVencida} día{f.diasVencida === 1 ? '' : 's'} de retraso</small></span> : <span className="redes-sin">Aún no</span>}
                     </td>
                     <td onClick={e => e.stopPropagation()} onKeyDown={e => e.stopPropagation()}>
                       {f.tipo === 'programada'

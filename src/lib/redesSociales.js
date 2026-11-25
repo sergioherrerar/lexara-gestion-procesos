@@ -103,20 +103,25 @@ export function calcularVistaMes(datos, mes){
   const filasProg = programadasMes.map(g => {
     const real = piezaPublicadaDe(datos, g);
     const salioEn = real ? real.fecha : (g.publicadaEn ? g.publicadaComo : null);
-    let cumpl;
+    let cumpl, diasVencida = null;
     if(salioEn){
       const d = diasEntre(g.fecha, salioEn);
       cumpl = d === 0 ? { texto: 'Publicada a tiempo', clase: 'badge-verde' }
         : d > 0 ? { texto: `Publicada con ${d} día${d > 1 ? 's' : ''} de retraso`, clase: 'badge-naranja' }
         : { texto: `Publicada ${-d} día${d < -1 ? 's' : ''} antes`, clase: 'badge-verde' };
     } else if(g.fecha < hoy){
-      cumpl = { texto: 'Sin publicar (fecha vencida)', clase: 'badge-rojo' };
+      // Cuántos días lleva vencida (2026-11-25, pedido del usuario: «ya pasó harto tiempo y nada que se publica, que se note»): se cuenta hasta hoy de verdad, no solo hasta la última lectura de Bustral.
+      const d = new Date(); const hoyReal = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      diasVencida = Math.max(diasEntre(g.fecha, hoy), diasEntre(g.fecha, hoyReal));
+      cumpl = { texto: `Sin publicar · vencida hace ${diasVencida} día${diasVencida === 1 ? '' : 's'}`, clase: 'badge-rojo' };
     } else if(g.fecha === hoy){
       cumpl = { texto: 'Programada para hoy', clase: 'badge-naranja' };
     } else {
       cumpl = { texto: 'Pendiente', clase: 'badge-gris' };
     }
-    return { tipo: 'programada', fecha: g.fecha, titulo: g.titulo, g, real, salioEn, cumpl };
+    // Bustral a veces mueve la pieza en su calendario a la fecha en que se publicó (`fechaActual`): el cumplimiento se sigue midiendo contra la fecha ORIGINAL.
+    if(cumpl && g.fechaActual && g.fechaActual !== g.fecha) cumpl = { ...cumpl, nota: `Se mide contra la fecha original (${fechaCorta(g.fecha)}). Hoy Bustral tiene esta pieza el ${fechaCorta(g.fechaActual)}: la movió.` };
+    return { tipo: 'programada', fecha: g.fecha, titulo: g.titulo, g, real, salioEn, cumpl, diasVencida };
   });
   const vinculadas = new Set(filasProg.filter(f => f.real).map(f => f.real.fecha + '|' + f.real.titulo));
   const filasPub = publicadasMes

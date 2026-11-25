@@ -911,8 +911,8 @@
     "porAprobar": 0,
     "conError": 0,
     "nota": "Leído del panel de Redes Sociales de Bustral (tareas pendientes): Por aprobar 0, Objetados en corrección 5, Con error 0. Bustral se cierra solo: lo que está por aprobar y no se decide en 2 días se aprueba automáticamente.",
-    "calendarioLeido": "2026-11-23",
-    "notaCalendario": "Calendario de noviembre y diciembre releído de Bustral el 23-nov-2026 (los estados coinciden); diciembre trae 12 publicaciones con guion aprobado, aún por grabar."
+    "calendarioLeido": "2026-11-25",
+    "notaCalendario": "Calendario de noviembre y diciembre releído de Bustral el 23-nov-2026 (los estados coinciden); diciembre trae 12 publicaciones con guion aprobado, aún por grabar. El 25-nov-2026 se releyó el calendario completo: Bustral tiene hoy el Reel 4 el 13 de noviembre, el Reel 5 el 16 y el Reel 3 el 19 (las fechas del 12-nov eran 16, 19 y 12): las movió a los días en que se publicaron. El informe conserva la fecha original (la que se mide) y muestra la de hoy en Bustral en «fechaActual»."
   },
   "programadas": [
     {
@@ -964,7 +964,8 @@
       "tieneVideo": true,
       "copy": "Material grabado: carpeta 03_TUS AHORROS MEJORA CALIDAD.mp4 (Drive Lexara).\nGancho (0:00–0:07): «Tus ahorros de pensión en un fondo privado ya no tienen que regresar obligatoriamente a Colombia. El Gobierno acaba de eliminar esa regla.»\n[0:07–0:28] «En abril de este año, el gobierno anterior expidió el Decreto 369: los fondos privados solo podían tener invertido en el exterior, como máximo, el 30 %…»\n[0:28–0:50] «Este 6 de octubre, el nuevo Gobierno expidió el Decreto 1490, que elimina ese tope…»",
       "publicadaComo": "2026-11-19",
-      "piezaUrl": "https://www.instagram.com/reel/Df7doRvJrJR/"
+      "piezaUrl": "https://www.instagram.com/reel/Df7doRvJrJR/",
+      "fechaActual": "2026-11-19"
     },
     {
       "fecha": "2026-11-16",
@@ -975,7 +976,8 @@
       "tieneVideo": true,
       "copy": "Material grabado: carpeta 04_Proceso Monitoreo laboral (Drive Lexara).\nGancho (0:00–0:07): «¿Te deben salarios o tu liquidación y no es mucha plata? Hay un proceso nuevo, rápido y sin tantos trámites, para cobrarlo. Se llama proceso monitorio.»\n[0:07–0:25] «Desde abril de 2026 rige el nuevo Código Procesal del Trabajo, y trae el proceso monitorio laboral: sirve para cobrar deudas de una relación de trabajo o de seguridad social que sean claras, exigibles y no superen 20 salarios mínimos…»",
       "publicadaComo": "2026-11-13",
-      "piezaUrl": "https://www.instagram.com/reel/DfsR3wcSL_E/"
+      "piezaUrl": "https://www.instagram.com/reel/DfsR3wcSL_E/",
+      "fechaActual": "2026-11-13"
     },
     {
       "fecha": "2026-11-19",
@@ -986,7 +988,8 @@
       "tieneVideo": true,
       "copy": "Material grabado: carpeta 05_DECRETO 234.mp4 (Drive Lexara).\nGancho (0:00–0:07): «¿Te dijeron que los sindicatos ahora iban a poder negociar con todo tu sector a la vez? Pues el Consejo de Estado acaba de frenar esa norma.»\n[0:07–0:25] «En marzo de este año, el gobierno anterior sacó el Decreto 234, que permitía negociar con un grupo de empresas, una rama o todo un sector, en una sola mesa y con un solo pliego…»\n[0:25–0:50] «El 1 de octubre, el Consejo de Estado suspendió provisionalmente ese decreto…»",
       "publicadaComo": "2026-11-16",
-      "piezaUrl": "https://www.instagram.com/reel/DfzvCisSAkr/"
+      "piezaUrl": "https://www.instagram.com/reel/DfzvCisSAkr/",
+      "fechaActual": "2026-11-16"
     },
     {
       "fecha": "2026-11-20",
