@@ -7,6 +7,7 @@ import HorasExtrasTab from './HorasExtrasTab';
 import NovedadesNominaTab from './NovedadesNominaTab';
 import GastosTab from './GastosTab';
 import FacturacionTab from './FacturacionTab';
+import PropuestaServiciosTab from './PropuestaServiciosTab';
 import { IconTextButton } from './IconButton';
 import { generarCertificacionColaboradorPDF, recomendacionPreferida } from '../lib/informeCertificacion';
 
@@ -26,6 +27,7 @@ const TABS = [
   {key:'novedadesNomina', label:'Novedades de nómina'},
   {key:'gastos', label:'Egresos'},
   {key:'facturacion', label:'Facturación'},
+  {key:'propuestas', label:'Propuesta de servicios'},
 ];
 
 function CertificacionesTab({ colaboradores, notify }){
@@ -182,6 +184,7 @@ export default function AdministracionView({ listas, liveMode, onActualizarEquip
         />
       )}
       {tab==='documentos' && <DocumentosTab colaboradores={colaboradores} config={config} notify={notify} />}
+      {tab==='propuestas' && <PropuestaServiciosTab clientes={clientes} liveMode={liveMode} notify={notify} />}
       {tab==='horasExtras' && (
         <HorasExtrasTab
           horasExtras={horasExtras}

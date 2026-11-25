@@ -225,7 +225,8 @@ export const ANCHO_FIRMA_COMPLETA_MM = 78;
 // (informeTutelas.js). `tituloEncabezado` es el título del documento, en la
 // franja debajo del logo — mismo lugar/estilo que "SOLICITUD DE
 // FACTURACIÓN ELECTRÓNICA" en la hoja imprimible de Facturas.
-export async function prepararDocumentoPDF(tituloEncabezado = 'Reporte procesos judiciales'){
+// `opciones.sinTitulo` (2026-11-25, propuestas de servicios): deja solo el membrete (logo, cintas y franja de contacto) sin la franja de título ni el Nit; el contenido puede empezar más arriba.
+export async function prepararDocumentoPDF(tituloEncabezado = 'Reporte procesos judiciales', opciones = {}){
   const [{ default: jsPDF }, { default: autoTable }, membreteDataUrl, qrDataUrl] = await Promise.all([
     import('jspdf'),
     import('jspdf-autotable'),
@@ -321,6 +322,7 @@ export async function prepararDocumentoPDF(tituloEncabezado = 'Reporte procesos 
     // Centrado (pedido explícito del usuario 2026-08-22, visto en la
     // certificación pero aplica a este encabezado COMPARTIDO por todos los
     // PDF de Informes) — antes alineado a la izquierda contra el margen.
+    if(opciones.sinTitulo) return;
     doc.setFont('helvetica','bold'); doc.setFontSize(13); doc.setTextColor(...VERDE_OSCURO);
     doc.text(tituloEncabezado, pageWidth/2, 60, {align:'center'});
     doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(...GRIS_SUAVE);
