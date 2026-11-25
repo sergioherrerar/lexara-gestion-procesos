@@ -268,3 +268,36 @@ export function procesosDeCorreo(textoRadicados, procesos){
   }
   return [...hallados.values()];
 }
+
+// ---------- acceso de la apoderada al expediente en SAMAI (2026-11-26) ----------
+// SAMAI deja rastro en las actuaciones públicas: «Se autorizó el acceso al sistema SAMAI para el usuari@: <NOMBRE>, según la solicitud No. N» (constancia secretarial), «No se autorizó… motivo: …», y
+// «RECIBE MEMORIALES ONLINE: El Señor(a): <NOMBRE> … radicó la solicitud No. N» (quien radica memoriales en SAMAI ya tiene acceso). Con eso, y con el renglón que deja el botón «Anotar en el Histórico»,
+// se sabe si la apoderada principal ya tiene acceso, si se lo negaron, o si la solicitud sigue pendiente. La ausencia de rastro NO prueba que no tenga acceso: en ese caso el botón queda habilitado.
+const NOMBRE_APODERADA = /monica\s+paola\s+quintero/;
+/** { estado: 'autorizada'|'vinculada'|'negada'|'solicitada'|'ninguna', fecha, solicitud, motivo, texto } */
+export function detectarAccesoSamai(acts, historicoTexto = ''){
+  const eventos = [];
+  (acts || []).forEach(a => {
+    const bruto = String(a.actuacion || '') + ' ' + String(a.anotacion || '');
+    const t = norm(bruto);
+    if(!NOMBRE_APODERADA.test(t)) return;
+    const fecha = iso(a.fecha);
+    const solicitud = ((/solicitud no\.?\s*(\d+)/.exec(t)) || [])[1] || '';
+    const limpio = String(a.anotacion || '').replace(/\s+/g, ' ').trim();
+    if(/no se autorizo el acceso/.test(t)){
+      const m = /motivo:?\s*(.*)$/i.exec(limpio);
+      eventos.push({ estado: 'negada', fecha, solicitud, motivo: m ? m[1].trim().slice(0, 220) : '', texto: limpio.slice(0, 260), prioridad: 1 });
+    }else if(/se autorizo el acceso/.test(t)){
+      eventos.push({ estado: 'autorizada', fecha, solicitud, motivo: '', texto: limpio.slice(0, 260), prioridad: 3 });
+    }else if(/con vinculacion al proceso|radico la solicitud no\.?\s*\d+/.test(t) && /memorial/.test(t)){
+      eventos.push({ estado: 'vinculada', fecha, solicitud, motivo: '', texto: 'Radicó memoriales por la ventanilla virtual de SAMAI' + (solicitud ? ' (solicitud No. ' + solicitud + ')' : ''), prioridad: 2 });
+    }
+  });
+  eventos.sort((a, b) => b.fecha.localeCompare(a.fecha) || b.prioridad - a.prioridad);
+  const ultimo = eventos[0] || null;
+  // Solicitud presentada desde el portal (renglón del Histórico): pendiente si es posterior a lo último que dice SAMAI.
+  const m = /(\d{2})-(\d{2})-(\d{4})\s+Solicitud de acceso al expediente en SAMAI/i.exec(String(historicoTexto || ''));
+  const fechaSol = m ? `${m[3]}-${m[2]}-${m[1]}` : '';
+  if(fechaSol && (!ultimo || fechaSol > ultimo.fecha)) return { estado: 'solicitada', fecha: fechaSol, solicitud: '', motivo: '', texto: 'Solicitud presentada desde el portal (anotada en el Histórico)' };
+  return ultimo ? { estado: ultimo.estado, fecha: ultimo.fecha, solicitud: ultimo.solicitud, motivo: ultimo.motivo, texto: ultimo.texto } : { estado: 'ninguna', fecha: '', solicitud: '', motivo: '', texto: '' };
+}

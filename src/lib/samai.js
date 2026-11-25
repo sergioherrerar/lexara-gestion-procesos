@@ -39,6 +39,8 @@ export function urlsSamai(radicado, despacho, conCorporacion){
   };
 }
 
+// Formulario oficial «Solicitud de acceso a expedientes en SAMAI» (Ventanilla Virtual del Consejo de Estado): ahí se pide el acceso al expediente digital de lo contencioso administrativo.
+export const URL_SOLICITUD_ACCESO_SAMAI = 'https://ventanillavirtual.consejodeestado.gov.co/Views/solicitud-acceso-expedientes.aspx';
 export function abrirEnSamai(url){ window.open(url, '_blank', 'noopener,noreferrer'); }
 // Consulta pública de procesos de SAMAI (botón de la cabecera de Procesos judiciales): se busca por radicado y corporación; no recibe el número por la dirección.
 export const URL_SAMAI_CONSULTA = URL_SAMAI + 'Vistas/Casos/procesos.aspx';
