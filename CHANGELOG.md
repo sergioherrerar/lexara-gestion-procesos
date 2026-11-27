@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-11-27 (237)
+- **«Correo de despachos»: la lista de despachos ya no mezcla los correos de nuestro equipo.** Antes contaba como «de despacho» cualquier correo que citara un radicado, y entraban los de Daniel al cliente o a RDL. Ahora cuenta por quién lo envía (Rama Judicial, SAMAI, Consejo de Estado, Procuraduría, Supersociedades… o un juzgado o tribunal); los de nuestro equipo y los de RDL quedan en «Todos». Cuando un correo apunta a más de un proceso del portal, ahora dice por qué coincide con cada uno (No. completo, Histórico de números o número corto).
+
 ## 2026-11-27 (236)
 - **Nueva herramienta «Cobertura RDL» (Informes → Herramientas):** compara los informes diarios de RDL Servicios Jurídicos (vigilancia judicial, que cobra por proceso cada mes) con lo que dice la Rama de cada proceso vigente. Reglas acordadas con el usuario: periodo = el mes en curso; «no reportó» = pasaron 2 días hábiles desde la actuación; cuentan solo las actuaciones importantes.
   - Lee los informes del buzón (solo lectura) y la tabla de cada uno: radicado, despacho, actuaciones con su fecha, términos y el enlace a la carpeta de Drive de RDL.
