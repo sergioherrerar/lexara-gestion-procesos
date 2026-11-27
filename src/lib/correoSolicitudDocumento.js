@@ -96,15 +96,23 @@ function bytesABase64(bytes){
   for(let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
   return btoa(bin);
 }
-export async function crearBorradorSolicitudDocumento({ tipo, documento, clientes, colaboradores, pdf }){
+export async function crearBorradorSolicitudDocumento({ tipo, documento, clientes, colaboradores, pdf, anexos }){
   const esFactura = tipo === 'factura';
   const firma = await firmaComoImagenInline('soporte');
   const cliente = (clientes || []).find(c => String(c.id) === String(documento?.CodigoCliente)) || null;
   const beatriz = destinatariaNovedades(colaboradores);
   const correo = construirCorreoSolicitudDocumento({ tipo, documento, cliente, pilaDestinatario: esFactura ? nombreDeSaludo() : '' });
+  // Anexos de la orden de compra (2026-11-28): la propuesta o contrato de «0. Contrato» y la pieza judicial que demuestra la etapa; lo que pesa más de 3 MB va como enlace.
+  let htmlBody = correo.html;
+  const nombresAnexos = (anexos?.adjuntos || []).map(a => a.nombre);
+  if(nombresAnexos.length || (anexos?.enlaces || []).length){
+    const lista = nombresAnexos.map(n => '<li>' + esc(n) + ' (adjunto)</li>').join('') + (anexos.enlaces || []).map(e => '<li><a href="' + esc(e.url) + '">' + esc(e.nombre) + '</a> (enlace: el archivo es muy pesado para adjuntarlo)</li>').join('');
+    const bloque = '<p style="margin:14px 0 4px;"><strong>Anexos:</strong> la propuesta o contrato y la pieza judicial que demuestra la etapa.</p><ul style="margin:0 0 10px 18px;padding:0;">' + lista + '</ul>';
+    htmlBody = /<\/body>/i.test(htmlBody) ? htmlBody.replace(/<\/body>/i, () => bloque + '</body>') : htmlBody + bloque;
+  }
   const r = await crearBorradorConImagenesInline({
-    to: esFactura ? [beatriz.correo] : [], cc: [CORREO_GERENCIA_NOVEDADES], subject: correo.asunto, htmlBody: correo.html, imagenes: [firma],
-    adjuntos: pdf ? [{ nombre: pdf.nombre, contentType: 'application/pdf', base64: bytesABase64(pdf.bytes), tamano: pdf.bytes.length }] : [],
+    to: esFactura ? [beatriz.correo] : [], cc: [CORREO_GERENCIA_NOVEDADES], subject: correo.asunto, htmlBody, imagenes: [firma],
+    adjuntos: [...(pdf ? [{ nombre: pdf.nombre, contentType: 'application/pdf', base64: bytesABase64(pdf.bytes), tamano: pdf.bytes.length }] : []), ...(anexos?.adjuntos || [])],
     categorias: [(esFactura ? CATEGORIA_SOLICITUD_FACTURA : CATEGORIA_SOLICITUD_ORDEN) + ' (borrador)'], buzon: REMITENTE_SOPORTE, caerAlBuzonPropio: true,
   });
   return { ...r, para: esFactura ? beatriz.correo : '', remitente: REMITENTE_SOPORTE };

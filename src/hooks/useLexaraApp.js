@@ -171,7 +171,14 @@ export function useLexaraApp(){
     if(!pdf){ setGenerandoCorreoDoc(tipo + ':' + documento.id); encolarCopiaSoporte(tipo, documento, { subir: false, correo: true }); return; }
     setGenerandoCorreoDoc(tipo + ':' + documento.id);
     try{
-      const r = await crearBorradorSolicitudDocumento({ tipo, documento, clientes, colaboradores, pdf });
+      // Orden de compra: se anexan la propuesta o contrato de la carpeta del proceso y la pieza judicial certificada de la etapa (ver «Etapas por cobrar»).
+      let anexos = null;
+      if(tipo !== 'factura'){
+        try{ anexos = await Graph.armarAnexosDeCobro(config, RUTAS_CARPETAS_ENTIDAD, documento, procesos); }
+        catch(e){ console.error(e); anexos = { adjuntos: [], enlaces: [], avisos: ['No se pudieron preparar los anexos: ' + Graph.mensajeError(e)] }; }
+      }
+      const r = await crearBorradorSolicitudDocumento({ tipo, documento, clientes, colaboradores, pdf, anexos });
+      if(anexos && anexos.avisos && anexos.avisos.length) notify('Ojo con los anexos de la orden de compra: ' + anexos.avisos.join(' '), 'info');
       const quien = r.para ? 'para ' + r.para + ' con copia a Gerencia' : 'sin destinatario (escríbelo tú) y con copia a Gerencia';
       notify(r.enBuzonPropio
         ? '⚠ Creé el correo ' + etiqueta + ' en TUS Borradores (Microsoft no encontró el buzón de ' + r.remitente + '), ' + quien + ': cambia el «De» a Soporte si tienes permiso.'

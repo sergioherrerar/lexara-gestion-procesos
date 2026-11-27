@@ -1,5 +1,6 @@
-import { useMemo, useRef, useState } from 'react';
-import { stripHtml, mensajeError, parseMonto, fmtMonto, leerCorreosBandeja } from '../lib/graph';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import ValidarEtapaModal from './ValidarEtapaModal';
+import { stripHtml, mensajeError, parseMonto, fmtMonto, leerCorreosBandeja, listarValidacionesCobro, claveValidacionCobro } from '../lib/graph';
 import { CORREO_GERENCIA_ACCESO } from '../lib/solicitudAccesoExpediente';
 import { consultarRama, numerosDelProceso } from '../lib/ramaJudicial';
 import { procesosDeCorreo } from '../lib/ramaResumen';
@@ -12,7 +13,7 @@ import { etapasSinCobrar, reglaDeEtapa, detectarEnActuaciones, detectarEnHistori
 const dma = f => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(f || ''); return m ? m[3] + '-' + m[2] + '-' + m[1] : ''; };
 const CLAVE_SMMLV = 'lexara-smmlv';
 
-export default function EtapasPorCobrarTab({ modo = 'informes', procesos, formasPago, facturas, ordenesCompra, clientes, config, liveMode, notify, canWrite, onAbrirBorradorOrdenCompra, onAbrirBorradorFactura, onAbrirProceso, onAbrirFormaPago }){
+export default function EtapasPorCobrarTab({ modo = 'informes', procesos, formasPago, facturas, ordenesCompra, clientes, config, liveMode, notify, canWrite, onAbrirBorradorOrdenCompra, onAbrirBorradorFactura, onAbrirProceso, onAbrirFormaPago, miNombre, pendientes: pendientesDelPortal, onCrearPendiente }){
   const admin = modo === 'administracion';
   const [resultados, setResultados] = useState(null);   // clave -> { estado: 'pasada'|'sin-evidencia'|'manual', evidencia }
   const [fase, setFase] = useState('');
@@ -21,6 +22,9 @@ export default function EtapasPorCobrarTab({ modo = 'informes', procesos, formas
   const [filtro, setFiltro] = useState('pasadas');
   const [smmlv, setSmmlv] = useState(() => { try{ return localStorage.getItem(CLAVE_SMMLV) || ''; }catch(e){ return ''; } });
   const cancelar = useRef(false);
+  const [validaciones, setValidaciones] = useState({});   // clave contrato+etapa -> certificación del abogado
+  const [validando, setValidando] = useState(null);   // fila que se está validando
+  useEffect(() => { if(liveMode){ listarValidacionesCobro(config).then(setValidaciones).catch(e => console.error(e)); } }, [liveMode]);   // eslint-disable-line react-hooks/exhaustive-deps
   const url = config?.RAMA_JUDICIAL_URL;
 
   const pendientes = useMemo(() => etapasSinCobrar({ formasPago, facturas, ordenesCompra, procesos, parseMonto }), [formasPago, facturas, ordenesCompra, procesos]);
@@ -117,7 +121,7 @@ export default function EtapasPorCobrarTab({ modo = 'informes', procesos, formas
             {CHIPS.map(([id, nombre, k]) => <button key={id} type="button" className={'rama-chip' + (filtro === id ? ' activo' : '')} aria-pressed={filtro === id} onClick={() => setFiltro(id)}>{nombre} <span>{k ? cuenta(k) : pendientes.length}</span></button>)}
           </div>
           {filas.length === 0 ? <div className="empty-state empty-state-compact">No hay etapas en esta vista.</div> : (
-            <div className="table-wrap"><table className="rama-tabla"><thead><tr><th>Proceso</th><th>Contrato</th><th>Etapa</th><th className="rama-num">Salarios</th><th>Qué se encontró</th>{admin && <th></th>}</tr></thead>
+            <div className="table-wrap"><table className="rama-tabla"><thead><tr><th>Proceso</th><th>Contrato</th><th>Etapa</th><th className="rama-num">Salarios</th><th>Qué se encontró</th><th></th></tr></thead>
               <tbody>{filas.map(x => {
                 const r = resultados[x.clave] || {};
                 return (
@@ -139,19 +143,22 @@ export default function EtapasPorCobrarTab({ modo = 'informes', procesos, formas
                       {r.estado === 'sin-evidencia' && <><span className="badge badge-gris">Sin evidencia todavía</span><br /><span className="rama-res-suave">Se busca: {r.nombre}</span></>}
                       {(r.estado === 'manual') && <><span className="badge badge-gris">A mano</span><br /><span className="rama-res-suave">Esta etapa no se puede detectar sola.</span></>}
                       {r.estado === 'sin-proceso' && <span className="badge badge-gris">Sin proceso</span>}
+                      {(() => { const v = validaciones[claveValidacionCobro(x.fp.Contrato, x.etapa)]; return v ? <div style={{ marginTop: 6 }}><span className="badge badge-verde">Validada por {v.certificadoPor || 'el abogado'}</span><br /><span className="rama-res-suave">{String(v.fecha || '').split('-').reverse().join('-')} · pieza: {v.pieza && v.pieza.webUrl ? <a href={v.pieza.webUrl} target="_blank" rel="noopener noreferrer">{v.pieza.nombre}</a> : (v.pieza && v.pieza.nombre)}</span></div> : null; })()}
                     </td>
-                    {admin && <td className="rama-acc">
-                      {canWrite && x.proceso && (r.estado === 'pasada' || r.estado === 'manual') && <>
+                    <td className="rama-acc">
+                      {canWrite && x.proceso && <button type="button" className="rama-btn rama-btn--hist" onClick={() => setValidando({ item: x, resultado: r })} title="Busque en la carpeta del proceso la pieza que demuestra la etapa, certifique que ya pasó y cree el pendiente de solicitar la orden de compra">{validaciones[claveValidacionCobro(x.fp.Contrato, x.etapa)] ? 'Volver a validar' : 'Validar la etapa'}</button>}
+                      {admin && canWrite && x.proceso && (r.estado === 'pasada' || r.estado === 'manual' || validaciones[claveValidacionCobro(x.fp.Contrato, x.etapa)]) && <>
                         <button type="button" className="rama-btn rama-btn--crear" onClick={() => generar(x, 'orden')} title="Abre el borrador de la orden de compra de esta etapa; no guarda nada hasta «Guardar cambios»">Orden de compra</button>
                         <button type="button" className="rama-btn rama-btn--crear" onClick={() => generar(x, 'factura')} title="Abre el borrador de la factura de esta etapa; no guarda nada hasta «Guardar cambios»">Factura</button>
                       </>}
-                    </td>}
+                    </td>
                   </tr>
                 );
               })}</tbody></table></div>
           )}
         </>
       )}
+      {validando && <ValidarEtapaModal liveMode={liveMode} item={validando.item} resultado={validando.resultado} config={config} miNombre={miNombre} pendientes={pendientesDelPortal} onCrearPendiente={onCrearPendiente} notify={notify} onGuardado={v => setValidaciones(prev => ({ ...prev, [claveValidacionCobro(v.contrato, v.etapa)]: v }))} onCerrar={() => setValidando(null)} />}
     </div>
   );
 }

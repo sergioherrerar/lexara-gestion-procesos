@@ -2,6 +2,12 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-11-28 (249)
+- **«Etapas por cobrar»: el abogado valida la etapa con la pieza que la demuestra y se crea el pendiente de solicitar la orden de compra** — pedido del usuario. En Informes → Etapas por cobrar (y en Administración) cada fila tiene el botón **«Validar la etapa»**: abre una ventana con los archivos de la **carpeta del proceso** (y sus subcarpetas: 0. Contrato, 1. Escritos, 2. Poder…), con buscador y una pieza sugerida según la etapa (poder, auto de admisión, contestación, sentencia, acta…); el abogado la abre y la revisa, elige **la pieza que demuestra que la etapa ya pasó**, marca **«Certifico que revisé la pieza y que la etapa ya pasó, por lo que se puede cobrar»** y presiona **«Certificar y crear el pendiente»**. Eso:
+  - **crea el pendiente «Solicitar orden de compra del proceso … por la etapa …»** en **Vencimientos**, para la persona que está en el portal (Soporte, por ejemplo), con la observación de quién validó, cuándo y con qué pieza, y enlazado al proceso (no duplica si ya hay uno vigente);
+  - **guarda la certificación** (quién, cuándo, la pieza) en Administración Lexara → ADMINISTRACION → Cobros, y la fila queda marcada **«Validada por …»** con el enlace a la pieza.
+- **El correo de la orden de compra (ícono del sobre) ahora anexa la propuesta o contrato y la pieza judicial:** adjunta lo que haya en **«0. Contrato»** de la carpeta del proceso (hasta 3 archivos, p. ej. la propuesta «Pro … - ENTIDAD.pdf») y **la pieza que el abogado certificó para esa etapa**. Lo que pesa más de 3 MB va como enlace en el cuerpo del correo (no se adjunta). El correo lista los anexos. Si falta algo (no hay carpeta del proceso, «0. Contrato» está vacía o la etapa no tiene pieza certificada) se le avisa a quien crea el correo; nunca se inventa un anexo.
+
 ## 2026-11-28 (248)
 - **«Etapas por cobrar»: clic en el proceso y clic en el contrato** — pedido del usuario. En la tabla (Informes y Administración): al hacer clic en el **proceso** (número corto y cliente) se abre ese proceso; al hacer clic en el **contrato** se abre **el documento del contrato** (en otra pestaña; si el proceso no lo tiene vinculado, abre el proceso para buscarlo y vincularlo); y al hacer clic en la **etapa** se abre la **forma de pago** de ese contrato (etapas, valores y facturas).
 

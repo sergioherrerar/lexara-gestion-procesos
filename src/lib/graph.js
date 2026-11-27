@@ -3427,6 +3427,99 @@ export async function guardarCopiaPropuesta(config, { cliente, fechaISO, bytes, 
   }
   throw new Error('No se pudo reservar un número de propuesta (varios intentos seguidos chocaron con otras propuestas).');
 }
+// ---------------------------------------------------------------------------------------------------------------------------------------------------
+// «Etapas por cobrar» — validación del abogado (2026-11-28, pedido del usuario): antes de pedir la orden de compra, el abogado busca la PIEZA que demuestra la etapa (en la carpeta del proceso), certifica que
+// la etapa ya pasó y queda un pendiente de «solicitar orden de compra». La certificación se guarda en «Administración Lexara → ADMINISTRACION → Cobros» (un archivito por contrato y etapa) y de ahí el correo de
+// la orden de compra toma la pieza y el contrato/propuesta como anexos. Solo se leen/escriben esos archivitos; nunca se toca el contenido de la carpeta del proceso.
+export const RUTA_COBROS = 'ADMINISTRACION/Cobros';
+const claveCobro = (contrato, etapa) => normalize(String(contrato || '') + ' ' + String(etapa || '')).replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 110);
+/** Los archivos que hay en la carpeta del proceso y un nivel de subcarpetas (0. Contrato, 1. Escritos, 2. Poder…): { carpeta: {nombre, driveId, itemId, webUrl}, archivos: [{sub, nombre, id, driveId, size, webUrl}] } o { status } si no hay carpeta. */
+export async function listarArchivosDelProceso(config, rutasEntidad, proceso){
+  const enc = await buscarCarpetaDelProceso(config, rutasEntidad, proceso);
+  if(enc.status !== 'ok') return { status: enc.status, candidatas: enc.candidatas || [] };
+  const driveId = enc.driveId;
+  const hijos = await listarHijos(driveId, enc.itemId);
+  const archivos = [];
+  const pedir = async (carpetaId, sub, lista) => { const items = lista || await listarHijos(driveId, carpetaId); items.filter(h => h.file).forEach(h => archivos.push({ sub, nombre: h.name, id: h.id, driveId, size: h.size || 0, webUrl: h.webUrl || '' })); return items; };
+  await pedir(enc.itemId, '', hijos);
+  for(const sub of hijos.filter(h => h.folder).slice(0, 12)){
+    try{ const items = await graphFetch('/drives/' + driveId + '/items/' + sub.id + '/children?$select=id,name,file,folder,size,webUrl&$top=100'); await pedir(sub.id, sub.name, items.value || []); }catch(e){ /* una subcarpeta sin acceso no frena a las demás */ }
+  }
+  return { status: 'ok', carpeta: { nombre: enc.nombre, driveId, itemId: enc.itemId }, archivos };
+}
+async function carpetaCobros(config, crear){
+  const driveId = await resolverDriveIdRaiz(config);
+  if(!crear) return { driveId, id: '' };
+  let padre = (await graphFetch('/drives/' + driveId + '/root?$select=id')).id;
+  for(const seg of RUTA_COBROS.split('/')) padre = (await asegurarCarpetaConInfo(driveId, padre, seg)).id;
+  return { driveId, id: padre };
+}
+/** Guarda (o reemplaza) la validación de una etapa: { contrato, etapa, proceso, procesoId, pieza: { nombre, id, driveId, webUrl, sub }, certificadoPor, fecha, … }. */
+export async function guardarValidacionCobro(config, v){
+  const { driveId, id } = await carpetaCobros(config, true);
+  const res = await subirContenido(driveId, id, 'COB-' + claveCobro(v.contrato, v.etapa) + '.json', JSON.stringify({ ...v, certificadoEn: new Date().toISOString() }, null, 2), 'application/json', 'replace');
+  if(!res.ok) throw new Error('Graph ' + res.status + ' al guardar la validación: ' + (await res.text()).substring(0, 200));
+  return true;
+}
+/** La validación de una etapa o null. */
+export async function leerValidacionCobro(config, contrato, etapa){
+  try{
+    const driveId = await resolverDriveIdRaiz(config);
+    const token = await getGraphToken();
+    const ruta = RUTA_COBROS + '/COB-' + claveCobro(contrato, etapa) + '.json';
+    const r = await fetch('https://graph.microsoft.com/v1.0/drives/' + driveId + '/root:/' + encodeURIComponent(ruta).replace(/%2F/g, '/') + ':/content', { headers: { Authorization: 'Bearer ' + token } });
+    return r.ok ? await r.json() : null;
+  }catch(e){ return null; }
+}
+/** Todas las validaciones guardadas: { 'clave contrato+etapa': validación }. */
+export async function listarValidacionesCobro(config){
+  const salida = {};
+  try{
+    const driveId = await resolverDriveIdRaiz(config);
+    let url = '/drives/' + driveId + '/root:/' + encodeURIComponent(RUTA_COBROS).replace(/%2F/g, '/') + ':/children?$select=id,name,@microsoft.graph.downloadUrl&$top=200';
+    const archivos = [];
+    while(url){ const res = await graphFetch(url); (res.value || []).forEach(it => { if(/^COB-.+\.json$/i.test(it.name || '')) archivos.push(it); }); url = res['@odata.nextLink'] || null; }
+    for(let i = 0; i < archivos.length; i += 6){
+      const g = await Promise.all(archivos.slice(i, i + 6).map(async it => { try{ const r = await fetch(it['@microsoft.graph.downloadUrl']); return r.ok ? await r.json() : null; }catch(e){ return null; } }));
+      g.forEach(v => { if(v && v.contrato) salida[claveCobro(v.contrato, v.etapa)] = v; });
+    }
+  }catch(err){ if(!/^Graph 404/.test(err.message || '')) throw err; }
+  return salida;
+}
+export const claveValidacionCobro = claveCobro;
+const MAX_ANEXO = 3 * 1024 * 1024;   // Graph acepta adjuntos de hasta ~3 MB en una sola petición; lo más grande va como enlace
+async function anexoDeArchivo(a){
+  if(a.size && a.size > MAX_ANEXO) return { enlace: { nombre: a.nombre, url: a.webUrl } };
+  const token = await getGraphToken();
+  const r = await fetch('https://graph.microsoft.com/v1.0/drives/' + a.driveId + '/items/' + a.id + '/content', { headers: { Authorization: 'Bearer ' + token } });
+  if(!r.ok) throw new Error('Graph ' + r.status + ' al leer «' + a.nombre + '»');
+  const bytes = new Uint8Array(await r.arrayBuffer());
+  let bin = ''; for(let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+  const tipo = /\.pdf$/i.test(a.nombre) ? 'application/pdf' : /\.docx?$/i.test(a.nombre) ? 'application/msword' : /\.(png|jpe?g)$/i.test(a.nombre) ? 'image/jpeg' : 'application/octet-stream';
+  return { adjunto: { nombre: a.nombre, contentType: tipo, base64: btoa(bin), tamano: bytes.length } };
+}
+/**
+ * Anexos del correo de la ORDEN DE COMPRA: (1) la propuesta o contrato guardado en «0. Contrato» de la carpeta del proceso y (2) la pieza judicial que el abogado certificó para esa etapa.
+ * → { adjuntos: [...], enlaces: [{nombre, url}], avisos: [texto] }. Lo que pesa más de 3 MB va como enlace; lo que falta se avisa (no se inventa).
+ */
+export async function armarAnexosDeCobro(config, rutasEntidad, orden, procesos){
+  const adjuntos = [], enlaces = [], avisos = [];
+  const proceso = (procesos || []).find(p => normalize(p.NumeroContrato) && normalize(p.NumeroContrato) === normalize(orden.Contrato)) || (procesos || []).find(p => String(p.Radicado || '') === String(orden.Proceso || ''));
+  if(!proceso){ avisos.push('No encontré el proceso de esta orden de compra: no se pudieron anexar el contrato ni la pieza judicial.'); return { adjuntos, enlaces, avisos }; }
+  const anexar = async a => { try{ const x = await anexoDeArchivo(a); if(x.adjunto) adjuntos.push(x.adjunto); else enlaces.push(x.enlace); }catch(e){ avisos.push('No se pudo anexar «' + a.nombre + '»: ' + e.message); } };
+  let lista = null;
+  try{ lista = await listarArchivosDelProceso(config, rutasEntidad, proceso); }catch(e){ avisos.push('No se pudo leer la carpeta del proceso: ' + e.message); }
+  if(lista && lista.status === 'ok'){
+    const contratos = lista.archivos.filter(a => /^\s*0[\s.\-_]*contrato/i.test(a.sub || '')).slice(0, 3);
+    if(contratos.length) for(const a of contratos) await anexar(a);
+    else avisos.push('La carpeta del proceso no tiene archivos en «0. Contrato»: no se anexó la propuesta ni el contrato.');
+  }else if(lista){ avisos.push('No encontré la carpeta del proceso en SharePoint: no se anexaron el contrato ni la pieza judicial.'); }
+  const val = await leerValidacionCobro(config, orden.Contrato, orden.EtapaContrato);
+  if(val && val.pieza && val.pieza.id) await anexar({ nombre: val.pieza.nombre, id: val.pieza.id, driveId: val.pieza.driveId, size: val.pieza.size || 0, webUrl: val.pieza.webUrl || '' });
+  else avisos.push('Esta etapa no tiene una pieza judicial certificada (Informes → Etapas por cobrar → Validar): no se anexó.');
+  return { adjuntos, enlaces, avisos, validacion: val || null };
+}
+
 // Lista de propuestas (los archivos de datos de «Propuestas/_datos»), de la más reciente a la más antigua.
 export async function listarPropuestas(config){
   const driveId = await resolverDriveIdRaiz(config);
@@ -4030,7 +4123,7 @@ export async function asegurarCarpetaDelProceso(config, rutasEntidad, proceso, o
 // ruta), esto busca por id y no descarta archivos, porque "Contrato" o
 // "Propuesta" adentro de la carpeta del proceso puede ser cualquiera de los 2.
 export async function listarHijos(driveId, itemId){
-  const res = await graphFetch(`/drives/${driveId}/items/${itemId}/children?$select=id,name,file,folder&$top=200`);
+  const res = await graphFetch(`/drives/${driveId}/items/${itemId}/children?$select=id,name,file,folder,size,webUrl&$top=200`);
   return res.value || [];
 }
 
