@@ -107,7 +107,7 @@ export default function CorreosDespachosTab({ procesos, liveMode, notify, canWri
         <label>Desde <input type="date" value={desde} onChange={e => setDesde(e.target.value)} /></label>
         <button type="button" className="btn-primary rama-btn" onClick={leer} disabled={cargando}>{cargando ? 'Leyendo…' : (liveMode ? 'Leer correo de Gerencia' : 'Ver ejemplo (modo demo)')}</button>
       </div>
-      {error && <div className="rama-error" role="alert"><strong>No se pudo leer el correo de Gerencia.</strong> {/403|404|Access is denied/i.test(error) ? 'Su usuario no tiene permiso para ver ese correo: pídale a Soporte que le dé acceso.' : 'Intente de nuevo en un momento; si sigue igual, avise a Soporte.'}<br /><span className="rama-res-suave">Detalle técnico: {error}</span></div>}
+      {error && <div className="rama-error" role="alert"><strong>No se pudo leer el correo de Gerencia.</strong> {/403|404|Access is denied/i.test(error) ? 'La cuenta con la que inició sesión no tiene permiso de lectura sobre ese buzón: pídale al administrador de Microsoft 365 que se lo dé (buzón de Gerencia → permiso «Leer y administrar»), o inicie sesión con una cuenta que ya lo tenga.' : 'Intente de nuevo en un momento; si sigue igual, avise a Soporte.'}<br /><span className="rama-res-suave">Detalle técnico: {error}</span></div>}
       {mensajes && (
         <>
           <div className="rama-chips" role="group" aria-label="Filtrar los correos">

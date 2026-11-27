@@ -1290,6 +1290,37 @@ export async function leerCorreosBandeja(correoBuzon, desdeISO, maxCorreos = 300
   return salida;
 }
 
+// Informes diarios de RDL Servicios Jurídicos («Informe de novedades judiciales») de un buzón desde `desdeISO` (yyyy-mm-dd): [{ id, recibido (yyyy-mm-dd, hora de Bogotá), asunto, html }]. SOLO LEE.
+// Se usa en «Cobertura RDL» (Informes → Herramientas) para comparar lo que RDL reportó con lo que dice la Rama.
+export async function leerInformesRDL(correoBuzon, desdeISO, remitente = 'informacion@rdinlaw.com'){
+  const params = new URLSearchParams({
+    $select: 'id,subject,receivedDateTime,body',
+    $top: '15',
+    $filter: `receivedDateTime ge ${desdeISO}T00:00:00Z and from/emailAddress/address eq '${remitente}'`,
+    $orderby: 'receivedDateTime desc',
+  });
+  let url = `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(String(correoBuzon).trim())}/mailFolders/inbox/messages?${params.toString()}`;
+  const salida = [];
+  for(let pagina = 0; url && pagina < 6; pagina++){
+    const pedir = async () => fetch(url, { headers: { Authorization: `Bearer ${await getMailToken()}` } });
+    let res = await pedir();
+    if(!mailCompartido && (res.status === 403 || (res.status === 404 && carpetaPorDefectoInexistente(res.status, await res.clone().text())))){ usarPermisoCorreoCompartido(); res = await pedir(); }
+    if(!res.ok){
+      const cuerpo = await res.text();
+      if(carpetaPorDefectoInexistente(res.status, cuerpo)) throw new Error(`Graph 404 al leer la bandeja de ${correoBuzon}: la sesión actual (${(account && account.username) || 'sin sesión'}) no tiene acceso a ese buzón. Pida a quien administra el buzón que le dé permiso de lectura.`);
+      throw new Error(`Graph ${res.status} al leer los informes de RDL: ${cuerpo.substring(0, 240)}`);
+    }
+    const datos = await res.json();
+    (datos.value || []).forEach(m => {
+      let recibido = String(m.receivedDateTime || '').slice(0, 10);
+      try{ recibido = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Bogota', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(m.receivedDateTime)); }catch(e){ /* queda la fecha UTC */ }
+      salida.push({ id: m.id, recibido, asunto: m.subject || '', html: (m.body && m.body.content) || '' });
+    });
+    url = datos['@odata.nextLink'] || null;
+  }
+  return salida;
+}
+
 // Texto completo de UN correo del buzón (solo lectura), recortado: la vista previa de Graph trae apenas 255 caracteres y la fecha de una audiencia (p. ej. «Cuándo: …» de la invitación de Teams)
 // suele estar más abajo. Devuelve '' si no se pudo leer.
 export async function leerCuerpoCorreo(correoBuzon, idMensaje, maxCaracteres = 6000){

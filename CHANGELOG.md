@@ -2,6 +2,12 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-11-27 (236)
+- **Nueva herramienta «Cobertura RDL» (Informes → Herramientas):** compara los informes diarios de RDL Servicios Jurídicos (vigilancia judicial, que cobra por proceso cada mes) con lo que dice la Rama de cada proceso vigente. Reglas acordadas con el usuario: periodo = el mes en curso; «no reportó» = pasaron 2 días hábiles desde la actuación; cuentan solo las actuaciones importantes.
+  - Lee los informes del buzón (solo lectura) y la tabla de cada uno: radicado, despacho, actuaciones con su fecha, términos y el enlace a la carpeta de Drive de RDL.
+  - Entrega: **actuaciones importantes que RDL no reportó**, **reportadas tarde** (con los días hábiles de retraso), **procesos con novedades en la Rama y ninguna de RDL**, **procesos del Excel mensual de RDL sin novedad** (si se sube el Excel, opcional), **terminados en el portal que RDL sigue reportando** y **procesos que RDL reporta y no están en el portal**. Todo con botón de Excel (una hoja por lista) para llevárselo a RDL.
+  - Consulta la Rama de los procesos vigentes de a 4, con barra de avance y botón para cancelar y ver lo que lleva.
+
 ## 2026-11-27 (235)
 - **«Correo de despachos» ya no muestra «no hay correos» cuando en realidad no tiene acceso al buzón de Gerencia:** al leer el buzón de otra persona, Microsoft puede responder 404 «Default folder Inbox not found» cuando falta el permiso de buzones compartidos, y el portal lo tomaba como bandeja vacía. Ahora pide el permiso y reintenta; si aun así no hay acceso, lo dice con claridad (con el correo de la sesión) en lugar de mostrar la lista vacía. El aviso de «Todavía no hay correos» también muestra con qué cuenta se inició sesión.
 

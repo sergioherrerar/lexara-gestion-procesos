@@ -2488,3 +2488,9 @@
   .acc-aviso--ok{background:#e3f6ec; border:1px solid #8fd3bb; color:#00463e;}
   .acc-aviso--pend{background:#fff6e0; border:1px solid #f2c18a; color:#7a5a00;}
   .acc-aviso--mal{background:#fbe4e2; border:1px solid #f0b9b3; color:#a3281c;}
+  .cob-seccion{margin-top:14px;}
+  .cob-cab{display:flex; align-items:center; gap:10px; width:100%; background:none; border:0; border-bottom:1px solid var(--gris-linea); padding:8px 2px; cursor:pointer; text-align:left; font:inherit; color:inherit;}
+  .cob-cab .cob-mas{margin-left:auto; font-size:12px; color:var(--texto-suave);}
+  .cob-barra{height:8px; border-radius:999px; background:var(--gris-linea,#e3e8e6); overflow:hidden; margin-top:10px;}
+  .cob-barra span{display:block; height:100%; background:var(--verde-oscuro,#00634f); transition:width .2s;}
+  .rama-num{text-align:right; font-variant-numeric:tabular-nums;}
