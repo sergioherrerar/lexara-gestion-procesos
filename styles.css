@@ -2548,3 +2548,7 @@
   .val-fila--sel{background:#e8f4ef; box-shadow:inset 3px 0 0 var(--verde-oscuro,#00463e);}
   .val-nombre{flex:1; min-width:0; overflow-wrap:anywhere;}
   .val-certifico{display:flex; gap:10px; align-items:flex-start; padding:10px 12px; border:1px dashed #f9bb35; background:#fffbea; border-radius:8px; font-size:13px; margin:8px 0;}
+  .cob-checks{display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:6px 14px;}
+  .cob-check{display:flex; gap:8px; align-items:flex-start; font-size:13px; cursor:pointer;}
+  .cob-check--vacio{opacity:.55; cursor:default;}
+  .cob-bueno{color:#00634f;}

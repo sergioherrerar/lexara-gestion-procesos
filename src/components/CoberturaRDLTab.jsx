@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
-import { leerInformesRDL, mensajeError } from '../lib/graph';
+import { leerInformesRDL, mensajeError, getAccount, crearBorradorConImagenesInline, firmaComoImagenInline, firmaHtml } from '../lib/graph';
+import { construirCorreoRDL, seccionesDelCorreoRDL, CORREO_RDL } from '../lib/correoRDL';
 import { CORREO_GERENCIA_ACCESO } from '../lib/solicitudAccesoExpediente';
 import { consultarRama, numerosDelProceso, radicadosDelProceso } from '../lib/ramaJudicial';
 import { leerArchivoVigilancia, compararConProcesos, generarExcelRevisionProcesos } from '../lib/revisionProcesos';
@@ -42,6 +43,10 @@ export default function CoberturaRDLTab({ procesos, config, notify, liveMode, on
   const [archivo, setArchivo] = useState(null);
   const [revision, setRevision] = useState(null);   // Excel mensual de RDL contra el portal (las 3 diferencias de la antigua «Revisión de Procesos»)
   const [generandoRev, setGenerandoRev] = useState(false);
+  const [incluir, setIncluir] = useState(null);   // casillas del correo a RDL: { id: bool } (se inicializan al terminar la comparación)
+  const [notaRDL, setNotaRDL] = useState('');
+  const [adjuntarExcel, setAdjuntarExcel] = useState(true);
+  const [creandoCorreo, setCreandoCorreo] = useState(false);
   const [filasExcel, setFilasExcel] = useState(null);
   const [fase, setFase] = useState('');
   const [progreso, setProgreso] = useState({ hecho: 0, total: 0 });
@@ -103,6 +108,7 @@ export default function CoberturaRDLTab({ procesos, config, notify, liveMode, on
       // 3) Comparar
       const r = compararCobertura({ informes, procesos, actuacionesRama: mapa, filasExcel, mes: { ini: rango.ini, fin: rango.hasta }, hoy, gracia: 2, c21sProceso: p => { const t = c21sDe(p); const pr = principalC21(p); return pr ? [pr, ...t.filter(x => x !== pr)] : t; } });
       r.rango = rango; setResultado(r);
+      { const ini = {}; seccionesDelCorreoRDL(r, revision).forEach(s => { ini[s.id] = s.n > 0; }); setIncluir(ini); }
       notify?.(`Comparación lista: ${r.resumen.noReportadas} actuaciones importantes sin reportar por RDL.`, r.resumen.noReportadas ? 'info' : 'success');
     }catch(err){
       console.error(err); setError(mensajeError(err));
@@ -124,6 +130,25 @@ export default function CoberturaRDLTab({ procesos, config, notify, liveMode, on
   const celdaRad = f => { const p = onAbrirProceso ? procDeFila(f) : null; return p ? <button type="button" className="celda-enlace" onClick={() => onAbrirProceso(p.id)} title="Abrir este proceso">{f.radicado}</button> : f.radicado; };
   const colsRevAbrir = [{ t: 'Radicado', v: celdaRad }, { t: 'Consecutivo', v: f => f.consecutivo }, { t: 'Demandante', v: f => f.demandante }, { t: 'Demandado', v: f => f.demandado }, { t: 'Apoderado', v: f => f.apoderado }, { t: 'Portal Lexara', v: f => f.lexara }];
   const colsRev = [{ t: 'Radicado', v: f => f.radicado }, { t: 'Consecutivo', v: f => f.consecutivo }, { t: 'Demandante', v: f => f.demandante }, { t: 'Demandado', v: f => f.demandado }, { t: 'Apoderado', v: f => f.apoderado }, { t: 'Portal Lexara', v: f => f.lexara }];
+
+  // Borrador de correo para RDL con lo bueno y lo que hay que mejorar (queda en los Borradores de Soporte con copia a Gerencia; nunca se envía solo).
+  async function crearCorreoParaRDL(){
+    if(!resultado || !incluir) return;
+    if(!getAccount()){ notify?.('El borrador se crea en el Outlook de Soporte al iniciar sesión con Microsoft; en el modo demo no hay buzón.', 'info'); return; }
+    setCreandoCorreo(true);
+    try{
+      const adjuntos = [];
+      if(adjuntarExcel){ try{ adjuntos.push(await generarExcelCobertura(`Vigilancia RDL ${mes}`, resultado, resultado.rango, revision ? { revision } : null, { devolver: true })); }catch(e){ console.error(e); notify?.('No se pudo preparar el Excel para adjuntarlo: ' + mensajeError(e), 'info'); } }
+      const cuerpo = construirCorreoRDL({ r: resultado, revision, mes, incluir, nota: notaRDL, hayExcelAdjunto: adjuntos.length > 0 });
+      const firma = await firmaComoImagenInline('soporte').catch(() => null);
+      const html = cuerpo.html + (firma ? firmaHtml('soporte', 'cid:' + firma.cid) : '') + '</body></html>';
+      const r = await crearBorradorConImagenesInline({ to: [CORREO_RDL], cc: [CORREO_GERENCIA_ACCESO], subject: cuerpo.asunto, htmlBody: html, imagenes: firma ? [firma] : [], adjuntos, categorias: ['Vigilancia RDL (borrador)'], buzon: 'soporte@lexaraabogados.com', caerAlBuzonPropio: true });
+      notify?.(r.enBuzonPropio
+        ? '⚠ Creé el correo para RDL en TUS Borradores (Microsoft no encontró el buzón de Soporte). Revíselo y envíelo.'
+        : '✓ Borrador del correo para RDL creado en los Borradores de Soporte, para ' + CORREO_RDL + ' con copia a Gerencia' + (adjuntos.length ? ' y con el Excel adjunto' : '') + '. Revíselo y envíelo: no se envía solo.', r.enBuzonPropio ? 'info' : 'success');
+    }catch(err){ console.error(err); notify?.('No se pudo crear el correo para RDL: ' + mensajeError(err), 'error'); }
+    finally{ setCreandoCorreo(false); }
+  }
 
   async function descargar(){
     if(!resultado) return;
@@ -202,6 +227,23 @@ export default function CoberturaRDLTab({ procesos, config, notify, liveMode, on
             columnas={[{ t: 'Proceso', v: f => abrir(f.proceso) }, { t: 'Radicado', v: f => onAbrirProceso && f.proceso ? <button type="button" className="celda-enlace" onClick={() => onAbrirProceso(f.proceso.id)} title="Abrir este proceso">{f.radicado}</button> : f.radicado }, { t: 'Última novedad', v: f => dma(f.ultima) }, { t: 'Carpeta de RDL', v: f => enlaceDrive(f.drive) }]} />
           <Tabla titulo="RDL los reporta y no están en el portal" filas={R.enRdlNoPortal} vacio="Todos los procesos que RDL reportó están en el portal."
             columnas={[{ t: 'Radicado', v: f => f.radicado }, { t: 'Despacho', v: f => f.despacho }, { t: 'Demandante', v: f => f.demandante }, { t: 'Última novedad', v: f => dma(f.ultima) }, { t: 'Carpeta de RDL', v: f => enlaceDrive(f.drive) }]} />
+          {incluir && (
+            <section className="cob-bloque" style={{ marginTop: 22 }}>
+              <h4 style={{ margin: '0 0 6px' }}>3) Informar a RDL</h4>
+              <p className="rama-res-suave" style={{ margin: '0 0 8px' }}>Arma un <strong>borrador de correo para RDL</strong> con lo que va bien y lo que hay que mejorar. Marque lo que quiere incluir; queda en los Borradores de Soporte, con copia a Gerencia, para que lo revise: <strong>no se envía solo</strong>.</p>
+              <div className="cob-checks">
+                {seccionesDelCorreoRDL(R, revision).map(s => (
+                  <label key={s.id} className={'cob-check' + (s.n === 0 ? ' cob-check--vacio' : '')}>
+                    <input type="checkbox" checked={!!incluir[s.id]} disabled={s.n === 0} onChange={e => setIncluir(prev => ({ ...prev, [s.id]: e.target.checked }))} />
+                    <span><strong className={s.tipo === 'bueno' ? 'cob-bueno' : ''}>{s.tipo === 'bueno' ? '✓ ' : ''}{s.nombre}</strong> <span className="rama-res-suave">({s.id === 'bueno' ? 'reconocimiento' : s.n})</span></span>
+                  </label>
+                ))}
+                <label className="cob-check"><input type="checkbox" checked={adjuntarExcel} onChange={e => setAdjuntarExcel(e.target.checked)} /><span>Adjuntar el Excel con el detalle completo</span></label>
+              </div>
+              <label style={{ display: 'block', marginTop: 8 }}>Nota adicional (opcional)<textarea rows={2} value={notaRDL} onChange={e => setNotaRDL(e.target.value)} placeholder="Algo más que quiera decirle a RDL" style={{ width: '100%' }} /></label>
+              <div style={{ marginTop: 10 }}><button type="button" className="btn-primary rama-btn" onClick={crearCorreoParaRDL} disabled={creandoCorreo || !Object.values(incluir).some(Boolean)}>{creandoCorreo ? 'Creando borrador…' : 'Crear borrador de correo para RDL'}</button></div>
+            </section>
+          )}
         </>
       )}
     </div>

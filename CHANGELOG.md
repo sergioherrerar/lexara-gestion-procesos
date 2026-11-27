@@ -2,6 +2,10 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-11-28 (254)
+- **Vigilancia RDL: botón «Crear borrador de correo para RDL» para informarles las novedades, las buenas y las no tan buenas** — pedido del usuario. Al terminar la comparación aparece la sección **«3) Informar a RDL»** con casillas para elegir qué incluir (cada una muestra cuántos casos tiene): **lo que va bien** (informes diarios recibidos, procesos reportados y el porcentaje de actuaciones reportadas a tiempo, con un agradecimiento) y **lo que hay que mejorar**: actuaciones que no reportaron, reportadas con retraso, procesos con movimiento en la Rama y sin ningún reporte, terminados que siguen reportando o cobrando (con la petición de sacarlos de la vigilancia y **dejar de cobrarlos**), procesos que reportan y no están en el portal, procesos de su Excel que no están en el portal y vigentes nuestros que no incluyeron en su lista. Hay un campo de **nota adicional** y la opción de **adjuntar el Excel** con el detalle completo.
+  - El borrador sale para **informacion@rdinlaw.com** con copia a Gerencia, **desde los Borradores de Soporte** y con la firma de Soporte; asunto «Seguimiento de la vigilancia judicial – Noviembre 2026: novedades de Lexara Abogados». Cada punto trae una tabla corta (hasta 25 filas; el resto va en el Excel) y lo que se les pide. **Nunca se envía solo.**
+
 ## 2026-11-28 (253)
 - **Vigilancia RDL: clic en el proceso lo abre, también en las listas del Excel mensual y en «Terminados»** — pedido del usuario. En «Terminados en el portal que RDL sigue reportando» (informes diarios) el **número del proceso y el radicado** son enlaces que abren la ficha del proceso; y en las listas del Excel mensual («Terminados que RDL cobra» y «Vigentes que RDL no incluyó») el **radicado** abre el proceso cuando existe en el portal.
 

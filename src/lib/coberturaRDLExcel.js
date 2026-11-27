@@ -13,7 +13,7 @@ function encabezar(ws, columnas){
 const dma = f => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(f || ''); return m ? `${m[3]}/${m[2]}/${m[1]}` : ''; };
 const num = p => (p && (p.NoCompleto || p.Radicado)) || '';
 
-export async function generarExcelCobertura(nombreArchivo, r, mes, extra){
+export async function generarExcelCobertura(nombreArchivo, r, mes, extra, opciones){
   const { default: ExcelJS } = await import('exceljs');
   const wb = new ExcelJS.Workbook();
   const S = r.resumen;
@@ -75,6 +75,12 @@ export async function generarExcelCobertura(nombreArchivo, r, mes, extra){
   }
 
   const buffer = await wb.xlsx.writeBuffer();
+  // Para adjuntarlo a un correo (en vez de descargarlo): { nombre, contentType, base64 }
+  if(opciones && opciones.devolver){
+    const bytes = new Uint8Array(buffer);
+    let bin = ''; for(let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+    return { nombre: `${nombreArchivo}.xlsx`, contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', base64: btoa(bin) };
+  }
   const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
