@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-11-28 (250)
+- **«Etapas por cobrar» no incluye los contratos que se cobran mensualmente** — aclaración del usuario: el contrato **GJU-31-03-2025-431** (SOS, la factura mensual) se cobra todos los meses y **ninguna etapa** de los procesos de ese contrato se cobra por separado, porque ya van incluidas en la mensualidad. Esas etapas ya no salen en la lista (Informes ni Administración) y la pantalla lo dice («No se incluyen los procesos del contrato GJU-31-03-2025-431 (N etapas)…»). Si más adelante hay otro contrato mensual, se suma a la lista `CONTRATOS_MENSUALES` de `etapasPorCobrar.js`.
+
 ## 2026-11-28 (249)
 - **«Etapas por cobrar»: el abogado valida la etapa con la pieza que la demuestra y se crea el pendiente de solicitar la orden de compra** — pedido del usuario. En Informes → Etapas por cobrar (y en Administración) cada fila tiene el botón **«Validar la etapa»**: abre una ventana con los archivos de la **carpeta del proceso** (y sus subcarpetas: 0. Contrato, 1. Escritos, 2. Poder…), con buscador y una pieza sugerida según la etapa (poder, auto de admisión, contestación, sentencia, acta…); el abogado la abre y la revisa, elige **la pieza que demuestra que la etapa ya pasó**, marca **«Certifico que revisé la pieza y que la etapa ya pasó, por lo que se puede cobrar»** y presiona **«Certificar y crear el pendiente»**. Eso:
   - **crea el pendiente «Solicitar orden de compra del proceso … por la etapa …»** en **Vencimientos**, para la persona que está en el portal (Soporte, por ejemplo), con la observación de quién validó, cuándo y con qué pieza, y enlazado al proceso (no duplica si ya hay uno vigente);

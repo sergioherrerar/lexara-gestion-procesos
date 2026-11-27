@@ -5,7 +5,7 @@ import { CORREO_GERENCIA_ACCESO } from '../lib/solicitudAccesoExpediente';
 import { consultarRama, numerosDelProceso } from '../lib/ramaJudicial';
 import { procesosDeCorreo } from '../lib/ramaResumen';
 import { etiquetaEtapa } from '../lib/propuestaServicios';
-import { etapasSinCobrar, reglaDeEtapa, detectarEnActuaciones, detectarEnHistorico, detectarPoderEnCorreos, borradorDeCobro } from '../lib/etapasPorCobrar';
+import { etapasDeContratosMensuales, CONTRATOS_MENSUALES, etapasSinCobrar, reglaDeEtapa, detectarEnActuaciones, detectarEnHistorico, detectarPoderEnCorreos, borradorDeCobro } from '../lib/etapasPorCobrar';
 
 // «Etapas por cobrar» (2026-11-27, pedido del usuario). En Informes se REVISA (qué etapas de las formas de pago ya pasaron y todavía no tienen factura ni orden de compra) y en Administración, además,
 // se GENERA la orden de compra o la factura de esa etapa (abre el borrador ya lleno; no se guarda hasta «Guardar cambios»). Se revisan todos los procesos que tienen etapas sin cobrar. Es una pista con su evidencia:
@@ -29,6 +29,7 @@ export default function EtapasPorCobrarTab({ modo = 'informes', procesos, formas
 
   const pendientes = useMemo(() => etapasSinCobrar({ formasPago, facturas, ordenesCompra, procesos, parseMonto }), [formasPago, facturas, ordenesCompra, procesos]);
   const conProceso = pendientes.filter(x => x.proceso);
+  const deMensuales = useMemo(() => etapasDeContratosMensuales(formasPago), [formasPago]);
 
   async function revisar(){
     setError(''); setResultados(null); cancelar.current = false;
@@ -104,6 +105,7 @@ export default function EtapasPorCobrarTab({ modo = 'informes', procesos, formas
         {admin ? ' Desde aquí se abre el borrador de la orden de compra o de la factura. ' : ' La orden de compra o la factura se generan en Administración → Etapas por cobrar. '}
         Es una pista con su evidencia: <strong>no marca «cumplida» ni factura sola</strong>.
       </p>
+      {deMensuales > 0 && <p className="rama-res-suave" style={{ margin: '0 0 8px' }}>No se incluyen los procesos del contrato <strong>{CONTRATOS_MENSUALES.join(', ')}</strong> ({deMensuales} etapas): ese contrato se cobra <strong>mensualmente</strong> y sus etapas ya van incluidas en la mensualidad.</p>}
       <div className="rama-fechas" style={{ marginBottom: 10 }}>
         <button type="button" className="btn-primary rama-btn" onClick={revisar} disabled={!!fase || !pendientes.length}>
           {fase === 'correos' ? 'Leyendo los correos del poder…' : fase === 'rama' ? `Revisando los procesos… ${progreso.hecho} de ${progreso.total}` : 'Revisar etapas'}

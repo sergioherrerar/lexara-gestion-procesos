@@ -52,11 +52,16 @@ export function detectarPoderEnCorreos(correos, proceso, procesosDeCorreo){
   return c ? { fecha: iso(c.fecha), texto: String(c.asunto || '').trim(), origen: 'Correo' } : null;
 }
 
+// Contratos que se cobran MENSUALMENTE (2026-11-28, aclaración del usuario): todos los procesos de ese contrato tienen sus etapas incluidas en la mensualidad, así que NINGUNA etapa se cobra por separado y no salen en «Etapas por cobrar».
+// GJU-31-03-2025-431 = SOS (la factura mensual de $7.000.000). Para agregar otro contrato mensual basta con sumarlo aquí.
+export const CONTRATOS_MENSUALES = ['GJU-31-03-2025-431'];
+export const esContratoMensual = contrato => CONTRATOS_MENSUALES.some(c => norm(c) === norm(contrato));
 const mismoContrato = (a, b) => !!norm(a) && norm(a) === norm(b);
 /** Las etapas de las formas de pago que todavía NO se han cobrado: sin número de factura guardado y sin factura ni orden de compra con el mismo contrato y etapa. */
 export function etapasSinCobrar({ formasPago, facturas, ordenesCompra, procesos, parseMonto }){
   const salida = [];
   (formasPago || []).forEach(fp => {
+    if(esContratoMensual(fp.Contrato)) return;   // sus etapas van incluidas en la mensualidad
     const proceso = (procesos || []).find(p => mismoContrato(p.NumeroContrato, fp.Contrato)) || null;
     [1, 2, 3, 4, 5, 6].forEach(n => {
       const etapa = String(fp['Pago' + n] || '').trim();
@@ -70,6 +75,13 @@ export function etapasSinCobrar({ formasPago, facturas, ordenesCompra, procesos,
     });
   });
   return salida;
+}
+
+/** Cuántas etapas de las formas de pago se dejaron fuera por ser de un contrato mensual (para decirlo en pantalla). */
+export function etapasDeContratosMensuales(formasPago){
+  let n = 0;
+  (formasPago || []).forEach(fp => { if(esContratoMensual(fp.Contrato)) [1, 2, 3, 4, 5, 6].forEach(i => { if(String(fp['Pago' + i] || '').trim()) n++; }); });
+  return n;
 }
 
 /** Datos para abrir el borrador de la orden de compra o de la factura de esa etapa (no se guarda hasta «Guardar cambios»). `smmlv` (pesos) es opcional: si se da, el valor sale de salarios × smmlv. */
