@@ -8,6 +8,7 @@
 // Reglas acordadas con el usuario: periodo = el mes calendario en curso; «no reportó» = pasaron 2 días hábiles judiciales desde la actuación; cuentan solo las actuaciones importantes. Funciones puras, sin red.
 import { clasificarActuacion } from './ramaResumen.js';
 import { sumarDiasHabilesJudiciales } from './audienciasTerminos.js';
+import { esIgnoradoRDL, esSeguimientoFueraDelPortal, cruzarConPortal } from './cruceRDL.js';
 
 const MES = { ene: 1, feb: 2, mar: 3, abr: 4, may: 5, jun: 6, jul: 7, ago: 8, sep: 9, sept: 9, oct: 10, nov: 11, dic: 12 };
 const sinTildes = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
@@ -79,7 +80,7 @@ export function reportadoPorRDL(informes){
   const mapa = new Map();
   (informes || []).forEach(inf => (inf.filas || []).forEach(f => {
     if(!f.c21) return;
-    if(!mapa.has(f.c21)) mapa.set(f.c21, { filas: [], fechas: new Map(), drive: '', ultimoRecibido: '', despacho: f.despacho, demandante: f.demandante, demandado: f.demandado, radicado: f.radicado, consecutivo: f.consecutivo });
+    if(!mapa.has(f.c21)) mapa.set(f.c21, { filas: [], fechas: new Map(), drive: '', ultimoRecibido: '', despacho: f.despacho, demandante: f.demandante, demandado: f.demandado, apoderado: f.apoderado, radicado: f.radicado, consecutivo: f.consecutivo });
     const e = mapa.get(f.c21);
     e.filas.push(f);
     if(f.drive) e.drive = f.drive;
@@ -151,6 +152,8 @@ export function compararCobertura({ informes, procesos, actuacionesRama, filasEx
 
   // Lo que RDL cobra (Excel mensual) y no reportó nada en el mes
   const cobradosSinNovedad = [];
+  // Reglas del usuario: lo ignorado no es novedad; lo de Daniel es seguimiento fuera del portal (se muestra aparte); lo que es el mismo proceso con otro radicado va a «diferencias»
+  let ignorados = 0; const fueraDelPortal = [], diferencias = [];
   (filasExcel || []).forEach(fx => {
     const k = c21De(fx.radicado);
     if(!k) return;
@@ -159,6 +162,8 @@ export function compararCobertura({ informes, procesos, actuacionesRama, filasEx
     if(enMes === 0){
       const rama = actuacionesRama ? actuacionesRama[k] : undefined;
       const movRama = rama ? rama.filter(a => dentro(iso(a.fecha))).length : null;
+      if(esIgnoradoRDL(fx)){ ignorados++; return; }   // Supersociedades: fuera de las novedades
+      if(esSeguimientoFueraDelPortal(fx.apoderado)){ fueraDelPortal.push({ origen: 'Excel mensual', radicado: fx.radicado, consecutivo: fx.consecutivo, demandante: fx.demandante, demandado: fx.demandado, apoderado: fx.apoderado }); return; }
       cobradosSinNovedad.push({ radicado: fx.radicado, consecutivo: fx.consecutivo, demandante: fx.demandante, demandado: fx.demandado, movimientoRama: movRama });
     }
   });
@@ -175,7 +180,14 @@ export function compararCobertura({ informes, procesos, actuacionesRama, filasEx
     const enMes = [...e.fechas.keys()].filter(dentro);
     if(!enMes.length) return;
     if(porC21Terminado.has(k)) terminadosQueReporta.push({ proceso: porC21Terminado.get(k), c21: k, radicado: e.radicado, ultima: enMes.sort().pop(), drive: e.drive, despacho: e.despacho });
-    else if(!conocidos.has(k)) enRdlNoPortal.push({ c21: k, radicado: e.radicado, consecutivo: e.consecutivo, despacho: e.despacho, demandante: e.demandante, demandado: e.demandado, ultima: enMes.sort().pop(), drive: e.drive });
+    else if(!conocidos.has(k)){
+      const fila = { c21: k, radicado: e.radicado, consecutivo: e.consecutivo, despacho: e.despacho, demandante: e.demandante, demandado: e.demandado, apoderado: e.apoderado, ultima: enMes.sort().pop(), drive: e.drive };
+      if(esIgnoradoRDL(fila)){ ignorados++; return; }
+      if(esSeguimientoFueraDelPortal(e.apoderado)){ fueraDelPortal.push({ ...fila, origen: 'Informes diarios' }); return; }
+      const x = cruzarConPortal(fila, procesos);
+      if(x){ diferencias.push({ origen: 'Informes diarios', fila, proceso: x.proceso, diferencias: x.diferencias, parteIgual: x.parteIgual }); return; }
+      enRdlNoPortal.push(fila);
+    }
   });
 
   return {
@@ -183,8 +195,8 @@ export function compararCobertura({ informes, procesos, actuacionesRama, filasEx
       informesLeidos: (informes || []).length, procesosReportadosPorRDL: rdl.size, procesosVigentesComparados: porProceso.length,
       importantesEnRama: porProceso.reduce((s, x) => s + x.importantes, 0), reportadas: porProceso.reduce((s, x) => s + x.reportadas, 0),
       tardias: tardias.length, noReportadas: noReportadas.length, enPlazo: enPlazo.length, sinNovedadRDL: sinNovedadRDL.length,
-      cobradosSinNovedad: cobradosSinNovedad.length, terminadosQueReporta: terminadosQueReporta.length, enRdlNoPortal: enRdlNoPortal.length,
+      cobradosSinNovedad: cobradosSinNovedad.length, terminadosQueReporta: terminadosQueReporta.length, enRdlNoPortal: enRdlNoPortal.length, fueraDelPortal: fueraDelPortal.length, diferencias: diferencias.length, ignorados,
     },
-    noReportadas: noReportadas.sort((a, b) => a.fecha.localeCompare(b.fecha)), tardias, enPlazo, sinNovedadRDL, cobradosSinNovedad, terminadosQueReporta, enRdlNoPortal, porProceso,
+    noReportadas: noReportadas.sort((a, b) => a.fecha.localeCompare(b.fecha)), tardias, enPlazo, sinNovedadRDL, cobradosSinNovedad, terminadosQueReporta, enRdlNoPortal, porProceso, fueraDelPortal, diferencias, ignorados,
   };
 }

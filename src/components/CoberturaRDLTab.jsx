@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from 'react';
 import { leerInformesRDL, mensajeError, getAccount, crearBorradorConImagenesInline, firmaComoImagenInline, firmaHtml } from '../lib/graph';
 import { construirCorreoRDL, seccionesDelCorreoRDL, CORREO_RDL } from '../lib/correoRDL';
+import { refinarRevision } from '../lib/cruceRDL';
 import { CORREO_GERENCIA_ACCESO } from '../lib/solicitudAccesoExpediente';
 import { consultarRama, numerosDelProceso, radicadosDelProceso } from '../lib/ramaJudicial';
 import { leerArchivoVigilancia, compararConProcesos, generarExcelRevisionProcesos } from '../lib/revisionProcesos';
@@ -63,8 +64,8 @@ export default function CoberturaRDLTab({ procesos, config, notify, liveMode, on
     const f = e.target.files?.[0]; if(!f) return;
     try{
       const filas = await leerArchivoVigilancia(f); setArchivo(f.name); setFilasExcel(filas);
-      const rev = compararConProcesos(filas, procesos); setRevision(rev);   // al instante, sin correo ni Rama
-      notify?.(`Excel de RDL leído: ${filas.length} procesos. Diferencias con el portal: ${rev.noEncontrados.length + rev.terminados.length + rev.faltantesEnArchivo.length}.`, 'success');
+      const rev = refinarRevision(compararConProcesos(filas, procesos), procesos); setRevision(rev);   // al instante, sin correo ni Rama; con las reglas de Daniel (fuera del portal), ignorados y cruce por otros datos
+      notify?.(`Excel de RDL leído: ${filas.length} procesos. Diferencias con el portal: ${rev.noEncontrados.length + rev.terminados.length + rev.faltantesEnArchivo.length}${rev.diferencias.length ? ' · ' + rev.diferencias.length + ' son el mismo proceso con datos distintos' : ''}${rev.fueraDelPortal.length ? ' · ' + rev.fueraDelPortal.length + ' son de seguimiento fuera del portal (no cuentan)' : ''}.`, 'success');
     }
     catch(err){ notify?.('No se pudo leer el Excel: ' + mensajeError(err), 'error'); }
     e.target.value = '';
@@ -108,7 +109,7 @@ export default function CoberturaRDLTab({ procesos, config, notify, liveMode, on
       // 3) Comparar
       const r = compararCobertura({ informes, procesos, actuacionesRama: mapa, filasExcel, mes: { ini: rango.ini, fin: rango.hasta }, hoy, gracia: 2, c21sProceso: p => { const t = c21sDe(p); const pr = principalC21(p); return pr ? [pr, ...t.filter(x => x !== pr)] : t; } });
       r.rango = rango; setResultado(r);
-      { const ini = {}; seccionesDelCorreoRDL(r, revision).forEach(s => { ini[s.id] = s.n > 0; }); setIncluir(ini); }
+      { const ini = {}; seccionesDelCorreoRDL(r, revision, ((revision && revision.diferencias) || []).length + (r.diferencias || []).length).forEach(s => { ini[s.id] = s.n > 0; }); setIncluir(ini); }
       notify?.(`Comparación lista: ${r.resumen.noReportadas} actuaciones importantes sin reportar por RDL.`, r.resumen.noReportadas ? 'info' : 'success');
     }catch(err){
       console.error(err); setError(mensajeError(err));
@@ -129,6 +130,10 @@ export default function CoberturaRDLTab({ procesos, config, notify, liveMode, on
   const procDeFila = f => (procesos || []).find(p => p.Radicado && (p.Radicado === f.lexara || p.Radicado === f.consecutivo)) || null;
   const celdaRad = f => { const p = onAbrirProceso ? procDeFila(f) : null; return p ? <button type="button" className="celda-enlace" onClick={() => onAbrirProceso(p.id)} title="Abrir este proceso">{f.radicado}</button> : f.radicado; };
   const colsRevAbrir = [{ t: 'Radicado', v: celdaRad }, { t: 'Consecutivo', v: f => f.consecutivo }, { t: 'Demandante', v: f => f.demandante }, { t: 'Demandado', v: f => f.demandado }, { t: 'Apoderado', v: f => f.apoderado }, { t: 'Portal Lexara', v: f => f.lexara }];
+  // Lo que no es novedad (seguimiento fuera del portal de Daniel) y lo que es el mismo proceso con datos distintos: del Excel mensual y de los informes diarios juntos
+  const diferenciasTodas = [...((revision && revision.diferencias) || []), ...((resultado && resultado.diferencias) || [])];
+  const fueraTodas = [...((revision && revision.fueraDelPortal) || []), ...((resultado && resultado.fueraDelPortal) || [])];
+  const ignoradosTotal = ((revision && revision.ignorados) || 0) + ((resultado && resultado.ignorados) || 0);
   const colsRev = [{ t: 'Radicado', v: f => f.radicado }, { t: 'Consecutivo', v: f => f.consecutivo }, { t: 'Demandante', v: f => f.demandante }, { t: 'Demandado', v: f => f.demandado }, { t: 'Apoderado', v: f => f.apoderado }, { t: 'Portal Lexara', v: f => f.lexara }];
 
   // Borrador de correo para RDL con lo bueno y lo que hay que mejorar (queda en los Borradores de Soporte con copia a Gerencia; nunca se envía solo).
@@ -139,7 +144,7 @@ export default function CoberturaRDLTab({ procesos, config, notify, liveMode, on
     try{
       const adjuntos = [];
       if(adjuntarExcel){ try{ adjuntos.push(await generarExcelCobertura(`Vigilancia RDL ${mes}`, resultado, resultado.rango, revision ? { revision } : null, { devolver: true })); }catch(e){ console.error(e); notify?.('No se pudo preparar el Excel para adjuntarlo: ' + mensajeError(e), 'info'); } }
-      const cuerpo = construirCorreoRDL({ r: resultado, revision, mes, incluir, nota: notaRDL, hayExcelAdjunto: adjuntos.length > 0 });
+      const cuerpo = construirCorreoRDL({ r: resultado, revision, mes, incluir, nota: notaRDL, hayExcelAdjunto: adjuntos.length > 0, diferencias: diferenciasTodas });
       const firma = await firmaComoImagenInline('soporte').catch(() => null);
       const html = cuerpo.html + (firma ? firmaHtml('soporte', 'cid:' + firma.cid) : '') + '</body></html>';
       const r = await crearBorradorConImagenesInline({ to: [CORREO_RDL], cc: [CORREO_GERENCIA_ACCESO], subject: cuerpo.asunto, htmlBody: html, imagenes: firma ? [firma] : [], adjuntos, categorias: ['Vigilancia RDL (borrador)'], buzon: 'soporte@lexaraabogados.com', caerAlBuzonPropio: true });
@@ -227,12 +232,24 @@ export default function CoberturaRDLTab({ procesos, config, notify, liveMode, on
             columnas={[{ t: 'Proceso', v: f => abrir(f.proceso) }, { t: 'Radicado', v: f => onAbrirProceso && f.proceso ? <button type="button" className="celda-enlace" onClick={() => onAbrirProceso(f.proceso.id)} title="Abrir este proceso">{f.radicado}</button> : f.radicado }, { t: 'Última novedad', v: f => dma(f.ultima) }, { t: 'Carpeta de RDL', v: f => enlaceDrive(f.drive) }]} />
           <Tabla titulo="RDL los reporta y no están en el portal" filas={R.enRdlNoPortal} vacio="Todos los procesos que RDL reportó están en el portal."
             columnas={[{ t: 'Radicado', v: f => f.radicado }, { t: 'Despacho', v: f => f.despacho }, { t: 'Demandante', v: f => f.demandante }, { t: 'Última novedad', v: f => dma(f.ultima) }, { t: 'Carpeta de RDL', v: f => enlaceDrive(f.drive) }]} />
+          {(diferenciasTodas.length > 0 || fueraTodas.length > 0 || ignoradosTotal > 0) && (
+            <section className="cob-bloque" style={{ marginTop: 22 }}>
+              <h4 style={{ margin: '0 0 6px' }}>Lo que NO es novedad y los datos por corregir</h4>
+              <Tabla titulo="Mismo proceso con datos distintos (para corregir)" ayuda="El portal cruzó estos procesos por el número corto y las partes: son el mismo proceso, pero el radicado no coincide. Hay que corregir el dato en el portal o pedirle a RDL que lo corrija (queda en el correo a RDL)."
+                filas={diferenciasTodas} vacio="No hay procesos con datos distintos."
+                columnas={[{ t: 'Origen', v: f => f.origen }, { t: 'Radicado de RDL', v: f => f.fila.radicado }, { t: 'Proceso en el portal', v: f => onAbrirProceso ? <button type="button" className="celda-enlace" onClick={() => onAbrirProceso(f.proceso.id)} title="Abrir este proceso"><strong>{f.proceso.Radicado}</strong><br /><span className="rama-res-suave">{f.proceso.Cliente || ''}</span></button> : <strong>{f.proceso.Radicado}</strong> }, { t: 'Radicado del portal', v: f => f.proceso.NoCompleto || '—' }, { t: 'Diferencia', v: f => f.diferencias.length ? f.diferencias.map(d => d.campo).join(', ') : 'Solo coincidieron por el número corto y las partes' }]} />
+              <Tabla titulo="Seguimiento fuera del portal (apoderado Daniel): no son novedades" ayuda="RDL los vigila y Lexara les hace seguimiento, pero fuera del portal: se tienen en cuenta y no se marcan como «no están en el portal»."
+                filas={fueraTodas} vacio="No hay procesos de seguimiento fuera del portal."
+                columnas={[{ t: 'Origen', v: f => f.origen }, { t: 'Radicado', v: f => f.radicado }, { t: 'Demandante', v: f => f.demandante }, { t: 'Demandado', v: f => f.demandado }, { t: 'Apoderado', v: f => f.apoderado }]} />
+              {ignoradosTotal > 0 && <p className="rama-res-suave" style={{ margin: '4px 0' }}>{ignoradosTotal} {ignoradosTotal === 1 ? 'proceso se dejó' : 'procesos se dejaron'} por fuera de las novedades (Supersociedades 76534 y 39696).</p>}
+            </section>
+          )}
           {incluir && (
             <section className="cob-bloque" style={{ marginTop: 22 }}>
               <h4 style={{ margin: '0 0 6px' }}>3) Informar a RDL</h4>
               <p className="rama-res-suave" style={{ margin: '0 0 8px' }}>Arma un <strong>borrador de correo para RDL</strong> con lo que va bien y lo que hay que mejorar. Marque lo que quiere incluir; queda en los Borradores de Soporte, con copia a Gerencia, para que lo revise: <strong>no se envía solo</strong>.</p>
               <div className="cob-checks">
-                {seccionesDelCorreoRDL(R, revision).map(s => (
+                {seccionesDelCorreoRDL(R, revision, diferenciasTodas.length).map(s => (
                   <label key={s.id} className={'cob-check' + (s.n === 0 ? ' cob-check--vacio' : '')}>
                     <input type="checkbox" checked={!!incluir[s.id]} disabled={s.n === 0} onChange={e => setIncluir(prev => ({ ...prev, [s.id]: e.target.checked }))} />
                     <span><strong className={s.tipo === 'bueno' ? 'cob-bueno' : ''}>{s.tipo === 'bueno' ? '✓ ' : ''}{s.nombre}</strong> <span className="rama-res-suave">({s.id === 'bueno' ? 'reconocimiento' : s.n})</span></span>

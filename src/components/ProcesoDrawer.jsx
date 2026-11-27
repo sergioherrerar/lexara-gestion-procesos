@@ -21,6 +21,7 @@ import { AudienciasTerminosDelProceso } from './AudienciasTerminosTab';
 import RamaJudicialTab from './RamaJudicialTab';
 import { abrirEnRamaJudicial, numerosDelProceso } from '../lib/ramaJudicial';
 import { urlsSamai, abrirEnSamai } from '../lib/samai';
+import { ordenarHistorico, estadoDesdeHistorico } from '../lib/historicoOrden';
 
 const TABS = [
   {key:'datos', label:'Datos generales'},
@@ -541,7 +542,28 @@ export default function ProcesoDrawer({ procesosLista, onNavegarProceso, request
       const renglones = htmlHistoricoNuevasLineas(historicoActual, proceso.Estado, proceso.FechaUltimoEstado, payload.Estado, form.FechaUltimoEstado ?? proceso.FechaUltimoEstado);
       if(renglones) payload.Historico = historicoActual + renglones;
     }
+    // Si el Histórico cambió (lo escribieron a mano o se agregó algo), al guardar queda en orden de fechas: la más antigua arriba, la más nueva abajo.
+    if(payload.Historico !== undefined){
+      const o = ordenarHistorico(payload.Historico);
+      if(o.cambio) payload.Historico = o.html;
+    }
     onSave(payload);
+  }
+
+  // Botones del Histórico y del Estado (se aplican al formulario; se guardan con «Guardar cambios»).
+  function ordenarHistoricoDelForm(){
+    const o = ordenarHistorico(form.Historico || '');
+    if(!o.html){ notify?.('El Histórico está vacío.', 'info'); return; }
+    if(!o.cambio){ notify?.('El Histórico ya está en orden de fechas (la más antigua arriba, la más nueva abajo).', 'info'); return; }
+    setField('Historico', o.html);
+    notify?.('Histórico ordenado por fecha: la más antigua arriba y la más nueva abajo. Guarde para dejarlo así.', 'success');
+  }
+  function actualizarEstadoDesdeHistorico(){
+    const r = estadoDesdeHistorico(form.Historico || '');
+    if(!r){ notify?.('No encontré renglones con fecha en el Histórico para armar el Estado.', 'info'); return; }
+    setForm(prev => ({ ...prev, Estado: r.estado, FechaUltimoEstado: r.fecha }));
+    const [a, m, d] = r.fecha.split('-');
+    notify?.(`Estado actualizado con las ${r.lineas} últimas actuaciones del Histórico y Fecha último estado = ${d}/${m}/${a}. Guarde para dejarlo así.`, 'success');
   }
 
   // Al cambiar el Tipo de Acción, si el Tipo de Proceso o el Despacho ya
@@ -1015,6 +1037,11 @@ export default function ProcesoDrawer({ procesosLista, onNavegarProceso, request
                   return (
                     <FieldCard label={LABELS[key]} full={type==='textarea' || type==='richtext'} key={key}>
                       {renderGenericField(key, type, form, setField, canWrite)}
+                      {canWrite && key==='Estado' && (
+                        <div className="hist-acciones">
+                          <button type="button" className="rama-btn" onClick={actualizarEstadoDesdeHistorico} title="Pone en Estado las 3 últimas actuaciones del Histórico (las de fecha más cercana a hoy) y en Fecha último estado la más reciente">Actualizar Estado y fecha desde el Histórico</button>
+                        </div>
+                      )}
                     </FieldCard>
                   );
                 })}
@@ -1074,6 +1101,13 @@ export default function ProcesoDrawer({ procesosLista, onNavegarProceso, request
                 {TRAZABILIDAD_SECTION.fields.map(([key,type]) => (
                   <FieldCard label={LABELS[key]} full={type==='richtext'} key={key}>
                     {renderGenericField(key, type, form, setField, canWrite)}
+                    {canWrite && key==='Historico' && (
+                      <div className="hist-acciones">
+                        <button type="button" className="rama-btn" onClick={ordenarHistoricoDelForm} title="Deja el Histórico en orden de fechas: la más antigua arriba y la más nueva abajo">Ordenar por fecha</button>
+                        <button type="button" className="rama-btn" onClick={actualizarEstadoDesdeHistorico} title="Pone en Estado las 3 últimas actuaciones del Histórico y en Fecha último estado la más reciente">Actualizar Estado y fecha desde el Histórico</button>
+                        <span className="rama-res-suave">Al guardar también queda en orden de fechas.</span>
+                      </div>
+                    )}
                   </FieldCard>
                 ))}
               </div>

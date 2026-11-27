@@ -17,7 +17,7 @@ const titulo = t => `<p style="margin:18px 0 4px; font-size:14px; font-weight:70
 const parrafo = t => `<p style="margin:4px 0; font-size:13.5px;">${t}</p>`;
 
 /** Las secciones que se pueden incluir, con su cantidad: [{ id, nombre, n, tipo: 'bueno'|'mejorar' }]. */
-export function seccionesDelCorreoRDL(r, revision){
+export function seccionesDelCorreoRDL(r, revision, nDiferencias = 0){
   const S = (r && r.resumen) || {};
   return [
     { id: 'bueno', nombre: 'Lo que va bien (reportes a tiempo, informes recibidos)', n: (S.reportadas || 0) + (S.informesLeidos || 0), tipo: 'bueno' },
@@ -26,6 +26,7 @@ export function seccionesDelCorreoRDL(r, revision){
     { id: 'sinNovedad', nombre: 'Procesos con movimiento en la Rama y sin ningún reporte', n: S.sinNovedadRDL || 0, tipo: 'mejorar' },
     { id: 'terminadosDiarios', nombre: 'Procesos terminados que siguen reportando', n: S.terminadosQueReporta || 0, tipo: 'mejorar' },
     { id: 'noPortal', nombre: 'Procesos que reportan y no están en nuestro portal', n: S.enRdlNoPortal || 0, tipo: 'mejorar' },
+    { id: 'diferencias', nombre: 'Mismo proceso con datos distintos (confirmen cuál es el correcto)', n: nDiferencias || 0, tipo: 'mejorar' },
     { id: 'excelNoEstan', nombre: 'Procesos de su Excel que no están en nuestro portal', n: revision ? revision.noEncontrados.length : 0, tipo: 'mejorar' },
     { id: 'excelTerminados', nombre: 'Procesos terminados que siguen en su Excel (cobro)', n: revision ? revision.terminados.length : 0, tipo: 'mejorar' },
     { id: 'excelFaltantes', nombre: 'Procesos vigentes nuestros que no incluyeron en su Excel', n: revision ? revision.faltantesEnArchivo.length : 0, tipo: 'mejorar' },
@@ -36,7 +37,7 @@ export function seccionesDelCorreoRDL(r, revision){
  * entradas: { r (resultado de compararCobertura), revision (compararConProcesos o null), mes: 'AAAA-MM', incluir: { id: bool }, nota (texto libre opcional), hayExcelAdjunto }
  * → { asunto, html } (sin firma: la agrega quien crea el borrador).
  */
-export function construirCorreoRDL({ r, revision, mes, incluir, nota, hayExcelAdjunto }){
+export function construirCorreoRDL({ r, revision, mes, incluir, nota, hayExcelAdjunto, diferencias = [] }){
   const [anio, m] = String(mes || '').split('-').map(Number);
   const nombreMes = MESES[(m || 1) - 1] || '';
   const S = r.resumen;
@@ -56,18 +57,19 @@ export function construirCorreoRDL({ r, revision, mes, incluir, nota, hayExcelAd
       + '</ul>');
   }
   const mejoras = [];
+  let numeroPunto = 0; const num = () => ++numeroPunto;   // los puntos se numeran solo los que se incluyen
   if(on('noReportadas') && r.noReportadas.length){
-    mejoras.push(titulo(`1. Actuaciones importantes que no nos reportaron (${r.noReportadas.length})`)
+    mejoras.push(titulo(`${num()}. Actuaciones importantes que no nos reportaron (${r.noReportadas.length})`)
       + parrafo('Aparecen en la Rama y, pasados 2 días hábiles, no estaban en ningún informe. Les pedimos revisar por qué no se detectaron y reportarlas.')
       + tabla([{ t: 'Proceso', v: f => esc(f.proceso.Radicado) }, { t: 'Cliente', v: f => esc(f.proceso.Cliente || '') }, { t: 'Fecha', v: f => dma(f.fecha) }, { t: 'Actuación en la Rama', v: f => esc(f.actuacion) }], r.noReportadas));
   }
   if(on('tardias') && r.tardias.length){
-    mejoras.push(titulo(`2. Actuaciones que reportaron con retraso (${r.tardias.length})`)
+    mejoras.push(titulo(`${num()}. Actuaciones que reportaron con retraso (${r.tardias.length})`)
       + parrafo('Sí las reportaron, pero pasados más de 2 días hábiles. Para nosotros el tiempo es clave por los términos.')
       + tabla([{ t: 'Proceso', v: f => esc(f.proceso.Radicado) }, { t: 'Actuación', v: f => esc(f.actuacion) }, { t: 'Fecha', v: f => dma(f.fecha) }, { t: 'La reportaron el', v: f => dma(f.recibido) }, { t: 'Días hábiles de retraso', v: f => String(f.retraso) }], r.tardias));
   }
   if(on('sinNovedad') && r.sinNovedadRDL.length){
-    mejoras.push(titulo(`3. Procesos con movimiento en la Rama y sin ningún reporte en el mes (${r.sinNovedadRDL.length})`)
+    mejoras.push(titulo(`${num()}. Procesos con movimiento en la Rama y sin ningún reporte en el mes (${r.sinNovedadRDL.length})`)
       + parrafo('En estos procesos la Rama muestra actuaciones importantes y no recibimos nada de ustedes. Les pedimos confirmar que están en vigilancia.')
       + tabla([{ t: 'Proceso', v: f => esc(f.proceso.Radicado) }, { t: 'Cliente', v: f => esc(f.proceso.Cliente || '') }, { t: 'Actuaciones importantes en la Rama', v: f => String(f.importantes) }], r.sinNovedadRDL));
   }
@@ -75,7 +77,7 @@ export function construirCorreoRDL({ r, revision, mes, incluir, nota, hayExcelAd
   if(on('terminadosDiarios')) r.terminadosQueReporta.forEach(f => terminados.push({ radicado: f.radicado, origen: 'Lo siguen reportando en los informes diarios' }));
   if(on('excelTerminados') && revision) revision.terminados.forEach(f => terminados.push({ radicado: f.radicado, origen: 'Figura en su lista mensual (cobro)' }));
   if(terminados.length){
-    mejoras.push(titulo(`4. Procesos terminados que siguen en vigilancia (${terminados.length})`)
+    mejoras.push(titulo(`${num()}. Procesos terminados que siguen en vigilancia (${terminados.length})`)
       + parrafo('Estos procesos ya terminaron. Les pedimos sacarlos de la vigilancia y <strong>dejar de cobrarlos</strong>.')
       + tabla([{ t: 'Radicado', v: f => esc(f.radicado) }, { t: 'Dónde aparece', v: f => esc(f.origen) }], terminados));
   }
@@ -83,12 +85,17 @@ export function construirCorreoRDL({ r, revision, mes, incluir, nota, hayExcelAd
   if(on('noPortal')) r.enRdlNoPortal.forEach(f => fuera.push({ radicado: f.radicado, demandante: f.demandante, demandado: f.demandado, origen: 'Informes diarios' }));
   if(on('excelNoEstan') && revision) revision.noEncontrados.forEach(f => fuera.push({ radicado: f.radicado, demandante: f.demandante, demandado: f.demandado, origen: 'Lista mensual' }));
   if(fuera.length){
-    mejoras.push(titulo(`5. Procesos que reportan y no corresponden a nuestros procesos registrados (${fuera.length})`)
+    mejoras.push(titulo(`${num()}. Procesos que reportan y no corresponden a nuestros procesos registrados (${fuera.length})`)
       + parrafo('No los tenemos en nuestro sistema como procesos de Lexara. Les pedimos confirmar si son nuestros o si hay que retirarlos.')
       + tabla([{ t: 'Radicado', v: f => esc(f.radicado) }, { t: 'Demandante', v: f => esc(f.demandante || '') }, { t: 'Demandado', v: f => esc(f.demandado || '') }, { t: 'Dónde aparece', v: f => esc(f.origen) }], fuera));
   }
+  if(on('diferencias') && diferencias.length){
+    mejoras.push(titulo(`${num()}. Procesos que son los mismos pero con datos distintos (${diferencias.length})`)
+      + parrafo('Cruzamos estos procesos por el número corto y las partes: son el mismo proceso, pero el radicado que tienen ustedes no coincide con el nuestro. Les pedimos <strong>confirmar cuál es el correcto</strong> para corregirlo de nuestro lado o del suyo.')
+      + tabla([{ t: 'Radicado de ustedes', v: f => esc(f.fila.radicado) }, { t: 'Radicado en nuestro sistema', v: f => esc(f.proceso.NoCompleto || '') }, { t: 'Proceso', v: f => esc(f.proceso.Radicado) + (f.proceso.Cliente ? ' · ' + esc(f.proceso.Cliente) : '') }, { t: 'Diferencia', v: f => esc(f.diferencias.length ? f.diferencias.map(d => d.campo).join(', ') : 'Número corto y partes') }], diferencias));
+  }
   if(on('excelFaltantes') && revision && revision.faltantesEnArchivo.length){
-    mejoras.push(titulo(`6. Procesos nuestros vigentes que no incluyeron en su lista (${revision.faltantesEnArchivo.length})`)
+    mejoras.push(titulo(`${num()}. Procesos nuestros vigentes que no incluyeron en su lista (${revision.faltantesEnArchivo.length})`)
       + parrafo('Son procesos activos de Lexara que no aparecen en su lista mensual. Les pedimos incluirlos en la vigilancia.')
       + tabla([{ t: 'Radicado', v: f => esc(f.radicado) }, { t: 'Número corto', v: f => esc(f.consecutivo) }, { t: 'Demandante', v: f => esc(f.demandante || '') }, { t: 'Demandado', v: f => esc(f.demandado || '') }], revision.faltantesEnArchivo));
   }

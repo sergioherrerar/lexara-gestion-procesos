@@ -60,6 +60,21 @@ export async function generarExcelCobertura(nombreArchivo, r, mes, extra, opcion
   encabezar(w6, [{ header: 'Radicado', key: 'r', width: 26 }, { header: 'Consecutivo', key: 'c', width: 14 }, { header: 'Despacho', key: 'd', width: 36 }, { header: 'Demandante', key: 'd1', width: 30 }, { header: 'Demandado', key: 'd2', width: 30 }, { header: 'Última novedad', key: 'u', width: 16 }, { header: 'Carpeta de RDL (Drive)', key: 'dr', width: 40 }]);
   r.enRdlNoPortal.forEach(x => w6.addRow({ r: x.radicado, c: x.consecutivo, d: x.despacho, d1: x.demandante, d2: x.demandado, u: dma(x.ultima), dr: x.drive }));
 
+  // Diferencias por corregir y seguimiento fuera del portal (de los informes diarios y, si se subió, del Excel mensual)
+  {
+    const difs = [...(r.diferencias || []), ...((extra && extra.revision && extra.revision.diferencias) || [])];
+    const fuera = [...(r.fueraDelPortal || []), ...((extra && extra.revision && extra.revision.fueraDelPortal) || [])];
+    const wd = wb.addWorksheet('Mismo proceso, datos distintos');
+    encabezar(wd, [{ header: 'Origen', key: 'o', width: 18 }, { header: 'Radicado de RDL', key: 'r', width: 28 }, { header: 'Proceso (portal)', key: 'p', width: 14 }, { header: 'Cliente', key: 'c', width: 30 }, { header: 'Radicado del portal', key: 'n', width: 28 }, { header: 'Diferencia', key: 'd', width: 34 }]);
+    difs.forEach(f => wd.addRow({ o: f.origen, r: f.fila.radicado, p: f.proceso.Radicado || '', c: f.proceso.Cliente || '', n: f.proceso.NoCompleto || '', d: f.diferencias.length ? f.diferencias.map(d => d.campo).join(', ') : 'Número corto y partes' }));
+    const wf = wb.addWorksheet('Fuera del portal (Daniel)');
+    encabezar(wf, [{ header: 'Origen', key: 'o', width: 18 }, { header: 'Radicado', key: 'r', width: 28 }, { header: 'Demandante', key: 'd1', width: 32 }, { header: 'Demandado', key: 'd2', width: 32 }, { header: 'Apoderado', key: 'a', width: 24 }]);
+    fuera.forEach(f => wf.addRow({ o: f.origen, r: f.radicado, d1: f.demandante, d2: f.demandado, a: f.apoderado }));
+    wr.addRow({ c: '', n: '' });
+    wr.addRow({ c: 'Mismo proceso con datos distintos (para corregir)', n: difs.length });
+    wr.addRow({ c: 'Seguimiento fuera del portal (no son novedades)', n: fuera.length });
+    wr.addRow({ c: 'Procesos ignorados (Supersociedades 76534 y 39696)', n: (r.ignorados || 0) + ((extra && extra.revision && extra.revision.ignorados) || 0) });
+  }
   // Si se subió el Excel mensual de RDL: las 3 diferencias contra el portal (lo que antes daba «Revisión de Procesos»), en el mismo archivo
   if(extra && extra.revision){
     const rv = extra.revision;
