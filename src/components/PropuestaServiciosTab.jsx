@@ -3,6 +3,7 @@ import { IconTextButton } from './IconButton';
 import membrete from '../assets/Membrete Lexara.png';   // el membrete real de Lexara (el mismo de los PDF del portal)
 import { getAccount, crearBorradorConImagenesInline, firmaComoImagenInline, firmaHtml, mensajeError, guardarCopiaPropuesta, listarPropuestas, actualizarPropuesta, leerCorreosBandeja, leerCuerpoCorreo, crearRespuestaBorrador } from '../lib/graph';
 import { esSolicitudDePropuesta, extraerDatosSolicitud } from '../lib/solicitudPropuesta';
+import { respuestaDePropuesta } from '../lib/respuestaPropuesta';
 import { CORREO_GERENCIA_ACCESO } from '../lib/solicitudAccesoExpediente';
 import {
   EQUIPO_LEXARA, ETAPAS_POR_SALARIOS, FRASE_ETAPA, etiquetaEtapa, textoSalarios, textoAsunto, textoPresentacion, serviciosPorDefecto, conceptoPorDefecto,
@@ -41,9 +42,9 @@ const GRID = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(24
 
 // «Propuestas enviadas» (2026-11-27): lo guardado en ADMINISTRACION/Propuestas/_datos al crear cada correo. Estados: creada → aceptada (la confirma una persona) → proceso creado. «Crear proceso» abre el formulario de proceso
 // nuevo ya lleno con los datos de la propuesta; al GUARDARLO se crea la carpeta del proceso y el PDF de la propuesta se copia a su «0. Contrato».
-const ESTADO_PROPUESTA = { creada: ['Creada', 'badge-gris'], aceptada: ['Aceptada', 'badge-naranja'], 'proceso-creado': ['Proceso creado', 'badge-verde'] };
+const ESTADO_PROPUESTA = { creada: ['Creada', 'badge-gris'], respondida: ['Respondida', 'badge-naranja'], aceptada: ['Aceptada', 'badge-naranja'], 'proceso-creado': ['Proceso creado', 'badge-verde'] };
 const dmaP = f => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(f || ''); return m ? m[3] + '-' + m[2] + '-' + m[1] : ''; };
-function procesoDesdePropuesta(p, clientes){
+export function procesoDesdePropuesta(p, clientes){
   const rad23 = String(p.numeroProceso || '').replace(/\D/g, '');
   const cli = (clientes || []).find(c => String(c.RazonSocial || c.Nombre || '').trim().toLowerCase() === String(p.cliente || '').trim().toLowerCase());
   const o = {};
@@ -65,7 +66,26 @@ function PropuestasEnviadas({ config, liveMode, notify, canWrite, clientes, onCr
   async function cargar(){
     if(!liveMode) return;
     setCargando(true); setError('');
-    try{ setLista(await listarPropuestas(config)); }
+    try{
+      let propuestas = await listarPropuestas(config);
+      // ¿Alguien respondió? Se busca en el correo de Gerencia, en el mismo hilo (conversación) de cada propuesta que sigue «Creada» o «Respondida». Solo lee; lo que se guarda es el aviso en el archivo de datos de la propuesta.
+      const vigilar = propuestas.filter(p => p.conversacion && (p.estado === 'creada' || p.estado === 'respondida' || !p.estado));
+      if(vigilar.length){
+        try{
+          const desde = vigilar.map(p => String(p.creadoEn || p.fecha).slice(0, 10)).sort()[0];
+          const correos = await leerCorreosBandeja(CORREO_GERENCIA_ACCESO || 'gerencia@lexaraabogados.com', desde);
+          const nuevas = [];
+          for(const p of vigilar){
+            const r = respuestaDePropuesta(p, correos);
+            if(!r || (p.respuesta && p.respuesta.correoId === r.correo.id)) continue;
+            const respuesta = { tipo: r.tipo, correoId: r.correo.id, fecha: r.correo.fecha, de: r.correo.remitenteNombre || r.correo.remitente, asunto: r.correo.asunto, resumen: String(r.correo.resumen || '').slice(0, 300), enlace: r.correo.enlace || '', total: r.total };
+            try{ const nuevo = await actualizarPropuesta(config, p.numero, { estado: 'respondida', respuesta }); propuestas = propuestas.map(x => x.numero === p.numero ? nuevo : x); nuevas.push({ p, tipo: r.tipo }); }catch(e){ console.error(e); }
+          }
+          nuevas.forEach(n => notify?.(n.tipo === 'aceptacion' ? 'El cliente respondió a la propuesta ' + n.p.numero + ' y parece que la ACEPTÓ. Revise el correo y confirme la aceptación.' : 'El cliente respondió a la propuesta ' + n.p.numero + '. Revise el correo.', 'info'));
+        }catch(e){ console.error(e); setError('No se pudo revisar si hubo respuestas en el correo de Gerencia: ' + mensajeError(e)); }
+      }
+      setLista(propuestas);
+    }
     catch(err){ console.error(err); setError(mensajeError(err)); }
     finally{ setCargando(false); }
   }
@@ -84,10 +104,11 @@ function PropuestasEnviadas({ config, liveMode, notify, canWrite, clientes, onCr
     notify?.('Se abrió el formulario del proceso nuevo con los datos de la propuesta ' + p.numero + '. Revíselo y presione Guardar: ahí se crea el proceso, su carpeta y se copia la propuesta a «0. Contrato».', 'info');
   }
   const pendientes = (lista || []).filter(p => p.estado !== 'proceso-creado').length;
+  const respondidas = (lista || []).filter(p => p.estado === 'respondida').length;
   return (
     <section className="rama-seccion" style={{ margin: '0 0 16px' }}>
       <button type="button" className="cob-cab" onClick={() => setAbierta(v => !v)} aria-expanded={abierta}>
-        <strong>Propuestas enviadas</strong>{lista && <span className={'badge ' + (pendientes ? 'badge-naranja' : 'badge-verde')}>{lista.length}{pendientes ? ' · ' + pendientes + ' sin proceso' : ''}</span>}
+        <strong>Propuestas enviadas</strong>{lista && <span className={'badge ' + (pendientes ? 'badge-naranja' : 'badge-verde')}>{lista.length}{pendientes ? ' · ' + pendientes + ' sin proceso' : ''}</span>}{respondidas > 0 && <span className="badge badge-alerta">{respondidas} {respondidas === 1 ? 'respondida' : 'respondidas'}</span>}
         <span className="cob-mas">{abierta ? 'ocultar' : 'ver'}</span>
       </button>
       {abierta && (
@@ -102,13 +123,15 @@ function PropuestasEnviadas({ config, liveMode, notify, canWrite, clientes, onCr
               <tbody>{lista.map(p => {
                 const [txt, cls] = ESTADO_PROPUESTA[p.estado] || ESTADO_PROPUESTA.creada;
                 return (
-                  <tr key={p.numero}>
+                  <tr key={p.numero} className={p.estado === 'respondida' ? 'rama-importante' : ''}>
                     <td><strong>{p.numero}</strong></td><td className="rama-fecha">{dmaP(p.fecha)}</td><td>{p.entidad || p.cliente}</td>
                     <td>{[p.tipoProceso, p.numeroProceso].filter(Boolean).join(' · ') || '—'}{p.demandante || p.demandado ? <><br /><span className="rama-res-suave">{[p.demandante, p.demandado].filter(Boolean).join(' vs. ')}</span></> : null}</td>
-                    <td><span className={'badge ' + cls}>{txt}</span>{p.estado === 'proceso-creado' && p.procesoRadicado ? <><br /><span className="rama-res-suave">{p.procesoRadicado}</span></> : null}</td>
+                    <td><span className={'badge ' + cls}>{txt}</span>{p.estado === 'proceso-creado' && p.procesoRadicado ? <><br /><span className="rama-res-suave">{p.procesoRadicado}</span></> : null}
+                      {p.estado === 'respondida' && p.respuesta ? <><br /><strong>{p.respuesta.tipo === 'aceptacion' ? 'Parece una ACEPTACIÓN' : 'El cliente respondió'}</strong><br /><span className="rama-res-suave">{dmaP(String(p.respuesta.fecha).slice(0, 10))} · {p.respuesta.de}<br />«{p.respuesta.asunto}»</span></> : null}</td>
                     <td className="rama-acc">
                       {p.pdfWebUrl && <a className="btn-secondary rama-btn" href={p.pdfWebUrl} target="_blank" rel="noopener noreferrer">Ver PDF</a>}
-                      {canWrite && p.estado === 'creada' && <button type="button" className="rama-btn rama-btn--crear" onClick={() => aceptar(p)} title="Márquela cuando el cliente responda aceptando la propuesta">Marcar aceptada</button>}
+                      {p.estado === 'respondida' && p.respuesta && p.respuesta.enlace && <a className="btn-secondary rama-btn" href={p.respuesta.enlace} target="_blank" rel="noopener noreferrer">Ver la respuesta</a>}
+                      {canWrite && (p.estado === 'creada' || p.estado === 'respondida') && <button type="button" className="rama-btn rama-btn--crear" onClick={() => aceptar(p)} title="Confírmela cuando el cliente haya aceptado la propuesta">{p.estado === 'respondida' && p.respuesta && p.respuesta.tipo === 'aceptacion' ? 'Confirmar aceptación' : 'Marcar aceptada'}</button>}
                       {canWrite && p.estado === 'aceptada' && <><button type="button" className="rama-btn rama-btn--crear" onClick={() => crearProceso(p)} title="Abre el formulario de proceso nuevo con los datos de la propuesta; no guarda nada hasta Guardar">Crear proceso</button><button type="button" className="rama-mas" onClick={() => reabrir(p)}>quitar «aceptada»</button></>}
                     </td>
                   </tr>
@@ -275,11 +298,13 @@ export default function PropuestaServiciosTab({ clientes, liveMode, notify, conf
         try{
           const htmlAntes = htmlBody.replace(/^[\s\S]*?<body[^>]*>/i, '').replace(/<\/body>[\s\S]*$/i, '');
           const rr = await crearRespuestaBorrador({ buzon: CORREO_GERENCIA_ACCESO, mensajeId: solicitud.id, htmlAntes, imagenes: firma ? [firma] : [], adjuntos: [adjunto], categorias: ['Propuesta de servicios (borrador)'] });
+          if(copia && (rr.conversationId || solicitud.conversacion)) actualizarPropuesta(config, copia.numero, { conversacion: rr.conversationId || solicitud.conversacion }).catch(e => console.error(e));
           notify?.('✓ Respuesta creada en los Borradores de ' + CORREO_GERENCIA_ACCESO + ' dentro del hilo «' + solicitud.asunto + '», con la propuesta adjunta. Revísela y envíela.' + (copia ? ' Copia guardada en ADMINISTRACION/Propuestas como ' + copia.numero + '.' : '') + avisoCopia + (rr.imagenesFallidas && rr.imagenesFallidas.length ? ' (No se pudo poner la firma como imagen.)' : ''), 'success');
           return;
         }catch(err){ console.error(err); notify?.('No se pudo crear la respuesta en el hilo (' + mensajeError(err) + '). Se crea un correo nuevo con la propuesta.', 'info'); }
       }
       const r = await crearBorradorConImagenesInline({ to: f.correoPara.trim() ? [f.correoPara.trim()] : [], subject: asuntoCorreo, htmlBody, imagenes: firma ? [firma] : [], adjuntos: [adjunto], categorias: ['Propuesta de servicios (borrador)'], buzon: CORREO_GERENCIA_ACCESO, caerAlBuzonPropio: true });
+      if(copia && r.conversationId) actualizarPropuesta(config, copia.numero, { conversacion: r.conversationId }).catch(e => console.error(e));
       notify?.(r.enBuzonPropio
         ? '⚠ No pude crear el borrador en ' + CORREO_GERENCIA_ACCESO + '. Quedó en TUS Borradores con la propuesta adjunta: revísalo y cambia el «De» a Gerencia si tienes permiso.'
         : '✓ Borrador creado en los Borradores de ' + CORREO_GERENCIA_ACCESO + ' con la propuesta en PDF adjunta' + (f.correoPara.trim() ? ', dirigido a ' + f.correoPara.trim() : ' (sin destinatario: agrégalo)') + '. Revísalo y envíalo.' + (copia ? ' Copia guardada en ADMINISTRACION/Propuestas como ' + copia.numero + '.' : '') + avisoCopia, r.enBuzonPropio ? 'info' : 'success');

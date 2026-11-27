@@ -3388,7 +3388,7 @@ export async function guardarCopiaPropuesta(config, { cliente, fechaISO, bytes, 
   }
   for(let intento = 1; intento <= 6; intento++){
     const numero = 'PS-' + anio + '-' + String(max + intento).padStart(3, '0');
-    const meta = { numero, fecha: fechaISO, creadaPor: (account && account.username) || '', estado: 'creada', ...datos };
+    const meta = { numero, fecha: fechaISO, creadoEn: new Date().toISOString(), creadaPor: (account && account.username) || '', estado: 'creada', ...datos };
     const reserva = await subirContenido(driveId, datosId, numero + '.json', JSON.stringify(meta, null, 2), 'application/json', 'fail');
     if(reserva.status === 409) continue;   // ya la tomó otra persona: se prueba el siguiente
     if(!reserva.ok) throw new Error('Graph ' + reserva.status + ' al reservar el número de la propuesta: ' + (await reserva.text()).substring(0, 200));
