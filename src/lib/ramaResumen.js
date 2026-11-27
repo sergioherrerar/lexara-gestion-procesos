@@ -237,7 +237,7 @@ export const TIPOS_CORREO = {
  * ruido = acuses de entrega/lectura, respuestas automáticas y acuses de SAMAI (no son actuaciones); audiencia = fecha futura que cita el texto;
  * terminoDias = «N días (hábiles)» si el texto los menciona (solo una pista: la verificación es de la persona).
  */
-export function clasificarCorreo(asunto, vista, remitente, hoy = hoyISO()){
+export function clasificarCorreo(asunto, vista, remitente, hoy = hoyISO(), adjuntos = ''){
   const a = norm(asunto), v = norm(vista), r = norm(remitente), t = a + ' ' + v;
   const ruido = /^(respuesta automatica|automatic reply|delivered|entregado|relayed|retransmitido|undeliverable|leido:|read:|aceptado|rechazado|provisional)|postmaster|no se pudo entregar/.test(a) || /postmaster|mailer-daemon/.test(r)
     || /notificaciones samai|acuse de recibo|validacion de autenticacion/.test(a + ' ' + r);
@@ -249,7 +249,14 @@ export function clasificarCorreo(asunto, vista, remitente, hoy = hoyISO()){
   else if(/traslado|termino|corre traslado/.test(a)) tipo = 'traslado';
   else if(/\bauto\b|providencia|requiere|admite|niega|decreta|ordena|rechaza|resuelve/.test(a)) tipo = 'auto';
   else if(/oficio/.test(a)) tipo = 'oficio';
-  else if(/notificacion|estado|edicto|citacion|comunicacion/.test(a)) tipo = 'notificacion';
+  else if(/notificacion|estado|edicto|citacion|comunicacion|comunica\b|actuacion procesal/.test(a)) tipo = 'notificacion';
+  // El auto suele venir ADJUNTO y el asunto solo dice «COMUNICA ACTUACION PROCESAL RAD …» (notificaciones que reenvía el cliente): el nombre del adjunto lo aclara (2026-11-27).
+  if(!ruido && (tipo === 'otro' || tipo === 'notificacion')){
+    const adj = norm(adjuntos);
+    if(/sentencia|fallo/.test(adj)) tipo = 'sentencia';
+    else if(/auto(?!riz)|providencia/.test(adj)) tipo = 'auto';
+    else if(/oficio/.test(adj)) tipo = 'oficio';
+  }
   let audiencia = null;
   if(!ruido && /audiencia|diligencia/.test(t)){
     const completo = sinFechaDeEnvio(String(asunto || '') + ' ' + String(vista || ''));

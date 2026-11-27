@@ -1351,6 +1351,17 @@ export async function crearRespuestaBorrador({ buzon, mensajeId, htmlAntes, imag
   return { ...(await r2.json()), imagenesFallidas: fallidas };
 }
 
+// Nombres de los adjuntos «de verdad» (no las imágenes de la firma) de UN correo del buzón (solo lectura). [] si no se pudo leer.
+export async function leerAdjuntosCorreo(correoBuzon, idMensaje){
+  try{
+    const url = `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(String(correoBuzon).trim())}/messages/${encodeURIComponent(idMensaje)}/attachments?$select=name,isInline&$top=30`;
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${await getMailToken()}` } });
+    if(!res.ok) return [];
+    const j = await res.json();
+    return (j.value || []).filter(a => !a.isInline && a.name && !/^image\d*\.(png|jpe?g|gif)$/i.test(a.name)).map(a => a.name);
+  }catch(e){ return []; }
+}
+
 // Texto completo de UN correo del buzón (solo lectura), recortado: la vista previa de Graph trae apenas 255 caracteres y la fecha de una audiencia (p. ej. «Cuándo: …» de la invitación de Teams)
 // suele estar más abajo. Devuelve '' si no se pudo leer.
 export async function leerCuerpoCorreo(correoBuzon, idMensaje, maxCaracteres = 6000){

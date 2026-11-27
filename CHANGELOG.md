@@ -2,6 +2,12 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-11-27 (244)
+- **«Correo de despachos» detecta las notificaciones que REENVÍA EL CLIENTE** — caso real reportado por el usuario: Carlos Andrés Castro (SOS) reenvió «COMUNICA ACTUACION PROCESAL RAD 2024-00329-00» con el auto adjunto y el portal no lo mostraba como correo de despacho. Ahora cuenta como tal el correo de alguien de afuera (no de nuestro equipo, RDL ni Microsoft/SharePoint) que cita un número de proceso y habla de una actuación o notificación (comunica actuación procesal, notificación, auto, providencia, traslado, citación, audiencia, sentencia, oficio…). Sale con la etiqueta **«Reenviado por el cliente»**.
+  - **Muestra los adjuntos** del correo (el auto suele venir adjunto) y los usa para clasificarlo: un adjunto «Auto…», «Providencia…», «Sentencia…» u «Oficio…» lo marca como auto/sentencia/oficio e **importante**. Se abren con «Abrir correo».
+  - «COMUNICA ACTUACION PROCESAL» ahora se reconoce como notificación.
+  - **Corrección interna:** dos expresiones del filtro de la versión anterior (dominios de la Rama y comparación de números de proceso) habían perdido sus caracteres especiales; ya funcionan para cualquier dominio de la Rama, SAMAI, Consejo de Estado, etc.
+
 ## 2026-11-27 (243)
 - **«Crear proceso» desde una propuesta aceptada, también desde Informes** — pedido del usuario (Daniel, Abogado de Procesos, no tiene acceso a Administración): nueva pestaña **Informes → Propuestas aceptadas** que muestra SOLO las propuestas ya aceptadas y sin proceso, con **«Crear proceso»** (abre el formulario de proceso nuevo ya lleno; al Guardar se crea el proceso, su carpeta y la propuesta se copia a «0. Contrato») y «Ver PDF». Quien confirma la aceptación sigue siendo Gerencia en Administración → Propuesta de servicios, donde queda todo el ciclo (creada, respondida, aceptada, proceso creado). Quien use esta pestaña necesita permiso de lectura sobre la carpeta «Propuestas» de Administración Lexara; si no lo tiene, el portal lo explica.
 

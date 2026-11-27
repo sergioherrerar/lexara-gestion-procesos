@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { leerCorreosBandeja, leerCuerpoCorreo, mensajeError, getAccount } from '../lib/graph';
+import { leerCorreosBandeja, leerCuerpoCorreo, leerAdjuntosCorreo, mensajeError, getAccount } from '../lib/graph';
 import { ModalCrearDesdeRama, Ico } from './RamaJudicialTab';
 import { CORREO_GERENCIA_ACCESO } from '../lib/solicitudAccesoExpediente';
 import { clasificarCorreo, procesosDeCorreo, radicadosEnTexto, audienciaRegistrada, TIPOS_CORREO } from '../lib/ramaResumen';
@@ -19,12 +19,22 @@ const COLOR_TIPO = { audiencia: 'naranja', desistimiento: 'naranja', sentencia: 
 // y así entraban los de nuestro propio equipo (p. ej. los de Daniel al cliente o a RDL): esos quedan en «Todos» (2026-11-27).
 function esDeDespacho(m){
   const remitente = String(m.remitente || '').toLowerCase();
-  if(/@lexaraabogados.com$/.test(remitente) || /@rdinlaw.com$/.test(remitente)) return false;
-  return /@[w.-]*(ramajudicial|cendoj|samai|consejodeestado|procuraduria|supersociedades|supersalud|dian)./.test(remitente) || /^(juzgado|tribunal|oficina|secretar|sala|corte|centro de servicios|despacho)/i.test(m.remitenteNombre || '');
+  if(/@lexaraabogados\.com$/.test(remitente) || /@rdinlaw\.com$/.test(remitente)) return false;
+  return /@[\w.-]*(ramajudicial|cendoj|samai|consejodeestado|procuraduria|supersociedades|supersalud|dian)\./.test(remitente) || /^(juzgado|tribunal|oficina|secretar|sala|corte|centro de servicios|despacho)/i.test(m.remitenteNombre || '');
+}
+// Notificación judicial REENVIADA POR UN CLIENTE (2026-11-27, caso real: Carlos Andrés Castro, de SOS, reenvió «COMUNICA ACTUACION PROCESAL RAD 2024-00329-00» con el auto adjunto): el correo no sale del despacho sino
+// del cliente, pero avisa una actuación de un proceso. Cuenta cuando lo envía alguien de afuera (no nuestro equipo, ni RDL, ni SharePoint/Microsoft), cita un número de proceso y habla de una actuación o notificación.
+const nrm = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+const PALABRAS_NOTIFICACION = /comunica(n|cion)?\s+(la\s+)?(actuacion|auto|providencia)|actuacion procesal|notificacion (judicial|de auto|de providencia|por estado|personal|electronica)|se notifica|le notifican|auto (admite|inadmite|requiere|decreta|ordena|reforma|de)|providencia|traslado|citacion|audiencia|sentencia|oficio|requerimiento/;
+function esReenviadoDeCliente(m, texto){
+  const remitente = String(m.remitente || '').toLowerCase();
+  if(/@(lexaraabogados\.com|rdinlaw\.com)$/.test(remitente) || /(sharepointonline|microsoft|onmicrosoft|outlook\.com)/.test(remitente) && !/@sos\.|@aliansalud|@colmedica|@umd|@famisanar/.test(remitente)) return false;
+  const rad = radicadosEnTexto(texto);
+  return (rad.c21.length > 0 || rad.cortos.length > 0) && PALABRAS_NOTIFICACION.test(nrm(texto));
 }
 // Por qué el correo apunta a ese proceso del portal (para entender los casos en que apunta a más de uno).
 function motivoCruce(p, c21s){
-  const dig = v => String(v || '').split(/s+/).map(s => s.replace(/D/g, '')).filter(d => d.length >= 21).map(d => d.slice(0, 21));
+  const dig = v => String(v || '').split(/\s+/).map(s => s.replace(/\D/g, '')).filter(d => d.length >= 21).map(d => d.slice(0, 21));
   if(dig(p.NoCompleto).some(n => c21s.includes(n))) return 'por el No. completo';
   if(dig(p.HistoricoNumerosCompletos).some(n => c21s.includes(n))) return 'por el Histórico de números';
   return 'por el número corto';
@@ -52,6 +62,7 @@ export default function CorreosDespachosTab({ procesos, liveMode, notify, canWri
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState('');
   const [filtro, setFiltro] = useState('despachos');
+  const [adjuntosDe, setAdjuntosDe] = useState({});   // id del correo -> nombres de sus adjuntos (el auto suele venir adjunto)
   const [cuerpos, setCuerpos] = useState({});   // id del correo -> texto completo (solo de los correos de despachos; la vista previa trae 255 caracteres)
   const [crear, setCrear] = useState(null);   // { tipo, proceso, act, inicial, origen:'correo' }: ventana de crear audiencia/término
   const puedeCrear = !!(canWrite && onCrearAudiencia && onCrearTermino);
@@ -61,15 +72,16 @@ export default function CorreosDespachosTab({ procesos, liveMode, notify, canWri
     try{
       const lista = liveMode ? await leerCorreosBandeja(buzon, desde) : ejemploDemo();
       setMensajes(lista);
-      setCuerpos({});
+      setCuerpos({}); setAdjuntosDe({});
       if(liveMode){
         // Texto completo solo de los que parecen de un despacho y no son acuses (máx. 40; de a 4 a la vez): ahí viene la fecha de la audiencia o los días del término.
-        const candidatos = lista.filter(m => !/^(respuesta automatica|automatic reply|delivered|entregado)/i.test(m.asunto) && esDeDespacho(m)).slice(0, 40);
+        const candidatos = lista.filter(m => !/^(respuesta automatica|automatic reply|delivered|entregado)/i.test(m.asunto) && (esDeDespacho(m) || esReenviadoDeCliente(m, m.asunto + ' ' + m.resumen))).slice(0, 40);
         (async () => {
           for(let i = 0; i < candidatos.length; i += 4){
             const grupo = candidatos.slice(i, i + 4);
-            const textos = await Promise.all(grupo.map(m => leerCuerpoCorreo(buzon, m.id)));
+            const [textos, adjuntos] = await Promise.all([Promise.all(grupo.map(m => leerCuerpoCorreo(buzon, m.id))), Promise.all(grupo.map(m => m.tieneAdjuntos ? leerAdjuntosCorreo(buzon, m.id) : Promise.resolve([])))]);
             setCuerpos(prev => { const n = { ...prev }; grupo.forEach((m, k) => { if(textos[k]) n[m.id] = textos[k]; }); return n; });
+            setAdjuntosDe(prev => { const n = { ...prev }; grupo.forEach((m, k) => { if(adjuntos[k] && adjuntos[k].length) n[m.id] = adjuntos[k]; }); return n; });
           }
         })();
       }
@@ -84,9 +96,11 @@ export default function CorreosDespachosTab({ procesos, liveMode, notify, canWri
     const completo = m.resumen + ' ' + (cuerpos[m.id] || '');
     const texto = m.asunto + ' ' + completo;
     const rad = radicadosEnTexto(texto);
-    const cls = clasificarCorreo(m.asunto, completo, m.remitente + ' ' + m.remitenteNombre);
-    return { ...m, rad, cls, procesos: cls.ruido ? [] : procesosDeCorreo(texto, procesos), despacho: esDeDespacho(m), conTexto: !!cuerpos[m.id] };
-  }), [mensajes, procesos, cuerpos]);
+    const adj = adjuntosDe[m.id] || [];
+    const cls = clasificarCorreo(m.asunto, completo, m.remitente + ' ' + m.remitenteNombre, undefined, adj.join(' '));
+    const via = esDeDespacho(m) ? 'despacho' : (esReenviadoDeCliente(m, texto) ? 'cliente' : '');
+    return { ...m, rad, cls, procesos: cls.ruido ? [] : procesosDeCorreo(texto, procesos), despacho: !!via, via, adjuntos: adj, conTexto: !!cuerpos[m.id] };
+  }), [mensajes, procesos, cuerpos, adjuntosDe]);
 
   function abrirCrear(tipo, f, proceso){
     const recibido = isoBogota(f.fecha);
@@ -134,7 +148,7 @@ export default function CorreosDespachosTab({ procesos, liveMode, notify, canWri
                     <tr key={f.id} className={f.cls.ruido ? 'rama-tramite' : (f.cls.importante ? 'rama-importante' : '')}>
                       <td className="rama-fecha">{fechaHora(f.fecha)}</td>
                       <td>{f.remitenteNombre || f.remitente}{f.tieneAdjuntos ? ' 📎' : ''}</td>
-                      <td className="rama-nota"><strong>{f.asunto}</strong><br /><span className="rama-res-suave">{f.resumen.slice(0, 160)}{f.resumen.length > 160 ? '…' : ''}</span></td>
+                      <td className="rama-nota"><strong>{f.asunto}</strong>{f.via === 'cliente' && <span className="badge badge-naranja" style={{ marginLeft: 8 }}>Reenviado por el cliente</span>}<br /><span className="rama-res-suave">{f.resumen.slice(0, 160)}{f.resumen.length > 160 ? '…' : ''}</span>{f.adjuntos.length > 0 && <><br /><span className="rama-res-suave">📎 {f.adjuntos.slice(0, 4).join(' · ')}{f.adjuntos.length > 4 ? ' · +' + (f.adjuntos.length - 4) : ''} (se abren con «Abrir correo»)</span></>}</td>
                       <td>{f.procesos.length ? f.procesos.map(p => <div key={p.id}><strong>{p.Radicado || p.NoCompleto}</strong><br /><span className="rama-res-suave">{p.Cliente || ''}{f.procesos.length > 1 ? ' · coincide ' + motivoCruce(p, f.rad.c21) : ''}</span></div>) : (f.despacho && !f.cls.ruido ? <span className="rama-res-alerta">No encontré el proceso{f.rad.c21.length ? ' (radicado ' + f.rad.c21[0] + '…)' : ' (sin radicado)'}</span> : '—')}</td>
                       <td><span className={'badge badge-' + (COLOR_TIPO[f.cls.tipo] || 'gris')}>{TIPOS_CORREO[f.cls.tipo]}</span></td>
                       <td>
