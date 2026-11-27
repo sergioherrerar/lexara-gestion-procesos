@@ -2,6 +2,12 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-11-27 (234)
+- **«Correo de despachos» (Informes): ya lee el texto completo del correo y crea la audiencia o el término** — probado con el correo real del Juzgado 59 Administrativo (invitación a audiencia de pruebas, proceso 2022-00212):
+  - **Lee el texto completo** de cada correo de despacho (solo lectura; no marca como leído, no mueve ni borra). Antes solo veía los primeros 255 caracteres, y ahí no está la fecha de la audiencia.
+  - **Fecha correcta:** ignora la fecha de envío que trae un correo reenviado («Enviados: viernes, 27 de noviembre…», que antes se tomaba como la de la audiencia) y entiende las invitaciones de Teams («Cuándo: lunes, 30 de noviembre de 2026 9:00 a. m.»), con hora. Reconoce «audiencia de pruebas» aunque venga sin «de», la plataforma (Teams) y el radicado dentro del enlace de SAMAI.
+  - **Botones «Crear audiencia» y «Crear término»** en cada correo que los trae y tiene proceso en el portal: abren el mismo formulario de Audiencias o Términos ya lleno (fecha, hora, tipo sugerido, observación con el asunto) y **no guardan nada hasta que se presione «Agregar»**. Si la audiencia ya está en el portal, dice «Ya está en Audiencias del portal».
+
 ## 2026-11-27 (233)
 - **«Actualizar redes» ahora detecta las publicaciones nuevas y las enlaza con el calendario** — pedido del usuario («salió otra publicación y el portal no la detecta; la idea es que se actualice con este botón»). Antes el botón solo mostraba lo leído en vivo en un recuadro aparte y el calendario seguía marcando la pieza como pendiente:
   - Lo que se lee en vivo de YouTube y Spotify se **fusiona** con lo guardado: cada publicación nueva se agrega a las publicadas y a la tabla de publicaciones.

@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
-import { leerCorreosBandeja, mensajeError } from '../lib/graph';
+import { leerCorreosBandeja, leerCuerpoCorreo, mensajeError } from '../lib/graph';
+import { ModalCrearDesdeRama, Ico } from './RamaJudicialTab';
 import { CORREO_GERENCIA_ACCESO } from '../lib/solicitudAccesoExpediente';
-import { clasificarCorreo, procesosDeCorreo, radicadosEnTexto, TIPOS_CORREO } from '../lib/ramaResumen';
+import { clasificarCorreo, procesosDeCorreo, radicadosEnTexto, audienciaRegistrada, TIPOS_CORREO } from '../lib/ramaResumen';
 
 // «Correo de despachos» (2026-11-24, fase 1 de las novedades por correo): los despachos escriben al correo de la apoderada y una regla de Hotmail reenvía todo lo de
 // @cendoj.ramajudicial.gov.co a Gerencia. Aquí se LEE esa bandeja (solo lectura: no marca como leído, no mueve ni borra), se identifica de qué proceso del portal habla
@@ -28,19 +29,39 @@ function ejemploDemo(){
   ];
 }
 
-export default function CorreosDespachosTab({ procesos, liveMode, notify }){
+// Fecha (yyyy-mm-dd) en hora de Bogotá de un instante ISO.
+function isoBogota(iso){
+  try{ const p = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Bogota', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(iso)); return p; }catch(e){ return String(iso || '').slice(0, 10); }
+}
+
+export default function CorreosDespachosTab({ procesos, liveMode, notify, canWrite, tiposAccion, colaboradores, audiencias, terminos, onCrearAudiencia, onCrearTermino, onCreateTipoTermino }){
   const [buzon, setBuzon] = useState(CORREO_GERENCIA_ACCESO || 'gerencia@lexaraabogados.com');
   const [desde, setDesde] = useState(hoyMenos(7));
   const [mensajes, setMensajes] = useState(null);
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState('');
   const [filtro, setFiltro] = useState('despachos');
+  const [cuerpos, setCuerpos] = useState({});   // id del correo -> texto completo (solo de los correos de despachos; la vista previa trae 255 caracteres)
+  const [crear, setCrear] = useState(null);   // { tipo, proceso, act, inicial, origen:'correo' }: ventana de crear audiencia/término
+  const puedeCrear = !!(canWrite && onCrearAudiencia && onCrearTermino);
 
   async function leer(){
     setCargando(true); setError('');
     try{
       const lista = liveMode ? await leerCorreosBandeja(buzon, desde) : ejemploDemo();
       setMensajes(lista);
+      setCuerpos({});
+      if(liveMode){
+        // Texto completo solo de los que parecen de un despacho y no son acuses (máx. 40; de a 4 a la vez): ahí viene la fecha de la audiencia o los días del término.
+        const candidatos = lista.filter(m => !/^(respuesta automatica|automatic reply|delivered|entregado)/i.test(m.asunto) && esDeDespacho(m, radicadosEnTexto(m.asunto + ' ' + m.resumen))).slice(0, 40);
+        (async () => {
+          for(let i = 0; i < candidatos.length; i += 4){
+            const grupo = candidatos.slice(i, i + 4);
+            const textos = await Promise.all(grupo.map(m => leerCuerpoCorreo(buzon, m.id)));
+            setCuerpos(prev => { const n = { ...prev }; grupo.forEach((m, k) => { if(textos[k]) n[m.id] = textos[k]; }); return n; });
+          }
+        })();
+      }
       notify?.(liveMode ? `Se leyeron ${lista.length} correos de ${buzon} (solo lectura).` : 'Modo demo: correos de ejemplo (no hay buzón real).', 'success');
     }catch(err){
       console.error(err);
@@ -49,11 +70,21 @@ export default function CorreosDespachosTab({ procesos, liveMode, notify }){
   }
 
   const filas = useMemo(() => (mensajes || []).map(m => {
-    const texto = m.asunto + ' ' + m.resumen;
+    const completo = m.resumen + ' ' + (cuerpos[m.id] || '');
+    const texto = m.asunto + ' ' + completo;
     const rad = radicadosEnTexto(texto);
-    const cls = clasificarCorreo(m.asunto, m.resumen, m.remitente + ' ' + m.remitenteNombre);
-    return { ...m, rad, cls, procesos: cls.ruido ? [] : procesosDeCorreo(texto, procesos), despacho: esDeDespacho(m, rad) };
-  }), [mensajes, procesos]);
+    const cls = clasificarCorreo(m.asunto, completo, m.remitente + ' ' + m.remitenteNombre);
+    return { ...m, rad, cls, procesos: cls.ruido ? [] : procesosDeCorreo(texto, procesos), despacho: esDeDespacho(m, rad), conTexto: !!cuerpos[m.id] };
+  }), [mensajes, procesos, cuerpos]);
+
+  function abrirCrear(tipo, f, proceso){
+    const recibido = isoBogota(f.fecha);
+    const act = { actuacion: f.asunto.replace(/\s+/g, ' ').trim(), fecha: recibido };
+    const inicial = tipo === 'audiencias'
+      ? { fecha: f.cls.audiencia.fecha, hora: f.cls.audiencia.hora || '', observacion: ('Correo del despacho ' + dma(recibido) + ' · ' + act.actuacion + (f.cls.audiencia.modalidad ? ' — ' + f.cls.audiencia.modalidad : '')).slice(0, 250), textoSugerencia: f.cls.audiencia.tipo || act.actuacion }
+      : { fecha: recibido, diasHabiles: f.cls.terminoDias, observacion: ('Correo del despacho ' + dma(recibido) + ' · ' + act.actuacion + ' — término de ' + f.cls.terminoDias + ' días').slice(0, 250), textoSugerencia: act.actuacion };
+    setCrear({ tipo, proceso, act, inicial, origen: 'correo' });
+  }
 
   const conteo = useMemo(() => ({
     todos: filas.length,
@@ -70,7 +101,7 @@ export default function CorreosDespachosTab({ procesos, liveMode, notify }){
 
   return (
     <div className="field-section">
-      <p className="rama-fuente">Aquí aparecen los correos que los juzgados y despachos envían a nuestro correo de notificaciones (Gerencia). El portal los lee, dice de qué proceso es cada uno y de qué se trata (auto, audiencia, traslado…). <strong>Solo lee: no borra, no mueve ni cambia nada del correo.</strong> Por ahora tampoco crea nada en el portal: sirve para ver qué llegó y revisarlo.</p>
+      <p className="rama-fuente">Aquí aparecen los correos que los juzgados y despachos envían a nuestro correo de notificaciones (Gerencia). El portal los lee, dice de qué proceso es cada uno y de qué se trata (auto, audiencia, traslado…). <strong>Solo lee: no borra, no mueve ni cambia nada del correo.</strong> Cuando el correo trae una audiencia o un término, aparece el botón para abrir el formulario ya lleno; <strong>no se guarda nada hasta que usted presione «Agregar»</strong>.</p>
       <div className="rama-fechas">
         <label>Buzón <input type="text" value={buzon} onChange={e => setBuzon(e.target.value)} style={{ minWidth: 260 }} /></label>
         <label>Desde <input type="date" value={desde} onChange={e => setDesde(e.target.value)} /></label>
@@ -99,16 +130,32 @@ export default function CorreosDespachosTab({ procesos, liveMode, notify }){
                         {f.cls.audiencia && <div>Audiencia{f.cls.audiencia.cancelada ? ' (cancelada)' : ''}: <strong>{dma(f.cls.audiencia.fecha)}{f.cls.audiencia.hora ? ' ' + f.cls.audiencia.hora : ''}</strong><br /><span className="rama-res-suave">{[f.cls.audiencia.tipo, f.cls.audiencia.modalidad].filter(Boolean).join(' · ')}</span></div>}
                         {f.cls.terminoDias > 0 && <div>Término: <strong>{f.cls.terminoDias} días</strong><br /><span className="rama-res-suave">según el texto; verifique</span></div>}
                       </td>
-                      <td className="rama-acc">{f.enlace && <a className="btn-secondary rama-btn" href={f.enlace} target="_blank" rel="noopener noreferrer">Abrir correo</a>}</td>
+                      <td className="rama-acc">
+                        {puedeCrear && !f.cls.ruido && f.procesos.map(p => {
+                          const mias = (audiencias || []).filter(r => String(r.Proceso) === String(p.id));
+                          const etiqueta = f.procesos.length > 1 ? ' (' + (p.Radicado || p.NoCompleto) + ')' : '';
+                          return (
+                            <div key={p.id}>
+                              {f.cls.audiencia && !f.cls.audiencia.cancelada && (audienciaRegistrada(f.cls.audiencia, mias)
+                                ? <span className="rama-res-ok">Ya está en Audiencias del portal{etiqueta}</span>
+                                : <button type="button" className="rama-btn rama-btn--crear" onClick={() => abrirCrear('audiencias', f, p)} title="Abre el formulario de Audiencias con la fecha y hora de este correo; no guarda hasta «Agregar»"><Ico n="mas" />Crear audiencia{etiqueta}</button>)}
+                              {f.cls.terminoDias > 0 && <button type="button" className="rama-btn rama-btn--crear" onClick={() => abrirCrear('terminos', f, p)} title="Abre el formulario de Términos con la fecha de llegada del correo y los días que dice su texto; no guarda hasta «Agregar»"><Ico n="mas" />Crear término{etiqueta}</button>}
+                            </div>
+                          );
+                        })}
+                        {f.enlace && <a className="btn-secondary rama-btn" href={f.enlace} target="_blank" rel="noopener noreferrer">Abrir correo</a>}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
           )}
+          {liveMode && Object.keys(cuerpos).length === 0 && filas.some(f => f.despacho) && <p className="rama-res-suave">Leyendo el texto completo de los correos de despachos para encontrar la fecha de la audiencia…</p>}
           <p className="rama-res-nota">Las fechas de audiencia y los días de término que se muestran salen del texto del correo y son solo una guía: confírmelos siempre en el auto o el oficio antes de registrarlos.</p>
         </>
       )}
+      {crear && <ModalCrearDesdeRama crear={crear} proceso={crear.proceso} tiposAccion={tiposAccion} colaboradores={colaboradores} notify={notify} onCrearAudiencia={onCrearAudiencia} onCrearTermino={onCrearTermino} onCreateTipoTermino={onCreateTipoTermino} onCerrar={() => setCrear(null)} />}
     </div>
   );
 }

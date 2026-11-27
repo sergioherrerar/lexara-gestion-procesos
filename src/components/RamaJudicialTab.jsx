@@ -41,7 +41,7 @@ function BotonSiugj({ rad, despacho, notify }){
   if(!esJurisdiccionOrdinaria(rad, despacho)) return null;
   return <button type="button" className="rama-btn rama-btn--siugj" onClick={() => abrirSiugjConCup(rad, notify)} title="Copia el CUP de SIUGJ (radicado con guion después de los 12 primeros dígitos) y abre «Consultar procesos» de SIUGJ: péguelo, marque el captcha y busque."><Ico n="siugj" />Copiar CUP</button>;
 }
-function Ico({ n }){
+export function Ico({ n }){
   if(n === 'siugj') return <img className="rama-btn-logo" src={logoSiugj} alt="SIUGJ" />;
   if(n === 'escudo') return <img className="rama-btn-ico rama-btn-escudo" src={escudoColombia} alt="" />;
   return <svg className="rama-btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={ICONOS[n]} /></svg>;
@@ -143,7 +143,7 @@ function ResumenRama({ acts, audiencias, terminos, hoy, puedeCrear, onCrear }){
 }
 
 // Ventana para crear la audiencia o el término desde una actuación: el formulario del portal ya lleno; solo se guarda con «Agregar».
-function ModalCrearDesdeRama({ crear, proceso, tiposAccion, colaboradores, notify, onCrearAudiencia, onCrearTermino, onCreateTipoTermino, onCerrar }){
+export function ModalCrearDesdeRama({ crear, proceso, tiposAccion, colaboradores, notify, onCrearAudiencia, onCrearTermino, onCreateTipoTermino, onCerrar }){
   useEffect(() => {
     const f = e => { if(e.key === 'Escape') onCerrar(); };
     window.addEventListener('keydown', f); return () => window.removeEventListener('keydown', f);
@@ -155,8 +155,10 @@ function ModalCrearDesdeRama({ crear, proceso, tiposAccion, colaboradores, notif
   return (
     <div className="confirm-overlay" onClick={e => { if(e.target === e.currentTarget) onCerrar(); }}>
       <div className="rama-modal" role="dialog" aria-modal="true" aria-label={esAud ? 'Crear audiencia desde la Rama' : 'Crear término desde la Rama'}>
-        <h4>{esAud ? 'Crear audiencia' : 'Crear término'} desde la actuación de la Rama</h4>
-        <p className="rama-res-suave">{crear.act.actuacion} · {fechaDMA(crear.act.fecha)}. {esAud ? 'Fecha y hora salen del texto de la actuación' : 'La Rama marca que el término finaliza el ' + fechaDMA(crear.finaliza) + '; la fecha de notificación es el último día hábil antes de que inicie y los días hábiles son los del término'}. <strong>Verifíquelos contra el auto antes de agregar.</strong></p>
+        <h4>{esAud ? 'Crear audiencia' : 'Crear término'} desde {crear.origen === 'correo' ? 'el correo del despacho' : 'la actuación de la Rama'}</h4>
+        {crear.origen === 'correo'
+          ? <p className="rama-res-suave">«{crear.act.actuacion}» · recibido el {fechaDMA(crear.act.fecha)}. {esAud ? 'La fecha y la hora salen del texto del correo' : 'La fecha de notificación es el día en que llegó el correo y los días hábiles son los que dice su texto'}. <strong>Verifíquelos contra el auto o la invitación antes de agregar.</strong> No se guarda nada hasta que presione «Agregar».</p>
+          : <p className="rama-res-suave">{crear.act.actuacion} · {fechaDMA(crear.act.fecha)}. {esAud ? 'Fecha y hora salen del texto de la actuación' : 'La Rama marca que el término finaliza el ' + fechaDMA(crear.finaliza) + '; la fecha de notificación es el último día hábil antes de que inicie y los días hábiles son los del término'}. <strong>Verifíquelos contra el auto antes de agregar.</strong></p>}
         <FormularioNuevo
           tipo={crear.tipo} procesos={[proceso]} procesoFijo={proceso} tiposAccion={tiposAccion} colaboradores={colaboradores} notify={notify}
           inicial={crear.inicial} onCrear={onCrear} onCreateTipoTermino={onCreateTipoTermino}

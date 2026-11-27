@@ -1284,6 +1284,18 @@ export async function leerCorreosBandeja(correoBuzon, desdeISO, maxCorreos = 300
   return salida;
 }
 
+// Texto completo de UN correo del buzón (solo lectura), recortado: la vista previa de Graph trae apenas 255 caracteres y la fecha de una audiencia (p. ej. «Cuándo: …» de la invitación de Teams)
+// suele estar más abajo. Devuelve '' si no se pudo leer.
+export async function leerCuerpoCorreo(correoBuzon, idMensaje, maxCaracteres = 6000){
+  try{
+    const url = `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(String(correoBuzon).trim())}/messages/${encodeURIComponent(idMensaje)}?$select=body`;
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${await getMailToken()}`, Prefer: 'outlook.body-content-type="text"' } });
+    if(!res.ok) return '';
+    const j = await res.json();
+    return String((j.body && j.body.content) || '').replace(/\r/g, '').replace(/[ \t]+/g, ' ').slice(0, maxCaracteres);
+  }catch(e){ return ''; }
+}
+
 // Fecha de notificación de una tutela (2026-10-07, pedido explícito del usuario:
 // "la fecha de notificación la tomamos cuando se envíe el primer correo por parte
 // de los correos que ya tienes filtrados"): el instante en que llegó el PRIMER

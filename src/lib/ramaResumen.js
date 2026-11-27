@@ -56,6 +56,7 @@ function aISO(a, m, d){
   return `${y}-${String(mm).padStart(2, '0')}-${String(dd).padStart(2, '0')}`;
 }
 function horaDespues(texto){
+  if(/^\s*[,;-]?\s*\d{1,2}:\d{2}/.test(texto)) texto = 'a las ' + texto.replace(/^\s*[,;-]?\s*/, '');   // la hora pegada a la fecha (invitaciones de Teams: «30 de noviembre de 2026 9:00 a. m.»)
   const m = /(?:a\s+las?|siendo\s+las?|hora(?:s)?\s*:?)\s*(\d{1,2})(?:\s*[:.h]\s*(\d{2}))?\s*(a\.?\s?m\.?|p\.?\s?m\.?|horas|hrs?\.?|de la manana|de la tarde|de la noche|del dia|am|pm)?/.exec(texto);
   if(!m) return '';
   let h = +m[1]; const min = m[2] ? +m[2] : 0; const marca = (m[3] || '').replace(/[.\s]/g, '');
@@ -78,9 +79,9 @@ export function fechasEnTexto(texto){
 
 // ---------- audiencias y términos de una actuación ----------
 function tipoDeAudiencia(textoNorm){
-  const m = /audiencia\s+(inicial|de pruebas|de juzgamiento|de conciliacion|de tramite|de alegatos|de instruccion|unica|especial|de fallo|de sustentacion|concentrada|de resolucion de excepciones|de sentencia|virtual|de verificacion|de contradiccion)/.exec(textoNorm);
+  const m = /audiencia\s+(?:de\s+)?(inicial|pruebas|juzgamiento|conciliacion|tramite|alegatos|instruccion|unica|especial|fallo|sustentacion|concentrada|resolucion de excepciones|sentencia|virtual|verificacion|contradiccion)/.exec(textoNorm);
   if(!m) return /audiencia/.test(textoNorm) ? 'Audiencia' : '';
-  return 'Audiencia ' + m[1];
+  return 'Audiencia ' + (['inicial', 'unica', 'especial', 'virtual', 'concentrada'].includes(m[1]) ? '' : 'de ') + m[1];
 }
 function modalidadDeAudiencia(textoNorm){
   const plataforma = /microsoft teams|\bteams\b/.test(textoNorm) ? 'Microsoft Teams' : /lifesize/.test(textoNorm) ? 'Lifesize' : /\bzoom\b/.test(textoNorm) ? 'Zoom' : /google meet|\bmeet\b/.test(textoNorm) ? 'Google Meet' : '';
@@ -215,6 +216,7 @@ export function radicadosEnTexto(texto){
     .replace(/(\d{12})\s*-\s*(\d{4})\s*-?\s*(\d{5})\s*-?\s*(\d{2})/g, '$1$2$3$4')
     .replace(/(\d{5})-(\d{2})-(\d{2})-(\d{3})-(\d{4})-(\d{5})\b/g, '$1$2$3$4$5$6');
   const c21 = new Set();
+  (t.match(/guid=(\d{23})/gi) || []).forEach(x => c21.add(x.replace(/\D/g, '').slice(0, 21)));   // enlaces de SAMAI: ...list_procesos.aspx?guid=<radicado de 23 dígitos><más>
   (limpio.match(/\b\d{23}\b/g) || []).forEach(x => c21.add(x.slice(0, 21)));
   (limpio.match(/\b\d{21}\b/g) || []).forEach(x => c21.add(x));
   const cortos = new Set();
@@ -222,6 +224,10 @@ export function radicadosEnTexto(texto){
   return { c21: [...c21], cortos: [...cortos] };
 }
 
+/** Quita del texto la fecha de envío que trae un correo reenviado («Enviados: …», «Enviado el: …», «Sent: …»): no es la fecha de la audiencia. */
+function sinFechaDeEnvio(texto){
+  return String(texto || '').replace(/\b(enviados?(?:\s+el)?|sent)\s*:\s*(?:[A-Za-zÁÉÍÓÚáéíóúñ]+,?\s+)?\d{1,2}\s+de\s+[A-Za-zñáéíóú]+\s+de(?:l)?\s+\d{4}(?:\s+\d{1,2}:\d{2}(?::\d{2})?\s*(?:[ap]\.?\s?m\.?)?)?/gi, ' ');
+}
 export const TIPOS_CORREO = {
   audiencia: 'Audiencia', desistimiento: 'Desistimiento', sentencia: 'Sentencia', traslado: 'Traslado o término', auto: 'Auto', oficio: 'Oficio',
   notificacion: 'Notificación', acuse: 'Acuse o respuesta automática', otro: 'Otro',
@@ -246,7 +252,11 @@ export function clasificarCorreo(asunto, vista, remitente, hoy = hoyISO()){
   else if(/notificacion|estado|edicto|citacion|comunicacion/.test(a)) tipo = 'notificacion';
   let audiencia = null;
   if(!ruido && /audiencia|diligencia/.test(t)){
-    const futuras = fechasEnTexto(String(asunto || '') + ' ' + String(vista || '')).filter(x => x.fecha >= hoy).sort((p, q) => p.fecha.localeCompare(q.fecha));
+    const completo = sinFechaDeEnvio(String(asunto || '') + ' ' + String(vista || ''));
+    // Invitaciones de Teams: «Cuándo: lunes, 30 de noviembre de 2026 9:00 a. m.-9:30 a. m.» es la fecha de la audiencia
+    const cu = /cu[aá]ndo\s*:\s*([^\n]{0,90})/i.exec(completo);
+    const deCuando = cu ? fechasEnTexto(cu[1]).filter(x => x.fecha >= hoy) : [];
+    const futuras = (deCuando.length ? deCuando : fechasEnTexto(completo).filter(x => x.fecha >= hoy)).sort((p, q) => p.fecha.localeCompare(q.fecha));
     if(futuras.length) audiencia = { fecha: futuras[0].fecha, hora: futuras[0].hora, tipo: tipoDeAudiencia(t), modalidad: modalidadDeAudiencia(t), cancelada: /^cancelado|cancel/.test(a) };
   }
   const m = !ruido && /(?:termino|plazo|traslado|dentro de)[^.]{0,60}?\b(\d{1,2})\s*(?:\(\d+\)\s*)?dias(?:\s+habiles)?/.exec(t);
