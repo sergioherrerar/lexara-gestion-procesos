@@ -22,6 +22,7 @@ import SolicitudVacacionesTab from './SolicitudVacacionesTab';
 import RevisionProcesosTab from './RevisionProcesosTab';
 import CoberturaRDLTab from './CoberturaRDLTab';
 import PropuestasAceptadasTab from './PropuestasAceptadasTab';
+import EtapasPorCobrarTab from './EtapasPorCobrarTab';
 import CruceArchivosTab from './CruceArchivosTab';
 import CruceDesistimientosTab from './CruceDesistimientosTab';
 import CrearLinkCompartirTab from './CrearLinkCompartirTab';
@@ -76,6 +77,7 @@ const TABS = [
   {key:'procesos', label:'Procesos Judiciales'},
   {key:'correoDespachos', label:'Correo de despachos'},
   {key:'propuestasAceptadas', label:'Propuestas aceptadas'},
+  {key:'etapasPorCobrar', label:'Etapas por cobrar'},
   {key:'redesSociales', label:'Redes sociales'},
   {key:'horasExtras', label:'Horas Extras'},
   {key:'vacaciones', label:'Solicitud de vacaciones'},
@@ -110,7 +112,7 @@ const SUBTABS_HERRAMIENTAS = [
   {key:'diligenciamientoFormatos', label:'Diligenciamiento Formatos Empresas'},
 ];
 
-export default function InformesView({ procesos, clientes, facturas, desistimientos, tutelas, valoresEntidad, notify, liveMode, config, requestConfirm, corregirEntidadFaltanteTutelas, colaboradores, onCreateHoraExtra, onEditarHoraExtra, onEliminarHoraExtra, horasExtras, vacacionesPeriodos, onSolicitarVacaciones, onEditarPeriodoVacaciones, onEliminarPeriodoVacaciones, onReenviarSolicitudVacaciones, tasasInteres, ipcMensual, onCrearTasaInteres, onEditarTasaInteres, onEliminarTasaInteres, onCrearIPC, onEditarIPC, onEliminarIPC, role, canWrite, tiposAccion, audiencias, terminos, onCrearAudiencia, onCrearTermino, onCreateTipoTermino, onCrearProcesoDesdePropuesta }){
+export default function InformesView({ procesos, clientes, facturas, desistimientos, tutelas, valoresEntidad, notify, liveMode, config, requestConfirm, corregirEntidadFaltanteTutelas, colaboradores, onCreateHoraExtra, onEditarHoraExtra, onEliminarHoraExtra, horasExtras, vacacionesPeriodos, onSolicitarVacaciones, onEditarPeriodoVacaciones, onEliminarPeriodoVacaciones, onReenviarSolicitudVacaciones, tasasInteres, ipcMensual, onCrearTasaInteres, onEditarTasaInteres, onEliminarTasaInteres, onCrearIPC, onEditarIPC, onEliminarIPC, role, canWrite, tiposAccion, audiencias, terminos, onCrearAudiencia, onCrearTermino, onCreateTipoTermino, onCrearProcesoDesdePropuesta, formasPago, ordenesCompra }){
   const [tab, setTab] = useState('clientesPagos');
   const [subTabClientesPagos, setSubTabClientesPagos] = useState('informeCliente');
   const [subTabTutelas, setSubTabTutelas] = useState('informeDiario');
@@ -594,6 +596,7 @@ export default function InformesView({ procesos, clientes, facturas, desistimien
       </div>
       )}
 
+      {tab==='etapasPorCobrar' && <EtapasPorCobrarTab modo="informes" procesos={procesos} formasPago={formasPago} facturas={facturas} ordenesCompra={ordenesCompra} clientes={clientes} config={config} liveMode={liveMode} notify={notify} canWrite={canWrite} />}
       {tab==='propuestasAceptadas' && <PropuestasAceptadasTab config={config} liveMode={liveMode} notify={notify} canWrite={canWrite} clientes={clientes} onCrearProceso={onCrearProcesoDesdePropuesta} />}
       {tab==='correoDespachos' && <CorreosDespachosTab procesos={procesos} liveMode={liveMode} notify={notify} canWrite={canWrite} tiposAccion={tiposAccion} colaboradores={colaboradores} audiencias={audiencias} terminos={terminos} onCrearAudiencia={onCrearAudiencia} onCrearTermino={onCrearTermino} onCreateTipoTermino={onCreateTipoTermino} />}
       {tab==='redesSociales' && <RedesSocialesInforme liveMode={liveMode} notify={notify} esAdministrador={role === 'Administrador'} urlConsulta={config?.RAMA_JUDICIAL_URL} />}

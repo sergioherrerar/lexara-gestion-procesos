@@ -3384,7 +3384,7 @@ const MESES_ETIQUETA = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 
 export function etiquetaPropuesta(fechaISO){
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(fechaISO || ''));
   if(!m) return 'Pro';
-  return 'Pro ' + Number(m[3]) + ' ' + MESES_ETIQUETA[Number(m[2]) - 1] + ' ' + m[1];
+  return 'Pro ' + m[3] + ' ' + MESES_ETIQUETA[Number(m[2]) - 1] + ' ' + m[1];   // día con dos cifras: «Pro 05 Ene 2026» (pedido del usuario)
 }
 async function subirContenido(driveId, padreId, nombre, cuerpo, tipo, conflicto){
   const token = await getGraphToken();

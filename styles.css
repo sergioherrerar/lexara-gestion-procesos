@@ -2516,3 +2516,24 @@
   .prop-hoja .field-info{background:none; border:0; padding:0; margin-top:3px; font-size:11.5px; font-style:italic; color:#88a099;}
   .prop-hoja .rama-res-suave{font-size:12px;}
   @media (max-width:640px){ .prop-mesa{padding:12px 6px; gap:16px;} .prop-hoja{padding:34cqw 6cqw 14cqw;} }
+
+  /* Navegación entre procesos de la misma entidad: primero · atrás · siguiente · último + buscador (2026-11-28). Botones con el borde dorado y el verde de Lexara. */
+  .proc-nav{position:absolute; top:58px; right:26px; display:flex; flex-direction:column; align-items:flex-end; gap:6px; z-index:5; max-width:calc(100% - 420px);}
+  .proc-nav-botones{display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:flex-end;}
+  .proc-nav-btn{width:46px; height:36px; display:inline-flex; align-items:center; justify-content:center; background:#fff; color:var(--verde-oscuro,#00463e); border:2px solid #f9bb35; border-radius:8px; cursor:pointer; padding:0; transition:background .12s, transform .08s;}
+  .proc-nav-btn:hover:not(:disabled){background:#fff5d6;}
+  .proc-nav-btn:active:not(:disabled){transform:translateY(1px);}
+  .proc-nav-btn:focus-visible, .proc-nav-buscar input:focus-visible{outline:3px solid rgba(0,70,62,.35); outline-offset:1px;}
+  .proc-nav-btn:disabled{opacity:.38; cursor:default; border-color:#e6d9ae;}
+  .proc-nav-buscar{position:relative; display:flex; align-items:center; background:#fff; border:2px solid #f9bb35; border-radius:8px; height:36px; padding:0 10px 0 10px; gap:6px; color:var(--verde-oscuro,#00463e); min-width:230px;}
+  .proc-nav-buscar input{border:0; background:transparent; outline:none; font:inherit; font-size:13px; width:100%; color:var(--texto,#1c2624);}
+  .proc-nav-resultados{position:absolute; top:calc(100% + 6px); right:-2px; width:min(460px, 86vw); max-height:300px; overflow:auto; list-style:none; margin:0; padding:4px; background:#fff; border:1px solid var(--gris-linea,#d9e2e0); border-radius:10px; box-shadow:0 10px 30px rgba(0,40,35,.22); z-index:30;}
+  .proc-nav-resultados li button{display:block; width:100%; text-align:left; background:none; border:0; padding:8px 10px; border-radius:8px; cursor:pointer; font:inherit; font-size:13px; color:inherit;}
+  .proc-nav-resultados li button:hover, .proc-nav-resultados li button:focus-visible{background:#eef6f3; outline:none;}
+  .proc-nav-resultados li button strong{font-family:var(--font-mono); color:var(--verde-oscuro,#00463e); margin-right:6px;}
+  .proc-nav-resultados li button span{font-weight:600;}
+  .proc-nav-resultados li button em{color:var(--texto-suave,#5f7a74); font-style:normal; font-size:12px;}
+  .proc-nav-vacio{padding:10px; font-size:12.5px; color:var(--texto-suave,#5f7a74);}
+  .proc-nav-pos{font-size:11.5px; font-weight:600; letter-spacing:.03em; color:var(--texto-suave,#5f7a74); text-transform:uppercase;}
+  @media (max-width:980px){ .proc-nav{position:static; align-items:stretch; max-width:none; margin:2px 0 12px;} .proc-nav-botones{justify-content:flex-start;} .proc-nav-buscar{flex:1 1 220px; min-width:0;} .proc-nav-resultados{left:0; right:auto;} }
+  @media (min-width:981px){ .drawer-head:has(.proc-nav) h2, .drawer-head:has(.proc-nav) .eyebrow{max-width:calc(100% - 500px);} }

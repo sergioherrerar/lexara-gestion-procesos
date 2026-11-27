@@ -1,5 +1,6 @@
 import { facturaDeOrden } from '../lib/cruceFacturasOrdenes';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import NavegadorProcesos from './NavegadorProcesos';
 import {
   stripHtml, estadoComoTexto, estadoBadgeClass, findClienteByNombre,
   facturasForProceso, ordenesCompraForProceso, formasPagoForProceso, desistimientosForProceso, audienciasForProceso, terminosForProceso, facturaNumero, ordenCompraNumero,
@@ -283,8 +284,10 @@ function renderGenericField(key, type, form, setField, canWrite){
 }
 const EMPTY_NEW_CLIENTE = {RazonSocial:"", Nit:"", Direccion:"", Telefono:"", Correo:""};
 
-export default function ProcesoDrawer({ pestanaInicial, onRamaVista, proceso, clientes, colaboradores, facturas, ordenesCompra, formasPago, desistimientos, audiencias, terminos, tiposAccion, liveMode, onClose, onSave, onNavigateAway, onCreateCliente, onOpenFactura, onPrintFactura, onCreateFactura, onOpenOrdenCompra, onPrintOrdenCompra, onCreateOrdenCompra, onOpenFormaPago, onCreateFormaPago, onOpenDesistimiento, onCreateDesistimiento, onCrearAudiencia, onEditarAudiencia, onEliminarAudiencia, onCrearTermino, onEditarTermino, onEliminarTermino, onCreateTipoTermino, saving, canWrite = true, config, notify }){
+export default function ProcesoDrawer({ procesosLista, onNavegarProceso, requestConfirm, pestanaInicial, onRamaVista, proceso, clientes, colaboradores, facturas, ordenesCompra, formasPago, desistimientos, audiencias, terminos, tiposAccion, liveMode, onClose, onSave, onNavigateAway, onCreateCliente, onOpenFactura, onPrintFactura, onCreateFactura, onOpenOrdenCompra, onPrintOrdenCompra, onCreateOrdenCompra, onOpenFormaPago, onCreateFormaPago, onOpenDesistimiento, onCreateDesistimiento, onCrearAudiencia, onEditarAudiencia, onEliminarAudiencia, onCrearTermino, onEditarTermino, onEliminarTermino, onCreateTipoTermino, saving, canWrite = true, config, notify }){
   const [form, setForm] = useState(null);
+  const formInicial = useRef('');   // el formulario tal como se abrió: para avisar si hay cambios sin guardar al pasar a otro proceso
+  const conservarPestana = useRef(false);   // al navegar entre procesos se queda en la misma pestaña (p. ej. Rama Judicial)
   const [showNewCliente, setShowNewCliente] = useState(false);
   const [newCliente, setNewCliente] = useState(EMPTY_NEW_CLIENTE);
   const [nuevoClienteError, setNuevoClienteError] = useState("");
@@ -463,14 +466,26 @@ export default function ProcesoDrawer({ pestanaInicial, onRamaVista, proceso, cl
           : (seguro || "");
       }));
       setForm(initial);
+      formInicial.current = JSON.stringify(initial);
       setShowNewCliente(false);
       setNewCliente(EMPTY_NEW_CLIENTE);
       setNuevoClienteError("");
-      setActiveTab(pestanaInicial || 'datos');
+      if(conservarPestana.current) conservarPestana.current = false; else setActiveTab(pestanaInicial || 'datos');
     } else {
       setForm(null);
     }
   }, [proceso]);
+
+  // Pasar a otro proceso (botones de navegación): si hay cambios sin guardar, se pregunta antes.
+  function irAProceso(destino){
+    if(!destino || !onNavegarProceso) return;
+    const hayCambios = !!form && formInicial.current && JSON.stringify(form) !== formInicial.current;
+    const pasar = () => { conservarPestana.current = true; onNavegarProceso(destino.id); };
+    if(hayCambios && canWrite){
+      const msg = 'Este proceso tiene cambios sin guardar. Si pasa a otro proceso se pierden. ¿Pasar de todos modos?';
+      if(requestConfirm) requestConfirm(msg, pasar); else if(window.confirm(msg)) pasar();
+    } else pasar();
+  }
 
   useEscapeToClose(!!proceso, onClose);
 
@@ -723,6 +738,7 @@ export default function ProcesoDrawer({ pestanaInicial, onRamaVista, proceso, cl
           <button className="drawer-close" onClick={onClose}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
           </button>
+          {proceso.id != null && procesosLista && <NavegadorProcesos actual={proceso} procesos={procesosLista} onIr={irAProceso} />}
           <div className="eyebrow">NUMERO_CORTO — {proceso.Radicado || "—"}</div>
           <h2>{proceso.Cliente || "Sin nombre"}</h2>
           <span className={"badge badge-truncate " + estadoBadgeClass(proceso.EstadoVT, proceso.FechaUltimoEstado, proceso.Estado)}>{stripHtml(proceso.Estado) || "—"}</span>
