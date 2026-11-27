@@ -1,5 +1,5 @@
 import { Fragment, useState, useEffect, useMemo } from 'react';
-import { MESES, RED_NOMBRE, ESTADO, BUSTRAL_CALENDARIO, REDES_ORDEN, mesDe, fechaLarga, fechaCorta, totalVistas, nuevosDe, calcularVistaMes, mesesDisponibles, estadisticasPorPublicacion, titulosBustralPorEnlace, claveEnlace, piezasSinPublicarQueCoinciden } from '../lib/redesSociales';
+import { MESES, RED_NOMBRE, ESTADO, BUSTRAL_CALENDARIO, REDES_ORDEN, mesDe, fechaLarga, fechaCorta, totalVistas, nuevosDe, calcularVistaMes, mesesDisponibles, estadisticasPorPublicacion, titulosBustralPorEnlace, claveEnlace, piezasSinPublicarQueCoinciden, fusionarEnVivo } from '../lib/redesSociales';
 import { IconTextButton } from './IconButton';
 import ColumnHeaderMenu from './ColumnHeaderMenu';
 import { useColumnFilters } from '../hooks/useColumnFilters';
@@ -48,7 +48,10 @@ function idYoutube(url){
   return m ? m[1] : null;
 }
 export default function RedesSocialesInforme({ liveMode, notify, esAdministrador, urlConsulta }){
-  const [datos, setDatos] = useState(null);
+  const [datosBase, setDatosBase] = useState(null);   // lo guardado en el archivo; `datos` = eso + lo que «Actualizar redes» lee en vivo y enlaza con el calendario
+  const [enVivo, setEnVivo] = useState(null);   // lo que hay publicado ahora en YouTube y Spotify (lectura abierta, sin Bustral)
+  const fusion = useMemo(() => (datosBase ? fusionarEnVivo(datosBase, enVivo) : { datos: null, nuevas: [] }), [datosBase, enVivo]);
+  const datos = fusion.datos;
   const [error, setError] = useState('');
   const [mes, setMes] = useState('');
   const [abierta, setAbierta] = useState(null);
@@ -60,7 +63,6 @@ export default function RedesSocialesInforme({ liveMode, notify, esAdministrador
   const { sort: ordenEst, setSortKey: setOrdenEst, sortRows: ordenarEst } = useColumnSort();
 
   const [recargando, setRecargando] = useState(false);
-  const [enVivo, setEnVivo] = useState(null);   // lo que hay publicado ahora en YouTube y Spotify (lectura abierta, sin Bustral)
   const cargar = () => Promise.all([
     fetch(`${import.meta.env.BASE_URL}data/redes-sociales.json?v=${Date.now()}`, { cache: 'no-store' })
       .then(r => { if(!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }),
@@ -71,7 +73,7 @@ export default function RedesSocialesInforme({ liveMode, notify, esAdministrador
   useEffect(() => {
     let vivo = true;
     cargar()
-      .then(j => { if(vivo) setDatos(j); })
+      .then(j => { if(vivo) setDatosBase(j); })
       .catch(() => { if(vivo) setError('No se pudo cargar el archivo de redes sociales (data/redes-sociales.json).'); });
     return () => { vivo = false; };
   }, []);
@@ -88,10 +90,13 @@ export default function RedesSocialesInforme({ liveMode, notify, esAdministrador
           ? fetch(urlConsulta, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ redes: true }) }).then(r => r.json()).catch(() => null)
           : Promise.resolve(null),
       ]);
-      setDatos(j);
+      setDatosBase(j);
       if(vivo && vivo.ok){
         setEnVivo(vivo);
-        notify?.('Redes actualizadas: ' + vivo.publicaciones.length + ' publicaciones leídas en vivo de YouTube y Spotify.', 'info');
+        const nuevas = fusionarEnVivo(j, vivo).nuevas;
+        notify?.(nuevas.length
+          ? 'Redes actualizadas: ' + nuevas.length + (nuevas.length === 1 ? ' publicación nueva detectada' : ' publicaciones nuevas detectadas') + ' — ' + nuevas.map(n => '«' + n.item.titulo + '» (' + (RED_NOMBRE[n.item.red] || n.item.red) + ', ' + fechaCorta(n.item.fecha) + ')' + (n.pieza ? ' ↔ ' + n.pieza.titulo.split(':')[0] : ' (sin pieza del calendario que encaje)')).join('; ') + '. Ya están en el calendario de esta pantalla; Instagram, TikTok y Facebook se leen cuando se pide «actualiza redes» en el chat.'
+          : 'Redes actualizadas: ' + vivo.publicaciones.length + ' publicaciones leídas en vivo de YouTube y Spotify, sin novedades frente a lo guardado.', nuevas.length ? 'success' : 'info');
       }else{
         notify?.('Se recargó la última lectura de Bustral (' + fechaLarga(j.leido) + '), pero no se pudo leer YouTube/Spotify en vivo. Revisa que la consulta en Netlify tenga la última versión.', 'info');
       }
@@ -145,7 +150,7 @@ export default function RedesSocialesInforme({ liveMode, notify, esAdministrador
   // Al cambiar de mes se vuelve a leer el archivo de datos y se pinta de nuevo lo de ese mes (así se ve siempre lo último publicado).
   function cambiarMes(nuevo){
     setMes(nuevo);
-    cargar().then(j => setDatos(j)).catch(() => { /* si falla, se sigue con lo que ya estaba cargado */ });
+    cargar().then(j => setDatosBase(j)).catch(() => { /* si falla, se sigue con lo que ya estaba cargado */ });
   }
 
   const vista = useMemo(() => (datos && mes ? calcularVistaMes(datos, mes) : null), [datos, mes]);
@@ -215,7 +220,7 @@ export default function RedesSocialesInforme({ liveMode, notify, esAdministrador
               Calendario y notas de Bustral leídos el {fechaLarga(calendarioLeido)}{diasCal >= 1 ? ` (hace ${diasCal} ${plural(diasCal)})` : ''}
               {calendarioLeido !== datos.leido && <>; seguidores y métricas, el {fechaLarga(datos.leido)} (hace {diasMet} {plural(diasMet)})</>}. Los estados pueden haber cambiado.
               {esAdministrador
-                ? ' El botón «Actualizar redes» solo recarga lo guardado y lee YouTube y Spotify en vivo; para volver a leer Bustral, escríbele a Claude en el chat: «actualiza redes».'
+                ? ' El botón «Actualizar redes» recarga lo guardado, lee YouTube y Spotify en vivo y enlaza lo nuevo con el calendario; Instagram, TikTok, Facebook y Bustral se leen cuando le escribes a Claude en el chat: «actualiza redes».'
                 : ' El Administrador los actualiza desde Bustral.'}
             </span>
           );
@@ -233,6 +238,8 @@ export default function RedesSocialesInforme({ liveMode, notify, esAdministrador
       </div>
       <p className="save-hint" style={{margin:'-6px 0 0'}}>El correo «Revisión de publicaciones de Lexara Abogados» queda en los Borradores de tu Outlook, con la lista de novedades de {MESES[mm - 1]} (fecha programada, aprobación, fecha y hora de publicación, y lo que no se publicó). No se envía solo.</p>
 
+      {/* «Publicado actualmente» a la izquierda y las fichas a la derecha (en pantallas angostas, una debajo de la otra) */}
+      <div className={'redes-dividida' + (enVivo ? ' redes-dividida--2' : '')}>
       {enVivo && (
         <section className="redes-envivo" aria-label="Publicado actualmente">
           <div className="redes-envivo-cab">
@@ -288,6 +295,7 @@ export default function RedesSocialesInforme({ liveMode, notify, esAdministrador
           <span className="redes-kpi-s">{vista.menos ? vista.menos.p.titulo : 'Se necesitan al menos 2 piezas con vistas'}</span>
           {vista.menos && <FechasKpi p={vista.menos.p} datos={datos} />}
         </div>
+      </div>
       </div>
 
       <div className="redes-seccion">
@@ -405,7 +413,7 @@ export default function RedesSocialesInforme({ liveMode, notify, esAdministrador
       {todasRedes.length > 0 && (
         <div className="redes-seccion">
           <h3>Todas las publicaciones de las redes</h3>
-          <p className="save-hint" style={{margin:'0 0 8px'}}>Cada publicación en cada red (YouTube, Instagram y TikTok) desde el 5 de agosto, con sus vistas, me gusta y comentarios. Usa el menú de cada encabezado para ordenar o filtrar (en «Publicación» se busca por el título de la red y también por el de Bustral); el título abre la publicación en su red. Un guion largo (—) significa que esa red no entrega ese dato (por ejemplo, Instagram no muestra vistas y TikTok no muestra me gusta sin sesión). Leído el {fechaLarga(datos.publicacionesRedes.leido)}; se actualiza al pedir «actualiza redes». Facebook y LinkedIn no se pueden leer sin sesión.</p>
+          <p className="save-hint" style={{margin:'0 0 8px'}}>Cada publicación en cada red (YouTube, Instagram y TikTok) desde el 5 de agosto, con sus vistas, me gusta y comentarios. Usa el menú de cada encabezado para ordenar o filtrar (en «Publicación» se busca por el título de la red y también por el de Bustral); el título abre la publicación en su red. Un guion largo (—) significa que ese dato no se pudo leer (por ejemplo, los comentarios de YouTube y los me gusta de las últimas publicaciones de Instagram, que la red no muestra con número sin acceso de administrador). Leído el {fechaLarga(datos.publicacionesRedes.leido)}; se actualiza al pedir «actualiza redes». Facebook y LinkedIn no se pueden leer sin sesión.</p>
           <p className="save-hint" style={{margin:'0 0 8px'}}>{estadVisibles.length} de {todasRedes.length} publicaciones{hayFiltrosEst && <> · <button type="button" className="clear-filters-link" onClick={limpiarFiltrosEst}>Limpiar filtros de columna</button></>}</p>
           <div className="table-wrap">
             <table className="redes-tabla redes-tabla-estad">

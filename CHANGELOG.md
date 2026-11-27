@@ -2,6 +2,16 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-11-27 (233)
+- **«Actualizar redes» ahora detecta las publicaciones nuevas y las enlaza con el calendario** — pedido del usuario («salió otra publicación y el portal no la detecta; la idea es que se actualice con este botón»). Antes el botón solo mostraba lo leído en vivo en un recuadro aparte y el calendario seguía marcando la pieza como pendiente:
+  - Lo que se lee en vivo de YouTube y Spotify se **fusiona** con lo guardado: cada publicación nueva se agrega a las publicadas y a la tabla de publicaciones.
+  - Si encaja con una pieza programada que aún no figura como publicada (Bustral y las redes titulan distinto), se **enlaza sola** por cercanía de fecha (hasta 14 días) y palabras del título. La fila del calendario pasa a «Publicada a tiempo» o «Publicada con retraso» según corresponda.
+  - El aviso al terminar dice cuáles publicaciones nuevas encontró y con qué pieza del calendario las enlazó (o que no encontró pieza que encaje).
+  - Instagram, TikTok, Facebook y Bustral siguen leyéndose cuando se escribe «actualiza redes» en el chat (requieren sesión).
+- **Informe de redes en dos columnas:** «Publicado actualmente» a la izquierda y las fichas de resumen (más pequeñas) a la derecha; en pantallas angostas y celular quedan una debajo de la otra.
+- **Tabla de publicaciones con menos datos vacíos:** TikTok ahora trae me gusta y comentarios de sus 24 videos (leídos de la página pública de cada video); Instagram trae las vistas de sus 28 Reels (leídas del perfil con la sesión de Chrome) y se agregó el Reel 7 en Instagram (26-nov). Siguen en guion solo los comentarios de YouTube y los me gusta de las 4 publicaciones más recientes de Instagram, que esas redes no muestran con número sin acceso de administrador.
+- **Datos de redes al 27-nov-2026:** Reel 7 «¿Visita del inspector de trabajo?» publicado el 26-nov en YouTube y TikTok; episodio No. 31 de Café Laboral «Colpensiones o fondo privado» en Spotify (21-nov); vistas de TikTok y YouTube al día; TikTok con 312 seguidores y 2.548 me gusta. Queda sin publicar solo el Reel 2 (programado el 10-nov).
+
 ## 2026-11-26 (232)
 - **«Solicitar acceso en SAMAI» detecta si la apoderada ya tiene acceso y habilita o deshabilita el botón** — pedido del usuario. El portal no puede entrar a SAMAI a verlo (pide sesión), pero SAMAI deja rastro en las actuaciones públicas, y de ahí sale el estado de la Dra. Mónica en cada proceso:
   - **«✓ Ya tiene acceso en SAMAI · fecha»** (botón verde, deshabilitado): hay una constancia secretarial «Se autorizó el acceso al sistema SAMAI para el usuari@: MONICA PAOLA QUINTERO…» o aparece radicando memoriales por la ventanilla virtual («RECIBE MEMORIALES ONLINE… MONICA PAOLA QUINTERO… con vinculación al proceso…»). Al pasar el mouse se ve la constancia y el número de solicitud; un enlace «ver detalle / solicitar de nuevo» abre la ventana de datos.

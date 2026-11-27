@@ -93,6 +93,52 @@ export function piezasSinPublicarQueCoinciden(datos, texto){
     .sort((a, b) => String(a.fecha).localeCompare(String(b.fecha)));
 }
 
+// «Actualizar redes» (2026-11-27, pedido del usuario: «salió otra publicación y el portal no la detecta; la idea es que se actualice con este botón»): lo que se lee en vivo de YouTube y Spotify se
+// fusiona con lo guardado. Cada publicación en vivo que no está guardada se agrega y, si encaja con una pieza programada que aún no figura como publicada, se enlaza con ella (misma pieza con otro
+// nombre: Bustral y las redes titulan distinto) por cercanía de fecha y palabras del título. Devuelve { datos, nuevas: [{ item, pieza }] }; `datos` es una copia: no modifica lo guardado.
+const PALABRAS_COMUNES = new Set(['para', 'como', 'sobre', 'desde', 'entre', 'donde', 'cuando', 'todo', 'todos', 'esta', 'este', 'estos', 'pero', 'cafe', 'laboral', 'parte', 'decreto', 'circular', 'durante', 'trabajo']);
+function palabrasClave(t){
+  return new Set(sinTildes(t).replace(/[^a-z0-9ñ ]+/g, ' ').split(' ').filter(w => w.length >= 5 && !PALABRAS_COMUNES.has(w) && !/^\d+$/.test(w)));
+}
+export function fusionarEnVivo(datos, vivo){
+  const lista = (vivo && vivo.publicaciones) || [];
+  if(!datos || !lista.length) return { datos, nuevas: [] };
+  const conocidas = new Set();
+  (datos.publicadas || []).forEach(p => Object.values(p.urls || {}).forEach(u => { if(u) conocidas.add(claveEnlace(u)); }));
+  const enTabla = (datos.publicacionesRedes && datos.publicacionesRedes.publicaciones) || [];
+  enTabla.forEach(e => { if(e.url) conocidas.add(claveEnlace(e.url)); });
+  const desde = [...(datos.publicadas || []).map(p => p.fecha), ...enTabla.map(e => e.fecha)].filter(Boolean).sort()[0] || '0000-00-00';
+  const nuevos = lista.filter(x => x.url && x.fecha && x.fecha >= desde && !conocidas.has(claveEnlace(x.url))).sort((a, b) => String(a.fecha).localeCompare(String(b.fecha)));
+  if(!nuevos.length) return { datos, nuevas: [] };
+
+  const sinPublicar = (datos.programadas || []).filter(g => !piezaPublicadaDe(datos, g));
+  const tomadas = new Set();
+  const enlaces = new Map();   // url nueva → programada
+  const nuevas = [];
+  nuevos.forEach(x => {
+    const palabras = palabrasClave(x.titulo);
+    let mejor = null, mejorPuntos = -1;
+    sinPublicar.forEach(g => {
+      if(tomadas.has(g)) return;
+      const d = Math.abs(diasEntre(g.fecha, x.fecha));
+      if(d > 14) return;
+      const comunes = [...palabrasClave(g.titulo)].filter(w => palabras.has(w)).length;
+      const puntos = comunes * 10 - d;
+      if((comunes >= 1 || d === 0) && puntos > mejorPuntos){ mejor = g; mejorPuntos = puntos; }
+    });
+    if(mejor){ tomadas.add(mejor); enlaces.set(x.url, mejor); }
+    nuevas.push({ item: x, pieza: mejor });
+  });
+
+  const publicadas = [...(datos.publicadas || []), ...nuevos.map(x => ({
+    fecha: x.fecha, titulo: x.titulo, redes: [x.red], urls: { [x.red]: x.url }, vistas: x.vistas != null ? { [x.red]: x.vistas } : {}, reacciones: {}, vivo: true,
+  }))];
+  const programadas = (datos.programadas || []).map(g => { const x = [...enlaces.entries()].find(([, p]) => p === g); return x ? { ...g, piezaUrl: x[0], vivo: true } : g; });
+  const filasTabla = nuevos.filter(x => x.red === 'youtube').map(x => ({ red: x.red, tipo: 'video', fecha: x.fecha, titulo: x.titulo, url: x.url, vistas: x.vistas, meGusta: null, comentarios: null, vivo: true }));
+  const publicacionesRedes = datos.publicacionesRedes ? { ...datos.publicacionesRedes, publicaciones: [...filasTabla, ...enTabla] } : datos.publicacionesRedes;
+  return { datos: { ...datos, publicadas, programadas, publicacionesRedes }, nuevas };
+}
+
 // Todo lo del mes: filas del calendario (programadas cruzadas con lo realmente publicado + publicadas sin programar), indicadores y más/menos vista.
 export function calcularVistaMes(datos, mes){
   const hoy = fechaCalendario(datos);
