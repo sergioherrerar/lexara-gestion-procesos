@@ -127,7 +127,8 @@ export async function consultarRama(url, radicado, { forzar = false, paginas = 3
     datos = null;
     try{ datos = await res.json(); }catch(e){ /* sin cuerpo válido */ }
     if(res.ok && datos?.ok) break;
-    if(intento === 0 && /\b403\b|forbidden/i.test(String(datos?.error || ''))) { await new Promise(r => setTimeout(r, 4000)); continue; }
+    // 403 del cortafuegos o «tiempo agotado» (la Rama a ratos tarda o no responde): se reintenta una vez a los pocos segundos antes de mostrar el error.
+    if(intento === 0 && /\b403\b|forbidden|tiempo agotado|timed? ?out|no respondi/i.test(String(datos?.error || ''))) { await new Promise(r => setTimeout(r, 4000)); continue; }
     break;
   }
   if(!res.ok || !datos?.ok){

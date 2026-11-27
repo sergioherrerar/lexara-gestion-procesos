@@ -48,7 +48,7 @@ export default function EtapasPorCobrarTab({ modo = 'informes', procesos, formas
       }
       setFase('rama'); setProgreso({ hecho: 0, total: objetivos.length });
       let indice = 0, hechos = 0;
-      await Promise.all(Array.from({ length: 4 }, async () => {
+      await Promise.all(Array.from({ length: 3 }, async () => {
         while(indice < objetivos.length && !cancelar.current){
           const o = objetivos[indice++];
           let actuaciones = [];

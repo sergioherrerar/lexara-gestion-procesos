@@ -2,7 +2,7 @@ import { useMemo, useRef, useState } from 'react';
 import { leerInformesRDL, mensajeError } from '../lib/graph';
 import { CORREO_GERENCIA_ACCESO } from '../lib/solicitudAccesoExpediente';
 import { consultarRama, numerosDelProceso, radicadosDelProceso } from '../lib/ramaJudicial';
-import { leerArchivoVigilancia } from '../lib/revisionProcesos';
+import { leerArchivoVigilancia, compararConProcesos, generarExcelRevisionProcesos } from '../lib/revisionProcesos';
 import { parsearInformeRDL, compararCobertura, rangoDelMes, c21De } from '../lib/coberturaRDL';
 import { generarExcelCobertura } from '../lib/coberturaRDLExcel';
 import { hoyISO } from '../lib/ramaResumen';
@@ -35,11 +35,13 @@ function Tabla({ titulo, ayuda, filas, columnas, vacio, abierta = false }){
 }
 const enlaceDrive = u => u ? <a href={u} target="_blank" rel="noopener noreferrer">Abrir carpeta de RDL</a> : '—';
 
-export default function CoberturaRDLTab({ procesos, config, notify, liveMode }){
+export default function CoberturaRDLTab({ procesos, config, notify, liveMode, onAbrirProceso }){
   const hoy = hoyISO();
   const [mes, setMes] = useState(hoy.slice(0, 7));
   const [buzon, setBuzon] = useState(CORREO_GERENCIA_ACCESO || 'gerencia@lexaraabogados.com');
   const [archivo, setArchivo] = useState(null);
+  const [revision, setRevision] = useState(null);   // Excel mensual de RDL contra el portal (las 3 diferencias de la antigua «Revisión de Procesos»)
+  const [generandoRev, setGenerandoRev] = useState(false);
   const [filasExcel, setFilasExcel] = useState(null);
   const [fase, setFase] = useState('');
   const [progreso, setProgreso] = useState({ hecho: 0, total: 0 });
@@ -54,7 +56,11 @@ export default function CoberturaRDLTab({ procesos, config, notify, liveMode }){
 
   async function subirExcel(e){
     const f = e.target.files?.[0]; if(!f) return;
-    try{ const filas = await leerArchivoVigilancia(f); setArchivo(f.name); setFilasExcel(filas); notify?.(`Excel de RDL leído: ${filas.length} procesos.`, 'success'); }
+    try{
+      const filas = await leerArchivoVigilancia(f); setArchivo(f.name); setFilasExcel(filas);
+      const rev = compararConProcesos(filas, procesos); setRevision(rev);   // al instante, sin correo ni Rama
+      notify?.(`Excel de RDL leído: ${filas.length} procesos. Diferencias con el portal: ${rev.noEncontrados.length + rev.terminados.length + rev.faltantesEnArchivo.length}.`, 'success');
+    }
     catch(err){ notify?.('No se pudo leer el Excel: ' + mensajeError(err), 'error'); }
     e.target.value = '';
   }
@@ -79,7 +85,7 @@ export default function CoberturaRDLTab({ procesos, config, notify, liveMode }){
       setProgreso({ hecho: 0, total: objetivos.length });
       const mapa = {}; const fallos = []; let indice = 0, hechos = 0;
       if(liveMode && url){
-        await Promise.all(Array.from({ length: 4 }, async () => {
+        await Promise.all(Array.from({ length: 3 }, async () => {
           while(indice < objetivos.length && !cancelar.current){
             const o = objetivos[indice++];
             try{ const d = await consultarRama(url, o.rad, { paginas: 1 }); const pr = d.procesos && d.procesos[0]; if(pr) mapa[o.k] = pr.actuaciones || []; else fallos.push(o); }
@@ -103,10 +109,22 @@ export default function CoberturaRDLTab({ procesos, config, notify, liveMode }){
     }finally{ setFase(''); }
   }
 
+  async function descargarRevision(){
+    if(!revision) return;
+    setGenerandoRev(true);
+    try{ await generarExcelRevisionProcesos(`Revisión de Procesos ${new Date().toISOString().slice(0, 10)}`, revision, filasExcel, procesos); }
+    finally{ setGenerandoRev(false); }
+  }
+  // ¿RDL cobra este proceso? (está en su Excel mensual)
+  const enExcel = useMemo(() => new Set((filasExcel || []).map(f => c21De(f.radicado)).filter(Boolean)), [filasExcel]);
+  const cobra = p => !filasExcel ? '—' : (c21sDe(p).some(k => enExcel.has(k)) ? 'Sí' : 'No está en su Excel');
+  const abrir = p => onAbrirProceso ? <button type="button" className="celda-enlace" onClick={() => onAbrirProceso(p.id)} title="Abrir este proceso"><strong>{p.Radicado}</strong></button> : <strong>{p.Radicado}</strong>;
+  const colsRev = [{ t: 'Radicado', v: f => f.radicado }, { t: 'Consecutivo', v: f => f.consecutivo }, { t: 'Demandante', v: f => f.demandante }, { t: 'Demandado', v: f => f.demandado }, { t: 'Apoderado', v: f => f.apoderado }, { t: 'Portal Lexara', v: f => f.lexara }];
+
   async function descargar(){
     if(!resultado) return;
     setGenerando(true);
-    try{ await generarExcelCobertura(`Cobertura RDL ${mes}`, resultado, resultado.rango); }
+    try{ await generarExcelCobertura(`Vigilancia RDL ${mes}`, resultado, resultado.rango, revision ? { revision } : null); }
     finally{ setGenerando(false); }
   }
 
@@ -114,9 +132,9 @@ export default function CoberturaRDLTab({ procesos, config, notify, liveMode }){
   const [anioSel, mesSel] = mes.split('-').map(Number);
   return (
     <div className="panel">
-      <div className="panel-head"><h3>Cobertura de la vigilancia (RDL)</h3></div>
+      <div className="panel-head"><h3>Vigilancia RDL</h3></div>
       <p className="save-hint" style={{ margin: '0 0 12px' }}>
-        RDL cobra por proceso cada mes y envía cada día el «Informe de novedades judiciales». Aquí se comparan esos informes con lo que dice la Rama de cada proceso vigente, para saber qué actuaciones importantes <strong>no reportó</strong> (pasados 2 días hábiles), cuáles reportó tarde, a qué procesos cobra sin reportar nada, y cuáles ya terminaron. <strong>Solo lee: no cambia nada del correo ni del portal.</strong>
+        RDL cobra por proceso cada mes y envía cada día el «Informe de novedades judiciales». Aquí se revisa en dos pasos, en la misma pantalla: <strong>1) El Excel mensual de RDL</strong> (lo que ellos dicen vigilar y cobrar) contra el portal: qué procesos no están en el portal, cuáles figuran terminados y siguen cobrando, y qué procesos vigentes no incluyeron. <strong>2) Los informes diarios + la Rama</strong>: qué actuaciones importantes no reportaron (pasados 2 días hábiles), cuáles reportaron tarde, a qué procesos cobran sin reportar nada y cuáles ya terminaron. <strong>Solo lee: no cambia nada del correo ni del portal.</strong>
       </p>
       <div className="rama-fechas" style={{ marginBottom: 10 }}>
         <label>Mes <input type="month" value={mes} onChange={e => setMes(e.target.value)} disabled={ocupado} /></label>
@@ -133,6 +151,22 @@ export default function CoberturaRDLTab({ procesos, config, notify, liveMode }){
       {error && <div className="rama-error" role="alert" style={{ marginTop: 10 }}><strong>No se pudo comparar.</strong> {error}</div>}
       {aviso && <div className="rama-hist-aviso" style={{ marginTop: 10 }}><span>{aviso}</span></div>}
 
+      {revision && (
+        <section className="cob-bloque">
+          <h4 style={{ margin: '18px 0 6px' }}>1) Excel mensual de RDL contra el portal</h4>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 8 }}>
+            <span className="badge badge-alerta">{revision.noEncontrados.length} no están en el portal</span>
+            <span className="badge badge-naranja">{revision.terminados.length} terminados en el portal que RDL cobra</span>
+            <span className="badge badge-gris">{revision.faltantesEnArchivo.length} vigentes del portal que RDL no incluyó</span>
+          </div>
+          <div style={{ marginBottom: 6 }}><IconTextButton icon="excel" variant="secondary" onClick={descargarRevision} disabled={generandoRev}>{generandoRev ? 'Generando…' : 'Descargar Excel de esta revisión'}</IconTextButton></div>
+          <Tabla titulo="Procesos del Excel de RDL que NO están en el portal" ayuda="RDL los vigila (y los cobra) y en el portal no existen: o falta crearlos aquí, o RDL tiene procesos que no son nuestros." filas={revision.noEncontrados} vacio="Todos los procesos del Excel están en el portal." columnas={colsRev} />
+          <Tabla titulo="Terminados en el portal que RDL sigue reportando y cobrando" ayuda="Hay que pedirle a RDL que los saque de la vigilancia." filas={revision.terminados} vacio="RDL no tiene procesos terminados en su lista." columnas={colsRev} />
+          <Tabla titulo="Vigentes del portal que RDL NO incluyó en su Excel" ayuda="Procesos activos que RDL no está vigilando: ahí no habrá informes diarios." filas={revision.faltantesEnArchivo} vacio="RDL incluyó todos los procesos vigentes del portal." columnas={colsRev} />
+        </section>
+      )}
+
+      {R && <h4 style={{ margin: '22px 0 6px' }}>2) Informes diarios de RDL contra la Rama ({NOMBRE_MES[(mesSel || 1) - 1]} {anioSel})</h4>}
       {R && (
         <>
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', margin: '16px 0 10px' }}>
@@ -149,19 +183,19 @@ export default function CoberturaRDLTab({ procesos, config, notify, liveMode }){
 
           <Tabla titulo="Actuaciones importantes que RDL no reportó" abierta ayuda="Están en la Rama, pasaron 2 días hábiles y RDL no las trajo en ningún informe del periodo. Es la evidencia para reclamar el seguimiento."
             filas={R.noReportadas} vacio="RDL reportó todas las actuaciones importantes."
-            columnas={[{ t: 'Proceso', v: f => <><strong>{f.proceso.Radicado}</strong><br /><span className="rama-res-suave">{f.proceso.Demandante || ''}</span></> }, { t: 'Fecha', v: f => dma(f.fecha) }, { t: 'Actuación en la Rama', v: f => f.actuacion }, { t: 'Debió reportarla el', v: f => dma(f.limite) }, { t: 'Carpeta de RDL', v: f => enlaceDrive(f.drive) }]} />
+            columnas={[{ t: 'Proceso', v: f => <>{abrir(f.proceso)}<br /><span className="rama-res-suave">{f.proceso.Demandante || ''}</span></> }, { t: 'Fecha', v: f => dma(f.fecha) }, { t: 'Actuación en la Rama', v: f => f.actuacion }, { t: 'Debió reportarla el', v: f => dma(f.limite) }, { t: '¿RDL lo cobra? (su Excel)', v: f => cobra(f.proceso) }, { t: 'Carpeta de RDL', v: f => enlaceDrive(f.drive) }]} />
           <Tabla titulo="Reportadas tarde" ayuda="RDL sí las reportó, pero pasados más de 2 días hábiles."
             filas={R.tardias} vacio="No hay actuaciones reportadas con retraso."
-            columnas={[{ t: 'Proceso', v: f => f.proceso.Radicado }, { t: 'Actuación', v: f => f.actuacion }, { t: 'Fecha', v: f => dma(f.fecha) }, { t: 'La reportó el', v: f => dma(f.recibido) }, { t: 'Días hábiles de retraso', der: true, v: f => f.retraso }]} />
+            columnas={[{ t: 'Proceso', v: f => abrir(f.proceso) }, { t: 'Actuación', v: f => f.actuacion }, { t: 'Fecha', v: f => dma(f.fecha) }, { t: 'La reportó el', v: f => dma(f.recibido) }, { t: 'Días hábiles de retraso', der: true, v: f => f.retraso }]} />
           <Tabla titulo="Procesos con novedades importantes y ninguna novedad de RDL" ayuda="En el mes la Rama muestra actuaciones importantes y RDL no trajo nada de ese proceso: probablemente no lo están vigilando."
             filas={R.sinNovedadRDL} vacio="Todos los procesos con novedades aparecen en los informes de RDL."
-            columnas={[{ t: 'Proceso', v: f => <><strong>{f.proceso.Radicado}</strong><br /><span className="rama-res-suave">{f.proceso.Demandante || ''}</span></> }, { t: 'Actuaciones importantes en la Rama', der: true, v: f => f.importantes }]} />
+            columnas={[{ t: 'Proceso', v: f => <>{abrir(f.proceso)}<br /><span className="rama-res-suave">{f.proceso.Demandante || ''}</span></> }, { t: 'Actuaciones importantes en la Rama', der: true, v: f => f.importantes }]} />
           <Tabla titulo="Procesos del Excel mensual sin ninguna novedad de RDL" ayuda={filasExcel ? 'RDL los incluye en su Excel (los cobra) y no reportó nada de ellos en el mes. La columna dice si la Rama sí tuvo movimiento.' : 'Suba el Excel mensual de RDL para ver esta lista.'}
             filas={R.cobradosSinNovedad} vacio={filasExcel ? 'Todos los procesos del Excel tuvieron alguna novedad.' : 'Falta el Excel mensual de RDL.'}
             columnas={[{ t: 'Radicado', v: f => f.radicado }, { t: 'Consecutivo', v: f => f.consecutivo }, { t: 'Demandante', v: f => f.demandante }, { t: 'Movimiento en la Rama', der: true, v: f => f.movimientoRama == null ? 'no consultado' : f.movimientoRama }]} />
           <Tabla titulo="Terminados en el portal que RDL sigue reportando" ayuda="Si los cobra, hay que pedirle que los saque de la vigilancia."
             filas={R.terminadosQueReporta} vacio="RDL no reportó procesos terminados."
-            columnas={[{ t: 'Proceso', v: f => f.proceso.Radicado }, { t: 'Radicado', v: f => f.radicado }, { t: 'Última novedad', v: f => dma(f.ultima) }, { t: 'Carpeta de RDL', v: f => enlaceDrive(f.drive) }]} />
+            columnas={[{ t: 'Proceso', v: f => abrir(f.proceso) }, { t: 'Radicado', v: f => f.radicado }, { t: 'Última novedad', v: f => dma(f.ultima) }, { t: 'Carpeta de RDL', v: f => enlaceDrive(f.drive) }]} />
           <Tabla titulo="RDL los reporta y no están en el portal" filas={R.enRdlNoPortal} vacio="Todos los procesos que RDL reportó están en el portal."
             columnas={[{ t: 'Radicado', v: f => f.radicado }, { t: 'Despacho', v: f => f.despacho }, { t: 'Demandante', v: f => f.demandante }, { t: 'Última novedad', v: f => dma(f.ultima) }, { t: 'Carpeta de RDL', v: f => enlaceDrive(f.drive) }]} />
         </>

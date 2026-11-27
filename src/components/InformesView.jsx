@@ -19,7 +19,6 @@ import { agruparPorAbogado, filtrarTutelasPorMes, generarInformeAbogadosTutelasE
 import StackedBarChart from './StackedBarChart';
 import { clasificarHorasExtra, soloFecha, redondear, filtrarHorasExtrasPorMes } from '../lib/horasExtras';
 import SolicitudVacacionesTab from './SolicitudVacacionesTab';
-import RevisionProcesosTab from './RevisionProcesosTab';
 import CoberturaRDLTab from './CoberturaRDLTab';
 import PropuestasAceptadasTab from './PropuestasAceptadasTab';
 import EtapasPorCobrarTab from './EtapasPorCobrarTab';
@@ -104,8 +103,7 @@ const SUBTABS_PROCESOS_JUDICIALES = [
 ];
 const SUBTABS_HERRAMIENTAS = [
   {key:'crearLink', label:'Crear link para compartir'},
-  {key:'revisionProcesos', label:'Revisión de Procesos'},
-  {key:'coberturaRdl', label:'Cobertura RDL'},
+  {key:'coberturaRdl', label:'Vigilancia RDL'},   // une la antigua «Revisión de Procesos» (Excel mensual de RDL) y «Cobertura RDL» (informes diarios + Rama)
   {key:'cruceArchivos', label:'Cruce de Archivos'},
   {key:'cruceDesistimientos', label:'Cruce Desistimientos'},
   {key:'liquidacionIntereses', label:'Liquidación Intereses'},
@@ -966,14 +964,9 @@ export default function InformesView({ procesos, clientes, facturas, desistimien
           </div>
         </div>
         {subTabHerramientas==='crearLink' && <CrearLinkCompartirTab config={config} notify={notify} />}
-        {subTabHerramientas==='revisionProcesos' && (
-          <div style={{marginTop:20}}>
-            <RevisionProcesosTab procesos={procesos} notify={notify} />
-          </div>
-        )}
         {subTabHerramientas==='coberturaRdl' && (
           <div style={{marginTop:20}}>
-            <CoberturaRDLTab procesos={procesos} config={config} notify={notify} liveMode={liveMode} />
+            <CoberturaRDLTab procesos={procesos} config={config} notify={notify} liveMode={liveMode} onAbrirProceso={onAbrirProceso} />
           </div>
         )}
         {subTabHerramientas==='cruceArchivos' && <CruceArchivosTab notify={notify} config={config} liveMode={liveMode} />}

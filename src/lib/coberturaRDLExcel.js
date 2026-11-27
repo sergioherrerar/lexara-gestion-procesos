@@ -13,7 +13,7 @@ function encabezar(ws, columnas){
 const dma = f => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(f || ''); return m ? `${m[3]}/${m[2]}/${m[1]}` : ''; };
 const num = p => (p && (p.NoCompleto || p.Radicado)) || '';
 
-export async function generarExcelCobertura(nombreArchivo, r, mes){
+export async function generarExcelCobertura(nombreArchivo, r, mes, extra){
   const { default: ExcelJS } = await import('exceljs');
   const wb = new ExcelJS.Workbook();
   const S = r.resumen;
@@ -59,6 +59,20 @@ export async function generarExcelCobertura(nombreArchivo, r, mes){
   const w6 = wb.addWorksheet('RDL reporta, no en portal');
   encabezar(w6, [{ header: 'Radicado', key: 'r', width: 26 }, { header: 'Consecutivo', key: 'c', width: 14 }, { header: 'Despacho', key: 'd', width: 36 }, { header: 'Demandante', key: 'd1', width: 30 }, { header: 'Demandado', key: 'd2', width: 30 }, { header: 'Última novedad', key: 'u', width: 16 }, { header: 'Carpeta de RDL (Drive)', key: 'dr', width: 40 }]);
   r.enRdlNoPortal.forEach(x => w6.addRow({ r: x.radicado, c: x.consecutivo, d: x.despacho, d1: x.demandante, d2: x.demandado, u: dma(x.ultima), dr: x.drive }));
+
+  // Si se subió el Excel mensual de RDL: las 3 diferencias contra el portal (lo que antes daba «Revisión de Procesos»), en el mismo archivo
+  if(extra && extra.revision){
+    const rv = extra.revision;
+    const colsRev = [{ header: 'Radicado', key: 'r', width: 28 }, { header: 'Observación', key: 'o', width: 40 }, { header: 'Consecutivo', key: 'c', width: 16 }, { header: 'Portal Lexara', key: 'l', width: 16 }, { header: 'Demandante', key: 'd1', width: 32 }, { header: 'Demandado', key: 'd2', width: 32 }, { header: 'Apoderado', key: 'a', width: 30 }];
+    [['Excel · no están en el portal', rv.noEncontrados], ['Excel · terminados que cobra', rv.terminados], ['Excel · vigentes sin incluir', rv.faltantesEnArchivo]].forEach(([nombre, filas]) => {
+      const w = wb.addWorksheet(nombre); encabezar(w, colsRev);
+      filas.forEach(f => w.addRow({ r: f.radicado, o: f.observacion, c: f.consecutivo, l: f.lexara, d1: f.demandante, d2: f.demandado, a: f.apoderado }));
+    });
+    wr.addRow({ c: '', n: '' });
+    wr.addRow({ c: 'Excel mensual de RDL: procesos que no están en el portal', n: rv.noEncontrados.length });
+    wr.addRow({ c: 'Excel mensual de RDL: terminados en el portal que cobra', n: rv.terminados.length });
+    wr.addRow({ c: 'Excel mensual de RDL: vigentes del portal que no incluyó', n: rv.faltantesEnArchivo.length });
+  }
 
   const buffer = await wb.xlsx.writeBuffer();
   const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });

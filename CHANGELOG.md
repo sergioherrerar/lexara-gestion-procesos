@@ -2,6 +2,15 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-11-28 (252)
+- **«Revisión de Procesos» y «Cobertura RDL» se unen en una sola herramienta: Informes → Herramientas → «Vigilancia RDL»** — pedido del usuario (unirlas sin quitar funciones, mejorándolas). Una sola pantalla en dos pasos:
+  - **1) Excel mensual de RDL contra el portal** (lo de la antigua «Revisión de Procesos», con las mismas 3 diferencias): al subir el Excel sale **al instante**, sin esperar correo ni Rama, qué procesos **no están en el portal**, cuáles están **terminados y RDL sigue cobrando** y qué **vigentes del portal RDL no incluyó**, con su botón de Excel de siempre.
+  - **2) Informes diarios + Rama** (lo de «Cobertura RDL»): las actuaciones importantes que no reportaron, las reportadas tarde, los procesos sin novedades, los terminados que reportan y los que no están en el portal.
+  - **Mejoras al unirlas:** en las actuaciones que RDL no reportó aparece la columna **«¿RDL lo cobra? (su Excel)»** (si el proceso está en su Excel mensual, el reclamo es más fuerte); el **número del proceso es un enlace que lo abre**; y el **Excel de la vigilancia trae también las 3 hojas de diferencias del Excel mensual** y su resumen, todo en un solo archivo. El resto de funciones se conservan.
+
+## 2026-11-28 (251)
+- **Rama Judicial: reintento automático cuando la consulta tarda («tiempo agotado»)** — reporte del usuario (proceso 2010-00397: «La Rama Judicial no respondió la consulta (tiempo agotado)»). La Rama a ratos tarda o no contesta; ahora el portal vuelve a intentarlo solo una vez a los pocos segundos antes de mostrar el error (antes solo lo hacía con el bloqueo 403). Las revisiones masivas («Etapas por cobrar» y «Cobertura RDL») consultan de a 3 y no de a 4, para no saturar la consulta.
+
 ## 2026-11-28 (250)
 - **«Etapas por cobrar» no incluye los contratos que se cobran mensualmente** — aclaración del usuario: el contrato **GJU-31-03-2025-431** (SOS, la factura mensual) se cobra todos los meses y **ninguna etapa** de los procesos de ese contrato se cobra por separado, porque ya van incluidas en la mensualidad. Esas etapas ya no salen en la lista (Informes ni Administración) y la pantalla lo dice («No se incluyen los procesos del contrato GJU-31-03-2025-431 (N etapas)…»). Si más adelante hay otro contrato mensual, se suma a la lista `CONTRATOS_MENSUALES` de `etapasPorCobrar.js`.
 
