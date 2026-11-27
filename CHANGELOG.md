@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-11-28 (248)
+- **«Etapas por cobrar»: clic en el proceso y clic en el contrato** — pedido del usuario. En la tabla (Informes y Administración): al hacer clic en el **proceso** (número corto y cliente) se abre ese proceso; al hacer clic en el **contrato** se abre **el documento del contrato** (en otra pestaña; si el proceso no lo tiene vinculado, abre el proceso para buscarlo y vincularlo); y al hacer clic en la **etapa** se abre la **forma de pago** de ese contrato (etapas, valores y facturas).
+
 ## 2026-11-28 (247)
 - **Navegación entre procesos: botones «primero · atrás · siguiente · último» y un buscador, dentro de cada proceso** — pedido del usuario. En la parte de arriba de la ficha del proceso (a la derecha, donde estaba el espacio libre) hay cuatro botones con el borde dorado y el verde de Lexara y un buscador. **Solo se mueven entre los procesos de la misma Entidad (grupo)** del proceso abierto: si abres uno de GRUPO COLMEDICA, pasan por los de GRUPO COLMEDICA, en el orden de la tabla (por número corto), y el buscador ya viene filtrado a esa entidad («Buscar en GRUPO COLMEDICA…»: por número corto, número completo, cliente, demandante, demandado, despacho o contrato; Enter abre el primer resultado). Debajo dice «Proceso 5 de 38 · GRUPO COLMEDICA». Entre vigentes se navega entre vigentes; si el abierto es un terminado, entre terminados. Al pasar de un proceso a otro **se queda en la misma pestaña** (por ejemplo Rama Judicial) y, si hay **cambios sin guardar**, pregunta antes. Se oculta si la entidad tiene un solo proceso. En pantallas angostas queda en una fila debajo del título.
 

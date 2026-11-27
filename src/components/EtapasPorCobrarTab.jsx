@@ -12,7 +12,7 @@ import { etapasSinCobrar, reglaDeEtapa, detectarEnActuaciones, detectarEnHistori
 const dma = f => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(f || ''); return m ? m[3] + '-' + m[2] + '-' + m[1] : ''; };
 const CLAVE_SMMLV = 'lexara-smmlv';
 
-export default function EtapasPorCobrarTab({ modo = 'informes', procesos, formasPago, facturas, ordenesCompra, clientes, config, liveMode, notify, canWrite, onAbrirBorradorOrdenCompra, onAbrirBorradorFactura }){
+export default function EtapasPorCobrarTab({ modo = 'informes', procesos, formasPago, facturas, ordenesCompra, clientes, config, liveMode, notify, canWrite, onAbrirBorradorOrdenCompra, onAbrirBorradorFactura, onAbrirProceso, onAbrirFormaPago }){
   const admin = modo === 'administracion';
   const [resultados, setResultados] = useState(null);   // clave -> { estado: 'pasada'|'sin-evidencia'|'manual', evidencia }
   const [fase, setFase] = useState('');
@@ -122,9 +122,17 @@ export default function EtapasPorCobrarTab({ modo = 'informes', procesos, formas
                 const r = resultados[x.clave] || {};
                 return (
                   <tr key={x.clave} className={r.estado === 'pasada' ? 'rama-importante' : ''}>
-                    <td>{x.proceso ? <><strong>{x.proceso.Radicado}</strong><br /><span className="rama-res-suave">{x.proceso.Cliente || ''}</span></> : <span className="rama-res-suave">sin proceso con este contrato</span>}</td>
-                    <td className="rama-nota">{x.fp.Contrato}</td>
-                    <td><strong>{etiquetaEtapa(x.etapa)}</strong>{x.cumplidaMarcada && <><br /><span className="badge badge-verde">ya marcada «cumplida»</span></>}</td>
+                    <td>{x.proceso
+                      ? <button type="button" className="celda-enlace" onClick={() => onAbrirProceso?.(x.proceso.id)} title="Abrir este proceso"><strong>{x.proceso.Radicado}</strong><br /><span className="rama-res-suave">{x.proceso.Cliente || ''}</span></button>
+                      : <span className="rama-res-suave">sin proceso con este contrato</span>}</td>
+                    <td className="rama-nota">{(() => {
+                      const link = x.proceso && x.proceso.LinkContrato ? (typeof x.proceso.LinkContrato === 'object' ? (x.proceso.LinkContrato.Url || '') : String(x.proceso.LinkContrato)) : '';
+                      const nombre = x.fp.Contrato || '(sin número de contrato)';
+                      if(link) return <a className="celda-enlace" href={link} target="_blank" rel="noopener noreferrer" title="Abrir el contrato (el documento)">{nombre}</a>;
+                      if(x.proceso) return <button type="button" className="celda-enlace" onClick={() => onAbrirProceso?.(x.proceso.id)} title="Este proceso no tiene el documento del contrato vinculado: abra el proceso para buscarlo y vincularlo">{nombre}</button>;
+                      return <span>{nombre}</span>;
+                    })()}</td>
+                    <td><button type="button" className="celda-enlace" onClick={() => onAbrirFormaPago?.(x.fp.id)} title="Abrir la forma de pago de este contrato (etapas, valores y facturas)"><strong>{etiquetaEtapa(x.etapa)}</strong></button>{x.cumplidaMarcada && <><br /><span className="badge badge-verde">ya marcada «cumplida»</span></>}</td>
                     <td className="rama-num">{x.salarios ? String(x.salarios).replace('.', ',') : '—'}</td>
                     <td>
                       {r.estado === 'pasada' && <><span className="badge badge-verde">Ya pasó</span> <strong>{r.nombre}</strong><br /><span className="rama-res-suave">{r.evidencia.origen}{r.evidencia.fecha ? ' · ' + dma(r.evidencia.fecha) : ''}: «{r.evidencia.texto}»</span></>}

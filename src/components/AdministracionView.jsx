@@ -132,7 +132,7 @@ function DocumentosTab({ colaboradores, config, notify }){
   );
 }
 
-export default function AdministracionView({ formasPago, onCrearProcesoDesdePropuesta, listas, liveMode, onActualizarEquipo, colaboradores, searchQuery, onOpenColaborador, onCreateColaborador, onDeleteColaborador, canWrite = true, onAsignarPagosGerencia, notify, config, tutelas, valoresEntidad, clientes, procesos, facturas, ordenesCompra, onAbrirBorradorOrdenCompra, onAbrirOrdenCompra, onCrearOrdenesCompraEnLote, onCrearFacturasDesdeOrdenes, onAbrirBorradorFactura, horasExtras, onAprobarHoraExtra, vacacionesPeriodos, onCrearPeriodoVacaciones, onEditarPeriodoVacaciones, onEliminarPeriodoVacaciones, onAprobarPeriodoVacaciones,
+export default function AdministracionView({ onAbrirProceso, onAbrirFormaPago, formasPago, onCrearProcesoDesdePropuesta, listas, liveMode, onActualizarEquipo, colaboradores, searchQuery, onOpenColaborador, onCreateColaborador, onDeleteColaborador, canWrite = true, onAsignarPagosGerencia, notify, config, tutelas, valoresEntidad, clientes, procesos, facturas, ordenesCompra, onAbrirBorradorOrdenCompra, onAbrirOrdenCompra, onCrearOrdenesCompraEnLote, onCrearFacturasDesdeOrdenes, onAbrirBorradorFactura, horasExtras, onAprobarHoraExtra, vacacionesPeriodos, onCrearPeriodoVacaciones, onEditarPeriodoVacaciones, onEliminarPeriodoVacaciones, onAprobarPeriodoVacaciones,
   proveedoresGastos, cuentasCobroGastos, pagosPorRealizar, gastos,
   onCrearProveedorGastos, onEditarProveedorGastos, onEliminarProveedorGastos,
   onCrearCuentaCobroGastos, onEditarCuentaCobroGastos, onEliminarCuentaCobroGastos,
@@ -186,7 +186,7 @@ export default function AdministracionView({ formasPago, onCrearProcesoDesdeProp
         />
       )}
       {tab==='documentos' && <DocumentosTab colaboradores={colaboradores} config={config} notify={notify} />}
-      {tab==='etapasPorCobrar' && <EtapasPorCobrarTab modo="administracion" procesos={procesos} formasPago={formasPago} facturas={facturas} ordenesCompra={ordenesCompra} clientes={clientes} config={config} liveMode={liveMode} notify={notify} canWrite={canWrite} onAbrirBorradorOrdenCompra={onAbrirBorradorOrdenCompra} onAbrirBorradorFactura={onAbrirBorradorFactura} />}
+      {tab==='etapasPorCobrar' && <EtapasPorCobrarTab modo="administracion" onAbrirProceso={onAbrirProceso} onAbrirFormaPago={onAbrirFormaPago} procesos={procesos} formasPago={formasPago} facturas={facturas} ordenesCompra={ordenesCompra} clientes={clientes} config={config} liveMode={liveMode} notify={notify} canWrite={canWrite} onAbrirBorradorOrdenCompra={onAbrirBorradorOrdenCompra} onAbrirBorradorFactura={onAbrirBorradorFactura} />}
       {tab==='propuestas' && <PropuestaServiciosTab clientes={clientes} liveMode={liveMode} notify={notify} config={config} canWrite={canWrite} onCrearProceso={onCrearProcesoDesdePropuesta} />}
       {tab==='horasExtras' && (
         <HorasExtrasTab
