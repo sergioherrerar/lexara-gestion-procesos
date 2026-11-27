@@ -2,6 +2,16 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-11-27 (241)
+- **Propuesta de servicios sobre el papel membretado de Lexara** — pedido del usuario («como si estuviéramos modificando el Word… cambiar el fondo al formato de Lexara»): el formulario ahora se ve como la propuesta misma, en **3 hojas** con el membrete real de Lexara (logo arriba y barra amarilla con contacto abajo, en su proporción real aunque la hoja crezca con el texto): Hoja 1 carta y proceso, Hoja 2 servicios y honorarios, Hoja 3 clientes, equipo y cierre. Los campos son los mismos; ahora parecen líneas del documento (subrayado punteado, se resaltan al pasar el mouse o al escribir). En el celular las hojas se ajustan al ancho de la pantalla.
+
+## 2026-11-27 (240)
+- **Propuesta de servicios: reconoce la solicitud del cliente, llena el formulario con sus datos y responde en el mismo hilo** — pedido del usuario (caso real: Aliansalud pidió el 23-nov la propuesta de honorarios del proceso monitorio del IDU):
+  - Nueva sección **«Solicitudes de propuesta recibidas»**: busca en el correo de Gerencia (últimos 45 días, solo lectura) los correos de clientes que piden una propuesta de honorarios o de servicios. No cuenta los de nuestro equipo ni las respuestas de «aprobación».
+  - **«Usar esta solicitud»** lee el correo y llena el formulario: quién lo pide (nombre y cargo de su firma), el tratamiento (Dra./Dr.), el correo y la entidad (por el dominio), el tipo de proceso, el demandante y el demandado (de la tabla «Referencia / Demandante / Demandada» o del asunto), el número de proceso si trae un radicado y la parte que representamos. Todo se puede corregir.
+  - Al presionar **«Crear correo con la propuesta»**, la propuesta queda como **RESPUESTA en el mismo hilo** de esa solicitud (borrador en Gerencia, conserva el asunto «RE: …» y a quienes iban con copia, con la propuesta en PDF adjunta y la firma); no se envía sola. Si no se puede responder en el hilo, crea un correo nuevo y lo avisa.
+  - La copia numerada de la propuesta guarda también cuál fue la solicitud y su conversación, para reconocer después la respuesta de aceptación del cliente.
+
 ## 2026-11-27 (239)
 - **Propuesta de servicios: copia numerada del PDF, lista de «Propuestas enviadas» y copia a «0. Contrato» del proceso nuevo** — pedido del usuario:
   - Al usar **«Crear correo con la propuesta»** se guarda una copia del PDF en **Administración Lexara → Documentos → ADMINISTRACION → Propuestas** con un número que da el portal: **PS-AAAA-NNN** (consecutivo por año; el nombre queda «PS-2026-001 – Entidad – fecha.pdf» y el adjunto del correo lleva el mismo). Los datos del formulario quedan en la subcarpeta «_datos». Si dos personas piden número a la vez, el segundo toma el siguiente. Si no se puede guardar la copia, el borrador igual se crea y lo avisa.

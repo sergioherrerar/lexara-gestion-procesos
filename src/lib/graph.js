@@ -1258,7 +1258,7 @@ export async function leerCorreosTutelas(correoBuzon, remitentesPermitidos, top 
 // Del más reciente al más antiguo desde `desdeISO` (yyyy-mm-dd): [{ id, asunto, remitente, remitenteNombre, fecha, resumen, tieneAdjuntos, leido, enlace }]. 403 en el buzón compartido: activa el permiso «.Shared» y reintenta una vez.
 export async function leerCorreosBandeja(correoBuzon, desdeISO, maxCorreos = 300){
   const params = new URLSearchParams({
-    $select: 'id,subject,from,sender,receivedDateTime,hasAttachments,bodyPreview,isRead,webLink',
+    $select: 'id,subject,from,sender,receivedDateTime,hasAttachments,bodyPreview,isRead,webLink,conversationId',
     $top: '100',
     $filter: `receivedDateTime ge ${desdeISO}T00:00:00Z`,
     $orderby: 'receivedDateTime desc',
@@ -1283,7 +1283,7 @@ export async function leerCorreosBandeja(correoBuzon, desdeISO, maxCorreos = 300
     const datos = await res.json();
     (datos.value || []).forEach(m => salida.push({
       id: m.id, asunto: m.subject || '(sin asunto)', remitente: m.from?.emailAddress?.address || m.sender?.emailAddress?.address || '', remitenteNombre: m.from?.emailAddress?.name || m.sender?.emailAddress?.name || '',
-      fecha: m.receivedDateTime || '', resumen: m.bodyPreview || '', tieneAdjuntos: !!m.hasAttachments, leido: !!m.isRead, enlace: m.webLink || '',
+      fecha: m.receivedDateTime || '', resumen: m.bodyPreview || '', tieneAdjuntos: !!m.hasAttachments, leido: !!m.isRead, enlace: m.webLink || '', conversacion: m.conversationId || '',
     }));
     url = datos['@odata.nextLink'] || null;
   }
@@ -1319,6 +1319,36 @@ export async function leerInformesRDL(correoBuzon, desdeISO, remitente = 'inform
     url = datos['@odata.nextLink'] || null;
   }
   return salida;
+}
+
+// Respuesta a un correo como BORRADOR (nunca la envía): conserva el hilo y el asunto «RE: …», con nuestro texto arriba, los adjuntos y la firma en línea. Responde a todos (quien pidió y quienes iban con copia).
+// Se usa para contestar una «solicitud de propuesta» con la propuesta en PDF (2026-11-27).
+export async function crearRespuestaBorrador({ buzon, mensajeId, htmlAntes, imagenes, adjuntos, categorias, responderATodos = true }){
+  const token = await getMailToken();
+  const esPropio = !buzon || String(buzon).trim().toLowerCase() === cuentaDelPortal();
+  const raiz = esPropio ? 'https://graph.microsoft.com/v1.0/me' : `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(buzon)}`;
+  const cab = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
+  const crear = async () => fetch(`${raiz}/messages/${encodeURIComponent(mensajeId)}/${responderATodos ? 'createReplyAll' : 'createReply'}`, { method: 'POST', headers: cab, body: '{}' });
+  let r1 = await crear();
+  if(r1.status === 403 && !mailCompartido){ usarPermisoCorreoCompartido(); cab.Authorization = `Bearer ${await getMailToken()}`; r1 = await crear(); }
+  if(!r1.ok) throw new Error(`Graph ${r1.status} al crear la respuesta: ${(await r1.text()).substring(0, 200)}`);
+  const borrador = await r1.json();
+  const original = (borrador.body && borrador.body.content) || '';
+  const abre = /<body[^>]*>/i.exec(original);
+  const contenido = abre ? original.slice(0, abre.index + abre[0].length) + htmlAntes + '<br>' + original.slice(abre.index + abre[0].length) : htmlAntes + '<br>' + original;
+  const r2 = await fetch(`${raiz}/messages/${borrador.id}`, { method: 'PATCH', headers: cab, body: JSON.stringify({ categories: categorias || [], body: { contentType: 'HTML', content: contenido } }) });
+  if(!r2.ok) throw new Error(`Graph ${r2.status} al preparar la respuesta: ${(await r2.text()).substring(0, 200)}`);
+  const fallidas = [];
+  for(const im of [...(imagenes || []), ...(adjuntos || []).map(a => ({ ...a, normal: true }))]){
+    try{
+      const res = await fetch(`${raiz}/messages/${borrador.id}/attachments`, { method: 'POST', headers: cab, body: JSON.stringify(im.normal
+        ? { '@odata.type': '#microsoft.graph.fileAttachment', name: im.nombre, contentType: im.contentType || 'application/octet-stream', contentBytes: im.base64 }
+        : { '@odata.type': '#microsoft.graph.fileAttachment', name: im.nombre, contentType: im.contentType || 'image/jpeg', contentBytes: im.base64, isInline: true, contentId: im.cid }) });
+      if(!res.ok) throw new Error('Graph ' + res.status + ': ' + (await res.text()).substring(0, 160));
+    }catch(err){ console.error('No se pudo adjuntar «' + im.nombre + '» a la respuesta:', err); fallidas.push(im.nombre); }
+  }
+  invalidarCacheCarpetasCorreo();
+  return { ...(await r2.json()), imagenesFallidas: fallidas };
 }
 
 // Texto completo de UN correo del buzón (solo lectura), recortado: la vista previa de Graph trae apenas 255 caracteres y la fecha de una audiencia (p. ej. «Cuándo: …» de la invitación de Teams)

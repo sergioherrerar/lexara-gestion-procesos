@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { IconTextButton } from './IconButton';
-import { getAccount, crearBorradorConImagenesInline, firmaComoImagenInline, firmaHtml, mensajeError, guardarCopiaPropuesta, listarPropuestas, actualizarPropuesta } from '../lib/graph';
+import membrete from '../assets/Membrete Lexara.png';   // el membrete real de Lexara (el mismo de los PDF del portal)
+import { getAccount, crearBorradorConImagenesInline, firmaComoImagenInline, firmaHtml, mensajeError, guardarCopiaPropuesta, listarPropuestas, actualizarPropuesta, leerCorreosBandeja, leerCuerpoCorreo, crearRespuestaBorrador } from '../lib/graph';
+import { esSolicitudDePropuesta, extraerDatosSolicitud } from '../lib/solicitudPropuesta';
 import { CORREO_GERENCIA_ACCESO } from '../lib/solicitudAccesoExpediente';
 import {
   EQUIPO_LEXARA, ETAPAS_POR_SALARIOS, FRASE_ETAPA, etiquetaEtapa, textoSalarios, textoAsunto, textoPresentacion, serviciosPorDefecto, conceptoPorDefecto,
@@ -118,11 +120,72 @@ function PropuestasEnviadas({ config, liveMode, notify, canWrite, clientes, onCr
     </section>
   );
 }
+// «Solicitudes de propuesta recibidas» (2026-11-27): busca en el correo de Gerencia los correos que piden una propuesta de honorarios; «Usar esta solicitud» llena el formulario con lo que dice el correo y,
+// al crear el correo, la propuesta se deja como RESPUESTA en ese mismo hilo (borrador, nunca se envía sola).
+function SolicitudesRecibidas({ liveMode, notify, onUsar, seleccionada }){
+  const [abierta, setAbierta] = useState(false);
+  const [lista, setLista] = useState(null);
+  const [cargando, setCargando] = useState(false);
+  const [usando, setUsando] = useState('');
+  const [error, setError] = useState('');
+  async function buscar(){
+    if(!liveMode){ notify?.('En el modo demo no hay buzón de Gerencia.', 'info'); return; }
+    setCargando(true); setError('');
+    try{
+      const d = new Date(); d.setDate(d.getDate() - 45);
+      const desde = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+      const todos = await leerCorreosBandeja(CORREO_GERENCIA_ACCESO || 'gerencia@lexaraabogados.com', desde);
+      setLista(todos.filter(m => esSolicitudDePropuesta(m.asunto, m.resumen, m.remitente)));
+    }catch(err){ console.error(err); setError(mensajeError(err)); }
+    finally{ setCargando(false); }
+  }
+  useEffect(() => { if(abierta && lista === null) buscar(); }, [abierta]);   // eslint-disable-line react-hooks/exhaustive-deps
+  async function usar(m){
+    setUsando(m.id);
+    try{
+      const texto = await leerCuerpoCorreo(CORREO_GERENCIA_ACCESO || 'gerencia@lexaraabogados.com', m.id, 15000);
+      const datos = extraerDatosSolicitud({ asunto: m.asunto, texto: texto || m.resumen, remitente: m.remitente, remitenteNombre: m.remitenteNombre, cc: [] });
+      onUsar(datos, m);
+    }catch(err){ notify?.('No se pudo leer el correo: ' + mensajeError(err), 'error'); }
+    finally{ setUsando(''); }
+  }
+  const dma = f => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(f || ''); return m ? m[3] + '-' + m[2] + '-' + m[1] : ''; };
+  return (
+    <section className="rama-seccion" style={{ margin: '0 0 16px' }}>
+      <button type="button" className="cob-cab" onClick={() => setAbierta(v => !v)} aria-expanded={abierta}>
+        <strong>Solicitudes de propuesta recibidas</strong>{lista && <span className={'badge ' + (lista.length ? 'badge-naranja' : 'badge-verde')}>{lista.length}</span>}
+        <span className="cob-mas">{abierta ? 'ocultar' : 'ver'}</span>
+      </button>
+      {abierta && (
+        <div style={{ marginTop: 8 }}>
+          <p className="rama-res-suave" style={{ margin: '0 0 8px' }}>Correos de los últimos 45 días en Gerencia donde un cliente pide una propuesta de honorarios. «Usar esta solicitud» llena el formulario con lo que dice el correo (quién lo pide, su cargo, el proceso y las partes); <strong>revíselo y corríjalo</strong>. Al crear el correo, la propuesta queda como <strong>respuesta en ese mismo hilo</strong>, como borrador: no se envía sola.</p>
+          <div style={{ marginBottom: 8 }}><button type="button" className="btn-secondary rama-btn" onClick={buscar} disabled={cargando}>{cargando ? 'Buscando…' : 'Buscar de nuevo'}</button></div>
+          {error && <div className="rama-error" role="alert"><strong>No se pudo leer el correo.</strong> {error}</div>}
+          {lista && lista.length === 0 && <div className="empty-state empty-state-compact">No encontré solicitudes de propuesta en los últimos 45 días.</div>}
+          {lista && lista.length > 0 && (
+            <div className="table-wrap"><table className="rama-tabla"><thead><tr><th>Recibido</th><th>De</th><th>Asunto</th><th></th></tr></thead>
+              <tbody>{lista.map(m => (
+                <tr key={m.id} className={seleccionada && seleccionada.id === m.id ? 'rama-importante' : ''}>
+                  <td className="rama-fecha">{dma(m.fecha)}</td><td>{m.remitenteNombre || m.remitente}</td>
+                  <td className="rama-nota"><strong>{m.asunto}</strong><br /><span className="rama-res-suave">{m.resumen.slice(0, 150)}{m.resumen.length > 150 ? '…' : ''}</span></td>
+                  <td className="rama-acc">
+                    <button type="button" className="rama-btn rama-btn--crear" onClick={() => usar(m)} disabled={!!usando}>{usando === m.id ? 'Leyendo…' : (seleccionada && seleccionada.id === m.id ? 'Volver a llenar' : 'Usar esta solicitud')}</button>
+                    {m.enlace && <a className="btn-secondary rama-btn" href={m.enlace} target="_blank" rel="noopener noreferrer">Abrir correo</a>}
+                  </td>
+                </tr>
+              ))}</tbody></table></div>
+          )}
+        </div>
+      )}
+    </section>
+  );
+}
 function bytesDeBase64(b64){ const bin = atob(b64); const u = new Uint8Array(bin.length); for(let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return u; }
 export default function PropuestaServiciosTab({ clientes, liveMode, notify, config, canWrite = true, onCrearProceso }){
   const [f, setF] = useState(inicial);
   const [editado, setEditado] = useState({ asunto: null, presentacion: null, concepto: null, servicios: null });   // texto escrito a mano (null = el automático)
   const [ocupado, setOcupado] = useState('');
+  const [solicitud, setSolicitud] = useState(null);   // correo de solicitud al que se va a responder: { id, conversacion, asunto, remitenteNombre, fecha }
   const poner = (campo, valor) => setF(prev => ({ ...prev, [campo]: valor }));
 
   const listaClientes = useMemo(() => (clientes || []).map(c => String(c.RazonSocial || c.Nombre || '').trim()).filter(Boolean).sort((a, b) => a.localeCompare(b, 'es')), [clientes]);
@@ -152,6 +215,17 @@ export default function PropuestaServiciosTab({ clientes, liveMode, notify, conf
   function elegirEtapa(i, etapa){ cambiarFila(i, { etapa, frase: FRASE_ETAPA[etapa] || '' }); }
   function cambiarServicio(i, cambios){ setEditado(prev => ({ ...prev, servicios: servicios.map((s, j) => j === i ? { ...s, ...cambios } : s) })); }
 
+  function usarSolicitud(d, m){
+    const cli = listaClientes.find(n => d.entidad && n.toLowerCase().includes(String(d.entidad).split(' ')[0].toLowerCase())) || '';
+    setF(prev => ({
+      ...prev, clienteSel: cli || prev.clienteSel, entidad: d.entidad || prev.entidad, entidadCorta: d.entidadCorta || prev.entidadCorta, tratamiento: d.tratamiento || prev.tratamiento,
+      atteNombre: d.atteNombre || prev.atteNombre, atteCargo: d.atteCargo || prev.atteCargo, correoPara: d.correoPara || prev.correoPara,
+      tipoProceso: d.tipoProceso || prev.tipoProceso, numeroProceso: d.numeroProceso || prev.numeroProceso, demandante: d.demandante || prev.demandante, demandado: d.demandado || prev.demandado, rol: d.rol || prev.rol,
+    }));
+    setEditado(prev => ({ ...prev, asunto: null, presentacion: null }));
+    setSolicitud({ id: m.id, conversacion: m.conversacion || '', asunto: m.asunto, remitenteNombre: m.remitenteNombre || m.remitente, fecha: m.fecha });
+    notify?.('Formulario llenado con la solicitud de ' + (m.remitenteNombre || m.remitente) + '. Revise los datos antes de crear el correo.', 'success');
+  }
   function validar(){
     if(!String(f.entidad).trim()){ notify?.('Escribe o elige la entidad a la que va dirigida la propuesta.', 'error'); return false; }
     if(!f.honorarios.some(h => Number(String(h.salarios).replace(',', '.')) > 0)){ notify?.('Agrega al menos una etapa de honorarios con su número de salarios.', 'error'); return false; }
@@ -184,7 +258,7 @@ export default function PropuestaServiciosTab({ clientes, liveMode, notify, conf
         try{
           copia = await guardarCopiaPropuesta(config, {
             cliente: ent, fechaISO: f.fecha || HOY(), bytes: bytesDeBase64(adjunto.base64),
-            datos: { cliente: f.clienteSel, entidad: ent, entidadCorta: f.entidadCorta, correoPara: f.correoPara, tipoProceso: f.tipoProceso, numeroProceso: f.numeroProceso, demandante: f.demandante, demandado: f.demandado, despacho: f.despacho, rol: f.rol, honorarios: f.honorarios },
+            datos: { cliente: f.clienteSel, entidad: ent, entidadCorta: f.entidadCorta, correoPara: f.correoPara, tipoProceso: f.tipoProceso, numeroProceso: f.numeroProceso, demandante: f.demandante, demandado: f.demandado, despacho: f.despacho, rol: f.rol, honorarios: f.honorarios, solicitudId: solicitud ? solicitud.id : '', conversacion: solicitud ? solicitud.conversacion : '', solicitudAsunto: solicitud ? solicitud.asunto : '', solicitante: solicitud ? solicitud.remitenteNombre : '' },
           });
           adjunto.nombre = copia.nombre;
         }catch(err){ console.error(err); avisoCopia = ' (No se pudo guardar la copia en Propuestas: ' + mensajeError(err) + ')'; }
@@ -196,6 +270,15 @@ export default function PropuestaServiciosTab({ clientes, liveMode, notify, conf
         `<p>${esc(saludoCorreo(f.tratamiento, f.atteNombre))}</p>` +
         `<p>Adjuntamos la propuesta de prestación de servicios profesionales para la representación judicial de ${esc(ent)}${esc(proceso)}.</p>` +
         `<p>Quedamos atentos a sus comentarios.</p><p>Cordial saludo,</p>` + (firma ? firmaHtml('gerencia', 'cid:' + firma.cid) : '') + `</body></html>`;
+      if(solicitud){
+        // Respuesta en el MISMO hilo de la solicitud (borrador en Gerencia; conserva asunto y destinatarios, que son quien pidió y quienes iban con copia).
+        try{
+          const htmlAntes = htmlBody.replace(/^[\s\S]*?<body[^>]*>/i, '').replace(/<\/body>[\s\S]*$/i, '');
+          const rr = await crearRespuestaBorrador({ buzon: CORREO_GERENCIA_ACCESO, mensajeId: solicitud.id, htmlAntes, imagenes: firma ? [firma] : [], adjuntos: [adjunto], categorias: ['Propuesta de servicios (borrador)'] });
+          notify?.('✓ Respuesta creada en los Borradores de ' + CORREO_GERENCIA_ACCESO + ' dentro del hilo «' + solicitud.asunto + '», con la propuesta adjunta. Revísela y envíela.' + (copia ? ' Copia guardada en ADMINISTRACION/Propuestas como ' + copia.numero + '.' : '') + avisoCopia + (rr.imagenesFallidas && rr.imagenesFallidas.length ? ' (No se pudo poner la firma como imagen.)' : ''), 'success');
+          return;
+        }catch(err){ console.error(err); notify?.('No se pudo crear la respuesta en el hilo (' + mensajeError(err) + '). Se crea un correo nuevo con la propuesta.', 'info'); }
+      }
       const r = await crearBorradorConImagenesInline({ to: f.correoPara.trim() ? [f.correoPara.trim()] : [], subject: asuntoCorreo, htmlBody, imagenes: firma ? [firma] : [], adjuntos: [adjunto], categorias: ['Propuesta de servicios (borrador)'], buzon: CORREO_GERENCIA_ACCESO, caerAlBuzonPropio: true });
       notify?.(r.enBuzonPropio
         ? '⚠ No pude crear el borrador en ' + CORREO_GERENCIA_ACCESO + '. Quedó en TUS Borradores con la propuesta adjunta: revísalo y cambia el «De» a Gerencia si tienes permiso.'
@@ -214,10 +297,15 @@ export default function PropuestaServiciosTab({ clientes, liveMode, notify, conf
 
   return (
     <div className="field-section">
+      <SolicitudesRecibidas liveMode={liveMode} notify={notify} onUsar={usarSolicitud} seleccionada={solicitud} />
+      {solicitud && <div className="rama-hist-aviso" style={{ marginBottom: 12 }}><span><strong>Esta propuesta responderá al correo «{solicitud.asunto}»</strong> de {solicitud.remitenteNombre}, en el mismo hilo (como borrador). <button type="button" className="rama-mas" onClick={() => setSolicitud(null)}>no responder a ese correo, crear uno nuevo</button></span></div>}
       <PropuestasEnviadas config={config} liveMode={liveMode} notify={notify} canWrite={canWrite} clientes={clientes} onCrearProceso={onCrearProceso} />
       <p className="rama-fuente">Arma la propuesta de servicios profesionales con el modelo de la última (Aliansalud 2026-00062): carta, portafolio, honorarios por etapas, condiciones, clientes, equipo de trabajo y firma de la representante legal. Como es una propuesta, no se necesitan datos de un proceso del portal: elige el cliente de la lista o escribe otra entidad, y llena el proceso y las partes que se conozcan. Todos los textos se pueden ajustar.</p>
       {Acciones()}
 
+      {/* La propuesta se arma sobre el papel membretado de Lexara, como si se escribiera en el Word: tres hojas (carta y proceso · servicios y honorarios · clientes, equipo y cierre). Los campos son los mismos de siempre. */}
+      <div className="prop-mesa">
+      <div className="prop-marco"><div className="prop-rotulo">Hoja 1 de 3 · Carta y proceso</div><div className="prop-hoja" style={{ '--membrete': `url(${membrete})` }}>
       <h4 style={{ marginTop: 22 }}>1. A quién va dirigida</h4>
       <div style={GRID}>
         <Campo etiqueta="Fecha de la carta"><input type="date" value={f.fecha} onChange={e => poner('fecha', e.target.value)} /></Campo>
@@ -261,6 +349,8 @@ export default function PropuestaServiciosTab({ clientes, liveMode, notify, conf
         {editado.presentacion !== null && <button type="button" className="rama-mas" onClick={() => setEditado(prev => ({ ...prev, presentacion: null }))}>Volver al texto automático</button>}
       </Campo>
 
+      </div></div>
+      <div className="prop-marco"><div className="prop-rotulo">Hoja 2 de 3 · Servicios y honorarios</div><div className="prop-hoja" style={{ '--membrete': `url(${membrete})` }}>
       <h4 style={{ marginTop: 22 }}>3. Portafolio de servicios</h4>
       {servicios.map((s, i) => (
         <div key={i} className="rama-resumen-card" style={{ marginBottom: 10 }}>
@@ -307,6 +397,8 @@ export default function PropuestaServiciosTab({ clientes, liveMode, notify, conf
       </label>
       <Campo etiqueta="Condiciones contractuales (una por línea)"><textarea rows={7} value={f.condiciones} onChange={e => poner('condiciones', e.target.value)} /></Campo>
 
+      </div></div>
+      <div className="prop-marco"><div className="prop-rotulo">Hoja 3 de 3 · Clientes, equipo y cierre</div><div className="prop-hoja" style={{ '--membrete': `url(${membrete})` }}>
       <h4 style={{ marginTop: 22 }}>5. Nuestros clientes</h4>
       <Campo etiqueta="Una entidad por línea"><textarea rows={7} value={f.clientes} onChange={e => poner('clientes', e.target.value)} /></Campo>
 
@@ -323,6 +415,9 @@ export default function PropuestaServiciosTab({ clientes, liveMode, notify, conf
 
       <h4 style={{ marginTop: 22 }}>7. Cierre</h4>
       <Campo etiqueta="Texto de cierre (antes de «Cordial saludo» y la firma de la representante legal)"><textarea rows={4} value={f.cierre} onChange={e => poner('cierre', e.target.value)} /></Campo>
+
+      </div></div>
+      </div>
 
       {Acciones()}
     </div>

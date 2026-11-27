@@ -2494,3 +2494,25 @@
   .cob-barra{height:8px; border-radius:999px; background:var(--gris-linea,#e3e8e6); overflow:hidden; margin-top:10px;}
   .cob-barra span{display:block; height:100%; background:var(--verde-oscuro,#00634f); transition:width .2s;}
   .rama-num{text-align:right; font-variant-numeric:tabular-nums;}
+
+  /* «Propuesta de servicios» sobre el papel membretado de Lexara (2026-11-27, pedido del usuario: «como si estuviéramos modificando el Word… cambiar el fondo al formato de Lexara»).
+     Cada hoja es una página A4 con el membrete real de fondo; los márgenes se miden en cqw (ancho de la hoja) para que el texto quede entre el encabezado y la barra amarilla a cualquier tamaño. */
+  .prop-mesa{background:#dfe6e3; border-radius:12px; padding:18px 12px; display:flex; flex-direction:column; align-items:center; gap:22px; margin:8px 0 14px;}
+  .prop-marco{container-type:inline-size; width:100%; max-width:794px;}
+  .prop-rotulo{font-size:11.5px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:#52706a; margin:0 2px 6px;}
+  .prop-hoja{box-sizing:border-box; width:100%; aspect-ratio:210 / 297; position:relative; background-color:#fff; box-shadow:0 3px 16px rgba(20,60,50,.22); border-radius:2px;
+    padding:36cqw 8cqw 15cqw;}
+  /* encabezado y barra amarilla del membrete en su proporción real, sin estirarse aunque la hoja crezca con el texto */
+  .prop-hoja::before, .prop-hoja::after{content:""; position:absolute; left:0; right:0; pointer-events:none; background-repeat:no-repeat; background-image:var(--membrete); background-size:100% auto;}
+  .prop-hoja::before{top:0; height:36cqw; background-position:top center;}
+  .prop-hoja::after{bottom:0; height:12.5cqw; background-position:bottom center;}
+  .prop-hoja h4{margin-top:18px !important; margin-bottom:8px; color:var(--verde-oscuro,#00463e); font-size:14px; padding-bottom:4px; border-bottom:2px solid #f9bb35;}
+  .prop-hoja h4:first-child{margin-top:0 !important;}
+  .prop-hoja .field label{font-size:10.5px; text-transform:uppercase; letter-spacing:.04em; color:#5f7a74; font-weight:700;}
+  .prop-hoja .field input:not([type=checkbox]):not([type=radio]), .prop-hoja .field select{background:transparent; border:0; border-bottom:1px dashed #b4c7c1; border-radius:0; padding:6px 2px; box-shadow:none;}
+  .prop-hoja .field textarea{background:rgba(255,255,255,.6); border:1px dashed #cbd9d4; border-radius:4px; padding:8px 10px; box-shadow:none;}
+  .prop-hoja .field input:not([type=checkbox]):hover, .prop-hoja .field select:hover, .prop-hoja .field textarea:hover{background:#f3f8f6;}
+  .prop-hoja .field input:not([type=checkbox]):focus, .prop-hoja .field select:focus, .prop-hoja .field textarea:focus{background:#eef6f3; border-color:var(--verde-oscuro,#00463e); outline:none;}
+  .prop-hoja .field-info{background:none; border:0; padding:0; margin-top:3px; font-size:11.5px; font-style:italic; color:#88a099;}
+  .prop-hoja .rama-res-suave{font-size:12px;}
+  @media (max-width:640px){ .prop-mesa{padding:12px 6px; gap:16px;} .prop-hoja{padding:34cqw 6cqw 14cqw;} }
