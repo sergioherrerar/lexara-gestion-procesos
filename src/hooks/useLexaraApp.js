@@ -735,6 +735,21 @@ export function useLexaraApp(){
       setDraftProceso(null);
       setActiveProcesoId(null);
       notify("Creado con éxito en Lexara", 'success');
+      // Número de contrato de un proceso que viene de una propuesta: número de la propuesta + «-» + ID del proceso nuevo (como se armaba antes: «Pro 24 Oct 2025-151»). El ID solo se conoce al crearlo, por eso se escribe
+      // justo después. Si la persona ya escribió un número de contrato en el formulario, se respeta.
+      if(propuestaDelDraft && !String(nuevo.NumeroContrato || '').trim()){
+        const contratoAuto = (propuestaDelDraft.etiqueta || propuestaDelDraft.numero) + '-' + nuevo.id;
+        try{
+          if(liveMode){
+            const listP = listByKey('procesos');
+            const cuerpo = await Graph.graphFieldsFromUpdates(listP.siteId || siteId, listP, { NumeroContrato: contratoAuto });
+            await Graph.graphFetch(`/sites/${siteId}/lists/${listP.listId}/items/${nuevo._graphId}/fields`, { method: 'PATCH', body: JSON.stringify(cuerpo) });
+          }
+          nuevo.NumeroContrato = contratoAuto;
+          setProcesos(prev => prev.map(p => p.id === nuevo.id ? { ...p, NumeroContrato: contratoAuto } : p));
+          notify(`Número de contrato del proceso: ${contratoAuto}.`, 'info');
+        }catch(err){ console.error(err); notify('El proceso se creó, pero no se pudo escribir su número de contrato (' + contratoAuto + '): ' + Graph.mensajeError(err), 'error'); }
+      }
       // Carpeta del proceso en SharePoint (entidad → número corto → subcarpetas), verificando antes que no exista. Si falla, el proceso ya quedó creado: solo se avisa.
       if(liveMode){
         try{
@@ -751,6 +766,33 @@ export function useLexaraApp(){
           else if(c.status === 'sin-entidad') notify('El proceso no tiene Entidad: no se creó la carpeta en SharePoint. Llene la Entidad y use «Buscar y vincular carpeta».', 'info');
           else if(c.status === 'sin-numero') notify('El número corto del proceso no tiene el formato AAAA-NNNNN: no se creó la carpeta en SharePoint.', 'info');
         }catch(err){ console.error(err); notify('El proceso se creó, pero no se pudo crear su carpeta en SharePoint: ' + Graph.mensajeError(err), 'error'); }
+      }
+      // Forma de pago con los honorarios de la propuesta (etapas y salarios): se crea con el mismo número de contrato del proceso. Si ya hay una forma de pago con ese contrato, no se toca.
+      if(propuestaDelDraft && Array.isArray(propuestaDelDraft.honorarios) && propuestaDelDraft.honorarios.length){
+        try{
+          const contrato = String(nuevo.NumeroContrato || propuestaDelDraft.numero || '').trim();
+          const filas = propuestaDelDraft.honorarios.map(h => ({ etapa: String(h.etapa || '').trim(), v: Number(String(h.salarios || '').replace(',', '.')) })).filter(h => h.etapa && h.v > 0);
+          if(contrato && filas.length){
+            if(formasPago.some(f => String(f.Contrato || '').trim().toLowerCase() === contrato.toLowerCase())){
+              notify(`Ya existe una forma de pago con el contrato «${contrato}»: no se creó otra con los honorarios de la propuesta ${propuestaDelDraft.numero}.`, 'info');
+            }else{
+              const usadas = filas.slice(0, 6);
+              const total = usadas.reduce((s, h) => s + h.v, 0);
+              const fp = { Contrato: contrato, Honorarios: total };
+              usadas.forEach((h, i) => { fp['Pago' + (i + 1)] = h.etapa; fp['ValorPago' + (i + 1)] = h.v; });
+              const nuevaFP = { ...fp };
+              if(liveMode){
+                const listFP = listByKey('formasPago');
+                const creada = await Graph.crearItemConLookups(listFP.siteId || siteId, listFP, fp);
+                nuevaFP.id = creada.id; nuevaFP._graphId = creada.id;
+              }else{
+                nuevaFP.id = formasPago.reduce((max, f) => Math.max(max, Number(f.id) || 0), 0) + 1;
+              }
+              setFormasPago(prev => [...prev, nuevaFP]);
+              notify(`Forma de pago creada con los honorarios de la propuesta ${propuestaDelDraft.numero}: ${usadas.length} pagos, ${total} salarios (contrato ${contrato}).` + (filas.length > 6 ? ' La propuesta tenía más de 6 etapas: solo caben 6 pagos, revise.' : ''), 'success');
+            }
+          }
+        }catch(err){ console.error(err); notify('El proceso se creó, pero no se pudo crear su forma de pago: ' + Graph.mensajeError(err), 'error'); }
       }
       return;
     }

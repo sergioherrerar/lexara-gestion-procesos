@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { IconTextButton } from './IconButton';
 import membrete from '../assets/Membrete Lexara.png';   // el membrete real de Lexara (el mismo de los PDF del portal)
-import { getAccount, crearBorradorConImagenesInline, firmaComoImagenInline, firmaHtml, mensajeError, guardarCopiaPropuesta, listarPropuestas, actualizarPropuesta, leerCorreosBandeja, leerCuerpoCorreo, crearRespuestaBorrador } from '../lib/graph';
+import { getAccount, crearBorradorConImagenesInline, firmaComoImagenInline, firmaHtml, mensajeError, guardarCopiaPropuesta, etiquetaPropuesta, listarPropuestas, actualizarPropuesta, leerCorreosBandeja, leerCuerpoCorreo, crearRespuestaBorrador } from '../lib/graph';
 import { esSolicitudDePropuesta, extraerDatosSolicitud } from '../lib/solicitudPropuesta';
 import { respuestaDePropuesta } from '../lib/respuestaPropuesta';
 import { CORREO_GERENCIA_ACCESO } from '../lib/solicitudAccesoExpediente';
@@ -100,8 +100,8 @@ function PropuestasEnviadas({ config, liveMode, notify, canWrite, clientes, onCr
   }
   function crearProceso(p){
     if(!p.pdfItemId) notify?.('Esta propuesta no tiene el PDF guardado: se crea el proceso pero no se copiará nada a «0. Contrato».', 'info');
-    onCrearProceso?.(procesoDesdePropuesta(p, clientes), p.pdfItemId ? { numero: p.numero, pdf: p.pdf, pdfItemId: p.pdfItemId, pdfDriveId: p.pdfDriveId } : { numero: p.numero });
-    notify?.('Se abrió el formulario del proceso nuevo con los datos de la propuesta ' + p.numero + '. Revíselo y presione Guardar: ahí se crea el proceso, su carpeta y se copia la propuesta a «0. Contrato».', 'info');
+    onCrearProceso?.(procesoDesdePropuesta(p, clientes), p.pdfItemId ? { numero: p.numero, etiqueta: p.etiqueta || etiquetaPropuesta(p.fecha), pdf: p.pdf, pdfItemId: p.pdfItemId, pdfDriveId: p.pdfDriveId, honorarios: p.honorarios } : { numero: p.numero, etiqueta: p.etiqueta || etiquetaPropuesta(p.fecha), honorarios: p.honorarios });
+    notify?.('Se abrió el formulario del proceso nuevo con los datos de la propuesta ' + p.numero + '. Revíselo y presione Guardar: ahí se crea el proceso, su carpeta, su forma de pago con los honorarios de la propuesta y se copia la propuesta a «0. Contrato».', 'info');
   }
   const pendientes = (lista || []).filter(p => p.estado !== 'proceso-creado').length;
   const respondidas = (lista || []).filter(p => p.estado === 'respondida').length;
@@ -124,7 +124,7 @@ function PropuestasEnviadas({ config, liveMode, notify, canWrite, clientes, onCr
                 const [txt, cls] = ESTADO_PROPUESTA[p.estado] || ESTADO_PROPUESTA.creada;
                 return (
                   <tr key={p.numero} className={p.estado === 'respondida' ? 'rama-importante' : ''}>
-                    <td><strong>{p.numero}</strong></td><td className="rama-fecha">{dmaP(p.fecha)}</td><td>{p.entidad || p.cliente}</td>
+                    <td><strong>{p.etiqueta || etiquetaPropuesta(p.fecha)}</strong><br /><span className="rama-res-suave">{p.numero}</span></td><td className="rama-fecha">{dmaP(p.fecha)}</td><td>{p.entidad || p.cliente}</td>
                     <td>{[p.tipoProceso, p.numeroProceso].filter(Boolean).join(' · ') || '—'}{p.demandante || p.demandado ? <><br /><span className="rama-res-suave">{[p.demandante, p.demandado].filter(Boolean).join(' vs. ')}</span></> : null}</td>
                     <td><span className={'badge ' + cls}>{txt}</span>{p.estado === 'proceso-creado' && p.procesoRadicado ? <><br /><span className="rama-res-suave">{p.procesoRadicado}</span></> : null}
                       {p.estado === 'respondida' && p.respuesta ? <><br /><strong>{p.respuesta.tipo === 'aceptacion' ? 'Parece una ACEPTACIÓN' : 'El cliente respondió'}</strong><br /><span className="rama-res-suave">{dmaP(String(p.respuesta.fecha).slice(0, 10))} · {p.respuesta.de}<br />«{p.respuesta.asunto}»</span></> : null}</td>
@@ -299,7 +299,7 @@ export default function PropuestaServiciosTab({ clientes, liveMode, notify, conf
           const htmlAntes = htmlBody.replace(/^[\s\S]*?<body[^>]*>/i, '').replace(/<\/body>[\s\S]*$/i, '');
           const rr = await crearRespuestaBorrador({ buzon: CORREO_GERENCIA_ACCESO, mensajeId: solicitud.id, htmlAntes, imagenes: firma ? [firma] : [], adjuntos: [adjunto], categorias: ['Propuesta de servicios (borrador)'] });
           if(copia && (rr.conversationId || solicitud.conversacion)) actualizarPropuesta(config, copia.numero, { conversacion: rr.conversationId || solicitud.conversacion }).catch(e => console.error(e));
-          notify?.('✓ Respuesta creada en los Borradores de ' + CORREO_GERENCIA_ACCESO + ' dentro del hilo «' + solicitud.asunto + '», con la propuesta adjunta. Revísela y envíela.' + (copia ? ' Copia guardada en ADMINISTRACION/Propuestas como ' + copia.numero + '.' : '') + avisoCopia + (rr.imagenesFallidas && rr.imagenesFallidas.length ? ' (No se pudo poner la firma como imagen.)' : ''), 'success');
+          notify?.('✓ Respuesta creada en los Borradores de ' + CORREO_GERENCIA_ACCESO + ' dentro del hilo «' + solicitud.asunto + '», con la propuesta adjunta. Revísela y envíela.' + (copia ? ' Copia guardada en ADMINISTRACION/Propuestas como «' + copia.nombre + '».' : '') + avisoCopia + (rr.imagenesFallidas && rr.imagenesFallidas.length ? ' (No se pudo poner la firma como imagen.)' : ''), 'success');
           return;
         }catch(err){ console.error(err); notify?.('No se pudo crear la respuesta en el hilo (' + mensajeError(err) + '). Se crea un correo nuevo con la propuesta.', 'info'); }
       }
@@ -307,7 +307,7 @@ export default function PropuestaServiciosTab({ clientes, liveMode, notify, conf
       if(copia && r.conversationId) actualizarPropuesta(config, copia.numero, { conversacion: r.conversationId }).catch(e => console.error(e));
       notify?.(r.enBuzonPropio
         ? '⚠ No pude crear el borrador en ' + CORREO_GERENCIA_ACCESO + '. Quedó en TUS Borradores con la propuesta adjunta: revísalo y cambia el «De» a Gerencia si tienes permiso.'
-        : '✓ Borrador creado en los Borradores de ' + CORREO_GERENCIA_ACCESO + ' con la propuesta en PDF adjunta' + (f.correoPara.trim() ? ', dirigido a ' + f.correoPara.trim() : ' (sin destinatario: agrégalo)') + '. Revísalo y envíalo.' + (copia ? ' Copia guardada en ADMINISTRACION/Propuestas como ' + copia.numero + '.' : '') + avisoCopia, r.enBuzonPropio ? 'info' : 'success');
+        : '✓ Borrador creado en los Borradores de ' + CORREO_GERENCIA_ACCESO + ' con la propuesta en PDF adjunta' + (f.correoPara.trim() ? ', dirigido a ' + f.correoPara.trim() : ' (sin destinatario: agrégalo)') + '. Revísalo y envíalo.' + (copia ? ' Copia guardada en ADMINISTRACION/Propuestas como «' + copia.nombre + '».' : '') + avisoCopia, r.enBuzonPropio ? 'info' : 'success');
     }catch(err){ console.error(err); notify?.('No se pudo crear el borrador: ' + mensajeError(err), 'error'); }
     finally{ setOcupado(''); }
   }

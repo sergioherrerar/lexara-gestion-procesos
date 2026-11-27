@@ -3378,6 +3378,14 @@ export function fechaISODeDocumento(doc){
 // Propuestas, con una numeración que da el portal: PS-AAAA-NNN (consecutivo por año). El número se RESERVA creando primero un archivito de datos en «Propuestas/_datos» con ese nombre (si dos personas piden el mismo
 // número a la vez, SharePoint rechaza el segundo y se toma el siguiente). Los datos del formulario quedan ahí para crear el proceso cuando la propuesta se acepte (el PDF se copiará entonces a la carpeta «0. Contrato» del proceso).
 export const RUTA_PROPUESTAS = 'ADMINISTRACION/Propuestas';
+// Cómo se llama una propuesta a la vista (el formato de siempre, «Pro 24 Oct 2025»): «Pro» + día + mes abreviado + año de la propuesta. El número interno PS-AAAA-NNN solo distingue una de otra.
+// Cuando se acepta y se crea el proceso, el contrato queda «Pro 24 Oct 2025-<ID del proceso>».
+const MESES_ETIQUETA = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+export function etiquetaPropuesta(fechaISO){
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(fechaISO || ''));
+  if(!m) return 'Pro';
+  return 'Pro ' + Number(m[3]) + ' ' + MESES_ETIQUETA[Number(m[2]) - 1] + ' ' + m[1];
+}
 async function subirContenido(driveId, padreId, nombre, cuerpo, tipo, conflicto){
   const token = await getGraphToken();
   return fetch('https://graph.microsoft.com/v1.0/drives/' + driveId + '/items/' + padreId + ':/' + encodeURIComponent(nombre) + ':/content?@microsoft.graph.conflictBehavior=' + conflicto, {
@@ -3399,17 +3407,23 @@ export async function guardarCopiaPropuesta(config, { cliente, fechaISO, bytes, 
   }
   for(let intento = 1; intento <= 6; intento++){
     const numero = 'PS-' + anio + '-' + String(max + intento).padStart(3, '0');
-    const meta = { numero, fecha: fechaISO, creadoEn: new Date().toISOString(), creadaPor: (account && account.username) || '', estado: 'creada', ...datos };
+    const etiqueta = etiquetaPropuesta(fechaISO);
+    const meta = { numero, etiqueta, fecha: fechaISO, creadoEn: new Date().toISOString(), creadaPor: (account && account.username) || '', estado: 'creada', ...datos };
     const reserva = await subirContenido(driveId, datosId, numero + '.json', JSON.stringify(meta, null, 2), 'application/json', 'fail');
     if(reserva.status === 409) continue;   // ya la tomó otra persona: se prueba el siguiente
     if(!reserva.ok) throw new Error('Graph ' + reserva.status + ' al reservar el número de la propuesta: ' + (await reserva.text()).substring(0, 200));
-    const nombre = nombreArchivoSeguro(numero + ' - ' + String(cliente || 'Propuesta').slice(0, 60) + ' - ' + fechaISO) + '.pdf';
-    const pdf = await subirContenido(driveId, carpetaId, nombre, bytes, 'application/pdf', 'fail');
+    // Nombre del archivo: «Pro 27 Nov 2026 - ENTIDAD.pdf» (el formato de siempre); si ese mismo día ya hay una propuesta de esa entidad, «… (2).pdf»
+    let nombre = '', pdf = null;
+    for(let n = 1; n <= 9; n++){
+      nombre = nombreArchivoSeguro(etiqueta + ' - ' + String(cliente || 'Propuesta').slice(0, 60) + (n > 1 ? ' (' + n + ')' : '')) + '.pdf';
+      pdf = await subirContenido(driveId, carpetaId, nombre, bytes, 'application/pdf', 'fail');
+      if(pdf.status !== 409) break;
+    }
     if(!pdf.ok) throw new Error('Graph ' + pdf.status + ' al guardar la copia del PDF: ' + (await pdf.text()).substring(0, 200));
     const item = await pdf.json();
     // el archivo de datos queda con los datos del PDF guardado (para listarlo y copiarlo al proceso cuando se acepte)
     try{ await subirContenido(driveId, datosId, numero + '.json', JSON.stringify({ ...meta, pdf: nombre, pdfItemId: item.id, pdfWebUrl: item.webUrl || '', pdfDriveId: driveId }, null, 2), 'application/json', 'replace'); }catch(e){ /* la copia ya está; solo faltaría el enlace en la lista */ }
-    return { numero, nombre, webUrl: item.webUrl || '', itemId: item.id, driveId };
+    return { numero, etiqueta, nombre, webUrl: item.webUrl || '', itemId: item.id, driveId };
   }
   throw new Error('No se pudo reservar un número de propuesta (varios intentos seguidos chocaron con otras propuestas).');
 }

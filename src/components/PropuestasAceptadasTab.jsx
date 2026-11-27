@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { listarPropuestas, mensajeError } from '../lib/graph';
+import { listarPropuestas, etiquetaPropuesta, mensajeError } from '../lib/graph';
 import { procesoDesdePropuesta } from './PropuestaServiciosTab';
 
 // «Propuestas aceptadas» (Informes, 2026-11-27, pedido del usuario: «la que crea el nuevo proceso debería ir también desde Informes, porque Daniel no tiene acceso a Administración»). Muestra SOLO las propuestas de
@@ -20,8 +20,8 @@ export default function PropuestasAceptadasTab({ config, liveMode, notify, canWr
   useEffect(() => { cargar(); }, []);   // eslint-disable-line react-hooks/exhaustive-deps
   function crearProceso(p){
     if(!p.pdfItemId) notify?.('Esta propuesta no tiene el PDF guardado: se crea el proceso pero no se copiará nada a «0. Contrato».', 'info');
-    onCrearProceso?.(procesoDesdePropuesta(p, clientes), p.pdfItemId ? { numero: p.numero, pdf: p.pdf, pdfItemId: p.pdfItemId, pdfDriveId: p.pdfDriveId } : { numero: p.numero });
-    notify?.('Se abrió el formulario del proceso nuevo con los datos de la propuesta ' + p.numero + '. Revíselo y presione Guardar: ahí se crea el proceso, su carpeta y se copia la propuesta a «0. Contrato».', 'info');
+    onCrearProceso?.(procesoDesdePropuesta(p, clientes), p.pdfItemId ? { numero: p.numero, etiqueta: p.etiqueta || etiquetaPropuesta(p.fecha), pdf: p.pdf, pdfItemId: p.pdfItemId, pdfDriveId: p.pdfDriveId, honorarios: p.honorarios } : { numero: p.numero, etiqueta: p.etiqueta || etiquetaPropuesta(p.fecha), honorarios: p.honorarios });
+    notify?.('Se abrió el formulario del proceso nuevo con los datos de la propuesta ' + p.numero + '. Revíselo y presione Guardar: ahí se crea el proceso, su carpeta, su forma de pago con los honorarios de la propuesta y se copia la propuesta a «0. Contrato».', 'info');
   }
   return (
     <div className="field-section">
@@ -34,7 +34,7 @@ export default function PropuestasAceptadasTab({ config, liveMode, notify, canWr
         <div className="table-wrap"><table className="rama-tabla"><thead><tr><th>Propuesta</th><th>Aceptada el</th><th>Cliente</th><th>Proceso</th><th></th></tr></thead>
           <tbody>{lista.map(p => (
             <tr key={p.numero}>
-              <td><strong>{p.numero}</strong><br /><span className="rama-res-suave">{dma(p.fecha)}</span></td>
+              <td><strong>{p.etiqueta || etiquetaPropuesta(p.fecha)}</strong><br /><span className="rama-res-suave">{p.numero}</span></td>
               <td className="rama-fecha">{dma(p.aceptadaEl) || '—'}</td>
               <td>{p.entidad || p.cliente}</td>
               <td>{[p.tipoProceso, p.numeroProceso].filter(Boolean).join(' · ') || '—'}{p.demandante || p.demandado ? <><br /><span className="rama-res-suave">{[p.demandante, p.demandado].filter(Boolean).join(' vs. ')}</span></> : null}</td>
