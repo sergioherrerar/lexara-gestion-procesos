@@ -1268,10 +1268,16 @@ export async function leerCorreosBandeja(correoBuzon, desdeISO, maxCorreos = 300
   for(let pagina = 0; url && pagina < 10 && salida.length < maxCorreos; pagina++){
     const pedir = async () => fetch(url, { headers: { Authorization: `Bearer ${await getMailToken()}` } });
     let res = await pedir();
-    if(res.status === 403 && !mailCompartido){ usarPermisoCorreoCompartido(); res = await pedir(); }
+    // Buzón de OTRA persona (Gerencia desde la sesión de Soporte): sin el permiso «.Shared» Microsoft responde 403 o, a veces, 404 «Default folder Inbox not found». En los dos casos se pide el permiso y se reintenta (antes el 404 se tomaba como bandeja vacía: «no se ve ningún correo», 2026-11-27).
+    if(!mailCompartido && (res.status === 403 || (res.status === 404 && carpetaPorDefectoInexistente(res.status, await res.clone().text())))){ usarPermisoCorreoCompartido(); res = await pedir(); }
     if(!res.ok){
       const cuerpo = await res.text();
-      if(carpetaPorDefectoInexistente(res.status, cuerpo)) return salida;   // el buzón aún no tiene bandeja de entrada (Microsoft la crea con el primer correo que llega)
+      if(carpetaPorDefectoInexistente(res.status, cuerpo)){
+        // Solo es «bandeja vacía» si el buzón es el de la propia sesión (Microsoft crea la bandeja con el primer correo que llega); en el de otra persona significa que no hay acceso.
+        const mio = String((account && account.username) || '').toLowerCase() === String(correoBuzon).trim().toLowerCase();
+        if(mio) return salida;
+        throw new Error(`Graph 404 al leer la bandeja de ${correoBuzon}: la sesión actual (${(account && account.username) || 'sin sesión'}) no tiene acceso a ese buzón. Pida a quien administra Gerencia que le dé permiso de lectura sobre el buzón.`);
+      }
       throw new Error(`Graph ${res.status} al leer la bandeja: ${cuerpo.substring(0, 240)}`);
     }
     const datos = await res.json();

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { leerCorreosBandeja, leerCuerpoCorreo, mensajeError } from '../lib/graph';
+import { leerCorreosBandeja, leerCuerpoCorreo, mensajeError, getAccount } from '../lib/graph';
 import { ModalCrearDesdeRama, Ico } from './RamaJudicialTab';
 import { CORREO_GERENCIA_ACCESO } from '../lib/solicitudAccesoExpediente';
 import { clasificarCorreo, procesosDeCorreo, radicadosEnTexto, audienciaRegistrada, TIPOS_CORREO } from '../lib/ramaResumen';
@@ -107,13 +107,13 @@ export default function CorreosDespachosTab({ procesos, liveMode, notify, canWri
         <label>Desde <input type="date" value={desde} onChange={e => setDesde(e.target.value)} /></label>
         <button type="button" className="btn-primary rama-btn" onClick={leer} disabled={cargando}>{cargando ? 'Leyendo…' : (liveMode ? 'Leer correo de Gerencia' : 'Ver ejemplo (modo demo)')}</button>
       </div>
-      {error && <div className="rama-error" role="alert"><strong>No se pudo leer el correo de Gerencia.</strong> {/403|Access is denied/i.test(error) ? 'Su usuario no tiene permiso para ver ese correo: pídale a Soporte que le dé acceso.' : 'Intente de nuevo en un momento; si sigue igual, avise a Soporte.'}<br /><span className="rama-res-suave">Detalle técnico: {error}</span></div>}
+      {error && <div className="rama-error" role="alert"><strong>No se pudo leer el correo de Gerencia.</strong> {/403|404|Access is denied/i.test(error) ? 'Su usuario no tiene permiso para ver ese correo: pídale a Soporte que le dé acceso.' : 'Intente de nuevo en un momento; si sigue igual, avise a Soporte.'}<br /><span className="rama-res-suave">Detalle técnico: {error}</span></div>}
       {mensajes && (
         <>
           <div className="rama-chips" role="group" aria-label="Filtrar los correos">
             {FILTROS.map(([id, nombre]) => <button key={id} type="button" className={'rama-chip' + (filtro === id ? ' activo' : '')} aria-pressed={filtro === id} onClick={() => setFiltro(id)}>{nombre} <span>{conteo[id === 'acuses' ? 'acuses' : id]}</span></button>)}
           </div>
-          {liveMode && mensajes.length === 0 && <div className="rama-hist-aviso"><span><strong>Todavía no hay correos para mostrar.</strong> Puede ser que aún no haya llegado ninguno desde que se activó el reenvío, o que el rango de fechas sea muy corto: pruebe con una fecha «Desde» más antigua. Si sabe que un despacho ya escribió y no aparece, avise a Soporte.</span></div>}
+          {liveMode && mensajes.length === 0 && <div className="rama-hist-aviso"><span><strong>Todavía no hay correos para mostrar.</strong> Puede ser que aún no haya llegado ninguno desde que se activó el reenvío, o que el rango de fechas sea muy corto: pruebe con una fecha «Desde» más antigua. (Sesión: {getAccount()?.username || '—'}.) Si sabe que un despacho ya escribió y no aparece, avise a Soporte.</span></div>}
           {visibles.length === 0 ? <div className="empty-state empty-state-compact">No hay correos en esta vista.</div> : (
             <div className="table-wrap">
               <table className="rama-tabla">

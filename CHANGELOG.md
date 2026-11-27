@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-11-27 (235)
+- **«Correo de despachos» ya no muestra «no hay correos» cuando en realidad no tiene acceso al buzón de Gerencia:** al leer el buzón de otra persona, Microsoft puede responder 404 «Default folder Inbox not found» cuando falta el permiso de buzones compartidos, y el portal lo tomaba como bandeja vacía. Ahora pide el permiso y reintenta; si aun así no hay acceso, lo dice con claridad (con el correo de la sesión) en lugar de mostrar la lista vacía. El aviso de «Todavía no hay correos» también muestra con qué cuenta se inició sesión.
+
 ## 2026-11-27 (234)
 - **«Correo de despachos» (Informes): ya lee el texto completo del correo y crea la audiencia o el término** — probado con el correo real del Juzgado 59 Administrativo (invitación a audiencia de pruebas, proceso 2022-00212):
   - **Lee el texto completo** de cada correo de despacho (solo lectura; no marca como leído, no mueve ni borra). Antes solo veía los primeros 255 caracteres, y ahí no está la fecha de la audiencia.
