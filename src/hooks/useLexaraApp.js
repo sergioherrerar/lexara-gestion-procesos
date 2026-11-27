@@ -143,6 +143,7 @@ export function useLexaraApp(){
   const [ordenesCompra, setOrdenesCompra] = useState([]);
   const [activeProcesoId, setActiveProcesoId] = useState(null);
   const [draftProceso, setDraftProceso] = useState(null);
+  const [propuestaDelDraft, setPropuestaDelDraft] = useState(null);   // propuesta aceptada de la que viene el proceso nuevo (su PDF se copia a «0. Contrato» al guardar)
   // Aparte del rol (canWrite), cada apertura del panel de Proceso judicial
   // puede pedirse explícitamente "solo ver" (botón de ojo en la tabla) —
   // deja todo en modo consulta aunque el rol sí permita editar.
@@ -679,7 +680,7 @@ export function useLexaraApp(){
   const canWrite = cargandoPermisos ? true : canWriteForColaborador(colaboradorActual);
 
   function openProceso(id, opts){ setDraftProceso(null); setActiveProcesoId(id); setProcesoViewOnly(!!(opts && opts.viewOnly)); }
-  function closeDrawer(){ setActiveProcesoId(null); setDraftProceso(null); setProcesoViewOnly(false); }
+  function closeDrawer(){ setActiveProcesoId(null); setDraftProceso(null); setPropuestaDelDraft(null); setProcesoViewOnly(false); }
   // El panel de Proceso llama esto justo antes de cerrarse para ir a ver/crear
   // una factura, orden de compra, forma de pago o desistimiento relacionado —
   // guarda el id del proceso para poder volver a él (ver reabrirProcesoSiCorresponde).
@@ -694,7 +695,8 @@ export function useLexaraApp(){
   // "+ Nuevo proceso judicial" solo abre un borrador local — no toca
   // SharePoint hasta que el usuario le da "Guardar cambios" (mismo criterio
   // que "Nueva factura"/"Nueva orden de compra"/etc.).
-  function newProceso(){ setActiveProcesoId(null); setProcesoViewOnly(false); setDraftProceso({}); }
+  // `inicial` y `propuesta` son opcionales: al crear el proceso desde una propuesta aceptada llegan los datos de la propuesta y su PDF.
+  function newProceso(inicial, propuesta){ setActiveProcesoId(null); setProcesoViewOnly(false); setPropuestaDelDraft(propuesta && propuesta.numero ? propuesta : null); setDraftProceso(inicial && typeof inicial === 'object' && !inicial.nativeEvent && !inicial.target ? inicial : {}); }
   // Los campos de Link se envían a Graph como {Url, Description} (así
   // espera Graph una columna de "Hipervínculo"), pero el resto de la app
   // (el propio formulario al reabrir el proceso, las listas relacionadas,
@@ -733,6 +735,23 @@ export function useLexaraApp(){
       setDraftProceso(null);
       setActiveProcesoId(null);
       notify("Creado con éxito en Lexara", 'success');
+      // Carpeta del proceso en SharePoint (entidad → número corto → subcarpetas), verificando antes que no exista. Si falla, el proceso ya quedó creado: solo se avisa.
+      if(liveMode){
+        try{
+          const c = await Graph.asegurarCarpetaDelProceso(config, RUTAS_CARPETAS_ENTIDAD, { ...updates, ...nuevo }, { propuesta: propuestaDelDraft });
+          if(propuestaDelDraft){
+            const aviso = c.copia ? (c.copia.estado === 'copiada' ? `La propuesta ${propuestaDelDraft.numero} se copió a «${c.copia.carpeta}» del proceso.` : c.copia.estado === 'sin-carpeta-contrato' ? `La carpeta del proceso ya existía y no tiene «0. Contrato»: la propuesta ${propuestaDelDraft.numero} no se copió.` : `No se pudo copiar la propuesta a «0. Contrato»: ${c.copia.mensaje}`) : '';
+            if(aviso) notify(aviso, c.copia && c.copia.estado === 'copiada' ? 'success' : 'info');
+            if(c.status === 'creada' || c.status === 'ya-existia') Graph.actualizarPropuesta(config, propuestaDelDraft.numero, { estado: 'proceso-creado', procesoRadicado: nuevo.Radicado || '', procesoCreado: new Date().toISOString().slice(0, 10) }).catch(e => console.error(e));
+            setPropuestaDelDraft(null);
+          }
+          if(c.status === 'creada') notify(`Carpeta del proceso creada en SharePoint: ${c.ruta} (${c.subcarpetas.length} subcarpetas)${c.entidadCreada ? '. Ojo: también se creó la carpeta de la entidad porque no existía.' : ''}`, 'success');
+          else if(c.status === 'ya-existia') notify(`La carpeta de este proceso ya existía («${c.nombre}»): no se creó ni se cambió nada.`, 'info');
+          else if(c.status === 'ya-existia-varias') notify(`Ya hay varias carpetas que corresponden a este número (${(c.candidatas || []).join(', ')}): no se creó ninguna; elíjala a mano en «Link a la carpeta».`, 'info');
+          else if(c.status === 'sin-entidad') notify('El proceso no tiene Entidad: no se creó la carpeta en SharePoint. Llene la Entidad y use «Buscar y vincular carpeta».', 'info');
+          else if(c.status === 'sin-numero') notify('El número corto del proceso no tiene el formato AAAA-NNNNN: no se creó la carpeta en SharePoint.', 'info');
+        }catch(err){ console.error(err); notify('El proceso se creó, pero no se pudo crear su carpeta en SharePoint: ' + Graph.mensajeError(err), 'error'); }
+      }
       return;
     }
 

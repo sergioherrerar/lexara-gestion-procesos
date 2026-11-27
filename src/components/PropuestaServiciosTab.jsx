@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { IconTextButton } from './IconButton';
-import { getAccount, crearBorradorConImagenesInline, firmaComoImagenInline, firmaHtml, mensajeError } from '../lib/graph';
+import { getAccount, crearBorradorConImagenesInline, firmaComoImagenInline, firmaHtml, mensajeError, guardarCopiaPropuesta, listarPropuestas, actualizarPropuesta } from '../lib/graph';
 import { CORREO_GERENCIA_ACCESO } from '../lib/solicitudAccesoExpediente';
 import {
   EQUIPO_LEXARA, ETAPAS_POR_SALARIOS, FRASE_ETAPA, etiquetaEtapa, textoSalarios, textoAsunto, textoPresentacion, serviciosPorDefecto, conceptoPorDefecto,
@@ -37,7 +37,89 @@ function Campo({ etiqueta, ayuda, children, ancho }){
 }
 const GRID = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 12, marginBottom: 12 };
 
-export default function PropuestaServiciosTab({ clientes, liveMode, notify }){
+// «Propuestas enviadas» (2026-11-27): lo guardado en ADMINISTRACION/Propuestas/_datos al crear cada correo. Estados: creada → aceptada (la confirma una persona) → proceso creado. «Crear proceso» abre el formulario de proceso
+// nuevo ya lleno con los datos de la propuesta; al GUARDARLO se crea la carpeta del proceso y el PDF de la propuesta se copia a su «0. Contrato».
+const ESTADO_PROPUESTA = { creada: ['Creada', 'badge-gris'], aceptada: ['Aceptada', 'badge-naranja'], 'proceso-creado': ['Proceso creado', 'badge-verde'] };
+const dmaP = f => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(f || ''); return m ? m[3] + '-' + m[2] + '-' + m[1] : ''; };
+function procesoDesdePropuesta(p, clientes){
+  const rad23 = String(p.numeroProceso || '').replace(/\D/g, '');
+  const cli = (clientes || []).find(c => String(c.RazonSocial || c.Nombre || '').trim().toLowerCase() === String(p.cliente || '').trim().toLowerCase());
+  const o = {};
+  if(rad23.length >= 21) o.Radicado = rad23.slice(12, 16) + '-' + rad23.slice(16, 21);
+  if(rad23.length === 23) o.NoCompleto = rad23;
+  if(p.cliente) o.Cliente = p.cliente;
+  if(cli && cli.Entidad) o.Entidad = cli.Entidad;
+  if(p.tipoProceso) o.TipoProceso = p.tipoProceso;
+  if(p.demandante) o.Demandante = p.demandante;
+  if(p.demandado) o.Demandado = p.demandado;
+  if(/demandante/i.test(p.rol || '')) o.ParteActuamos = 'Demandante'; else if(/demandad/i.test(p.rol || '')) o.ParteActuamos = 'Demandado';
+  return o;
+}
+function PropuestasEnviadas({ config, liveMode, notify, canWrite, clientes, onCrearProceso }){
+  const [lista, setLista] = useState(null);
+  const [cargando, setCargando] = useState(false);
+  const [error, setError] = useState('');
+  const [abierta, setAbierta] = useState(false);
+  async function cargar(){
+    if(!liveMode) return;
+    setCargando(true); setError('');
+    try{ setLista(await listarPropuestas(config)); }
+    catch(err){ console.error(err); setError(mensajeError(err)); }
+    finally{ setCargando(false); }
+  }
+  useEffect(() => { if(abierta && lista === null) cargar(); }, [abierta]);   // eslint-disable-line react-hooks/exhaustive-deps
+  async function aceptar(p){
+    try{ await actualizarPropuesta(config, p.numero, { estado: 'aceptada', aceptadaEl: new Date().toISOString().slice(0, 10) }); notify?.('Propuesta ' + p.numero + ' marcada como aceptada.', 'success'); await cargar(); }
+    catch(err){ notify?.('No se pudo marcar la propuesta: ' + mensajeError(err), 'error'); }
+  }
+  async function reabrir(p){
+    try{ await actualizarPropuesta(config, p.numero, { estado: 'creada', aceptadaEl: '' }); await cargar(); }
+    catch(err){ notify?.('No se pudo cambiar el estado: ' + mensajeError(err), 'error'); }
+  }
+  function crearProceso(p){
+    if(!p.pdfItemId) notify?.('Esta propuesta no tiene el PDF guardado: se crea el proceso pero no se copiará nada a «0. Contrato».', 'info');
+    onCrearProceso?.(procesoDesdePropuesta(p, clientes), p.pdfItemId ? { numero: p.numero, pdf: p.pdf, pdfItemId: p.pdfItemId, pdfDriveId: p.pdfDriveId } : { numero: p.numero });
+    notify?.('Se abrió el formulario del proceso nuevo con los datos de la propuesta ' + p.numero + '. Revíselo y presione Guardar: ahí se crea el proceso, su carpeta y se copia la propuesta a «0. Contrato».', 'info');
+  }
+  const pendientes = (lista || []).filter(p => p.estado !== 'proceso-creado').length;
+  return (
+    <section className="rama-seccion" style={{ margin: '0 0 16px' }}>
+      <button type="button" className="cob-cab" onClick={() => setAbierta(v => !v)} aria-expanded={abierta}>
+        <strong>Propuestas enviadas</strong>{lista && <span className={'badge ' + (pendientes ? 'badge-naranja' : 'badge-verde')}>{lista.length}{pendientes ? ' · ' + pendientes + ' sin proceso' : ''}</span>}
+        <span className="cob-mas">{abierta ? 'ocultar' : 'ver'}</span>
+      </button>
+      {abierta && (
+        <div style={{ marginTop: 8 }}>
+          <p className="rama-res-suave" style={{ margin: '0 0 8px' }}>Cada vez que usa «Crear correo con la propuesta», el portal guarda una copia del PDF en <strong>Administración Lexara → ADMINISTRACION → Propuestas</strong> con un número (PS-año-consecutivo). Cuando el cliente la acepte, márquela como aceptada y use «Crear proceso»: al guardar el proceso nuevo se crea su carpeta en SharePoint y la propuesta se copia a su <strong>0. Contrato</strong>.</p>
+          {!liveMode && <div className="empty-state empty-state-compact">En el modo demo no hay SharePoint: aquí aparecerán las propuestas guardadas.</div>}
+          {liveMode && <div style={{ marginBottom: 8 }}><button type="button" className="btn-secondary rama-btn" onClick={cargar} disabled={cargando}>{cargando ? 'Leyendo…' : 'Actualizar la lista'}</button></div>}
+          {error && <div className="rama-error" role="alert"><strong>No se pudo leer la lista.</strong> {error}</div>}
+          {lista && lista.length === 0 && <div className="empty-state empty-state-compact">Todavía no hay propuestas guardadas. Aparecen al crear el primer correo con la propuesta.</div>}
+          {lista && lista.length > 0 && (
+            <div className="table-wrap"><table className="rama-tabla"><thead><tr><th>Propuesta</th><th>Fecha</th><th>Cliente</th><th>Proceso</th><th>Estado</th><th></th></tr></thead>
+              <tbody>{lista.map(p => {
+                const [txt, cls] = ESTADO_PROPUESTA[p.estado] || ESTADO_PROPUESTA.creada;
+                return (
+                  <tr key={p.numero}>
+                    <td><strong>{p.numero}</strong></td><td className="rama-fecha">{dmaP(p.fecha)}</td><td>{p.entidad || p.cliente}</td>
+                    <td>{[p.tipoProceso, p.numeroProceso].filter(Boolean).join(' · ') || '—'}{p.demandante || p.demandado ? <><br /><span className="rama-res-suave">{[p.demandante, p.demandado].filter(Boolean).join(' vs. ')}</span></> : null}</td>
+                    <td><span className={'badge ' + cls}>{txt}</span>{p.estado === 'proceso-creado' && p.procesoRadicado ? <><br /><span className="rama-res-suave">{p.procesoRadicado}</span></> : null}</td>
+                    <td className="rama-acc">
+                      {p.pdfWebUrl && <a className="btn-secondary rama-btn" href={p.pdfWebUrl} target="_blank" rel="noopener noreferrer">Ver PDF</a>}
+                      {canWrite && p.estado === 'creada' && <button type="button" className="rama-btn rama-btn--crear" onClick={() => aceptar(p)} title="Márquela cuando el cliente responda aceptando la propuesta">Marcar aceptada</button>}
+                      {canWrite && p.estado === 'aceptada' && <><button type="button" className="rama-btn rama-btn--crear" onClick={() => crearProceso(p)} title="Abre el formulario de proceso nuevo con los datos de la propuesta; no guarda nada hasta Guardar">Crear proceso</button><button type="button" className="rama-mas" onClick={() => reabrir(p)}>quitar «aceptada»</button></>}
+                    </td>
+                  </tr>
+                );
+              })}</tbody></table></div>
+          )}
+        </div>
+      )}
+    </section>
+  );
+}
+function bytesDeBase64(b64){ const bin = atob(b64); const u = new Uint8Array(bin.length); for(let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return u; }
+export default function PropuestaServiciosTab({ clientes, liveMode, notify, config, canWrite = true, onCrearProceso }){
   const [f, setF] = useState(inicial);
   const [editado, setEditado] = useState({ asunto: null, presentacion: null, concepto: null, servicios: null });   // texto escrito a mano (null = el automático)
   const [ocupado, setOcupado] = useState('');
@@ -96,6 +178,17 @@ export default function PropuestaServiciosTab({ clientes, liveMode, notify }){
     try{
       const [adjunto, firma] = await Promise.all([propuestaComoAdjunto(datos), firmaComoImagenInline('gerencia').catch(() => null)]);
       const ent = String(f.entidad).trim();
+      // Copia del PDF en «Administración Lexara → ADMINISTRACION → Propuestas» con su número (PS-AAAA-NNN); el adjunto del correo lleva el mismo nombre. Si no se puede guardar la copia, el borrador igual se crea.
+      let copia = null, avisoCopia = '';
+      if(liveMode){
+        try{
+          copia = await guardarCopiaPropuesta(config, {
+            cliente: ent, fechaISO: f.fecha || HOY(), bytes: bytesDeBase64(adjunto.base64),
+            datos: { cliente: f.clienteSel, entidad: ent, entidadCorta: f.entidadCorta, correoPara: f.correoPara, tipoProceso: f.tipoProceso, numeroProceso: f.numeroProceso, demandante: f.demandante, demandado: f.demandado, despacho: f.despacho, rol: f.rol, honorarios: f.honorarios },
+          });
+          adjunto.nombre = copia.nombre;
+        }catch(err){ console.error(err); avisoCopia = ' (No se pudo guardar la copia en Propuestas: ' + mensajeError(err) + ')'; }
+      }
       const asuntoCorreo = `Propuesta de servicios profesionales – ${ent}${f.numeroProceso ? ' – proceso ' + f.numeroProceso : ''}`;
       const proceso = f.numeroProceso ? ` en el proceso ${f.tipoProceso ? f.tipoProceso.toLowerCase() + ' ' : ''}No. ${f.numeroProceso}` : '';
       const esc = t => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -106,7 +199,7 @@ export default function PropuestaServiciosTab({ clientes, liveMode, notify }){
       const r = await crearBorradorConImagenesInline({ to: f.correoPara.trim() ? [f.correoPara.trim()] : [], subject: asuntoCorreo, htmlBody, imagenes: firma ? [firma] : [], adjuntos: [adjunto], categorias: ['Propuesta de servicios (borrador)'], buzon: CORREO_GERENCIA_ACCESO, caerAlBuzonPropio: true });
       notify?.(r.enBuzonPropio
         ? '⚠ No pude crear el borrador en ' + CORREO_GERENCIA_ACCESO + '. Quedó en TUS Borradores con la propuesta adjunta: revísalo y cambia el «De» a Gerencia si tienes permiso.'
-        : '✓ Borrador creado en los Borradores de ' + CORREO_GERENCIA_ACCESO + ' con la propuesta en PDF adjunta' + (f.correoPara.trim() ? ', dirigido a ' + f.correoPara.trim() : ' (sin destinatario: agrégalo)') + '. Revísalo y envíalo.', r.enBuzonPropio ? 'info' : 'success');
+        : '✓ Borrador creado en los Borradores de ' + CORREO_GERENCIA_ACCESO + ' con la propuesta en PDF adjunta' + (f.correoPara.trim() ? ', dirigido a ' + f.correoPara.trim() : ' (sin destinatario: agrégalo)') + '. Revísalo y envíalo.' + (copia ? ' Copia guardada en ADMINISTRACION/Propuestas como ' + copia.numero + '.' : '') + avisoCopia, r.enBuzonPropio ? 'info' : 'success');
     }catch(err){ console.error(err); notify?.('No se pudo crear el borrador: ' + mensajeError(err), 'error'); }
     finally{ setOcupado(''); }
   }
@@ -121,6 +214,7 @@ export default function PropuestaServiciosTab({ clientes, liveMode, notify }){
 
   return (
     <div className="field-section">
+      <PropuestasEnviadas config={config} liveMode={liveMode} notify={notify} canWrite={canWrite} clientes={clientes} onCrearProceso={onCrearProceso} />
       <p className="rama-fuente">Arma la propuesta de servicios profesionales con el modelo de la última (Aliansalud 2026-00062): carta, portafolio, honorarios por etapas, condiciones, clientes, equipo de trabajo y firma de la representante legal. Como es una propuesta, no se necesitan datos de un proceso del portal: elige el cliente de la lista o escribe otra entidad, y llena el proceso y las partes que se conozcan. Todos los textos se pueden ajustar.</p>
       {Acciones()}
 

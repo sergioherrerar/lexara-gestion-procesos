@@ -130,7 +130,7 @@ function DocumentosTab({ colaboradores, config, notify }){
   );
 }
 
-export default function AdministracionView({ listas, liveMode, onActualizarEquipo, colaboradores, searchQuery, onOpenColaborador, onCreateColaborador, onDeleteColaborador, canWrite = true, onAsignarPagosGerencia, notify, config, tutelas, valoresEntidad, clientes, procesos, facturas, ordenesCompra, onAbrirBorradorOrdenCompra, onAbrirOrdenCompra, onCrearOrdenesCompraEnLote, onCrearFacturasDesdeOrdenes, onAbrirBorradorFactura, horasExtras, onAprobarHoraExtra, vacacionesPeriodos, onCrearPeriodoVacaciones, onEditarPeriodoVacaciones, onEliminarPeriodoVacaciones, onAprobarPeriodoVacaciones,
+export default function AdministracionView({ onCrearProcesoDesdePropuesta, listas, liveMode, onActualizarEquipo, colaboradores, searchQuery, onOpenColaborador, onCreateColaborador, onDeleteColaborador, canWrite = true, onAsignarPagosGerencia, notify, config, tutelas, valoresEntidad, clientes, procesos, facturas, ordenesCompra, onAbrirBorradorOrdenCompra, onAbrirOrdenCompra, onCrearOrdenesCompraEnLote, onCrearFacturasDesdeOrdenes, onAbrirBorradorFactura, horasExtras, onAprobarHoraExtra, vacacionesPeriodos, onCrearPeriodoVacaciones, onEditarPeriodoVacaciones, onEliminarPeriodoVacaciones, onAprobarPeriodoVacaciones,
   proveedoresGastos, cuentasCobroGastos, pagosPorRealizar, gastos,
   onCrearProveedorGastos, onEditarProveedorGastos, onEliminarProveedorGastos,
   onCrearCuentaCobroGastos, onEditarCuentaCobroGastos, onEliminarCuentaCobroGastos,
@@ -184,7 +184,7 @@ export default function AdministracionView({ listas, liveMode, onActualizarEquip
         />
       )}
       {tab==='documentos' && <DocumentosTab colaboradores={colaboradores} config={config} notify={notify} />}
-      {tab==='propuestas' && <PropuestaServiciosTab clientes={clientes} liveMode={liveMode} notify={notify} />}
+      {tab==='propuestas' && <PropuestaServiciosTab clientes={clientes} liveMode={liveMode} notify={notify} config={config} canWrite={canWrite} onCrearProceso={onCrearProcesoDesdePropuesta} />}
       {tab==='horasExtras' && (
         <HorasExtrasTab
           horasExtras={horasExtras}

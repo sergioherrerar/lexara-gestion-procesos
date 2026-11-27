@@ -2,6 +2,19 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-11-27 (239)
+- **Propuesta de servicios: copia numerada del PDF, lista de «Propuestas enviadas» y copia a «0. Contrato» del proceso nuevo** — pedido del usuario:
+  - Al usar **«Crear correo con la propuesta»** se guarda una copia del PDF en **Administración Lexara → Documentos → ADMINISTRACION → Propuestas** con un número que da el portal: **PS-AAAA-NNN** (consecutivo por año; el nombre queda «PS-2026-001 – Entidad – fecha.pdf» y el adjunto del correo lleva el mismo). Los datos del formulario quedan en la subcarpeta «_datos». Si dos personas piden número a la vez, el segundo toma el siguiente. Si no se puede guardar la copia, el borrador igual se crea y lo avisa.
+  - Nueva sección **«Propuestas enviadas»** (arriba de la misma pantalla): lista con estado **Creada → Aceptada → Proceso creado**. Una persona marca «Aceptada» cuando el cliente responde; entonces aparece **«Crear proceso»**, que abre el formulario de proceso nuevo ya lleno con los datos de la propuesta (radicado, cliente, entidad, tipo, partes, parte en que actuamos). No se guarda nada hasta presionar Guardar.
+  - **Al guardar ese proceso**, además de crear su carpeta (entidad → número corto → subcarpetas), **la propuesta se copia a su «0. Contrato»** (sin pisar archivos que ya existan) y la propuesta queda como «Proceso creado». Si la carpeta del proceso ya existía, solo se copia la propuesta a su «0. Contrato» si la tiene.
+  - Pendiente: detectar sola la respuesta de aceptación en el correo de Gerencia (hoy se marca a mano).
+
+## 2026-11-27 (238)
+- **Al guardar un proceso NUEVO, el portal crea su carpeta en SharePoint** — pedido del usuario. En NuevosProcesosMD → Documentos → Procesos: la carpeta de la **entidad** (si no existe), dentro la del **número corto** del proceso y dentro la estructura estándar: **0. Contrato, 1. Escritos, 2. Poder, 3. Pruebas, 4 .Digitales** (los nombres de la captura del usuario).
+  - **Verifica antes de crear:** usa la misma búsqueda por número corto de «Buscar y vincular carpeta». Si ya hay una carpeta para ese número, **no crea ni cambia nada** y lo avisa; si hay varias candidatas, tampoco crea y pide elegirla a mano.
+  - Nunca renombra, mueve ni borra. Si algo falla, el proceso ya quedó creado y solo se avisa el error de la carpeta.
+  - Para Grupo Colmédica elige Aliansalud, UMD o Colmédica según el cliente, igual que el resto del portal.
+
 ## 2026-11-27 (237)
 - **«Correo de despachos»: la lista de despachos ya no mezcla los correos de nuestro equipo.** Antes contaba como «de despacho» cualquier correo que citara un radicado, y entraban los de Daniel al cliente o a RDL. Ahora cuenta por quién lo envía (Rama Judicial, SAMAI, Consejo de Estado, Procuraduría, Supersociedades… o un juzgado o tribunal); los de nuestro equipo y los de RDL quedan en «Todos». Cuando un correo apunta a más de un proceso del portal, ahora dice por qué coincide con cada uno (No. completo, Histórico de números o número corto).
 

@@ -3333,6 +3333,81 @@ export function fechaISODeDocumento(doc){
   const h = new Date();
   return h.getFullYear() + '-' + String(h.getMonth() + 1).padStart(2, '0') + '-' + String(h.getDate()).padStart(2, '0');
 }
+// «Copia de la propuesta de servicios» (2026-11-27, pedido del usuario): al crear el correo con la propuesta se guarda una copia del PDF en el sitio «Administración Lexara» → Documentos → ADMINISTRACION →
+// Propuestas, con una numeración que da el portal: PS-AAAA-NNN (consecutivo por año). El número se RESERVA creando primero un archivito de datos en «Propuestas/_datos» con ese nombre (si dos personas piden el mismo
+// número a la vez, SharePoint rechaza el segundo y se toma el siguiente). Los datos del formulario quedan ahí para crear el proceso cuando la propuesta se acepte (el PDF se copiará entonces a la carpeta «0. Contrato» del proceso).
+export const RUTA_PROPUESTAS = 'ADMINISTRACION/Propuestas';
+async function subirContenido(driveId, padreId, nombre, cuerpo, tipo, conflicto){
+  const token = await getGraphToken();
+  return fetch('https://graph.microsoft.com/v1.0/drives/' + driveId + '/items/' + padreId + ':/' + encodeURIComponent(nombre) + ':/content?@microsoft.graph.conflictBehavior=' + conflicto, {
+    method: 'PUT', headers: { Authorization: 'Bearer ' + token, 'Content-Type': tipo }, body: cuerpo,
+  });
+}
+export async function guardarCopiaPropuesta(config, { cliente, fechaISO, bytes, datos }){
+  const driveId = await resolverDriveIdRaiz(config);
+  let carpetaId = (await graphFetch('/drives/' + driveId + '/root?$select=id')).id;
+  for(const seg of RUTA_PROPUESTAS.split('/')) carpetaId = (await asegurarCarpetaConInfo(driveId, carpetaId, seg)).id;
+  const datosId = (await asegurarCarpetaConInfo(driveId, carpetaId, '_datos')).id;
+  const anio = String(fechaISO || '').slice(0, 4) || String(new Date().getFullYear());
+  // el mayor número de este año, leyendo los archivos de datos
+  let max = 0; let url = '/drives/' + driveId + '/items/' + datosId + '/children?$select=name&$top=200';
+  while(url){
+    const res = await graphFetch(url);
+    (res.value || []).forEach(it => { const m = new RegExp('^PS-' + anio + '-(\\d+)').exec(it.name || ''); if(m) max = Math.max(max, Number(m[1])); });
+    url = res['@odata.nextLink'] || null;
+  }
+  for(let intento = 1; intento <= 6; intento++){
+    const numero = 'PS-' + anio + '-' + String(max + intento).padStart(3, '0');
+    const meta = { numero, fecha: fechaISO, creadaPor: (account && account.username) || '', estado: 'creada', ...datos };
+    const reserva = await subirContenido(driveId, datosId, numero + '.json', JSON.stringify(meta, null, 2), 'application/json', 'fail');
+    if(reserva.status === 409) continue;   // ya la tomó otra persona: se prueba el siguiente
+    if(!reserva.ok) throw new Error('Graph ' + reserva.status + ' al reservar el número de la propuesta: ' + (await reserva.text()).substring(0, 200));
+    const nombre = nombreArchivoSeguro(numero + ' - ' + String(cliente || 'Propuesta').slice(0, 60) + ' - ' + fechaISO) + '.pdf';
+    const pdf = await subirContenido(driveId, carpetaId, nombre, bytes, 'application/pdf', 'fail');
+    if(!pdf.ok) throw new Error('Graph ' + pdf.status + ' al guardar la copia del PDF: ' + (await pdf.text()).substring(0, 200));
+    const item = await pdf.json();
+    // el archivo de datos queda con los datos del PDF guardado (para listarlo y copiarlo al proceso cuando se acepte)
+    try{ await subirContenido(driveId, datosId, numero + '.json', JSON.stringify({ ...meta, pdf: nombre, pdfItemId: item.id, pdfWebUrl: item.webUrl || '', pdfDriveId: driveId }, null, 2), 'application/json', 'replace'); }catch(e){ /* la copia ya está; solo faltaría el enlace en la lista */ }
+    return { numero, nombre, webUrl: item.webUrl || '', itemId: item.id, driveId };
+  }
+  throw new Error('No se pudo reservar un número de propuesta (varios intentos seguidos chocaron con otras propuestas).');
+}
+// Lista de propuestas (los archivos de datos de «Propuestas/_datos»), de la más reciente a la más antigua.
+export async function listarPropuestas(config){
+  const driveId = await resolverDriveIdRaiz(config);
+  let url = '/drives/' + driveId + '/root:/' + encodeURIComponent(RUTA_PROPUESTAS + '/_datos').replace(/%2F/g, '/') + ':/children?$select=id,name,@microsoft.graph.downloadUrl&$top=200';
+  const archivos = [];
+  try{
+    while(url){ const res = await graphFetch(url); (res.value || []).forEach(it => { if(/^PS-\d{4}-\d+\.json$/i.test(it.name || '')) archivos.push(it); }); url = res['@odata.nextLink'] || null; }
+  }catch(err){ if(/^Graph 404/.test(err.message || '')) return []; throw err; }
+  const salida = [];
+  for(let i = 0; i < archivos.length; i += 6){
+    const grupo = await Promise.all(archivos.slice(i, i + 6).map(async it => { try{ const r = await fetch(it['@microsoft.graph.downloadUrl']); return r.ok ? await r.json() : null; }catch(e){ return null; } }));
+    grupo.forEach(x => { if(x && x.numero) salida.push(x); });
+  }
+  return salida.sort((a, b) => String(b.numero).localeCompare(String(a.numero)));
+}
+// Cambia datos de una propuesta (p. ej. estado: 'aceptada' | 'proceso-creado'): relee su archivo de datos, mezcla y lo guarda.
+export async function actualizarPropuesta(config, numero, cambios){
+  const driveId = await resolverDriveIdRaiz(config);
+  const ruta = '/drives/' + driveId + '/root:/' + encodeURIComponent(RUTA_PROPUESTAS + '/_datos/' + numero + '.json').replace(/%2F/g, '/') + ':/content';
+  const token = await getGraphToken();
+  const lec = await fetch('https://graph.microsoft.com/v1.0' + ruta, { headers: { Authorization: 'Bearer ' + token } });
+  if(!lec.ok) throw new Error('Graph ' + lec.status + ' al leer la propuesta ' + numero);
+  const nuevo = { ...(await lec.json()), ...cambios };
+  const esc = await fetch('https://graph.microsoft.com/v1.0' + ruta, { method: 'PUT', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, body: JSON.stringify(nuevo, null, 2) });
+  if(!esc.ok) throw new Error('Graph ' + esc.status + ' al guardar la propuesta ' + numero + ': ' + (await esc.text()).substring(0, 160));
+  return nuevo;
+}
+// Copia el PDF de la propuesta a una carpeta (la «0. Contrato» del proceso). Descarga y vuelve a subir (las dos carpetas están en sitios distintos); si ya hay un archivo con ese nombre, no lo pisa.
+async function copiarPropuestaACarpeta(propuesta, driveDestino, carpetaDestinoId){
+  const token = await getGraphToken();
+  const des = await fetch('https://graph.microsoft.com/v1.0/drives/' + (propuesta.pdfDriveId || propuesta.driveId) + '/items/' + propuesta.pdfItemId + '/content', { headers: { Authorization: 'Bearer ' + token } });
+  if(!des.ok) throw new Error('Graph ' + des.status + ' al leer el PDF de la propuesta');
+  const res = await subirContenido(driveDestino, carpetaDestinoId, propuesta.pdf, await des.arrayBuffer(), 'application/pdf', 'rename');
+  if(!res.ok) throw new Error('Graph ' + res.status + ' al copiar la propuesta a «0. Contrato»: ' + (await res.text()).substring(0, 160));
+  return ((await res.json()).webUrl) || '';
+}
 export async function subirCopiaPdfSoportes(shareUrl, fechaISO, nombreArchivo, bytes){
   if(!shareUrl) throw new Error('Falta la dirección de la carpeta «1 Soportes de gastos MD» (GASTOS_SOPORTES_SHARE_URL en la configuración).');
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(fechaISO || '');
@@ -3824,6 +3899,75 @@ export async function generarLinksCarpetaProceso(config, rutasEntidad, proceso){
     }).then(r => r.link.webUrl),
   ]);
   return { status:'ok', nombreCarpeta: encontrado.nombre, linkCarpeta, linkCliente };
+}
+
+// «Carpeta del proceso nuevo» (2026-11-27, pedido del usuario): al crear un proceso se crea en SharePoint (NuevosProcesosMD → Documentos → Procesos) la carpeta de la ENTIDAD (si falta), dentro la del
+// NÚMERO CORTO del proceso y dentro la estructura estándar de subcarpetas. Antes de crear se VERIFICA si ya existe (misma búsqueda por número corto de «Buscar y vincular carpeta»): si existe, no se crea
+// ni se toca nada. Nunca renombra, mueve ni borra. La lista de subcarpetas vive aquí, en un solo sitio (los nombres son los de la captura que mandó el usuario, incluido «4 .Digitales»).
+export const SUBCARPETAS_PROCESO_NUEVO = ['0. Contrato', '1. Escritos', '2. Poder', '3. Pruebas', '4 .Digitales'];
+async function carpetaPorNombre(driveId, padreId, nombre){
+  try{ const r = await graphFetch('/drives/' + driveId + '/items/' + padreId + ':/' + encodeURIComponent(nombre) + '?$select=id,folder,webUrl'); return r && r.folder ? r : null; }
+  catch(err){ if(/^Graph 404/.test(err.message || '')) return null; throw err; }
+}
+async function asegurarCarpetaConInfo(driveId, padreId, nombre){
+  const hay = await carpetaPorNombre(driveId, padreId, nombre);
+  if(hay) return { id: hay.id, webUrl: hay.webUrl || '', creada: false };
+  try{
+    const n = await graphFetch('/drives/' + driveId + '/items/' + padreId + '/children', { method: 'POST', body: JSON.stringify({ name: nombre, folder: {}, '@microsoft.graph.conflictBehavior': 'fail' }) });
+    return { id: n.id, webUrl: n.webUrl || '', creada: true };
+  }catch(err){
+    if(/^Graph 409/.test(err.message || '')){ const r = await carpetaPorNombre(driveId, padreId, nombre); if(r) return { id: r.id, webUrl: r.webUrl || '', creada: false }; }   // la creó otra persona al mismo tiempo
+    throw err;
+  }
+}
+/**
+ * Asegura la carpeta de un proceso. Devuelve { status, … }:
+ *  'sin-entidad' | 'sin-numero'  → no se creó nada (falta el dato);
+ *  'ya-existia' { nombre } / 'ya-existia-varias' { candidatas } → ya hay carpeta para ese número corto: no se tocó nada;
+ *  'creada' { ruta, webUrl, entidadCreada, subcarpetas: [..creadas] }.
+ */
+export async function asegurarCarpetaDelProceso(config, rutasEntidad, proceso, opciones = {}){
+  const ruta = rutaEntidadDeProceso(rutasEntidad, proceso);
+  if(!ruta) return { status: 'sin-entidad' };
+  const numero = radicadoCortoPropio(proceso);
+  if(!numero) return { status: 'sin-numero' };
+  const existente = await buscarCarpetaDelProceso(config, rutasEntidad, proceso);
+  if(existente.status === 'ok'){
+    // La carpeta ya estaba: no se toca nada, salvo copiar la propuesta a su «0. Contrato» si hay una y la carpeta lo tiene.
+    let copia = null;
+    if(opciones.propuesta){
+      try{
+        const hijos = await listarHijos(existente.driveId, existente.itemId);
+        const contrato = hijos.find(h => h.folder && /^\s*0[\s.\-_]*contrato/i.test(h.name || ''));
+        if(contrato){ await copiarPropuestaACarpeta(opciones.propuesta, existente.driveId, contrato.id); copia = { estado: 'copiada', carpeta: contrato.name }; }
+        else copia = { estado: 'sin-carpeta-contrato' };
+      }catch(err){ copia = { estado: 'error', mensaje: err.message }; }
+    }
+    return { status: 'ya-existia', nombre: existente.nombre, copia };
+  }
+  if(existente.status === 'ambiguo') return { status: 'ya-existia-varias', candidatas: existente.candidatas };
+  const driveId = await resolverDriveIdPrincipal(config);
+  let padre = (await graphFetch('/drives/' + driveId + '/root?$select=id')).id;
+  let entidadCreada = false;
+  for(const segmento of ruta.split('/').filter(Boolean)){
+    const c = await asegurarCarpetaConInfo(driveId, padre, segmento);
+    if(c.creada && segmento !== 'Procesos') entidadCreada = true;
+    padre = c.id;
+  }
+  const carpeta = await asegurarCarpetaConInfo(driveId, padre, numero);
+  const subcarpetas = []; let contratoId = '';
+  for(const nombre of SUBCARPETAS_PROCESO_NUEVO){
+    const s = await asegurarCarpetaConInfo(driveId, carpeta.id, nombre);
+    if(s.creada) subcarpetas.push(nombre);
+    if(!contratoId) contratoId = s.id;   // la primera es «0. Contrato»
+  }
+  if(cacheSubcarpetas) cacheSubcarpetas.clear();
+  let copia = null;
+  if(opciones.propuesta){
+    try{ await copiarPropuestaACarpeta(opciones.propuesta, driveId, contratoId); copia = { estado: 'copiada', carpeta: SUBCARPETAS_PROCESO_NUEVO[0] }; }
+    catch(err){ copia = { estado: 'error', mensaje: err.message }; }
+  }
+  return { status: 'creada', ruta: ruta + '/' + numero, webUrl: carpeta.webUrl, entidadCreada, subcarpetas, yaTeniaCarpeta: !carpeta.creada, copia };
 }
 
 // Lista TODOS los hijos (archivos y carpetas) de un ítem ya resuelto por id
