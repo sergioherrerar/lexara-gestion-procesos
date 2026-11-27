@@ -2,6 +2,9 @@
 
 Registro de qué cambió en cada publicación, en orden del más reciente al más antiguo. Para el detalle técnico de un cambio puntual, el mensaje del commit correspondiente en GitHub tiene más contexto.
 
+## 2026-11-28 (253)
+- **Vigilancia RDL: clic en el proceso lo abre, también en las listas del Excel mensual y en «Terminados»** — pedido del usuario. En «Terminados en el portal que RDL sigue reportando» (informes diarios) el **número del proceso y el radicado** son enlaces que abren la ficha del proceso; y en las listas del Excel mensual («Terminados que RDL cobra» y «Vigentes que RDL no incluyó») el **radicado** abre el proceso cuando existe en el portal.
+
 ## 2026-11-28 (252)
 - **«Revisión de Procesos» y «Cobertura RDL» se unen en una sola herramienta: Informes → Herramientas → «Vigilancia RDL»** — pedido del usuario (unirlas sin quitar funciones, mejorándolas). Una sola pantalla en dos pasos:
   - **1) Excel mensual de RDL contra el portal** (lo de la antigua «Revisión de Procesos», con las mismas 3 diferencias): al subir el Excel sale **al instante**, sin esperar correo ni Rama, qué procesos **no están en el portal**, cuáles están **terminados y RDL sigue cobrando** y qué **vigentes del portal RDL no incluyó**, con su botón de Excel de siempre.

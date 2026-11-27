@@ -119,6 +119,10 @@ export default function CoberturaRDLTab({ procesos, config, notify, liveMode, on
   const enExcel = useMemo(() => new Set((filasExcel || []).map(f => c21De(f.radicado)).filter(Boolean)), [filasExcel]);
   const cobra = p => !filasExcel ? '—' : (c21sDe(p).some(k => enExcel.has(k)) ? 'Sí' : 'No está en su Excel');
   const abrir = p => onAbrirProceso ? <button type="button" className="celda-enlace" onClick={() => onAbrirProceso(p.id)} title="Abrir este proceso"><strong>{p.Radicado}</strong></button> : <strong>{p.Radicado}</strong>;
+  // En las listas del Excel mensual, si el proceso existe en el portal (terminados y vigentes sin incluir), su radicado es un enlace que lo abre.
+  const procDeFila = f => (procesos || []).find(p => p.Radicado && (p.Radicado === f.lexara || p.Radicado === f.consecutivo)) || null;
+  const celdaRad = f => { const p = onAbrirProceso ? procDeFila(f) : null; return p ? <button type="button" className="celda-enlace" onClick={() => onAbrirProceso(p.id)} title="Abrir este proceso">{f.radicado}</button> : f.radicado; };
+  const colsRevAbrir = [{ t: 'Radicado', v: celdaRad }, { t: 'Consecutivo', v: f => f.consecutivo }, { t: 'Demandante', v: f => f.demandante }, { t: 'Demandado', v: f => f.demandado }, { t: 'Apoderado', v: f => f.apoderado }, { t: 'Portal Lexara', v: f => f.lexara }];
   const colsRev = [{ t: 'Radicado', v: f => f.radicado }, { t: 'Consecutivo', v: f => f.consecutivo }, { t: 'Demandante', v: f => f.demandante }, { t: 'Demandado', v: f => f.demandado }, { t: 'Apoderado', v: f => f.apoderado }, { t: 'Portal Lexara', v: f => f.lexara }];
 
   async function descargar(){
@@ -161,8 +165,8 @@ export default function CoberturaRDLTab({ procesos, config, notify, liveMode, on
           </div>
           <div style={{ marginBottom: 6 }}><IconTextButton icon="excel" variant="secondary" onClick={descargarRevision} disabled={generandoRev}>{generandoRev ? 'Generando…' : 'Descargar Excel de esta revisión'}</IconTextButton></div>
           <Tabla titulo="Procesos del Excel de RDL que NO están en el portal" ayuda="RDL los vigila (y los cobra) y en el portal no existen: o falta crearlos aquí, o RDL tiene procesos que no son nuestros." filas={revision.noEncontrados} vacio="Todos los procesos del Excel están en el portal." columnas={colsRev} />
-          <Tabla titulo="Terminados en el portal que RDL sigue reportando y cobrando" ayuda="Hay que pedirle a RDL que los saque de la vigilancia." filas={revision.terminados} vacio="RDL no tiene procesos terminados en su lista." columnas={colsRev} />
-          <Tabla titulo="Vigentes del portal que RDL NO incluyó en su Excel" ayuda="Procesos activos que RDL no está vigilando: ahí no habrá informes diarios." filas={revision.faltantesEnArchivo} vacio="RDL incluyó todos los procesos vigentes del portal." columnas={colsRev} />
+          <Tabla titulo="Terminados en el portal que RDL sigue reportando y cobrando" ayuda="Hay que pedirle a RDL que los saque de la vigilancia." filas={revision.terminados} vacio="RDL no tiene procesos terminados en su lista." columnas={colsRevAbrir} />
+          <Tabla titulo="Vigentes del portal que RDL NO incluyó en su Excel" ayuda="Procesos activos que RDL no está vigilando: ahí no habrá informes diarios." filas={revision.faltantesEnArchivo} vacio="RDL incluyó todos los procesos vigentes del portal." columnas={colsRevAbrir} />
         </section>
       )}
 
@@ -195,7 +199,7 @@ export default function CoberturaRDLTab({ procesos, config, notify, liveMode, on
             columnas={[{ t: 'Radicado', v: f => f.radicado }, { t: 'Consecutivo', v: f => f.consecutivo }, { t: 'Demandante', v: f => f.demandante }, { t: 'Movimiento en la Rama', der: true, v: f => f.movimientoRama == null ? 'no consultado' : f.movimientoRama }]} />
           <Tabla titulo="Terminados en el portal que RDL sigue reportando" ayuda="Si los cobra, hay que pedirle que los saque de la vigilancia."
             filas={R.terminadosQueReporta} vacio="RDL no reportó procesos terminados."
-            columnas={[{ t: 'Proceso', v: f => abrir(f.proceso) }, { t: 'Radicado', v: f => f.radicado }, { t: 'Última novedad', v: f => dma(f.ultima) }, { t: 'Carpeta de RDL', v: f => enlaceDrive(f.drive) }]} />
+            columnas={[{ t: 'Proceso', v: f => abrir(f.proceso) }, { t: 'Radicado', v: f => onAbrirProceso && f.proceso ? <button type="button" className="celda-enlace" onClick={() => onAbrirProceso(f.proceso.id)} title="Abrir este proceso">{f.radicado}</button> : f.radicado }, { t: 'Última novedad', v: f => dma(f.ultima) }, { t: 'Carpeta de RDL', v: f => enlaceDrive(f.drive) }]} />
           <Tabla titulo="RDL los reporta y no están en el portal" filas={R.enRdlNoPortal} vacio="Todos los procesos que RDL reportó están en el portal."
             columnas={[{ t: 'Radicado', v: f => f.radicado }, { t: 'Despacho', v: f => f.despacho }, { t: 'Demandante', v: f => f.demandante }, { t: 'Última novedad', v: f => dma(f.ultima) }, { t: 'Carpeta de RDL', v: f => enlaceDrive(f.drive) }]} />
         </>
